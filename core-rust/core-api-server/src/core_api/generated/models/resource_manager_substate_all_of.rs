@@ -19,9 +19,11 @@ pub struct ResourceManagerSubstateAllOf {
     pub fungible_divisibility: Option<i32>,
     #[serde(rename = "metadata")]
     pub metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>,
-    /// The string-encoded decimal representing the total supply of this resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    /// The string-encoded decimal representing the total supply of this resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.     owned_entities: 
     #[serde(rename = "total_supply")]
     pub total_supply: String,
+    #[serde(rename = "owned_nf_store", skip_serializing_if = "Option::is_none")]
+    pub owned_nf_store: Option<Box<crate::core_api::generated::models::EntityReference>>,
 }
 
 impl ResourceManagerSubstateAllOf {
@@ -31,6 +33,7 @@ impl ResourceManagerSubstateAllOf {
             fungible_divisibility: None,
             metadata,
             total_supply,
+            owned_nf_store: None,
         }
     }
 }

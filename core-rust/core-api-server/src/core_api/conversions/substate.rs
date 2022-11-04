@@ -35,7 +35,7 @@ pub fn to_api_substate(
             to_api_epoch_manager_substate(epoch_manager)?
         }
         PersistedSubstate::ResourceManager(resource_manager) => {
-            to_api_resource_substate(resource_manager)
+            to_api_resource_manager_substate(resource_manager)?
         }
         PersistedSubstate::ComponentInfo(component_info) => {
             to_api_component_info_substate(component_info, bech32_encoder)
@@ -93,15 +93,22 @@ fn to_api_epoch_manager_substate(
     })
 }
 
-pub fn to_api_resource_substate(resource_manager: &ResourceManagerSubstate) -> models::Substate {
+pub fn to_api_resource_manager_substate(
+    resource_manager: &ResourceManagerSubstate,
+) -> Result<models::Substate, MappingError> {
     let (resource_type, fungible_divisibility) = match resource_manager.resource_type {
         ResourceType::Fungible { divisibility } => {
             (models::ResourceType::Fungible, Some(divisibility as i32))
         }
         ResourceType::NonFungible => (models::ResourceType::NonFungible, None),
     };
+    let owned_nf_store = resource_manager
+        .nf_store_id
+        .map(|node_id| MappedEntityId::try_from(RENodeId::NonFungibleStore(node_id)))
+        .transpose()?;
+
     // TODO: map method_table, vault_method_table, bucket_method_table, authorization
-    models::Substate::ResourceManagerSubstate {
+    Ok(models::Substate::ResourceManagerSubstate {
         entity_type: EntityType::ResourceManager,
         resource_type,
         fungible_divisibility,
@@ -114,7 +121,8 @@ pub fn to_api_resource_substate(resource_manager: &ResourceManagerSubstate) -> m
             })
             .collect(),
         total_supply: to_api_decimal(&resource_manager.total_supply),
-    }
+        owned_nf_store: owned_nf_store.map(|entity_id| Box::new(entity_id.into())),
+    })
 }
 
 pub fn to_api_component_info_substate(

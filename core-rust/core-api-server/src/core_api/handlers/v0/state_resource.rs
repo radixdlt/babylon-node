@@ -28,7 +28,7 @@ fn handle_v0_state_resource_internal(
     ) {
         Some(PersistedSubstate::ResourceManager(resource_manager)) => {
             Ok(models::V0StateResourceResponse {
-                manager: Some(to_api_resource_substate(&resource_manager)),
+                manager: Some(to_api_resource_manager_substate(&resource_manager)?),
             })
         }
         Some(..) => Err(MappingError::MismatchedSubstateId {

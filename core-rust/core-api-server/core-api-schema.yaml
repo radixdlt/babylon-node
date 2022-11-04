@@ -1206,6 +1206,9 @@ components:
               description: |
                 The string-encoded decimal representing the total supply of this resource.
                 A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+                    owned_entities:
+            owned_nf_store:
+              $ref: '#/components/schemas/EntityReference'
     ResourceType:
       type: string
       enum:
