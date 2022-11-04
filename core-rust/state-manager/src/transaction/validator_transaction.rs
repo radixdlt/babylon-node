@@ -71,7 +71,7 @@ impl PreparedValidatorTransaction {
         let transaction_hash = Hash([0u8; Hash::LENGTH]);
 
         let auth_zone_params = AuthZoneParams {
-            initial_proofs: vec![AuthModule::validator_role_nf_address()],
+            initial_proofs: vec![AuthModule::validator_role_non_fungible_address()],
             virtualizable_proofs_resource_addresses: BTreeSet::new(),
         };
 
