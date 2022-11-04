@@ -20,14 +20,18 @@ pub struct PackageSubstate {
     /// The hex-encoded package code
     #[serde(rename = "code_hex")]
     pub code_hex: String,
+    /// A map from the blueprint name to BlueprintData
+    #[serde(rename = "blueprints")]
+    pub blueprints: ::std::collections::HashMap<String, crate::core_api::generated::models::BlueprintData>,
 }
 
 impl PackageSubstate {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, code_hex: String) -> PackageSubstate {
+    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, code_hex: String, blueprints: ::std::collections::HashMap<String, crate::core_api::generated::models::BlueprintData>) -> PackageSubstate {
         PackageSubstate {
             entity_type,
             substate_type,
             code_hex,
+            blueprints,
         }
     }
 }

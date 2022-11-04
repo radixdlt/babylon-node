@@ -207,10 +207,22 @@ fn extract_entities(
 }
 
 pub fn to_api_package_substate(package: &PackageSubstate) -> models::Substate {
-    // TODO: map blueprint_abis
     models::Substate::PackageSubstate {
         entity_type: EntityType::Package,
         code_hex: to_hex(package.code()),
+        blueprints: package
+            .blueprint_abis
+            .iter()
+            .map(|(blueprint_name, abi)| {
+                let blueprint_data = models::BlueprintData {
+                    // TODO: Whilst an SBOR-encoded ABI is probably most useful for consumers using the ABI,
+                    //       we should probably at some point also map this to something more human-intelligible.
+                    //       But let's wait till SBOR schema changes have finalized first.
+                    abi_hex: to_hex(scrypto_encode(abi)),
+                };
+                (blueprint_name.to_owned(), blueprint_data)
+            })
+            .collect(),
     }
 }
 

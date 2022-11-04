@@ -1,3 +1,5 @@
+pub mod blueprint_data;
+pub use self::blueprint_data::BlueprintData;
 pub mod committed_state_identifier;
 pub use self::committed_state_identifier::CommittedStateIdentifier;
 pub mod committed_transaction;

@@ -1275,10 +1275,24 @@ components:
         - type: object
           required:
             - code_hex
+            - blueprints
           properties:
             code_hex:
               type: string
               description: The hex-encoded package code
+            blueprints:
+              type: object
+              description: A map from the blueprint name to BlueprintData
+              additionalProperties:
+                $ref: '#/components/schemas/BlueprintData'
+    BlueprintData:
+      type: object
+      required:
+        - abi_hex
+      properties:
+        abi_hex:
+          type: string
+          description: The hex-encoded, sbor-encoded package abi
     VaultSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
