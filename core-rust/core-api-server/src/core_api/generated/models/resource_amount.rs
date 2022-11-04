@@ -27,8 +27,8 @@ pub enum ResourceAmount {
         /// The Bech32m-encoded human readable version of the resource address
         #[serde(rename = "resource_address")]
         resource_address: String,
-        #[serde(rename = "nf_ids_hex")]
-        nf_ids_hex: Vec<String>,
+        #[serde(rename = "non_fungible_ids_hex")]
+        non_fungible_ids_hex: Vec<String>,
     },
 }
 

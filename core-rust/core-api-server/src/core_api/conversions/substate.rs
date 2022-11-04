@@ -121,7 +121,7 @@ pub fn to_api_resource_manager_substate(
             })
             .collect(),
         total_supply: to_api_decimal(&resource_manager.total_supply),
-        owned_nf_store: owned_nf_store.map(|entity_id| Box::new(entity_id.into())),
+        owned_non_fungible_store: owned_nf_store.map(|entity_id| Box::new(entity_id.into())),
     })
 }
 
@@ -269,10 +269,10 @@ fn to_api_non_fungible_resource_amount(
     resource_address: &ResourceAddress,
     ids: &BTreeSet<NonFungibleId>,
 ) -> Result<models::ResourceAmount, MappingError> {
-    let nf_ids_hex = ids.iter().map(|nf_id| to_hex(&nf_id.0)).collect::<Vec<_>>();
+    let non_fungible_ids_hex = ids.iter().map(|nf_id| to_hex(&nf_id.0)).collect::<Vec<_>>();
     Ok(models::ResourceAmount::NonFungibleResourceAmount {
         resource_address: bech32_encoder.encode_resource_address_to_string(resource_address),
-        nf_ids_hex,
+        non_fungible_ids_hex,
     })
 }
 
@@ -297,7 +297,7 @@ pub fn to_api_non_fungible_substate(
     Ok(match &non_fungible.0 {
         Some(non_fungible) => models::Substate::NonFungibleSubstate {
             entity_type: EntityType::NonFungibleStore,
-            nf_id_hex: to_hex(nf_id_bytes),
+            non_fungible_id_hex: to_hex(nf_id_bytes),
             is_deleted: false,
             non_fungible_data: Some(Box::new(to_api_non_fungible_data(
                 bech32_encoder,
@@ -306,7 +306,7 @@ pub fn to_api_non_fungible_substate(
         },
         None => models::Substate::NonFungibleSubstate {
             entity_type: EntityType::NonFungibleStore,
-            nf_id_hex: to_hex(nf_id_bytes),
+            non_fungible_id_hex: to_hex(nf_id_bytes),
             is_deleted: true,
             non_fungible_data: None,
         },

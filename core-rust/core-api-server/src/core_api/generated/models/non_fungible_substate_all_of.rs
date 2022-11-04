@@ -14,8 +14,8 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct NonFungibleSubstateAllOf {
     /// The hex-encoded bytes of its non-fungible id
-    #[serde(rename = "nf_id_hex")]
-    pub nf_id_hex: String,
+    #[serde(rename = "non_fungible_id_hex")]
+    pub non_fungible_id_hex: String,
     #[serde(rename = "is_deleted")]
     pub is_deleted: bool,
     #[serde(rename = "non_fungible_data", skip_serializing_if = "Option::is_none")]
@@ -23,9 +23,9 @@ pub struct NonFungibleSubstateAllOf {
 }
 
 impl NonFungibleSubstateAllOf {
-    pub fn new(nf_id_hex: String, is_deleted: bool) -> NonFungibleSubstateAllOf {
+    pub fn new(non_fungible_id_hex: String, is_deleted: bool) -> NonFungibleSubstateAllOf {
         NonFungibleSubstateAllOf {
-            nf_id_hex,
+            non_fungible_id_hex,
             is_deleted,
             non_fungible_data: None,
         }

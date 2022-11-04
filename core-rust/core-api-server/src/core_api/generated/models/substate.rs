@@ -62,8 +62,8 @@ pub enum Substate {
         #[serde(rename = "entity_type")]
         entity_type: crate::core_api::generated::models::EntityType,
         /// The hex-encoded bytes of its non-fungible id
-        #[serde(rename = "nf_id_hex")]
-        nf_id_hex: String,
+        #[serde(rename = "non_fungible_id_hex")]
+        non_fungible_id_hex: String,
         #[serde(rename = "is_deleted")]
         is_deleted: bool,
         #[serde(rename = "non_fungible_data", skip_serializing_if = "Option::is_none")]
@@ -90,11 +90,11 @@ pub enum Substate {
         fungible_divisibility: Option<i32>,
         #[serde(rename = "metadata")]
         metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>,
-        /// The string-encoded decimal representing the total supply of this resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.     owned_entities: 
+        /// The string-encoded decimal representing the total supply of this resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
         #[serde(rename = "total_supply")]
         total_supply: String,
-        #[serde(rename = "owned_nf_store", skip_serializing_if = "Option::is_none")]
-        owned_nf_store: Option<Box<crate::core_api::generated::models::EntityReference>>,
+        #[serde(rename = "owned_non_fungible_store", skip_serializing_if = "Option::is_none")]
+        owned_non_fungible_store: Option<Box<crate::core_api::generated::models::EntityReference>>,
     },
     #[serde(rename="Vault")]
     VaultSubstate {
