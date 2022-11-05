@@ -63,6 +63,7 @@
  */
 
 use crate::jni::mempool::JavaRawTransaction;
+use crate::transaction::UserTransactionValidator;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -90,11 +91,15 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_verify(
 fn do_verify(state_manager: &ActualStateManager, args: JavaRawTransaction) -> Result<(), String> {
     let transaction = args;
 
-    let result = state_manager
-        .user_transaction_validator
-        .parse_and_validate_user_transaction_slice(state_manager.get_epoch(), &transaction.payload);
+    let parsed = UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
+        &transaction.payload,
+    )
+    .map_err(|err| format!("{:?}", err))?;
 
-    result.map_err(|err| format!("{:?}", err))?;
+    let _static_validation = state_manager
+        .user_transaction_validator
+        .validate_and_create_executable(&parsed)
+        .map_err(|err| format!("{:?}", err))?;
 
     Ok(())
 }

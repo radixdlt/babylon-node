@@ -74,6 +74,21 @@ pub fn extract_api_state_version(state_version: i64) -> Result<u64, ExtractionEr
     Ok(state_version)
 }
 
+pub fn extract_api_epoch(epoch: i64) -> Result<u64, ExtractionError> {
+    if epoch < 0 {
+        return Err(ExtractionError::InvalidInteger {
+            message: "Epoch too low".to_owned(),
+        });
+    }
+    let epoch: u64 = epoch.try_into().expect("Epoch invalid somehow");
+    if epoch > MAX_API_EPOCH {
+        return Err(ExtractionError::InvalidInteger {
+            message: "Epoch larger than max api epoch".to_owned(),
+        });
+    }
+    Ok(epoch)
+}
+
 pub fn extract_api_u64_as_string(input: String) -> Result<u64, ExtractionError> {
     input
         .parse::<u64>()

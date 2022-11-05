@@ -12,7 +12,7 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct SystemSubstate {
+pub struct EpochManagerSubstate {
     #[serde(rename = "entity_type")]
     pub entity_type: crate::core_api::generated::models::EntityType,
     #[serde(rename = "substate_type")]
@@ -22,9 +22,9 @@ pub struct SystemSubstate {
     pub epoch: i64,
 }
 
-impl SystemSubstate {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, epoch: i64) -> SystemSubstate {
-        SystemSubstate {
+impl EpochManagerSubstate {
+    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, epoch: i64) -> EpochManagerSubstate {
+        EpochManagerSubstate {
             entity_type,
             substate_type,
             epoch,

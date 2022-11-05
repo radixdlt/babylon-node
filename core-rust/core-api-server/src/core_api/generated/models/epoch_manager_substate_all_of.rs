@@ -12,15 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct SystemSubstateAllOf {
+pub struct EpochManagerSubstateAllOf {
     /// An integer between `0` and `10^10`, marking the current epoch
     #[serde(rename = "epoch")]
     pub epoch: i64,
 }
 
-impl SystemSubstateAllOf {
-    pub fn new(epoch: i64) -> SystemSubstateAllOf {
-        SystemSubstateAllOf {
+impl EpochManagerSubstateAllOf {
+    pub fn new(epoch: i64) -> EpochManagerSubstateAllOf {
+        EpochManagerSubstateAllOf {
             epoch,
         }
     }

@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use scrypto::engine::types::{GlobalAddress, RENodeId, Receiver};
+use scrypto::engine::types::{GlobalAddress, RENodeId};
 use scrypto::prelude::*;
 
 use transaction::builder::ManifestBuilder;
@@ -78,13 +78,14 @@ pub fn create_set_epoch_intent(
     epoch: u64,
 ) -> TransactionIntent {
     let manifest = ManifestBuilder::new(network_definition)
-        .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 100.into())
         .call_native_method(
-            Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
-                SYS_SYSTEM_COMPONENT,
-            ))),
+            RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
             "set_epoch",
-            args!(epoch),
+            scrypto_encode(&EpochManagerSetEpochInvocation {
+                receiver: EPOCH_MANAGER,
+                epoch,
+            }),
         )
         .build();
     TransactionIntent {
@@ -108,8 +109,8 @@ pub fn create_new_account_intent_bytes(
     public_key: PublicKey,
 ) -> Vec<u8> {
     let manifest = ManifestBuilder::new(network_definition)
-        .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-        .call_method(SYS_FAUCET_COMPONENT, "free", args!())
+        .lock_fee(FAUCET_COMPONENT, 100.into())
+        .call_method(FAUCET_COMPONENT, "free", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.new_account_with_resource(&AccessRule::AllowAll, bucket_id)
         })

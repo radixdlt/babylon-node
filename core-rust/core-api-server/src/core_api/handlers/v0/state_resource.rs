@@ -25,7 +25,7 @@ fn handle_v0_state_resource_internal(
         state_manager,
         GlobalAddress::Resource(resource_address),
         SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-    )? {
+    ) {
         Some(PersistedSubstate::ResourceManager(resource_manager)) => {
             Ok(models::V0StateResourceResponse {
                 manager: Some(to_api_resource_substate(&resource_manager)),

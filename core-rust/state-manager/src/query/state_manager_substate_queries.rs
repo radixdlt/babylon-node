@@ -1,42 +1,44 @@
-use radix_engine::model::{GlobalAddressSubstate, SystemSubstate};
-use radix_engine::types::SubstateId;
-use scrypto::constants::SYS_SYSTEM_COMPONENT;
-use scrypto::engine::types::{GlobalAddress, GlobalOffset, RENodeId, SubstateOffset, SystemOffset};
+use radix_engine::model::EpochManagerSubstate;
+use radix_engine::types::{EpochManagerOffset, SubstateId, EPOCH_MANAGER};
+use scrypto::engine::types::{GlobalAddress, GlobalOffset, RENodeId, SubstateOffset};
 
 use crate::store::traits::*;
 
 pub trait StateManagerSubstateQueries {
+    fn global_deref(&self, global_address: GlobalAddress) -> Option<RENodeId>;
     fn get_epoch(&self) -> u64;
 }
 
-impl<T: ReadableSubstateStore + QueryableSubstateStore> StateManagerSubstateQueries for T {
-    fn get_epoch(&self) -> u64 {
-        let global_address_substate: GlobalAddressSubstate = self
+impl<T: ReadableSubstateStore> StateManagerSubstateQueries for T {
+    fn global_deref(&self, global_address: GlobalAddress) -> Option<RENodeId> {
+        let node_id = self
             .get_substate(&SubstateId(
-                RENodeId::Global(GlobalAddress::Component(SYS_SYSTEM_COMPONENT)),
+                RENodeId::Global(global_address),
                 SubstateOffset::Global(GlobalOffset::Global),
+            ))?
+            .substate
+            .to_runtime()
+            .global()
+            .node_deref();
+
+        Some(node_id)
+    }
+
+    fn get_epoch(&self) -> u64 {
+        let epoch_manager_node = self
+            .global_deref(GlobalAddress::System(EPOCH_MANAGER))
+            .expect("Couldn't find Epoch Manager from Global Address!");
+
+        let system_substate: EpochManagerSubstate = self
+            .get_substate(&SubstateId(
+                epoch_manager_node,
+                SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
             ))
-            .unwrap()
+            .expect("Couldn't find Epoch Manager substate!")
             .substate
             .to_runtime()
             .into();
 
-        if let GlobalAddressSubstate::SystemComponent(scrypto::component::Component(component_id)) =
-            global_address_substate
-        {
-            let system_substate: SystemSubstate = self
-                .get_substate(&SubstateId(
-                    RENodeId::System(component_id),
-                    SubstateOffset::System(SystemOffset::System),
-                ))
-                .unwrap()
-                .substate
-                .to_runtime()
-                .into();
-
-            return system_substate.epoch;
-        }
-
-        panic!("Failed to read SystemSubstate");
+        system_substate.epoch
     }
 }

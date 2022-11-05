@@ -34,7 +34,7 @@ fn handle_v0_state_non_fungible_internal(
         state_manager,
         GlobalAddress::Resource(resource_address),
         SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
-    )? {
+    ) {
         Some(PersistedSubstate::ResourceManager(resource_manager)) => {
             if let Some(non_fungible_store_id) = resource_manager.nf_store_id {
                 let non_fungible_substate_id = SubstateId(

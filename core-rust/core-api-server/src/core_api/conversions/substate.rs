@@ -1,5 +1,4 @@
-use std::collections::{BTreeSet, HashSet};
-use std::iter;
+use std::collections::BTreeSet;
 
 use super::*;
 use crate::core_api::models;
@@ -7,12 +6,12 @@ use models::EntityType;
 
 use crate::core_api::models::SborData;
 use radix_engine::model::{
-    ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate,
+    ComponentInfoSubstate, ComponentStateSubstate, EpochManagerSubstate, GlobalAddressSubstate,
     KeyValueStoreEntrySubstate, NonFungible, NonFungibleSubstate, PackageSubstate,
-    PersistedSubstate, Resource, ResourceManagerSubstate, SystemSubstate, VaultSubstate,
+    PersistedSubstate, Resource, ResourceManagerSubstate, VaultSubstate,
 };
 use radix_engine::types::{
-    Decimal, GlobalAddress, GlobalOffset, NonFungibleId, ResourceAddress, ScryptoValue, SubstateId,
+    Decimal, GlobalOffset, NonFungibleId, ResourceAddress, ScryptoValue, SubstateId,
 };
 use scrypto::address::Bech32Encoder;
 use scrypto::engine::types::{
@@ -32,7 +31,9 @@ pub fn to_api_substate(
         PersistedSubstate::Global(global) => {
             to_api_global_substate(bech32_encoder, substate_id, global)?
         }
-        PersistedSubstate::System(system) => to_api_system_substate(system)?,
+        PersistedSubstate::EpochManager(epoch_manager) => {
+            to_api_epoch_manager_substate(epoch_manager)?
+        }
         PersistedSubstate::ResourceManager(resource_manager) => {
             to_api_resource_substate(resource_manager)
         }
@@ -83,10 +84,12 @@ fn to_api_global_substate(
     })
 }
 
-fn to_api_system_substate(system: &SystemSubstate) -> Result<models::Substate, MappingError> {
-    Ok(models::Substate::SystemSubstate {
-        entity_type: EntityType::System,
-        epoch: to_api_epoch(system.epoch)?,
+fn to_api_epoch_manager_substate(
+    epoch_manager: &EpochManagerSubstate,
+) -> Result<models::Substate, MappingError> {
+    Ok(models::Substate::EpochManagerSubstate {
+        entity_type: EntityType::EpochManager,
+        epoch: to_api_epoch(epoch_manager.epoch)?,
     })
 }
 
@@ -175,53 +178,17 @@ fn extract_entities(
         });
     }
 
-    let mut owned_entities = Vec::<models::EntityReference>::new();
-    owned_entities.extend(
-        struct_scrypto_value
-            .component_ids
-            .iter()
-            .map(|x| to_entity_reference(EntityType::Component, x)),
-    );
-    owned_entities.extend(
-        struct_scrypto_value
-            .vault_ids
-            .iter()
-            .map(|x| to_entity_reference(EntityType::Vault, x)),
-    );
-    owned_entities.extend(
-        struct_scrypto_value
-            .kv_store_ids
-            .iter()
-            .map(|x| to_entity_reference(EntityType::KeyValueStore, x)),
-    );
+    let owned_entities = struct_scrypto_value
+        .node_ids()
+        .into_iter()
+        .map(|node_id| -> Result<models::EntityReference, MappingError> {
+            Ok(MappedEntityId::try_from(node_id)?.into())
+        })
+        .collect::<Result<Vec<_>, _>>()?;
 
-    let mut referenced_resource_addresses = HashSet::<ResourceAddress>::new();
-    referenced_resource_addresses.extend(struct_scrypto_value.resource_addresses.iter());
-    referenced_resource_addresses.extend(
-        struct_scrypto_value
-            .non_fungible_addresses
-            .iter()
-            .map(|addr| addr.resource_address()),
-    );
-
-    let referenced_entities = iter::empty()
-        .chain(
-            struct_scrypto_value
-                .refed_component_addresses
-                .iter()
-                .map(|addr| GlobalAddress::Component(*addr)),
-        )
-        .chain(
-            referenced_resource_addresses
-                .into_iter()
-                .map(GlobalAddress::Resource),
-        )
-        .chain(
-            struct_scrypto_value
-                .package_addresses
-                .iter()
-                .map(|addr| GlobalAddress::Package(*addr)),
-        )
+    let referenced_entities = struct_scrypto_value
+        .global_references()
+        .into_iter()
         .map(|addr| to_global_entity_reference(bech32_encoder, &addr))
         .collect::<Vec<_>>();
 

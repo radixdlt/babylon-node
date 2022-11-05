@@ -22,6 +22,17 @@ pub struct TransactionPreviewRequest {
     /// An array of hex-encoded blob data (optional)
     #[serde(rename = "blobs_hex", skip_serializing_if = "Option::is_none")]
     pub blobs_hex: Option<Vec<String>>,
+    /// An integer between `0` and `10^10`, marking the epoch at which the transaction starts being valid
+    #[serde(rename = "start_epoch_inclusive")]
+    pub start_epoch_inclusive: i64,
+    /// An integer between `0` and `10^10`, marking the epoch at which the transaction is no longer valid
+    #[serde(rename = "end_epoch_exclusive")]
+    pub end_epoch_exclusive: i64,
+    #[serde(rename = "notary_public_key", skip_serializing_if = "Option::is_none")]
+    pub notary_public_key: Option<Box<crate::core_api::generated::models::PublicKey>>,
+    /// Whether the notary should count as a signatory (optional, default false)
+    #[serde(rename = "notary_as_signatory", skip_serializing_if = "Option::is_none")]
+    pub notary_as_signatory: Option<bool>,
     /// An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution
     #[serde(rename = "cost_unit_limit")]
     pub cost_unit_limit: i64,
@@ -39,11 +50,15 @@ pub struct TransactionPreviewRequest {
 }
 
 impl TransactionPreviewRequest {
-    pub fn new(network: String, manifest: String, cost_unit_limit: i64, tip_percentage: i64, nonce: String, signer_public_keys: Vec<crate::core_api::generated::models::PublicKey>, flags: crate::core_api::generated::models::TransactionPreviewRequestFlags) -> TransactionPreviewRequest {
+    pub fn new(network: String, manifest: String, start_epoch_inclusive: i64, end_epoch_exclusive: i64, cost_unit_limit: i64, tip_percentage: i64, nonce: String, signer_public_keys: Vec<crate::core_api::generated::models::PublicKey>, flags: crate::core_api::generated::models::TransactionPreviewRequestFlags) -> TransactionPreviewRequest {
         TransactionPreviewRequest {
             network,
             manifest,
             blobs_hex: None,
+            start_epoch_inclusive,
+            end_epoch_exclusive,
+            notary_public_key: None,
+            notary_as_signatory: None,
             cost_unit_limit,
             tip_percentage,
             nonce,

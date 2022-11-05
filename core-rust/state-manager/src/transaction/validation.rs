@@ -1,4 +1,4 @@
-use crate::transaction::types::LedgerTransaction;
+use crate::transaction::ledger_transaction::LedgerTransaction;
 use scrypto::buffer::scrypto_decode;
 use transaction::errors::TransactionValidationError;
 use transaction::model::{Executable, NotarizedTransaction};
@@ -7,8 +7,10 @@ use transaction::validation::{
     NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator,
 };
 
+use super::PreparedLedgerTransaction;
+
 pub struct UserTransactionValidator {
-    pub base_validation_config: ValidationConfig,
+    pub validation_config: ValidationConfig,
     pub intent_hash_manager: TestIntentHashManager,
 }
 
@@ -16,6 +18,9 @@ pub struct UserTransactionValidator {
 // 4MB MAX_PAYLOAD_SIZE in the radixdlt-scrypto codebase
 // This limit will likely need reducing after some review
 pub const OVERRIDE_MAX_PAYLOAD_SIZE: usize = 24 * 1024 * 1024;
+
+// Add a few extra bytes for the enum disciminator at the start(!)
+pub const OVERRIDE_LEDGER_MAX_PAYLOAD_SIZE: usize = OVERRIDE_MAX_PAYLOAD_SIZE + 10;
 
 impl UserTransactionValidator {
     /// Checks the Payload max size, and SBOR decodes to a NotarizedTransaction if the size is okay
@@ -33,82 +38,47 @@ impl UserTransactionValidator {
     }
 
     /// Performs static validation only
-    pub fn parse_and_validate_user_transaction_slice(
+    pub fn validate_and_create_executable<'a>(
         &self,
-        epoch: u64, // Temporary
-        transaction_payload: &[u8],
-    ) -> Result<ValidatedTransaction<NotarizedTransaction>, TransactionValidationError> {
-        let notarized_transaction =
-            Self::parse_unvalidated_user_transaction_from_slice(transaction_payload)?;
-        self.validate_user_transaction(epoch, notarized_transaction)
-    }
+        transaction: &'a NotarizedTransaction,
+    ) -> Result<Executable<'a>, TransactionValidationError> {
+        let validator = NotarizedTransactionValidator::new(self.validation_config);
 
-    /// Performs static validation only
-    pub fn validate_user_transaction(
-        &self,
-        epoch: u64, // Temporary
-        transaction: NotarizedTransaction,
-    ) -> Result<ValidatedTransaction<NotarizedTransaction>, TransactionValidationError> {
-        let mut config = self.base_validation_config;
-        config.current_epoch = epoch;
-        let validator = NotarizedTransactionValidator::new(config);
-
-        validator
-            .validate(transaction.clone(), &self.intent_hash_manager)
-            .map(|executable| ValidatedTransaction {
-                transaction,
-                executable,
-            })
+        validator.validate(transaction, &self.intent_hash_manager)
     }
 }
 
-pub struct ValidatedTransaction<T> {
-    pub transaction: T,
-    pub executable: Executable,
-}
-
-pub struct CommittedTransactionValidator {
-    pub base_validation_config: ValidationConfig,
+pub struct LedgerTransactionValidator {
+    pub validation_config: ValidationConfig,
     pub intent_hash_manager: TestIntentHashManager,
 }
 
-impl CommittedTransactionValidator {
+impl LedgerTransactionValidator {
     pub fn parse_unvalidated_transaction_from_slice(
         transaction_payload: &[u8],
     ) -> Result<LedgerTransaction, TransactionValidationError> {
+        if transaction_payload.len() > OVERRIDE_LEDGER_MAX_PAYLOAD_SIZE {
+            return Err(TransactionValidationError::TransactionTooLarge);
+        }
+
         let transaction: LedgerTransaction = scrypto_decode(transaction_payload)
             .map_err(TransactionValidationError::DeserializationError)?;
 
         Ok(transaction)
     }
 
-    pub fn parse_and_validate_transaction_slice(
+    pub fn validate_and_create_executable<'a>(
         &self,
-        epoch: u64, // Temporary
-        transaction_payload: &[u8],
-    ) -> Result<ValidatedTransaction<LedgerTransaction>, TransactionValidationError> {
-        // TODO: Need a good way to do payload transaction size here
-        let transaction = Self::parse_unvalidated_transaction_from_slice(transaction_payload)?;
-        self.validate_transaction(epoch, transaction)
-    }
-
-    fn validate_transaction(
-        &self,
-        epoch: u64, // Temporary
-        transaction: LedgerTransaction,
-    ) -> Result<ValidatedTransaction<LedgerTransaction>, TransactionValidationError> {
-        let mut config = self.base_validation_config;
-        config.current_epoch = epoch;
-        let validator = NotarizedTransactionValidator::new(config);
-        let executable = match transaction.clone() {
-            LedgerTransaction::User(notarized_transaction) => {
+        prepared_transaction: &'a PreparedLedgerTransaction<'a>,
+    ) -> Result<Executable<'a>, TransactionValidationError> {
+        let validator = NotarizedTransactionValidator::new(self.validation_config);
+        match prepared_transaction {
+            PreparedLedgerTransaction::User(notarized_transaction) => {
                 validator.validate(notarized_transaction, &self.intent_hash_manager)
             }
-            LedgerTransaction::Validator(validator_transaction) => Ok(validator_transaction.into()),
-        }?;
-        Ok(ValidatedTransaction {
-            transaction,
-            executable,
-        })
+            PreparedLedgerTransaction::Validator(validator_transaction) => {
+                Ok(validator_transaction.get_executable())
+            }
+        }
     }
 }

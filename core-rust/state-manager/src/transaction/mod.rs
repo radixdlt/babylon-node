@@ -63,11 +63,11 @@
  */
 
 mod builder;
-mod types;
+mod ledger_transaction;
 mod validation;
-mod validator;
+mod validator_transaction;
 
-pub use self::types::*;
+pub use self::ledger_transaction::*;
 pub use builder::*;
 pub use validation::*;
-pub use validator::*;
+pub use validator_transaction::*;

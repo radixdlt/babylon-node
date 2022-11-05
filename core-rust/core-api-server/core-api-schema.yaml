@@ -855,15 +855,10 @@ components:
       type: object
       description: Transaction state updates (only present if status is Succeeded or Failed)
       required:
-        - down_virtual_substates
         - up_substates
         - down_substates
         - new_global_entities
       properties:
-        down_virtual_substates:
-          type: array
-          items:
-            $ref: "#/components/schemas/SubstateId"
         up_substates:
           type: array
           items:
@@ -1112,7 +1107,7 @@ components:
     EntityType:
       type: string
       enum:
-        - System
+        - EpochManager
         - ResourceManager
         - Component
         - Package
@@ -1122,7 +1117,7 @@ components:
         - NonFungibleStore
     Substate:
       oneOf:
-        - $ref: '#/components/schemas/SystemSubstate'
+        - $ref: '#/components/schemas/EpochManagerSubstate'
         - $ref: '#/components/schemas/ResourceManagerSubstate'
         - $ref: '#/components/schemas/ComponentInfoSubstate'
         - $ref: '#/components/schemas/ComponentStateSubstate'
@@ -1135,7 +1130,7 @@ components:
         propertyName: substate_type
         mapping:
           # NOTE: These need to match SubstateType options below
-          System: '#/components/schemas/SystemSubstate'
+          EpochManager: '#/components/schemas/EpochManagerSubstate'
           ResourceManager: '#/components/schemas/ResourceManagerSubstate'
           ComponentInfo: '#/components/schemas/ComponentInfoSubstate'
           ComponentState: '#/components/schemas/ComponentStateSubstate'
@@ -1147,7 +1142,7 @@ components:
     SubstateType:
       type: string
       enum:
-        - System
+        - EpochManager
         - ResourceManager
         - ComponentInfo
         - ComponentState
@@ -1166,7 +1161,7 @@ components:
           $ref: '#/components/schemas/EntityType'
         substate_type:
           $ref: '#/components/schemas/SubstateType'
-    SystemSubstate:
+    EpochManagerSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
         - type: object
@@ -1748,6 +1743,8 @@ components:
       required:
         - network
         - manifest
+        - start_epoch_inclusive
+        - end_epoch_exclusive
         - cost_unit_limit
         - tip_percentage
         - nonce
@@ -1764,6 +1761,24 @@ components:
           type: array
           items:
             type: string
+        start_epoch_inclusive:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`, marking the epoch at which the transaction starts being valid
+        end_epoch_exclusive:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`, marking the epoch at which the transaction is no longer valid
+        notary_public_key:
+          $ref: "#/components/schemas/PublicKey"
+          description: The notary public key to use (optional)
+        notary_as_signatory:
+          type: bool
+          description: Whether the notary should count as a signatory (optional, default false)
         cost_unit_limit:
           type: integer
           format: int64
@@ -1789,10 +1804,16 @@ components:
           required:
             - unlimited_loan
             - assume_all_signature_proofs
+            - permit_duplicate_intent_hash
+            - permit_invalid_header_epoch
           properties:
             unlimited_loan:
               type: boolean
             assume_all_signature_proofs:
+              type: boolean
+            permit_duplicate_intent_hash:
+              type: boolean
+            permit_invalid_header_epoch:
               type: boolean
     TransactionPreviewResponse:
       type: object

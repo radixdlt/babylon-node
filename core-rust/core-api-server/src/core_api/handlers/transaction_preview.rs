@@ -11,12 +11,12 @@ pub(crate) async fn handle_transaction_preview(
     state: Extension<CoreApiState>,
     request: Json<models::TransactionPreviewRequest>,
 ) -> Result<Json<models::TransactionPreviewResponse>, RequestHandlingError> {
-    core_api_handler(state, request, handle_preview_internal)
+    core_api_read_handler(state, request, handle_preview_internal)
 }
 
 #[tracing::instrument(level = "debug", skip(state_manager), err(Debug))]
 fn handle_preview_internal(
-    state_manager: &mut ActualStateManager,
+    state_manager: &ActualStateManager,
     request: models::TransactionPreviewRequest,
 ) -> Result<models::TransactionPreviewResponse, RequestHandlingError> {
     assert_matching_network(&request.network, &state_manager.network)?;
@@ -27,7 +27,7 @@ fn handle_preview_internal(
         .preview(preview_request)
         .map_err(|err| match err {
             PreviewError::TransactionValidationError(err) => {
-                server_error(&format!("Transaction validation error: {:?}", err))
+                client_error(&format!("Transaction validation error: {:?}", err))
             }
         })?;
 
@@ -61,6 +61,18 @@ fn parse_preview_request(
 
     Ok(PreviewRequest {
         manifest,
+        start_epoch_inclusive: extract_api_epoch(request.start_epoch_inclusive)
+            .map_err(|err| err.into_response_error("start_epoch_inclusive"))?,
+        end_epoch_exclusive: extract_api_epoch(request.end_epoch_exclusive)
+            .map_err(|err| err.into_response_error("end_epoch_exclusive"))?,
+        notary_public_key: request
+            .notary_public_key
+            .map(|pk| {
+                extract_api_public_key(*pk)
+                    .map_err(|err| err.into_response_error("notary_public_key"))
+            })
+            .transpose()?,
+        notary_as_signatory: request.notary_as_signatory.unwrap_or(false),
         cost_unit_limit: extract_api_u32_as_i64(request.cost_unit_limit)
             .map_err(|err| err.into_response_error("cost_unit_limit"))?,
         tip_percentage: extract_api_u32_as_i64(request.tip_percentage)
@@ -71,6 +83,8 @@ fn parse_preview_request(
         flags: PreviewFlags {
             unlimited_loan: request.flags.unlimited_loan,
             assume_all_signature_proofs: request.flags.assume_all_signature_proofs,
+            permit_duplicate_intent_hash: request.flags.permit_duplicate_intent_hash,
+            permit_invalid_header_epoch: request.flags.permit_invalid_header_epoch,
         },
     })
 }
@@ -128,7 +142,6 @@ fn to_api_response(
                 status: models::TransactionStatus::Rejected,
                 fee_summary: Box::new(to_api_fee_summary(receipt.execution.fee_summary)),
                 state_updates: Box::new(models::StateUpdates {
-                    down_virtual_substates: vec![],
                     up_substates: vec![],
                     down_substates: vec![],
                     new_global_entities: vec![],

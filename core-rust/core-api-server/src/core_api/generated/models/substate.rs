@@ -30,6 +30,14 @@ pub enum Substate {
         #[serde(rename = "data_struct")]
         data_struct: Box<crate::core_api::generated::models::DataStruct>,
     },
+    #[serde(rename="EpochManager")]
+    EpochManagerSubstate {
+        #[serde(rename = "entity_type")]
+        entity_type: crate::core_api::generated::models::EntityType,
+        /// An integer between `0` and `10^10`, marking the current epoch
+        #[serde(rename = "epoch")]
+        epoch: i64,
+    },
     #[serde(rename="Global")]
     GlobalSubstate {
         #[serde(rename = "entity_type")]
@@ -82,14 +90,6 @@ pub enum Substate {
         /// A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in the total supply of this resource. 
         #[serde(rename = "total_supply_attos")]
         total_supply_attos: String,
-    },
-    #[serde(rename="System")]
-    SystemSubstate {
-        #[serde(rename = "entity_type")]
-        entity_type: crate::core_api::generated::models::EntityType,
-        /// An integer between `0` and `10^10`, marking the current epoch
-        #[serde(rename = "epoch")]
-        epoch: i64,
     },
     #[serde(rename="Vault")]
     VaultSubstate {

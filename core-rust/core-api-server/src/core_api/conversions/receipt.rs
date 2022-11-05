@@ -4,7 +4,6 @@ use crate::core_api::*;
 use radix_engine::{
     fee::FeeSummary as EngineFeeSummary,
     ledger::{OutputId, OutputValue},
-    state_manager::VirtualSubstateId,
     types::{hash, scrypto_encode, SubstateId},
 };
 use scrypto::address::Bech32Encoder;
@@ -40,12 +39,6 @@ pub fn to_api_receipt(
         .map(to_api_down_substate)
         .collect::<Result<Vec<_>, _>>()?;
 
-    let down_virtual_substates = state_updates
-        .down_virtual_substates
-        .into_iter()
-        .map(to_api_down_virtual_substate)
-        .collect::<Result<Vec<_>, _>>()?;
-
     let new_global_entities = up_substates
         .iter()
         .filter_map(|substate| {
@@ -62,7 +55,6 @@ pub fn to_api_receipt(
     let api_state_updates = StateUpdates {
         up_substates,
         down_substates,
-        down_virtual_substates,
         new_global_entities,
     };
 
@@ -117,13 +109,6 @@ pub fn to_api_down_substate(output_id: OutputId) -> Result<DownSubstate, Mapping
         substate_data_hash: to_hex(output_id.substate_hash),
         version: to_api_substate_version(output_id.version)?,
     })
-}
-
-#[tracing::instrument(skip_all)]
-pub fn to_api_down_virtual_substate(
-    VirtualSubstateId(root_substate_id, key): VirtualSubstateId,
-) -> Result<models::SubstateId, MappingError> {
-    to_api_virtual_substate_id(root_substate_id, key)
 }
 
 #[tracing::instrument(skip_all)]

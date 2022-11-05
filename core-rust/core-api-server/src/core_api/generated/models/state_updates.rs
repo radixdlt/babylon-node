@@ -14,8 +14,6 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StateUpdates {
-    #[serde(rename = "down_virtual_substates")]
-    pub down_virtual_substates: Vec<crate::core_api::generated::models::SubstateId>,
     #[serde(rename = "up_substates")]
     pub up_substates: Vec<crate::core_api::generated::models::UpSubstate>,
     #[serde(rename = "down_substates")]
@@ -26,9 +24,8 @@ pub struct StateUpdates {
 
 impl StateUpdates {
     /// Transaction state updates (only present if status is Succeeded or Failed)
-    pub fn new(down_virtual_substates: Vec<crate::core_api::generated::models::SubstateId>, up_substates: Vec<crate::core_api::generated::models::UpSubstate>, down_substates: Vec<crate::core_api::generated::models::DownSubstate>, new_global_entities: Vec<crate::core_api::generated::models::GlobalEntityAssignment>) -> StateUpdates {
+    pub fn new(up_substates: Vec<crate::core_api::generated::models::UpSubstate>, down_substates: Vec<crate::core_api::generated::models::DownSubstate>, new_global_entities: Vec<crate::core_api::generated::models::GlobalEntityAssignment>) -> StateUpdates {
         StateUpdates {
-            down_virtual_substates,
             up_substates,
             down_substates,
             new_global_entities,
