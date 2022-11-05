@@ -71,6 +71,50 @@ use transaction::model::{
 };
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Decode, Encode, TypeId)]
+pub struct AccumulatorHash([u8; Self::LENGTH]);
+
+impl AccumulatorHash {
+    pub const LENGTH: usize = 32;
+
+    pub fn pre_genesis() -> Self {
+        Self([0; Self::LENGTH])
+    }
+
+    pub fn accumulate(&self, ledger_payload_hash: &LedgerPayloadHash) -> Self {
+        let concat_bytes = [self.0, ledger_payload_hash.0].concat();
+        Self(sha256_twice(&concat_bytes).0)
+    }
+
+    pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
+        Self(hash_bytes)
+    }
+
+    pub fn into_bytes(self) -> [u8; Self::LENGTH] {
+        self.0
+    }
+}
+
+impl AsRef<[u8]> for AccumulatorHash {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl fmt::Display for AccumulatorHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(self.0))
+    }
+}
+
+impl fmt::Debug for AccumulatorHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("AccumulatorHash")
+            .field(&hex::encode(self.0))
+            .finish()
+    }
+}
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Decode, Encode, TypeId)]
 pub struct LedgerPayloadHash([u8; Self::LENGTH]);
 
 impl LedgerPayloadHash {

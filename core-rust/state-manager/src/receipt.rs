@@ -13,9 +13,21 @@ use sbor::{Decode, Encode, TypeId};
 use scrypto::buffer::scrypto_encode;
 use scrypto::engine::types::Level;
 
+use crate::AccumulatorHash;
+
 #[derive(Debug, Decode, Encode, TypeId)]
 pub struct CommittedTransactionIdentifiers {
     pub state_version: u64,
+    pub accumulator_hash: AccumulatorHash,
+}
+
+impl CommittedTransactionIdentifiers {
+    pub fn pre_genesis() -> Self {
+        Self {
+            state_version: 0,
+            accumulator_hash: AccumulatorHash::pre_genesis(),
+        }
+    }
 }
 
 #[derive(Debug, Decode, Encode, TypeId)]

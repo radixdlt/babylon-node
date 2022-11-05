@@ -29,7 +29,7 @@ fn handle_v0_transaction_receipt_internal(
                 network,
                 ledger_transaction,
                 receipt,
-                identifiers.state_version,
+                identifiers,
             )?),
         })
     } else {

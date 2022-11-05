@@ -15,17 +15,17 @@
 pub struct NetworkStatusResponse {
     #[serde(rename = "pre_genesis_state_identifier")]
     pub pre_genesis_state_identifier: Box<crate::core_api::generated::models::CommittedStateIdentifier>,
-    #[serde(rename = "post_genesis_state_identifier")]
-    pub post_genesis_state_identifier: Box<crate::core_api::generated::models::CommittedStateIdentifier>,
+    #[serde(rename = "post_genesis_state_identifier", skip_serializing_if = "Option::is_none")]
+    pub post_genesis_state_identifier: Option<Box<crate::core_api::generated::models::CommittedStateIdentifier>>,
     #[serde(rename = "current_state_identifier")]
     pub current_state_identifier: Box<crate::core_api::generated::models::CommittedStateIdentifier>,
 }
 
 impl NetworkStatusResponse {
-    pub fn new(pre_genesis_state_identifier: crate::core_api::generated::models::CommittedStateIdentifier, post_genesis_state_identifier: crate::core_api::generated::models::CommittedStateIdentifier, current_state_identifier: crate::core_api::generated::models::CommittedStateIdentifier) -> NetworkStatusResponse {
+    pub fn new(pre_genesis_state_identifier: crate::core_api::generated::models::CommittedStateIdentifier, current_state_identifier: crate::core_api::generated::models::CommittedStateIdentifier) -> NetworkStatusResponse {
         NetworkStatusResponse {
             pre_genesis_state_identifier: Box::new(pre_genesis_state_identifier),
-            post_genesis_state_identifier: Box::new(post_genesis_state_identifier),
+            post_genesis_state_identifier: None,
             current_state_identifier: Box::new(current_state_identifier),
         }
     }
