@@ -287,6 +287,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        '404':
+          description: Not found error - if you request transactions past the end of the currently committed stream 
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         '500':
           description: Server error
           content:

@@ -60,7 +60,7 @@ pub fn to_api_u64_as_string(input: u64) -> String {
 pub fn extract_api_state_version(state_version: i64) -> Result<u64, ExtractionError> {
     if state_version < 1 {
         return Err(ExtractionError::InvalidInteger {
-            message: "State version too low".to_owned(),
+            message: "State version must be >= 1".to_owned(),
         });
     }
     let state_version: u64 = state_version
@@ -68,7 +68,10 @@ pub fn extract_api_state_version(state_version: i64) -> Result<u64, ExtractionEr
         .expect("State version invalid somehow");
     if state_version > MAX_API_STATE_VERSION {
         return Err(ExtractionError::InvalidInteger {
-            message: "State version larger than max api state version".to_owned(),
+            message: format!(
+                "State version is larger than the max allowed: {}",
+                MAX_API_STATE_VERSION
+            ),
         });
     }
     Ok(state_version)

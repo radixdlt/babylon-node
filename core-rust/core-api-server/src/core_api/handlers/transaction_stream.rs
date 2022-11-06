@@ -41,12 +41,23 @@ fn handle_transaction_stream_internal(
         .try_into()
         .map_err(|_| client_error("limit cannot be negative"))?;
 
+    if limit == 0 {
+        return Err(client_error("limit must be positive"));
+    }
+
     let state_version_at_limit: u64 = from_state_version
         .checked_add(limit)
         .and_then(|v| v.checked_sub(1))
         .ok_or_else(|| client_error("start_state_version + limit - 1 out of u64 bounds"))?;
 
     let max_state_version = state_manager.store.max_state_version();
+
+    if max_state_version < from_state_version {
+        return Err(not_found_error(format!(
+            "The current max state version is {} but you requested from {}",
+            max_state_version, from_state_version
+        )));
+    }
 
     let up_to_state_version_inclusive = cmp::min(state_version_at_limit, max_state_version);
 

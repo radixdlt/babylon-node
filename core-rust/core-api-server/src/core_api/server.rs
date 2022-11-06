@@ -83,7 +83,7 @@ use handle_network_configuration as handle_provide_info_at_root_path;
 pub(crate) struct CoreApiState {
     pub state_manager: Arc<RwLock<ActualStateManager>>,
 }
-// TODO - try mapping request JSON errors into Response type
+
 pub async fn create_server<F>(
     bind_addr: &str,
     shutdown_signal: F,
