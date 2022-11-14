@@ -73,7 +73,7 @@ use crate::{
 };
 use prometheus::core::Collector;
 use prometheus::{IntCounter, IntCounterVec, IntGauge, Registry};
-use radix_engine::constants::DEFAULT_MAX_CALL_DEPTH;
+use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
 use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::fee::SystemLoanFeeReserve;
 use radix_engine::state_manager::StagedSubstateStoreManager;
@@ -235,6 +235,7 @@ impl<S> StateManager<S> {
             execution_config: ExecutionConfig {
                 max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                 trace: logging_config.engine_trace,
+                max_sys_call_trace_depth: 1,
             },
             scrypto_interpreter: ScryptoInterpreter {
                 wasm_engine: DefaultWasmEngine::default(),
