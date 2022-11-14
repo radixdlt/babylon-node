@@ -1169,9 +1169,13 @@ components:
             auth_rule:
               $ref: '#/components/schemas/FixedAuthRule'
     AllowAllFixedAuthorization:
-      $ref: '#/components/schemas/FixedAuthorizationBase'
+      allOf:
+        - $ref: '#/components/schemas/FixedAuthorizationBase'
+        - type: object
     DenyAllFixedAuthorization:
-      $ref: '#/components/schemas/FixedAuthorizationBase'
+      allOf:
+        - $ref: '#/components/schemas/FixedAuthorizationBase'
+        - type: object
     FixedAuthRuleType:
       type: string
       enum:
@@ -1403,9 +1407,13 @@ components:
             auth_rule:
               $ref: '#/components/schemas/DynamicAuthRule'
     AllowAllDynamicAuthorization:
-      $ref: '#/components/schemas/DynamicAuthorizationBase'
+      allOf:
+        - $ref: '#/components/schemas/DynamicAuthorizationBase'
+        - type: object
     DenyAllDynamicAuthorization:
-      $ref: '#/components/schemas/DynamicAuthorizationBase'
+      allOf:
+        - $ref: '#/components/schemas/DynamicAuthorizationBase'
+        - type: object
     DynamicAuthRuleType:
       type: string
       enum:
@@ -2503,7 +2511,7 @@ components:
           $ref: "#/components/schemas/PublicKey"
           description: The notary public key to use (optional)
         notary_as_signatory:
-          type: bool
+          type: boolean
           description: Whether the notary should count as a signatory (optional, default false)
         cost_unit_limit:
           type: integer
