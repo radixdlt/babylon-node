@@ -62,69 +62,40 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.consensus_ledger_epochs;
+package com.radixdlt.harness.simulation.monitors.consensus;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.ExecutedVertex;
+import com.radixdlt.harness.simulation.TestInvariant;
+import com.radixdlt.harness.simulation.monitors.NodeEvents;
+import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
+import io.reactivex.rxjava3.core.Observable;
 
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.harness.simulation.NetworkDroppers;
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.SimulationTest.Builder;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import java.time.Duration;
-import java.util.Collections;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Test;
+public final class ProposerTimestampChecker implements TestInvariant {
+  private final NodeEvents nodeEvents;
 
-/**
- * Drops all epoch responses from the first node to send the epoch response (effectively a down
- * node). Tests to make sure that epoch changes are still smooth even with an epoch dropper.
- */
-public class OneNodeNeverSendEpochResponseTest {
-  private static final int numNodes = 10;
-  private static final int minValidators = 4; // need at least f=1 for this test
-
-  private final Builder bftTestBuilder =
-      SimulationTest.builder()
-          .networkModules(
-              NetworkOrdering.inOrder(),
-              NetworkLatencies.fixed(),
-              NetworkDroppers.oneNodePerEpochLedgerStatusUpdateDropped())
-          .numNodes(numNodes)
-          .ledgerAndEpochs(ConsensusConfig.of(1000), Round.of(4), randomEpochToNodesMapper())
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
-              ConsensusMonitors.consensusTimestampChecker(Duration.ofSeconds(5)),
-              LedgerMonitors.consensusToLedger(),
-              LedgerMonitors.ordered());
-
-  private static Function<Long, IntStream> randomEpochToNodesMapper() {
-    return epoch -> {
-      final var indices = IntStream.range(0, numNodes).boxed().collect(Collectors.toList());
-      final var random = new Random(epoch);
-      Collections.shuffle(indices, random);
-      final var numValidators = minValidators + random.nextInt(numNodes - minValidators + 1);
-      return indices.subList(0, numValidators).stream().mapToInt(Integer::intValue);
-    };
+  public ProposerTimestampChecker(NodeEvents nodeEvents) {
+    this.nodeEvents = nodeEvents;
   }
 
-  @Test
-  public void
-      given_deterministic_randomized_validator_sets__then_should_pass_bft_and_epoch_invariants() {
-    SimulationTest bftTest = bftTestBuilder.build();
-
-    final var checkResults = bftTest.run().awaitCompletion();
-    assertThat(checkResults)
-        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+  @Override
+  public Observable<TestInvariantError> check(RunningNetwork network) {
+    return Observable.<BFTCommittedUpdate>create(
+            emitter ->
+                nodeEvents.addListener(
+                    (node, update) -> emitter.onNext(update), BFTCommittedUpdate.class))
+        .serialize()
+        .flatMap(
+            e -> {
+              for (ExecutedVertex v : e.committed()) {
+                final var proposerTimestamp = v.getLedgerHeader().proposerTimestamp();
+                final var prevTimestamp = v.vertex().parentLedgerHeader().proposerTimestamp();
+                if (proposerTimestamp <= prevTimestamp) {
+                  return Observable.just(
+                      new TestInvariantError("Proposer timestamp hasn't increased"));
+                }
+              }
+              return Observable.empty();
+            });
   }
 }

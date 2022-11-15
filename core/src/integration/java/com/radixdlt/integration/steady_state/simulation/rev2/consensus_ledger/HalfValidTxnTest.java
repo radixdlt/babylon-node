@@ -106,6 +106,7 @@ public class HalfValidTxnTest {
                           REV2ProposerConfig.halfCorrectProposer()))))
           .addTestModules(
               ConsensusMonitors.safety(),
+              ConsensusMonitors.proposerTimestampChecker(),
               ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
               ConsensusMonitors.noTimeouts(),
               ConsensusMonitors.directParents(),
