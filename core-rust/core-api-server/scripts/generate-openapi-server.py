@@ -110,6 +110,17 @@ def generate_models(schema_file, tmp_client_folder, out_location):
         fix_for_enum_not_implementing_default(file_path, "ParsedTransaction")
         fix_for_enum_not_implementing_default(file_path, "LedgerTransaction")
         fix_for_enum_not_implementing_default(file_path, "ValidatorTransaction")
+        fix_for_enum_not_implementing_default(file_path, "FixedAuthorization")
+        fix_for_enum_not_implementing_default(file_path, "FixedAuthRule")
+        fix_for_enum_not_implementing_default(file_path, "FixedProofRule")
+        fix_for_enum_not_implementing_default(file_path, "FixedResourceDescriptor")
+        fix_for_enum_not_implementing_default(file_path, "DynamicAuthorization")
+        fix_for_enum_not_implementing_default(file_path, "DynamicAuthRule")
+        fix_for_enum_not_implementing_default(file_path, "DynamicProofRule")
+        fix_for_enum_not_implementing_default(file_path, "DynamicResourceDescriptor")
+        fix_for_enum_not_implementing_default(file_path, "DynamicResourceDescriptorList")
+        fix_for_enum_not_implementing_default(file_path, "DynamicCount")
+        fix_for_enum_not_implementing_default(file_path, "DynamicAmount")
 
     logging.info("Successfully fixed up.")
 

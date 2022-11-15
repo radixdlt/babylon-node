@@ -1,4 +1,6 @@
-use state_manager::{IntentHash, LedgerPayloadHash, SignaturesHash, UserPayloadHash};
+use state_manager::{
+    AccumulatorHash, IntentHash, LedgerPayloadHash, SignaturesHash, UserPayloadHash,
+};
 
 use crate::core_api::*;
 
@@ -17,6 +19,10 @@ pub fn to_api_payload_hash(payload_hash: &UserPayloadHash) -> String {
 
 pub fn to_api_ledger_hash(ledger_hash: &LedgerPayloadHash) -> String {
     to_hex(ledger_hash)
+}
+
+pub fn to_api_accumulator_hash(accumulator_hash: &AccumulatorHash) -> String {
+    to_hex(accumulator_hash)
 }
 
 pub fn extract_intent_hash(intent_hash_str: String) -> Result<IntentHash, ExtractionError> {

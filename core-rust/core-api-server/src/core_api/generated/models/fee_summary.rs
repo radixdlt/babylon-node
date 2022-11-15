@@ -21,33 +21,33 @@ pub struct FeeSummary {
     #[serde(rename = "cost_unit_limit")]
     pub cost_unit_limit: i64,
     /// An integer between `0` and `2^32 - 1`, representing the amount of cost units consumed by the transaction execution.
-    #[serde(rename = "cost_unit_consumed")]
-    pub cost_unit_consumed: i64,
-    /// A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in the XRD price of a single cost unit. 
-    #[serde(rename = "cost_unit_price_attos")]
-    pub cost_unit_price_attos: String,
+    #[serde(rename = "cost_units_consumed")]
+    pub cost_units_consumed: i64,
+    /// The string-encoded decimal representing the XRD price of a single cost unit. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    #[serde(rename = "cost_unit_price")]
+    pub cost_unit_price: String,
     /// An integer between `0` and `2^32 - 1`, specifying the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
     #[serde(rename = "tip_percentage")]
     pub tip_percentage: i64,
-    /// A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in the total amount of XRD burned in the transaction. 
-    #[serde(rename = "xrd_burned_attos")]
-    pub xrd_burned_attos: String,
-    /// A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in the total amount of XRD tipped to validators in the transaction. 
-    #[serde(rename = "xrd_tipped_attos")]
-    pub xrd_tipped_attos: String,
+    /// The string-encoded decimal representing the total amount of XRD burned in the transaction. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    #[serde(rename = "xrd_burned")]
+    pub xrd_burned: String,
+    /// The string-encoded decimal representing the total amount of XRD tipped to validators in the transaction. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    #[serde(rename = "xrd_tipped")]
+    pub xrd_tipped: String,
 }
 
 impl FeeSummary {
     /// Fees paid
-    pub fn new(loan_fully_repaid: bool, cost_unit_limit: i64, cost_unit_consumed: i64, cost_unit_price_attos: String, tip_percentage: i64, xrd_burned_attos: String, xrd_tipped_attos: String) -> FeeSummary {
+    pub fn new(loan_fully_repaid: bool, cost_unit_limit: i64, cost_units_consumed: i64, cost_unit_price: String, tip_percentage: i64, xrd_burned: String, xrd_tipped: String) -> FeeSummary {
         FeeSummary {
             loan_fully_repaid,
             cost_unit_limit,
-            cost_unit_consumed,
-            cost_unit_price_attos,
+            cost_units_consumed,
+            cost_unit_price,
             tip_percentage,
-            xrd_burned_attos,
-            xrd_tipped_attos,
+            xrd_burned,
+            xrd_tipped,
         }
     }
 }

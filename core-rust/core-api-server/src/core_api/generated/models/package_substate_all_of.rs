@@ -16,12 +16,16 @@ pub struct PackageSubstateAllOf {
     /// The hex-encoded package code
     #[serde(rename = "code_hex")]
     pub code_hex: String,
+    /// A map from the blueprint name to BlueprintData
+    #[serde(rename = "blueprints")]
+    pub blueprints: ::std::collections::HashMap<String, crate::core_api::generated::models::BlueprintData>,
 }
 
 impl PackageSubstateAllOf {
-    pub fn new(code_hex: String) -> PackageSubstateAllOf {
+    pub fn new(code_hex: String, blueprints: ::std::collections::HashMap<String, crate::core_api::generated::models::BlueprintData>) -> PackageSubstateAllOf {
         PackageSubstateAllOf {
             code_hex,
+            blueprints,
         }
     }
 }

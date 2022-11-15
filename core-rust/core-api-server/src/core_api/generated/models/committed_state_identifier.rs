@@ -16,12 +16,16 @@ pub struct CommittedStateIdentifier {
     /// An integer between `0` and `10^13`, representing the state version. The state version increments with each transaction, starting at `0` pre-genesis.
     #[serde(rename = "state_version")]
     pub state_version: i64,
+    /// The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger. This hash is `ACC_{N+1} = SHA256(SHA256(CONCAT(ACC_N, LEDGER_HASH_{N})))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator. 
+    #[serde(rename = "accumulator_hash")]
+    pub accumulator_hash: String,
 }
 
 impl CommittedStateIdentifier {
-    pub fn new(state_version: i64) -> CommittedStateIdentifier {
+    pub fn new(state_version: i64, accumulator_hash: String) -> CommittedStateIdentifier {
         CommittedStateIdentifier {
             state_version,
+            accumulator_hash,
         }
     }
 }

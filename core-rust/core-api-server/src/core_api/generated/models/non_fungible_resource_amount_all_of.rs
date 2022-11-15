@@ -13,14 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct NonFungibleResourceAmountAllOf {
-    #[serde(rename = "nf_ids_hex")]
-    pub nf_ids_hex: Vec<String>,
+    #[serde(rename = "non_fungible_ids_hex")]
+    pub non_fungible_ids_hex: Vec<String>,
 }
 
 impl NonFungibleResourceAmountAllOf {
-    pub fn new(nf_ids_hex: Vec<String>) -> NonFungibleResourceAmountAllOf {
+    pub fn new(non_fungible_ids_hex: Vec<String>) -> NonFungibleResourceAmountAllOf {
         NonFungibleResourceAmountAllOf {
-            nf_ids_hex,
+            non_fungible_ids_hex,
         }
     }
 }

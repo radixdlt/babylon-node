@@ -18,16 +18,16 @@ pub struct NonFungibleResourceAmount {
     /// The Bech32m-encoded human readable version of the resource address
     #[serde(rename = "resource_address")]
     pub resource_address: String,
-    #[serde(rename = "nf_ids_hex")]
-    pub nf_ids_hex: Vec<String>,
+    #[serde(rename = "non_fungible_ids_hex")]
+    pub non_fungible_ids_hex: Vec<String>,
 }
 
 impl NonFungibleResourceAmount {
-    pub fn new(resource_type: crate::core_api::generated::models::ResourceType, resource_address: String, nf_ids_hex: Vec<String>) -> NonFungibleResourceAmount {
+    pub fn new(resource_type: crate::core_api::generated::models::ResourceType, resource_address: String, non_fungible_ids_hex: Vec<String>) -> NonFungibleResourceAmount {
         NonFungibleResourceAmount {
             resource_type,
             resource_address,
-            nf_ids_hex,
+            non_fungible_ids_hex,
         }
     }
 }

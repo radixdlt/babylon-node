@@ -65,10 +65,10 @@
 use crate::jni::state_manager::ActualStateManager;
 use crate::store::traits::*;
 
-use crate::CommittedTransactionStatus;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use radix_engine::transaction::TransactionOutcome;
 use sbor::{Decode, Encode, TypeId};
 use scrypto::buffer::scrypto_encode;
 use scrypto::prelude::ComponentAddress;
@@ -78,11 +78,17 @@ use super::utils::jni_state_manager_sbor_read_call;
 
 #[derive(Encode, Decode, TypeId)]
 struct ExecutedTransaction {
-    status: CommittedTransactionStatus,
+    outcome: TransactionOutcomeJava,
     ledger_receipt_bytes: Vec<u8>,
     transaction_bytes: Vec<u8>,
     /// Used by some Java tests, consider removing at some point as it doesn't really fit here
     new_component_addresses: Vec<ComponentAddress>,
+}
+
+#[derive(Encode, Decode, TypeId)]
+pub enum TransactionOutcomeJava {
+    Success(Vec<Vec<u8>>),
+    Failure(String),
 }
 
 #[no_mangle]
@@ -113,7 +119,12 @@ fn do_get_transaction_at_state_version(
     let ledger_receipt_bytes = scrypto_encode(&ledger_receipt);
 
     Some(ExecutedTransaction {
-        status: ledger_receipt.status,
+        outcome: match ledger_receipt.outcome {
+            TransactionOutcome::Success(output) => TransactionOutcomeJava::Success(output),
+            TransactionOutcome::Failure(err) => {
+                TransactionOutcomeJava::Failure(format!("{:?}", err))
+            }
+        },
         ledger_receipt_bytes,
         transaction_bytes: stored_transaction.create_payload(),
         new_component_addresses: ledger_receipt.entity_changes.new_component_addresses,

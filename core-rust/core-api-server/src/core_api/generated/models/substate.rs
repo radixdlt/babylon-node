@@ -22,6 +22,8 @@ pub enum Substate {
         package_address: String,
         #[serde(rename = "blueprint_name")]
         blueprint_name: String,
+        #[serde(rename = "access_rules_layers")]
+        access_rules_layers: Vec<crate::core_api::generated::models::ComponentAccessRulesLayer>,
     },
     #[serde(rename="ComponentState")]
     ComponentStateSubstate {
@@ -62,8 +64,8 @@ pub enum Substate {
         #[serde(rename = "entity_type")]
         entity_type: crate::core_api::generated::models::EntityType,
         /// The hex-encoded bytes of its non-fungible id
-        #[serde(rename = "nf_id_hex")]
-        nf_id_hex: String,
+        #[serde(rename = "non_fungible_id_hex")]
+        non_fungible_id_hex: String,
         #[serde(rename = "is_deleted")]
         is_deleted: bool,
         #[serde(rename = "non_fungible_data", skip_serializing_if = "Option::is_none")]
@@ -76,6 +78,9 @@ pub enum Substate {
         /// The hex-encoded package code
         #[serde(rename = "code_hex")]
         code_hex: String,
+        /// A map from the blueprint name to BlueprintData
+        #[serde(rename = "blueprints")]
+        blueprints: ::std::collections::HashMap<String, crate::core_api::generated::models::BlueprintData>,
     },
     #[serde(rename="ResourceManager")]
     ResourceManagerSubstate {
@@ -87,9 +92,13 @@ pub enum Substate {
         fungible_divisibility: Option<i32>,
         #[serde(rename = "metadata")]
         metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>,
-        /// A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in the total supply of this resource. 
-        #[serde(rename = "total_supply_attos")]
-        total_supply_attos: String,
+        /// The string-encoded decimal representing the total supply of this resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+        #[serde(rename = "total_supply")]
+        total_supply: String,
+        #[serde(rename = "owned_non_fungible_store", skip_serializing_if = "Option::is_none")]
+        owned_non_fungible_store: Option<Box<crate::core_api::generated::models::EntityReference>>,
+        #[serde(rename = "auth_rules")]
+        auth_rules: Box<crate::core_api::generated::models::ResourceManagerSubstateAllOfAuthRules>,
     },
     #[serde(rename="Vault")]
     VaultSubstate {

@@ -73,7 +73,7 @@ use crate::{
 };
 use prometheus::core::Collector;
 use prometheus::{IntCounter, IntCounterVec, IntGauge, Registry};
-use radix_engine::constants::DEFAULT_MAX_CALL_DEPTH;
+use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
 use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::fee::SystemLoanFeeReserve;
 use radix_engine::state_manager::StagedSubstateStoreManager;
@@ -235,6 +235,7 @@ impl<S> StateManager<S> {
             execution_config: ExecutionConfig {
                 max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                 trace: logging_config.engine_trace,
+                max_sys_call_trace_depth: 1,
             },
             scrypto_interpreter: ScryptoInterpreter {
                 wasm_engine: DefaultWasmEngine::default(),
@@ -680,6 +681,7 @@ impl<'db, S> StateManager<S>
 where
     S: CommitStore<'db>,
     S: ReadableSubstateStore,
+    S: QueryableProofStore + TransactionIndex<u64>,
 {
     pub fn save_vertex_store(&'db mut self, vertex_store: Vec<u8>) {
         let mut db_transaction = self.store.create_db_transaction();
@@ -691,6 +693,8 @@ where
         let mut to_store = Vec::new();
         let mut payload_hashes = Vec::new();
         let mut intent_hashes = Vec::new();
+        let commit_request_start_state_version =
+            commit_request.state_version - (commit_request.transaction_payloads.len() as u64);
 
         // Whilst we should probably validate intent hash duplicates here, these are checked by validators on prepare already,
         // and the check will move into the engine at some point and we'll get it for free then...
@@ -713,8 +717,20 @@ where
             .map(|parsed| parsed.prepare())
             .collect::<Vec<_>>();
 
+        let current_top_of_ledger = self
+            .store
+            .get_top_of_ledger_transaction_identifiers_unwrap(); // Genesis must have happened to be here
+        if current_top_of_ledger.state_version != commit_request_start_state_version {
+            panic!(
+                "Mismatched state versions - the commit request claims {} but the database thinks we're at {}",
+                commit_request_start_state_version,
+                current_top_of_ledger.state_version
+            );
+        }
+
         let mut db_transaction = self.store.create_db_transaction();
-        let mut current_state_version = commit_request.state_version;
+        let mut current_state_version = current_top_of_ledger.state_version;
+        let mut current_accumulator = current_top_of_ledger.accumulator_hash;
 
         let receipts = prepared_parsed_transactions
             .iter()
@@ -757,12 +773,16 @@ where
                 intent_hashes.push(intent_hash);
             }
 
+            current_accumulator = current_accumulator.accumulate(&payload_hash);
+            current_state_version += 1;
+
             let identifiers = CommittedTransactionIdentifiers {
                 state_version: current_state_version,
+                accumulator_hash: current_accumulator,
             };
+
             to_store.push((transaction, ledger_receipt, identifiers));
             payload_hashes.push(payload_hash);
-            current_state_version += 1;
         }
 
         let committed_transactions_count = to_store.len();

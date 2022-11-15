@@ -84,7 +84,8 @@ use crate::store::rocks_db::RocksDBCommitTransaction;
 use crate::store::traits::RecoverableVertexStore;
 use crate::transaction::{LedgerTransaction, ValidatorTransaction};
 use crate::{
-    CommittedTransactionIdentifiers, IntentHash, LedgerPayloadHash, LedgerTransactionReceipt,
+    AccumulatorHash, CommittedTransactionIdentifiers, IntentHash, LedgerPayloadHash,
+    LedgerTransactionReceipt,
 };
 use scrypto::engine::types::{KeyValueStoreId, SubstateId};
 
@@ -140,7 +141,10 @@ impl StateManagerDatabase {
                 let mock_genesis =
                     LedgerTransaction::Validator(ValidatorTransaction::EpochUpdate(0)); // Mocked
                 let payload_hash = mock_genesis.get_hash();
-                let identifiers = CommittedTransactionIdentifiers { state_version: 1 };
+                let identifiers = CommittedTransactionIdentifiers {
+                    state_version: 1,
+                    accumulator_hash: AccumulatorHash::pre_genesis().accumulate(&payload_hash),
+                };
                 db_txn.insert_committed_transactions(vec![(
                     mock_genesis,
                     ledger_receipt,

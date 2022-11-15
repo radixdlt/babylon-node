@@ -287,6 +287,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        '404':
+          description: Not found error - if you request transactions past the end of the currently committed stream 
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         '500':
           description: Server error
           content:
@@ -742,9 +748,10 @@ components:
       example: "{{network}}"
     CommittedStateIdentifier:
       type: object
-      # This should expand to include transaction accumulator and state hash
+      # This should expand to include the state hash
       required:
         - state_version
+        - accumulator_hash
       properties:
         state_version:
           type: integer
@@ -752,6 +759,13 @@ components:
           minimum: 0
           maximum: 100000000000000
           description: An integer between `0` and `10^13`, representing the state version. The state version increments with each transaction, starting at `0` pre-genesis.
+        accumulator_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: |
+            The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger.
+            This hash is `ACC_{N+1} = SHA256(SHA256(CONCAT(ACC_N, LEDGER_HASH_{N})))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator.
     TransactionIdentifiers:
       type: object
       required:
@@ -809,11 +823,11 @@ components:
       required:
         - loan_fully_repaid
         - cost_unit_limit
-        - cost_unit_consumed
-        - cost_unit_price_attos
+        - cost_units_consumed
+        - cost_unit_price
         - tip_percentage
-        - xrd_burned_attos
-        - xrd_tipped_attos
+        - xrd_burned
+        - xrd_tipped
       properties:
         loan_fully_repaid:
           type: boolean
@@ -824,54 +838,59 @@ components:
           minimum: 0
           maximum: 4294967295
           description: An integer between `0` and `2^32 - 1`, representing the maximum amount of cost units available for the transaction execution.
-        cost_unit_consumed:
+        cost_units_consumed:
           type: integer
           format: int64
           minimum: 0
           maximum: 4294967295
           description: An integer between `0` and `2^32 - 1`, representing the amount of cost units consumed by the transaction execution.
-        cost_unit_price_attos:
+        cost_unit_price:
           type: string
           description: |
-            A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in
-            the XRD price of a single cost unit.
+            The string-encoded decimal representing the XRD price of a single cost unit.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
         tip_percentage:
           type: integer
           format: int64
           minimum: 0
           maximum: 4294967295
           description: An integer between `0` and `2^32 - 1`, specifying the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
-        xrd_burned_attos:
+        xrd_burned:
           type: string
           description: |
-            A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in
-            the total amount of XRD burned in the transaction.
-        xrd_tipped_attos:
+            The string-encoded decimal representing the total amount of XRD burned in the transaction.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+        xrd_tipped:
           type: string
           description: |
-            A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in
-            the total amount of XRD tipped to validators in the transaction.
+            The string-encoded decimal representing the total amount of XRD tipped to validators in the transaction.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
     StateUpdates:
       type: object
       description: Transaction state updates (only present if status is Succeeded or Failed)
       required:
-        - up_substates
-        - down_substates
+        - created_substates
+        - updated_substates
+        - deleted_substates
         - new_global_entities
       properties:
-        up_substates:
+        created_substates:
           type: array
           items:
-            $ref: "#/components/schemas/UpSubstate"
-        down_substates:
+            $ref: "#/components/schemas/NewSubstateVersion"
+        updated_substates:
           type: array
           items:
-            $ref: "#/components/schemas/DownSubstate"
+            $ref: "#/components/schemas/NewSubstateVersion"
+        deleted_substates:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeletedSubstateVersionRef"
         new_global_entities:
           type: array
           items:
             $ref: "#/components/schemas/GlobalEntityAssignment"
-    UpSubstate:
+    NewSubstateVersion:
       type: object
       required:
         - substate_id
@@ -896,7 +915,7 @@ components:
           description: The hex-encoded single-SHA256 hash of the substate data bytes
         substate_data:
           $ref: "#/components/schemas/Substate"
-    DownSubstate:
+    DeletedSubstateVersionRef:
       type: object
       required:
         - substate_id
@@ -973,7 +992,7 @@ components:
         - resource_address
         - component_entity
         - vault_entity
-        - amount_attos
+        - amount
       properties:
         resource_address:
           $ref: "#/components/schemas/ResourceAddress"
@@ -981,11 +1000,11 @@ components:
           $ref: "#/components/schemas/EntityReference"
         vault_entity:
           $ref: "#/components/schemas/EntityReference"
-        amount_attos:
+        amount:
           type: string
           description: |
-            A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in
-            the XRD amount put or taken from the vault
+            The string-encoded decimal representing the XRD amount put or taken from the vault.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
 #################################################
 # GENERAL / SHARED MODELS - keys and signatures #
 #################################################
@@ -1101,6 +1120,666 @@ components:
           $ref: '#/components/schemas/EddsaEd25519PublicKey'
         signature:
           $ref: '#/components/schemas/EddsaEd25519Signature'
+##############################################
+# GENERAL / SHARED MODELS - Fixed auth rules #
+##############################################
+    FixedActionAuthRules:
+      type: object
+      required:
+        - perform_action
+        - update_rules
+      description: The auth rules for method access
+      properties:
+        perform_action:
+          $ref: '#/components/schemas/FixedAuthorization'
+        update_rules:
+          $ref: '#/components/schemas/FixedAuthorization'
+    FixedAuthorizationType:
+      type: string
+      enum:
+        - Protected
+        - AllowAll
+        - DenyAll
+    FixedAuthorization:
+      anyOf:
+        - $ref: '#/components/schemas/ProtectedFixedAuthorization'
+        - $ref: '#/components/schemas/AllowAllFixedAuthorization'
+        - $ref: '#/components/schemas/DenyAllFixedAuthorization'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match FixedAuthorizationType options above
+          Protected: '#/components/schemas/ProtectedFixedAuthorization'
+          AllowAll: '#/components/schemas/AllowAllFixedAuthorization'
+          DenyAll: '#/components/schemas/DenyAllFixedAuthorization'
+    FixedAuthorizationBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/FixedAuthorizationType'
+    ProtectedFixedAuthorization:
+      allOf:
+        - $ref: '#/components/schemas/FixedAuthorizationBase'
+        - type: object
+          required:
+            - auth_rule
+          properties:
+            auth_rule:
+              $ref: '#/components/schemas/FixedAuthRule'
+    AllowAllFixedAuthorization:
+      allOf:
+        - $ref: '#/components/schemas/FixedAuthorizationBase'
+        - type: object
+    DenyAllFixedAuthorization:
+      allOf:
+        - $ref: '#/components/schemas/FixedAuthorizationBase'
+        - type: object
+    FixedAuthRuleType:
+      type: string
+      enum:
+        - ProofRule
+        - AnyOf
+        - AllOf
+    FixedAuthRule:
+      anyOf:
+        - $ref: '#/components/schemas/ProofFixedAuthRule'
+        - $ref: '#/components/schemas/AnyOfFixedAuthRule'
+        - $ref: '#/components/schemas/AllOfFixedAuthRule'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match FixedAuthRuleType options above
+          ProofRule: '#/components/schemas/ProofFixedAuthRule'
+          AnyOf: '#/components/schemas/AnyOfFixedAuthRule'
+          AllOf: '#/components/schemas/AllOfFixedAuthRule'
+    FixedAuthRuleBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/FixedAuthRuleType'
+    ProofFixedAuthRule:
+      allOf:
+        - $ref: '#/components/schemas/FixedAuthRuleBase'
+        - type: object
+          required:
+            - proof_rule
+          properties:
+            proof_rule:
+              $ref: '#/components/schemas/FixedProofRule'
+    AnyOfFixedAuthRule:
+      allOf:
+        - $ref: '#/components/schemas/FixedAuthRuleBase'
+        - type: object
+          required:
+            - auth_rules
+          properties:
+            auth_rules:
+              type: array
+              items:
+                $ref: '#/components/schemas/FixedAuthRule'
+    AllOfFixedAuthRule:
+      allOf:
+        - $ref: '#/components/schemas/FixedAuthRuleBase'
+        - type: object
+          required:
+            - auth_rules
+          properties:
+            auth_rules:
+              type: array
+              items:
+                $ref: '#/components/schemas/FixedAuthRule'
+    FixedProofRuleType:
+      type: string
+      enum:
+        - Require
+        - AmountOf
+        - AllOf
+        - AnyOf
+        - CountOf
+    FixedProofRule:
+      anyOf:
+        - $ref: '#/components/schemas/RequireFixedProofRule'
+        - $ref: '#/components/schemas/AmountOfFixedProofRule'
+        - $ref: '#/components/schemas/AllOfFixedProofRule'
+        - $ref: '#/components/schemas/AnyOfFixedProofRule'
+        - $ref: '#/components/schemas/CountOfFixedProofRule'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match FixedProofRuleType options above
+          Require: '#/components/schemas/RequireFixedProofRule'
+          AmountOf: '#/components/schemas/AmountOfFixedProofRule'
+          AllOf: '#/components/schemas/AllOfFixedProofRule'
+          AnyOf: '#/components/schemas/AnyOfFixedProofRule'
+          CountOf: '#/components/schemas/CountOfFixedProofRule'
+    FixedProofRuleBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/FixedProofRuleType'
+    RequireFixedProofRule:
+      allOf:
+        - $ref: '#/components/schemas/FixedProofRuleBase'
+        - type: object
+          required:
+            - resource
+          properties:
+            resource:
+              $ref: '#/components/schemas/FixedResourceDescriptor'
+    AmountOfFixedProofRule:
+      allOf:
+        - $ref: '#/components/schemas/FixedProofRuleBase'
+        - type: object
+          required:
+            - amount
+            - resource
+          properties:
+            amount:
+              type: string
+              description: |
+                The string-encoded decimal representing the amount of resource required to pass the proof rule.
+                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            resource:
+              $ref: '#/components/schemas/FixedResourceDescriptor'
+    AllOfFixedProofRule:
+      allOf:
+        - $ref: '#/components/schemas/FixedProofRuleBase'
+        - type: object
+          required:
+            - resources
+          properties:
+            resources:
+              type: array
+              items:
+                $ref: '#/components/schemas/FixedResourceDescriptor'
+    AnyOfFixedProofRule:
+      allOf:
+        - $ref: '#/components/schemas/FixedProofRuleBase'
+        - type: object
+          required:
+            - resources
+          properties:
+            resources:
+              type: array
+              items:
+                $ref: '#/components/schemas/FixedResourceDescriptor'
+    CountOfFixedProofRule:
+      allOf:
+        - $ref: '#/components/schemas/FixedProofRuleBase'
+        - type: object
+          required:
+            - count
+            - resources
+          properties:
+            count:
+              type: integer
+              minimum: 0
+              maximum: 255
+            resources:
+              type: array
+              items:
+                $ref: '#/components/schemas/FixedResourceDescriptor'
+    FixedResourceDescriptorType:
+      type: string
+      enum:
+        - NonFungible
+        - Resource
+    FixedResourceDescriptor:
+      anyOf:
+        - $ref: '#/components/schemas/NonFungibleFixedResourceDescriptor'
+        - $ref: '#/components/schemas/ResourceFixedResourceDescriptor'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match FixedResourceDescriptorType options above
+          NonFungible: '#/components/schemas/NonFungibleFixedResourceDescriptor'
+          Resource: '#/components/schemas/ResourceFixedResourceDescriptor'
+    FixedResourceDescriptorBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/FixedResourceDescriptorType'
+    NonFungibleFixedResourceDescriptor:
+      allOf:
+        - $ref: '#/components/schemas/FixedResourceDescriptorBase'
+        - type: object
+          required:
+            - resource_address
+            - non_fungible_id_hex
+          properties:
+            resource_address:
+              $ref: '#/components/schemas/ResourceAddress'
+            non_fungible_id_hex:
+              type: string
+              description: The hex-encoded bytes of a non-fungible id
+    ResourceFixedResourceDescriptor:
+      allOf:
+        - $ref: '#/components/schemas/FixedResourceDescriptorBase'
+        - type: object
+          required:
+            - resource_address
+          properties:
+            resource_address:
+              $ref: '#/components/schemas/ResourceAddress'
+################################################
+# GENERAL / SHARED MODELS - Dynamic auth rules #
+################################################
+    DynamicAuthorizationType:
+      type: string
+      enum:
+        - Protected
+        - AllowAll
+        - DenyAll
+    DynamicAuthorization:
+      anyOf:
+        - $ref: '#/components/schemas/ProtectedDynamicAuthorization'
+        - $ref: '#/components/schemas/AllowAllDynamicAuthorization'
+        - $ref: '#/components/schemas/DenyAllDynamicAuthorization'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match DynamicAuthorizationType options above
+          Protected: '#/components/schemas/ProtectedDynamicAuthorization'
+          AllowAll: '#/components/schemas/AllowAllDynamicAuthorization'
+          DenyAll: '#/components/schemas/DenyAllDynamicAuthorization'
+    DynamicAuthorizationBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/DynamicAuthorizationType'
+    ProtectedDynamicAuthorization:
+      allOf:
+        - $ref: '#/components/schemas/DynamicAuthorizationBase'
+        - type: object
+          required:
+            - auth_rule
+          properties:
+            auth_rule:
+              $ref: '#/components/schemas/DynamicAuthRule'
+    AllowAllDynamicAuthorization:
+      allOf:
+        - $ref: '#/components/schemas/DynamicAuthorizationBase'
+        - type: object
+    DenyAllDynamicAuthorization:
+      allOf:
+        - $ref: '#/components/schemas/DynamicAuthorizationBase'
+        - type: object
+    DynamicAuthRuleType:
+      type: string
+      enum:
+        - ProofRule
+        - AnyOf
+        - AllOf
+    DynamicAuthRule:
+      anyOf:
+        - $ref: '#/components/schemas/ProofDynamicAuthRule'
+        - $ref: '#/components/schemas/AnyOfDynamicAuthRule'
+        - $ref: '#/components/schemas/AllOfDynamicAuthRule'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match DynamicAuthRuleType options above
+          ProofRule: '#/components/schemas/ProofDynamicAuthRule'
+          AnyOf: '#/components/schemas/AnyOfDynamicAuthRule'
+          AllOf: '#/components/schemas/AllOfDynamicAuthRule'
+    DynamicAuthRuleBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/DynamicAuthRuleType'
+    ProofDynamicAuthRule:
+      allOf:
+        - $ref: '#/components/schemas/DynamicAuthRuleBase'
+        - type: object
+          required:
+            - proof_rule
+          properties:
+            proof_rule:
+              $ref: '#/components/schemas/DynamicProofRule'
+    AnyOfDynamicAuthRule:
+      allOf:
+        - $ref: '#/components/schemas/DynamicAuthRuleBase'
+        - type: object
+          required:
+            - auth_rules
+          properties:
+            auth_rules:
+              type: array
+              items:
+                $ref: '#/components/schemas/DynamicAuthRule'
+    AllOfDynamicAuthRule:
+      allOf:
+        - $ref: '#/components/schemas/DynamicAuthRuleBase'
+        - type: object
+          required:
+            - auth_rules
+          properties:
+            auth_rules:
+              type: array
+              items:
+                $ref: '#/components/schemas/DynamicAuthRule'
+    DynamicProofRuleType:
+      type: string
+      enum:
+        - Require
+        - AmountOf
+        - AllOf
+        - AnyOf
+        - CountOf
+    DynamicProofRule:
+      anyOf:
+        - $ref: '#/components/schemas/RequireDynamicProofRule'
+        - $ref: '#/components/schemas/AmountOfDynamicProofRule'
+        - $ref: '#/components/schemas/AllOfDynamicProofRule'
+        - $ref: '#/components/schemas/AnyOfDynamicProofRule'
+        - $ref: '#/components/schemas/CountOfDynamicProofRule'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match DynamicProofRuleType options above
+          Require: '#/components/schemas/RequireDynamicProofRule'
+          AmountOf: '#/components/schemas/AmountOfDynamicProofRule'
+          AllOf: '#/components/schemas/AllOfDynamicProofRule'
+          AnyOf: '#/components/schemas/AnyOfDynamicProofRule'
+          CountOf: '#/components/schemas/CountOfDynamicProofRule'
+    DynamicProofRuleBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/DynamicProofRuleType'
+    RequireDynamicProofRule:
+      allOf:
+        - $ref: '#/components/schemas/DynamicProofRuleBase'
+        - type: object
+          required:
+            - resource
+          properties:
+            resource:
+              $ref: '#/components/schemas/DynamicResourceDescriptor'
+    AmountOfDynamicProofRule:
+      allOf:
+        - $ref: '#/components/schemas/DynamicProofRuleBase'
+        - type: object
+          required:
+            - amount
+            - resource
+          properties:
+            amount:
+              $ref: '#/components/schemas/DynamicAmount'
+            resource:
+              $ref: '#/components/schemas/DynamicResourceDescriptor'
+    AllOfDynamicProofRule:
+      allOf:
+        - $ref: '#/components/schemas/DynamicProofRuleBase'
+        - type: object
+          required:
+            - list
+          properties:
+            list:
+              $ref: '#/components/schemas/DynamicResourceDescriptorList'
+    AnyOfDynamicProofRule:
+      allOf:
+        - $ref: '#/components/schemas/DynamicProofRuleBase'
+        - type: object
+          required:
+            - list
+          properties:
+            list:
+              $ref: '#/components/schemas/DynamicResourceDescriptorList'
+    CountOfDynamicProofRule:
+      allOf:
+        - $ref: '#/components/schemas/DynamicProofRuleBase'
+        - type: object
+          required:
+            - count
+            - list
+          properties:
+            count:
+              $ref: '#/components/schemas/DynamicCount'
+            list:
+              $ref: '#/components/schemas/DynamicResourceDescriptorList'
+    DynamicAmountType:
+      type: string
+      enum:
+        - Amount
+        - SchemaPath
+    DynamicAmount:
+      anyOf:
+        - $ref: '#/components/schemas/AmountDynamicAmount'
+        - $ref: '#/components/schemas/SchemaPathDynamicAmount'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match DynamicAmountType options above
+          Amount: '#/components/schemas/AmountDynamicAmount'
+          SchemaPath: '#/components/schemas/SchemaPathDynamicAmount'
+    DynamicAmountBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/DynamicAmountType'
+    AmountDynamicAmount:
+      allOf:
+        - $ref: '#/components/schemas/DynamicAmountBase'
+        - type: object
+          required:
+            - amount
+          properties:
+            amount:
+              type: string
+              description: |
+                The string-encoded decimal representing the amount of resource required to pass the proof rule.
+                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    SchemaPathDynamicAmount:
+      allOf:
+        - $ref: '#/components/schemas/DynamicAmountBase'
+        - type: object
+          required:
+            - schema_path
+          properties:
+            schema_path:
+              $ref: '#/components/schemas/SchemaPath'
+    DynamicCountType:
+      type: string
+      enum:
+        - Count
+        - SchemaPath
+    DynamicCount:
+      anyOf:
+        - $ref: '#/components/schemas/CountDynamicCount'
+        - $ref: '#/components/schemas/SchemaPathDynamicCount'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match DynamicCountType options above
+          Count: '#/components/schemas/CountDynamicCount'
+          SchemaPath: '#/components/schemas/SchemaPathDynamicCount'
+    DynamicCountBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/DynamicCountType'
+    CountDynamicCount:
+      allOf:
+        - $ref: '#/components/schemas/DynamicCountBase'
+        - type: object
+          required:
+            - count
+          properties:
+            count:
+              type: integer
+              minimum: 0
+              maximum: 255
+    SchemaPathDynamicCount:
+      allOf:
+        - $ref: '#/components/schemas/DynamicCountBase'
+        - type: object
+          required:
+            - schema_path
+          properties:
+            schema_path:
+              $ref: '#/components/schemas/SchemaPath'
+    DynamicResourceDescriptorListType:
+      type: string
+      enum:
+        - List
+        - SchemaPath
+    DynamicResourceDescriptorList:
+      anyOf:
+        - $ref: '#/components/schemas/ListDynamicResourceDescriptorList'
+        - $ref: '#/components/schemas/SchemaPathDynamicResourceDescriptorList'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match DynamicResourceDescriptorListType options above
+          List: '#/components/schemas/ListDynamicResourceDescriptorList'
+          SchemaPath: '#/components/schemas/SchemaPathDynamicResourceDescriptorList'
+    DynamicResourceDescriptorListBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/DynamicResourceDescriptorListType'
+    ListDynamicResourceDescriptorList:
+      allOf:
+        - $ref: '#/components/schemas/DynamicResourceDescriptorListBase'
+        - type: object
+          required:
+            - resources
+          properties:
+            resources:
+              type: array
+              items:
+                $ref: '#/components/schemas/DynamicResourceDescriptor'
+    SchemaPathDynamicResourceDescriptorList:
+      allOf:
+        - $ref: '#/components/schemas/DynamicResourceDescriptorListBase'
+        - type: object
+          required:
+            - schema_path
+          properties:
+            schema_path:
+              $ref: '#/components/schemas/SchemaPath'
+    DynamicResourceDescriptorType:
+      type: string
+      enum:
+        - NonFungible
+        - Resource
+    DynamicResourceDescriptor:
+      anyOf:
+        - $ref: '#/components/schemas/NonFungibleDynamicResourceDescriptor'
+        - $ref: '#/components/schemas/ResourceDynamicResourceDescriptor'
+        - $ref: '#/components/schemas/SchemaPathDynamicResourceDescriptor'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match DynamicResourceDescriptorType options above
+          NonFungible: '#/components/schemas/NonFungibleDynamicResourceDescriptor'
+          Resource: '#/components/schemas/ResourceDynamicResourceDescriptor'
+          SchemaPath: '#/components/schemas/SchemaPathDynamicResourceDescriptor'
+    DynamicResourceDescriptorBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/DynamicResourceDescriptorType'
+    NonFungibleDynamicResourceDescriptor:
+      allOf:
+        - $ref: '#/components/schemas/DynamicResourceDescriptorBase'
+        - type: object
+          required:
+            - resource_address
+            - non_fungible_id_hex
+          properties:
+            resource_address:
+              $ref: '#/components/schemas/ResourceAddress'
+            non_fungible_id_hex:
+              type: string
+              description: The hex-encoded bytes of a non-fungible id
+    ResourceDynamicResourceDescriptor:
+      allOf:
+        - $ref: '#/components/schemas/DynamicResourceDescriptorBase'
+        - type: object
+          required:
+            - resource_address
+          properties:
+            resource_address:
+              $ref: '#/components/schemas/ResourceAddress'
+    SchemaPathDynamicResourceDescriptor:
+      allOf:
+        - $ref: '#/components/schemas/DynamicResourceDescriptorBase'
+        - type: object
+          required:
+            - schema_path
+          properties:
+            schema_path:
+              $ref: '#/components/schemas/SchemaPath'
+    SchemaPath:
+      type: array
+      items:
+        $ref: '#/components/schemas/SchemaSubpath'
+    SchemaSubpathType:
+      type: string
+      enum:
+        - Index
+        - Field
+    SchemaSubpath:
+      anyOf:
+        - $ref: '#/components/schemas/IndexSchemaSubpath'
+        - $ref: '#/components/schemas/FieldSchemaSubpath'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match SchemaSubpathType options above
+          Index: '#/components/schemas/IndexSchemaSubpath'
+          Field: '#/components/schemas/FieldSchemaSubpath'
+    SchemaSubpathBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/SchemaSubpathType'
+    IndexSchemaSubpath:
+      allOf:
+        - $ref: '#/components/schemas/SchemaSubpathBase'
+        - type: object
+          required:
+            - index
+          properties:
+            index:
+              type: string
+              description: A decimal-string-encoded integer between 0 and 2^64 - 1, which captures the index of the schema sub-path
+    FieldSchemaSubpath:
+      allOf:
+        - $ref: '#/components/schemas/SchemaSubpathBase'
+        - type: object
+          required:
+            - field
+          properties:
+            field:
+              type: string
+              description: The name of the field
 #######################################
 # GENERAL / SHARED MODELS - substates #
 #######################################
@@ -1181,7 +1860,8 @@ components:
           required:
             - resource_type
             - metadata
-            - total_supply_attos
+            - total_supply
+            - auth_rules
           properties:
             resource_type:
               $ref: '#/components/schemas/ResourceType'
@@ -1201,11 +1881,35 @@ components:
                     type: string
                   value:
                     type: string
-            total_supply_attos:
+            total_supply:
               type: string
               description: |
-                A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in
-                the total supply of this resource.
+                The string-encoded decimal representing the total supply of this resource.
+                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            owned_non_fungible_store:
+              $ref: '#/components/schemas/EntityReference'
+            auth_rules:
+              type: object
+              required:
+                - mint
+                - burn
+                - withdraw
+                - deposit
+                - update_metadata
+                - update_non_fungible_data
+              properties:
+                mint:
+                  $ref: '#/components/schemas/FixedActionAuthRules'
+                burn:
+                  $ref: '#/components/schemas/FixedActionAuthRules'
+                withdraw:
+                  $ref: '#/components/schemas/FixedActionAuthRules'
+                deposit:
+                  $ref: '#/components/schemas/FixedActionAuthRules'
+                update_metadata:
+                  $ref: '#/components/schemas/FixedActionAuthRules'
+                update_non_fungible_data:
+                  $ref: '#/components/schemas/FixedActionAuthRules'
     ResourceType:
       type: string
       enum:
@@ -1218,11 +1922,28 @@ components:
           required:
             - package_address
             - blueprint_name
+            - access_rules_layers
           properties:
             package_address:
               $ref: '#/components/schemas/PackageAddress'
             blueprint_name:
               type: string
+            access_rules_layers:
+              type: array
+              items:
+                $ref: '#/components/schemas/ComponentAccessRulesLayer'
+    ComponentAccessRulesLayer:
+      type: object
+      required:
+        - method_auth
+        - default_auth
+      properties:
+        method_auth:
+          description: A map from the method name to method access rules
+          additionalProperties:
+            $ref: '#/components/schemas/DynamicAuthorization'
+        default_auth:
+          $ref: '#/components/schemas/DynamicAuthorization'
     ComponentStateSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
@@ -1267,10 +1988,24 @@ components:
         - type: object
           required:
             - code_hex
+            - blueprints
           properties:
             code_hex:
               type: string
               description: The hex-encoded package code
+            blueprints:
+              type: object
+              description: A map from the blueprint name to BlueprintData
+              additionalProperties:
+                $ref: '#/components/schemas/BlueprintData'
+    BlueprintData:
+      type: object
+      required:
+        - abi_hex
+      properties:
+        abi_hex:
+          type: string
+          description: The hex-encoded, sbor-encoded package abi
     VaultSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
@@ -1305,21 +2040,21 @@ components:
         - $ref: '#/components/schemas/ResourceAmountBase'
         - type: object
           required:
-            - amount_attos
+            - amount
           properties:
-            amount_attos:
+            amount:
               type: string
               description: |
-                The string-encoded decimal subunits of the amount (`10^-18`) in a signed 256-bit integer.
-                This is string-encoded as it doesn't fit well into common numeric types.
+                The string-encoded decimal representing the amount of this resource (some decimal for fungible resources, a whole integer for non-fungible resources).
+                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
     NonFungibleResourceAmount:
       allOf:
         - $ref: '#/components/schemas/ResourceAmountBase'
         - type: object
           required:
-            - nf_ids_hex
+            - non_fungible_ids_hex
           properties:
-            nf_ids_hex:
+            non_fungible_ids_hex:
               type: array
               items:
                 type: string
@@ -1329,10 +2064,10 @@ components:
         - $ref: '#/components/schemas/SubstateBase'
         - type: object
           required:
-            - nf_id_hex
+            - non_fungible_id_hex
             - is_deleted
           properties:
-            nf_id_hex:
+            non_fungible_id_hex:
               type: string
               description: The hex-encoded bytes of its non-fungible id
             is_deleted:
@@ -1454,7 +2189,6 @@ components:
       type: object
       required:
         - pre_genesis_state_identifier
-        - post_genesis_state_identifier
         - current_state_identifier
       properties:
         pre_genesis_state_identifier:
@@ -1462,7 +2196,7 @@ components:
           description: The ledger state identifier before the genesis transaction
         post_genesis_state_identifier:
           $ref: "#/components/schemas/CommittedStateIdentifier"
-          description: The ledger state identifier after the genesis transaction
+          description: The ledger state identifier after the genesis transaction. May not be present if genesis has not yet been run.
         current_state_identifier:
           $ref: "#/components/schemas/CommittedStateIdentifier"
           description: |
@@ -1777,7 +2511,7 @@ components:
           $ref: "#/components/schemas/PublicKey"
           description: The notary public key to use (optional)
         notary_as_signatory:
-          type: bool
+          type: boolean
           description: Whether the notary should count as a signatory (optional, default false)
         cost_unit_limit:
           type: integer
@@ -1898,6 +2632,7 @@ components:
       type: object
       required:
         - state_version
+        - accumulator_hash
         - ledger_transaction
         - receipt
       properties:
@@ -1907,6 +2642,13 @@ components:
           minimum: 1
           maximum: 100000000000000
           description: An integer between `1` and `10^13`, giving the resultant state version after the transaction has been committed
+        accumulator_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: |
+            The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger.
+            This hash is `ACC_{N+1} = SHA256(SHA256(CONCAT(ACC_N, LEDGER_HASH_{N})))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator.
         ledger_transaction:
           $ref: "#/components/schemas/LedgerTransaction"
         receipt:

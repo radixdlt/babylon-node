@@ -7,7 +7,10 @@ use scrypto::core::NetworkDefinition;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
 use state_manager::transaction::{LedgerTransaction, ValidatorTransaction};
-use state_manager::{IntentHash, LedgerTransactionReceipt, SignaturesHash, UserPayloadHash};
+use state_manager::{
+    CommittedTransactionIdentifiers, IntentHash, LedgerTransactionReceipt, SignaturesHash,
+    UserPayloadHash,
+};
 use std::cmp;
 use std::collections::HashMap;
 use transaction::manifest;
@@ -38,12 +41,23 @@ fn handle_transaction_stream_internal(
         .try_into()
         .map_err(|_| client_error("limit cannot be negative"))?;
 
+    if limit == 0 {
+        return Err(client_error("limit must be positive"));
+    }
+
     let state_version_at_limit: u64 = from_state_version
         .checked_add(limit)
         .and_then(|v| v.checked_sub(1))
         .ok_or_else(|| client_error("start_state_version + limit - 1 out of u64 bounds"))?;
 
     let max_state_version = state_manager.store.max_state_version();
+
+    if max_state_version < from_state_version {
+        return Err(not_found_error(format!(
+            "The current max state version is {} but you requested from {}",
+            max_state_version, from_state_version
+        )));
+    }
 
     let up_to_state_version_inclusive = cmp::min(state_version_at_limit, max_state_version);
 
@@ -76,12 +90,24 @@ fn handle_transaction_stream_internal(
 
     let api_txns = txns
         .into_iter()
-        .map(|((ledger_transaction, receipt, _), state_version)| {
-            let api_tx =
-                to_api_committed_transaction(&network, ledger_transaction, receipt, state_version)?;
+        .map(
+            |((ledger_transaction, receipt, identifiers), state_version)| {
+                if identifiers.state_version != state_version {
+                    Err(server_error(&format!(
+                        "Loaded state version {} doesn't match its stored state version {}",
+                        state_version, identifiers.state_version
+                    )))?
+                }
+                let api_tx = to_api_committed_transaction(
+                    &network,
+                    ledger_transaction,
+                    receipt,
+                    identifiers,
+                )?;
 
-            Ok(api_tx)
-        })
+                Ok(api_tx)
+            },
+        )
         .collect::<Result<Vec<models::CommittedTransaction>, RequestHandlingError>>()?;
 
     let start_state_version = if api_txns.is_empty() {
@@ -103,13 +129,14 @@ pub fn to_api_committed_transaction(
     network: &NetworkDefinition,
     ledger_transaction: LedgerTransaction,
     receipt: LedgerTransactionReceipt,
-    state_version: u64,
+    identifiers: CommittedTransactionIdentifiers,
 ) -> Result<models::CommittedTransaction, MappingError> {
     let bech32_encoder = Bech32Encoder::new(network);
     let receipt = to_api_receipt(&bech32_encoder, receipt)?;
 
     Ok(models::CommittedTransaction {
-        state_version: to_api_state_version(state_version)?,
+        state_version: to_api_state_version(identifiers.state_version)?,
+        accumulator_hash: to_api_accumulator_hash(&identifiers.accumulator_hash),
         ledger_transaction: Some(to_api_ledger_transaction(&ledger_transaction, network)?),
         receipt: Box::new(receipt),
     })
