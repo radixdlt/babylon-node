@@ -81,12 +81,18 @@ public interface SystemCounters {
     /** Number of round-timeout quorums formed. */
     BFT_TIMEOUT_QUORUMS("bft.timeout_quorums"),
 
+    BFT_VERIFIER_INVALID_VOTE_AUTHORS("bft.verifier.invalid_vote_authors"),
+    BFT_VERIFIER_INVALID_PROPOSAL_AUTHORS("bft.verifier.invalid_proposal_authors"),
+    BFT_VERIFIER_INVALID_PROPOSAL_TIMESTAMPS("bft.verifier.invalid_proposal_timestamps"),
+
     /** Number of times a round-timeout message was broadcast. */
     BFT_PACEMAKER_TIMEOUTS_SENT("bft.pacemaker.timeouts_sent"),
     BFT_PACEMAKER_ROUND("bft.pacemaker.round"),
     BFT_PACEMAKER_PROPOSED_TRANSACTIONS("bft.pacemaker.proposed_transactions"),
     BFT_PACEMAKER_PROPOSALS_SENT("bft.pacemaker.proposals_sent"),
     BFT_PACEMAKER_TIMED_OUT_ROUNDS("bft.pacemaker.timed_out_rounds"),
+    BFT_PACEMAKER_PROPOSALS_WITH_SUBSTITUTE_TIMESTAMP(
+        "bft.pacemaker.proposals_with_substitute_timestamp"),
 
     BFT_SYNC_REQUESTS_SENT("bft.sync.requests_sent"),
     BFT_SYNC_REQUESTS_RECEIVED("bft.sync.requests_received"),

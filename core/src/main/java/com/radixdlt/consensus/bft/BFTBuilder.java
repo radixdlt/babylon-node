@@ -70,6 +70,8 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.utils.TimeSupplier;
 
 /** A helper class to help in constructing a BFT validator state machine */
 public final class BFTBuilder {
@@ -92,6 +94,9 @@ public final class BFTBuilder {
   private RoundUpdate roundUpdate;
   private RemoteEventDispatcher<Vote> voteDispatcher;
   private SafetyRules safetyRules;
+
+  private TimeSupplier timeSupplier;
+  private SystemCounters systemCounters;
 
   private BFTBuilder() {
     // Just making this inaccessible
@@ -157,6 +162,11 @@ public final class BFTBuilder {
     return this;
   }
 
+  public BFTBuilder timeSupplier(TimeSupplier timeSupplier) {
+    this.timeSupplier = timeSupplier;
+    return this;
+  }
+
   public BFTBuilder roundQuorumReachedEventDispatcher(
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher) {
     this.roundQuorumReachedEventDispatcher = roundQuorumReachedEventDispatcher;
@@ -165,6 +175,11 @@ public final class BFTBuilder {
 
   public BFTBuilder noVoteEventDispatcher(EventDispatcher<NoVote> noVoteEventDispatcher) {
     this.noVoteEventDispatcher = noVoteEventDispatcher;
+    return this;
+  }
+
+  public BFTBuilder systemCounters(SystemCounters systemCounters) {
+    this.systemCounters = systemCounters;
     return this;
   }
 
@@ -190,6 +205,7 @@ public final class BFTBuilder {
 
     BFTEventPreprocessor preprocessor = new BFTEventPreprocessor(reducer, bftSyncer, roundUpdate);
 
-    return new BFTEventVerifier(validatorSet, preprocessor, hasher, verifier, safetyRules);
+    return new BFTEventVerifier(
+        validatorSet, preprocessor, hasher, verifier, safetyRules, timeSupplier, systemCounters);
   }
 }

@@ -65,11 +65,7 @@
 package com.radixdlt.consensus;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.transactions.RawNotarizedTransaction;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -92,74 +88,12 @@ public final class VertexWithHash {
     return new VertexWithHash(vertex, hasher.hashDsonEncoded(vertex));
   }
 
-  public BFTNode getProposer() {
-    return vertex.getProposer();
-  }
-
-  public boolean isTimeout() {
-    return vertex.isTimeout();
-  }
-
-  public Vertex toSerializable() {
+  public Vertex vertex() {
     return vertex;
   }
 
-  public List<RawNotarizedTransaction> getTransactions() {
-    return vertex.getTransactions();
-  }
-
-  public boolean touchesGenesis() {
-    return this.getRound().isGenesis()
-        || this.getParentHeader().getRound().isGenesis()
-        || this.getGrandParentHeader().getRound().isGenesis();
-  }
-
-  public boolean hasDirectParent() {
-    return this.vertex.getRound().equals(this.getParentHeader().getRound().next());
-  }
-
-  public boolean parentHasDirectParent() {
-    return this.getParentHeader().getRound().equals(this.getGrandParentHeader().getRound().next());
-  }
-
-  public BFTHeader getParentHeader() {
-    return vertex.getQCToParent().getProposedHeader();
-  }
-
-  public BFTHeader getGrandParentHeader() {
-    return vertex.getQCToParent().getParentHeader();
-  }
-
-  public Round getRound() {
-    return vertex.getRound();
-  }
-
-  public QuorumCertificate getQCToParent() {
-    return vertex.getQCToParent();
-  }
-
-  public HashCode getHash() {
+  public HashCode hash() {
     return vertexHash;
-  }
-
-  public HashCode getParentVertexId() {
-    return vertex.getQCToParent().getProposedHeader().getVertexId();
-  }
-
-  /**
-   * @return The weighted timestamp of the signatures in the parent QC, in milliseconds since Unix
-   *     Epoch.
-   */
-  public long getWeightedTimestampOfQCToParent() {
-    // If the vertex has a genesis parent then its QC is mocked so just use previous timestamp
-    // this does have the edge case of never increasing timestamps if configuration is
-    // one round per epoch but good enough for now
-
-    return getQCToParent().getWeightedTimestampOfSignatures();
-  }
-
-  public long getEpoch() {
-    return getParentHeader().getLedgerHeader().getEpoch();
   }
 
   @Override
@@ -169,8 +103,7 @@ public final class VertexWithHash {
 
   @Override
   public boolean equals(Object o) {
-    if (o instanceof VertexWithHash) {
-      final var that = (VertexWithHash) o;
+    if (o instanceof final VertexWithHash that) {
       return Objects.equals(this.vertexHash, that.vertexHash)
           && Objects.equals(this.vertex, that.vertex);
     }
@@ -182,7 +115,7 @@ public final class VertexWithHash {
     return String.format(
         "%s{epoch=%s round=%s qc=%s hash=%s}",
         this.getClass().getSimpleName(),
-        this.vertex.getQCToParent().getProposedHeader().getLedgerHeader().getEpoch(),
+        this.vertex.parentLedgerHeader().getEpoch(),
         this.vertex.getRound(),
         this.vertex.getQCToParent(),
         this.vertexHash);

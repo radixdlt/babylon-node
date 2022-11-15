@@ -86,6 +86,7 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.utils.TimeSupplier;
+import java.security.SecureRandom;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -137,7 +138,8 @@ public class PacemakerTest {
             hasher,
             timeSupplier,
             initialRoundUpdate,
-            new SystemCountersImpl());
+            new SystemCountersImpl(),
+            new SecureRandom());
   }
 
   @Test
@@ -173,6 +175,9 @@ public class PacemakerTest {
     BFTHeader highestQcProposed = mock(BFTHeader.class);
     HashCode highQcParentVertexId = mock(HashCode.class);
     when(highestQcProposed.getVertexId()).thenReturn(highQcParentVertexId);
+    final var highQcLedgerHeader = mock(LedgerHeader.class);
+    when(highQcLedgerHeader.proposerTimestamp()).thenReturn(1L);
+    when(highestQcProposed.getLedgerHeader()).thenReturn(highQcLedgerHeader);
     when(highestQc.getProposedHeader()).thenReturn(highestQcProposed);
     when(committedQc.getRound()).thenReturn(Round.of(0));
     RoundUpdate roundUpdate =
@@ -195,8 +200,8 @@ public class PacemakerTest {
     when(bftInsertUpdate.getInserted()).thenReturn(executedVertex);
     when(bftInsertUpdate.getVertexStoreState()).thenReturn(vertexStoreState);
     var node = BFTNode.random();
-    when(executedVertex.getVertexHash())
-        .thenReturn(hasher.hashDsonEncoded(Vertex.createTimeout(highestQc, round, node)));
+    final var vertexHash = hasher.hashDsonEncoded(Vertex.createTimeout(highestQc, round, node));
+    when(executedVertex.getVertexHash()).thenReturn(vertexHash);
 
     when(this.safetyRules.getLastVote(round)).thenReturn(Optional.empty());
     when(this.safetyRules.createVote(any(), any(), anyLong(), any()))
@@ -223,7 +228,7 @@ public class PacemakerTest {
     ArgumentCaptor<VertexWithHash> insertVertexCaptor =
         ArgumentCaptor.forClass(VertexWithHash.class);
     verify(this.vertexStore, times(1)).insertVertex(insertVertexCaptor.capture());
-    assertEquals(insertVertexCaptor.getValue().getParentVertexId(), highQcParentVertexId);
+    assertEquals(insertVertexCaptor.getValue().vertex().getParentVertexId(), highQcParentVertexId);
 
     verifyNoMoreInteractions(this.vertexStore);
   }

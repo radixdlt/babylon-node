@@ -101,7 +101,7 @@ public final class SafetyChecker {
         new TestInvariant.TestInvariantError(
             String.format(
                 "Conflicting vertices [%s, %s] committed at same round: %s",
-                vertex, currentVertex, vertex.getRound())));
+                vertex, currentVertex, vertex.vertex().getRound())));
   }
 
   private static Optional<TestInvariant.TestInvariantError> brokenChainError(
@@ -111,14 +111,16 @@ public final class SafetyChecker {
             String.format("Broken Chain [%s, %s]", vertex, closeVertex)));
   }
 
-  private Optional<TestInvariant.TestInvariantError> process(BFTNode node, VertexWithHash vertex) {
+  private Optional<TestInvariant.TestInvariantError> process(
+      BFTNode node, VertexWithHash vertexWithHash) {
+    final var vertex = vertexWithHash.vertex();
     final EpochRound epochRound =
         EpochRound.of(vertex.getParentHeader().getLedgerHeader().getEpoch(), vertex.getRound());
 
     final VertexWithHash currentVertexAtRound = committedVertices.get(epochRound);
     if (currentVertexAtRound != null) {
-      if (!currentVertexAtRound.getHash().equals(vertex.getHash())) {
-        return conflictingVerticesError(vertex, currentVertexAtRound);
+      if (!currentVertexAtRound.hash().equals(vertexWithHash.hash())) {
+        return conflictingVerticesError(vertexWithHash, currentVertexAtRound);
       }
     } else {
       EpochRound parentEpochRound =
@@ -130,17 +132,17 @@ public final class SafetyChecker {
         Entry<EpochRound, VertexWithHash> higherCommitted =
             committedVertices.higherEntry(parentEpochRound);
         if (higherCommitted != null) {
-          BFTHeader higherParentHeader = higherCommitted.getValue().getParentHeader();
+          BFTHeader higherParentHeader = higherCommitted.getValue().vertex().getParentHeader();
           EpochRound higherCommittedParentEpochRound =
               EpochRound.of(
                   higherParentHeader.getLedgerHeader().getEpoch(), higherParentHeader.getRound());
           if (epochRound.compareTo(higherCommittedParentEpochRound) > 0) {
-            return brokenChainError(vertex, higherCommitted.getValue());
+            return brokenChainError(vertexWithHash, higherCommitted.getValue());
           }
         }
       }
 
-      committedVertices.put(epochRound, vertex);
+      committedVertices.put(epochRound, vertexWithHash);
     }
 
     // Clean up old vertices so that we avoid consuming too much memory
@@ -159,7 +161,8 @@ public final class SafetyChecker {
       BFTNode node, BFTCommittedUpdate committedUpdate) {
     ImmutableList<ExecutedVertex> vertices = committedUpdate.committed();
     for (ExecutedVertex vertex : vertices) {
-      Optional<TestInvariant.TestInvariantError> maybeError = process(node, vertex.getVertex());
+      Optional<TestInvariant.TestInvariantError> maybeError =
+          process(node, vertex.getVertexWithHash());
       if (maybeError.isPresent()) {
         return maybeError;
       }

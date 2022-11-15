@@ -118,6 +118,7 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.TimeSupplier;
+import java.security.SecureRandom;
 import java.util.Comparator;
 import java.util.Random;
 
@@ -287,7 +288,8 @@ public class EpochsConsensusModule extends AbstractModule {
       ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>> localTimeoutSender,
       RemoteEventDispatcher<Proposal> proposalDispatcher,
       RemoteEventDispatcher<Vote> voteDispatcher,
-      TimeSupplier timeSupplier) {
+      TimeSupplier timeSupplier,
+      SecureRandom secureRandom) {
     return (validatorSet, vertexStore, timeoutCalculator, safetyRules, initialRoundUpdate, epoch) ->
         new Pacemaker(
             self,
@@ -306,7 +308,8 @@ public class EpochsConsensusModule extends AbstractModule {
             hasher,
             timeSupplier,
             initialRoundUpdate,
-            counters);
+            counters,
+            secureRandom);
   }
 
   @Provides

@@ -388,6 +388,7 @@ pub struct PrepareRequest {
     pub already_prepared_payloads: Vec<Vec<u8>>,
     pub proposed_payloads: Vec<Vec<u8>>,
     pub round_number: u64,
+    pub proposer_timestamp: u64,
 }
 
 #[derive(Debug, Decode, Encode, TypeId)]

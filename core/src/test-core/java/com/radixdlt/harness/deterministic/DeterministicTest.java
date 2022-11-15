@@ -123,6 +123,7 @@ public final class DeterministicTest implements AutoCloseable {
 
   private DeterministicTest(
       ImmutableList<BFTNode> nodes,
+      BFTValidatorSet initialValidatorSet,
       MessageSelector messageSelector,
       MessageMutator messageMutator,
       MessageMonitor messageMonitor,
@@ -130,7 +131,9 @@ public final class DeterministicTest implements AutoCloseable {
       Module baseModule,
       Module overrideModule) {
     this.network = new DeterministicNetwork(nodes, messageSelector, messageMutator, messageMonitor);
-    this.nodes = new DeterministicNodes(nodes, this.network, baseModule, overrideModule);
+    this.nodes =
+        new DeterministicNodes(
+            nodes, initialValidatorSet, this.network, baseModule, overrideModule);
     this.stateMonitor = stateMonitor;
   }
 
@@ -144,6 +147,7 @@ public final class DeterministicTest implements AutoCloseable {
         ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
     private ImmutableList<BFTNode> initialValidatorNodes =
         ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
+    private BFTValidatorSet initialValidatorSet;
 
     private MessageSelector messageSelector = MessageSelector.firstSelector();
     private MessageMutator messageMutator = MessageMutator.nothing();
@@ -167,7 +171,9 @@ public final class DeterministicTest implements AutoCloseable {
               .collect(ImmutableList.toImmutableList());
       this.initialValidatorNodes =
           this.nodes.stream().limit(numInitialValidators).collect(ImmutableList.toImmutableList());
-
+      this.initialValidatorSet =
+          BFTValidatorSet.from(
+              initialValidatorNodes.stream().map(n -> BFTValidator.from(n, UInt256.ONE)));
       return this;
     }
 
@@ -191,10 +197,7 @@ public final class DeterministicTest implements AutoCloseable {
             new AbstractModule() {
               @Override
               protected void configure() {
-                var validatorSet =
-                    BFTValidatorSet.from(
-                        initialValidatorNodes.stream().map(n -> BFTValidator.from(n, UInt256.ONE)));
-                bind(BFTValidatorSet.class).toInstance(validatorSet);
+                bind(BFTValidatorSet.class).toInstance(initialValidatorSet);
               }
             });
       } else {
@@ -306,6 +309,7 @@ public final class DeterministicTest implements AutoCloseable {
 
       return new DeterministicTest(
           this.nodes,
+          this.initialValidatorSet,
           this.messageSelector,
           this.messageMutator,
           messageMonitor,

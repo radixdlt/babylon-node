@@ -73,13 +73,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.BFTEventProcessor;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.utils.TimeSupplier;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -92,6 +98,8 @@ public class BFTEventVerifierTest {
   private HashVerifier verifier;
   private BFTEventVerifier eventVerifier;
   private SafetyRules safetyRules;
+  private TimeSupplier timeSupplier;
+  private SystemCounters systemCounters;
 
   @Before
   public void setup() {
@@ -100,8 +108,11 @@ public class BFTEventVerifierTest {
     this.hasher = mock(Hasher.class);
     this.verifier = mock(HashVerifier.class);
     this.safetyRules = mock(SafetyRules.class);
+    this.timeSupplier = mock(TimeSupplier.class);
+    this.systemCounters = mock(SystemCounters.class);
     this.eventVerifier =
-        new BFTEventVerifier(validatorSet, forwardTo, hasher, verifier, safetyRules);
+        new BFTEventVerifier(
+            validatorSet, forwardTo, hasher, verifier, safetyRules, timeSupplier, systemCounters);
   }
 
   @Test
@@ -130,6 +141,10 @@ public class BFTEventVerifierTest {
     BFTNode author = mock(BFTNode.class);
     when(proposal.getAuthor()).thenReturn(author);
     when(proposal.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
+    when(timeSupplier.currentTime()).thenReturn(5L);
+    final var vertex =
+        vertexWithProposerTimestamps(timeSupplier.currentTime() - 1, timeSupplier.currentTime());
+    when(proposal.getVertex()).thenReturn(vertex);
     when(validatorSet.containsNode(eq(author))).thenReturn(true);
     when(verifier.verify(any(), any(), any())).thenReturn(true);
     when(safetyRules.verifyHighQcAgainstTheValidatorSet(any())).thenReturn(true);
@@ -155,10 +170,47 @@ public class BFTEventVerifierTest {
     BFTNode author = mock(BFTNode.class);
     when(proposal.getAuthor()).thenReturn(author);
     when(proposal.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
+    when(timeSupplier.currentTime()).thenReturn(5L);
+    final var vertex =
+        vertexWithProposerTimestamps(timeSupplier.currentTime() - 1, timeSupplier.currentTime());
+    when(proposal.getVertex()).thenReturn(vertex);
     when(validatorSet.containsNode(eq(author))).thenReturn(true);
     when(verifier.verify(any(), any(), any())).thenReturn(false);
     eventVerifier.processProposal(proposal);
     verify(forwardTo, never()).processProposal(any());
+  }
+
+  @Test
+  public void when_process_proposal_with_invalid_timestamp_then_should_be_rejected() {
+    Proposal proposal = mock(Proposal.class);
+    BFTNode author = mock(BFTNode.class);
+    when(proposal.getAuthor()).thenReturn(author);
+    when(proposal.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
+    when(timeSupplier.currentTime()).thenReturn(5L);
+    final var vertex =
+        vertexWithProposerTimestamps(
+            timeSupplier.currentTime(), timeSupplier.currentTime() /* same as prev */);
+    when(proposal.getVertex()).thenReturn(vertex);
+    when(validatorSet.containsNode(eq(author))).thenReturn(true);
+    when(verifier.verify(any(), any(), any())).thenReturn(true);
+    when(safetyRules.verifyHighQcAgainstTheValidatorSet(any())).thenReturn(true);
+    eventVerifier.processProposal(proposal);
+    verify(forwardTo, never()).processProposal(any());
+  }
+
+  private Vertex vertexWithProposerTimestamps(long prevTimestamp, long currentTimestamp) {
+    final var vertex = mock(Vertex.class);
+    final var qcToParent = mock(QuorumCertificate.class);
+    final var bftHeader = mock(BFTHeader.class);
+    final var ledgerHeader = mock(LedgerHeader.class);
+    when(vertex.parentBFTHeader()).thenReturn(bftHeader);
+    when(vertex.parentLedgerHeader()).thenReturn(ledgerHeader);
+    when(vertex.getQCToParent()).thenReturn(qcToParent);
+    when(vertex.proposerTimestamp()).thenReturn(currentTimestamp);
+    when(qcToParent.getProposedHeader()).thenReturn(bftHeader);
+    when(bftHeader.getLedgerHeader()).thenReturn(ledgerHeader);
+    when(ledgerHeader.proposerTimestamp()).thenReturn(prevTimestamp);
+    return vertex;
   }
 
   @Test

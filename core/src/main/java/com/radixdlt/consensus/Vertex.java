@@ -68,6 +68,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.Hasher;
@@ -117,6 +118,10 @@ public final class Vertex {
   @DsonOutput(Output.ALL)
   private final Boolean proposerTimedOut;
 
+  @JsonProperty("proposer_timestamp")
+  @DsonOutput(Output.ALL)
+  private final long proposerTimestamp;
+
   // This is serialized in getProposerBytes below
   private final BFTNode proposer;
 
@@ -125,7 +130,8 @@ public final class Vertex {
       Round round,
       List<byte[]> transactions,
       BFTNode proposer,
-      Boolean proposerTimedOut) {
+      Boolean proposerTimedOut,
+      long proposerTimestamp) {
     this.qcToParent = requireNonNull(qcToParent);
     this.round = requireNonNull(round);
 
@@ -140,6 +146,7 @@ public final class Vertex {
     this.transactions = transactions;
     this.proposer = proposer;
     this.proposerTimedOut = proposerTimedOut;
+    this.proposerTimestamp = proposerTimestamp;
   }
 
   @JsonCreator
@@ -148,14 +155,16 @@ public final class Vertex {
       @JsonProperty("round") long roundNumber,
       @JsonProperty("txns") List<byte[]> transactions,
       @JsonProperty("p") byte[] proposer,
-      @JsonProperty("tout") Boolean proposerTimedOut)
+      @JsonProperty("tout") Boolean proposerTimedOut,
+      @JsonProperty("proposer_timestamp") long proposerTimestamp)
       throws PublicKeyException {
     return new Vertex(
         parentQC,
         Round.of(roundNumber),
         transactions == null ? List.of() : transactions,
         proposer != null ? BFTNode.fromPublicKeyBytes(proposer) : null,
-        proposerTimedOut);
+        proposerTimedOut,
+        proposerTimestamp);
   }
 
   public static Vertex createGenesis(LedgerHeader ledgerHeader) {
@@ -163,25 +172,30 @@ public final class Vertex {
     final VoteData voteData = new VoteData(header, header, header);
     final QuorumCertificate parentQC =
         new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-    return new Vertex(parentQC, Round.genesis(), null, null, false);
+    return new Vertex(
+        parentQC, Round.genesis(), null, null, false, ledgerHeader.proposerTimestamp());
   }
 
   public static Vertex createTimeout(QuorumCertificate parentQC, Round round, BFTNode proposer) {
-    return new Vertex(parentQC, round, List.of(), proposer, true);
+    /* Timeout vertices simply increment the previous timestamp by 1. This makes sure that
+    all validators (that participate in a timeout quorum) agree on the same timestamp. */
+    final var prevTimestamp = parentQC.getProposedHeader().getLedgerHeader().proposerTimestamp();
+    return new Vertex(parentQC, round, List.of(), proposer, true, prevTimestamp + 1);
   }
 
   public static Vertex create(
       QuorumCertificate parentQC,
       Round round,
       List<RawNotarizedTransaction> transactions,
-      BFTNode proposer) {
+      BFTNode proposer,
+      long proposerTimestamp) {
     if (round.number() == 0) {
       throw new IllegalArgumentException("Only genesis can have round 0.");
     }
 
     var transactionBytes = transactions.stream().map(RawNotarizedTransaction::getPayload).toList();
 
-    return new Vertex(parentQC, round, transactionBytes, proposer, false);
+    return new Vertex(parentQC, round, transactionBytes, proposer, false, proposerTimestamp);
   }
 
   @JsonProperty("p")
@@ -206,6 +220,14 @@ public final class Vertex {
     return qcToParent;
   }
 
+  public BFTHeader parentBFTHeader() {
+    return qcToParent.getProposedHeader();
+  }
+
+  public LedgerHeader parentLedgerHeader() {
+    return parentBFTHeader().getLedgerHeader();
+  }
+
   public Round getRound() {
     return round;
   }
@@ -214,6 +236,40 @@ public final class Vertex {
     return transactions == null
         ? List.of()
         : transactions.stream().map(RawNotarizedTransaction::create).toList();
+  }
+
+  public long proposerTimestamp() {
+    return this.proposerTimestamp;
+  }
+
+  public BFTHeader getParentHeader() {
+    return getQCToParent().getProposedHeader();
+  }
+
+  public HashCode getParentVertexId() {
+    return getQCToParent().getProposedHeader().getVertexId();
+  }
+
+  public long getEpoch() {
+    return getParentHeader().getLedgerHeader().getEpoch();
+  }
+
+  public BFTHeader getGrandParentHeader() {
+    return getQCToParent().getParentHeader();
+  }
+
+  public boolean touchesGenesis() {
+    return this.getRound().isGenesis()
+        || this.getParentHeader().getRound().isGenesis()
+        || this.getGrandParentHeader().getRound().isGenesis();
+  }
+
+  public boolean hasDirectParent() {
+    return getRound().equals(this.getParentHeader().getRound().next());
+  }
+
+  public boolean parentHasDirectParent() {
+    return this.getParentHeader().getRound().equals(this.getGrandParentHeader().getRound().next());
   }
 
   @JsonProperty("round")
@@ -229,7 +285,8 @@ public final class Vertex {
 
   @Override
   public int hashCode() {
-    return Objects.hash(qcToParent, proposer, round, transactions, proposerTimedOut);
+    return Objects.hash(
+        qcToParent, proposer, round, transactions, proposerTimedOut, proposerTimestamp);
   }
 
   @Override
@@ -243,6 +300,7 @@ public final class Vertex {
         && Objects.equals(v.proposerTimedOut, this.proposerTimedOut)
         && Objects.equals(v.proposer, this.proposer)
         && Objects.equals(v.getTransactions(), this.getTransactions())
-        && Objects.equals(v.qcToParent, this.qcToParent);
+        && Objects.equals(v.qcToParent, this.qcToParent)
+        && v.proposerTimestamp == this.proposerTimestamp;
   }
 }

@@ -189,13 +189,15 @@ public final class BFTEventReducer implements BFTEventProcessor {
     final BFTNode nextLeader = this.latestRoundUpdate.getNextLeader();
     final Optional<Vote> maybeVote =
         this.safetyRules.createVote(
-            update.getInserted().getVertex(),
+            update.getInserted().getVertexWithHash(),
             update.getHeader(),
             update.getInserted().getTimeOfExecution(),
             this.latestRoundUpdate.getHighQC());
     maybeVote.ifPresentOrElse(
         vote -> this.voteDispatcher.dispatch(nextLeader, vote),
-        () -> this.noVoteDispatcher.dispatch(NoVote.create(update.getInserted().getVertex())));
+        () ->
+            this.noVoteDispatcher.dispatch(
+                NoVote.create(update.getInserted().getVertexWithHash())));
   }
 
   @Override

@@ -78,6 +78,7 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.TimeSupplier;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -87,6 +88,9 @@ import org.apache.logging.log4j.Logger;
 /** Manages the pacemaker driver. */
 public final class Pacemaker {
   private static final Logger log = LogManager.getLogger();
+
+  /* See detailed explanation in `generateProposal` */
+  private static final int PROPOSAL_SUBSTITUTE_TIMESTAMP_MAX_OFFSET_MS = 50;
 
   private final BFTNode self;
   private final SystemCounters counters;
@@ -102,6 +106,7 @@ public final class Pacemaker {
   private final EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher;
   private final TimeSupplier timeSupplier;
   private final SystemCounters systemCounters;
+  private final SecureRandom secureRandom;
 
   private RoundUpdate latestRoundUpdate;
   private boolean isRoundTimedOut = false;
@@ -122,7 +127,8 @@ public final class Pacemaker {
       Hasher hasher,
       TimeSupplier timeSupplier,
       RoundUpdate initialRoundUpdate,
-      SystemCounters systemCounters) {
+      SystemCounters systemCounters,
+      SecureRandom secureRandom) {
     this.self = Objects.requireNonNull(self);
     this.counters = Objects.requireNonNull(counters);
     this.validatorSet = Objects.requireNonNull(validatorSet);
@@ -138,6 +144,7 @@ public final class Pacemaker {
     this.timeSupplier = Objects.requireNonNull(timeSupplier);
     this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
     this.systemCounters = Objects.requireNonNull(systemCounters);
+    this.secureRandom = Objects.requireNonNull(secureRandom);
   }
 
   public void start() {
@@ -197,13 +204,51 @@ public final class Pacemaker {
   private Optional<Proposal> generateProposal(Round round) {
     final var highQC = this.latestRoundUpdate.getHighQC();
     final var highestQC = highQC.highestQC();
-
     final var nextTransactions = getTransactionsForProposal(round, highestQC);
-
+    final var proposerTimestamp = determineNextProposalTimestamp(highestQC);
     final var proposedVertex =
-        Vertex.create(highestQC, round, nextTransactions, self).withId(hasher);
+        Vertex.create(highestQC, round, nextTransactions, self, proposerTimestamp).withId(hasher);
     return safetyRules.signProposal(
         proposedVertex, highQC.highestCommittedQC(), highQC.highestTC());
+  }
+
+  @SuppressWarnings("StatementWithEmptyBody")
+  private long determineNextProposalTimestamp(QuorumCertificate highestQC) {
+    final var now = timeSupplier.currentTime();
+    final var previousProposerTimestamp =
+        highestQC.getProposedHeader().getLedgerHeader().proposerTimestamp();
+    if (now > previousProposerTimestamp) {
+      /* All good, previous timestamp is in the past. Use local system time. */
+      return now;
+    } else if (now < previousProposerTimestamp) {
+      /* Our local system time is lagging or the quorum has agreed on a rushing timestamp in the previous round.
+       * We can't use our local time because the proposal would be rejected.
+       * To get as close to the real time (from our perspective) as possible, we simply increment the
+       * previous timestamp by a small, randomized number. The offset is random to prevent a single validator
+       * from being able to deterministically choose two consecutive timestamps: one for their round (rushing)
+       * and another one for the next round (which would be their_timestamp + some_fixed_offset without the randomization). */
+      log.warn(
+          "Previous round proposer timestamp was greater than the current local system time. "
+              + "This may (but doesn't have to) indicate system clock malfunction. "
+              + "Consider further investigation if this log message appears on a regular basis.");
+      counters.increment(CounterType.BFT_PACEMAKER_PROPOSALS_WITH_SUBSTITUTE_TIMESTAMP);
+      final var randomOffset =
+          this.secureRandom.nextInt(PROPOSAL_SUBSTITUTE_TIMESTAMP_MAX_OFFSET_MS);
+      return previousProposerTimestamp + randomOffset;
+    } else /* now == previousProposerTimestamp */ {
+      /* This is a bit of a hack for tests, but it doesn't influence a real-world behaviour.
+      If the previous timestamp is exactly the same as our local time, the simplest thing
+      to do is to just wait a single millisecond. The latency of a real network is surely more than 1ms
+      so the comment in the above `else if` statement doesn't apply here.
+      The hack is needed because the deterministic (local) network can run so fast that
+      two consecutive `generateProposal` calls (for distinct simulated validators) can happen within
+      less than a millisecond. Merely returning `previousProposerTimestamp + 1` (without the actual delay)
+      won't work either because then the validators keep increasing the timestamps (rushing, from their point of view)
+      ad infinitum, which can lead to proposals being rejected at some point (due to exceeding the acceptable limits). */
+      long nowButABitLater;
+      while ((nowButABitLater = timeSupplier.currentTime()) <= now) {}
+      return nowButABitLater;
+    }
   }
 
   private List<RawNotarizedTransaction> getTransactionsForProposal(
@@ -268,11 +313,11 @@ public final class Pacemaker {
         Vertex.createTimeout(
                 highQC.highestQC(), roundUpdate.getCurrentRound(), roundUpdate.getLeader())
             .withId(hasher);
-    this.timeoutVoteVertexId = Optional.of(vertex.getHash());
+    this.timeoutVoteVertexId = Optional.of(vertex.hash());
 
     // TODO: reimplement in async way
     this.vertexStore
-        .getExecutedVertex(vertex.getHash())
+        .getExecutedVertex(vertex.hash())
         .ifPresentOrElse(
             this::createAndSendTimeoutVote, // if vertex is already there, send the vote immediately
             () -> maybeInsertVertex(vertex) // otherwise insert and wait for async bft update msg
@@ -302,7 +347,7 @@ public final class Pacemaker {
     // TODO: occurs. Once liveness bug is fixed we should never hit this state.
     final var maybeBaseVote =
         this.safetyRules.createVote(
-            executedVertex.getVertex(),
+            executedVertex.getVertexWithHash(),
             bftHeader,
             this.timeSupplier.currentTime(),
             this.latestRoundUpdate.getHighQC());

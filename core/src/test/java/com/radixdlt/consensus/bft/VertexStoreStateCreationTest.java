@@ -82,13 +82,13 @@ public class VertexStoreStateCreationTest {
   private HashCode genesisHash;
   private Hasher hasher;
   private static final LedgerHeader MOCKED_HEADER =
-      LedgerHeader.create(0, Round.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0);
+      LedgerHeader.create(0, Round.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0, 0);
 
   @Before
   public void setup() {
     this.hasher = new Sha256Hasher(DefaultSerialization.getInstance());
     this.genesisVertex = Vertex.createGenesis(MOCKED_HEADER).withId(hasher);
-    this.genesisHash = genesisVertex.getHash();
+    this.genesisHash = genesisVertex.hash();
   }
 
   @Test

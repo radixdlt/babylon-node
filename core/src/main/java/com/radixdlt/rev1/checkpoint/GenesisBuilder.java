@@ -156,7 +156,7 @@ public final class GenesisBuilder {
 
     var init = new AccumulatorState(0, HashUtils.zero256());
     var accumulatorState = ledgerAccumulator.accumulate(init, transaction.getPayloadHash());
-    var genesisProof = LedgerProof.genesis(accumulatorState, genesisValidatorSet, 0L);
+    var genesisProof = LedgerProof.genesis(accumulatorState, genesisValidatorSet, 0L, 0L);
     if (!genesisProof.isEndOfEpoch()) {
       throw new IllegalStateException("Genesis must be end of epoch");
     }

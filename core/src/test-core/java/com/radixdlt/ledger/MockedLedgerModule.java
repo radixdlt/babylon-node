@@ -91,18 +91,21 @@ public class MockedLedgerModule extends AbstractModule {
     return new Ledger() {
       @Override
       public Optional<ExecutedVertex> prepare(
-          LinkedList<ExecutedVertex> previous, VertexWithHash vertex) {
-        final long timestamp =
+          LinkedList<ExecutedVertex> previous, VertexWithHash vertexWithHash) {
+        final var vertex = vertexWithHash.vertex();
+        final long consensusParentRoundTimestamp =
             vertex.getQCToParent().getTimestampedSignatures().weightedTimestampMillis();
+        final var proposerTimestamp = vertex.proposerTimestamp();
         final LedgerHeader ledgerHeader =
             vertex
                 .getParentHeader()
                 .getLedgerHeader()
-                .updateRoundAndTimestamp(vertex.getRound(), timestamp);
+                .updateRoundAndTimestamps(
+                    vertex.getRound(), consensusParentRoundTimestamp, proposerTimestamp);
 
         return Optional.of(
             new ExecutedVertex(
-                vertex,
+                vertexWithHash,
                 ledgerHeader,
                 vertex.getTransactions().stream()
                     .<ExecutedTransaction>map(

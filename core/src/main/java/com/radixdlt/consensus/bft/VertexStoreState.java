@@ -138,21 +138,22 @@ public final class VertexStoreState {
                         String.format("highQC=%s does not have commit", highQC)));
     var bftHeader = headers.getFirst();
 
-    if (!bftHeader.getVertexId().equals(root.getHash())) {
+    if (!bftHeader.getVertexId().equals(root.hash())) {
       throw new IllegalStateException(
           String.format("committedHeader=%s does not match rootVertex=%s", bftHeader, root));
     }
 
     var seen = new HashMap<HashCode, VertexWithHash>();
-    seen.put(root.getHash(), root);
+    seen.put(root.hash(), root);
 
-    for (var vertex : vertices) {
+    for (var vertexWithHash : vertices) {
+      final var vertex = vertexWithHash.vertex();
       if (!seen.containsKey(vertex.getParentVertexId())) {
         throw new IllegalStateException(
             String.format(
                 "Missing qc=%s {root=%s vertices=%s}", vertex.getQCToParent(), root, vertices));
       }
-      seen.put(vertex.getHash(), vertex);
+      seen.put(vertexWithHash.hash(), vertexWithHash);
     }
 
     if (seen.keySet().stream()
@@ -219,7 +220,7 @@ public final class VertexStoreState {
       var newHeaders = stateProof.get();
       var header = newHeaders.getFirst();
 
-      if (header.getRound().gt(root.getRound())) {
+      if (header.getRound().gt(root.vertex().getRound())) {
         var newRoot = idToVertex.get(header.getVertexId());
         var newVertices =
             ImmutableList.of(
@@ -242,10 +243,8 @@ public final class VertexStoreState {
   public SerializedVertexStoreState toSerialized() {
     return new SerializedVertexStoreState(
         this.highQC,
-        this.root.toSerializable(),
-        this.vertices.stream()
-            .map(VertexWithHash::toSerializable)
-            .collect(ImmutableList.toImmutableList()),
+        this.root.vertex(),
+        this.vertices.stream().map(VertexWithHash::vertex).collect(ImmutableList.toImmutableList()),
         this.highestTC.orElse(null));
   }
 

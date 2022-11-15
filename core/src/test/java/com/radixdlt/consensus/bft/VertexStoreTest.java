@@ -112,7 +112,7 @@ public class VertexStoreTest {
   private Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
 
   private static final LedgerHeader MOCKED_HEADER =
-      LedgerHeader.create(0, Round.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0);
+      LedgerHeader.create(0, Round.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0, 0);
 
   @Before
   public void setUp() {
@@ -136,7 +136,7 @@ public class VertexStoreTest {
     this.committedSender = rmock(EventDispatcher.class);
 
     this.genesisVertex = Vertex.createGenesis(MOCKED_HEADER).withId(ZeroHasher.INSTANCE);
-    this.genesisHash = genesisVertex.getHash();
+    this.genesisHash = genesisVertex.hash();
     this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, MOCKED_HEADER);
     this.underlyingVertexStore =
         VertexStoreJavaImpl.create(
@@ -182,9 +182,10 @@ public class VertexStoreTest {
                       qc,
                       round,
                       List.of(RawNotarizedTransaction.create(new byte[0])),
-                      BFTNode.random())
+                      BFTNode.random(),
+                      0)
                   .withId(hasher);
-          lastParentHeader.set(new BFTHeader(round, vertex.getHash(), MOCKED_HEADER));
+          lastParentHeader.set(new BFTHeader(round, vertex.hash(), MOCKED_HEADER));
           lastGrandParentHeader.set(parentHeader);
           lastGreatGrandParentHeader.set(grandParentHeader);
 
@@ -201,7 +202,7 @@ public class VertexStoreTest {
     vertexStoreAdapter.insertVertex(vertices.get(0));
 
     // Act
-    QuorumCertificate qc = vertices.get(1).getQCToParent();
+    QuorumCertificate qc = vertices.get(1).vertex().getQCToParent();
     vertexStoreAdapter.insertQc(qc);
 
     // Assert
@@ -266,17 +267,18 @@ public class VertexStoreTest {
                 mockedHeaderOf(vertexF),
                 mockedHeaderOf(vertexG),
                 new byte[] {0})
+            .vertex()
             .getQCToParent();
 
     // Act
     boolean success = vertexStoreAdapter.insertQc(qcForVertexG);
 
     assertTrue(success);
-    assertEquals(vertexStoreAdapter.getRoot().getHash(), vertexD.getHash());
-    assertFalse(vertexStoreAdapter.containsVertex(vertexA.getHash()));
-    assertFalse(vertexStoreAdapter.containsVertex(vertexB.getHash()));
-    assertFalse(vertexStoreAdapter.containsVertex(vertexC.getHash()));
-    assertFalse(vertexStoreAdapter.containsVertex(vertexE.getHash()));
+    assertEquals(vertexStoreAdapter.getRoot().hash(), vertexD.hash());
+    assertFalse(vertexStoreAdapter.containsVertex(vertexA.hash()));
+    assertFalse(vertexStoreAdapter.containsVertex(vertexB.hash()));
+    assertFalse(vertexStoreAdapter.containsVertex(vertexC.hash()));
+    assertFalse(vertexStoreAdapter.containsVertex(vertexE.hash()));
     assertTrue(isVertexStoreChildrenMappingTidy(underlyingVertexStore));
   }
 
@@ -290,12 +292,13 @@ public class VertexStoreTest {
       qc = rootQC;
     }
     final var round = parent.getRound().next();
-    return Vertex.create(qc, round, List.of(RawNotarizedTransaction.create(tx)), BFTNode.random())
+    return Vertex.create(
+            qc, round, List.of(RawNotarizedTransaction.create(tx)), BFTNode.random(), 0)
         .withId(hasher);
   }
 
-  private BFTHeader mockedHeaderOf(VertexWithHash vertex) {
-    return new BFTHeader(vertex.getRound(), vertex.getHash(), MOCKED_HEADER);
+  private BFTHeader mockedHeaderOf(VertexWithHash vertexWithHash) {
+    return new BFTHeader(vertexWithHash.vertex().getRound(), vertexWithHash.hash(), MOCKED_HEADER);
   }
 
   @Test
@@ -307,21 +310,21 @@ public class VertexStoreTest {
     vertexStoreAdapter.insertVertex(vertices.get(2));
 
     // Act
-    QuorumCertificate qc = vertices.get(3).getQCToParent();
+    QuorumCertificate qc = vertices.get(3).vertex().getQCToParent();
     boolean success = vertexStoreAdapter.insertQc(qc);
 
     // Assert
     assertThat(success).isTrue();
     assertThat(vertexStoreAdapter.highQC().highestQC()).isEqualTo(qc);
     assertThat(vertexStoreAdapter.highQC().highestCommittedQC()).isEqualTo(qc);
-    assertThat(vertexStoreAdapter.getVertices(vertices.get(2).getHash(), 3))
+    assertThat(vertexStoreAdapter.getVertices(vertices.get(2).hash(), 3))
         .hasValue(ImmutableList.of(vertices.get(2), vertices.get(1), vertices.get(0)));
     verify(committedSender, times(1))
         .dispatch(
             argThat(
                 u ->
                     u.committed().size() == 1
-                        && u.committed().get(0).getVertex().equals(vertices.get(0))));
+                        && u.committed().get(0).getVertexWithHash().equals(vertices.get(0))));
     assertTrue(isVertexStoreChildrenMappingTidy(underlyingVertexStore));
   }
 
@@ -344,7 +347,7 @@ public class VertexStoreTest {
     this.nextVertex.get();
 
     // Act
-    QuorumCertificate qc = this.nextVertex.get().getQCToParent();
+    QuorumCertificate qc = this.nextVertex.get().vertex().getQCToParent();
     boolean success = vertexStoreAdapter.insertQc(qc);
 
     // Assert
@@ -357,7 +360,7 @@ public class VertexStoreTest {
     final var vertices = Stream.generate(this.nextVertex).limit(4).toList();
     VertexStoreState vertexStoreState =
         VertexStoreState.create(
-            HighQC.from(vertices.get(3).getQCToParent()),
+            HighQC.from(vertices.get(3).vertex().getQCToParent()),
             vertices.get(0),
             vertices.stream().skip(1).collect(ImmutableList.toImmutableList()),
             vertexStoreAdapter.highQC().highestTC(),

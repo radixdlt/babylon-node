@@ -407,7 +407,13 @@ public final class EpochManager {
 
   public EventProcessor<BFTRebuildUpdate> bftRebuildUpdateEventProcessor() {
     return update -> {
-      if (update.getVertexStoreState().getRoot().getParentHeader().getLedgerHeader().getEpoch()
+      if (update
+              .getVertexStoreState()
+              .getRoot()
+              .vertex()
+              .getParentHeader()
+              .getLedgerHeader()
+              .getEpoch()
           != this.currentEpoch()) {
         return;
       }
