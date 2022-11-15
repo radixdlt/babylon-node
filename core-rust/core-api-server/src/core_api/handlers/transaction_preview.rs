@@ -1,6 +1,8 @@
 use crate::core_api::*;
-use radix_engine::transaction::{PreviewError, PreviewResult, TransactionResult};
-use scrypto::address::Bech32Encoder;
+use radix_engine::{
+    transaction::{PreviewError, PreviewResult, TransactionResult},
+    types::Bech32Encoder,
+};
 use scrypto::prelude::*;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::{LedgerTransactionReceipt, PreviewRequest};
@@ -40,24 +42,23 @@ fn parse_preview_request(
     network: &NetworkDefinition,
     request: models::TransactionPreviewRequest,
 ) -> Result<PreviewRequest, RequestHandlingError> {
-    let manifest_blobs = request
+    let manifest_blobs: Vec<_> = request
         .blobs_hex
         .unwrap_or_default()
         .into_iter()
         .map(from_hex)
-        .collect::<Result<Vec<_>, _>>()
+        .collect::<Result<_, _>>()
         .map_err(|err| err.into_response_error("blobs"))?;
 
     let manifest = manifest::compile(&request.manifest, network, manifest_blobs)
         .map_err(|err| client_error(format!("Invalid manifest - {:?}", err)))?;
 
-    let signer_public_keys = request
+    let signer_public_keys: Vec<_> = request
         .signer_public_keys
         .into_iter()
-        .map(|pk| {
-            extract_api_public_key(pk).map_err(|err| err.into_response_error("signer_public_keys"))
-        })
-        .collect::<Result<Vec<PublicKey>, RequestHandlingError>>()?;
+        .map(|pk| extract_api_public_key(pk))
+        .collect::<Result<_, _>>()
+        .map_err(|err| err.into_response_error("signer_public_keys"))?;
 
     Ok(PreviewRequest {
         manifest,
@@ -141,7 +142,7 @@ fn to_api_response(
             receipt: Box::new(models::TransactionReceipt {
                 status: models::TransactionStatus::Rejected,
                 fee_summary: Box::new(to_api_fee_summary(receipt.execution.fee_summary)),
-                state_updates: Box::new(models::StateUpdates::default()),
+                state_updates: Box::default(),
                 output: None,
                 error_message: Some(format!("{:?}", reject_result)),
             }),
