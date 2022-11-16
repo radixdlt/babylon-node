@@ -240,7 +240,7 @@ public class DifferentTimestampsCauseTimeoutTest {
     var txns = v.getTransactions();
     var proposer = v.getProposer();
 
-    return Vertex.create(mutateQC(qc, destination), round, txns, proposer, 0);
+    return Vertex.create(mutateQC(qc, destination), round, txns, proposer, v.proposerTimestamp());
   }
 
   private QuorumCertificate mutateQC(QuorumCertificate qc, int destination) {
