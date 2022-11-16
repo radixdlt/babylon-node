@@ -96,7 +96,7 @@ jobs:
       - name: Update Postman's Core API collection from the spec
         run: |
           npx @apideck/portman@1.18.1 -l core-rust/core-api-server/core-api-schema.yaml \
-            --postmanUid ${{env.core_api_collection_id}} --syncPostman true --envFile .env
+            --postmanUid ${{env.core_api_collection_id}} --syncPostman true --envFile .env --ignoreCircularRefs true
       - name: Download the Core API collection
         run: |
           curl -X GET -H "X-API-KEY:${{secrets.POSTMAN_API_TOKEN}}" https://api.getpostman.com/collections/${{env.core_api_collection_id}} > tmp.core.collection.json
