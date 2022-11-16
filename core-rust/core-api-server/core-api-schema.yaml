@@ -2192,6 +2192,7 @@ components:
         - version
         - network
         - network_hrp_suffix
+        - address_types
         - well_known_addresses
       properties:
         version:
@@ -2210,6 +2211,10 @@ components:
         network_hrp_suffix:
           type: string
           description: The network suffix used for Bech32m HRPs used for addressing.
+        address_types:
+          type: array
+          items:
+            $ref: "#/components/schemas/AddressType"
         well_known_addresses:
           type: object
           description: Key addresses for this network.
@@ -2230,6 +2235,39 @@ components:
               type: string
             xrd:
               type: string
+    AddressType:
+      type: object
+      required:
+        - hrp_prefix
+        - subtype
+        - entity_type
+        - address_byte_prefix
+        - address_byte_length
+      properties:
+        subtype:
+          type: string
+          enum:
+            - Resource
+            - Package
+            - NormalComponent
+            - AccountComponent
+            - EcdsaSecp256k1VirtualAccountComponent
+            - EddsaEd25519VirtualAccountComponent
+            - EpochManager
+        hrp_prefix:
+          type: string
+        entity_type:
+          $ref: "#/components/schemas/EntityType"
+        address_byte_prefix:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+        address_byte_length:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
 ###################################
 # REQUEST: /status/network-status #
 ###################################
