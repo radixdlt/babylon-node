@@ -170,9 +170,11 @@ pub fn to_api_ledger_transaction(
 ) -> Result<models::LedgerTransaction, MappingError> {
     Ok(match ledger_transaction {
         LedgerTransaction::User(tx) => models::LedgerTransaction::UserLedgerTransaction {
+            payload_hex: to_hex(ledger_transaction.create_payload()),
             notarized_transaction: Box::new(to_api_notarized_transaction(tx, network)?),
         },
         LedgerTransaction::Validator(tx) => models::LedgerTransaction::ValidatorLedgerTransaction {
+            payload_hex: to_hex(ledger_transaction.create_payload()),
             validator_transaction: Box::new(to_api_validator_transaction(tx, network)?),
         },
     })

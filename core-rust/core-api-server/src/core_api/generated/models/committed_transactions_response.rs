@@ -13,26 +13,26 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct CommittedTransactionsResponse {
-    /// An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response
-    #[serde(rename = "from_state_version")]
-    pub from_state_version: i64,
-    /// An integer between `1` and `10^13`, giving the final (resultant) state version in the returned response
-    #[serde(rename = "to_state_version")]
-    pub to_state_version: i64,
-    /// An integer between `1` and `10^13`, giving the maximum state version currently committed
-    #[serde(rename = "max_state_version")]
-    pub max_state_version: i64,
+    /// If present, an integer between `1` and `10^13`, giving the first (resultant) state version in the returned response. If not present, this indicates that the requested start is off the end of the committed ledger. 
+    #[serde(rename = "from_state_version", skip_serializing_if = "Option::is_none")]
+    pub from_state_version: Option<i64>,
+    /// An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.
+    #[serde(rename = "max_ledger_state_version")]
+    pub max_ledger_state_version: i64,
+    /// An integer between `0` and `10000`, giving the total count of transactions in the returned response
+    #[serde(rename = "count")]
+    pub count: i32,
     /// A committed transactions list starting from the `from_state_version` (inclusive).
     #[serde(rename = "transactions")]
     pub transactions: Vec<crate::core_api::generated::models::CommittedTransaction>,
 }
 
 impl CommittedTransactionsResponse {
-    pub fn new(from_state_version: i64, to_state_version: i64, max_state_version: i64, transactions: Vec<crate::core_api::generated::models::CommittedTransaction>) -> CommittedTransactionsResponse {
+    pub fn new(max_ledger_state_version: i64, count: i32, transactions: Vec<crate::core_api::generated::models::CommittedTransaction>) -> CommittedTransactionsResponse {
         CommittedTransactionsResponse {
-            from_state_version,
-            to_state_version,
-            max_state_version,
+            from_state_version: None,
+            max_ledger_state_version,
+            count,
             transactions,
         }
     }

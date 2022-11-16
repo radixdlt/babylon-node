@@ -2765,9 +2765,13 @@ components:
       type: object
       required:
         - type
+        - payload_hex
       properties:
         type:
           $ref: "#/components/schemas/LedgerTransactionType"
+        payload_hex:
+          type: string
+          description: The hex-encoded full ledger transaction payload
     UserLedgerTransaction:
       allOf:
         - $ref: "#/components/schemas/LedgerTransactionBase"

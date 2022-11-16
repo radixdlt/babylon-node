@@ -15,14 +15,18 @@
 pub struct UserLedgerTransaction {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::LedgerTransactionType,
+    /// The hex-encoded full ledger transaction payload
+    #[serde(rename = "payload_hex")]
+    pub payload_hex: String,
     #[serde(rename = "notarized_transaction")]
     pub notarized_transaction: Box<crate::core_api::generated::models::NotarizedTransaction>,
 }
 
 impl UserLedgerTransaction {
-    pub fn new(_type: crate::core_api::generated::models::LedgerTransactionType, notarized_transaction: crate::core_api::generated::models::NotarizedTransaction) -> UserLedgerTransaction {
+    pub fn new(_type: crate::core_api::generated::models::LedgerTransactionType, payload_hex: String, notarized_transaction: crate::core_api::generated::models::NotarizedTransaction) -> UserLedgerTransaction {
         UserLedgerTransaction {
             _type,
+            payload_hex,
             notarized_transaction: Box::new(notarized_transaction),
         }
     }
