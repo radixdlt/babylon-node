@@ -56,7 +56,7 @@ fn parse_preview_request(
     let signer_public_keys: Vec<_> = request
         .signer_public_keys
         .into_iter()
-        .map(|pk| extract_api_public_key(pk))
+        .map(extract_api_public_key)
         .collect::<Result<_, _>>()
         .map_err(|err| err.into_response_error("signer_public_keys"))?;
 

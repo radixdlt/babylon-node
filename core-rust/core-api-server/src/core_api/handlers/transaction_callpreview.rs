@@ -33,7 +33,7 @@ pub(crate) async fn handle_transaction_callpreview(
 
     let call_target = request
         .target
-        .ok_or_else(|| client_error(format!("Missing target from request")))?;
+        .ok_or_else(|| client_error("Missing target from request".to_string()))?;
 
     let requested_call = match call_target {
         TransactionCallPreviewRequestTarget::BlueprintFunctionIdentifier {

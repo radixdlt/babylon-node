@@ -73,7 +73,6 @@ use crate::{
 };
 use prometheus::core::Collector;
 use prometheus::{IntCounter, IntCounterVec, IntGauge, Registry};
-use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
 use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::fee::SystemLoanFeeReserve;
 use radix_engine::state_manager::StagedSubstateStoreManager;
@@ -85,6 +84,7 @@ use radix_engine::transaction::{
 use radix_engine::wasm::{
     DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
 };
+use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
 use scrypto::engine::types::{GlobalAddress, RENodeId};
 use scrypto::prelude::*;
 use std::collections::HashMap;
