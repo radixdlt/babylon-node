@@ -3,7 +3,7 @@ name: Sync OpenAPI specs with Postman
 on:
   push:
     branches:
-    - fix/portman-circular-refs
+    - main
   workflow_dispatch:
     inputs:
       network_name:
