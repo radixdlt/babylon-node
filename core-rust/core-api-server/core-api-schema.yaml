@@ -2729,8 +2729,9 @@ components:
     CommittedTransactionsResponse:
       type: object
       required:
-        - max_ledger_state_version
+        - from_state_version
         - count
+        - max_ledger_state_version
         - transactions
       properties:
         from_state_version:
@@ -2739,20 +2740,20 @@ components:
           minimum: 1
           maximum: 100000000000000
           description: |
-            If present, an integer between `1` and `10^13`, giving the first (resultant) state version in the returned response.
-            If not present, this indicates that the requested start is off the end of the committed ledger.
-        max_ledger_state_version:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 100000000000000
-          description: An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.
+            An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response (if any).
+            This matches the `from_state_version` in the request.
         count:
           type: integer
           format: int32
           minimum: 0
           maximum: 10000
           description: An integer between `0` and `10000`, giving the total count of transactions in the returned response
+        max_ledger_state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.
         transactions:
           description: A committed transactions list starting from the `from_state_version` (inclusive).
           type: array

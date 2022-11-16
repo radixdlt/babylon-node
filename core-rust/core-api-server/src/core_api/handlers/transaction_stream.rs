@@ -63,7 +63,7 @@ fn handle_transaction_stream_internal(
 
     if max_state_version < from_state_version {
         return Ok(models::CommittedTransactionsResponse {
-            from_state_version: None,
+            from_state_version: to_api_state_version(from_state_version)?,
             count: 0,
             max_ledger_state_version: to_api_state_version(max_state_version)?,
             transactions: vec![],
@@ -138,7 +138,7 @@ fn handle_transaction_stream_internal(
     };
 
     Ok(models::CommittedTransactionsResponse {
-        from_state_version: Some(to_api_state_version(start_state_version)?),
+        from_state_version: to_api_state_version(start_state_version)?,
         count,
         max_ledger_state_version: to_api_state_version(max_state_version)?,
         transactions: api_txns,
