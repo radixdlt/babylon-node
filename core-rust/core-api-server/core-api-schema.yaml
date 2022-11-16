@@ -325,12 +325,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-        '404':
-          description: Not found error - if you request transactions past the end of the currently committed stream 
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
         '500':
           description: Server error
           content:
@@ -2697,9 +2691,8 @@ components:
     CommittedTransactionsResponse:
       type: object
       required:
-        - from_state_version
-        - to_state_version
-        - max_state_version
+        - max_ledger_state_version
+        - count
         - transactions
       properties:
         from_state_version:
@@ -2707,19 +2700,21 @@ components:
           format: int64
           minimum: 1
           maximum: 100000000000000
-          description: An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response
-        to_state_version:
+          description: |
+            If present, an integer between `1` and `10^13`, giving the first (resultant) state version in the returned response.
+            If not present, this indicates that the requested start is off the end of the committed ledger.
+        max_ledger_state_version:
           type: integer
           format: int64
           minimum: 1
           maximum: 100000000000000
-          description: An integer between `1` and `10^13`, giving the final (resultant) state version in the returned response
-        max_state_version:
+          description: An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.
+        count:
           type: integer
-          format: int64
-          minimum: 1
-          maximum: 100000000000000
-          description: An integer between `1` and `10^13`, giving the maximum state version currently committed
+          format: int32
+          minimum: 0
+          maximum: 10000
+          description: An integer between `0` and `10000`, giving the total count of transactions in the returned response
         transactions:
           description: A committed transactions list starting from the `from_state_version` (inclusive).
           type: array

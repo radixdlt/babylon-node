@@ -26,6 +26,8 @@ pub(crate) async fn handle_transaction_stream(
     core_api_read_handler(state, request, handle_transaction_stream_internal)
 }
 
+const MAX_TXN_COUNT_PER_REQUEST: u16 = 10000;
+
 #[tracing::instrument(err(Debug), skip(state_manager))]
 fn handle_transaction_stream_internal(
     state_manager: &ActualStateManager,
@@ -45,6 +47,13 @@ fn handle_transaction_stream_internal(
         return Err(client_error("limit must be positive"));
     }
 
+    if limit > MAX_TXN_COUNT_PER_REQUEST.into() {
+        return Err(client_error(&format!(
+            "limit must <= {}",
+            MAX_TXN_COUNT_PER_REQUEST
+        )));
+    }
+
     let state_version_at_limit: u64 = from_state_version
         .checked_add(limit)
         .and_then(|v| v.checked_sub(1))
@@ -53,10 +62,12 @@ fn handle_transaction_stream_internal(
     let max_state_version = state_manager.store.max_state_version();
 
     if max_state_version < from_state_version {
-        return Err(not_found_error(format!(
-            "The current max state version is {} but you requested from {}",
-            max_state_version, from_state_version
-        )));
+        return Ok(models::CommittedTransactionsResponse {
+            from_state_version: None,
+            count: 0,
+            max_ledger_state_version: to_api_state_version(max_state_version)?,
+            transactions: vec![],
+        });
     }
 
     let up_to_state_version_inclusive = cmp::min(state_version_at_limit, max_state_version);
@@ -116,10 +127,20 @@ fn handle_transaction_stream_internal(
         from_state_version
     };
 
+    let count: i32 = {
+        let transaction_count = api_txns.len();
+        if transaction_count > MAX_TXN_COUNT_PER_REQUEST.into() {
+            return Err(server_error("Too many transactions were loaded somehow"));
+        }
+        transaction_count
+            .try_into()
+            .map_err(|_| server_error("Unexpected error mapping small usize to i32"))?
+    };
+
     Ok(models::CommittedTransactionsResponse {
-        from_state_version: to_api_state_version(start_state_version)?,
-        to_state_version: to_api_state_version(up_to_state_version_inclusive)?,
-        max_state_version: to_api_state_version(max_state_version)?,
+        from_state_version: Some(to_api_state_version(start_state_version)?),
+        count,
+        max_ledger_state_version: to_api_state_version(max_state_version)?,
         transactions: api_txns,
     })
 }
