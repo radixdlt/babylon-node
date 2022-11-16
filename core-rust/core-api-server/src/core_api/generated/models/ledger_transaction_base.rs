@@ -15,12 +15,16 @@
 pub struct LedgerTransactionBase {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::LedgerTransactionType,
+    /// The hex-encoded full ledger transaction payload
+    #[serde(rename = "payload_hex")]
+    pub payload_hex: String,
 }
 
 impl LedgerTransactionBase {
-    pub fn new(_type: crate::core_api::generated::models::LedgerTransactionType) -> LedgerTransactionBase {
+    pub fn new(_type: crate::core_api::generated::models::LedgerTransactionType, payload_hex: String) -> LedgerTransactionBase {
         LedgerTransactionBase {
             _type,
+            payload_hex,
         }
     }
 }

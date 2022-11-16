@@ -325,12 +325,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-        '404':
-          description: Not found error - if you request transactions past the end of the currently committed stream 
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
         '500':
           description: Server error
           content:
@@ -2198,6 +2192,7 @@ components:
         - version
         - network
         - network_hrp_suffix
+        - address_types
         - well_known_addresses
       properties:
         version:
@@ -2216,6 +2211,10 @@ components:
         network_hrp_suffix:
           type: string
           description: The network suffix used for Bech32m HRPs used for addressing.
+        address_types:
+          type: array
+          items:
+            $ref: "#/components/schemas/AddressType"
         well_known_addresses:
           type: object
           description: Key addresses for this network.
@@ -2236,6 +2235,39 @@ components:
               type: string
             xrd:
               type: string
+    AddressType:
+      type: object
+      required:
+        - hrp_prefix
+        - subtype
+        - entity_type
+        - address_byte_prefix
+        - address_byte_length
+      properties:
+        subtype:
+          type: string
+          enum:
+            - Resource
+            - Package
+            - NormalComponent
+            - AccountComponent
+            - EcdsaSecp256k1VirtualAccountComponent
+            - EddsaEd25519VirtualAccountComponent
+            - EpochManager
+        hrp_prefix:
+          type: string
+        entity_type:
+          $ref: "#/components/schemas/EntityType"
+        address_byte_prefix:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+        address_byte_length:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
 ###################################
 # REQUEST: /status/network-status #
 ###################################
@@ -2698,8 +2730,8 @@ components:
       type: object
       required:
         - from_state_version
-        - to_state_version
-        - max_state_version
+        - count
+        - max_ledger_state_version
         - transactions
       properties:
         from_state_version:
@@ -2707,19 +2739,21 @@ components:
           format: int64
           minimum: 1
           maximum: 100000000000000
-          description: An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response
-        to_state_version:
+          description: |
+            An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response (if any).
+            This matches the `from_state_version` in the request.
+        count:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 10000
+          description: An integer between `0` and `10000`, giving the total count of transactions in the returned response
+        max_ledger_state_version:
           type: integer
           format: int64
           minimum: 1
           maximum: 100000000000000
-          description: An integer between `1` and `10^13`, giving the final (resultant) state version in the returned response
-        max_state_version:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 100000000000000
-          description: An integer between `1` and `10^13`, giving the maximum state version currently committed
+          description: An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.
         transactions:
           description: A committed transactions list starting from the `from_state_version` (inclusive).
           type: array
@@ -2770,9 +2804,13 @@ components:
       type: object
       required:
         - type
+        - payload_hex
       properties:
         type:
           $ref: "#/components/schemas/LedgerTransactionType"
+        payload_hex:
+          type: string
+          description: The hex-encoded full ledger transaction payload
     UserLedgerTransaction:
       allOf:
         - $ref: "#/components/schemas/LedgerTransactionBase"

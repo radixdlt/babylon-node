@@ -13,26 +13,26 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct CommittedTransactionsResponse {
-    /// An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response
+    /// An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response (if any). This matches the `from_state_version` in the request. 
     #[serde(rename = "from_state_version")]
     pub from_state_version: i64,
-    /// An integer between `1` and `10^13`, giving the final (resultant) state version in the returned response
-    #[serde(rename = "to_state_version")]
-    pub to_state_version: i64,
-    /// An integer between `1` and `10^13`, giving the maximum state version currently committed
-    #[serde(rename = "max_state_version")]
-    pub max_state_version: i64,
+    /// An integer between `0` and `10000`, giving the total count of transactions in the returned response
+    #[serde(rename = "count")]
+    pub count: i32,
+    /// An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.
+    #[serde(rename = "max_ledger_state_version")]
+    pub max_ledger_state_version: i64,
     /// A committed transactions list starting from the `from_state_version` (inclusive).
     #[serde(rename = "transactions")]
     pub transactions: Vec<crate::core_api::generated::models::CommittedTransaction>,
 }
 
 impl CommittedTransactionsResponse {
-    pub fn new(from_state_version: i64, to_state_version: i64, max_state_version: i64, transactions: Vec<crate::core_api::generated::models::CommittedTransaction>) -> CommittedTransactionsResponse {
+    pub fn new(from_state_version: i64, count: i32, max_ledger_state_version: i64, transactions: Vec<crate::core_api::generated::models::CommittedTransaction>) -> CommittedTransactionsResponse {
         CommittedTransactionsResponse {
             from_state_version,
-            to_state_version,
-            max_state_version,
+            count,
+            max_ledger_state_version,
             transactions,
         }
     }

@@ -15,14 +15,18 @@
 pub struct ValidatorLedgerTransaction {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::LedgerTransactionType,
+    /// The hex-encoded full ledger transaction payload
+    #[serde(rename = "payload_hex")]
+    pub payload_hex: String,
     #[serde(rename = "validator_transaction")]
     pub validator_transaction: Option<crate::core_api::generated::models::ValidatorTransaction>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl ValidatorLedgerTransaction {
-    pub fn new(_type: crate::core_api::generated::models::LedgerTransactionType, validator_transaction: crate::core_api::generated::models::ValidatorTransaction) -> ValidatorLedgerTransaction {
+    pub fn new(_type: crate::core_api::generated::models::LedgerTransactionType, payload_hex: String, validator_transaction: crate::core_api::generated::models::ValidatorTransaction) -> ValidatorLedgerTransaction {
         ValidatorLedgerTransaction {
             _type,
+            payload_hex,
             validator_transaction: Option::Some(validator_transaction),
         }
     }

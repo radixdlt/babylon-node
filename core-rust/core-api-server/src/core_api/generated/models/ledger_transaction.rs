@@ -15,11 +15,17 @@
 pub enum LedgerTransaction {
     #[serde(rename="User")]
     UserLedgerTransaction {
+        /// The hex-encoded full ledger transaction payload
+        #[serde(rename = "payload_hex")]
+        payload_hex: String,
         #[serde(rename = "notarized_transaction")]
         notarized_transaction: Box<crate::core_api::generated::models::NotarizedTransaction>,
     },
     #[serde(rename="Validator")]
     ValidatorLedgerTransaction {
+        /// The hex-encoded full ledger transaction payload
+        #[serde(rename = "payload_hex")]
+        payload_hex: String,
         #[serde(rename = "validator_transaction")]
         validator_transaction: Box<crate::core_api::generated::models::ValidatorTransaction>,
     },

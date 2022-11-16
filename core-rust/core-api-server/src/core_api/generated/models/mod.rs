@@ -1,3 +1,5 @@
+pub mod address_type;
+pub use self::address_type::AddressType;
 pub mod all_of_dynamic_auth_rule;
 pub use self::all_of_dynamic_auth_rule::AllOfDynamicAuthRule;
 pub mod all_of_dynamic_proof_rule;
