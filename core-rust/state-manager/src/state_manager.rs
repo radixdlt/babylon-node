@@ -592,7 +592,13 @@ where
 
         let mut parent_accumulator_hash = self.store.get_top_accumulator_hash();
 
-        for prepared in prepare_request.already_prepared_payloads {
+        let already_prepared_payloads: Vec<_> = prepare_request
+            .prepared_vertices
+            .into_iter()
+            .flat_map(|v| v.transaction_payloads)
+            .collect();
+
+        for prepared in already_prepared_payloads {
             let parsed_transaction =
                 LedgerTransactionValidator::parse_unvalidated_transaction_from_slice(&prepared)
                     .expect("Already prepared transactions should be decodeable");
