@@ -67,13 +67,12 @@ package com.radixdlt.statecomputer.commit;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 
 public record PrepareRequest(
-    List<RawLedgerTransaction> previous,
+    List<PreviousVertex> previous,
     List<RawNotarizedTransaction> proposed,
     UInt64 epoch,
     UInt64 roundNumber,

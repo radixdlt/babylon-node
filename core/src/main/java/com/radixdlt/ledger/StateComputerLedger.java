@@ -128,7 +128,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         List<ExecutedTransaction> executedTransactions);
 
     StateComputerResult prepare(
-        List<ExecutedTransaction> previous,
+        List<ExecutedVertex> previous,
         List<RawNotarizedTransaction> proposedTransactions,
         RoundDetails roundDetails);
 
@@ -245,10 +245,11 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       var matched = false;
       var committedAccumulatorHash =
           this.currentLedgerHeader.getAccumulatorState().getAccumulatorHash();
+      var verticesInExtension = new ArrayList<ExecutedVertex>();
       for (var previousVertex : previous) {
         var previousVertexParentAccumulatorHash =
             previousVertex
-                .getVertex()
+                .vertex()
                 .getParentHeader()
                 .getLedgerHeader()
                 .getAccumulatorState()
@@ -256,16 +257,17 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         if (previousVertexParentAccumulatorHash.equals(committedAccumulatorHash)) {
           matched = true;
         }
+        if (matched) {
+          verticesInExtension.add(previousVertex);
+        }
       }
       if (previous.size() > 0 && !matched) {
-        throw new RuntimeException("Committed accumulator didn't match a vertex top");
+        throw new RuntimeException("Committed accumulator didn't match the top of a vertex");
       }
-
-      final var executedTransactions = executedTransactionsOptional.get();
 
       final StateComputerResult result =
           stateComputer.prepare(
-              executedTransactions,
+              verticesInExtension,
               vertex.getTransactions(),
               RoundDetails.fromVertex(vertexWithHash));
 

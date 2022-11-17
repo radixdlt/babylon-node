@@ -114,7 +114,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 
   @Override
   public StateComputerResult prepare(
-      List<ExecutedTransaction> previous,
+      List<ExecutedVertex> previousVertices,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     if (roundDetails.roundNumber() >= epochMaxRound.number()) {
@@ -127,7 +127,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
               roundDetails.epoch() + 1,
               validatorSetMapping.apply(roundDetails.epoch() + 1).getValidators()));
     } else {
-      return stateComputer.prepare(previous, proposedTransactions, roundDetails);
+      return stateComputer.prepare(previousVertices, proposedTransactions, roundDetails);
     }
   }
 

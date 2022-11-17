@@ -64,6 +64,7 @@
 
 use crate::jni::mempool::JavaRawTransaction;
 use crate::transaction::UserTransactionValidator;
+use crate::PreviousVertex;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -263,9 +264,9 @@ impl From<JavaCommitRequest> for CommitRequest {
     }
 }
 
-#[derive(Debug, Decode, Encode, Categorize)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPrepareRequest {
-    pub already_prepared: Vec<JavaRawTransaction>,
+    pub prepared_vertices: Vec<JavaPreviousVertex>,
     pub proposed: Vec<JavaRawTransaction>,
     pub consensus_epoch: u64,
     pub round_number: u64,
@@ -275,10 +276,10 @@ pub struct JavaPrepareRequest {
 impl From<JavaPrepareRequest> for PrepareRequest {
     fn from(prepare_request: JavaPrepareRequest) -> Self {
         PrepareRequest {
-            already_prepared_payloads: prepare_request
-                .already_prepared
+            prepared_vertices: prepare_request
+                .prepared_vertices
                 .into_iter()
-                .map(|t| t.payload)
+                .map(|t| t.into())
                 .collect(),
             proposed_payloads: prepare_request
                 .proposed
@@ -288,6 +289,27 @@ impl From<JavaPrepareRequest> for PrepareRequest {
             consensus_epoch: prepare_request.consensus_epoch,
             round_number: prepare_request.round_number,
             proposer_timestamp_ms: prepare_request.proposer_timestamp_ms,
+        }
+    }
+}
+
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct JavaPreviousVertex {
+    pub transactions: Vec<JavaRawTransaction>,
+    pub parent_accumulator: Vec<u8>,
+    pub resultant_accumulator: Vec<u8>,
+}
+
+impl From<JavaPreviousVertex> for PreviousVertex {
+    fn from(previous_vertex: JavaPreviousVertex) -> Self {
+        PreviousVertex {
+            transaction_payloads: previous_vertex
+                .transactions
+                .into_iter()
+                .map(|v| v.payload)
+                .collect(),
+            parent_accumulator: previous_vertex.parent_accumulator,
+            resultant_accumulator: previous_vertex.resultant_accumulator,
         }
     }
 }

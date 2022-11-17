@@ -430,13 +430,20 @@ pub struct CommitRequest {
     pub vertex_store: Option<Vec<u8>>,
 }
 
-#[derive(Debug, Decode, Encode, Categorize)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareRequest {
-    pub already_prepared_payloads: Vec<Vec<u8>>,
+    pub prepared_vertices: Vec<PreviousVertex>,
     pub proposed_payloads: Vec<Vec<u8>>,
     pub consensus_epoch: u64,
     pub round_number: u64,
     pub proposer_timestamp_ms: i64,
+}
+
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct PreviousVertex {
+    pub transaction_payloads: Vec<Vec<u8>>,
+    pub parent_accumulator: Vec<u8>,
+    pub resultant_accumulator: Vec<u8>,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
