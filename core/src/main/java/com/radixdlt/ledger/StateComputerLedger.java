@@ -204,10 +204,6 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     final var vertex = vertexWithHash.vertex();
     final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
     final AccumulatorState parentAccumulatorState = parentHeader.getAccumulatorState();
-    final ImmutableList<ExecutedTransaction> prevTransactions =
-        previous.stream()
-            .flatMap(ExecutedVertex::successfulTransactions)
-            .collect(ImmutableList.toImmutableList());
 
     synchronized (lock) {
       if (this.currentLedgerHeader.getStateVersion() > parentAccumulatorState.getStateVersion()) {
@@ -228,6 +224,11 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
                 timeSupplier.currentTime()));
       }
 
+      final ImmutableList<ExecutedTransaction> prevTransactions =
+          previous.stream()
+              .flatMap(ExecutedVertex::successfulTransactions)
+              .collect(ImmutableList.toImmutableList());
+
       final var executedTransactionsOptional =
           this.verifier.verifyAndGetExtension(
               this.currentLedgerHeader.getAccumulatorState(),
@@ -239,6 +240,25 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       // Can possibly get here without maliciousness if parent vertex isn't locked by everyone else
       if (executedTransactionsOptional.isEmpty()) {
         return Optional.empty();
+      }
+
+      var matched = false;
+      var committedAccumulatorHash =
+          this.currentLedgerHeader.getAccumulatorState().getAccumulatorHash();
+      for (var previousVertex : previous) {
+        var previousVertexParentAccumulatorHash =
+            previousVertex
+                .getVertex()
+                .getParentHeader()
+                .getLedgerHeader()
+                .getAccumulatorState()
+                .getAccumulatorHash();
+        if (previousVertexParentAccumulatorHash.equals(committedAccumulatorHash)) {
+          matched = true;
+        }
+      }
+      if (previous.size() > 0 && !matched) {
+        throw new RuntimeException("Committed accumulator didn't match a vertex top");
       }
 
       final var executedTransactions = executedTransactionsOptional.get();
