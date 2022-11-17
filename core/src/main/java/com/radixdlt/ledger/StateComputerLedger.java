@@ -224,27 +224,14 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
                 timeSupplier.currentTime()));
       }
 
-      final ImmutableList<ExecutedTransaction> prevTransactions =
-          previous.stream()
-              .flatMap(ExecutedVertex::successfulTransactions)
-              .collect(ImmutableList.toImmutableList());
-
-      final var executedTransactionsOptional =
-          this.verifier.verifyAndGetExtension(
-              this.currentLedgerHeader.getAccumulatorState(),
-              prevTransactions,
-              p -> p.transaction().getPayloadHash(),
-              parentAccumulatorState);
-
-      // TODO: Write a test to get here
-      // Can possibly get here without maliciousness if parent vertex isn't locked by everyone else
-      if (executedTransactionsOptional.isEmpty()) {
-        return Optional.empty();
-      }
-
-      var matched = false;
-      var committedAccumulatorHash =
+      // It's possibly that this function is called with a list of vertices which starts with some
+      // committed vertices
+      // By matching on the accumulator, we remove the already committed vertices from the
+      // "previous" list
+      final var committedAccumulatorHash =
           this.currentLedgerHeader.getAccumulatorState().getAccumulatorHash();
+      var committedAccumulatorHasMatchedStartOfAVertex =
+          committedAccumulatorHash.equals(parentAccumulatorState.getAccumulatorHash());
       var verticesInExtension = new ArrayList<ExecutedVertex>();
       for (var previousVertex : previous) {
         var previousVertexParentAccumulatorHash =
@@ -254,15 +241,33 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
                 .getLedgerHeader()
                 .getAccumulatorState()
                 .getAccumulatorHash();
-        if (previousVertexParentAccumulatorHash.equals(committedAccumulatorHash)) {
-          matched = true;
+        if (committedAccumulatorHash.equals(previousVertexParentAccumulatorHash)) {
+          committedAccumulatorHasMatchedStartOfAVertex = true;
         }
-        if (matched) {
+        if (committedAccumulatorHasMatchedStartOfAVertex) {
           verticesInExtension.add(previousVertex);
         }
       }
-      if (previous.size() > 0 && !matched) {
-        throw new RuntimeException("Committed accumulator didn't match the top of a vertex");
+
+      if (!committedAccumulatorHasMatchedStartOfAVertex) {
+        // This could trigger if the "previous" vertices don't line up with the committed state.
+        // In other words, they don't provide a valid partial path from the committed state to the
+        // start of the proposal.
+        return Optional.empty();
+      }
+
+      // Now we verify the payload hashes of the extension match the start of the proposal
+      var extensionMatchesAccumulator =
+          this.verifier.verify(
+              this.currentLedgerHeader.getAccumulatorState(),
+              verticesInExtension.stream()
+                  .flatMap(
+                      v -> v.successfulTransactions().map(t -> t.transaction().getPayloadHash()))
+                  .collect(ImmutableList.toImmutableList()),
+              parentAccumulatorState);
+
+      if (!extensionMatchesAccumulator) {
+        return Optional.empty();
       }
 
       final StateComputerResult result =
