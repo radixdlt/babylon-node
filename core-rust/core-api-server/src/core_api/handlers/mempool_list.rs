@@ -1,19 +1,11 @@
 use crate::core_api::*;
 
-use state_manager::jni::state_manager::ActualStateManager;
-
+#[tracing::instrument(level = "debug", skip(state), err(Debug))]
 pub(crate) async fn handle_mempool_list(
-    state: Extension<CoreApiState>,
-    request: Json<models::MempoolListRequest>,
+    Extension(state): Extension<CoreApiState>,
+    Json(request): Json<models::MempoolListRequest>,
 ) -> Result<Json<models::MempoolListResponse>, RequestHandlingError> {
-    core_api_handler(state, request, handle_mempool_list_internal)
-}
-
-#[tracing::instrument(level = "debug", skip(state_manager), err(Debug))]
-fn handle_mempool_list_internal(
-    state_manager: &mut ActualStateManager,
-    request: models::MempoolListRequest,
-) -> Result<models::MempoolListResponse, RequestHandlingError> {
+    let state_manager = state.state_manager.read();
     assert_matching_network(&request.network, &state_manager.network)?;
 
     Ok(models::MempoolListResponse {
@@ -29,4 +21,5 @@ fn handle_mempool_list_internal(
             )
             .collect(),
     })
+    .map(Json)
 }

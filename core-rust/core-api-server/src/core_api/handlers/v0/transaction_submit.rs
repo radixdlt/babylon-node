@@ -1,21 +1,15 @@
+use state_manager::MempoolAddError;
+
 use crate::core_api::handlers::extract_unvalidated_transaction;
 use crate::core_api::*;
 
-use state_manager::jni::state_manager::ActualStateManager;
-use state_manager::MempoolAddError;
-
+#[tracing::instrument(level = "debug", skip(state), err(Debug))]
 pub(crate) async fn handle_v0_transaction_submit(
-    state: Extension<CoreApiState>,
-    request: Json<models::V0TransactionSubmitRequest>,
+    Extension(state): Extension<CoreApiState>,
+    Json(request): Json<models::V0TransactionSubmitRequest>,
 ) -> Result<Json<models::V0TransactionSubmitResponse>, RequestHandlingError> {
-    core_api_handler(state, request, handle_v0_transaction_submit_internal)
-}
+    let mut state_manager = state.state_manager.write();
 
-#[tracing::instrument(level = "debug", skip(state_manager), err(Debug))]
-fn handle_v0_transaction_submit_internal(
-    state_manager: &mut ActualStateManager,
-    request: models::V0TransactionSubmitRequest,
-) -> Result<models::V0TransactionSubmitResponse, RequestHandlingError> {
     let transaction = extract_unvalidated_transaction(&request.notarized_transaction_hex)
         .map_err(|err| err.into_response_error("notarized_transaction"))?;
 
@@ -32,4 +26,5 @@ fn handle_v0_transaction_submit_internal(
             Err(client_error(&format!("Rejected: {}", reason)))
         }
     }
+    .map(Json)
 }

@@ -1,24 +1,17 @@
 use crate::core_api::*;
 
-use state_manager::jni::state_manager::ActualStateManager;
-
 use state_manager::mempool::transaction_rejection_cache::RejectionReason;
 use state_manager::transaction::UserTransactionValidator;
 use state_manager::MempoolAddError;
 use transaction::model::NotarizedTransaction;
 
+#[tracing::instrument(level = "debug", skip(state), err(Debug))]
 pub(crate) async fn handle_transaction_submit(
-    state: Extension<CoreApiState>,
-    request: Json<models::TransactionSubmitRequest>,
+    Extension(state): Extension<CoreApiState>,
+    Json(request): Json<models::TransactionSubmitRequest>,
 ) -> Result<Json<models::TransactionSubmitResponse>, RequestHandlingError> {
-    core_api_handler(state, request, handle_transaction_submit_internal)
-}
+    let mut state_manager = state.state_manager.write();
 
-#[tracing::instrument(level = "debug", skip(state_manager), err(Debug))]
-fn handle_transaction_submit_internal(
-    state_manager: &mut ActualStateManager,
-    request: models::TransactionSubmitRequest,
-) -> Result<models::TransactionSubmitResponse, RequestHandlingError> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
     let notarized_transaction = extract_unvalidated_transaction(&request.notarized_transaction_hex)
@@ -48,6 +41,7 @@ fn handle_transaction_submit_internal(
             Err(client_error(format!("Rejected: {}", reason)))
         }
     }
+    .map(Json)
 }
 
 pub fn extract_unvalidated_transaction(

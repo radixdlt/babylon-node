@@ -15,17 +15,6 @@ pub(crate) fn core_api_handler_empty_request<Response>(
 }
 
 #[tracing::instrument(skip_all)]
-pub(crate) fn core_api_handler<Request, Response>(
-    Extension(state): Extension<CoreApiState>,
-    Json(request_body): Json<Request>,
-    method: impl FnOnce(&mut ActualStateManager, Request) -> Result<Response, RequestHandlingError>,
-) -> Result<Json<Response>, RequestHandlingError> {
-    let mut state_manager = state.state_manager.write();
-
-    method(&mut state_manager, request_body).map(Json)
-}
-
-#[tracing::instrument(skip_all)]
 pub(crate) fn core_api_read_handler<Request, Response>(
     Extension(state): Extension<CoreApiState>,
     Json(request_body): Json<Request>,
