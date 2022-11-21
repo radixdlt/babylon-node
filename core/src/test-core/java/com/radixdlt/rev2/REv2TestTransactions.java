@@ -69,7 +69,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.PublicKey;
 import com.radixdlt.crypto.SignatureWithPublicKey;
-import com.radixdlt.lang.Tuple;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
@@ -197,18 +196,18 @@ public final class REv2TestTransactions {
 
   public record TransactionWithIntentHash(RawNotarizedTransaction transaction, byte[] intentHash) {}
 
-  public static TransactionWithIntentHash constructValidTransactionWithIntentHash(long fromEpoch, long nonce) {
+  public static TransactionWithIntentHash constructValidTransactionWithIntentHash(
+      long fromEpoch, long nonce) {
     var intentBytes =
-            constructValidIntentBytes(
-                    NetworkDefinition.INT_TEST_NET,
-                    fromEpoch,
-                    nonce,
-                    DEFAULT_NOTARY.getPublicKey().toPublicKey());
+        constructValidIntentBytes(
+            NetworkDefinition.INT_TEST_NET,
+            fromEpoch,
+            nonce,
+            DEFAULT_NOTARY.getPublicKey().toPublicKey());
     var intentHash = HashUtils.sha256Twice(intentBytes).asBytes();
     return new TransactionWithIntentHash(
-            REv2TestTransactions.constructTransaction(intentBytes, DEFAULT_NOTARY, List.of()),
-            intentHash
-    );
+        REv2TestTransactions.constructTransaction(intentBytes, DEFAULT_NOTARY, List.of()),
+        intentHash);
   }
 
   public static RawNotarizedTransaction constructNewAccountTransaction(

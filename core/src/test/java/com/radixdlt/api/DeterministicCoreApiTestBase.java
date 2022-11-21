@@ -121,8 +121,8 @@ public abstract class DeterministicCoreApiTestBase {
                             Network.INTEGRATIONTESTNET.getId(),
                             new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
                             REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
-                            StateComputerConfig.REV2ProposerConfig.mempool(50, 1000, MempoolRelayConfig.of())
-                        ),
+                            StateComputerConfig.REV2ProposerConfig.mempool(
+                                50, 1000, MempoolRelayConfig.of())),
                         SyncRelayConfig.of(200, 10, 2000))));
     try {
       test.startAllNodes();

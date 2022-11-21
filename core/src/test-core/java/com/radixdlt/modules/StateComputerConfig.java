@@ -91,7 +91,7 @@ public sealed interface StateComputerConfig {
       REv2StateConfig stateConfig,
       REv2DatabaseConfig databaseConfig,
       REV2ProposerConfig proposerConfig,
-        boolean debugLogging) {
+      boolean debugLogging) {
     return new REv2StateComputerConfig(
         networkId, stateConfig, databaseConfig, proposerConfig, debugLogging);
   }
