@@ -64,6 +64,15 @@
 
 package com.radixdlt.consensus;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -86,21 +95,11 @@ import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt256;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.stream.Stream;
-
-import static com.radixdlt.utils.TypedMocks.rmock;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.junit.Before;
+import org.junit.Test;
 
 public final class PacemakerGenerateProposalTest {
   private BFTNode self;
@@ -130,10 +129,12 @@ public final class PacemakerGenerateProposalTest {
     this.validator1 = BFTNode.random();
     this.validator2 = BFTNode.random();
     this.systemCounters = new SystemCountersImpl();
-    this.validatorSet = BFTValidatorSet.from(Stream.of(
-      BFTValidator.from(validator1, UInt256.ONE),
-      BFTValidator.from(validator2, UInt256.ONE),
-      BFTValidator.from(self, UInt256.ONE)));
+    this.validatorSet =
+        BFTValidatorSet.from(
+            Stream.of(
+                BFTValidator.from(validator1, UInt256.ONE),
+                BFTValidator.from(validator2, UInt256.ONE),
+                BFTValidator.from(self, UInt256.ONE)));
     this.vertexStore = mock(VertexStoreAdapter.class);
     this.safetyRules = mock(SafetyRules.class);
     this.timeoutDispatcher = rmock(EventDispatcher.class);
@@ -145,26 +146,28 @@ public final class PacemakerGenerateProposalTest {
     this.roundLeaderFailureDispatcher = rmock(EventDispatcher.class);
     this.hasher = new Sha256Hasher(DefaultSerialization.getInstance());
     this.timeSupplier = mock(TimeSupplier.class);
-    this.initialRoundUpdate = RoundUpdate.create(Round.of(1L), mock(HighQC.class), validator1, validator2);
+    this.initialRoundUpdate =
+        RoundUpdate.create(Round.of(1L), mock(HighQC.class), validator1, validator2);
     this.secureRandom = new SecureRandom();
 
-    this.sut = new Pacemaker(
-      self,
-      validatorSet,
-      vertexStore,
-      safetyRules,
-      timeoutDispatcher,
-      timeoutSender,
-      timeoutCalculator,
-      proposalGenerator,
-      proposalDispatcher,
-      voteDispatcher,
-      roundLeaderFailureDispatcher,
-      hasher,
-      timeSupplier,
-      initialRoundUpdate,
-      systemCounters,
-      secureRandom);
+    this.sut =
+        new Pacemaker(
+            self,
+            validatorSet,
+            vertexStore,
+            safetyRules,
+            timeoutDispatcher,
+            timeoutSender,
+            timeoutCalculator,
+            proposalGenerator,
+            proposalDispatcher,
+            voteDispatcher,
+            roundLeaderFailureDispatcher,
+            hasher,
+            timeSupplier,
+            initialRoundUpdate,
+            systemCounters,
+            secureRandom);
   }
 
   @Test
@@ -180,10 +183,9 @@ public final class PacemakerGenerateProposalTest {
 
     sut.processRoundUpdate(RoundUpdate.create(Round.of(2L), highQc, self, validator1));
 
-    verify(this.safetyRules, times(1)).signProposal(
-      argThat(v -> v.vertex().proposerTimestamp() == currentTimestamp),
-      any(),
-      any());
+    verify(this.safetyRules, times(1))
+        .signProposal(
+            argThat(v -> v.vertex().proposerTimestamp() == currentTimestamp), any(), any());
   }
 
   @Test
@@ -199,10 +201,9 @@ public final class PacemakerGenerateProposalTest {
 
     sut.processRoundUpdate(RoundUpdate.create(Round.of(2L), highQc, self, validator1));
 
-    verify(this.safetyRules, times(1)).signProposal(
-      argThat(v -> v.vertex().proposerTimestamp() > previousTimestamp),
-      any(),
-      any());
+    verify(this.safetyRules, times(1))
+        .signProposal(
+            argThat(v -> v.vertex().proposerTimestamp() > previousTimestamp), any(), any());
   }
 
   private HighQC createMockHighQc(long previousTimestamp) {

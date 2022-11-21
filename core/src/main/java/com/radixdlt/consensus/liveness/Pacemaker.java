@@ -240,10 +240,10 @@ public final class Pacemaker {
     final var now = timeSupplier.currentTime();
     final var previousProposerTimestamp =
         highestQC.getProposedHeader().getLedgerHeader().proposerTimestamp();
-    if (now > previousProposerTimestamp) {
-      /* All good, previous timestamp is in the past. Use local system time. */
+    if (now >= previousProposerTimestamp) {
+      /* All good, previous timestamp is smaller than (or equal to) our system time, so we can just use it  */
       return now;
-    } else if (now < previousProposerTimestamp) {
+    } else /* now < previousProposerTimestamp */ {
       /* Our local system time is lagging or the quorum has agreed on a rushing timestamp in the previous round.
        * We can't use our local time because the proposal would be rejected.
        * To get as close to the real time (from our perspective) as possible, we simply increment the
@@ -257,30 +257,10 @@ public final class Pacemaker {
                 + "This may (but doesn't have to) indicate system clock malfunction. "
                 + "Consider further investigation if this log message appears on a regular basis.");
       }
-
       systemCounters.increment(CounterType.BFT_PACEMAKER_PROPOSALS_WITH_SUBSTITUTE_TIMESTAMP);
       final var randomOffset =
           this.secureRandom.nextInt(PROPOSAL_SUBSTITUTE_TIMESTAMP_MAX_OFFSET_MS);
       return previousProposerTimestamp + randomOffset;
-    } else /* now == previousProposerTimestamp */ {
-      /* This is a bit of a hack for tests, but it doesn't influence a real-world behaviour.
-      If the previous timestamp is exactly the same as our local time, the simplest thing
-      to do is to just wait a single millisecond. The latency of a real network is surely more than 1ms
-      so the comment in the above `else if` statement doesn't apply here.
-      The hack is needed because the deterministic (local) network can run so fast that
-      two consecutive `generateProposal` calls (for distinct simulated validators) can happen within
-      less than a millisecond. Merely returning `previousProposerTimestamp + 1` (without the actual delay)
-      won't work either because then the validators keep increasing the timestamps (rushing, from their point of view)
-      ad infinitum, which can lead to proposals being rejected at some point (due to exceeding the acceptable limits). */
-      long nowButABitLater;
-      while ((nowButABitLater = timeSupplier.currentTime()) <= now) {
-        try {
-          Thread.sleep(1L);
-        } catch (InterruptedException e) {
-          // no-op
-        }
-      }
-      return nowButABitLater;
     }
   }
 

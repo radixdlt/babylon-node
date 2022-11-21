@@ -90,9 +90,10 @@ public final class ProposerTimestampChecker implements TestInvariant {
               for (ExecutedVertex v : e.committed()) {
                 final var proposerTimestamp = v.getLedgerHeader().proposerTimestamp();
                 final var prevTimestamp = v.vertex().parentLedgerHeader().proposerTimestamp();
-                if (proposerTimestamp <= prevTimestamp) {
+                if (proposerTimestamp < prevTimestamp) {
                   return Observable.just(
-                      new TestInvariantError("Proposer timestamp hasn't increased"));
+                      new TestInvariantError(
+                          "Proposer timestamp is smaller than the previous one"));
                 }
               }
               return Observable.empty();

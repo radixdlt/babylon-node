@@ -190,7 +190,8 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
       return;
     }
 
-    systemCounters.increment(SystemCounters.CounterType.BFT_VERIFIER_SUCCESSFULLY_VERIFIED_PROPOSALS);
+    systemCounters.increment(
+        SystemCounters.CounterType.BFT_VERIFIER_SUCCESSFULLY_VERIFIED_PROPOSALS);
     forwardTo.processProposal(proposal);
   }
 
