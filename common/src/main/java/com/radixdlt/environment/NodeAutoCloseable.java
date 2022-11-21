@@ -64,10 +64,7 @@
 
 package com.radixdlt.environment;
 
-/**
- * Wrapper interface around AutoCloseable so that we don't compile warnings regarding auto-closeable
- * resource that could throw InterruptedException
- */
+/** Wrapper interface around AutoCloseable - these are tidied up when a test node is shut down */
 public interface NodeAutoCloseable extends AutoCloseable {
   @Override
   void close();

@@ -7,7 +7,8 @@ logger = logging.getLogger()
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', level=logging.INFO)
 
 CORE_API_SPEC_LOCATION = '../core-api-schema.yaml'
-CORE_API_GENERATED_DESTINATION = '../src/core_api/generated/'
+CORE_API_RUST_GENERATED_DESTINATION = '../src/core_api/generated/'
+CORE_API_JAVA_GENERATED_DESTINATION = '../../../core/src/test-core/java/com/radixdlt/api/core/generated/'
 
 OPENAPI_GENERATION_FOLDER='.'
 OPENAPI_TEMP_GENERATION_FOLDER='./temp'
@@ -48,7 +49,7 @@ def run(command, cwd = '.', should_log = False):
     if (should_log): logging.debug('Response: %s', stdout)
     return stdout
 
-def generate_models(schema_file, tmp_client_folder, out_location):
+def generate_rust_models(schema_file, tmp_client_folder, out_location):
     safe_os_remove(out_location, True)
     # See https://openapi-generator.tech/docs/generators/rust/
     run(['java', '-jar', OPENAPI_GENERATOR_FIXED_VERSION_JAR, 'generate',
@@ -57,7 +58,7 @@ def generate_models(schema_file, tmp_client_folder, out_location):
          '-o', tmp_client_folder,
     ], should_log=False)
 
-    logging.info("Successfully generated.")
+    logging.info("Successfully generated rust models.")
 
     rust_code_root = os.path.join(tmp_client_folder, 'src')
     rust_models = os.path.join(rust_code_root, 'models')
@@ -124,7 +125,28 @@ def generate_models(schema_file, tmp_client_folder, out_location):
         fix_for_enum_not_implementing_default(file_path, "TransactionReadcallRequestTarget")
         fix_for_enum_not_implementing_default(file_path, "ValidatorTransaction")
 
-    logging.info("Successfully fixed up.")
+    logging.info("Successfully fixed up rust models.")
+
+def generate_java_models(schema_file, tmp_client_folder, out_location):
+    safe_os_remove(out_location, True)
+    package_name = "core-api"
+    api_package = "com.radixdlt.api.core.generated.api"
+    invoker_package = "com.radixdlt.api.core.generated.client"
+    models_package = "com.radixdlt.api.core.generated.models"
+    # See https://openapi-generator.tech/docs/generators/java
+    run(['java', '-jar', OPENAPI_GENERATOR_FIXED_VERSION_JAR, 'generate',
+         '-g', 'java',
+         '-i', schema_file,
+         '-o', tmp_client_folder,
+         '--additional-properties=packageName={},openApiNullable=false,useOneOfDiscriminatorLookup=true,library=native,hideGenerationTimestamp=true,apiPackage={},invokerPackage={},modelPackage={}'.format(package_name, api_package, invoker_package, models_package),
+    ], should_log=False)
+
+    logging.info("Successfully generated java models.")
+
+    rust_code_root = os.path.join(tmp_client_folder, 'src/main/java/com/radixdlt/api/core/generated/')
+    shutil.copytree(rust_code_root, out_location)
+
+    logging.info("Successfully copied java models.")
 
 if __name__ == "__main__":
     logger.info('Will generate models from the API specifications')
@@ -153,7 +175,8 @@ if __name__ == "__main__":
 
     logging.info('Generating code from specs...')
 
-    generate_models(core_api_spec_temp_filename, os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, "core-api"), CORE_API_GENERATED_DESTINATION)
+    generate_rust_models(core_api_spec_temp_filename, os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, "core-api-rust"), CORE_API_RUST_GENERATED_DESTINATION)
+    generate_java_models(core_api_spec_temp_filename, os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, "core-api-java"), CORE_API_JAVA_GENERATED_DESTINATION)
 
     logging.info("Code has been created.")
 

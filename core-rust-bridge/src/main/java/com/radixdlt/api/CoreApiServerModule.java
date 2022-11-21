@@ -67,6 +67,8 @@ package com.radixdlt.api;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.statemanager.CoreApiServerConfig;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.utils.UInt32;
@@ -83,5 +85,10 @@ public final class CoreApiServerModule extends AbstractModule {
   @Singleton
   private CoreApiServer coreApiServer(StateManager stateManager) {
     return CoreApiServer.create(stateManager, config);
+  }
+
+  @ProvidesIntoSet
+  NodeAutoCloseable closeable(CoreApiServer coreApiServer) {
+    return coreApiServer::stop;
   }
 }
