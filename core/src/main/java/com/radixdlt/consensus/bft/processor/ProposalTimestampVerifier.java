@@ -168,7 +168,7 @@ public final class ProposalTimestampVerifier implements BFTEventProcessor {
     final var prevTimestamp = proposal.getVertex().parentLedgerHeader().proposerTimestamp();
 
     final var ts = proposal.getVertex().proposerTimestamp();
-    return ts >= lowerBoundInclusive && ts <= upperBoundInclusive && ts > prevTimestamp;
+    return ts >= lowerBoundInclusive && ts <= upperBoundInclusive && ts >= prevTimestamp;
   }
 
   private boolean isProposalTimestampDiffAboveLoggingThreshold(Proposal proposal, long now) {

@@ -99,7 +99,7 @@ public class ProposalTimestampVerifierTest {
   }
 
   @Test
-  public void when_process_proposal_with_valid_timestamp_then_should_be_forwarded() {
+  public void when_process_proposal_with_increasing_timestamp_then_should_be_forwarded() {
     final var currentSystemTime = System.currentTimeMillis();
 
     final var sut =
@@ -112,7 +112,7 @@ public class ProposalTimestampVerifierTest {
   }
 
   @Test
-  public void when_process_proposal_with_same_timestamp_as_previous_then_should_be_rejected() {
+  public void when_process_proposal_with_same_timestamp_then_should_be_forwarded() {
     final var currentSystemTime = System.currentTimeMillis();
 
     final var sut =
@@ -120,6 +120,19 @@ public class ProposalTimestampVerifierTest {
             forwardTo, () -> currentSystemTime, systemCounters, roundLeaderFailureDispatcher);
 
     sut.processProposal(createProposalWithTimestamps(currentSystemTime, currentSystemTime));
+    verify(forwardTo, times(1)).processProposal(any());
+    verify(roundLeaderFailureDispatcher, never()).dispatch(any());
+  }
+
+  @Test
+  public void when_process_proposal_with_decreasing_timestamp_then_should_be_rejected() {
+    final var currentSystemTime = System.currentTimeMillis();
+
+    final var sut =
+        new ProposalTimestampVerifier(
+            forwardTo, () -> currentSystemTime, systemCounters, roundLeaderFailureDispatcher);
+
+    sut.processProposal(createProposalWithTimestamps(currentSystemTime, currentSystemTime - 1));
     verify(forwardTo, never()).processProposal(any());
     verify(roundLeaderFailureDispatcher, times(1)).dispatch(any());
   }
