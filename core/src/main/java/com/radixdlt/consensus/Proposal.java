@@ -129,7 +129,7 @@ public final class Proposal implements ConsensusEvent {
 
   @Override
   public long getEpoch() {
-    return vertex.parentLedgerHeader().getEpoch();
+    return vertex.getEpoch();
   }
 
   @Override

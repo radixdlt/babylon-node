@@ -99,6 +99,8 @@ public final class Pacemaker {
   /* See detailed explanation in `generateProposal` */
   private static final int PROPOSAL_SUBSTITUTE_TIMESTAMP_MAX_OFFSET_MS = 50;
 
+  private static final int PREVIOUS_ROUND_RUSHING_TIMESTAMP_LOG_THRESHOLD_MS = 1000;
+
   private final BFTNode self;
   private final SystemCounters counters;
   private final BFTValidatorSet validatorSet;
@@ -251,10 +253,14 @@ public final class Pacemaker {
        * previous timestamp by a small, randomized number. The offset is random to prevent a single validator
        * from being able to deterministically choose two consecutive timestamps: one for their round (rushing)
        * and another one for the next round (which would be their_timestamp + some_fixed_offset without the randomization). */
-      log.warn(
-          "Previous round proposer timestamp was greater than the current local system time. "
-              + "This may (but doesn't have to) indicate system clock malfunction. "
-              + "Consider further investigation if this log message appears on a regular basis.");
+      final var diff = previousProposerTimestamp - now;
+      if (diff > PREVIOUS_ROUND_RUSHING_TIMESTAMP_LOG_THRESHOLD_MS) {
+        log.warn(
+            "Previous round proposer timestamp was greater than the current local system time. "
+                + "This may (but doesn't have to) indicate system clock malfunction. "
+                + "Consider further investigation if this log message appears on a regular basis.");
+      }
+
       counters.increment(CounterType.BFT_PACEMAKER_PROPOSALS_WITH_SUBSTITUTE_TIMESTAMP);
       final var randomOffset =
           this.secureRandom.nextInt(PROPOSAL_SUBSTITUTE_TIMESTAMP_MAX_OFFSET_MS);

@@ -140,6 +140,7 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
             vote.getAuthor(), vote.getHashOfData(hasher), vote.getSignature(), vote);
     if (!verifiedVoteData) {
       log.warn("Ignoring invalid vote data {}", vote);
+      systemCounters.increment(SystemCounters.CounterType.BFT_VERIFIER_INVALID_VOTE_SIGNATURES);
       return;
     }
 
@@ -153,11 +154,14 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
 
     if (!verifiedTimeoutData) {
       log.warn("Ignoring invalid timeout data {}", vote);
+      systemCounters.increment(
+          SystemCounters.CounterType.BFT_VERIFIER_INVALID_VOTE_TIMEOUT_SIGNATURES);
       return;
     }
 
     if (!safetyRules.verifyHighQcAgainstTheValidatorSet(vote.highQC())) {
       log.warn("Ignoring a vote {} with invalid high QC", vote);
+      systemCounters.increment(SystemCounters.CounterType.BFT_VERIFIER_INVALID_VOTE_QCS);
       return;
     }
 
@@ -174,12 +178,14 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
 
     if (!verifyObjectSignature(
         proposal.getAuthor(), proposal.getVertex(), proposal.getSignature(), proposal)) {
+      systemCounters.increment(SystemCounters.CounterType.BFT_VERIFIER_INVALID_PROPOSAL_SIGNATURES);
       log.warn("Ignoring a proposal {} with invalid signature", proposal);
       return;
     }
 
     if (!safetyRules.verifyHighQcAgainstTheValidatorSet(proposal.highQC())) {
       log.warn("Ignoring a proposal {} with invalid high QC", proposal);
+      systemCounters.increment(SystemCounters.CounterType.BFT_VERIFIER_INVALID_PROPOSAL_QCS);
       return;
     }
 

@@ -110,13 +110,13 @@ public final class LedgerHeader {
   @DsonOutput(Output.ALL)
   private final AccumulatorState accumulatorState;
 
-  @JsonProperty("consensus_parent_round_timestamp")
+  @JsonProperty("consensus_parent_round_timestamp_ms")
   @DsonOutput(Output.ALL)
-  private final long consensusParentRoundTimestamp;
+  private final long consensusParentRoundTimestampMs;
 
-  @JsonProperty("proposer_timestamp")
+  @JsonProperty("proposer_timestamp_ms")
   @DsonOutput(Output.ALL)
-  private final long proposerTimestamp;
+  private final long proposerTimestampMs;
 
   @JsonProperty("next_validators")
   @DsonOutput(Output.ALL)
@@ -128,15 +128,15 @@ public final class LedgerHeader {
       @JsonProperty("epoch") long epoch,
       @JsonProperty("round") long roundNumber,
       @JsonProperty(value = "accumulator_state", required = true) AccumulatorState accumulatorState,
-      @JsonProperty("consensus_parent_round_timestamp") long consensusParentRoundTimestamp,
-      @JsonProperty("proposer_timestamp") long proposerTimestamp,
+      @JsonProperty("consensus_parent_round_timestamp_ms") long consensusParentRoundTimestampMs,
+      @JsonProperty("proposer_timestamp") long proposerTimestampMs,
       @JsonProperty("next_validators") ImmutableSet<BFTValidator> nextValidators) {
     this(
         epoch,
         Round.of(roundNumber),
         accumulatorState,
-        consensusParentRoundTimestamp,
-        proposerTimestamp,
+        consensusParentRoundTimestampMs,
+        proposerTimestampMs,
         nextValidators);
   }
 
@@ -144,8 +144,8 @@ public final class LedgerHeader {
       long epoch,
       Round round,
       AccumulatorState accumulatorState,
-      long consensusParentRoundTimestamp,
-      long proposerTimestamp,
+      long consensusParentRoundTimestampMs,
+      long proposerTimestampMs,
       ImmutableSet<BFTValidator> nextValidators) {
     this.epoch = epoch;
 
@@ -156,8 +156,8 @@ public final class LedgerHeader {
     this.round = round;
     this.accumulatorState = requireNonNull(accumulatorState);
     this.nextValidators = nextValidators;
-    this.consensusParentRoundTimestamp = consensusParentRoundTimestamp;
-    this.proposerTimestamp = proposerTimestamp;
+    this.consensusParentRoundTimestampMs = consensusParentRoundTimestampMs;
+    this.proposerTimestampMs = proposerTimestampMs;
   }
 
   public static LedgerHeader genesis(
@@ -238,19 +238,19 @@ public final class LedgerHeader {
   }
 
   public long consensusParentRoundTimestamp() {
-    return this.consensusParentRoundTimestamp;
+    return this.consensusParentRoundTimestampMs;
   }
 
   public long proposerTimestamp() {
-    return this.proposerTimestamp;
+    return this.proposerTimestampMs;
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
         this.accumulatorState,
-        this.consensusParentRoundTimestamp,
-        this.proposerTimestamp,
+        this.consensusParentRoundTimestampMs,
+        this.proposerTimestampMs,
         this.epoch,
         this.round,
         this.nextValidators);
@@ -263,8 +263,8 @@ public final class LedgerHeader {
     }
 
     return (o instanceof LedgerHeader other)
-        && this.consensusParentRoundTimestamp == other.consensusParentRoundTimestamp
-        && this.proposerTimestamp == other.proposerTimestamp
+        && this.consensusParentRoundTimestampMs == other.consensusParentRoundTimestampMs
+        && this.proposerTimestampMs == other.proposerTimestampMs
         && Objects.equals(this.accumulatorState, other.accumulatorState)
         && this.epoch == other.epoch
         && Objects.equals(this.round, other.round)
@@ -274,12 +274,12 @@ public final class LedgerHeader {
   @Override
   public String toString() {
     return String.format(
-        "%s{accumulator=%s consensus_timestamp=%s proposer_timestamp=%s epoch=%s round=%s"
-            + " nextValidators=%s}",
+        "%s{accumulator=%s consensus_parent_round_timestamp=%s proposer_timestamp=%s epoch=%s"
+            + " round=%s nextValidators=%s}",
         getClass().getSimpleName(),
         this.accumulatorState,
-        this.consensusParentRoundTimestamp,
-        this.proposerTimestamp,
+        this.consensusParentRoundTimestampMs,
+        this.proposerTimestampMs,
         this.epoch,
         this.round,
         this.nextValidators);

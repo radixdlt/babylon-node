@@ -115,7 +115,7 @@ public final class VertexWithHash {
     return String.format(
         "%s{epoch=%s round=%s qc=%s hash=%s}",
         this.getClass().getSimpleName(),
-        this.vertex.parentLedgerHeader().getEpoch(),
+        this.vertex.getEpoch(),
         this.vertex.getRound(),
         this.vertex.getQCToParent(),
         this.vertexHash);

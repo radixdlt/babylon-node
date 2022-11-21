@@ -96,6 +96,7 @@ public class RandomValidatorsTest {
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS),
               ConsensusMonitors.consensusTimestampChecker(Duration.ofSeconds(5L)),
+              ConsensusMonitors.proposerTimestampChecker(),
               ConsensusMonitors.noTimeouts(),
               ConsensusMonitors.directParents(),
               ConsensusMonitors.epochMaxRound(Round.of(100)),
