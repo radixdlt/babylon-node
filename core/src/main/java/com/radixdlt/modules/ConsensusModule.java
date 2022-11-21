@@ -80,12 +80,14 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.NoVote;
+import com.radixdlt.consensus.bft.RoundLeaderFailure;
 import com.radixdlt.consensus.bft.RoundQuorumReached;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStoreAdapter;
 import com.radixdlt.consensus.bft.VertexStoreJavaImpl;
+import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
 import com.radixdlt.consensus.liveness.ExponentialPacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -146,7 +148,8 @@ public final class ConsensusModule extends AbstractModule {
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteEventDispatcher,
       EventDispatcher<DoubleVote> doubleVoteEventDispatcher,
-      RemoteEventDispatcher<Vote> voteDispatcher) {
+      RemoteEventDispatcher<Vote> voteDispatcher,
+      EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher) {
     return (self,
         pacemaker,
         vertexStore,
@@ -160,6 +163,7 @@ public final class ConsensusModule extends AbstractModule {
             .hasher(hasher)
             .verifier(verifier)
             .voteDispatcher(voteDispatcher)
+            .roundLeaderFailureEventDispatcher(roundLeaderFailureEventDispatcher)
             .safetyRules(safetyRules)
             .pacemaker(pacemaker)
             .vertexStore(vertexStore)
@@ -222,6 +226,7 @@ public final class ConsensusModule extends AbstractModule {
       Hasher hasher,
       RemoteEventDispatcher<Proposal> proposalDispatcher,
       RemoteEventDispatcher<Vote> voteDispatcher,
+      EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher,
       TimeSupplier timeSupplier,
       RoundUpdate initialRoundUpdate,
       SystemCounters systemCounters,
@@ -239,6 +244,7 @@ public final class ConsensusModule extends AbstractModule {
         proposalGenerator,
         proposalDispatcher,
         voteDispatcher,
+        roundLeaderFailureEventDispatcher,
         hasher,
         timeSupplier,
         initialRoundUpdate,

@@ -62,33 +62,9 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTSyncer;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.RoundQuorumReached;
-import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.bft.VertexStoreAdapter;
-import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
-import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.environment.EventProcessor;
-
-/** Creates a new bft processor */
-public interface BFTFactory {
-  /**
-   * Create a new clean BFT processor
-   *
-   * @return a new bft processor
-   */
-  BFTEventProcessor create(
-      BFTNode self,
-      Pacemaker pacemaker,
-      VertexStoreAdapter vertexStore,
-      BFTSyncer bftSyncer,
-      EventProcessor<RoundQuorumReached> roundQuorumReachedEventProcessor,
-      BFTValidatorSet validatorSet,
-      RoundUpdate roundUpdate,
-      SafetyRules safetyRules);
+public enum RoundLeaderFailureReason {
+  PROPOSED_TIMESTAMP_UNACCEPTABLE,
+  ROUND_TIMEOUT
 }

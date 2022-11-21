@@ -70,6 +70,7 @@ import com.radixdlt.harness.invariants.SafetyChecker;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 
@@ -91,10 +92,20 @@ public class SafetyInvariant implements TestInvariant {
                     BFTCommittedUpdate.class))
         .serialize()
         .flatMap(
-            e ->
-                safetyChecker
-                    .process(e.getFirst(), e.getSecond())
-                    .map(Observable::just)
-                    .orElse(Observable.empty()));
+            e -> {
+              for (var node : network.getNodes()) {
+                final var nodeCounters = network.getInstance(SystemCounters.class, node);
+                if (nodeCounters.get(SystemCounters.CounterType.BFT_PRECONDITION_VIOLATIONS) != 0) {
+                  return Observable.just(
+                      new TestInvariantError(
+                          String.format("BFT precondition violation on node %s", node)));
+                }
+              }
+
+              return safetyChecker
+                  .process(e.getFirst(), e.getSecond())
+                  .map(Observable::just)
+                  .orElse(Observable.empty());
+            });
   }
 }

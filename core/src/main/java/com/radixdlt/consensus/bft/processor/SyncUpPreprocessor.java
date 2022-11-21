@@ -62,15 +62,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.bft.processor;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.RoundLeaderFailure;
+import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -84,17 +90,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Preprocesses consensus events and ensures that the vertexStore is synced to the correct state
- * before they get forwarded to the actual state reducer.
- *
- * <p>This class should not be updating any part of the BFT Safety state besides the VertexStore.
- *
- * <p>A lot of the queue logic could be done more "cleanly" and functionally using lambdas and
- * Functions but the performance impact is too great.
+ * Preprocesses consensus events and ensures that the vertexStore is synced up before forwarding the
+ * event to the next processor. This class should not be updating any part of the BFT Safety state
+ * besides the VertexStore.
  *
  * <p>This class is NOT thread-safe.
  */
-public final class BFTEventPreprocessor implements BFTEventProcessor {
+public final class SyncUpPreprocessor implements BFTEventProcessor {
   private static final Logger log = LogManager.getLogger();
 
   private final BFTEventProcessor forwardTo;
@@ -103,7 +105,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
   private final Map<Round, List<ConsensusEvent>> roundQueues = new HashMap<>();
   private RoundUpdate latestRoundUpdate;
 
-  public BFTEventPreprocessor(
+  public SyncUpPreprocessor(
       BFTEventProcessor forwardTo, BFTSyncer bftSyncer, RoundUpdate initialRoundUpdate) {
     this.bftSyncer = Objects.requireNonNull(bftSyncer);
     this.forwardTo = forwardTo;
@@ -199,6 +201,11 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
   @Override
   public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
     forwardTo.processLocalTimeout(scheduledLocalTimeout);
+  }
+
+  @Override
+  public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
+    forwardTo.processRoundLeaderFailure(roundLeaderFailure);
   }
 
   @Override

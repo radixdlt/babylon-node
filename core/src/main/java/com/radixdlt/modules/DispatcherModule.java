@@ -80,10 +80,12 @@ import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.NoVote;
+import com.radixdlt.consensus.bft.RoundLeaderFailure;
 import com.radixdlt.consensus.bft.RoundQuorumReached;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.bft.RoundVotingResult;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.epoch.EpochRoundLeaderFailure;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
@@ -218,6 +220,14 @@ public class DispatcherModule extends AbstractModule {
     Multibinder.newSetBinder(binder(), timeoutOccurrenceKey);
     bind(new TypeLiteral<EventDispatcher<EpochLocalTimeoutOccurrence>>() {})
         .toProvider(Dispatchers.dispatcherProvider(EpochLocalTimeoutOccurrence.class))
+        .in(Scopes.SINGLETON);
+
+    final var roundLeaderFailureKey = new TypeLiteral<EventProcessor<RoundLeaderFailure>>() {};
+    Multibinder.newSetBinder(binder(), roundLeaderFailureKey, ProcessOnDispatch.class);
+    Multibinder.newSetBinder(binder(), roundLeaderFailureKey);
+
+    bind(new TypeLiteral<EventDispatcher<EpochRoundLeaderFailure>>() {})
+        .toProvider(Dispatchers.dispatcherProvider(EpochRoundLeaderFailure.class))
         .in(Scopes.SINGLETON);
 
     final var roundUpdateKey = new TypeLiteral<EventProcessor<RoundUpdate>>() {};
@@ -463,6 +473,18 @@ public class DispatcherModule extends AbstractModule {
     return roundUpdate -> {
       processors.forEach(e -> e.process(roundUpdate));
       dispatcher.dispatch(roundUpdate);
+    };
+  }
+
+  @Provides
+  @Singleton
+  private EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher(
+      @ProcessOnDispatch Set<EventProcessor<RoundLeaderFailure>> processors,
+      Environment environment) {
+    final var dispatcher = environment.getDispatcher(RoundLeaderFailure.class);
+    return roundLeaderFailure -> {
+      processors.forEach(e -> e.process(roundLeaderFailure));
+      dispatcher.dispatch(roundLeaderFailure);
     };
   }
 }

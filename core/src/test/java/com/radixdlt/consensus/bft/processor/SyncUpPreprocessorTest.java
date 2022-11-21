@@ -62,33 +62,66 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft.processor;
 
-import com.radixdlt.consensus.bft.BFTNode;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTSyncer;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.RoundQuorumReached;
+import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.bft.VertexStoreAdapter;
-import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
-import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.environment.EventProcessor;
+import java.util.Optional;
+import org.junit.Before;
+import org.junit.Test;
 
-/** Creates a new bft processor */
-public interface BFTFactory {
-  /**
-   * Create a new clean BFT processor
-   *
-   * @return a new bft processor
-   */
-  BFTEventProcessor create(
-      BFTNode self,
-      Pacemaker pacemaker,
-      VertexStoreAdapter vertexStore,
-      BFTSyncer bftSyncer,
-      EventProcessor<RoundQuorumReached> roundQuorumReachedEventProcessor,
-      BFTValidatorSet validatorSet,
-      RoundUpdate roundUpdate,
-      SafetyRules safetyRules);
+public class SyncUpPreprocessorTest {
+
+  private SyncUpPreprocessor syncUpPreprocessor;
+
+  private final BFTEventProcessor forwardTo = mock(BFTEventProcessor.class);
+  private final BFTSyncer bftSyncer = mock(BFTSyncer.class);
+  private final RoundUpdate initialRoundUpdate = mock(RoundUpdate.class);
+
+  @Before
+  public void setUp() {
+    this.syncUpPreprocessor = new SyncUpPreprocessor(forwardTo, bftSyncer, initialRoundUpdate);
+  }
+
+  @Test
+  public void when_round_update__then_should_process_cached_events() {
+    final var proposal = mock(Proposal.class);
+    final var proposalHighQc = mock(HighQC.class);
+    final var proposalHighestCommittedQc = mock(QuorumCertificate.class);
+    final var proposalLedgerProof = mock(LedgerProof.class);
+    when(initialRoundUpdate.getCurrentRound()).thenReturn(Round.of(2));
+    when(proposal.getRound()).thenReturn(Round.of(4));
+    when(proposal.highQC()).thenReturn(proposalHighQc);
+    when(proposalHighQc.highestCommittedQC()).thenReturn(proposalHighestCommittedQc);
+    var header = mock(BFTHeader.class);
+    when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
+    when(proposalHighestCommittedQc.getCommittedHeader()).thenReturn(Optional.of(header));
+    when(proposalLedgerProof.isEndOfEpoch()).thenReturn(false);
+    when(bftSyncer.syncToQC(any(), any())).thenReturn(SyncResult.IN_PROGRESS);
+
+    // we're at v2, proposal for v4 should get cached as sync returns IN_PROGRESS
+    this.syncUpPreprocessor.processProposal(proposal);
+
+    final var newRoundUpdate = mock(RoundUpdate.class);
+    when(newRoundUpdate.getCurrentRound()).thenReturn(Round.of(4));
+    when(bftSyncer.syncToQC(any(), any())).thenReturn(SyncResult.SYNCED);
+
+    // we're going straight to v4, cached proposal should get processed
+    this.syncUpPreprocessor.processRoundUpdate(newRoundUpdate);
+    verify(forwardTo, times(1)).processProposal(proposal);
+  }
 }

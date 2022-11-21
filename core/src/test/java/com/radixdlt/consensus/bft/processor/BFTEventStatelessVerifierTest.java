@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.bft.processor;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -72,7 +72,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.LedgerHeader;
@@ -80,6 +79,10 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
@@ -90,13 +93,13 @@ import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
-public class BFTEventVerifierTest {
+public class BFTEventStatelessVerifierTest {
 
   private BFTValidatorSet validatorSet;
   private BFTEventProcessor forwardTo;
   private Hasher hasher;
   private HashVerifier verifier;
-  private BFTEventVerifier eventVerifier;
+  private BFTEventStatelessVerifier eventVerifier;
   private SafetyRules safetyRules;
   private TimeSupplier timeSupplier;
   private SystemCounters systemCounters;
@@ -111,8 +114,8 @@ public class BFTEventVerifierTest {
     this.timeSupplier = mock(TimeSupplier.class);
     this.systemCounters = mock(SystemCounters.class);
     this.eventVerifier =
-        new BFTEventVerifier(
-            validatorSet, forwardTo, hasher, verifier, safetyRules, timeSupplier, systemCounters);
+        new BFTEventStatelessVerifier(
+            validatorSet, forwardTo, hasher, verifier, safetyRules, systemCounters);
   }
 
   @Test
@@ -176,24 +179,6 @@ public class BFTEventVerifierTest {
     when(proposal.getVertex()).thenReturn(vertex);
     when(validatorSet.containsNode(eq(author))).thenReturn(true);
     when(verifier.verify(any(), any(), any())).thenReturn(false);
-    eventVerifier.processProposal(proposal);
-    verify(forwardTo, never()).processProposal(any());
-  }
-
-  @Test
-  public void when_process_proposal_with_invalid_timestamp_then_should_be_rejected() {
-    Proposal proposal = mock(Proposal.class);
-    BFTNode author = mock(BFTNode.class);
-    when(proposal.getAuthor()).thenReturn(author);
-    when(proposal.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
-    when(timeSupplier.currentTime()).thenReturn(5L);
-    final var vertex =
-        vertexWithProposerTimestamps(
-            timeSupplier.currentTime(), timeSupplier.currentTime() /* same as prev */);
-    when(proposal.getVertex()).thenReturn(vertex);
-    when(validatorSet.containsNode(eq(author))).thenReturn(true);
-    when(verifier.verify(any(), any(), any())).thenReturn(true);
-    when(safetyRules.verifyHighQcAgainstTheValidatorSet(any())).thenReturn(true);
     eventVerifier.processProposal(proposal);
     verify(forwardTo, never()).processProposal(any());
   }

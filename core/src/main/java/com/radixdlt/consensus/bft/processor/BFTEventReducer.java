@@ -62,12 +62,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.bft.processor;
 
-import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.NoVote;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.RoundLeaderFailure;
+import com.radixdlt.consensus.bft.RoundQuorumReached;
+import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.bft.VertexStoreAdapter;
 import com.radixdlt.consensus.bft.VoteProcessingResult.*;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
@@ -108,7 +117,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
    */
   private boolean hasReachedQuorum = false;
 
-  private boolean isRoundTimedOut = false;
+  private boolean hasLeaderFailedTheRound = false;
 
   public BFTEventReducer(
       BFTNode self,
@@ -159,7 +168,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
   @Override
   public void processRoundUpdate(RoundUpdate roundUpdate) {
     this.hasReachedQuorum = false;
-    this.isRoundTimedOut = false;
+    this.hasLeaderFailedTheRound = false;
     this.latestRoundUpdate = roundUpdate;
     this.pacemaker.processRoundUpdate(roundUpdate);
     this.tryVote();
@@ -175,13 +184,13 @@ public final class BFTEventReducer implements BFTEventProcessor {
       return;
     }
 
-    // check if already voted in this round
+    // Check if already voted in this round
     if (this.safetyRules.getLastVote(this.latestRoundUpdate.getCurrentRound()).isPresent()) {
       return;
     }
 
-    // don't vote if round has timed out
-    if (this.isRoundTimedOut) {
+    // Don't vote if the leader has already failed their round
+    if (this.hasLeaderFailedTheRound) {
       return;
     }
 
@@ -210,15 +219,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
     log.trace("Vote: Processing {}", vote);
 
     final Round round = vote.getRound();
-
-    if (round.lt(this.latestRoundUpdate.getCurrentRound())) {
-      log.trace(
-          "Vote: Ignoring vote from {} for round {}, current round at {}",
-          vote.getAuthor(),
-          round,
-          this.latestRoundUpdate.getCurrentRound());
-      return;
-    }
 
     if (this.hasReachedQuorum) {
       log.trace(
@@ -250,14 +250,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
   public void processProposal(Proposal proposal) {
     log.trace("Proposal: Processing {}", proposal);
 
-    // TODO: Move into preprocessor
-    final Round proposedVertexRound = proposal.getRound();
-    final Round currentRound = this.latestRoundUpdate.getCurrentRound();
-    if (!currentRound.equals(proposedVertexRound)) {
-      log.trace("Proposal: Ignoring round {}, current is: {}", proposedVertexRound, currentRound);
-      return;
-    }
-
     // TODO: Move insertion and maybe check into BFTSync
     var proposedVertex = proposal.getVertex().withId(hasher);
     this.vertexStore.insertVertex(proposedVertex);
@@ -265,13 +257,30 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
   @Override
   public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
-    log.trace("LocalTimeout: Processing {}", scheduledLocalTimeout);
-
-    if (scheduledLocalTimeout.round().equals(this.latestRoundUpdate.getCurrentRound())) {
-      this.isRoundTimedOut = true;
+    if (!scheduledLocalTimeout.round().equals(this.latestRoundUpdate.getCurrentRound())) {
+      log.trace(
+          "Ignoring ScheduledLocalTimeout event for the past round {}, current is {}",
+          scheduledLocalTimeout.round(),
+          this.latestRoundUpdate.getCurrentRound());
+      return;
     }
 
+    this.hasLeaderFailedTheRound = true;
     this.pacemaker.processLocalTimeout(scheduledLocalTimeout);
+  }
+
+  @Override
+  public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
+    if (!roundLeaderFailure.round().equals(this.latestRoundUpdate.getCurrentRound())) {
+      log.trace(
+          "Ignoring RoundLeaderFailure event for the past round {}, current is {}",
+          roundLeaderFailure.round(),
+          this.latestRoundUpdate.getCurrentRound());
+      return;
+    }
+
+    this.hasLeaderFailedTheRound = false;
+    this.pacemaker.processRoundLeaderFailure(roundLeaderFailure);
   }
 
   @Override

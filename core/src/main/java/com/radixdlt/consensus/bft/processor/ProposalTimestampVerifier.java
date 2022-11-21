@@ -62,30 +62,25 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.bft.processor;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.SecurityCritical;
-import com.radixdlt.SecurityCritical.SecurityKind;
-import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.RoundLeaderFailure;
+import com.radixdlt.consensus.bft.RoundLeaderFailureReason;
+import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.liveness.VoteTimeout;
-import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.crypto.ECDSASecp256k1Signature;
-import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/** Verifies signatures of BFT messages then forwards to the next processor */
-@SecurityCritical({SecurityKind.SIG_VERIFY})
-public final class BFTEventVerifier implements BFTEventProcessor {
+/** Verifies proposal timestamps against the local system time. */
+public final class ProposalTimestampVerifier implements BFTEventProcessor {
   private static final Logger log = LogManager.getLogger();
 
   /* These two constants specify the bounds for acceptable proposal timestamps in relation to
@@ -94,32 +89,23 @@ public final class BFTEventVerifier implements BFTEventProcessor {
   The acceptable delay is slightly higher to account for network latency.
   In addition to the delay/rush bounds, the proposal timestamp must be strictly
   greater than the previous one (see `isProposalTimestampAcceptable`). */
-  private static final long MAX_ACCEPTABLE_PROPOSAL_TIMESTAMP_DELAY_MS = 3000;
-  private static final long MAX_ACCEPTABLE_PROPOSAL_TIMESTAMP_RUSH_MS = 2000;
+  static final long MAX_ACCEPTABLE_PROPOSAL_TIMESTAMP_DELAY_MS = 3000;
+  static final long MAX_ACCEPTABLE_PROPOSAL_TIMESTAMP_RUSH_MS = 2000;
 
-  private final BFTValidatorSet validatorSet;
   private final BFTEventProcessor forwardTo;
-  private final Hasher hasher;
-  private final HashVerifier verifier;
-  private final SafetyRules safetyRules;
   private final TimeSupplier timeSupplier;
   private final SystemCounters systemCounters;
+  private final EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher;
 
-  public BFTEventVerifier(
-      BFTValidatorSet validatorSet,
+  public ProposalTimestampVerifier(
       BFTEventProcessor forwardTo,
-      Hasher hasher,
-      HashVerifier verifier,
-      SafetyRules safetyRules,
       TimeSupplier timeSupplier,
-      SystemCounters systemCounters) {
-    this.validatorSet = Objects.requireNonNull(validatorSet);
-    this.hasher = Objects.requireNonNull(hasher);
-    this.verifier = Objects.requireNonNull(verifier);
+      SystemCounters systemCounters,
+      EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher) {
     this.forwardTo = Objects.requireNonNull(forwardTo);
-    this.safetyRules = Objects.requireNonNull(safetyRules);
     this.timeSupplier = Objects.requireNonNull(timeSupplier);
     this.systemCounters = Objects.requireNonNull(systemCounters);
+    this.roundLeaderFailureDispatcher = Objects.requireNonNull(roundLeaderFailureDispatcher);
   }
 
   @Override
@@ -134,91 +120,27 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 
   @Override
   public void processVote(Vote vote) {
-    if (!isAuthorInValidatorSet(vote)) {
-      systemCounters.increment(SystemCounters.CounterType.BFT_VERIFIER_INVALID_VOTE_AUTHORS);
-      log.warn("Ignoring a vote from {}: not a validator", vote.getAuthor());
-      return;
-    }
-
-    final var verifiedVoteData =
-        verifyHashSignature(
-            vote.getAuthor(), vote.getHashOfData(hasher), vote.getSignature(), vote);
-    if (!verifiedVoteData) {
-      log.warn("Ignoring invalid vote data {}", vote);
-      return;
-    }
-
-    final var verifiedTimeoutData =
-        vote.getTimeoutSignature()
-            .map(
-                timeoutSignature ->
-                    verifyObjectSignature(
-                        vote.getAuthor(), VoteTimeout.of(vote), timeoutSignature, vote))
-            .orElse(true);
-
-    if (!verifiedTimeoutData) {
-      log.warn("Ignoring invalid timeout data {}", vote);
-      return;
-    }
-
-    if (!safetyRules.verifyHighQcAgainstTheValidatorSet(vote.highQC())) {
-      log.warn("Ignoring a vote {} with invalid high QC", vote);
-      return;
-    }
-
     forwardTo.processVote(vote);
   }
 
   @Override
   public void processProposal(Proposal proposal) {
-    if (!isAuthorInValidatorSet(proposal)) {
-      systemCounters.increment(SystemCounters.CounterType.BFT_VERIFIER_INVALID_PROPOSAL_AUTHORS);
-      log.warn("Ignoring a proposal from {}: not a validator", proposal.getAuthor());
-      return;
-    }
-
     final var now = timeSupplier.currentTime();
     if (!isProposalTimestampAcceptable(proposal, now)) {
       systemCounters.increment(SystemCounters.CounterType.BFT_VERIFIER_INVALID_PROPOSAL_TIMESTAMPS);
       log.warn(
-          "Ignoring a proposal from {}: invalid timestamp (received = {}, local time = {})",
+          "Rejecting a proposal from {}. Its timestamp ({}) is out of acceptable bounds at system"
+              + " time {}.",
           proposal.getAuthor(),
           proposal.getVertex().proposerTimestamp(),
           now);
-      return;
-    }
-
-    if (!verifyObjectSignature(
-        proposal.getAuthor(), proposal.getVertex(), proposal.getSignature(), proposal)) {
-      log.warn("Ignoring a proposal {} with invalid signature", proposal);
-      return;
-    }
-
-    if (!safetyRules.verifyHighQcAgainstTheValidatorSet(proposal.highQC())) {
-      log.warn("Ignoring a proposal {} with invalid high QC", proposal);
+      roundLeaderFailureDispatcher.dispatch(
+          new RoundLeaderFailure(
+              proposal.getRound(), RoundLeaderFailureReason.PROPOSED_TIMESTAMP_UNACCEPTABLE));
       return;
     }
 
     forwardTo.processProposal(proposal);
-  }
-
-  @Override
-  public void processLocalTimeout(ScheduledLocalTimeout localTimeout) {
-    forwardTo.processLocalTimeout(localTimeout);
-  }
-
-  @Override
-  public void processBFTUpdate(BFTInsertUpdate update) {
-    forwardTo.processBFTUpdate(update);
-  }
-
-  @Override
-  public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
-    forwardTo.processBFTRebuildUpdate(update);
-  }
-
-  private boolean isAuthorInValidatorSet(ConsensusEvent event) {
-    return validatorSet.containsNode(event.getAuthor());
   }
 
   private boolean isProposalTimestampAcceptable(Proposal proposal, long now) {
@@ -231,17 +153,23 @@ public final class BFTEventVerifier implements BFTEventProcessor {
     return ts >= lowerBoundInclusive && ts <= upperBoundInclusive && ts > prevTimestamp;
   }
 
-  private boolean verifyHashSignature(
-      BFTNode author, HashCode hash, ECDSASecp256k1Signature signature, Object what) {
-    boolean verified = this.verifier.verify(author.getKey(), hash, signature);
-    if (!verified) {
-      log.info("Ignoring invalid signature from {} for {}", author, what);
-    }
-    return verified;
+  @Override
+  public void processLocalTimeout(ScheduledLocalTimeout localTimeout) {
+    forwardTo.processLocalTimeout(localTimeout);
   }
 
-  private boolean verifyObjectSignature(
-      BFTNode author, Object hashable, ECDSASecp256k1Signature signature, Object what) {
-    return verifyHashSignature(author, this.hasher.hashDsonEncoded(hashable), signature, what);
+  @Override
+  public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
+    forwardTo.processRoundLeaderFailure(roundLeaderFailure);
+  }
+
+  @Override
+  public void processBFTUpdate(BFTInsertUpdate update) {
+    forwardTo.processBFTUpdate(update);
+  }
+
+  @Override
+  public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
+    forwardTo.processBFTRebuildUpdate(update);
   }
 }

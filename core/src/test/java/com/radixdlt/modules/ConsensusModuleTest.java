@@ -188,6 +188,8 @@ public class ConsensusModuleTest {
             .toInstance(rmock(ScheduledEventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<RoundQuorumReached>>() {})
             .toInstance(rmock(EventDispatcher.class));
+        bind(new TypeLiteral<EventDispatcher<RoundLeaderFailure>>() {})
+            .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
         bind(new TypeLiteral<RemoteEventDispatcher<Proposal>>() {})

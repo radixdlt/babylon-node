@@ -72,6 +72,8 @@ public interface SystemCounters {
   enum CounterType {
     // Please keep these sorted
 
+    BFT_PRECONDITION_VIOLATIONS("bft.precondition_violations"),
+    BFT_DUPLICATE_PROPOSALS_RECEIVED("bft.duplicate_proposals_received"),
     BFT_EVENTS_RECEIVED("bft.events_received"),
     BFT_COMMITTED_VERTICES("bft.committed_vertices"),
     /** Number of proposals rejected. */

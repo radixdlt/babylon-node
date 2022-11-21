@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.bft.processor;
 
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
@@ -73,6 +73,15 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.NoVote;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.RoundQuorumReached;
+import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.bft.VertexStoreAdapter;
+import com.radixdlt.consensus.bft.VoteProcessingResult;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -172,16 +181,6 @@ public class BFTEventReducerTest {
   }
 
   @Test
-  public void when_process_vote_with_quorum_wrong_round__then_ignored() {
-    Vote vote = mock(Vote.class);
-    when(vote.getRound()).thenReturn(Round.of(1));
-    this.bftEventReducer.processRoundUpdate(
-        RoundUpdate.create(Round.of(3), mock(HighQC.class), mock(BFTNode.class), this.self));
-    this.bftEventReducer.processVote(vote);
-    verifyNoMoreInteractions(this.pendingVotes);
-  }
-
-  @Test
   public void when_process_vote_with_quorum__then_processed() {
     BFTNode author = mock(BFTNode.class);
     Vote vote = mock(Vote.class);
@@ -205,5 +204,15 @@ public class BFTEventReducerTest {
     verify(this.roundQuorumReachedEventDispatcher, times(1)).dispatch(any());
     verify(this.pendingVotes, times(1)).insertVote(eq(vote), any());
     verifyNoMoreInteractions(this.pendingVotes);
+  }
+
+  @Test
+  public void when_local_timeout_for_non_current_round__then_ignored() {
+    this.bftEventReducer.processLocalTimeout(
+        ScheduledLocalTimeout.create(
+            RoundUpdate.create(
+                Round.of(1), mock(HighQC.class), mock(BFTNode.class), mock(BFTNode.class)),
+            0L));
+    verifyNoMoreInteractions(this.pacemaker);
   }
 }

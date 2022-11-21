@@ -62,64 +62,57 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.bft.processor;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
-import java.util.Optional;
-import org.junit.Before;
-import org.junit.Test;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.RoundLeaderFailure;
+import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 
-public class BFTEventPreprocessorTest {
+/** An empty BFT event processor */
+public enum EmptyBFTEventProcessor implements BFTEventProcessor {
+  INSTANCE;
 
-  private BFTEventPreprocessor bftEventPreprocessor;
-
-  private final BFTEventProcessor forwardTo = mock(BFTEventProcessor.class);
-  private final BFTSyncer bftSyncer = mock(BFTSyncer.class);
-  private final RoundUpdate initialRoundUpdate = mock(RoundUpdate.class);
-
-  @Before
-  public void setUp() {
-    this.bftEventPreprocessor = new BFTEventPreprocessor(forwardTo, bftSyncer, initialRoundUpdate);
+  @Override
+  public void processVote(Vote vote) {
+    // No-op
   }
 
-  @Test
-  public void when_round_update__then_should_process_cached_events() {
-    final var proposal = mock(Proposal.class);
-    final var proposalHighQc = mock(HighQC.class);
-    final var proposalHighestCommittedQc = mock(QuorumCertificate.class);
-    final var proposalLedgerProof = mock(LedgerProof.class);
-    when(initialRoundUpdate.getCurrentRound()).thenReturn(Round.of(2));
-    when(proposal.getRound()).thenReturn(Round.of(4));
-    when(proposal.highQC()).thenReturn(proposalHighQc);
-    when(proposalHighQc.highestCommittedQC()).thenReturn(proposalHighestCommittedQc);
-    var header = mock(BFTHeader.class);
-    when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
-    when(proposalHighestCommittedQc.getCommittedHeader()).thenReturn(Optional.of(header));
-    when(proposalLedgerProof.isEndOfEpoch()).thenReturn(false);
-    when(bftSyncer.syncToQC(any(), any())).thenReturn(SyncResult.IN_PROGRESS);
+  @Override
+  public void processProposal(Proposal proposal) {
+    // No-op
+  }
 
-    // we're at v2, proposal for v4 should get cached as sync returns IN_PROGRESS
-    this.bftEventPreprocessor.processProposal(proposal);
+  @Override
+  public void processLocalTimeout(ScheduledLocalTimeout timeout) {
+    // No-op
+  }
 
-    final var newRoundUpdate = mock(RoundUpdate.class);
-    when(newRoundUpdate.getCurrentRound()).thenReturn(Round.of(4));
-    when(bftSyncer.syncToQC(any(), any())).thenReturn(SyncResult.SYNCED);
+  @Override
+  public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
+    // No-op
+  }
 
-    // we're going straight to v4, cached proposal should get processed
-    this.bftEventPreprocessor.processRoundUpdate(newRoundUpdate);
-    verify(forwardTo, times(1)).processProposal(proposal);
+  @Override
+  public void processBFTUpdate(BFTInsertUpdate update) {
+    // No-op
+  }
+
+  @Override
+  public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
+    // No-op
+  }
+
+  @Override
+  public void start() {
+    // No-op
+  }
+
+  @Override
+  public void processRoundUpdate(RoundUpdate roundUpdate) {
+    // No-op
   }
 }

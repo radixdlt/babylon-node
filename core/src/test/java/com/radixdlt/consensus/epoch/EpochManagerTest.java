@@ -199,9 +199,13 @@ public class EpochManagerTest {
             .toInstance(syncLedgerRequestSender);
         bind(new TypeLiteral<EventDispatcher<RoundQuorumReached>>() {})
             .toInstance(rmock(EventDispatcher.class));
+        bind(new TypeLiteral<EventDispatcher<RoundUpdate>>() {})
+            .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<EpochRoundUpdate>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<EventDispatcher<RoundUpdate>>() {})
+        bind(new TypeLiteral<EventDispatcher<RoundLeaderFailure>>() {})
+            .toInstance(rmock(EventDispatcher.class));
+        bind(new TypeLiteral<EventDispatcher<EpochRoundLeaderFailure>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<NoVote>>() {})
             .toInstance(rmock(EventDispatcher.class));

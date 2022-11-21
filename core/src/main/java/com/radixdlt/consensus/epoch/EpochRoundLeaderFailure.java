@@ -62,59 +62,44 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.consensus.bft.RoundLeaderFailure;
+import java.util.Objects;
 
-/**
- * Processor of BFT events.
- *
- * <p>Implementations are not expected to be thread-safe.
- */
-public interface BFTEventProcessor {
-  /**
-   * The initialization call. Must be called first and only once at the beginning of the BFT's
-   * lifetime.
-   */
-  void start();
+/** A wrapper for a RoundLeaderFailure message that also holds epoch. */
+public final class EpochRoundLeaderFailure {
 
-  /**
-   * Process a local round update message.
-   *
-   * @param roundUpdate the round update message
-   */
-  void processRoundUpdate(RoundUpdate roundUpdate);
+  private final long epoch;
+  private final RoundLeaderFailure roundLeaderFailure;
 
-  /**
-   * Process a consensus vote message.
-   *
-   * @param vote the vote message
-   */
-  void processVote(Vote vote);
+  public EpochRoundLeaderFailure(long epoch, RoundLeaderFailure roundLeaderFailure) {
+    this.epoch = epoch;
+    this.roundLeaderFailure = Objects.requireNonNull(roundLeaderFailure);
+  }
 
-  /**
-   * Process a consensus proposal message.
-   *
-   * @param proposal the proposal message
-   */
-  void processProposal(Proposal proposal);
+  public long getEpoch() {
+    return epoch;
+  }
 
-  /**
-   * Process a local consensus timeout message.
-   *
-   * @param scheduledLocalTimeout the round corresponding to the timeout
-   */
-  void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout);
+  public RoundLeaderFailure getRoundLeaderFailure() {
+    return roundLeaderFailure;
+  }
 
-  /**
-   * Process a BFT update.
-   *
-   * @param update the BFT update
-   */
-  void processBFTUpdate(BFTInsertUpdate update);
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    EpochRoundLeaderFailure that = (EpochRoundLeaderFailure) o;
+    return epoch == that.epoch && Objects.equals(roundLeaderFailure, that.roundLeaderFailure);
+  }
 
-  void processBFTRebuildUpdate(BFTRebuildUpdate update);
+  @Override
+  public int hashCode() {
+    return Objects.hash(epoch, roundLeaderFailure);
+  }
 }

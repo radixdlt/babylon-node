@@ -67,7 +67,6 @@ package com.radixdlt.consensus.epoch;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.HashSigner;
@@ -75,6 +74,8 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
+import com.radixdlt.consensus.bft.processor.EmptyBFTEventProcessor;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerStateFactory;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
@@ -398,6 +399,15 @@ public final class EpochManager {
 
       log.trace("Processing RoundUpdate: {}", epochRoundUpdate);
       bftEventProcessor.processRoundUpdate(epochRoundUpdate.getRoundUpdate());
+    };
+  }
+
+  public EventProcessor<EpochRoundLeaderFailure> epochRoundLeaderFailureEventProcessor() {
+    return epochRoundLeaderFailure -> {
+      if (epochRoundLeaderFailure.getEpoch() != this.currentEpoch()) {
+        return;
+      }
+      bftEventProcessor.processRoundLeaderFailure(epochRoundLeaderFailure.getRoundLeaderFailure());
     };
   }
 

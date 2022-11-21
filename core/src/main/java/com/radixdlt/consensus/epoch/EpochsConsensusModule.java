@@ -82,6 +82,7 @@ import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.RoundLeaderFailure;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStoreAdapter;
@@ -131,6 +132,7 @@ public class EpochsConsensusModule extends AbstractModule {
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
             .permitDuplicates();
     eventBinder.addBinding().toInstance(EpochRoundUpdate.class);
+    eventBinder.addBinding().toInstance(EpochRoundLeaderFailure.class);
     eventBinder.addBinding().toInstance(VertexRequestTimeout.class);
     eventBinder.addBinding().toInstance(LedgerUpdate.class);
     eventBinder.addBinding().toInstance(Epoched.class);
@@ -227,6 +229,15 @@ public class EpochsConsensusModule extends AbstractModule {
         Runners.CONSENSUS, EpochRoundUpdate.class, epochManager.epochRoundUpdateEventProcessor());
   }
 
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> epochRoundLeaderFailureEventProcessor(
+      EpochManager epochManager) {
+    return new EventProcessorOnRunner<>(
+        Runners.CONSENSUS,
+        EpochRoundLeaderFailure.class,
+        epochManager.epochRoundLeaderFailureEventProcessor());
+  }
+
   @Provides
   private EpochChange initialEpoch(
       @LastEpochProof LedgerProof proof, BFTConfiguration initialBFTConfig) {
@@ -288,6 +299,7 @@ public class EpochsConsensusModule extends AbstractModule {
       ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>> localTimeoutSender,
       RemoteEventDispatcher<Proposal> proposalDispatcher,
       RemoteEventDispatcher<Vote> voteDispatcher,
+      EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher,
       TimeSupplier timeSupplier,
       SecureRandom secureRandom) {
     return (validatorSet, vertexStore, timeoutCalculator, safetyRules, initialRoundUpdate, epoch) ->
@@ -305,6 +317,7 @@ public class EpochsConsensusModule extends AbstractModule {
             proposalGenerator,
             proposalDispatcher,
             voteDispatcher,
+            roundLeaderFailureEventDispatcher,
             hasher,
             timeSupplier,
             initialRoundUpdate,

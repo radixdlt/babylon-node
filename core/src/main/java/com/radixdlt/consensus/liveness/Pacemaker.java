@@ -64,6 +64,7 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
@@ -89,6 +90,12 @@ import org.apache.logging.log4j.Logger;
 public final class Pacemaker {
   private static final Logger log = LogManager.getLogger();
 
+  private enum RoundStatus {
+    UNDISTURBED, // All good, still accepting proposals
+    PROPOSAL_REJECTED, // A genuine proposal was received, but it has been rejected
+    TIMED_OUT // The round has timed out
+  }
+
   /* See detailed explanation in `generateProposal` */
   private static final int PROPOSAL_SUBSTITUTE_TIMESTAMP_MAX_OFFSET_MS = 50;
 
@@ -104,13 +111,18 @@ public final class Pacemaker {
   private final RemoteEventDispatcher<Proposal> proposalDispatcher;
   private final RemoteEventDispatcher<Vote> voteDispatcher;
   private final EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher;
+  private final EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher;
   private final TimeSupplier timeSupplier;
   private final SystemCounters systemCounters;
   private final SecureRandom secureRandom;
 
   private RoundUpdate latestRoundUpdate;
-  private boolean isRoundTimedOut = false;
-  private Optional<HashCode> timeoutVoteVertexId = Optional.empty();
+  private RoundStatus roundStatus = RoundStatus.UNDISTURBED;
+
+  // ID of the vertex to be used as a substitute for the vertex proposed by
+  // the current leader (either because we didn't receive it or it was rejected).
+  // The vertex isn't created until it's actually needed (hence Optional).
+  private Optional<HashCode> vertexIdForLeaderFailure = Optional.empty();
 
   public Pacemaker(
       BFTNode self,
@@ -124,6 +136,7 @@ public final class Pacemaker {
       ProposalGenerator proposalGenerator,
       RemoteEventDispatcher<Proposal> proposalDispatcher,
       RemoteEventDispatcher<Vote> voteDispatcher,
+      EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher,
       Hasher hasher,
       TimeSupplier timeSupplier,
       RoundUpdate initialRoundUpdate,
@@ -139,8 +152,9 @@ public final class Pacemaker {
     this.timeoutCalculator = Objects.requireNonNull(timeoutCalculator);
     this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
     this.proposalDispatcher = Objects.requireNonNull(proposalDispatcher);
-    this.hasher = Objects.requireNonNull(hasher);
     this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
+    this.roundLeaderFailureDispatcher = Objects.requireNonNull(roundLeaderFailureDispatcher);
+    this.hasher = Objects.requireNonNull(hasher);
     this.timeSupplier = Objects.requireNonNull(timeSupplier);
     this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
     this.systemCounters = Objects.requireNonNull(systemCounters);
@@ -158,8 +172,11 @@ public final class Pacemaker {
 
     final var previousRound = this.latestRoundUpdate.getCurrentRound();
     if (roundUpdate.getCurrentRound().lte(previousRound)) {
+      // This shouldn't really happen but ignore any outdated updates
+      counters.increment(CounterType.BFT_PRECONDITION_VIOLATIONS);
       return;
     }
+
     this.latestRoundUpdate = roundUpdate;
     this.systemCounters.set(
         CounterType.BFT_PACEMAKER_ROUND, roundUpdate.getCurrentRound().number());
@@ -169,20 +186,28 @@ public final class Pacemaker {
 
   /** Processes a local BFTInsertUpdate message */
   public void processBFTUpdate(BFTInsertUpdate update) {
-    /* we only process the insertion of an empty vertex used for timeout vote (see: processLocalTimeout) */
-    if (!this.isRoundTimedOut
-        || this.timeoutVoteVertexId
-            .filter(update.getInserted().getVertexHash()::equals)
-            .isEmpty()) {
+    // We only process a "leader failure" vertex here
+    if (this.vertexIdForLeaderFailure
+        .filter(update.getInserted().getVertexHash()::equals)
+        .isEmpty()) {
       return;
     }
 
-    this.createAndSendTimeoutVote(update.getInserted());
+    switch (this.roundStatus) {
+      case UNDISTURBED -> {} // no-op
+      case PROPOSAL_REJECTED ->
+      // We have received a rejected proposal, send a timeout vote to the next leader only
+      createAndSendTimeoutVote(
+          update.getInserted(), ImmutableSet.of(this.latestRoundUpdate.getNextLeader()));
+      case TIMED_OUT ->
+      // The round has timed out for real, send a timeout vote to everyone
+      this.createAndSendTimeoutVoteToAll(update.getInserted());
+    }
   }
 
   private void startRound() {
-    this.isRoundTimedOut = false;
-    this.timeoutVoteVertexId = Optional.empty();
+    this.roundStatus = RoundStatus.UNDISTURBED;
+    this.vertexIdForLeaderFailure = Optional.empty();
 
     final var timeoutMs =
         timeoutCalculator.calculateTimeoutMs(latestRoundUpdate.consecutiveUncommittedRoundsCount());
@@ -191,8 +216,8 @@ public final class Pacemaker {
 
     final var currentRoundProposer = latestRoundUpdate.getLeader();
     if (this.self.equals(currentRoundProposer)) {
-      Optional<Proposal> proposalMaybe = generateProposal(latestRoundUpdate.getCurrentRound());
-      proposalMaybe.ifPresent(
+      final var maybeProposal = generateProposal(latestRoundUpdate.getCurrentRound());
+      maybeProposal.ifPresent(
           proposal -> {
             log.trace("Broadcasting proposal: {}", proposal);
             this.proposalDispatcher.dispatch(this.validatorSet.nodes(), proposal);
@@ -212,7 +237,6 @@ public final class Pacemaker {
         proposedVertex, highQC.highestCommittedQC(), highQC.highestTC());
   }
 
-  @SuppressWarnings("StatementWithEmptyBody")
   private long determineNextProposalTimestamp(QuorumCertificate highestQC) {
     final var now = timeSupplier.currentTime();
     final var previousProposerTimestamp =
@@ -246,7 +270,13 @@ public final class Pacemaker {
       won't work either because then the validators keep increasing the timestamps (rushing, from their point of view)
       ad infinitum, which can lead to proposals being rejected at some point (due to exceeding the acceptable limits). */
       long nowButABitLater;
-      while ((nowButABitLater = timeSupplier.currentTime()) <= now) {}
+      while ((nowButABitLater = timeSupplier.currentTime()) <= now) {
+        try {
+          Thread.sleep(1L);
+        } catch (InterruptedException e) {
+          // no-op
+        }
+      }
       return nowButABitLater;
     }
   }
@@ -274,38 +304,62 @@ public final class Pacemaker {
    * a timeout signature, which can later be used to form a timeout certificate.
    */
   public void processLocalTimeout(ScheduledLocalTimeout scheduledTimeout) {
-    final var round = scheduledTimeout.round();
-
-    if (!round.equals(this.latestRoundUpdate.getCurrentRound())) {
-      log.trace(
-          "LocalTimeout: Ignoring timeout {}, current is {}",
-          scheduledTimeout,
-          this.latestRoundUpdate.getCurrentRound());
-      return;
+    // Dispatch RoundLeaderFailure event if this is the first timeout occurrence
+    if (scheduledTimeout.count() == 0) {
+      roundLeaderFailureDispatcher.dispatch(
+          new RoundLeaderFailure(
+              this.latestRoundUpdate.getCurrentRound(), RoundLeaderFailureReason.ROUND_TIMEOUT));
     }
 
-    log.trace("LocalTimeout: {}", scheduledTimeout);
-
-    this.isRoundTimedOut = true;
+    this.roundStatus = RoundStatus.TIMED_OUT;
 
     updateTimeoutCounters(scheduledTimeout);
 
-    this.safetyRules
-        .getLastVote(round)
-        .map(this.safetyRules::timeoutVote)
-        .ifPresentOrElse(
-            /* if there is a previously sent vote, we time it out and broadcast to all nodes */
-            vote -> this.voteDispatcher.dispatch(this.validatorSet.nodes(), vote),
-            /* otherwise, we asynchronously insert an empty vertex and, when done,
-            we send a timeout vote on it (see processBFTUpdate) */
-            () -> createTimeoutVertexAndSendVote(scheduledTimeout.roundUpdate()));
+    resendPreviousOrNewVoteWithTimeout(this.validatorSet.nodes());
+
+    // Dispatch an actual timeout occurrence
+    this.timeoutDispatcher.dispatch(new LocalTimeoutOccurrence(scheduledTimeout));
 
     rescheduleTimeout(scheduledTimeout);
   }
 
-  private void createTimeoutVertexAndSendVote(RoundUpdate roundUpdate) {
-    if (this.timeoutVoteVertexId.isPresent()) {
-      return; // vertex for a timeout vote for this round is already inserted
+  private void resendPreviousOrNewVoteWithTimeout(ImmutableSet<BFTNode> receivers) {
+    this.safetyRules
+        .getLastVote(this.latestRoundUpdate.getCurrentRound())
+        .map(this.safetyRules::timeoutVote)
+        .ifPresentOrElse(
+            /* if there is a previously sent vote: time it out and send */
+            vote -> this.voteDispatcher.dispatch(receivers, vote),
+            /* otherwise: asynchronously insert a "leader failure" (timeout) vertex and, when done,
+            send a timeout vote for it (see processBFTUpdate) */
+            () -> createTimeoutVertexAndSendVote(this.latestRoundUpdate, receivers));
+  }
+
+  public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
+    switch (roundLeaderFailure.reason()) {
+      case ROUND_TIMEOUT -> {
+        /* nothing to do here, timeouts are handled within their own events */
+      }
+      case PROPOSED_TIMESTAMP_UNACCEPTABLE -> {
+        if (this.roundStatus != RoundStatus.UNDISTURBED) {
+          // No-op if the round is already disturbed
+          return;
+        }
+
+        this.roundStatus = RoundStatus.PROPOSAL_REJECTED;
+
+        // Send a single timeout vote to the next leader
+        resendPreviousOrNewVoteWithTimeout(ImmutableSet.of(this.latestRoundUpdate.getNextLeader()));
+      }
+    }
+  }
+
+  private void createTimeoutVertexAndSendVote(
+      RoundUpdate roundUpdate, ImmutableSet<BFTNode> receivers) {
+    if (this.vertexIdForLeaderFailure.isPresent()) {
+      // The "leader failure" vertex for this round is already being inserted (or has already been
+      // inserted)
+      return;
     }
 
     final var highQC = this.latestRoundUpdate.getHighQC();
@@ -313,14 +367,18 @@ public final class Pacemaker {
         Vertex.createTimeout(
                 highQC.highestQC(), roundUpdate.getCurrentRound(), roundUpdate.getLeader())
             .withId(hasher);
-    this.timeoutVoteVertexId = Optional.of(vertex.hash());
+    this.vertexIdForLeaderFailure = Optional.of(vertex.hash());
 
     // TODO: reimplement in async way
     this.vertexStore
         .getExecutedVertex(vertex.hash())
         .ifPresentOrElse(
-            this::createAndSendTimeoutVote, // if vertex is already there, send the vote immediately
-            () -> maybeInsertVertex(vertex) // otherwise insert and wait for async bft update msg
+            v ->
+                createAndSendTimeoutVote(
+                    v,
+                    receivers), // the vertex was already present in the vertex store, send the vote
+            // immediately
+            () -> maybeInsertVertex(vertex) // otherwise insert and wait for async bft update event
             );
   }
 
@@ -334,7 +392,12 @@ public final class Pacemaker {
     }
   }
 
-  private void createAndSendTimeoutVote(ExecutedVertex executedVertex) {
+  private void createAndSendTimeoutVoteToAll(ExecutedVertex executedVertex) {
+    createAndSendTimeoutVote(executedVertex, this.validatorSet.nodes());
+  }
+
+  private void createAndSendTimeoutVote(
+      ExecutedVertex executedVertex, ImmutableSet<BFTNode> receivers) {
     final var bftHeader =
         new BFTHeader(
             executedVertex.getRound(),
@@ -355,7 +418,7 @@ public final class Pacemaker {
     maybeBaseVote.ifPresent(
         baseVote -> {
           final var timeoutVote = this.safetyRules.timeoutVote(baseVote);
-          this.voteDispatcher.dispatch(this.validatorSet.nodes(), timeoutVote);
+          this.voteDispatcher.dispatch(receivers, timeoutVote);
         });
   }
 
@@ -367,9 +430,6 @@ public final class Pacemaker {
   }
 
   private void rescheduleTimeout(ScheduledLocalTimeout scheduledTimeout) {
-    final var localTimeoutOccurrence = new LocalTimeoutOccurrence(scheduledTimeout);
-    this.timeoutDispatcher.dispatch(localTimeoutOccurrence);
-
     final var timeout =
         timeoutCalculator.calculateTimeoutMs(latestRoundUpdate.consecutiveUncommittedRoundsCount());
     final var nextTimeout = scheduledTimeout.nextRetry(timeout);
