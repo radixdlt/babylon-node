@@ -83,10 +83,12 @@ public interface SystemCounters {
     /** Number of round-timeout quorums formed. */
     BFT_TIMEOUT_QUORUMS("bft.timeout_quorums"),
 
+    BFT_VERIFIER_SUCCESSFULLY_VERIFIED_VOTES("bft.verifier.successfully_verified_votes"),
     BFT_VERIFIER_INVALID_VOTE_AUTHORS("bft.verifier.invalid_vote_authors"),
     BFT_VERIFIER_INVALID_VOTE_SIGNATURES("bft.verifier.invalid_vote_signatures"),
     BFT_VERIFIER_INVALID_VOTE_TIMEOUT_SIGNATURES("bft.verifier.invalid_vote_timeout_signatures"),
     BFT_VERIFIER_INVALID_VOTE_QCS("bft.verifier.invalid_vote_qcs"),
+    BFT_VERIFIER_SUCCESSFULLY_VERIFIED_PROPOSALS("bft.verifier.successfully_verified_proposals"),
     BFT_VERIFIER_INVALID_PROPOSAL_AUTHORS("bft.verifier.invalid_proposal_authors"),
     BFT_VERIFIER_INVALID_PROPOSAL_SIGNATURES("bft.verifier.invalid_proposal_signatures"),
     BFT_VERIFIER_INVALID_PROPOSAL_QCS("bft.verifier.invalid_proposal_qcs"),

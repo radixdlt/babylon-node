@@ -305,7 +305,6 @@ public class EpochsConsensusModule extends AbstractModule {
     return (validatorSet, vertexStore, timeoutCalculator, safetyRules, initialRoundUpdate, epoch) ->
         new Pacemaker(
             self,
-            counters,
             validatorSet,
             vertexStore,
             safetyRules,

@@ -216,7 +216,6 @@ public final class ConsensusModule extends AbstractModule {
   private Pacemaker pacemaker(
       @Self BFTNode self,
       SafetyRules safetyRules,
-      SystemCounters counters,
       BFTConfiguration configuration,
       VertexStoreAdapter vertexStore,
       EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
@@ -234,7 +233,6 @@ public final class ConsensusModule extends AbstractModule {
     BFTValidatorSet validatorSet = configuration.getValidatorSet();
     return new Pacemaker(
         self,
-        counters,
         validatorSet,
         vertexStore,
         safetyRules,

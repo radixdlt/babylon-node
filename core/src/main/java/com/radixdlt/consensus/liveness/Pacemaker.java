@@ -102,7 +102,6 @@ public final class Pacemaker {
   private static final int PREVIOUS_ROUND_RUSHING_TIMESTAMP_LOG_THRESHOLD_MS = 1000;
 
   private final BFTNode self;
-  private final SystemCounters counters;
   private final BFTValidatorSet validatorSet;
   private final VertexStoreAdapter vertexStore;
   private final SafetyRules safetyRules;
@@ -128,7 +127,6 @@ public final class Pacemaker {
 
   public Pacemaker(
       BFTNode self,
-      SystemCounters counters,
       BFTValidatorSet validatorSet,
       VertexStoreAdapter vertexStore,
       SafetyRules safetyRules,
@@ -145,7 +143,6 @@ public final class Pacemaker {
       SystemCounters systemCounters,
       SecureRandom secureRandom) {
     this.self = Objects.requireNonNull(self);
-    this.counters = Objects.requireNonNull(counters);
     this.validatorSet = Objects.requireNonNull(validatorSet);
     this.vertexStore = Objects.requireNonNull(vertexStore);
     this.safetyRules = Objects.requireNonNull(safetyRules);
@@ -175,7 +172,7 @@ public final class Pacemaker {
     final var previousRound = this.latestRoundUpdate.getCurrentRound();
     if (roundUpdate.getCurrentRound().lte(previousRound)) {
       // This shouldn't really happen but ignore any outdated updates
-      counters.increment(CounterType.BFT_PRECONDITION_VIOLATIONS);
+      systemCounters.increment(CounterType.BFT_PRECONDITION_VIOLATIONS);
       return;
     }
 
@@ -223,7 +220,7 @@ public final class Pacemaker {
           proposal -> {
             log.trace("Broadcasting proposal: {}", proposal);
             this.proposalDispatcher.dispatch(this.validatorSet.nodes(), proposal);
-            this.counters.increment(CounterType.BFT_PACEMAKER_PROPOSALS_SENT);
+            this.systemCounters.increment(CounterType.BFT_PACEMAKER_PROPOSALS_SENT);
           });
     }
   }
@@ -261,7 +258,7 @@ public final class Pacemaker {
                 + "Consider further investigation if this log message appears on a regular basis.");
       }
 
-      counters.increment(CounterType.BFT_PACEMAKER_PROPOSALS_WITH_SUBSTITUTE_TIMESTAMP);
+      systemCounters.increment(CounterType.BFT_PACEMAKER_PROPOSALS_WITH_SUBSTITUTE_TIMESTAMP);
       final var randomOffset =
           this.secureRandom.nextInt(PROPOSAL_SUBSTITUTE_TIMESTAMP_MAX_OFFSET_MS);
       return previousProposerTimestamp + randomOffset;
@@ -430,9 +427,9 @@ public final class Pacemaker {
 
   private void updateTimeoutCounters(ScheduledLocalTimeout scheduledTimeout) {
     if (scheduledTimeout.count() == 0) {
-      counters.increment(CounterType.BFT_PACEMAKER_TIMED_OUT_ROUNDS);
+      systemCounters.increment(CounterType.BFT_PACEMAKER_TIMED_OUT_ROUNDS);
     }
-    counters.increment(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT);
+    systemCounters.increment(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT);
   }
 
   private void rescheduleTimeout(ScheduledLocalTimeout scheduledTimeout) {

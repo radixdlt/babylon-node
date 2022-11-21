@@ -92,6 +92,9 @@ public final class ProposalTimestampVerifier implements BFTEventProcessor {
   static final long MAX_ACCEPTABLE_PROPOSAL_TIMESTAMP_DELAY_MS = 3000;
   static final long MAX_ACCEPTABLE_PROPOSAL_TIMESTAMP_RUSH_MS = 2000;
 
+  static final long LOG_AT_PROPOSAL_TIMESTAMP_DELAY_MS = 2000;
+  static final long LOG_AT_PROPOSAL_TIMESTAMP_RUSH_MS = 1200;
+
   private final BFTEventProcessor forwardTo;
   private final TimeSupplier timeSupplier;
   private final SystemCounters systemCounters;
@@ -126,21 +129,35 @@ public final class ProposalTimestampVerifier implements BFTEventProcessor {
   @Override
   public void processProposal(Proposal proposal) {
     final var now = timeSupplier.currentTime();
-    if (!isProposalTimestampAcceptable(proposal, now)) {
-      systemCounters.increment(SystemCounters.CounterType.BFT_VERIFIER_INVALID_PROPOSAL_TIMESTAMPS);
-      log.warn(
-          "Rejecting a proposal from {}. Its timestamp ({}) is out of acceptable bounds at system"
-              + " time {}.",
+
+    final var isAcceptable = isProposalTimestampAcceptable(proposal, now);
+    final var shouldLog = isProposalTimestampWithinLoggingBounds(proposal, now);
+
+    if (shouldLog) {
+      if (isAcceptable) {
+        log.info(
+          "A proposal from {} has a timestamp that is close to being rejected (but still acceptable). Its timestamp is {} and the system time is {}.",
           proposal.getAuthor(),
           proposal.getVertex().proposerTimestamp(),
           now);
-      roundLeaderFailureDispatcher.dispatch(
-          new RoundLeaderFailure(
-              proposal.getRound(), RoundLeaderFailureReason.PROPOSED_TIMESTAMP_UNACCEPTABLE));
-      return;
+      } else {
+        log.warn(
+          "Rejecting a proposal from {}. Its timestamp ({}) is out of acceptable bounds at system"
+                + " time {}.",
+          proposal.getAuthor(),
+          proposal.getVertex().proposerTimestamp(),
+          now);
+      }
     }
 
-    forwardTo.processProposal(proposal);
+    if (isAcceptable) {
+      forwardTo.processProposal(proposal);
+    } else {
+      systemCounters.increment(SystemCounters.CounterType.BFT_VERIFIER_INVALID_PROPOSAL_TIMESTAMPS);
+      roundLeaderFailureDispatcher.dispatch(
+        new RoundLeaderFailure(
+          proposal.getRound(), RoundLeaderFailureReason.PROPOSED_TIMESTAMP_UNACCEPTABLE));
+    }
   }
 
   private boolean isProposalTimestampAcceptable(Proposal proposal, long now) {
@@ -151,6 +168,13 @@ public final class ProposalTimestampVerifier implements BFTEventProcessor {
 
     final var ts = proposal.getVertex().proposerTimestamp();
     return ts >= lowerBoundInclusive && ts <= upperBoundInclusive && ts > prevTimestamp;
+  }
+
+  private boolean isProposalTimestampWithinLoggingBounds(Proposal proposal, long now) {
+    final var lowerBoundInclusive = now - LOG_AT_PROPOSAL_TIMESTAMP_DELAY_MS;
+    final var upperBoundInclusive = now + LOG_AT_PROPOSAL_TIMESTAMP_RUSH_MS;
+    final var ts = proposal.getVertex().proposerTimestamp();
+    return ts >= lowerBoundInclusive && ts <= upperBoundInclusive;
   }
 
   @Override

@@ -165,6 +165,7 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
       return;
     }
 
+    systemCounters.increment(SystemCounters.CounterType.BFT_VERIFIER_SUCCESSFULLY_VERIFIED_VOTES);
     forwardTo.processVote(vote);
   }
 
@@ -189,6 +190,7 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
       return;
     }
 
+    systemCounters.increment(SystemCounters.CounterType.BFT_VERIFIER_SUCCESSFULLY_VERIFIED_PROPOSALS);
     forwardTo.processProposal(proposal);
   }
 

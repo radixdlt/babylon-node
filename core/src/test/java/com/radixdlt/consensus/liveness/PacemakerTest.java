@@ -97,7 +97,6 @@ public class PacemakerTest {
   private static final Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
 
   private BFTNode self = mock(BFTNode.class);
-  private SystemCounters counters = mock(SystemCounters.class);
   private BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
   private VertexStoreAdapter vertexStore = mock(VertexStoreAdapter.class);
   private SafetyRules safetyRules = mock(SafetyRules.class);
@@ -127,7 +126,6 @@ public class PacemakerTest {
     this.pacemaker =
         new Pacemaker(
             this.self,
-            this.counters,
             this.validatorSet,
             this.vertexStore,
             this.safetyRules,
