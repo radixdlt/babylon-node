@@ -64,8 +64,7 @@
 
 package com.radixdlt.consensus.epoch;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
 import com.radixdlt.consensus.bft.Round;

@@ -64,7 +64,7 @@
 
 package com.radixdlt.monitoring;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.*;
 import static org.junit.Assert.assertNotNull;
 
 import com.google.common.collect.ImmutableMap;

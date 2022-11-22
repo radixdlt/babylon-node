@@ -64,7 +64,7 @@
 
 package com.radixdlt.harness.invariants;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 import com.google.inject.Injector;
 import com.radixdlt.harness.predicates.NodePredicate;

@@ -64,7 +64,7 @@
 
 package com.radixdlt.consensus.bft;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.hash.HashCode;
