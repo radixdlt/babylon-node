@@ -68,6 +68,7 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.api.core.generated.api.MempoolApi;
 import com.radixdlt.api.core.generated.api.StateApi;
 import com.radixdlt.api.core.generated.api.StatusApi;
 import com.radixdlt.api.core.generated.api.TransactionApi;
@@ -142,6 +143,10 @@ public abstract class DeterministicCoreApiTestBase {
     dummySSLContext.init(null, null, null);
     apiClient.setHttpClientBuilder(HttpClient.newBuilder().sslContext(dummySSLContext));
     return apiClient;
+  }
+
+  public MempoolApi getMempoolApi() throws Exception {
+    return new MempoolApi(buildApiClient());
   }
 
   protected StatusApi getStatusApi() throws Exception {
