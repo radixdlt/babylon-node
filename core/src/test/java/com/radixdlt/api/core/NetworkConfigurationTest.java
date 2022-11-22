@@ -64,22 +64,21 @@
 
 package com.radixdlt.api.core;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
-import com.radixdlt.api.core.generated.models.NetworkStatusRequest;
 import org.junit.Test;
 
-public class NetworkStatusTest extends DeterministicCoreApiTestBase {
+public class NetworkConfigurationTest extends DeterministicCoreApiTestBase {
   @Test
-  public void test_core_api_status_response_at_startup() throws Exception {
+  public void test_network_configuration() throws Exception {
     try (var ignored = buildRunningServerTest()) {
-      final var response =
-          getStatusApi()
-              .statusNetworkStatusPost(new NetworkStatusRequest().network(networkLogicalName));
+      final var response = getStatusApi().statusNetworkConfigurationPost();
 
-      // Has ingested genesis on startup
-      assertThat(response.getCurrentStateIdentifier().getStateVersion()).isEqualTo(1);
+      assertThat(response.getNetwork())
+          .isEqualTo(DeterministicCoreApiTestBase.networkDefinition.logical_name());
+      assertThat(response.getNetworkHrpSuffix())
+          .isEqualTo(DeterministicCoreApiTestBase.networkDefinition.hrp_suffix());
     }
   }
 }
