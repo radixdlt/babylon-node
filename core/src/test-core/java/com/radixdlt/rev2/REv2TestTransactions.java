@@ -194,6 +194,22 @@ public final class REv2TestTransactions {
     return REv2TestTransactions.constructTransaction(intentBytes, DEFAULT_NOTARY, List.of());
   }
 
+  public record TransactionWithIntentHash(RawNotarizedTransaction transaction, byte[] intentHash) {}
+
+  public static TransactionWithIntentHash constructValidTransactionWithIntentHash(
+      long fromEpoch, long nonce) {
+    var intentBytes =
+        constructValidIntentBytes(
+            NetworkDefinition.INT_TEST_NET,
+            fromEpoch,
+            nonce,
+            DEFAULT_NOTARY.getPublicKey().toPublicKey());
+    var intentHash = HashUtils.sha256Twice(intentBytes).asBytes();
+    return new TransactionWithIntentHash(
+        REv2TestTransactions.constructTransaction(intentBytes, DEFAULT_NOTARY, List.of()),
+        intentHash);
+  }
+
   public static RawNotarizedTransaction constructNewAccountTransaction(
       NetworkDefinition networkDefinition, long fromEpoch, long nonce) {
     var manifest = constructNewAccountManifest(networkDefinition);

@@ -67,11 +67,11 @@ package com.radixdlt.api.system;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.ApiTest;
+import com.radixdlt.api.SystemApiTestBase;
 import com.radixdlt.api.prometheus.PrometheusHandler;
 import org.junit.Test;
 
-public class PrometheusHandlerTest extends ApiTest {
+public class PrometheusHandlerTest extends SystemApiTestBase {
   @Inject private PrometheusHandler sut;
 
   @Test

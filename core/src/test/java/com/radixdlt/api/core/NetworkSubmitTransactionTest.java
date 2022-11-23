@@ -62,13 +62,58 @@
  * permissions under this License.
  */
 
-package com.radixdlt.environment;
+package com.radixdlt.api.core;
 
-/**
- * Wrapper interface around AutoCloseable so that we don't compile warnings regarding auto-closeable
- * resource that could throw InterruptedException
- */
-public interface NodeAutoCloseable extends AutoCloseable {
-  @Override
-  void close();
+import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransaction;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
+import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.TransactionSubmitRequest;
+import com.radixdlt.api.core.generated.models.V0TransactionStatusRequest;
+import com.radixdlt.api.core.generated.models.V0TransactionStatusResponse;
+import com.radixdlt.rev2.REv2TestTransactions;
+import com.radixdlt.utils.Bytes;
+import org.junit.Test;
+
+public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
+  @Test
+  public void test_core_api_can_submit_and_commit_transaction() throws Exception {
+    try (var test = buildRunningServerTest()) {
+
+      var transactionWithHash = REv2TestTransactions.constructValidTransactionWithIntentHash(0, 0);
+      var transaction = transactionWithHash.transaction();
+      var intentHash = transactionWithHash.intentHash();
+
+      // Submit transaction
+      var response =
+          getTransactionApi()
+              .transactionSubmitPost(
+                  new TransactionSubmitRequest()
+                      .network(networkLogicalName)
+                      .notarizedTransactionHex(Bytes.toHexString(transaction.getPayload())));
+
+      assertThat(response.getDuplicate()).isEqualTo(false);
+
+      // Check that it's in mempool
+      var statusResponse1 =
+          getTransactionApi()
+              .v0TransactionStatusPost(
+                  new V0TransactionStatusRequest().intentHash(Bytes.toHexString(intentHash)));
+
+      assertThat(statusResponse1.getIntentStatus())
+          .isEqualTo(V0TransactionStatusResponse.IntentStatusEnum.INMEMPOOL);
+
+      // Now we run consensus
+      test.runUntilState(allCommittedTransaction(transaction), 1000);
+
+      // Check the status response again
+      var statusResponse2 =
+          getTransactionApi()
+              .v0TransactionStatusPost(
+                  new V0TransactionStatusRequest().intentHash(Bytes.toHexString(intentHash)));
+
+      assertThat(statusResponse2.getIntentStatus())
+          .isEqualTo(V0TransactionStatusResponse.IntentStatusEnum.COMMITTEDSUCCESS);
+    }
+  }
 }

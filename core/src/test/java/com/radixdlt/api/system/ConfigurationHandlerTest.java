@@ -67,12 +67,12 @@ package com.radixdlt.api.system;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.ApiTest;
+import com.radixdlt.api.SystemApiTestBase;
 import com.radixdlt.api.system.generated.models.SystemConfigurationResponse;
 import com.radixdlt.api.system.routes.ConfigurationHandler;
 import org.junit.Test;
 
-public class ConfigurationHandlerTest extends ApiTest {
+public class ConfigurationHandlerTest extends SystemApiTestBase {
   @Inject private ConfigurationHandler sut;
 
   @Test

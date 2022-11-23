@@ -183,6 +183,11 @@ public final class DeterministicTest implements AutoCloseable {
       return this;
     }
 
+    public Builder addModule(Module module) {
+      this.modules.add(module);
+      return this;
+    }
+
     private void addFunctionalNodeModule(FunctionalRadixNodeModule module) {
       modules.add(module);
 

@@ -101,12 +101,12 @@ import java.io.ByteArrayInputStream;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 
-public abstract class ApiTest {
+public abstract class SystemApiTestBase {
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 
   @Inject private SingleNodeDeterministicRunner runner;
 
-  protected ApiTest() {}
+  protected SystemApiTestBase() {}
 
   @Before
   public void setup() {
