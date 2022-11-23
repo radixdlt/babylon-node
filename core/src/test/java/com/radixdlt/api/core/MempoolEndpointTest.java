@@ -78,11 +78,10 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
   public void test_mempool_queries() throws Exception {
     try (var test = buildRunningServerTest()) {
 
-      var transactionWithHash =
-          REv2TestTransactions.constructValidRawTransactionWithIntentHash(0, 0);
-      var transaction = transactionWithHash.transaction();
-      var intentHash = transactionWithHash.intentHash();
-      var payloadHash = transaction.getPayloadHash();
+      var transaction = REv2TestTransactions.constructValidTransaction(0, 0);
+      var rawTransaction = transaction.constructRawTransaction();
+      var intentHash = transaction.hashedIntent().asBytes();
+      var payloadHash = rawTransaction.getPayloadHash();
 
       // Submit transaction
       var response =
@@ -90,7 +89,7 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
               .transactionSubmitPost(
                   new TransactionSubmitRequest()
                       .network(networkLogicalName)
-                      .notarizedTransactionHex(Bytes.toHexString(transaction.getPayload())));
+                      .notarizedTransactionHex(Bytes.toHexString(rawTransaction.getPayload())));
 
       assertThat(response.getDuplicate()).isEqualTo(false);
 
@@ -112,9 +111,9 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
                       .payloadHash(Bytes.toHexString(payloadHash.asBytes())));
 
       assertThat(mempoolTransaction.getNotarizedTransaction().getHash())
-          .isEqualTo(Bytes.toHexString(transaction.getPayloadHash().asBytes()));
+          .isEqualTo(Bytes.toHexString(payloadHash.asBytes()));
 
-      test.runUntilState(allCommittedTransaction(transaction), 1000);
+      test.runUntilState(allCommittedTransaction(rawTransaction), 1000);
 
       assertThat(
               getMempoolApi()
