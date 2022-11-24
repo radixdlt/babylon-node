@@ -66,7 +66,7 @@ package com.radixdlt.integration.steady_state.deterministic.rev2.consensus_ledge
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.randomSelector;
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 
 import com.google.inject.Module;
 import com.radixdlt.harness.deterministic.DeterministicTest;

@@ -62,71 +62,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.api.core;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.mock;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.*;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.serialization.DefaultSerialization;
-import java.util.Optional;
-import org.junit.Before;
+import com.radixdlt.api.DeterministicCoreApiTestBase;
 import org.junit.Test;
 
-public class VertexStoreStateCreationTest {
-  private VertexWithHash genesisVertex;
-  private HashCode genesisHash;
-  private Hasher hasher;
-  private static final LedgerHeader MOCKED_HEADER =
-      LedgerHeader.create(0, Round.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0);
-
-  @Before
-  public void setup() {
-    this.hasher = new Sha256Hasher(DefaultSerialization.getInstance());
-    this.genesisVertex = Vertex.createGenesis(MOCKED_HEADER).withId(hasher);
-    this.genesisHash = genesisVertex.getHash();
-  }
-
+public class NetworkConfigurationTest extends DeterministicCoreApiTestBase {
   @Test
-  public void creating_vertex_store_with_root_not_committed_should_fail() {
-    BFTHeader genesisHeader = new BFTHeader(Round.of(0), genesisHash, mock(LedgerHeader.class));
-    VoteData voteData = new VoteData(genesisHeader, genesisHeader, null);
-    QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-    assertThatThrownBy(
-            () ->
-                VertexStoreState.create(
-                    HighQC.from(badRootQC), genesisVertex, Optional.empty(), hasher))
-        .isInstanceOf(IllegalStateException.class);
-  }
+  public void test_network_configuration() throws Exception {
+    try (var ignored = buildRunningServerTest()) {
+      final var response = getStatusApi().statusNetworkConfigurationPost();
 
-  @Test
-  public void creating_vertex_store_with_committed_qc_not_matching_vertex_should_fail() {
-    BFTHeader genesisHeader = new BFTHeader(Round.of(0), genesisHash, mock(LedgerHeader.class));
-    BFTHeader otherHeader =
-        new BFTHeader(Round.of(0), HashUtils.random256(), mock(LedgerHeader.class));
-    VoteData voteData = new VoteData(genesisHeader, genesisHeader, otherHeader);
-    QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-    assertThatThrownBy(
-            () ->
-                VertexStoreState.create(
-                    HighQC.from(badRootQC), genesisVertex, Optional.empty(), hasher))
-        .isInstanceOf(IllegalStateException.class);
-  }
-
-  @Test
-  public void creating_vertex_store_with_qc_not_matching_vertex_should_fail() {
-    BFTHeader genesisHeader =
-        new BFTHeader(Round.of(0), HashUtils.random256(), mock(LedgerHeader.class));
-    VoteData voteData = new VoteData(genesisHeader, genesisHeader, genesisHeader);
-    QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-    assertThatThrownBy(
-            () ->
-                VertexStoreState.create(
-                    HighQC.from(badRootQC), genesisVertex, Optional.empty(), hasher))
-        .isInstanceOf(IllegalStateException.class);
+      assertThat(response.getNetwork())
+          .isEqualTo(DeterministicCoreApiTestBase.networkDefinition.logical_name());
+      assertThat(response.getNetworkHrpSuffix())
+          .isEqualTo(DeterministicCoreApiTestBase.networkDefinition.hrp_suffix());
+    }
   }
 }

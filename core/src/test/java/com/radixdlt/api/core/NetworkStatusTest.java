@@ -64,7 +64,7 @@
 
 package com.radixdlt.api.core;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.NetworkStatusRequest;
@@ -77,6 +77,7 @@ public class NetworkStatusTest extends DeterministicCoreApiTestBase {
       final var response =
           getStatusApi()
               .statusNetworkStatusPost(new NetworkStatusRequest().network(networkLogicalName));
+
       // Has ingested genesis on startup
       assertThat(response.getCurrentStateIdentifier().getStateVersion()).isEqualTo(1);
     }
