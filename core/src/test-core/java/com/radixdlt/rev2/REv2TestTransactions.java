@@ -87,7 +87,7 @@ public final class REv2TestTransactions {
     // Note - rejects due to lack of fee payment
     final var manifest = "CLEAR_AUTH_ZONE;";
     final var signatories = List.of(generateKeyPair(10));
-    return constructTransaction(
+    return constructRawTransaction(
         NetworkDefinition.INT_TEST_NET, manifest, fromEpoch, nonce, signatories);
   }
 
@@ -152,7 +152,7 @@ public final class REv2TestTransactions {
     var manifest = constructNewAccountFromAccountManifest(networkDefinition, from);
     var signatories = List.<ECKeyPair>of();
 
-    return constructTransaction(
+    return constructRawTransaction(
         networkDefinition, fromEpoch, nonce, manifest, DEFAULT_NOTARY, false, signatories);
   }
 
@@ -181,7 +181,7 @@ public final class REv2TestTransactions {
     var intentBytes =
         TransactionBuilder.buildSetEpochIntent(
             NetworkDefinition.INT_TEST_NET, DEFAULT_NOTARY.getPublicKey().toPublicKey(), epoch);
-    return REv2TestTransactions.constructTransaction(intentBytes, DEFAULT_NOTARY, List.of());
+    return REv2TestTransactions.constructRawTransaction(intentBytes, DEFAULT_NOTARY, List.of());
   }
 
   public static RawNotarizedTransaction constructValidTransaction(long fromEpoch, long nonce) {
@@ -191,7 +191,7 @@ public final class REv2TestTransactions {
             fromEpoch,
             nonce,
             DEFAULT_NOTARY.getPublicKey().toPublicKey());
-    return REv2TestTransactions.constructTransaction(intentBytes, DEFAULT_NOTARY, List.of());
+    return REv2TestTransactions.constructRawTransaction(intentBytes, DEFAULT_NOTARY, List.of());
   }
 
   public record TransactionWithIntentHash(RawNotarizedTransaction transaction, byte[] intentHash) {}
@@ -206,7 +206,7 @@ public final class REv2TestTransactions {
             DEFAULT_NOTARY.getPublicKey().toPublicKey());
     var intentHash = HashUtils.sha256Twice(intentBytes).asBytes();
     return new TransactionWithIntentHash(
-        REv2TestTransactions.constructTransaction(intentBytes, DEFAULT_NOTARY, List.of()),
+        REv2TestTransactions.constructRawTransaction(intentBytes, DEFAULT_NOTARY, List.of()),
         intentHash);
   }
 
@@ -215,21 +215,21 @@ public final class REv2TestTransactions {
     var manifest = constructNewAccountManifest(networkDefinition);
     var signatories = List.<ECKeyPair>of();
 
-    return constructTransaction(
+    return constructRawTransaction(
         networkDefinition, fromEpoch, nonce, manifest, DEFAULT_NOTARY, false, signatories);
   }
 
-  public static RawNotarizedTransaction constructTransaction(
+  public static RawNotarizedTransaction constructRawTransaction(
       NetworkDefinition networkDefinition,
       String manifest,
       long fromEpoch,
       long nonce,
       List<ECKeyPair> signatories) {
-    return constructTransaction(
+    return constructRawTransaction(
         networkDefinition, fromEpoch, nonce, manifest, DEFAULT_NOTARY, false, signatories);
   }
 
-  public static RawNotarizedTransaction constructTransaction(
+  public static RawNotarizedTransaction constructRawTransaction(
       NetworkDefinition networkDefinition,
       long fromEpoch,
       long nonce,
@@ -250,10 +250,10 @@ public final class REv2TestTransactions {
         TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
 
     // Sign intent
-    return constructTransaction(intentBytes, notary, signatories);
+    return constructRawTransaction(intentBytes, notary, signatories);
   }
 
-  public static RawNotarizedTransaction constructTransaction(
+  public static RawNotarizedTransaction constructRawTransaction(
       NetworkDefinition networkDefinition,
       TransactionHeader header,
       String manifest,
@@ -264,10 +264,10 @@ public final class REv2TestTransactions {
         TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
 
     // Sign intent
-    return constructTransaction(intentBytes, notary, signatories);
+    return constructRawTransaction(intentBytes, notary, signatories);
   }
 
-  public static RawNotarizedTransaction constructTransaction(
+  public static RawNotarizedTransaction constructRawTransaction(
       byte[] intentBytes, ECKeyPair notary, List<ECKeyPair> signatories) {
     // Sign intent
     var hashedIntent = HashUtils.sha256Twice(intentBytes).asBytes();
