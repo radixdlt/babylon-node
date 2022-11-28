@@ -83,12 +83,10 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -149,9 +147,6 @@ public final class EpochManager {
   @Inject
   public EpochManager(
       @Self BFTNode self,
-      BFTEventProcessor initialBFTEventProcessor,
-      VertexStoreBFTSyncRequestProcessor requestProcessor,
-      BFTSync initialBFTSync,
       RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
       EpochChange lastEpochChange,
       PacemakerFactory pacemakerFactory,
@@ -166,27 +161,6 @@ public final class EpochManager {
       PacemakerTimeoutCalculator timeoutCalculator,
       PacemakerStateFactory pacemakerStateFactory,
       PersistentSafetyStateStore persistentSafetyStateStore) {
-    var isValidator = lastEpochChange.getBFTConfiguration().getValidatorSet().containsNode(self);
-    // TODO: these should all be removed
-    if (!isValidator) {
-      this.bftEventProcessor = EmptyBFTEventProcessor.INSTANCE;
-      this.syncLedgerUpdateProcessor = update -> {};
-      this.syncTimeoutProcessor = timeout -> {};
-    } else {
-      this.bftEventProcessor = requireNonNull(initialBFTEventProcessor);
-      this.syncLedgerUpdateProcessor = initialBFTSync.baseLedgerUpdateEventProcessor();
-      this.syncTimeoutProcessor = initialBFTSync.vertexRequestTimeoutEventProcessor();
-    }
-    this.syncResponseProcessors =
-        isValidator ? Set.of(initialBFTSync.responseProcessor()) : Set.of();
-    this.syncRequestProcessors = isValidator ? Set.of(requestProcessor) : Set.of();
-    this.syncErrorResponseProcessors =
-        isValidator ? Set.of(initialBFTSync.errorResponseProcessor()) : Set.of();
-    this.bftUpdateProcessors =
-        isValidator ? Set.of(initialBFTEventProcessor::processBFTUpdate) : Set.of();
-    this.bftRebuildProcessors =
-        isValidator ? Set.of(initialBFTEventProcessor::processBFTRebuildUpdate) : Set.of();
-
     this.ledgerStatusUpdateDispatcher = requireNonNull(ledgerStatusUpdateDispatcher);
     this.lastEpochChange = requireNonNull(lastEpochChange);
     this.self = requireNonNull(self);
@@ -203,6 +177,8 @@ public final class EpochManager {
     this.pacemakerStateFactory = requireNonNull(pacemakerStateFactory);
     this.persistentSafetyStateStore = requireNonNull(persistentSafetyStateStore);
     this.queuedEvents = new HashMap<>();
+
+    this.updateEpochState();
   }
 
   private void updateEpochState() {

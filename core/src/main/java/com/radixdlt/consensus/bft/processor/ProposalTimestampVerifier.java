@@ -156,16 +156,18 @@ public final class ProposalTimestampVerifier implements BFTEventProcessor {
     if (shouldLog) {
       if (isAcceptable) {
         log.info(
-            "A proposal from {} has a timestamp that is close to being rejected (but still"
-                + " acceptable). Its timestamp is {} and the system time is {}.",
+            "A proposal from {} at round {} has a timestamp that is close to being rejected (but"
+                + " still acceptable). Its timestamp is {} and the system time is {}.",
             proposal.getAuthor(),
+            proposal.getRound(),
             proposal.getVertex().proposerTimestamp(),
             now);
       } else {
         log.warn(
-            "Rejecting a proposal from {}. Its timestamp ({}) is out of acceptable bounds at system"
-                + " time {}.",
+            "Rejecting a proposal from {} at round {}. Its timestamp ({}) is out of acceptable"
+                + " bounds at system time {}.",
             proposal.getAuthor(),
+            proposal.getRound(),
             proposal.getVertex().proposerTimestamp(),
             now);
       }

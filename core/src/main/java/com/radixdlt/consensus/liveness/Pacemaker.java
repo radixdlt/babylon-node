@@ -294,8 +294,8 @@ public final class Pacemaker {
    * a timeout signature, which can later be used to form a timeout certificate.
    */
   public void processLocalTimeout(ScheduledLocalTimeout scheduledTimeout) {
-    // Dispatch RoundLeaderFailure event if this is the first timeout occurrence
-    if (scheduledTimeout.count() == 0) {
+    // Dispatch RoundLeaderFailure event if the round hasn't failed so far
+    if (this.roundStatus == RoundStatus.UNDISTURBED) {
       roundLeaderFailureDispatcher.dispatch(
           new RoundLeaderFailure(
               this.latestRoundUpdate.getCurrentRound(), RoundLeaderFailureReason.ROUND_TIMEOUT));
