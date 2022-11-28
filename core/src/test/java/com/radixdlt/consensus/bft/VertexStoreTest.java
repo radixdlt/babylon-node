@@ -65,7 +65,7 @@
 package com.radixdlt.consensus.bft;
 
 import static com.radixdlt.utils.TypedMocks.rmock;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

@@ -64,7 +64,7 @@
 
 package com.radixdlt.consensus.safety;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.hash.HashCode;

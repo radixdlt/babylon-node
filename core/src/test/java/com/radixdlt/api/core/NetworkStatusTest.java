@@ -62,13 +62,24 @@
  * permissions under this License.
  */
 
-package com.radixdlt.environment;
+package com.radixdlt.api.core;
 
-/**
- * Wrapper interface around AutoCloseable so that we don't compile warnings regarding auto-closeable
- * resource that could throw InterruptedException
- */
-public interface NodeAutoCloseable extends AutoCloseable {
-  @Override
-  void close();
+import static org.assertj.core.api.Assertions.*;
+
+import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.NetworkStatusRequest;
+import org.junit.Test;
+
+public class NetworkStatusTest extends DeterministicCoreApiTestBase {
+  @Test
+  public void test_core_api_status_response_at_startup() throws Exception {
+    try (var ignored = buildRunningServerTest()) {
+      final var response =
+          getStatusApi()
+              .statusNetworkStatusPost(new NetworkStatusRequest().network(networkLogicalName));
+
+      // Has ingested genesis on startup
+      assertThat(response.getCurrentStateIdentifier().getStateVersion()).isEqualTo(1);
+    }
+  }
 }

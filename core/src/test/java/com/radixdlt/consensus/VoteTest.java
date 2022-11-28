@@ -64,7 +64,7 @@
 
 package com.radixdlt.consensus;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.*;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 

@@ -68,7 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.Inject;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.api.ApiTest;
+import com.radixdlt.api.SystemApiTestBase;
 import com.radixdlt.api.system.generated.models.Address;
 import com.radixdlt.api.system.generated.models.AddressBookEntry;
 import com.radixdlt.api.system.generated.models.SystemAddressBookResponse;
@@ -80,7 +80,7 @@ import com.radixdlt.utils.PrivateKeys;
 import java.util.Set;
 import org.junit.Test;
 
-public class AddressBookHandlerTest extends ApiTest {
+public class AddressBookHandlerTest extends SystemApiTestBase {
   @Inject @NetworkId private int networkId;
   @Inject private AddressBookHandler sut;
   @Inject private AddressBook addressBook;
