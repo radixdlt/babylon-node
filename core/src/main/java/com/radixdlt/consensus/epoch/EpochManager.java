@@ -270,7 +270,8 @@ public final class EpochManager {
             bftSync.roundQuorumReachedEventProcessor(),
             validatorSet,
             initialRoundUpdate,
-            safetyRules);
+            safetyRules,
+            nextEpoch);
 
     this.syncResponseProcessors = Set.of(bftSync.responseProcessor());
     this.syncErrorResponseProcessors = Set.of(bftSync.errorResponseProcessor());

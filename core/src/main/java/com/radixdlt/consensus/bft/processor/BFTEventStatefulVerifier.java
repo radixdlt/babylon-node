@@ -143,7 +143,9 @@ public final class BFTEventStatefulVerifier implements BFTEventProcessor {
     }
 
     if (!proposal.getAuthor().equals(latestRoundUpdate.getLeader())) {
-      log.debug(
+      this.systemCounters.increment(
+          SystemCounters.CounterType.BFT_PROPOSALS_RECEIVED_FROM_NON_LEADERS);
+      log.warn(
           "Ignoring a proposal from non-leader node {}, current_leader is {} at round {}",
           proposal.getAuthor(),
           latestRoundUpdate.getLeader(),
@@ -166,12 +168,28 @@ public final class BFTEventStatefulVerifier implements BFTEventProcessor {
   }
 
   @Override
-  public void processLocalTimeout(ScheduledLocalTimeout localTimeout) {
-    forwardTo.processLocalTimeout(localTimeout);
+  public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
+    if (!scheduledLocalTimeout.round().equals(this.latestRoundUpdate.getCurrentRound())) {
+      log.trace(
+          "Ignoring ScheduledLocalTimeout event for the past round {}, current is {}",
+          scheduledLocalTimeout.round(),
+          this.latestRoundUpdate.getCurrentRound());
+      return;
+    }
+
+    forwardTo.processLocalTimeout(scheduledLocalTimeout);
   }
 
   @Override
   public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
+    if (!roundLeaderFailure.round().equals(this.latestRoundUpdate.getCurrentRound())) {
+      log.trace(
+          "Ignoring RoundLeaderFailure event for the past round {}, current is {}",
+          roundLeaderFailure.round(),
+          this.latestRoundUpdate.getCurrentRound());
+      return;
+    }
+
     forwardTo.processRoundLeaderFailure(roundLeaderFailure);
   }
 

@@ -74,6 +74,7 @@ import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -130,7 +131,26 @@ public final class ProposalTimestampVerifier implements BFTEventProcessor {
   public void processProposal(Proposal proposal) {
     final var now = timeSupplier.currentTime();
 
-    final var isAcceptable = isProposalTimestampAcceptable(proposal, now);
+    final var lowerBoundInclusive = now - MAX_ACCEPTABLE_PROPOSAL_TIMESTAMP_DELAY_MS;
+    final var upperBoundInclusive = now + MAX_ACCEPTABLE_PROPOSAL_TIMESTAMP_RUSH_MS;
+
+    final var prevTimestamp = proposal.getVertex().parentLedgerHeader().proposerTimestamp();
+    final var proposalTimestamp = proposal.getVertex().proposerTimestamp();
+
+    final boolean isAcceptable;
+    if (proposalTimestamp < lowerBoundInclusive) {
+      systemCounters.increment(CounterType.BFT_INVALID_PROPOSAL_TIMESTAMP_WAS_TOO_BEHIND);
+      isAcceptable = false;
+    } else if (proposalTimestamp > upperBoundInclusive) {
+      systemCounters.increment(CounterType.BFT_INVALID_PROPOSAL_TIMESTAMP_WAS_TOO_AHEAD);
+      isAcceptable = false;
+    } else if (proposalTimestamp < prevTimestamp) {
+      systemCounters.increment(CounterType.BFT_INVALID_PROPOSAL_TIMESTAMP_WAS_LOWER_THAN_PREVIOUS);
+      isAcceptable = false;
+    } else {
+      isAcceptable = true;
+    }
+
     final var shouldLog = isProposalTimestampDiffAboveLoggingThreshold(proposal, now);
 
     if (shouldLog) {
@@ -154,21 +174,11 @@ public final class ProposalTimestampVerifier implements BFTEventProcessor {
     if (isAcceptable) {
       forwardTo.processProposal(proposal);
     } else {
-      systemCounters.increment(SystemCounters.CounterType.BFT_VERIFIER_INVALID_PROPOSAL_TIMESTAMPS);
+      systemCounters.increment(CounterType.BFT_INVALID_PROPOSAL_TIMESTAMPS);
       roundLeaderFailureDispatcher.dispatch(
           new RoundLeaderFailure(
               proposal.getRound(), RoundLeaderFailureReason.PROPOSED_TIMESTAMP_UNACCEPTABLE));
     }
-  }
-
-  private boolean isProposalTimestampAcceptable(Proposal proposal, long now) {
-    final var lowerBoundInclusive = now - MAX_ACCEPTABLE_PROPOSAL_TIMESTAMP_DELAY_MS;
-    final var upperBoundInclusive = now + MAX_ACCEPTABLE_PROPOSAL_TIMESTAMP_RUSH_MS;
-
-    final var prevTimestamp = proposal.getVertex().parentLedgerHeader().proposerTimestamp();
-
-    final var ts = proposal.getVertex().proposerTimestamp();
-    return ts >= lowerBoundInclusive && ts <= upperBoundInclusive && ts >= prevTimestamp;
   }
 
   private boolean isProposalTimestampDiffAboveLoggingThreshold(Proposal proposal, long now) {

@@ -185,13 +185,20 @@ public final class Pacemaker {
 
   /** Processes a local BFTInsertUpdate message */
   public void processBFTUpdate(BFTInsertUpdate update) {
-    // We only process a "leader failure" vertex here
-    if (this.vertexIdForLeaderFailure
-        .filter(update.getInserted().getVertexHash()::equals)
-        .isEmpty()) {
+    final var updateIsInsertionOfLeaderFailureVertex =
+        this.vertexIdForLeaderFailure
+            .filter(update.getInserted().getVertexHash()::equals)
+            .isPresent();
+
+    // The Pacemaker only processes the insertion of a leader failure vertex,
+    // which should have been (asynchronously) initialized earlier.
+    // No other vertices are of interest here, so they're ignored.
+    if (!updateIsInsertionOfLeaderFailureVertex) {
       return;
     }
 
+    // Continue the "leader failure" process from where it left off when requesting an (async)
+    // vertex insertion
     switch (this.roundStatus) {
       case UNDISTURBED -> {} // no-op
       case PROPOSAL_REJECTED ->

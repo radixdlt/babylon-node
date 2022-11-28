@@ -219,6 +219,7 @@ public final class BFTBuilder {
             noVoteEventDispatcher,
             voteDispatcher,
             hasher,
+            systemCounters,
             safetyRules,
             validatorSet,
             pendingVotes,

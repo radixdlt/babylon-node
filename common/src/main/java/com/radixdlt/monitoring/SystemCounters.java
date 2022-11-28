@@ -72,7 +72,11 @@ public interface SystemCounters {
   enum CounterType {
     // Please keep these sorted
 
+    BFT_SUCCESSFULLY_PROCESSED_VOTES("bft.successfully_processed_votes"),
+    BFT_SUCCESSFULLY_PROCESSED_PROPOSALS("bft.successfully_processed_proposals"),
+
     BFT_PRECONDITION_VIOLATIONS("bft.precondition_violations"),
+    BFT_PROPOSALS_RECEIVED_FROM_NON_LEADERS("bft.proposals_received_from_non_leaders"),
     BFT_DUPLICATE_PROPOSALS_RECEIVED("bft.duplicate_proposals_received"),
     BFT_EVENTS_RECEIVED("bft.events_received"),
     BFT_COMMITTED_VERTICES("bft.committed_vertices"),
@@ -83,16 +87,19 @@ public interface SystemCounters {
     /** Number of round-timeout quorums formed. */
     BFT_TIMEOUT_QUORUMS("bft.timeout_quorums"),
 
-    BFT_VERIFIER_SUCCESSFULLY_VERIFIED_VOTES("bft.verifier.successfully_verified_votes"),
     BFT_VERIFIER_INVALID_VOTE_AUTHORS("bft.verifier.invalid_vote_authors"),
     BFT_VERIFIER_INVALID_VOTE_SIGNATURES("bft.verifier.invalid_vote_signatures"),
     BFT_VERIFIER_INVALID_VOTE_TIMEOUT_SIGNATURES("bft.verifier.invalid_vote_timeout_signatures"),
     BFT_VERIFIER_INVALID_VOTE_QCS("bft.verifier.invalid_vote_qcs"),
-    BFT_VERIFIER_SUCCESSFULLY_VERIFIED_PROPOSALS("bft.verifier.successfully_verified_proposals"),
     BFT_VERIFIER_INVALID_PROPOSAL_AUTHORS("bft.verifier.invalid_proposal_authors"),
     BFT_VERIFIER_INVALID_PROPOSAL_SIGNATURES("bft.verifier.invalid_proposal_signatures"),
     BFT_VERIFIER_INVALID_PROPOSAL_QCS("bft.verifier.invalid_proposal_qcs"),
-    BFT_VERIFIER_INVALID_PROPOSAL_TIMESTAMPS("bft.verifier.invalid_proposal_timestamps"),
+
+    BFT_INVALID_PROPOSAL_TIMESTAMPS("bft.invalid_proposal_timestamps"),
+    BFT_INVALID_PROPOSAL_TIMESTAMP_WAS_TOO_BEHIND("bft.invalid_proposal_timestamp_was_too_behind"),
+    BFT_INVALID_PROPOSAL_TIMESTAMP_WAS_TOO_AHEAD("bft.invalid_proposal_timestamp_was_too_ahead"),
+    BFT_INVALID_PROPOSAL_TIMESTAMP_WAS_LOWER_THAN_PREVIOUS(
+        "bft.invalid_proposal_timestamp_was_lower_than_previous"),
 
     /** Number of times a round-timeout message was broadcast. */
     BFT_PACEMAKER_TIMEOUTS_SENT("bft.pacemaker.timeouts_sent"),

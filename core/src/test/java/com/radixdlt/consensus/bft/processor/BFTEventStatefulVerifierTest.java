@@ -62,34 +62,40 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft.processor;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTSyncer;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.RoundQuorumReached;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.bft.VertexStoreAdapter;
-import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
-import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.monitoring.SystemCounters;
+import org.junit.Before;
+import org.junit.Test;
 
-/** Creates a new bft processor */
-public interface BFTFactory {
-  /**
-   * Create a new clean BFT processor
-   *
-   * @return a new bft processor
-   */
-  BFTEventProcessor create(
-      BFTNode self,
-      Pacemaker pacemaker,
-      VertexStoreAdapter vertexStore,
-      BFTSyncer bftSyncer,
-      EventProcessor<RoundQuorumReached> roundQuorumReachedEventProcessor,
-      BFTValidatorSet validatorSet,
-      RoundUpdate roundUpdate,
-      SafetyRules safetyRules,
-      long nextEpoch);
+public final class BFTEventStatefulVerifierTest {
+  private SystemCounters systemCounters;
+  private BFTEventProcessor forwardTo;
+  private BFTEventStatefulVerifier bftEventStatefulVerifier;
+
+  @Before
+  public void setUp() {
+    this.systemCounters = mock(SystemCounters.class);
+    this.forwardTo = mock(BFTEventProcessor.class);
+    this.bftEventStatefulVerifier =
+        new BFTEventStatefulVerifier(this.forwardTo, this.systemCounters, mock(RoundUpdate.class));
+  }
+
+  @Test
+  public void when_local_timeout_for_non_current_round__then_ignored() {
+    this.bftEventStatefulVerifier.processLocalTimeout(
+        ScheduledLocalTimeout.create(
+            RoundUpdate.create(
+                Round.of(1), mock(HighQC.class), mock(BFTNode.class), mock(BFTNode.class)),
+            0L));
+    verifyNoMoreInteractions(this.forwardTo);
+  }
 }

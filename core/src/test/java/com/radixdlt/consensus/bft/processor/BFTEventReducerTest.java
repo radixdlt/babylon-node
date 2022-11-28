@@ -88,6 +88,7 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.monitoring.SystemCounters;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -96,6 +97,7 @@ public class BFTEventReducerTest {
 
   private BFTNode self = mock(BFTNode.class);
   private Hasher hasher = mock(Hasher.class);
+  private SystemCounters systemCounters = mock(SystemCounters.class);
   private RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
   private PendingVotes pendingVotes = mock(PendingVotes.class);
   private BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
@@ -119,6 +121,7 @@ public class BFTEventReducerTest {
             this.noVoteEventDispatcher,
             this.voteDispatcher,
             this.hasher,
+            this.systemCounters,
             this.safetyRules,
             this.validatorSet,
             this.pendingVotes,
@@ -204,15 +207,5 @@ public class BFTEventReducerTest {
     verify(this.roundQuorumReachedEventDispatcher, times(1)).dispatch(any());
     verify(this.pendingVotes, times(1)).insertVote(eq(vote), any());
     verifyNoMoreInteractions(this.pendingVotes);
-  }
-
-  @Test
-  public void when_local_timeout_for_non_current_round__then_ignored() {
-    this.bftEventReducer.processLocalTimeout(
-        ScheduledLocalTimeout.create(
-            RoundUpdate.create(
-                Round.of(1), mock(HighQC.class), mock(BFTNode.class), mock(BFTNode.class)),
-            0L));
-    verifyNoMoreInteractions(this.pacemaker);
   }
 }

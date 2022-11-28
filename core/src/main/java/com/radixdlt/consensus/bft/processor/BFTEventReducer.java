@@ -84,6 +84,7 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.monitoring.SystemCounters;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
@@ -104,6 +105,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
   private final EventDispatcher<NoVote> noVoteDispatcher;
   private final RemoteEventDispatcher<Vote> voteDispatcher;
   private final Hasher hasher;
+  private final SystemCounters systemCounters;
   private final SafetyRules safetyRules;
   private final BFTValidatorSet validatorSet;
   private final PendingVotes pendingVotes;
@@ -127,6 +129,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
       EventDispatcher<NoVote> noVoteDispatcher,
       RemoteEventDispatcher<Vote> voteDispatcher,
       Hasher hasher,
+      SystemCounters systemCounters,
       SafetyRules safetyRules,
       BFTValidatorSet validatorSet,
       PendingVotes pendingVotes,
@@ -139,6 +142,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
     this.noVoteDispatcher = Objects.requireNonNull(noVoteDispatcher);
     this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
     this.hasher = Objects.requireNonNull(hasher);
+    this.systemCounters = Objects.requireNonNull(systemCounters);
     this.safetyRules = Objects.requireNonNull(safetyRules);
     this.validatorSet = Objects.requireNonNull(validatorSet);
     this.pendingVotes = Objects.requireNonNull(pendingVotes);
@@ -244,6 +248,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
             new RoundQuorumReached(quorumReached.getRoundVotingResult(), vote.getAuthor()));
       }
     }
+
+    systemCounters.increment(SystemCounters.CounterType.BFT_SUCCESSFULLY_PROCESSED_VOTES);
   }
 
   @Override
@@ -251,35 +257,21 @@ public final class BFTEventReducer implements BFTEventProcessor {
     log.trace("Proposal: Processing {}", proposal);
 
     // TODO: Move insertion and maybe check into BFTSync
-    var proposedVertex = proposal.getVertex().withId(hasher);
+    final var proposedVertex = proposal.getVertex().withId(hasher);
     this.vertexStore.insertVertex(proposedVertex);
+
+    systemCounters.increment(SystemCounters.CounterType.BFT_SUCCESSFULLY_PROCESSED_PROPOSALS);
   }
 
   @Override
   public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
-    if (!scheduledLocalTimeout.round().equals(this.latestRoundUpdate.getCurrentRound())) {
-      log.trace(
-          "Ignoring ScheduledLocalTimeout event for the past round {}, current is {}",
-          scheduledLocalTimeout.round(),
-          this.latestRoundUpdate.getCurrentRound());
-      return;
-    }
-
     this.hasLeaderFailedTheRound = true;
     this.pacemaker.processLocalTimeout(scheduledLocalTimeout);
   }
 
   @Override
   public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
-    if (!roundLeaderFailure.round().equals(this.latestRoundUpdate.getCurrentRound())) {
-      log.trace(
-          "Ignoring RoundLeaderFailure event for the past round {}, current is {}",
-          roundLeaderFailure.round(),
-          this.latestRoundUpdate.getCurrentRound());
-      return;
-    }
-
-    this.hasLeaderFailedTheRound = false;
+    this.hasLeaderFailedTheRound = true;
     this.pacemaker.processRoundLeaderFailure(roundLeaderFailure);
   }
 
