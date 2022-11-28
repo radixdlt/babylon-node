@@ -252,11 +252,8 @@ public final class Pacemaker {
       return now;
     } else /* now < previousProposerTimestamp */ {
       /* Our local system time is lagging or the quorum has agreed on a rushing timestamp in the previous round.
-       * We can't use our local time because the proposal would be rejected.
-       * To get as close to the real time (from our perspective) as possible, we simply increment the
-       * previous timestamp by a small, randomized number. The offset is random to prevent a single validator
-       * from being able to deterministically choose two consecutive timestamps: one for their round (rushing)
-       * and another one for the next round (which would be their_timestamp + some_fixed_offset without the randomization). */
+       * We can't use our local time because the proposal would be rejected, hence re-using the previous timestamp
+       * to get as close to the current time (from this node's perspective) as possible. */
       final var diff = previousProposerTimestamp - now;
       if (diff > PREVIOUS_ROUND_RUSHING_TIMESTAMP_LOG_THRESHOLD_MS) {
         log.warn(
@@ -265,9 +262,7 @@ public final class Pacemaker {
                 + "Consider further investigation if this log message appears on a regular basis.");
       }
       systemCounters.increment(CounterType.BFT_PACEMAKER_PROPOSALS_WITH_SUBSTITUTE_TIMESTAMP);
-      final var randomOffset =
-          this.secureRandom.nextInt(PROPOSAL_SUBSTITUTE_TIMESTAMP_MAX_OFFSET_MS);
-      return previousProposerTimestamp + randomOffset;
+      return previousProposerTimestamp;
     }
   }
 

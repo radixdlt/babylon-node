@@ -100,8 +100,7 @@ public final class ProposerTimestampSanityTest {
             .ledgerAndEpochs(ConsensusConfig.of(1000), Round.of(10), e -> IntStream.range(0, 4));
 
     /* One node delayed */
-    modifyNthNodeTimeSupplier(
-        0, () -> System.currentTimeMillis() - 4000, builder);
+    modifyNthNodeTimeSupplier(0, () -> System.currentTimeMillis() - 4000, builder);
 
     final var results = builder.build().run().awaitCompletion();
     assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
@@ -124,16 +123,10 @@ public final class ProposerTimestampSanityTest {
             .ledgerAndEpochs(ConsensusConfig.of(1000), Round.of(10), e -> IntStream.range(0, 4));
 
     /* One node rushing within acceptable bounds */
-    modifyNthNodeTimeSupplier(
-        0,
-        () -> System.currentTimeMillis() + 500,
-        builder);
+    modifyNthNodeTimeSupplier(0, () -> System.currentTimeMillis() + 500, builder);
 
     /* One node delayed within acceptable bounds */
-    modifyNthNodeTimeSupplier(
-        1,
-        () -> System.currentTimeMillis() - 500,
-        builder);
+    modifyNthNodeTimeSupplier(1, () -> System.currentTimeMillis() - 500, builder);
 
     final var results = builder.build().run().awaitCompletion();
     assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
@@ -154,12 +147,10 @@ public final class ProposerTimestampSanityTest {
             .ledgerAndEpochs(ConsensusConfig.of(1000), Round.of(10), e -> IntStream.range(0, 4));
 
     /* One node rushing */
-    modifyNthNodeTimeSupplier(
-        0, () -> System.currentTimeMillis() - 4000, builder);
+    modifyNthNodeTimeSupplier(0, () -> System.currentTimeMillis() - 4000, builder);
 
     /* One node delayed */
-    modifyNthNodeTimeSupplier(
-        1, () -> System.currentTimeMillis() + 4000, builder);
+    modifyNthNodeTimeSupplier(1, () -> System.currentTimeMillis() + 4000, builder);
 
     final var results = builder.build().run().awaitCompletion();
     assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
