@@ -179,7 +179,6 @@ public final class EpochManager {
     this.queuedEvents = new HashMap<>();
 
     this.updateEpochState();
-    this.bftEventProcessor.start();
   }
 
   private void updateEpochState() {
