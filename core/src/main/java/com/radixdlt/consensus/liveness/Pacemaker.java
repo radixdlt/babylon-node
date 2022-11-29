@@ -289,14 +289,15 @@ public final class Pacemaker {
    * a timeout signature, which can later be used to form a timeout certificate.
    */
   public void processLocalTimeout(ScheduledLocalTimeout scheduledTimeout) {
+    final var prevStatus = this.roundStatus;
+    this.roundStatus = RoundStatus.TIMED_OUT;
+
     // Dispatch RoundLeaderFailure event if the round hasn't failed so far
-    if (this.roundStatus == RoundStatus.UNDISTURBED) {
+    if (prevStatus == RoundStatus.UNDISTURBED) {
       roundLeaderFailureDispatcher.dispatch(
           new RoundLeaderFailure(
               this.latestRoundUpdate.getCurrentRound(), RoundLeaderFailureReason.ROUND_TIMEOUT));
     }
-
-    this.roundStatus = RoundStatus.TIMED_OUT;
 
     updateTimeoutCounters(scheduledTimeout);
 
