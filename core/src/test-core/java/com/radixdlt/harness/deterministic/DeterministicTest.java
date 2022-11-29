@@ -75,6 +75,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochRound;
+import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventProcessor;
@@ -329,7 +330,6 @@ public final class DeterministicTest implements AutoCloseable {
             @Override
             public void configure() {
               bind(Round.class).annotatedWith(EpochMaxRound.class).toInstance(epochMaxRound);
-              bind(new TypeLiteral<EventProcessor<EpochRound>>() {}).toInstance(epochRound -> {});
               bind(new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() {})
                   .toInstance(t -> {});
             }
@@ -528,11 +528,16 @@ public final class DeterministicTest implements AutoCloseable {
   public static Predicate<Timed<ControlledMessage>> roundUpdateOnNode(Round round, int nodeIndex) {
     return timedMsg -> {
       final var message = timedMsg.value();
-      if (!(message.message() instanceof final RoundUpdate roundUpdate)) {
+      // This method works with both epoched and non-epoched consensus tests
+      if (message.message() instanceof final EpochRoundUpdate epochRoundUpdate) {
+        return message.channelId().receiverIndex() == nodeIndex
+            && epochRoundUpdate.getRoundUpdate().getCurrentRound().gte(round);
+      } else if (message.message() instanceof final RoundUpdate roundUpdate) {
+        return message.channelId().receiverIndex() == nodeIndex
+            && roundUpdate.getCurrentRound().gte(round);
+      } else {
         return false;
       }
-      return message.channelId().receiverIndex() == nodeIndex
-          && roundUpdate.getCurrentRound().gte(round);
     };
   }
 

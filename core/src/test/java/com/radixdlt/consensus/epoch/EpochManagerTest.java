@@ -193,8 +193,6 @@ public class EpochManagerTest {
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<EpochLocalTimeoutOccurrence>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<EventDispatcher<EpochRound>>() {})
-            .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<LocalSyncRequest>>() {})
             .toInstance(syncLedgerRequestSender);
         bind(new TypeLiteral<EventDispatcher<RoundQuorumReached>>() {})
