@@ -73,15 +73,18 @@ public record RoundDetails(
     long previousQcRoundNumber,
     BFTNode roundProposer,
     boolean roundWasTimeout,
-    long roundTimestamp) {
+    long consensusParentRoundTimestamp,
+    long proposerTimestamp) {
 
-  public static RoundDetails fromVertex(VertexWithHash vertex) {
+  public static RoundDetails fromVertex(VertexWithHash vertexWithHash) {
+    final var vertex = vertexWithHash.vertex();
     return new RoundDetails(
-        vertex.getEpoch(),
+        vertex.getParentHeader().getLedgerHeader().getEpoch(),
         vertex.getRound().number(),
         vertex.getParentHeader().getRound().number(),
         vertex.getProposer(),
         vertex.isTimeout(),
-        vertex.getWeightedTimestampOfQCToParent());
+        vertex.getQCToParent().getWeightedTimestampOfSignatures(),
+        vertex.proposerTimestamp());
   }
 }

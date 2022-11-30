@@ -62,59 +62,57 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft.processor;
 
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.RoundLeaderFailure;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 
-/**
- * Processor of BFT events.
- *
- * <p>Implementations are not expected to be thread-safe.
- */
-public interface BFTEventProcessor {
-  /**
-   * The initialization call. Must be called first and only once at the beginning of the BFT's
-   * lifetime.
-   */
-  void start();
+/** An empty BFT event processor */
+public enum EmptyBFTEventProcessor implements BFTEventProcessor {
+  INSTANCE;
 
-  /**
-   * Process a local round update message.
-   *
-   * @param roundUpdate the round update message
-   */
-  void processRoundUpdate(RoundUpdate roundUpdate);
+  @Override
+  public void processVote(Vote vote) {
+    // No-op
+  }
 
-  /**
-   * Process a consensus vote message.
-   *
-   * @param vote the vote message
-   */
-  void processVote(Vote vote);
+  @Override
+  public void processProposal(Proposal proposal) {
+    // No-op
+  }
 
-  /**
-   * Process a consensus proposal message.
-   *
-   * @param proposal the proposal message
-   */
-  void processProposal(Proposal proposal);
+  @Override
+  public void processLocalTimeout(ScheduledLocalTimeout timeout) {
+    // No-op
+  }
 
-  /**
-   * Process a local consensus timeout message.
-   *
-   * @param scheduledLocalTimeout the round corresponding to the timeout
-   */
-  void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout);
+  @Override
+  public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
+    // No-op
+  }
 
-  /**
-   * Process a BFT update.
-   *
-   * @param update the BFT update
-   */
-  void processBFTUpdate(BFTInsertUpdate update);
+  @Override
+  public void processBFTUpdate(BFTInsertUpdate update) {
+    // No-op
+  }
 
-  void processBFTRebuildUpdate(BFTRebuildUpdate update);
+  @Override
+  public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
+    // No-op
+  }
+
+  @Override
+  public void start() {
+    // No-op
+  }
+
+  @Override
+  public void processRoundUpdate(RoundUpdate roundUpdate) {
+    // No-op
+  }
 }

@@ -62,48 +62,54 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.bft.processor;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.SecurityCritical;
-import com.radixdlt.SecurityCritical.SecurityKind;
-import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.RoundLeaderFailure;
+import com.radixdlt.consensus.bft.RoundLeaderFailureReason;
+import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.liveness.VoteTimeout;
-import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.crypto.ECDSASecp256k1Signature;
-import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.utils.TimeSupplier;
 import java.util.Objects;
-import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/** Verifies signatures of BFT messages then forwards to the next processor */
-@SecurityCritical({SecurityKind.SIG_VERIFY})
-public final class BFTEventVerifier implements BFTEventProcessor {
+/** Verifies proposal timestamps against the local system time. */
+public final class ProposalTimestampVerifier implements BFTEventProcessor {
   private static final Logger log = LogManager.getLogger();
 
-  private final BFTValidatorSet validatorSet;
-  private final BFTEventProcessor forwardTo;
-  private final Hasher hasher;
-  private final HashVerifier verifier;
-  private final SafetyRules safetyRules;
+  /* These two constants specify the bounds for acceptable proposal timestamps in relation to
+  the current time (id est, the system time when the proposal message starts being processed).
+  Proposals that fall out of bounds are rejected (ignored).
+  The acceptable delay is slightly higher to account for network latency.
+  In addition to the delay/rush bounds, the proposal timestamp must be strictly
+  greater than the previous one (see `isProposalTimestampAcceptable`). */
+  static final long MAX_ACCEPTABLE_PROPOSAL_TIMESTAMP_DELAY_MS = 3000;
+  static final long MAX_ACCEPTABLE_PROPOSAL_TIMESTAMP_RUSH_MS = 2000;
 
-  public BFTEventVerifier(
-      BFTValidatorSet validatorSet,
+  static final long LOG_AT_PROPOSAL_TIMESTAMP_DELAY_MS = 2000;
+  static final long LOG_AT_PROPOSAL_TIMESTAMP_RUSH_MS = 1200;
+
+  private final BFTEventProcessor forwardTo;
+  private final TimeSupplier timeSupplier;
+  private final SystemCounters systemCounters;
+  private final EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher;
+
+  public ProposalTimestampVerifier(
       BFTEventProcessor forwardTo,
-      Hasher hasher,
-      HashVerifier verifier,
-      SafetyRules safetyRules) {
-    this.validatorSet = Objects.requireNonNull(validatorSet);
-    this.hasher = Objects.requireNonNull(hasher);
-    this.verifier = Objects.requireNonNull(verifier);
+      TimeSupplier timeSupplier,
+      SystemCounters systemCounters,
+      EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher) {
     this.forwardTo = Objects.requireNonNull(forwardTo);
-    this.safetyRules = Objects.requireNonNull(safetyRules);
+    this.timeSupplier = Objects.requireNonNull(timeSupplier);
+    this.systemCounters = Objects.requireNonNull(systemCounters);
+    this.roundLeaderFailureDispatcher = Objects.requireNonNull(roundLeaderFailureDispatcher);
   }
 
   @Override
@@ -118,61 +124,87 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 
   @Override
   public void processVote(Vote vote) {
-    validAuthor(vote)
-        .ifPresent(
-            node -> {
-              boolean verifiedVoteData =
-                  verifyHashSignature(node, vote.getHashOfData(hasher), vote.getSignature(), vote);
-              if (!verifiedVoteData) {
-                log.warn("Ignoring invalid vote data {}", vote);
-                return;
-              }
-
-              boolean verifiedTimeoutData =
-                  vote.getTimeoutSignature()
-                      .map(
-                          timeoutSignature ->
-                              verifyObjectSignature(
-                                  node, VoteTimeout.of(vote), timeoutSignature, vote))
-                      .orElse(true);
-
-              if (!verifiedTimeoutData) {
-                log.warn("Ignoring invalid timeout data {}", vote);
-                return;
-              }
-
-              if (!safetyRules.verifyHighQcAgainstTheValidatorSet(vote.highQC())) {
-                log.warn("Ignoring a vote {} with invalid high QC", vote);
-                return;
-              }
-
-              forwardTo.processVote(vote);
-            });
+    forwardTo.processVote(vote);
   }
 
   @Override
   public void processProposal(Proposal proposal) {
-    validAuthor(proposal)
-        .ifPresent(
-            node -> {
-              if (!verifyObjectSignature(
-                  node, proposal.getVertex(), proposal.getSignature(), proposal)) {
-                log.warn("Ignoring a proposal {} with invalid signature", proposal);
-                return;
-              }
+    final var now = timeSupplier.currentTime();
 
-              if (!safetyRules.verifyHighQcAgainstTheValidatorSet(proposal.highQC())) {
-                log.warn("Ignoring a proposal {} with invalid high QC", proposal);
-                return;
-              }
+    final var lowerBoundInclusive = now - MAX_ACCEPTABLE_PROPOSAL_TIMESTAMP_DELAY_MS;
+    final var upperBoundInclusive = now + MAX_ACCEPTABLE_PROPOSAL_TIMESTAMP_RUSH_MS;
 
-              forwardTo.processProposal(proposal);
-            });
+    final var prevTimestamp = proposal.getVertex().parentLedgerHeader().proposerTimestamp();
+    final var proposalTimestamp = proposal.getVertex().proposerTimestamp();
+
+    final boolean isAcceptable;
+    if (proposalTimestamp < lowerBoundInclusive) {
+      systemCounters.increment(CounterType.BFT_INVALID_PROPOSAL_TIMESTAMP_WAS_TOO_BEHIND);
+      isAcceptable = false;
+    } else if (proposalTimestamp > upperBoundInclusive) {
+      systemCounters.increment(CounterType.BFT_INVALID_PROPOSAL_TIMESTAMP_WAS_TOO_AHEAD);
+      isAcceptable = false;
+    } else if (proposalTimestamp < prevTimestamp) {
+      systemCounters.increment(CounterType.BFT_INVALID_PROPOSAL_TIMESTAMP_WAS_LOWER_THAN_PREVIOUS);
+      log.info(
+          "Rejecting a proposal from {} at round {}. Its timestamp ({}) is lower than previous"
+              + " ({})!",
+          proposal.getAuthor(),
+          proposal.getRound(),
+          proposalTimestamp,
+          prevTimestamp);
+      isAcceptable = false;
+    } else {
+      isAcceptable = true;
+    }
+
+    final var shouldLog = isProposalTimestampDiffAboveLoggingThreshold(proposal, now);
+
+    if (shouldLog) {
+      if (isAcceptable) {
+        log.info(
+            "A proposal from {} at round {} has a timestamp that is close to being rejected (but"
+                + " still acceptable). Its timestamp is {} and the system time is {}.",
+            proposal.getAuthor(),
+            proposal.getRound(),
+            proposalTimestamp,
+            now);
+      } else {
+        log.warn(
+            "Rejecting a proposal from {} at round {}. Its timestamp ({}) is out of acceptable"
+                + " bounds at system time {}.",
+            proposal.getAuthor(),
+            proposal.getRound(),
+            proposalTimestamp,
+            now);
+      }
+    }
+
+    if (isAcceptable) {
+      forwardTo.processProposal(proposal);
+    } else {
+      systemCounters.increment(CounterType.BFT_INVALID_PROPOSAL_TIMESTAMPS);
+      roundLeaderFailureDispatcher.dispatch(
+          new RoundLeaderFailure(
+              proposal.getRound(), RoundLeaderFailureReason.PROPOSED_TIMESTAMP_UNACCEPTABLE));
+    }
+  }
+
+  private boolean isProposalTimestampDiffAboveLoggingThreshold(Proposal proposal, long now) {
+    final var lowerBoundInclusive = now - LOG_AT_PROPOSAL_TIMESTAMP_DELAY_MS;
+    final var upperBoundInclusive = now + LOG_AT_PROPOSAL_TIMESTAMP_RUSH_MS;
+    final var ts = proposal.getVertex().proposerTimestamp();
+    return ts < lowerBoundInclusive || ts > upperBoundInclusive;
   }
 
   @Override
   public void processLocalTimeout(ScheduledLocalTimeout localTimeout) {
     forwardTo.processLocalTimeout(localTimeout);
+  }
+
+  @Override
+  public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
+    forwardTo.processRoundLeaderFailure(roundLeaderFailure);
   }
 
   @Override
@@ -183,32 +215,5 @@ public final class BFTEventVerifier implements BFTEventProcessor {
   @Override
   public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
     forwardTo.processBFTRebuildUpdate(update);
-  }
-
-  private Optional<BFTNode> validAuthor(ConsensusEvent event) {
-    BFTNode node = event.getAuthor();
-    if (!validatorSet.containsNode(node)) {
-      log.warn(
-          "CONSENSUS_EVENT: {} from author {} not in validator set {}",
-          event.getClass().getSimpleName(),
-          node,
-          this.validatorSet);
-      return Optional.empty();
-    }
-    return Optional.of(node);
-  }
-
-  private boolean verifyHashSignature(
-      BFTNode author, HashCode hash, ECDSASecp256k1Signature signature, Object what) {
-    boolean verified = this.verifier.verify(author.getKey(), hash, signature);
-    if (!verified) {
-      log.info("Ignoring invalid signature from {} for {}", author, what);
-    }
-    return verified;
-  }
-
-  private boolean verifyObjectSignature(
-      BFTNode author, Object hashable, ECDSASecp256k1Signature signature, Object what) {
-    return verifyHashSignature(author, this.hasher.hashDsonEncoded(hashable), signature, what);
   }
 }

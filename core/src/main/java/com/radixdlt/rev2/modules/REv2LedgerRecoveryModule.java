@@ -92,18 +92,18 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
   @LastProof
   private LedgerProof lastProof(
       TransactionsAndProofReader transactionsAndProofReader, BFTValidatorSet validatorSet) {
+    final var timestamp = 0L; /* TODO: use Olympia end-state timestamp */
     return transactionsAndProofReader
         .getLastProof()
         .orElseGet(
-            () -> {
-              return LedgerProof.genesis(initialAccumulatorState, validatorSet, 0L);
-            });
+            () -> LedgerProof.genesis(initialAccumulatorState, validatorSet, timestamp, timestamp));
   }
 
   @Provides
   @LastEpochProof
   public LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
-    return LedgerProof.genesis(initialAccumulatorState, validatorSet, 0L);
+    /* TODO: use Olympia end-state timestamp */
+    return LedgerProof.genesis(initialAccumulatorState, validatorSet, 0L, 0L);
   }
 
   private static VertexStoreState genesisEpochProofToGenesisVertexStore(
@@ -114,7 +114,8 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
             lastEpochProof.getNextEpoch(),
             Round.genesis(),
             lastEpochProof.getAccumulatorState(),
-            lastEpochProof.timestamp());
+            lastEpochProof.consensusParentRoundTimestamp(),
+            lastEpochProof.proposerTimestamp());
     var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
     return VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
   }

@@ -62,16 +62,9 @@
  * permissions under this License.
  */
 
-package com.radixdlt.utils;
+package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.ledger.AccumulatorState;
-
-public class LedgerHeaderMock {
-  public static LedgerHeader get() {
-    return LedgerHeader.create(
-        0, Round.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0, 0);
-  }
+public enum RoundLeaderFailureReason {
+  PROPOSED_TIMESTAMP_UNACCEPTABLE,
+  ROUND_TIMEOUT
 }

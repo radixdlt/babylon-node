@@ -112,6 +112,7 @@ public class SanityTest {
                     SyncRelayConfig.of(5000, 10, 3000L))))
         .addTestModules(
             ConsensusMonitors.safety(),
+            ConsensusMonitors.proposerTimestampChecker(),
             ConsensusMonitors.liveness(10, TimeUnit.SECONDS),
             ConsensusMonitors.noTimeouts(),
             ConsensusMonitors.directParents(),

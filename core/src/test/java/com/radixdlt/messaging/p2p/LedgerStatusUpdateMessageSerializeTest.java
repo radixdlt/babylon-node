@@ -78,6 +78,6 @@ public class LedgerStatusUpdateMessageSerializeTest
 
   private static LedgerStatusUpdateMessage get() {
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    return new LedgerStatusUpdateMessage(LedgerProof.genesis(accumulatorState, null, 0));
+    return new LedgerStatusUpdateMessage(LedgerProof.genesis(accumulatorState, null, 0, 0));
   }
 }

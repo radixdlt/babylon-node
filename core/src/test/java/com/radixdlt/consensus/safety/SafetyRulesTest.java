@@ -77,6 +77,7 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -125,10 +126,14 @@ public class SafetyRulesTest {
     var round = mock(Round.class);
     when(round.lte(round)).thenReturn(true);
     when(safetyState.getLastVotedRound()).thenReturn(round);
-    var vertex = mock(VertexWithHash.class);
+    final var vertexWithHash = mock(VertexWithHash.class);
+    final var vertex = mock(Vertex.class);
     when(vertex.getRound()).thenReturn(round);
+    when(vertexWithHash.vertex()).thenReturn(vertex);
 
-    assertThat(this.safetyRules.createVote(vertex, mock(BFTHeader.class), 0L, mock(HighQC.class)))
+    assertThat(
+            this.safetyRules.createVote(
+                vertexWithHash, mock(BFTHeader.class), 0L, mock(HighQC.class)))
         .isEmpty();
   }
 
@@ -155,13 +160,16 @@ public class SafetyRulesTest {
             hashVerifier,
             validatorSet);
 
-    VertexWithHash vertex = mock(VertexWithHash.class);
+    VertexWithHash vertexWithHash = mock(VertexWithHash.class);
+    Vertex vertex = mock(Vertex.class);
     when(vertex.getRound()).thenReturn(Round.of(3));
     BFTHeader parent = mock(BFTHeader.class);
     when(parent.getRound()).thenReturn(Round.of(0));
     when(vertex.getParentHeader()).thenReturn(parent);
+    when(vertexWithHash.vertex()).thenReturn(vertex);
 
-    assertThat(safetyRules.createVote(vertex, mock(BFTHeader.class), 0L, mock(HighQC.class)))
+    assertThat(
+            safetyRules.createVote(vertexWithHash, mock(BFTHeader.class), 0L, mock(HighQC.class)))
         .isEmpty();
   }
 
@@ -170,7 +178,8 @@ public class SafetyRulesTest {
     when(safetyState.getLastVotedRound()).thenReturn(Round.of(0));
     when(safetyState.getLockedRound()).thenReturn(Round.of(0));
     when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
-    VertexWithHash vertex = mock(VertexWithHash.class);
+    final var vertexWithHash = mock(VertexWithHash.class);
+    final var vertex = mock(Vertex.class);
     when(vertex.hasDirectParent()).thenReturn(true);
     when(vertex.touchesGenesis()).thenReturn(true);
     when(vertex.parentHasDirectParent()).thenReturn(true);
@@ -181,8 +190,10 @@ public class SafetyRulesTest {
     BFTHeader grandParent = mock(BFTHeader.class);
     when(grandParent.getRound()).thenReturn(mock(Round.class));
     when(vertex.getGrandParentHeader()).thenReturn(grandParent);
+    when(vertexWithHash.vertex()).thenReturn(vertex);
     BFTHeader header = mock(BFTHeader.class);
-    Optional<Vote> voteMaybe = safetyRules.createVote(vertex, header, 1L, mock(HighQC.class));
+    Optional<Vote> voteMaybe =
+        safetyRules.createVote(vertexWithHash, header, 1L, mock(HighQC.class));
     assertThat(voteMaybe).isNotEmpty();
     Vote vote = voteMaybe.get();
     assertThat(vote.getVoteData().getProposed()).isEqualTo(header);
@@ -195,19 +206,21 @@ public class SafetyRulesTest {
     when(safetyState.getLastVotedRound()).thenReturn(Round.of(1));
     when(safetyState.getLockedRound()).thenReturn(Round.of(0));
     when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
-    VertexWithHash proposal = mock(VertexWithHash.class);
-    when(proposal.touchesGenesis()).thenReturn(true);
-    when(proposal.hasDirectParent()).thenReturn(true);
-    when(proposal.parentHasDirectParent()).thenReturn(true);
+    final var vertexWithHash = mock(VertexWithHash.class);
+    final var vertex = mock(Vertex.class);
+    when(vertex.touchesGenesis()).thenReturn(true);
+    when(vertex.hasDirectParent()).thenReturn(true);
+    when(vertex.parentHasDirectParent()).thenReturn(true);
     BFTHeader parent = mock(BFTHeader.class);
     when(parent.getRound()).thenReturn(Round.of(1));
-    when(proposal.getParentHeader()).thenReturn(parent);
-    when(proposal.getRound()).thenReturn(Round.of(2));
+    when(vertex.getParentHeader()).thenReturn(parent);
+    when(vertex.getRound()).thenReturn(Round.of(2));
     BFTHeader grandParent = mock(BFTHeader.class);
     when(grandParent.getRound()).thenReturn(mock(Round.class));
-    when(proposal.getGrandParentHeader()).thenReturn(grandParent);
+    when(vertex.getGrandParentHeader()).thenReturn(grandParent);
+    when(vertexWithHash.vertex()).thenReturn(vertex);
     Optional<Vote> voteMaybe =
-        safetyRules.createVote(proposal, mock(BFTHeader.class), 1L, mock(HighQC.class));
+        safetyRules.createVote(vertexWithHash, mock(BFTHeader.class), 1L, mock(HighQC.class));
     assertThat(voteMaybe).isNotEmpty();
     Vote vote = voteMaybe.get();
     assertThat(vote.getVoteData().getCommitted()).isEmpty();
@@ -219,20 +232,22 @@ public class SafetyRulesTest {
     when(safetyState.getLockedRound()).thenReturn(Round.of(0));
     when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
 
-    VertexWithHash proposal = mock(VertexWithHash.class);
-    when(proposal.touchesGenesis()).thenReturn(false);
-    when(proposal.hasDirectParent()).thenReturn(true);
-    when(proposal.parentHasDirectParent()).thenReturn(true);
+    final var vertexWithHash = mock(VertexWithHash.class);
+    final var vertex = mock(Vertex.class);
+    when(vertex.touchesGenesis()).thenReturn(false);
+    when(vertex.hasDirectParent()).thenReturn(true);
+    when(vertex.parentHasDirectParent()).thenReturn(true);
     BFTHeader grandparentHeader = mock(BFTHeader.class);
     when(grandparentHeader.getRound()).thenReturn(mock(Round.class));
-    when(proposal.getGrandParentHeader()).thenReturn(grandparentHeader);
+    when(vertex.getGrandParentHeader()).thenReturn(grandparentHeader);
     BFTHeader parent = mock(BFTHeader.class);
     when(parent.getRound()).thenReturn(Round.of(2));
-    when(proposal.getParentHeader()).thenReturn(parent);
-    when(proposal.getRound()).thenReturn(Round.of(3));
+    when(vertex.getParentHeader()).thenReturn(parent);
+    when(vertex.getRound()).thenReturn(Round.of(3));
+    when(vertexWithHash.vertex()).thenReturn(vertex);
 
     Optional<Vote> voteMaybe =
-        safetyRules.createVote(proposal, mock(BFTHeader.class), 1L, mock(HighQC.class));
+        safetyRules.createVote(vertexWithHash, mock(BFTHeader.class), 1L, mock(HighQC.class));
     assertThat(voteMaybe).isNotEmpty();
     Vote vote = voteMaybe.get();
     assertThat(vote.getVoteData().getCommitted()).hasValue(grandparentHeader);
@@ -245,20 +260,22 @@ public class SafetyRulesTest {
     when(safetyState.getLockedRound()).thenReturn(Round.of(0));
     when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
 
-    VertexWithHash proposal = mock(VertexWithHash.class);
-    when(proposal.touchesGenesis()).thenReturn(false);
-    when(proposal.hasDirectParent()).thenReturn(false);
-    when(proposal.parentHasDirectParent()).thenReturn(true);
+    final var vertexWithHash = mock(VertexWithHash.class);
+    final var vertex = mock(Vertex.class);
+    when(vertex.touchesGenesis()).thenReturn(false);
+    when(vertex.hasDirectParent()).thenReturn(false);
+    when(vertex.parentHasDirectParent()).thenReturn(true);
     BFTHeader parent = mock(BFTHeader.class);
     when(parent.getRound()).thenReturn(Round.of(2));
-    when(proposal.getParentHeader()).thenReturn(parent);
-    when(proposal.getRound()).thenReturn(Round.of(4));
+    when(vertex.getParentHeader()).thenReturn(parent);
+    when(vertex.getRound()).thenReturn(Round.of(4));
     BFTHeader grandParent = mock(BFTHeader.class);
     when(grandParent.getRound()).thenReturn(mock(Round.class));
-    when(proposal.getGrandParentHeader()).thenReturn(grandParent);
+    when(vertex.getGrandParentHeader()).thenReturn(grandParent);
+    when(vertexWithHash.vertex()).thenReturn(vertex);
 
     Optional<Vote> voteMaybe =
-        safetyRules.createVote(proposal, mock(BFTHeader.class), 1L, mock(HighQC.class));
+        safetyRules.createVote(vertexWithHash, mock(BFTHeader.class), 1L, mock(HighQC.class));
     assertThat(voteMaybe).isNotEmpty();
     Vote vote = voteMaybe.get();
     assertThat(vote.getVoteData().getCommitted()).isEmpty();

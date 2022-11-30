@@ -72,16 +72,22 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.BFTFactory;
+import com.radixdlt.consensus.DoubleVote;
+import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.NoVote;
+import com.radixdlt.consensus.bft.RoundQuorumReached;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStoreAdapter;
@@ -130,6 +136,7 @@ public class EpochsConsensusModule extends AbstractModule {
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
             .permitDuplicates();
     eventBinder.addBinding().toInstance(EpochRoundUpdate.class);
+    eventBinder.addBinding().toInstance(EpochRoundLeaderFailure.class);
     eventBinder.addBinding().toInstance(VertexRequestTimeout.class);
     eventBinder.addBinding().toInstance(LedgerUpdate.class);
     eventBinder.addBinding().toInstance(Epoched.class);
@@ -226,6 +233,15 @@ public class EpochsConsensusModule extends AbstractModule {
         Runners.CONSENSUS, EpochRoundUpdate.class, epochManager.epochRoundUpdateEventProcessor());
   }
 
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> epochRoundLeaderFailureEventProcessor(
+      EpochManager epochManager) {
+    return new EventProcessorOnRunner<>(
+        Runners.CONSENSUS,
+        EpochRoundLeaderFailure.class,
+        epochManager.epochRoundLeaderFailureEventProcessor());
+  }
+
   @Provides
   private EpochChange initialEpoch(
       @LastEpochProof LedgerProof proof, BFTConfiguration initialBFTConfig) {
@@ -287,11 +303,11 @@ public class EpochsConsensusModule extends AbstractModule {
       ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>> localTimeoutSender,
       RemoteEventDispatcher<Proposal> proposalDispatcher,
       RemoteEventDispatcher<Vote> voteDispatcher,
+      EventDispatcher<EpochRoundLeaderFailure> roundLeaderFailureEventDispatcher,
       TimeSupplier timeSupplier) {
     return (validatorSet, vertexStore, timeoutCalculator, safetyRules, initialRoundUpdate, epoch) ->
         new Pacemaker(
             self,
-            counters,
             validatorSet,
             vertexStore,
             safetyRules,
@@ -303,10 +319,61 @@ public class EpochsConsensusModule extends AbstractModule {
             proposalGenerator,
             proposalDispatcher,
             voteDispatcher,
+            roundLeaderFailure ->
+                roundLeaderFailureEventDispatcher.dispatch(
+                    new EpochRoundLeaderFailure(epoch, roundLeaderFailure)),
             hasher,
             timeSupplier,
             initialRoundUpdate,
             counters);
+  }
+
+  @Provides
+  private BFTFactory bftFactory(
+      Hasher hasher,
+      HashVerifier verifier,
+      TimeSupplier timeSupplier,
+      SystemCounters systemCounters,
+      EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
+      EventDispatcher<NoVote> noVoteEventDispatcher,
+      EventDispatcher<DoubleVote> doubleVoteEventDispatcher,
+      RemoteEventDispatcher<Vote> voteDispatcher,
+      EventDispatcher<EpochRoundLeaderFailure> roundLeaderFailureEventDispatcher) {
+    return (self,
+        pacemaker,
+        vertexStore,
+        bftSyncer,
+        roundQuorumReachedEventProcessor,
+        validatorSet,
+        roundUpdate,
+        safetyRules,
+        epoch) ->
+        BFTBuilder.create()
+            .self(self)
+            .hasher(hasher)
+            .verifier(verifier)
+            .voteDispatcher(voteDispatcher)
+            .roundLeaderFailureEventDispatcher(
+                roundLeaderFailure ->
+                    roundLeaderFailureEventDispatcher.dispatch(
+                        new EpochRoundLeaderFailure(epoch, roundLeaderFailure)))
+            .safetyRules(safetyRules)
+            .pacemaker(pacemaker)
+            .vertexStore(vertexStore)
+            .roundQuorumReachedEventDispatcher(
+                roundQuorumReached -> {
+                  // FIXME: a hack for now until replacement of epochmanager factories
+                  roundQuorumReachedEventProcessor.process(roundQuorumReached);
+                  roundQuorumReachedEventDispatcher.dispatch(roundQuorumReached);
+                })
+            .noVoteEventDispatcher(noVoteEventDispatcher)
+            .doubleVoteEventDispatcher(doubleVoteEventDispatcher)
+            .roundUpdate(roundUpdate)
+            .bftSyncer(bftSyncer)
+            .validatorSet(validatorSet)
+            .timeSupplier(timeSupplier)
+            .systemCounters(systemCounters)
+            .build();
   }
 
   @Provides
