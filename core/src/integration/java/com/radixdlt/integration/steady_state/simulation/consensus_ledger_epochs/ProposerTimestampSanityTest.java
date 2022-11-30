@@ -65,6 +65,7 @@
 package com.radixdlt.integration.steady_state.simulation.consensus_ledger_epochs;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
@@ -76,6 +77,7 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
@@ -133,14 +135,13 @@ public final class ProposerTimestampSanityTest {
   }
 
   @Test
-  public void test_two_nodes_clock_significantly_rushing_or_delaying_liveness() {
+  public void test_two_nodes_clock_significantly_rushing_or_delaying_safety_but_no_liveness() {
     final var builder =
         SimulationTest.builder()
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
             .numNodes(4)
             .addTestModules(
                 ConsensusMonitors.safety(),
-                ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
                 LedgerMonitors.consensusToLedger(),
                 ConsensusMonitors.proposerTimestampChecker(),
                 LedgerMonitors.ordered())
@@ -152,8 +153,17 @@ public final class ProposerTimestampSanityTest {
     /* One node delayed */
     modifyNthNodeTimeSupplier(1, () -> System.currentTimeMillis() + 4000, builder);
 
-    final var results = builder.build().run().awaitCompletion();
+    final var runningTest = builder.build().run();
+    final var results = runningTest.awaitCompletion();
+
     assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
+
+    // In this test scenario there should be no liveness whatsoever.
+    // Making sure that not a single transaction went through.
+    for (final var nodeCounters : runningTest.getNetwork().getSystemCounters().values()) {
+      assertEquals(
+          0, nodeCounters.get(SystemCounters.CounterType.LEDGER_BFT_TRANSACTIONS_PROCESSED));
+    }
   }
 
   private void modifyNthNodeTimeSupplier(

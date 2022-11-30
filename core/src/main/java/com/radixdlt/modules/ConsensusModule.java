@@ -113,7 +113,6 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.TimeSupplier;
-import java.security.SecureRandom;
 import java.util.Comparator;
 import java.util.Random;
 
@@ -206,8 +205,7 @@ public final class ConsensusModule extends AbstractModule {
       EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher,
       TimeSupplier timeSupplier,
       RoundUpdate initialRoundUpdate,
-      SystemCounters systemCounters,
-      SecureRandom secureRandom) {
+      SystemCounters systemCounters) {
     BFTValidatorSet validatorSet = configuration.getValidatorSet();
     return new Pacemaker(
         self,
@@ -224,8 +222,7 @@ public final class ConsensusModule extends AbstractModule {
         hasher,
         timeSupplier,
         initialRoundUpdate,
-        systemCounters,
-        secureRandom);
+        systemCounters);
   }
 
   @Provides

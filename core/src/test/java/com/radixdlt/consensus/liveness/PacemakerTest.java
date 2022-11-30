@@ -85,7 +85,6 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.utils.TimeSupplier;
-import java.security.SecureRandom;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -138,8 +137,7 @@ public class PacemakerTest {
             hasher,
             timeSupplier,
             initialRoundUpdate,
-            new SystemCountersImpl(),
-            new SecureRandom());
+            new SystemCountersImpl());
   }
 
   @Test

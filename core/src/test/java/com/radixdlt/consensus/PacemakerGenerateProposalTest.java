@@ -95,7 +95,6 @@ import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt256;
-import java.security.SecureRandom;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.Before;
@@ -119,7 +118,6 @@ public final class PacemakerGenerateProposalTest {
   private TimeSupplier timeSupplier;
   private RoundUpdate initialRoundUpdate;
   private SystemCounters systemCounters;
-  private SecureRandom secureRandom;
 
   private Pacemaker sut;
 
@@ -148,7 +146,6 @@ public final class PacemakerGenerateProposalTest {
     this.timeSupplier = mock(TimeSupplier.class);
     this.initialRoundUpdate =
         RoundUpdate.create(Round.of(1L), mock(HighQC.class), validator1, validator2);
-    this.secureRandom = new SecureRandom();
 
     this.sut =
         new Pacemaker(
@@ -166,8 +163,7 @@ public final class PacemakerGenerateProposalTest {
             hasher,
             timeSupplier,
             initialRoundUpdate,
-            systemCounters,
-            secureRandom);
+            systemCounters);
   }
 
   @Test

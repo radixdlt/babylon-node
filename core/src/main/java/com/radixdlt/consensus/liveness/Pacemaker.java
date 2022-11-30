@@ -79,7 +79,6 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.TimeSupplier;
-import java.security.SecureRandom;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -95,9 +94,6 @@ public final class Pacemaker {
     PROPOSAL_REJECTED, // A genuine proposal was received, but it has been rejected
     TIMED_OUT // The round has timed out
   }
-
-  /* See detailed explanation in `generateProposal` */
-  private static final int PROPOSAL_SUBSTITUTE_TIMESTAMP_MAX_OFFSET_MS = 50;
 
   private static final int PREVIOUS_ROUND_RUSHING_TIMESTAMP_LOG_THRESHOLD_MS = 1000;
 
@@ -115,7 +111,6 @@ public final class Pacemaker {
   private final EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher;
   private final TimeSupplier timeSupplier;
   private final SystemCounters systemCounters;
-  private final SecureRandom secureRandom;
 
   private RoundUpdate latestRoundUpdate;
   private RoundStatus roundStatus = RoundStatus.UNDISTURBED;
@@ -140,8 +135,7 @@ public final class Pacemaker {
       Hasher hasher,
       TimeSupplier timeSupplier,
       RoundUpdate initialRoundUpdate,
-      SystemCounters systemCounters,
-      SecureRandom secureRandom) {
+      SystemCounters systemCounters) {
     this.self = Objects.requireNonNull(self);
     this.validatorSet = Objects.requireNonNull(validatorSet);
     this.vertexStore = Objects.requireNonNull(vertexStore);
@@ -157,7 +151,6 @@ public final class Pacemaker {
     this.timeSupplier = Objects.requireNonNull(timeSupplier);
     this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
     this.systemCounters = Objects.requireNonNull(systemCounters);
-    this.secureRandom = Objects.requireNonNull(secureRandom);
   }
 
   public void start() {
