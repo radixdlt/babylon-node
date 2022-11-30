@@ -1,6 +1,7 @@
 ## Development Environment Setup
 
 - Java 17.0.4+ SDK installed and configured. It's very important to have at least 17.0.4, else you will hit Java Compiler bugs.
+- rust/cargo 1.60.0+ installed and configured (recommended via rustup)
 - More or less recent Linux or MacOS (Windows WSL2 may work, but not tested)
 - git 2.27+
 - docker version 20.10+
@@ -8,9 +9,12 @@
 
 Two last prerequisites are necessary only if you plan to launch a local network through Docker.
 
+Please note that many installations require shell restart to become effective (due to `$PATH` etc.), with the most
+notorious being `cargo` - it may happen that only a full system reboot allows for a successful initial build.
+
 ### Getting code
 
-* If you intend to contribute, fork the main repository https://github.com/radixdlt/babylon-node into your account and then clone it locally.
+* External contributors: please fork the main repository https://github.com/radixdlt/babylon-node into your account and then clone it locally.
 * Otherwise, just clone the main repo at https://github.com/radixdlt/babylon-node
 
 ### Building code
