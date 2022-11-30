@@ -177,10 +177,10 @@ public final class Vertex {
   }
 
   public static Vertex createTimeout(QuorumCertificate parentQC, Round round, BFTNode proposer) {
-    /* Timeout vertices simply increment the previous timestamp by 1. This makes sure that
+    /* Timeout vertices simply reuse the previous timestamp. This makes sure that
     all validators (that participate in a timeout quorum) agree on the same timestamp. */
     final var prevTimestamp = parentQC.getProposedHeader().getLedgerHeader().proposerTimestamp();
-    return new Vertex(parentQC, round, List.of(), proposer, true, prevTimestamp + 1);
+    return new Vertex(parentQC, round, List.of(), proposer, true, prevTimestamp);
   }
 
   public static Vertex create(
