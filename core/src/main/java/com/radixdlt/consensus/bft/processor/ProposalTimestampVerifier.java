@@ -146,6 +146,13 @@ public final class ProposalTimestampVerifier implements BFTEventProcessor {
       isAcceptable = false;
     } else if (proposalTimestamp < prevTimestamp) {
       systemCounters.increment(CounterType.BFT_INVALID_PROPOSAL_TIMESTAMP_WAS_LOWER_THAN_PREVIOUS);
+      log.info(
+          "Rejecting a proposal from {} at round {}. Its timestamp ({}) is lower than previous"
+              + " ({})!",
+          proposal.getAuthor(),
+          proposal.getRound(),
+          proposalTimestamp,
+          prevTimestamp);
       isAcceptable = false;
     } else {
       isAcceptable = true;
@@ -160,7 +167,7 @@ public final class ProposalTimestampVerifier implements BFTEventProcessor {
                 + " still acceptable). Its timestamp is {} and the system time is {}.",
             proposal.getAuthor(),
             proposal.getRound(),
-            proposal.getVertex().proposerTimestamp(),
+            proposalTimestamp,
             now);
       } else {
         log.warn(
@@ -168,7 +175,7 @@ public final class ProposalTimestampVerifier implements BFTEventProcessor {
                 + " bounds at system time {}.",
             proposal.getAuthor(),
             proposal.getRound(),
-            proposal.getVertex().proposerTimestamp(),
+            proposalTimestamp,
             now);
       }
     }
