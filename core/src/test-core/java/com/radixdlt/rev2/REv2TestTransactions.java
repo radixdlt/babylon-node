@@ -184,7 +184,7 @@ public final class REv2TestTransactions {
     return REv2TestTransactions.constructRawTransaction(intentBytes, DEFAULT_NOTARY, List.of());
   }
 
-  public static RawNotarizedTransaction constructValidTransaction(long fromEpoch, long nonce) {
+  public static RawNotarizedTransaction constructValidRawTransaction(long fromEpoch, long nonce) {
     var intentBytes =
         constructValidIntentBytes(
             NetworkDefinition.INT_TEST_NET,
@@ -196,7 +196,7 @@ public final class REv2TestTransactions {
 
   public record TransactionWithIntentHash(RawNotarizedTransaction transaction, byte[] intentHash) {}
 
-  public static TransactionWithIntentHash constructValidTransactionWithIntentHash(
+  public static TransactionWithIntentHash constructValidRawTransactionWithIntentHash(
       long fromEpoch, long nonce) {
     var intentBytes =
         constructValidIntentBytes(

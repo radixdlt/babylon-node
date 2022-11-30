@@ -80,7 +80,8 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
   public void test_core_api_can_submit_and_commit_transaction() throws Exception {
     try (var test = buildRunningServerTest()) {
 
-      var transactionWithHash = REv2TestTransactions.constructValidTransactionWithIntentHash(0, 0);
+      var transactionWithHash =
+          REv2TestTransactions.constructValidRawTransactionWithIntentHash(0, 0);
       var transaction = transactionWithHash.transaction();
       var intentHash = transactionWithHash.intentHash();
 
