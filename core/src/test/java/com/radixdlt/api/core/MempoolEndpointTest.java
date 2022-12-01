@@ -91,7 +91,7 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
                       .network(networkLogicalName)
                       .notarizedTransactionHex(Bytes.toHexString(rawTransaction.getPayload())));
 
-      assertThat(response.getDuplicate()).isEqualTo(false);
+      assertThat(response.getDuplicate()).isFalse();
 
       // Assert this transaction is in the mempool list
       assertThat(

@@ -92,7 +92,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
                       .network(networkLogicalName)
                       .notarizedTransactionHex(Bytes.toHexString(rawTransaction.getPayload())));
 
-      assertThat(response.getDuplicate()).isEqualTo(false);
+      assertThat(response.getDuplicate()).isFalse();
 
       // Check that it's in mempool
       var statusResponse1 =
