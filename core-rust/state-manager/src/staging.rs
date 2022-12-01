@@ -171,19 +171,27 @@ where
 
         let mut stack = Vec::new();
         for node_key in self.first_layer.iter() {
-            stack.push(*node_key);
+            let node = self.nodes.get_mut(*node_key).unwrap();
+            node.data = PersistentHashMap::new();
+            stack.push((*node_key, node.data.clone()));
         }
 
         while !stack.is_empty() {
-            let node_key = stack.pop().unwrap();
+            let (node_key, parent_data) = stack.pop().unwrap();
 
-            let node = self.nodes.get_mut(node_key).unwrap();
-            for next_key in node.next_keys.iter() {
-                stack.push(*next_key);
+            let next_keys = self.nodes.get(node_key).unwrap().next_keys.clone();
+            for next_key in next_keys.iter() {
+                let next_node = self.nodes.get_mut(*next_key).unwrap();
+                next_node.data = parent_data.clone();
+                if let TransactionResult::Commit(commit) = &next_node.receipt.result {
+                    for (substate_id, output_value) in &commit.state_updates.up_substates {
+                        next_node
+                            .data
+                            .insert(substate_id.clone(), output_value.clone());
+                    }
+                }
+                stack.push((*next_key, next_node.data.clone()));
             }
-
-            self.accumulator_hash_to_node.remove(&node.accumulator_hash);
-            self.nodes.remove(node_key);
         }
     }
 
