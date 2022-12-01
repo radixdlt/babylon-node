@@ -13,7 +13,7 @@ fn handle_v0_state_epoch_internal(
     state_manager: &ActualStateManager,
     _request: (),
 ) -> Result<models::V0StateEpochResponse, RequestHandlingError> {
-    let epoch = state_manager.store.get_epoch();
+    let epoch = state_manager.staged_store.root.get_epoch();
     Ok(models::V0StateEpochResponse {
         epoch: to_api_epoch(epoch)?,
     })

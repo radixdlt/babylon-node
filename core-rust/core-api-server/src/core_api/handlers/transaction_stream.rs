@@ -59,7 +59,7 @@ fn handle_transaction_stream_internal(
         .and_then(|v| v.checked_sub(1))
         .ok_or_else(|| client_error("start_state_version + limit - 1 out of u64 bounds"))?;
 
-    let max_state_version = state_manager.store.max_state_version();
+    let max_state_version = state_manager.staged_store.root.max_state_version();
 
     if max_state_version < from_state_version {
         return Ok(models::CommittedTransactionsResponse {
@@ -76,7 +76,8 @@ fn handle_transaction_stream_internal(
     let mut state_version = from_state_version;
     while state_version <= up_to_state_version_inclusive {
         let next_tid = state_manager
-            .store
+            .staged_store
+            .root
             .get_payload_hash(state_version)
             .ok_or_else(|| {
                 server_error(&format!(
@@ -85,7 +86,8 @@ fn handle_transaction_stream_internal(
                 ))
             })?;
         let next_tx = state_manager
-            .store
+            .staged_store
+            .root
             .get_committed_transaction(&next_tid)
             .ok_or_else(|| {
                 server_error(&format!(

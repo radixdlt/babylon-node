@@ -44,7 +44,10 @@ fn handle_v0_state_non_fungible_internal(
                     )),
                 );
 
-                let nft_substate = state_manager.store.get_substate(&non_fungible_substate_id);
+                let nft_substate = state_manager
+                    .staged_store
+                    .root
+                    .get_substate(&non_fungible_substate_id);
                 if let Some(PersistedSubstate::NonFungible(non_fungible)) =
                     nft_substate.map(|o| o.substate)
                 {

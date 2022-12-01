@@ -31,8 +31,15 @@ pub(crate) fn read_derefed_global_substate(
     global_address: GlobalAddress,
     substate_offset: SubstateOffset,
 ) -> Option<PersistedSubstate> {
-    let node = state_manager.store.global_deref(global_address)?;
+    let node = state_manager
+        .staged_store
+        .root
+        .global_deref(global_address)?;
     let substate_id = SubstateId(node, substate_offset);
-    let substate = state_manager.store.get_substate(&substate_id)?.substate;
+    let substate = state_manager
+        .staged_store
+        .root
+        .get_substate(&substate_id)?
+        .substate;
     Some(substate)
 }

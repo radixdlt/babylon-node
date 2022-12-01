@@ -69,6 +69,7 @@ pub mod mempool;
 pub mod query;
 mod receipt;
 mod result;
+mod staging;
 mod state_manager;
 pub mod store;
 pub mod transaction;

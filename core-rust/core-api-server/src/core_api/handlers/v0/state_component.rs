@@ -36,7 +36,7 @@ fn handle_v0_state_component_internal(
         .into());
     }
 
-    let component_dump = dump_component(&state_manager.store, component_address)
+    let component_dump = dump_component(&state_manager.staged_store.root, component_address)
         .map_err(|err| server_error(&format!("Error traversing component state: {:?}", err)))?;
 
     let owned_vaults = component_dump
