@@ -339,7 +339,7 @@ public final class RadixEngineStateComputer implements StateComputer {
           new NextRound(
               roundDetails.roundNumber(),
               roundDetails.roundWasTimeout(),
-              roundDetails.roundTimestamp(),
+              roundDetails.consensusParentRoundTimestamp(),
               getValidatorMapping()));
     } else {
       // We shouldn't record the outcome of rounds beyond the end of the epoch, BUT we do need to
@@ -349,9 +349,12 @@ public final class RadixEngineStateComputer implements StateComputer {
       if (shouldRecordRoundTimeoutsUpToEndOfEpoch) {
         systemActions.action(
             new NextRound(
-                epochMaxRoundNumber, true, roundDetails.roundTimestamp(), getValidatorMapping()));
+                epochMaxRoundNumber,
+                true,
+                roundDetails.consensusParentRoundTimestamp(),
+                getValidatorMapping()));
       }
-      systemActions.action(new NextEpoch(roundDetails.roundTimestamp()));
+      systemActions.action(new NextEpoch(roundDetails.consensusParentRoundTimestamp()));
     }
 
     try {
@@ -480,7 +483,8 @@ public final class RadixEngineStateComputer implements StateComputer {
                             header.getNextEpoch(),
                             Round.genesis(),
                             header.getAccumulatorState(),
-                            header.timestamp());
+                            header.consensusParentRoundTimestamp(),
+                            header.proposerTimestamp());
                     var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
                     final var initialState =
                         VertexStoreState.create(

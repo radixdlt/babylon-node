@@ -77,9 +77,11 @@ import org.junit.Test;
 public class QuorumCertificateTest {
   @Test
   public void when_create_genesis_qc_with_non_genesis_vertex__then_should_throw_exception() {
-    VertexWithHash vertex = mock(VertexWithHash.class);
+    final var vertexWithHash = mock(VertexWithHash.class);
+    final var vertex = mock(Vertex.class);
+    when(vertexWithHash.vertex()).thenReturn(vertex);
     when(vertex.getRound()).thenReturn(Round.of(1));
-    assertThatThrownBy(() -> QuorumCertificate.ofGenesis(vertex, mock(LedgerHeader.class)))
+    assertThatThrownBy(() -> QuorumCertificate.ofGenesis(vertexWithHash, mock(LedgerHeader.class)))
         .isInstanceOf(IllegalArgumentException.class);
   }
 

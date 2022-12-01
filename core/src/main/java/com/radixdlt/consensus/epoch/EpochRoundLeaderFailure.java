@@ -62,49 +62,44 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.consensus.bft.RoundLeaderFailure;
+import java.util.Objects;
 
-/** An empty BFT event processor */
-public enum EmptyBFTEventProcessor implements BFTEventProcessor {
-  INSTANCE;
+/** A wrapper for a RoundLeaderFailure message that also holds epoch. */
+public final class EpochRoundLeaderFailure {
 
-  @Override
-  public void processVote(Vote vote) {
-    // No-op
+  private final long epoch;
+  private final RoundLeaderFailure roundLeaderFailure;
+
+  public EpochRoundLeaderFailure(long epoch, RoundLeaderFailure roundLeaderFailure) {
+    this.epoch = epoch;
+    this.roundLeaderFailure = Objects.requireNonNull(roundLeaderFailure);
+  }
+
+  public long getEpoch() {
+    return epoch;
+  }
+
+  public RoundLeaderFailure getRoundLeaderFailure() {
+    return roundLeaderFailure;
   }
 
   @Override
-  public void processProposal(Proposal proposal) {
-    // No-op
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    EpochRoundLeaderFailure that = (EpochRoundLeaderFailure) o;
+    return epoch == that.epoch && Objects.equals(roundLeaderFailure, that.roundLeaderFailure);
   }
 
   @Override
-  public void processLocalTimeout(ScheduledLocalTimeout timeout) {
-    // No-op
-  }
-
-  @Override
-  public void processBFTUpdate(BFTInsertUpdate update) {
-    // No-op
-  }
-
-  @Override
-  public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
-    // No-op
-  }
-
-  @Override
-  public void start() {
-    // No-op
-  }
-
-  @Override
-  public void processRoundUpdate(RoundUpdate roundUpdate) {
-    // No-op
+  public int hashCode() {
+    return Objects.hash(epoch, roundLeaderFailure);
   }
 }

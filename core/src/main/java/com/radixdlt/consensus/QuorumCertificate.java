@@ -104,18 +104,18 @@ public final class QuorumCertificate {
   /**
    * Create a mocked QC for genesis vertex
    *
-   * @param genesisVertex the vertex to create a qc for
+   * @param genesisVertexWithHash the vertex to create a qc for
    * @return a mocked QC
    */
   public static QuorumCertificate ofGenesis(
-      VertexWithHash genesisVertex, LedgerHeader ledgerHeader) {
-    if (!genesisVertex.getRound().isGenesis()) {
-      throw new IllegalArgumentException(String.format("Vertex is not genesis: %s", genesisVertex));
+      VertexWithHash genesisVertexWithHash, LedgerHeader ledgerHeader) {
+    final var vertex = genesisVertexWithHash.vertex();
+    if (!vertex.getRound().isGenesis()) {
+      throw new IllegalArgumentException(String.format("Vertex is not genesis: %s", vertex));
     }
 
-    BFTHeader header =
-        new BFTHeader(genesisVertex.getRound(), genesisVertex.getHash(), ledgerHeader);
-    final VoteData voteData = new VoteData(header, header, header);
+    final var header = new BFTHeader(vertex.getRound(), genesisVertexWithHash.hash(), ledgerHeader);
+    final var voteData = new VoteData(header, header, header);
     return new QuorumCertificate(voteData, new TimestampedECDSASignatures());
   }
 
@@ -134,7 +134,7 @@ public final class QuorumCertificate {
     // one round per epoch but this is likely good enough
 
     return getProposedHeader().getRound().isGenesis()
-        ? getProposedHeader().getLedgerHeader().roundTimestamp()
+        ? getProposedHeader().getLedgerHeader().consensusParentRoundTimestamp()
         : getTimestampedSignatures().weightedTimestampMillis();
   }
 

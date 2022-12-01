@@ -75,7 +75,8 @@ import java.util.List;
 public record PrepareRequest(
     List<RawLedgerTransaction> previous,
     List<RawNotarizedTransaction> proposed,
-    UInt64 roundNumber) {
+    UInt64 roundNumber,
+    UInt64 proposerTimestamp) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PrepareRequest.class,
@@ -85,6 +86,8 @@ public record PrepareRequest(
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
-                (t, encoder) -> encoder.encode(t.previous, t.proposed, t.roundNumber)));
+                codecs.of(new TypeToken<>() {}),
+                (t, encoder) ->
+                    encoder.encode(t.previous, t.proposed, t.roundNumber, t.proposerTimestamp)));
   }
 }

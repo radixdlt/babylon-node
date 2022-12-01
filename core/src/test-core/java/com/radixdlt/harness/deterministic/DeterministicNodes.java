@@ -70,7 +70,10 @@ import com.google.inject.*;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
@@ -97,6 +100,7 @@ import org.apache.logging.log4j.ThreadContext;
 public final class DeterministicNodes implements AutoCloseable {
   private static final Logger log = LogManager.getLogger();
 
+  private final BFTValidatorSet initialValidatorSet;
   private final List<Injector> nodeInstances;
   private final DeterministicNetwork network;
   private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
@@ -105,7 +109,12 @@ public final class DeterministicNodes implements AutoCloseable {
   private final Module overrideModule;
 
   public DeterministicNodes(
-      List<BFTNode> nodes, DeterministicNetwork network, Module baseModule, Module overrideModule) {
+      List<BFTNode> nodes,
+      BFTValidatorSet initialValidatorSet,
+      DeterministicNetwork network,
+      Module baseModule,
+      Module overrideModule) {
+    this.initialValidatorSet = initialValidatorSet;
     this.baseModule = baseModule;
     this.overrideModule = overrideModule;
     this.network = network;
@@ -147,9 +156,20 @@ public final class DeterministicNodes implements AutoCloseable {
   }
 
   public void startAllNodes() {
+    /* Since the nodes start processing messages as soon as they're started, we want to make sure that
+    the first leader starts last (so that all other nodes have a chance to init and get ready to process the proposal).
+    Otherwise, if for example the leader started first, for tests with lots of nodes to init (~100) the interval between
+    the proposal being generated and its processing can be greater than the acceptable proposal timestamp deviation,
+    resulting in no votes being sent and a timed-out round. */
+    final var firstLeader =
+        new WeightedRotatingLeaders(initialValidatorSet).getProposer(Round.genesis().next());
+    final int firstLeaderIdx = Objects.requireNonNull(this.nodeLookup.get(firstLeader));
     for (int nodeIndex = 0; nodeIndex < this.nodeInstances.size(); nodeIndex++) {
-      this.startNode(nodeIndex);
+      if (firstLeaderIdx != nodeIndex) {
+        this.startNode(nodeIndex);
+      }
     }
+    this.startNode(firstLeaderIdx);
   }
 
   public void shutdownNode(int nodeIndex) {

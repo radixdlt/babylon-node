@@ -112,7 +112,7 @@ public class MessageCentralValidatorSync {
   }
 
   private void sendGetVerticesResponse(BFTNode node, GetVerticesResponse response) {
-    var rawVertices = response.getVertices().stream().map(VertexWithHash::toSerializable).toList();
+    var rawVertices = response.getVertices().stream().map(VertexWithHash::vertex).toList();
     var msg = new GetVerticesResponseMessage(rawVertices);
     this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
   }

@@ -89,6 +89,7 @@ import org.apache.logging.log4j.Logger;
 
 /** Manages the BFT Vertex chain. TODO: Move this logic into ledger package. */
 @NotThreadSafe
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class VertexStoreJavaImpl implements VertexStore {
   private static final Logger logger = LogManager.getLogger();
 
@@ -116,7 +117,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     this.rootVertex = Objects.requireNonNull(rootVertex);
     this.highestQC = Objects.requireNonNull(highestQC);
     this.highestCommittedQC = Objects.requireNonNull(commitQC);
-    this.vertexChildren.put(rootVertex.getHash(), new HashSet<>());
+    this.vertexChildren.put(rootVertex.hash(), new HashSet<>());
     this.highestTC = Objects.requireNonNull(highestTC);
   }
 
@@ -131,9 +132,9 @@ public final class VertexStoreJavaImpl implements VertexStore {
             vertexStoreState.getHighQC().highestQC(),
             vertexStoreState.getHighQC().highestTC());
 
-    for (var vertex : vertexStoreState.getVertices()) {
-      var previous = vertexStore.getPathFromRoot(vertex.getParentVertexId());
-      var executedVertexMaybe = ledger.prepare(previous, vertex);
+    for (var vertexWithHash : vertexStoreState.getVertices()) {
+      var previous = vertexStore.getPathFromRoot(vertexWithHash.vertex().getParentVertexId());
+      var executedVertexMaybe = ledger.prepare(previous, vertexWithHash);
       if (executedVertexMaybe.isEmpty()) {
         // Try pruning to see if that helps catching up to the ledger
         // This can occur if a node crashes between persisting a new QC and committing
@@ -184,7 +185,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     this.highestQC = vertexStoreState.getHighQC().highestQC();
     this.vertices.clear();
     this.vertexChildren.clear();
-    this.vertexChildren.put(rootVertex.getHash(), new HashSet<>());
+    this.vertexChildren.put(rootVertex.hash(), new HashSet<>());
 
     for (var executedVertex : executedVertices) {
       this.vertices.put(executedVertex.getVertexHash(), executedVertex);
@@ -197,7 +198,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
   }
 
   public boolean containsVertex(HashCode vertexId) {
-    return vertices.containsKey(vertexId) || rootVertex.getHash().equals(vertexId);
+    return vertices.containsKey(vertexId) || rootVertex.hash().equals(vertexId);
   }
 
   public InsertQcResult insertQc(QuorumCertificate qc) {
@@ -230,13 +231,13 @@ public final class VertexStoreJavaImpl implements VertexStore {
 
   private void getChildrenVerticesList(
       VertexWithHash parent, ImmutableList.Builder<VertexWithHash> builder) {
-    Set<HashCode> childrenIds = this.vertexChildren.get(parent.getHash());
+    Set<HashCode> childrenIds = this.vertexChildren.get(parent.hash());
     if (childrenIds == null) {
       return;
     }
 
     for (HashCode childId : childrenIds) {
-      VertexWithHash v = vertices.get(childId).getVertex();
+      VertexWithHash v = vertices.get(childId).getVertexWithHash();
       builder.add(v);
       getChildrenVerticesList(v, builder);
     }
@@ -277,7 +278,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     final var bftInsertUpdates = new ArrayList<BFTInsertUpdate>();
     final var insertedQcs = new ArrayList<InsertQcResult.Inserted>();
     for (VertexWithHash v : vertexChain.getVertices()) {
-      final var insertQcResult = insertQc(v.getQCToParent());
+      final var insertQcResult = insertQc(v.vertex().getQCToParent());
 
       switch (insertQcResult) {
         case InsertQcResult.VertexIsMissing missing -> {
@@ -298,24 +299,26 @@ public final class VertexStoreJavaImpl implements VertexStore {
   /**
    * Inserts a vertex and then attempts to create the next header.
    *
-   * @param vertex vertex to insert
+   * @param vertexWithHash vertex to insert
    */
-  public Option<BFTInsertUpdate> insertVertex(VertexWithHash vertex) {
-    ExecutedVertex v = vertices.get(vertex.getHash());
+  public Option<BFTInsertUpdate> insertVertex(VertexWithHash vertexWithHash) {
+    ExecutedVertex v = vertices.get(vertexWithHash.hash());
     if (v != null) {
       return Option.empty();
     }
 
+    final var vertex = vertexWithHash.vertex();
     if (!this.containsVertex(vertex.getParentVertexId())) {
       throw new MissingParentException(vertex.getParentVertexId());
     }
 
-    return insertVertexInternal(vertex);
+    return insertVertexInternal(vertexWithHash);
   }
 
-  private Option<BFTInsertUpdate> insertVertexInternal(VertexWithHash vertex) {
-    LinkedList<ExecutedVertex> previous = getPathFromRoot(vertex.getParentVertexId());
-    final var executedVertexOption = Option.from(ledger.prepare(previous, vertex));
+  private Option<BFTInsertUpdate> insertVertexInternal(VertexWithHash vertexWithHash) {
+    LinkedList<ExecutedVertex> previous =
+        getPathFromRoot(vertexWithHash.vertex().getParentVertexId());
+    final var executedVertexOption = Option.from(ledger.prepare(previous, vertexWithHash));
     return executedVertexOption.map(
         executedVertex -> {
           vertices.put(executedVertex.getVertexHash(), executedVertex);
@@ -331,7 +334,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
   private void removeVertexAndPruneInternal(HashCode vertexId, HashCode skip) {
     vertices.remove(vertexId);
 
-    if (this.rootVertex.getHash().equals(vertexId)) {
+    if (this.rootVertex.hash().equals(vertexId)) {
       return;
     }
 
@@ -352,12 +355,12 @@ public final class VertexStoreJavaImpl implements VertexStore {
    * @param commitQC the proof of commit
    */
   private Optional<CommittedUpdate> commit(BFTHeader header, QuorumCertificate commitQC) {
-    if (header.getRound().compareTo(this.rootVertex.getRound()) <= 0) {
+    if (header.getRound().compareTo(this.rootVertex.vertex().getRound()) <= 0) {
       return Optional.empty();
     }
 
     final HashCode vertexId = header.getVertexId();
-    final VertexWithHash tipVertex = vertices.get(vertexId).getVertex();
+    final VertexWithHash tipVertex = vertices.get(vertexId).getVertexWithHash();
 
     /* removeVertexAndPruneInternal skips children removal for the rootVertex, so we need to
     keep a reference to the previous root and prune it *after* new rootVertex is set.
@@ -366,13 +369,13 @@ public final class VertexStoreJavaImpl implements VertexStore {
     final var prevRootVertex = this.rootVertex;
     this.rootVertex = tipVertex;
     this.highestCommittedQC = commitQC;
-    final var path = ImmutableList.copyOf(getPathFromRoot(tipVertex.getHash()));
+    final var path = ImmutableList.copyOf(getPathFromRoot(tipVertex.hash()));
     HashCode prev = null;
     for (int i = path.size() - 1; i >= 0; i--) {
       this.removeVertexAndPruneInternal(path.get(i).getVertexHash(), prev);
       prev = path.get(i).getVertexHash();
     }
-    removeVertexAndPruneInternal(prevRootVertex.getHash(), null);
+    removeVertexAndPruneInternal(prevRootVertex.hash(), null);
 
     return Optional.of(new CommittedUpdate(path));
   }
@@ -413,17 +416,17 @@ public final class VertexStoreJavaImpl implements VertexStore {
     ImmutableList.Builder<VertexWithHash> builder = ImmutableList.builderWithExpectedSize(count);
     for (int i = 0; i < count; i++) {
       final VertexWithHash vertexWithHash;
-      if (nextId.equals(rootVertex.getHash())) {
+      if (nextId.equals(rootVertex.hash())) {
         vertexWithHash = rootVertex;
       } else if (this.vertices.containsKey(nextId)) {
         final ExecutedVertex executedVertex = this.vertices.get(nextId);
-        vertexWithHash = executedVertex.getVertex();
+        vertexWithHash = executedVertex.getVertexWithHash();
       } else {
         return Option.empty();
       }
 
       builder.add(vertexWithHash);
-      nextId = vertexWithHash.getParentVertexId();
+      nextId = vertexWithHash.vertex().getParentVertexId();
     }
 
     return Option.present(builder.build());

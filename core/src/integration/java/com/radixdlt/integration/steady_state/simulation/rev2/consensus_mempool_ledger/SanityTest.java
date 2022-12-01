@@ -110,6 +110,7 @@ public class SanityTest {
                         REV2ProposerConfig.mempool(10, 100, MempoolRelayConfig.of())))))
         .addTestModules(
             ConsensusMonitors.safety(),
+            ConsensusMonitors.proposerTimestampChecker(),
             ConsensusMonitors.liveness(10, TimeUnit.SECONDS),
             ConsensusMonitors.noTimeouts(),
             ConsensusMonitors.directParents(),

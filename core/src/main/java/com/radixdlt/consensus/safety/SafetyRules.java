@@ -81,6 +81,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /** Manages safety of the protocol. */
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class SafetyRules {
   private static final Logger logger = LogManager.getLogger();
 
@@ -114,7 +115,8 @@ public final class SafetyRules {
     this.validatorSet = Objects.requireNonNull(validatorSet);
   }
 
-  private boolean checkLastVoted(VertexWithHash proposedVertex) {
+  private boolean checkLastVoted(VertexWithHash proposedVertexWithHash) {
+    final var proposedVertex = proposedVertexWithHash.vertex();
     // ensure vertex does not violate earlier votes
     if (proposedVertex.getRound().lte(this.state.getLastVotedRound())) {
       logger.warn(
@@ -130,7 +132,8 @@ public final class SafetyRules {
     }
   }
 
-  private boolean checkLocked(VertexWithHash proposedVertex, Builder nextStateBuilder) {
+  private boolean checkLocked(VertexWithHash proposedVertexWithHash, Builder nextStateBuilder) {
+    final var proposedVertex = proposedVertexWithHash.vertex();
     if (proposedVertex.getParentHeader().getRound().lt(this.state.getLockedRound())) {
       logger.warn(
           "Safety warning: Cannot vote for vertex {} as it does not respect locked round {}",
@@ -166,13 +169,14 @@ public final class SafetyRules {
 
     this.state = safetyStateBuilder.build();
 
-    final ECDSASecp256k1Signature signature = this.signer.sign(proposedVertex.getHash());
+    final ECDSASecp256k1Signature signature = this.signer.sign(proposedVertex.hash());
     return Optional.of(
-        new Proposal(proposedVertex.toSerializable(), highestCommittedQC, signature, highestTC));
+        new Proposal(proposedVertex.vertex(), highestCommittedQC, signature, highestTC));
   }
 
   private static VoteData constructVoteData(
-      VertexWithHash proposedVertex, BFTHeader proposedHeader) {
+      VertexWithHash proposedVertexWithHash, BFTHeader proposedHeader) {
+    final var proposedVertex = proposedVertexWithHash.vertex();
     final BFTHeader parent = proposedVertex.getParentHeader();
 
     // Add a vertex to commit if creating a quorum for the proposed vertex would

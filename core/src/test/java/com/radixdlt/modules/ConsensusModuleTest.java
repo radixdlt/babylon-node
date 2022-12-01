@@ -140,10 +140,11 @@ public class ConsensusModuleTest {
   public void setup() {
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     var genesisVertex =
-        Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, null, 0))
+        Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, null, 0, 0))
             .withId(ZeroHasher.INSTANCE);
     var qc =
-        QuorumCertificate.ofGenesis(genesisVertex, LedgerHeader.genesis(accumulatorState, null, 0));
+        QuorumCertificate.ofGenesis(
+            genesisVertex, LedgerHeader.genesis(accumulatorState, null, 0, 0));
     this.validatorKeyPair = ECKeyPair.generateNew();
     this.validatorBftNode = BFTNode.create(this.validatorKeyPair.getPublicKey());
     var validatorSet =
@@ -186,6 +187,8 @@ public class ConsensusModuleTest {
         bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledLocalTimeout>>() {})
             .toInstance(rmock(ScheduledEventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<RoundQuorumReached>>() {})
+            .toInstance(rmock(EventDispatcher.class));
+        bind(new TypeLiteral<EventDispatcher<RoundLeaderFailure>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
@@ -250,12 +253,14 @@ public class ConsensusModuleTest {
   private Pair<QuorumCertificate, VertexWithHash> createNextVertex(
       QuorumCertificate parent, ECKeyPair proposerKeyPair, RawNotarizedTransaction txn) {
     final var proposerBftNode = BFTNode.create(proposerKeyPair.getPublicKey());
-    var vertex = Vertex.create(parent, Round.of(1), List.of(txn), proposerBftNode).withId(hasher);
+    var vertex =
+        Vertex.create(parent, Round.of(1), List.of(txn), proposerBftNode, 0).withId(hasher);
     var next =
         new BFTHeader(
             Round.of(1),
-            vertex.getHash(),
-            LedgerHeader.create(1, Round.of(1), new AccumulatorState(1, HashUtils.zero256()), 1));
+            vertex.hash(),
+            LedgerHeader.create(
+                1, Round.of(1), new AccumulatorState(1, HashUtils.zero256()), 1, 1));
     final var voteData = new VoteData(next, parent.getProposedHeader(), parent.getParentHeader());
     final var timestamp = 1;
     final var voteDataHash = Vote.getHashOfData(hasher, voteData, timestamp);
@@ -277,7 +282,7 @@ public class ConsensusModuleTest {
     HighQC unsyncedHighQC =
         HighQC.from(nextVertex.getFirst(), nextVertex.getFirst(), Optional.empty());
     bftSync.syncToQC(unsyncedHighQC, validatorBftNode);
-    GetVerticesRequest request = new GetVerticesRequest(nextVertex.getSecond().getHash(), 1);
+    GetVerticesRequest request = new GetVerticesRequest(nextVertex.getSecond().hash(), 1);
     VertexRequestTimeout timeout = VertexRequestTimeout.create(request);
 
     // Act
@@ -289,8 +294,7 @@ public class ConsensusModuleTest {
         .dispatch(
             eq(validatorBftNode),
             argThat(
-                r ->
-                    r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().getHash())));
+                r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().hash())));
   }
 
   @Test
@@ -316,8 +320,7 @@ public class ConsensusModuleTest {
         .dispatch(
             eq(bftNode),
             argThat(
-                r ->
-                    r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().getHash())));
+                r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().hash())));
   }
 
   @Test
@@ -355,7 +358,7 @@ public class ConsensusModuleTest {
             argThat(
                 r ->
                     r.getCount() == 1
-                        && r.getVertexId().equals(proposedVertex1.getSecond().getHash())));
+                        && r.getVertexId().equals(proposedVertex1.getSecond().hash())));
 
     verify(requestSender, times(1))
         .dispatch(
@@ -363,7 +366,7 @@ public class ConsensusModuleTest {
             argThat(
                 r ->
                     r.getCount() == 1
-                        && r.getVertexId().equals(proposedVertex2.getSecond().getHash())));
+                        && r.getVertexId().equals(proposedVertex2.getSecond().hash())));
   }
 
   private void nothrowSleep(long milliseconds) {

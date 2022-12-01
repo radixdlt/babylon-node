@@ -62,16 +62,41 @@
  * permissions under this License.
  */
 
-package com.radixdlt.utils;
+package com.radixdlt.harness.simulation.monitors.consensus;
 
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.ExecutedVertex;
+import com.radixdlt.harness.simulation.TestInvariant;
+import com.radixdlt.harness.simulation.monitors.NodeEvents;
+import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
+import io.reactivex.rxjava3.core.Observable;
 
-public class LedgerHeaderMock {
-  public static LedgerHeader get() {
-    return LedgerHeader.create(
-        0, Round.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0, 0);
+public final class ProposerTimestampChecker implements TestInvariant {
+  private final NodeEvents nodeEvents;
+
+  public ProposerTimestampChecker(NodeEvents nodeEvents) {
+    this.nodeEvents = nodeEvents;
+  }
+
+  @Override
+  public Observable<TestInvariantError> check(RunningNetwork network) {
+    return Observable.<BFTCommittedUpdate>create(
+            emitter ->
+                nodeEvents.addListener(
+                    (node, update) -> emitter.onNext(update), BFTCommittedUpdate.class))
+        .serialize()
+        .flatMap(
+            e -> {
+              for (ExecutedVertex v : e.committed()) {
+                final var proposerTimestamp = v.getLedgerHeader().proposerTimestamp();
+                final var prevTimestamp = v.vertex().parentLedgerHeader().proposerTimestamp();
+                if (proposerTimestamp < prevTimestamp) {
+                  return Observable.just(
+                      new TestInvariantError(
+                          "Proposer timestamp is smaller than the previous one"));
+                }
+              }
+              return Observable.empty();
+            });
   }
 }

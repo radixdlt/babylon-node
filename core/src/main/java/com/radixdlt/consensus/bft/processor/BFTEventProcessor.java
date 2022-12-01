@@ -62,28 +62,65 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.deterministic;
+package com.radixdlt.consensus.bft.processor;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.RoundLeaderFailure;
+import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 
-/** Manages events for a node network */
-public class NodeEventsModule extends AbstractModule {
-  @Override
-  public void configure() {
-    bind(NodeEvents.class).in(Scopes.SINGLETON);
-  }
+/**
+ * Processor of BFT events.
+ *
+ * <p>Implementations are not expected to be thread-safe.
+ */
+public interface BFTEventProcessor {
+  /**
+   * The initialization call. Must be called first and only once at the beginning of the BFT's
+   * lifetime.
+   */
+  void start();
 
-  @Provides
-  public Map<Class<?>, Set<NodeEvents.NodeEventProcessor<?>>> safetyCheckProcessor(
-      Set<NodeEvents.NodeEventProcessor<?>> processors) {
-    return processors.stream()
-        .collect(
-            Collectors.groupingBy(
-                NodeEvents.NodeEventProcessor::getEventClass, Collectors.toSet()));
-  }
+  /**
+   * Process a local round update message.
+   *
+   * @param roundUpdate the round update message
+   */
+  void processRoundUpdate(RoundUpdate roundUpdate);
+
+  /**
+   * Process a consensus vote message.
+   *
+   * @param vote the vote message
+   */
+  void processVote(Vote vote);
+
+  /**
+   * Process a consensus proposal message.
+   *
+   * @param proposal the proposal message
+   */
+  void processProposal(Proposal proposal);
+
+  /**
+   * Process a local consensus timeout message.
+   *
+   * @param scheduledLocalTimeout the round corresponding to the timeout
+   */
+  void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout);
+
+  /** Process a local RoundLeaderFailure event. */
+  void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure);
+
+  /**
+   * Process a BFT update.
+   *
+   * @param update the BFT update
+   */
+  void processBFTUpdate(BFTInsertUpdate update);
+
+  void processBFTRebuildUpdate(BFTRebuildUpdate update);
 }

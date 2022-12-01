@@ -93,6 +93,6 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 
     var txn = RawNotarizedTransaction.create(new byte[] {0, 1, 2, 3});
 
-    return Vertex.create(qc, round, List.of(txn), BFTNode.random());
+    return Vertex.create(qc, round, List.of(txn), BFTNode.random(), 0L);
   }
 }

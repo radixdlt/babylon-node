@@ -80,12 +80,14 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.NoVote;
+import com.radixdlt.consensus.bft.RoundLeaderFailure;
 import com.radixdlt.consensus.bft.RoundQuorumReached;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStoreAdapter;
 import com.radixdlt.consensus.bft.VertexStoreJavaImpl;
+import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
 import com.radixdlt.consensus.liveness.ExponentialPacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -137,44 +139,6 @@ public final class ConsensusModule extends AbstractModule {
   }
 
   @Provides
-  private BFTFactory bftFactory(
-      Hasher hasher,
-      HashVerifier verifier,
-      EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
-      EventDispatcher<NoVote> noVoteEventDispatcher,
-      EventDispatcher<DoubleVote> doubleVoteEventDispatcher,
-      RemoteEventDispatcher<Vote> voteDispatcher) {
-    return (self,
-        pacemaker,
-        vertexStore,
-        bftSyncer,
-        roundQuorumReachedEventProcessor,
-        validatorSet,
-        roundUpdate,
-        safetyRules) ->
-        BFTBuilder.create()
-            .self(self)
-            .hasher(hasher)
-            .verifier(verifier)
-            .voteDispatcher(voteDispatcher)
-            .safetyRules(safetyRules)
-            .pacemaker(pacemaker)
-            .vertexStore(vertexStore)
-            .roundQuorumReachedEventDispatcher(
-                roundQuorumReached -> {
-                  // FIXME: a hack for now until replacement of epochmanager factories
-                  roundQuorumReachedEventProcessor.process(roundQuorumReached);
-                  roundQuorumReachedEventDispatcher.dispatch(roundQuorumReached);
-                })
-            .noVoteEventDispatcher(noVoteEventDispatcher)
-            .doubleVoteEventDispatcher(doubleVoteEventDispatcher)
-            .roundUpdate(roundUpdate)
-            .bftSyncer(bftSyncer)
-            .validatorSet(validatorSet)
-            .build();
-  }
-
-  @Provides
   @Singleton
   public ProposerElection proposerElection(BFTConfiguration configuration) {
     return configuration.getProposerElection();
@@ -182,24 +146,46 @@ public final class ConsensusModule extends AbstractModule {
 
   @Provides
   @Singleton
-  public BFTEventProcessor eventProcessor(
+  public BFTEventProcessor bftEventProcessor(
       @Self BFTNode self,
       BFTConfiguration config,
-      BFTFactory bftFactory,
       Pacemaker pacemaker,
       VertexStoreAdapter vertexStore,
       BFTSync bftSync,
       SafetyRules safetyRules,
+      Hasher hasher,
+      HashVerifier verifier,
+      TimeSupplier timeSupplier,
+      SystemCounters systemCounters,
+      EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
+      EventDispatcher<NoVote> noVoteEventDispatcher,
+      EventDispatcher<DoubleVote> doubleVoteEventDispatcher,
+      RemoteEventDispatcher<Vote> voteDispatcher,
+      EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher,
       RoundUpdate roundUpdate) {
-    return bftFactory.create(
-        self,
-        pacemaker,
-        vertexStore,
-        bftSync,
-        bftSync.roundQuorumReachedEventProcessor(),
-        config.getValidatorSet(),
-        roundUpdate,
-        safetyRules);
+    return BFTBuilder.create()
+        .self(self)
+        .hasher(hasher)
+        .verifier(verifier)
+        .voteDispatcher(voteDispatcher)
+        .roundLeaderFailureEventDispatcher(roundLeaderFailureEventDispatcher)
+        .safetyRules(safetyRules)
+        .pacemaker(pacemaker)
+        .vertexStore(vertexStore)
+        .roundQuorumReachedEventDispatcher(
+            roundQuorumReached -> {
+              // FIXME: a hack for now until replacement of epochmanager factories
+              bftSync.roundQuorumReachedEventProcessor().process(roundQuorumReached);
+              roundQuorumReachedEventDispatcher.dispatch(roundQuorumReached);
+            })
+        .noVoteEventDispatcher(noVoteEventDispatcher)
+        .doubleVoteEventDispatcher(doubleVoteEventDispatcher)
+        .roundUpdate(roundUpdate)
+        .bftSyncer(bftSync)
+        .validatorSet(config.getValidatorSet())
+        .timeSupplier(timeSupplier)
+        .systemCounters(systemCounters)
+        .build();
   }
 
   @Provides
@@ -207,7 +193,6 @@ public final class ConsensusModule extends AbstractModule {
   private Pacemaker pacemaker(
       @Self BFTNode self,
       SafetyRules safetyRules,
-      SystemCounters counters,
       BFTConfiguration configuration,
       VertexStoreAdapter vertexStore,
       EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
@@ -217,13 +202,13 @@ public final class ConsensusModule extends AbstractModule {
       Hasher hasher,
       RemoteEventDispatcher<Proposal> proposalDispatcher,
       RemoteEventDispatcher<Vote> voteDispatcher,
+      EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher,
       TimeSupplier timeSupplier,
       RoundUpdate initialRoundUpdate,
       SystemCounters systemCounters) {
     BFTValidatorSet validatorSet = configuration.getValidatorSet();
     return new Pacemaker(
         self,
-        counters,
         validatorSet,
         vertexStore,
         safetyRules,
@@ -233,6 +218,7 @@ public final class ConsensusModule extends AbstractModule {
         proposalGenerator,
         proposalDispatcher,
         voteDispatcher,
+        roundLeaderFailureEventDispatcher,
         hasher,
         timeSupplier,
         initialRoundUpdate,
