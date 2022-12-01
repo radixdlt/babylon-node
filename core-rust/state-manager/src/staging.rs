@@ -240,8 +240,7 @@ where
             stack.push((*node_key, node.data.clone()));
         }
 
-        while !stack.is_empty() {
-            let (node_key, parent_data) = stack.pop().unwrap();
+        while let Some((node_key, parent_data)) = stack.pop() {
 
             let next_keys = self.nodes.get(node_key).unwrap().next_keys.clone();
             for next_key in next_keys.iter() {
@@ -270,18 +269,16 @@ where
                     stack.push((*node_key, 1));
                 }
 
-                while !stack.is_empty() {
-                    let (node_key, depth) = stack.pop().unwrap();
-
+                while let Some((node_key, depth)) = stack.pop() {
                     if node_key == new_root_key {
                         self.dead_weight += depth;
                         continue;
                     }
 
                     let node = self.nodes.get(node_key).unwrap();
-                    for next_key in node.next_keys.iter() {
-                        stack.push((*next_key, depth + 1));
-                    }
+                    stack.extend(node.next_keys
+                        .iter()
+                        .map(|next_key| (*next_key, depth + 1)));
 
                     self.accumulator_hash_to_node.remove(&node.accumulator_hash);
                     self.nodes.remove(node_key);
