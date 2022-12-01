@@ -1,5 +1,6 @@
 use radix_engine::types::{scrypto_decode, scrypto_encode};
-use sbor::{Decode, DecodeError, Encode, TypeId};
+use radix_engine_interface::scrypto;
+use sbor::{DecodeError, TypeId, EncodeError};
 
 use crate::transaction::validator_transaction::ValidatorTransaction;
 use crate::LedgerPayloadHash;
@@ -8,7 +9,8 @@ use transaction::model::NotarizedTransaction;
 use super::PreparedValidatorTransaction;
 
 #[allow(clippy::large_enum_variant)]
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum LedgerTransaction {
     User(NotarizedTransaction),
     Validator(ValidatorTransaction),
@@ -23,7 +25,7 @@ impl LedgerTransaction {
         LedgerPayloadHash::for_transaction(self)
     }
 
-    pub fn create_payload(&self) -> Vec<u8> {
+    pub fn create_payload(&self) -> Result<Vec<u8>, EncodeError> {
         scrypto_encode(self)
     }
 

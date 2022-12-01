@@ -64,11 +64,11 @@
 
 use jni::JNIEnv;
 use jni::{objects::JObject, sys::jbyteArray};
+use radix_engine::types::{ScryptoEncode, ScryptoDecode, ScryptoTypeId};
 use std::ops::DerefMut;
 
 use crate::jni::state_manager::ActualStateManager;
 use crate::result::{StateManagerError, StateManagerResult, ERRCODE_JNI};
-use sbor::{Decode, Encode, TypeId};
 
 use super::{java_structure::JavaStructure, state_manager::JNIStateManager};
 
@@ -95,15 +95,15 @@ pub fn jni_slice_to_jbytearray(env: &JNIEnv, slice: &[u8]) -> jbyteArray {
 }
 
 pub fn jni_static_sbor_call<
-    Args: JavaStructure + Encode + Decode + TypeId,
-    Response: JavaStructure + Encode + Decode + TypeId,
+    Args: JavaStructure + ScryptoDecode,
+    Response: JavaStructure + ScryptoTypeId + ScryptoEncode + ScryptoDecode,
 >(
     env: JNIEnv,
     request_payload: jbyteArray,
     method: impl FnOnce(Args) -> Response,
 ) -> jbyteArray {
     let response_result = jni_static_sbor_call_inner(&env, request_payload, method);
-    jni_slice_to_jbytearray(&env, &response_result.to_java())
+    jni_slice_to_jbytearray(&env, &response_result.to_java().unwrap())
 }
 
 #[tracing::instrument(skip_all)]
@@ -120,15 +120,15 @@ fn jni_static_sbor_call_inner<Args: JavaStructure, Response: JavaStructure>(
 }
 
 pub fn jni_static_sbor_call_flatten_result<
-    Args: JavaStructure + Encode + Decode + TypeId,
-    Response: JavaStructure + Encode + Decode + TypeId,
+    Args: JavaStructure + ScryptoDecode,
+    Response: JavaStructure + ScryptoTypeId + ScryptoDecode + ScryptoEncode,
 >(
     env: JNIEnv,
     request_payload: jbyteArray,
     method: impl FnOnce(Args) -> StateManagerResult<Response>,
 ) -> jbyteArray {
     let response_result = jni_static_sbor_call_flatten_result_inner(&env, request_payload, method);
-    jni_slice_to_jbytearray(&env, &response_result.to_java())
+    jni_slice_to_jbytearray(&env, &response_result.to_java().unwrap())
 }
 
 fn jni_static_sbor_call_flatten_result_inner<Args: JavaStructure, Response: JavaStructure>(
@@ -144,8 +144,8 @@ fn jni_static_sbor_call_flatten_result_inner<Args: JavaStructure, Response: Java
 }
 
 pub fn jni_state_manager_sbor_read_call<
-    Args: JavaStructure + Encode + Decode + TypeId,
-    Response: JavaStructure + Encode + Decode + TypeId,
+    Args: JavaStructure + ScryptoDecode,
+    Response: JavaStructure + ScryptoEncode + ScryptoDecode + ScryptoTypeId,
 >(
     env: JNIEnv,
     j_state_manager: JObject,
@@ -154,12 +154,12 @@ pub fn jni_state_manager_sbor_read_call<
 ) -> jbyteArray {
     let response_result =
         jni_state_manager_sbor_read_call_inner(&env, j_state_manager, request_payload, method);
-    jni_slice_to_jbytearray(&env, &response_result.to_java())
+    jni_slice_to_jbytearray(&env, &response_result.to_java().unwrap())
 }
 
 pub fn jni_state_manager_sbor_call<
-    Args: JavaStructure + Encode + Decode + TypeId,
-    Response: JavaStructure + Encode + Decode + TypeId,
+    Args: JavaStructure + ScryptoDecode,
+    Response: JavaStructure + ScryptoEncode + ScryptoDecode + ScryptoTypeId,
 >(
     env: JNIEnv,
     j_state_manager: JObject,
@@ -168,7 +168,7 @@ pub fn jni_state_manager_sbor_call<
 ) -> jbyteArray {
     let response_result =
         jni_state_manager_sbor_call_inner(&env, j_state_manager, request_payload, method);
-    jni_slice_to_jbytearray(&env, &response_result.to_java())
+    jni_slice_to_jbytearray(&env, &response_result.to_java().unwrap())
 }
 
 #[tracing::instrument(skip_all)]
@@ -205,8 +205,8 @@ fn jni_state_manager_sbor_call_inner<Args: JavaStructure, Response: JavaStructur
 }
 
 pub fn jni_state_manager_sbor_call_flatten_result<
-    Args: JavaStructure + Encode + Decode + TypeId,
-    Response: JavaStructure + Encode + Decode + TypeId,
+    Args: JavaStructure + ScryptoDecode,
+    Response: JavaStructure + ScryptoEncode + ScryptoDecode + ScryptoTypeId,
 >(
     env: JNIEnv,
     j_state_manager: JObject,
@@ -219,7 +219,7 @@ pub fn jni_state_manager_sbor_call_flatten_result<
         request_payload,
         method,
     );
-    jni_slice_to_jbytearray(&env, &response_result.to_java())
+    jni_slice_to_jbytearray(&env, &response_result.to_java().unwrap())
 }
 
 fn jni_state_manager_sbor_call_flatten_result_inner<

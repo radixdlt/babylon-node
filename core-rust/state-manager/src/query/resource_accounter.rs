@@ -64,9 +64,7 @@
 
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use radix_engine::model::VaultSubstate;
-use radix_engine::types::SubstateId;
-use scrypto::engine::types::RENodeId;
-use scrypto::prelude::*;
+use radix_engine::types::{SubstateId, RENodeId, ResourceAddress, Decimal};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 

@@ -1,4 +1,4 @@
-use scrypto::crypto::*;
+use radix_engine::types::{PublicKey, Signature, SignatureWithPublicKey, EcdsaSecp256k1Signature, EcdsaSecp256k1PublicKey, EddsaEd25519PublicKey, EddsaEd25519Signature};
 
 use crate::core_api::*;
 

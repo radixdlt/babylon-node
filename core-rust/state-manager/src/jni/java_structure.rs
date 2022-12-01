@@ -63,7 +63,7 @@
  */
 
 use crate::result::StateManagerResult;
-use sbor::{decode_with_static_info, encode_with_static_info};
+use radix_engine::types::{ScryptoEncode, ScryptoDecode, scrypto_decode, scrypto_encode};
 
 pub use sbor::{Decode, Encode, TypeId};
 
@@ -72,16 +72,16 @@ pub trait JavaStructure {
     where
         Self: Sized;
 
-    fn to_java(&self) -> Vec<u8>;
+    fn to_java(&self) -> StateManagerResult<Vec<u8>>;
 }
 
-impl<T: Encode + Decode + TypeId> JavaStructure for T {
+impl<T: ScryptoEncode + ScryptoDecode> JavaStructure for T {
     fn from_java(data: &[u8]) -> StateManagerResult<Self> {
-        Ok(decode_with_static_info(data)?)
+        Ok(scrypto_decode(data)?)
     }
 
-    fn to_java(&self) -> Vec<u8> {
-        encode_with_static_info(self)
+    fn to_java(&self) -> StateManagerResult<Vec<u8>> {
+        Ok(scrypto_encode(self)?)
     }
 }
 
@@ -110,7 +110,7 @@ mod tests {
             bytes_b: vec![2u8; 64],
             a: a0,
         };
-        let sbor0 = b0.to_java();
+        let sbor0 = b0.to_java().unwrap();
         let r = TypeB::from_java(&sbor0);
         assert!(r.is_ok());
         let b1 = r.unwrap();

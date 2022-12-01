@@ -1,8 +1,8 @@
 use crate::core_api::*;
 
 use radix_engine::types::hash;
-use scrypto::address::Bech32Encoder;
-use scrypto::core::NetworkDefinition;
+use radix_engine::types::Bech32Encoder;
+use radix_engine_interface::core::NetworkDefinition;
 
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;

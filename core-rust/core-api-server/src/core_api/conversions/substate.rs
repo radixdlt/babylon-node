@@ -3,23 +3,20 @@ use std::collections::BTreeSet;
 use super::*;
 use crate::core_api::models;
 use models::EntityType;
-use scrypto::resource::{SchemaPath, SchemaSubPath};
+use radix_engine_interface::data::IndexedScryptoValue;
 
 use crate::core_api::models::SborData;
 use radix_engine::model::{
     ComponentInfoSubstate, ComponentStateSubstate, EpochManagerSubstate, GlobalAddressSubstate,
     HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
     HardResourceOrNonFungible, KeyValueStoreEntrySubstate, MethodAuthorization, NonFungible,
-    NonFungibleSubstate, PackageSubstate, PersistedSubstate, Resource, ResourceManagerSubstate,
+    NonFungibleSubstate, PackageInfoSubstate, PersistedSubstate, Resource, ResourceManagerSubstate,
     VaultSubstate,
 };
 use radix_engine::types::{
     AccessRule, AccessRuleNode, AccessRules, Decimal, GlobalOffset, NonFungibleId, ProofRule,
-    ResourceAddress, ResourceMethodAuthKey, ScryptoValue, SoftCount, SoftDecimal, SoftResource,
-    SoftResourceOrNonFungible, SoftResourceOrNonFungibleList, SubstateId,
-};
-use scrypto::address::Bech32Encoder;
-use scrypto::engine::types::{
+    ResourceAddress, ResourceMethodAuthKey, SoftCount, SoftDecimal, SoftResource,
+    SoftResourceOrNonFungible, SoftResourceOrNonFungibleList, SubstateId, Bech32Encoder,
     KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId, SubstateOffset,
 };
 use scrypto::prelude::{scrypto_encode, ResourceType};
@@ -48,7 +45,7 @@ pub fn to_api_substate(
         PersistedSubstate::ComponentState(component_state) => {
             to_api_component_state_substate(bech32_encoder, component_state)?
         }
-        PersistedSubstate::Package(package) => to_api_package_substate(package),
+        PersistedSubstate::PackageInfo(package) => to_api_package_substate(package),
         PersistedSubstate::Vault(vault) => to_api_vault_substate(bech32_encoder, vault)?,
         PersistedSubstate::NonFungible(non_fungible_wrapper) => {
             to_api_non_fungible_substate(bech32_encoder, substate_id, non_fungible_wrapper)?
@@ -596,7 +593,7 @@ struct Entities {
 
 fn extract_entities(
     bech32_encoder: &Bech32Encoder,
-    struct_scrypto_value: &ScryptoValue,
+    struct_scrypto_value: &IndexedScryptoValue,
 ) -> Result<Entities, MappingError> {
     if !struct_scrypto_value.bucket_ids.is_empty() {
         return Err(MappingError::InvalidComponentStateEntities {
@@ -629,7 +626,7 @@ fn extract_entities(
     })
 }
 
-pub fn to_api_package_substate(package: &PackageSubstate) -> models::Substate {
+pub fn to_api_package_substate(package: &PackageInfoSubstate) -> models::Substate {
     models::Substate::PackageSubstate {
         entity_type: EntityType::Package,
         code_hex: to_hex(package.code()),
@@ -641,7 +638,7 @@ pub fn to_api_package_substate(package: &PackageSubstate) -> models::Substate {
                     // TODO: Whilst an SBOR-encoded ABI is probably most useful for consumers using the ABI,
                     //       we should probably at some point also map this to something more human-intelligible.
                     //       But let's wait till SBOR schema changes have finalized first.
-                    abi_hex: to_hex(scrypto_encode(abi)),
+                    abi_hex: to_hex(scrypto_encode(abi).unwrap()),
                 };
                 (blueprint_name.to_owned(), blueprint_data)
             })
@@ -745,11 +742,11 @@ fn to_api_non_fungible_data(
     Ok(models::NonFungibleData {
         immutable_data: Box::new(to_api_data_struct(
             bech32_encoder,
-            &scrypto_encode(&non_fungible.immutable_data()),
+            &scrypto_encode(&non_fungible.immutable_data()).unwrap(),
         )?),
         mutable_data: Box::new(to_api_data_struct(
             bech32_encoder,
-            &scrypto_encode(&non_fungible.mutable_data()),
+            &scrypto_encode(&non_fungible.mutable_data()).unwrap(),
         )?),
     })
 }
@@ -793,7 +790,7 @@ fn to_api_data_struct(
     data: &[u8],
 ) -> Result<models::DataStruct, MappingError> {
     let scrypto_value =
-        ScryptoValue::from_slice(data).map_err(|err| MappingError::InvalidSbor {
+        IndexedScryptoValue::from_slice(data).map_err(|err| MappingError::InvalidSbor {
             decode_error: err,
             bytes: data.to_vec(),
         })?;

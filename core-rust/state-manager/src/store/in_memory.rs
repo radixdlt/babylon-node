@@ -144,7 +144,7 @@ impl InMemoryStore {
         }
         self.transactions.insert(
             payload_hash,
-            scrypto_encode(&(transaction, receipt, identifiers)),
+            scrypto_encode(&(transaction, receipt, identifiers)).unwrap(),
         );
     }
 }

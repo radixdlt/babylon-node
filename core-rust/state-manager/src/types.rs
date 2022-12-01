@@ -114,14 +114,15 @@ impl fmt::Debug for AccumulatorHash {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Decode, Encode, TypeId)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct LedgerPayloadHash([u8; Self::LENGTH]);
 
 impl LedgerPayloadHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_transaction(transaction: &LedgerTransaction) -> Self {
-        Self(sha256_twice(&scrypto_encode(transaction)).0)
+        Self(sha256_twice(&scrypto_encode(transaction).unwrap()).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -177,14 +178,15 @@ impl HasLedgerPayloadHash for NotarizedTransaction {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Decode, Encode, TypeId)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct UserPayloadHash([u8; Self::LENGTH]);
 
 impl UserPayloadHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_transaction(transaction: &NotarizedTransaction) -> Self {
-        Self(sha256_twice(&scrypto_encode(transaction)).0)
+        Self(sha256_twice(&scrypto_encode(transaction).unwrap()).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -226,14 +228,15 @@ impl HasUserPayloadHash for NotarizedTransaction {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Decode, Encode, TypeId)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct SignaturesHash([u8; Self::LENGTH]);
 
 impl SignaturesHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_signed_intent(signed_intent: &SignedTransactionIntent) -> Self {
-        Self(sha256_twice(&scrypto_encode(signed_intent)).0)
+        Self(sha256_twice(&scrypto_encode(signed_intent).unwrap()).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -281,14 +284,15 @@ impl HasSignaturesHash for NotarizedTransaction {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Decode, Encode, TypeId)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct IntentHash([u8; Self::LENGTH]);
 
 impl IntentHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_intent(intent: &TransactionIntent) -> Self {
-        Self(sha256_twice(&scrypto_encode(intent)).0)
+        Self(sha256_twice(&scrypto_encode(intent).unwrap()).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -343,7 +347,8 @@ impl HasIntentHash for NotarizedTransaction {
 }
 
 /// An uncommitted user transaction, in eg the mempool
-#[derive(Debug, PartialEq, Eq, Clone, Decode, Encode, TypeId)]
+#[derive(Debug, PartialEq, Eq, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct PendingTransaction {
     pub payload: NotarizedTransaction,
     pub payload_hash: UserPayloadHash,
@@ -361,7 +366,8 @@ impl From<NotarizedTransaction> for PendingTransaction {
     }
 }
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct PreviewRequest {
     pub manifest: TransactionManifest,
     pub start_epoch_inclusive: u64,

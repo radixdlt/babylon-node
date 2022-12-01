@@ -4,9 +4,8 @@ use radix_engine::{
     fee::FeeSummary as EngineFeeSummary,
     ledger::OutputValue,
     transaction::TransactionOutcome,
-    types::{hash, scrypto_encode, SubstateId},
+    types::{hash, scrypto_encode, SubstateId, Bech32Encoder},
 };
-use scrypto::address::Bech32Encoder;
 
 use state_manager::{DeletedSubstateVersion, LedgerTransactionReceipt};
 
@@ -93,7 +92,7 @@ pub fn to_api_new_substate_version(
     bech32_encoder: &Bech32Encoder,
     (substate_id, output_value): (SubstateId, OutputValue),
 ) -> Result<models::NewSubstateVersion, MappingError> {
-    let substate_bytes = scrypto_encode(&output_value.substate);
+    let substate_bytes = scrypto_encode(&output_value.substate)Bech32Encoder;
     let hash = to_hex(hash(&substate_bytes));
 
     let api_substate_data = Some(to_api_substate(

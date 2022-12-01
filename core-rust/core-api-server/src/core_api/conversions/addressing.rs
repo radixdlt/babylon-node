@@ -10,10 +10,10 @@ use radix_engine::{
         PackageAddress, RENodeId, ResourceAddress, SubstateId,
     },
 };
-use scrypto::engine::types::{
+use radix_engine::types::{
     BucketOffset, ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset,
     NonFungibleStoreOffset, PackageOffset, ProofOffset, ResourceManagerOffset, SubstateOffset,
-    VaultOffset, WorktopOffset,
+    VaultOffset, WorktopOffset
 };
 
 pub fn to_api_global_entity_assignment(
@@ -22,7 +22,7 @@ pub fn to_api_global_entity_assignment(
     global_substate: &GlobalAddressSubstate,
 ) -> Result<models::GlobalEntityAssignment, MappingError> {
     let target_entity_id = match global_substate {
-        GlobalAddressSubstate::Component(scrypto::component::Component(id)) => id,
+        GlobalAddressSubstate::Component(id) => id,
         GlobalAddressSubstate::System(id) => id,
         GlobalAddressSubstate::Resource(id) => id,
         GlobalAddressSubstate::Package(id) => id,
@@ -78,7 +78,7 @@ pub fn to_api_substate_id(substate_id: SubstateId) -> Result<models::SubstateId,
 /// BEFORE updating this:
 /// > NOTE that re_node_id only works properly if EntityId is of fixed length
 /// > If EntityId became variable length, we'd need to do something else (eg sbor encode) to ensure a 1:1 mapping there
-type EntityId = (scrypto::crypto::Hash, u32);
+type EntityId = [u8; 36];
 
 #[derive(Debug)]
 pub struct MappedEntityId {
@@ -364,13 +364,8 @@ pub fn extract_non_fungible_id(non_fungible_id: &str) -> Result<NonFungibleId, E
     Ok(NonFungibleId(from_hex(non_fungible_id)?))
 }
 
-// NB - see id_allocator.rs - addresses are formed from (tx_hash, index_in_tx_for_exec_mode + offset_for_exec_mode)
-// There is a separate exec_mode for the manifest and the standard Application executor
 pub fn entity_id_to_bytes(entity_id: &EntityId) -> Vec<u8> {
-    // NOTE - this only works because the trunc of basic_address is of fixed length.
-    // If basic_address became variable length, we'd need to do something else (eg sbor encode) to ensure a 1:1 mapping here
-
-    prefix(entity_id.0.to_vec(), entity_id.1.to_le_bytes().to_vec())
+    entity_id.to_vec()
 }
 
 /// This is used for Global Entities - the only entities which don't have use the standard EntityId format

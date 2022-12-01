@@ -1,6 +1,5 @@
-use radix_engine::types::Bech32Encoder;
-use sbor::decode_any;
-use scrypto::values::{ScryptoValueFormatter, ScryptoValueFormatterContext};
+use radix_engine::types::{Bech32Encoder, scrypto_decode};
+use radix_engine_interface::data::ScryptoValue;
 
 use crate::core_api::*;
 
@@ -17,10 +16,11 @@ pub fn scrypto_bytes_to_api_sbor_data(
     bech32_encoder: &Bech32Encoder,
     scrypto_bytes: &[u8],
 ) -> Result<models::SborData, MappingError> {
-    let scrypto_value = decode_any(scrypto_bytes).map_err(|err| MappingError::InvalidSbor {
-        decode_error: err,
-        bytes: scrypto_bytes.to_vec(),
-    })?;
+    let scrypto_value = scrypto_decode::<ScryptoValue>(scrypto_bytes)
+        .map_err(|err| MappingError::InvalidSbor {
+            decode_error: err,
+            bytes: scrypto_bytes.to_vec(),
+        })?;
     Ok(models::SborData {
         data_hex: to_hex(scrypto_bytes),
         data_json: Some(convert_scrypto_sbor_value_to_json(
@@ -34,8 +34,28 @@ use serde_json::Value as JsonValue;
 
 pub fn convert_scrypto_sbor_value_to_json(
     bech32_encoder: &Bech32Encoder,
-    scrypto_value: &sbor::any::Value,
+    scrypto_value: &ScryptoValue,
 ) -> JsonValue {
+    match scrypto_value {
+        sbor::SborValue::Unit => todo!(),
+        sbor::SborValue::Bool { value } => todo!(),
+        sbor::SborValue::I8 { value } => todo!(),
+        sbor::SborValue::I16 { value } => todo!(),
+        sbor::SborValue::I32 { value } => todo!(),
+        sbor::SborValue::I64 { value } => todo!(),
+        sbor::SborValue::I128 { value } => todo!(),
+        sbor::SborValue::U8 { value } => todo!(),
+        sbor::SborValue::U16 { value } => todo!(),
+        sbor::SborValue::U32 { value } => todo!(),
+        sbor::SborValue::U64 { value } => todo!(),
+        sbor::SborValue::U128 { value } => todo!(),
+        sbor::SborValue::String { value } => todo!(),
+        sbor::SborValue::Struct { fields } => todo!(),
+        sbor::SborValue::Enum { discriminator, fields } => todo!(),
+        sbor::SborValue::Array { element_type_id, elements } => todo!(),
+        sbor::SborValue::Tuple { elements } => todo!(),
+        sbor::SborValue::Custom { value } => todo!(),
+    }
     convert_custom_payloads_recursive(
         bech32_encoder,
         serde_json::to_value(scrypto_value).expect("JSON serialize error"),

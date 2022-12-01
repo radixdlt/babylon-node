@@ -1,6 +1,5 @@
 use radix_engine::{
     engine::RejectionError,
-    types::{scrypto_decode, scrypto_encode},
 };
 use transaction::errors::{HeaderValidationError, TransactionValidationError};
 
@@ -14,7 +13,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RejectionReason {
     FromExecution(Box<RejectionError>),
     ValidationError(TransactionValidationError),
@@ -33,38 +32,6 @@ impl RejectionReason {
             ) => false,
             RejectionReason::ValidationError(_) => true,
             RejectionReason::IntentHashCommitted => true,
-        }
-    }
-}
-
-// TODO: Remove manual impl when RejectionError implements PartialEq/Eq
-impl PartialEq for RejectionReason {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            // TODO: Remove manual impl when RejectionError implements PartialEq/Eq
-            (Self::FromExecution(l0), Self::FromExecution(r0)) => {
-                scrypto_encode(l0) == scrypto_encode(r0)
-            }
-            (Self::ValidationError(l0), Self::ValidationError(r0)) => l0 == r0,
-            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
-        }
-    }
-}
-
-impl Eq for RejectionReason {}
-
-// TODO: Remove manual impl when RejectionError implements Clone
-impl Clone for RejectionReason {
-    fn clone(&self) -> Self {
-        match self {
-            // TODO: Change to not use SBOR when RejectionError implements Clone
-            Self::FromExecution(rejection_error) => {
-                Self::FromExecution(scrypto_decode(&scrypto_encode(rejection_error)).unwrap())
-            }
-            Self::ValidationError(validation_error) => {
-                Self::ValidationError(validation_error.clone())
-            }
-            Self::IntentHashCommitted => Self::IntentHashCommitted,
         }
     }
 }

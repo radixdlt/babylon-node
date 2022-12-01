@@ -1,6 +1,6 @@
 use radix_engine::ledger::ReadableSubstateStore;
 use radix_engine::model::PersistedSubstate;
-use scrypto::engine::types::{GlobalAddress, SubstateId, SubstateOffset};
+use radix_engine::types::{GlobalAddress, SubstateId, SubstateOffset};
 use state_manager::{jni::state_manager::ActualStateManager, query::StateManagerSubstateQueries};
 
 use super::{CoreApiState, Extension, Json, RequestHandlingError};
