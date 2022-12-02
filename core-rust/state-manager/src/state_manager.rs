@@ -658,8 +658,8 @@ where
         }
 
         PrepareResult {
-            rejected,
             committed,
+            rejected,
         }
     }
 
