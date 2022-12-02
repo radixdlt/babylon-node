@@ -62,16 +62,40 @@
  * permissions under this License.
  */
 
-package com.radixdlt.utils;
+package com.radixdlt.consensus.bft.processor;
 
-import com.radixdlt.consensus.LedgerHeader;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.monitoring.SystemCounters;
+import org.junit.Before;
+import org.junit.Test;
 
-public class LedgerHeaderMock {
-  public static LedgerHeader get() {
-    return LedgerHeader.create(
-        0, Round.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0, 0);
+public final class BFTEventStatefulVerifierTest {
+  private SystemCounters systemCounters;
+  private BFTEventProcessor forwardTo;
+  private BFTEventStatefulVerifier bftEventStatefulVerifier;
+
+  @Before
+  public void setUp() {
+    this.systemCounters = mock(SystemCounters.class);
+    this.forwardTo = mock(BFTEventProcessor.class);
+    this.bftEventStatefulVerifier =
+        new BFTEventStatefulVerifier(this.forwardTo, this.systemCounters, mock(RoundUpdate.class));
+  }
+
+  @Test
+  public void when_local_timeout_for_non_current_round__then_ignored() {
+    this.bftEventStatefulVerifier.processLocalTimeout(
+        ScheduledLocalTimeout.create(
+            RoundUpdate.create(
+                Round.of(1), mock(HighQC.class), mock(BFTNode.class), mock(BFTNode.class)),
+            0L));
+    verifyNoMoreInteractions(this.forwardTo);
   }
 }

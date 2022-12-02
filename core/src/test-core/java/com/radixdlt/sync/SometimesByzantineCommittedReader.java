@@ -171,7 +171,8 @@ public final class SometimesByzantineCommittedReader implements TransactionsAndP
               base.getProof().getEpoch(),
               base.getProof().getRound(),
               accumulatorState,
-              base.getProof().timestamp(),
+              base.getProof().consensusParentRoundTimestamp(),
+              base.getProof().proposerTimestamp(),
               base.getProof().getNextValidatorSet().orElse(null));
       var signatures =
           overwriteSignatures != null ? overwriteSignatures : base.getProof().getSignatures();

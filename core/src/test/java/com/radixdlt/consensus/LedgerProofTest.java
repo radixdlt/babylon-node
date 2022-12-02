@@ -103,14 +103,14 @@ public class LedgerProofTest {
     when(accumulatorState.getStateVersion()).thenReturn(12345L);
     when(l0.getAccumulatorState()).thenReturn(accumulatorState);
     when(l0.getRound()).thenReturn(round);
-    when(l0.roundTimestamp()).thenReturn(2468L);
+    when(l0.consensusParentRoundTimestamp()).thenReturn(2468L);
     when(l0.isEndOfEpoch()).thenReturn(true);
     var ledgerHeaderAndProof =
         new LedgerProof(HashUtils.random256(), l0, mock(TimestampedECDSASignatures.class));
     assertThat(ledgerHeaderAndProof.getEpoch()).isEqualTo(3L);
     assertThat(ledgerHeaderAndProof.getStateVersion()).isEqualTo(12345L);
     assertThat(ledgerHeaderAndProof.getRound()).isEqualTo(round);
-    assertThat(ledgerHeaderAndProof.timestamp()).isEqualTo(2468L);
+    assertThat(ledgerHeaderAndProof.consensusParentRoundTimestamp()).isEqualTo(2468L);
     assertThat(ledgerHeaderAndProof.isEndOfEpoch()).isTrue();
   }
 

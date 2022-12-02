@@ -118,13 +118,18 @@ public final class LedgerProof {
 
   public static LedgerProof mock() {
     var acc = new AccumulatorState(0, HashUtils.zero256());
-    var header = LedgerHeader.create(0, Round.genesis(), acc, 0);
+    var header = LedgerHeader.create(0, Round.genesis(), acc, 0, 0);
     return new LedgerProof(HashUtils.zero256(), header, new TimestampedECDSASignatures());
   }
 
   public static LedgerProof genesis(
-      AccumulatorState accumulatorState, BFTValidatorSet nextValidators, long timestamp) {
-    var genesisLedgerHeader = LedgerHeader.genesis(accumulatorState, nextValidators, timestamp);
+      AccumulatorState accumulatorState,
+      BFTValidatorSet nextValidators,
+      long consensusParentRoundTimestamp,
+      long ledgerTimestamp) {
+    var genesisLedgerHeader =
+        LedgerHeader.genesis(
+            accumulatorState, nextValidators, consensusParentRoundTimestamp, ledgerTimestamp);
     return new LedgerProof(
         HashUtils.zero256(), genesisLedgerHeader, new TimestampedECDSASignatures());
   }
@@ -191,8 +196,12 @@ public final class LedgerProof {
     return ledgerHeader.getAccumulatorState().getStateVersion();
   }
 
-  public long timestamp() {
-    return ledgerHeader.roundTimestamp();
+  public long consensusParentRoundTimestamp() {
+    return ledgerHeader.consensusParentRoundTimestamp();
+  }
+
+  public long proposerTimestamp() {
+    return ledgerHeader.proposerTimestamp();
   }
 
   public boolean isEndOfEpoch() {

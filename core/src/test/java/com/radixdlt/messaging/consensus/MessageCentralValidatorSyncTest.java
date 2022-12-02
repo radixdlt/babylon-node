@@ -113,7 +113,7 @@ public class MessageCentralValidatorSyncTest {
   @Test
   public void when_send_response__then_message_central_will_send_response() {
     VertexWithHash vertex = mock(VertexWithHash.class);
-    when(vertex.toSerializable()).thenReturn(mock(Vertex.class));
+    when(vertex.vertex()).thenReturn(mock(Vertex.class));
     ImmutableList<VertexWithHash> vertices = ImmutableList.of(vertex);
 
     BFTNode node = mock(BFTNode.class);

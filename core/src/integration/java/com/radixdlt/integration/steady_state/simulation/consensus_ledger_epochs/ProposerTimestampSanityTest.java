@@ -62,79 +62,120 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.rev2.consensus_ledger;
+package com.radixdlt.integration.steady_state.simulation.consensus_ledger_epochs;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.junit.Assert.assertEquals;
 
+import com.google.common.collect.ImmutableList;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.statecomputer.StatelessComputer;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.REv2StateConfig;
-import com.radixdlt.utils.UInt64;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.utils.TimeSupplier;
 import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.assertj.core.data.Offset;
-import org.junit.Ignore;
+import java.util.stream.IntStream;
 import org.junit.Test;
 
-public class HalfValidTxnTest {
-  private final SimulationTest.Builder bftTestBuilder =
-      SimulationTest.builder()
-          .numNodes(4)
-          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .functionalNodeModule(
-              new FunctionalRadixNodeModule(
-                  false,
-                  SafetyRecoveryConfig.mocked(),
-                  ConsensusConfig.of(1000),
-                  LedgerConfig.stateComputerNoSync(
-                      StateComputerConfig.rev2(
-                          Network.INTEGRATIONTESTNET.getId(),
-                          new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
-                          REv2DatabaseConfig.none(),
-                          REV2ProposerConfig.halfCorrectProposer()))))
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              ConsensusMonitors.proposerTimestampChecker(),
-              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-              ConsensusMonitors.noTimeouts(),
-              ConsensusMonitors.directParents(),
-              LedgerMonitors.consensusToLedger(),
-              LedgerMonitors.ordered());
+public final class ProposerTimestampSanityTest {
+  @Test
+  public void test_single_node_clock_delayed_no_timeouts() {
+    final var builder =
+        SimulationTest.builder()
+            .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+            .numNodes(4)
+            .addTestModules(
+                ConsensusMonitors.safety(),
+                ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
+                LedgerMonitors.consensusToLedger(),
+                ConsensusMonitors.proposerTimestampChecker(),
+                ConsensusMonitors
+                    .noTimeouts(), // There should be no timeouts if just a single node is delayed
+                ConsensusMonitors.directParents(),
+                LedgerMonitors.ordered())
+            .ledgerAndEpochs(ConsensusConfig.of(1000), Round.of(10), e -> IntStream.range(0, 4));
+
+    /* One node delayed */
+    modifyNthNodeTimeSupplier(0, () -> System.currentTimeMillis() - 4000, builder);
+
+    final var results = builder.build().run().awaitCompletion();
+    assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
+  }
 
   @Test
-  @Ignore("Test is currently failing due to stateless computer trying to access epoch state.")
-  public void test_half_valid_half_invalid_rev2_transactions() {
-    // Arrange
-    var simulationTest = bftTestBuilder.build();
+  public void test_two_nodes_clock_slightly_rushing_or_delaying_no_timeouts() {
+    final var builder =
+        SimulationTest.builder()
+            .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+            .numNodes(4)
+            .addTestModules(
+                ConsensusMonitors.safety(),
+                ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
+                ConsensusMonitors.noTimeouts(),
+                ConsensusMonitors.directParents(),
+                LedgerMonitors.consensusToLedger(),
+                ConsensusMonitors.proposerTimestampChecker(),
+                LedgerMonitors.ordered())
+            .ledgerAndEpochs(ConsensusConfig.of(1000), Round.of(10), e -> IntStream.range(0, 4));
 
-    // Run
-    var runningTest = simulationTest.run();
-    final var checkResults = runningTest.awaitCompletion();
+    /* One node rushing within acceptable bounds */
+    modifyNthNodeTimeSupplier(0, () -> System.currentTimeMillis() + 500, builder);
 
-    // Post-run assertions
-    assertThat(checkResults)
-        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-    for (var node : runningTest.getNetwork().getNodes()) {
-      var statelessComputer = runningTest.getNetwork().getInstance(StatelessComputer.class, node);
+    /* One node delayed within acceptable bounds */
+    modifyNthNodeTimeSupplier(1, () -> System.currentTimeMillis() - 500, builder);
 
-      // The current proposal generator for REv2 produces half correct transactions and half
-      // invalid.
-      // This part verifies that this actually happened.
-      assertThat(statelessComputer.getInvalidCount()).isGreaterThan(10);
-      assertThat(statelessComputer.getInvalidCount())
-          .isCloseTo(statelessComputer.getSuccessCount(), Offset.offset(4));
+    final var results = builder.build().run().awaitCompletion();
+    assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
+  }
+
+  @Test
+  public void test_two_nodes_clock_significantly_rushing_or_delaying_safety_but_no_liveness() {
+    final var builder =
+        SimulationTest.builder()
+            .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+            .numNodes(4)
+            .addTestModules(
+                ConsensusMonitors.safety(),
+                LedgerMonitors.consensusToLedger(),
+                ConsensusMonitors.proposerTimestampChecker(),
+                LedgerMonitors.ordered())
+            .ledgerAndEpochs(ConsensusConfig.of(1000), Round.of(10), e -> IntStream.range(0, 4));
+
+    /* One node rushing */
+    modifyNthNodeTimeSupplier(0, () -> System.currentTimeMillis() - 4000, builder);
+
+    /* One node delayed */
+    modifyNthNodeTimeSupplier(1, () -> System.currentTimeMillis() + 4000, builder);
+
+    final var runningTest = builder.build().run();
+    final var results = runningTest.awaitCompletion();
+
+    assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
+
+    // In this test scenario there should be no liveness whatsoever.
+    // Making sure that not a single transaction went through.
+    for (final var nodeCounters : runningTest.getNetwork().getSystemCounters().values()) {
+      assertEquals(
+          0, nodeCounters.get(SystemCounters.CounterType.LEDGER_BFT_TRANSACTIONS_PROCESSED));
     }
+  }
+
+  private void modifyNthNodeTimeSupplier(
+      int n, TimeSupplier timeSupplier, SimulationTest.Builder builder) {
+    builder.addOverrideModuleToInitialNodes(
+        nodes -> ImmutableList.of(nodes.get(n).getPublicKey()),
+        nodes ->
+            new AbstractModule() {
+              @Provides
+              public TimeSupplier timeSupplier() {
+                return timeSupplier;
+              }
+            });
   }
 }

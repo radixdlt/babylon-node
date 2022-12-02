@@ -166,7 +166,8 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
                           header.getNextEpoch(),
                           Round.genesis(),
                           header.getAccumulatorState(),
-                          header.timestamp());
+                          header.consensusParentRoundTimestamp(),
+                          header.proposerTimestamp());
                   QuorumCertificate genesisQC =
                       QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
                   final var initialState =

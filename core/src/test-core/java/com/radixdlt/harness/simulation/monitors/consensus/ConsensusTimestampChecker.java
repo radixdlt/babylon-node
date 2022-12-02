@@ -78,18 +78,18 @@ import java.time.Duration;
  * Checks that the first time a ledger update occurs on the network that it is close to the real
  * wall clock time.
  */
-public final class TimestampChecker implements TestInvariant {
+public final class ConsensusTimestampChecker implements TestInvariant {
 
   private final Duration acceptableTimeRange;
 
-  public TimestampChecker(Duration acceptableTimeRange) {
+  public ConsensusTimestampChecker(Duration acceptableTimeRange) {
     this.acceptableTimeRange = acceptableTimeRange;
   }
 
   private Maybe<TestInvariantError> checkCloseTimestamp(LedgerUpdate update) {
     final var now = System.currentTimeMillis();
     final var proof = update.getTail();
-    final var timestamp = proof.timestamp();
+    final var timestamp = proof.consensusParentRoundTimestamp();
     // Initial rounds of Consensus can have a timestamp of 0
     if (timestamp == 0) {
       return Maybe.empty();

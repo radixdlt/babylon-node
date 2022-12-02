@@ -142,7 +142,8 @@ public final class MockedStateComputer implements StateComputer {
                           header.getNextEpoch(),
                           Round.genesis(),
                           header.getAccumulatorState(),
-                          header.timestamp());
+                          header.consensusParentRoundTimestamp(),
+                          header.proposerTimestamp());
                   QuorumCertificate genesisQC =
                       QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
                   final var initialState =

@@ -221,6 +221,7 @@ pub struct JavaPrepareRequest {
     pub already_prepared: Vec<JavaRawTransaction>,
     pub proposed: Vec<JavaRawTransaction>,
     pub round_number: u64,
+    pub proposer_timestamp: u64,
 }
 
 impl From<JavaPrepareRequest> for PrepareRequest {
@@ -237,6 +238,7 @@ impl From<JavaPrepareRequest> for PrepareRequest {
                 .map(|t| t.payload)
                 .collect(),
             round_number: prepare_request.round_number,
+            proposer_timestamp: prepare_request.proposer_timestamp,
         }
     }
 }

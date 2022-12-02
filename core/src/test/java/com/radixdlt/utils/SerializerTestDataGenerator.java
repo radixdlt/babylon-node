@@ -117,7 +117,7 @@ public class SerializerTestDataGenerator {
     var qc = randomQC();
     var txn = RawNotarizedTransaction.create(new byte[] {0, 1, 2, 3});
     var author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-    var vertex = Vertex.create(qc, randomRound(), List.of(txn), author);
+    var vertex = Vertex.create(qc, randomRound(), List.of(txn), author, 0L);
     return new Proposal(vertex, qc, ECDSASecp256k1Signature.zeroSignature(), Optional.empty());
   }
 
@@ -134,6 +134,7 @@ public class SerializerTestDataGenerator {
             randomRound(),
             new AccumulatorState(
                 Math.abs(random.nextLong()) + 1, HashCode.fromLong(random.nextLong())),
+            Math.abs(random.nextLong()) + 1,
             Math.abs(random.nextLong()) + 1,
             BFTValidatorSet.from(
                 ImmutableSet.<BFTValidator>builder()
