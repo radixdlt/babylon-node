@@ -71,10 +71,9 @@ use crate::transaction::{
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::types::{scrypto_encode, scrypto_decode};
+use radix_engine::types::{scrypto_encode, scrypto_decode, PublicKey, Signature, SignatureWithPublicKey};
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::scrypto;
-use scrypto::prelude::{PublicKey, Signature, SignatureWithPublicKey};
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
 };

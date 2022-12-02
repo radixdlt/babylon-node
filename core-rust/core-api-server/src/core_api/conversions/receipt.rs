@@ -92,7 +92,7 @@ pub fn to_api_new_substate_version(
     bech32_encoder: &Bech32Encoder,
     (substate_id, output_value): (SubstateId, OutputValue),
 ) -> Result<models::NewSubstateVersion, MappingError> {
-    let substate_bytes = scrypto_encode(&output_value.substate)Bech32Encoder;
+    let substate_bytes = scrypto_encode(&output_value.substate);
     let hash = to_hex(hash(&substate_bytes));
 
     let api_substate_data = Some(to_api_substate(

@@ -71,7 +71,7 @@ use axum::{
     Extension, Router,
 };
 use parking_lot::RwLock;
-use scrypto::prelude::*;
+use radix_engine::types::{TypeId, Encode, Decode};
 use state_manager::jni::state_manager::ActualStateManager;
 use tower_http::limit::RequestBodyLimitLayer;
 

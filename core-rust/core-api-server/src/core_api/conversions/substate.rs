@@ -18,8 +18,8 @@ use radix_engine::types::{
     ResourceAddress, ResourceMethodAuthKey, SoftCount, SoftDecimal, SoftResource,
     SoftResourceOrNonFungible, SoftResourceOrNonFungibleList, SubstateId, Bech32Encoder,
     KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId, SubstateOffset,
+    scrypto_encode, ResourceType
 };
-use scrypto::prelude::{scrypto_encode, ResourceType};
 
 use super::MappingError;
 

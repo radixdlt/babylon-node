@@ -69,7 +69,7 @@ use crate::{
     CommittedTransactionIdentifiers, HasIntentHash, HasUserPayloadHash, IntentHash,
     LedgerPayloadHash, LedgerTransactionReceipt,
 };
-use scrypto::prelude::{scrypto_decode, scrypto_encode};
+use radix_engine::types::{scrypto_decode, scrypto_encode};
 use std::collections::{BTreeMap, HashMap};
 
 #[derive(Debug)]

@@ -64,8 +64,7 @@
 
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use radix_engine::model::VaultSubstate;
-use radix_engine::types::{SubstateId, GlobalAddress, RENodeId};
-use scrypto::prelude::*;
+use radix_engine::types::{SubstateId, GlobalAddress, RENodeId, ComponentAddress};
 
 use super::state_tree_traverser::*;
 

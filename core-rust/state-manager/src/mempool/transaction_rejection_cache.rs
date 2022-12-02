@@ -192,7 +192,7 @@ impl RejectionCache {
 mod tests {
     use std::thread;
 
-    use scrypto::prelude::sha256_twice;
+    use radix_engine::types::sha256_twice;
 
     use super::*;
 

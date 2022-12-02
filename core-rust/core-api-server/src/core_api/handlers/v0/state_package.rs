@@ -1,7 +1,6 @@
 use crate::core_api::*;
 use radix_engine::model::PersistedSubstate;
-use radix_engine::types::Bech32Decoder;
-use scrypto::engine::types::{GlobalAddress, PackageOffset, SubstateOffset};
+use radix_engine::types::{Bech32Decoder, GlobalAddress, PackageOffset, SubstateOffset};
 
 use state_manager::jni::state_manager::ActualStateManager;
 

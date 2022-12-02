@@ -4,12 +4,12 @@ use models::parsed_notarized_transaction_all_of_identifiers::ParsedNotarizedTran
 use models::parsed_signed_transaction_intent_all_of_identifiers::ParsedSignedTransactionIntentAllOfIdentifiers;
 use models::transaction_parse_request::{ParseMode, ResponseMode, ValidationMode};
 use models::transaction_parse_response::TransactionParseResponse;
-use scrypto::prelude::*;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::mempool::transaction_rejection_cache::RejectionReason;
 use state_manager::transaction::{LedgerTransaction, UserTransactionValidator};
 use state_manager::{HasIntentHash, HasLedgerPayloadHash, HasSignaturesHash, HasUserPayloadHash};
 
+use radix_engine::types::scrypto_decode;
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionIntent, TransactionManifest,
 };

@@ -151,6 +151,11 @@ impl TryFrom<RENodeId> for MappedEntityId {
                     message: "AuthZoneStack persisted".to_owned(),
                 })
             }
+            RENodeId::FeeReserve(_) => {
+                return Err(MappingError::TransientSubstatePersisted {
+                    message: "FeeReserve persisted".to_owned(),
+                })
+            },
         })
     }
 
@@ -238,7 +243,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
         ),
 
         // PACKAGE SUBSTATES
-        SubstateId(RENodeId::Package(addr), SubstateOffset::Package(PackageOffset::Package)) => {
+        SubstateId(RENodeId::Package(addr), SubstateOffset::Package(PackageOffset::Info)) => {
             MappedSubstateId(
                 EntityType::Package,
                 entity_id_to_bytes(&addr),
@@ -246,6 +251,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 vec![0],
             )
         }
+
         // RESOURCE SUBSTATES
         SubstateId(
             RENodeId::ResourceManager(addr),

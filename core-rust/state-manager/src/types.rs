@@ -63,7 +63,7 @@
  */
 
 use crate::transaction::LedgerTransaction;
-use scrypto::prelude::*;
+use radix_engine::types::{Decode, Encode, TypeId, sha256_twice, scrypto, scrypto_encode, Hash, PublicKey};
 use std::fmt;
 use transaction::model::{
     NotarizedTransaction, PreviewFlags, SignedTransactionIntent, TransactionIntent,

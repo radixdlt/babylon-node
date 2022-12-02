@@ -1,6 +1,6 @@
 use crate::core_api::*;
 use radix_engine::types::*;
-use scrypto::address::{EntityType, HrpSet};
+use radix_engine_interface::address::{EntityType, HrpSet};
 use state_manager::jni::state_manager::ActualStateManager;
 
 #[tracing::instrument(err(Debug), skip(state))]
