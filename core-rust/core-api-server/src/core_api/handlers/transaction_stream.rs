@@ -290,5 +290,10 @@ pub fn to_api_validator_transaction(
                 epoch: to_api_epoch(*epoch)?,
             }
         }
+        ValidatorTransaction::TimeUpdate(proposer_timestamp_ms) => {
+            models::ValidatorTransaction::TimeUpdateValidatorTransaction {
+                proposer_timestamp_ms: to_api_timestamp_ms(*proposer_timestamp_ms)?,
+            }
+        }
     })
 }

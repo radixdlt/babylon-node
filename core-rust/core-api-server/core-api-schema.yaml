@@ -2969,6 +2969,7 @@ components:
       description: The type of the validator transaction
       enum:
         - EpochUpdate
+        - TimeUpdate
     ValidatorTransaction:
       oneOf:
         - $ref: '#/components/schemas/EpochUpdateValidatorTransaction'
@@ -2977,6 +2978,7 @@ components:
         mapping:
           # NOTE: These need to match ValidatorTransactionType
           EpochUpdate: '#/components/schemas/EpochUpdateValidatorTransaction'
+          TimeUpdate: '#/components/schemas/TimeUpdateValidatorTransaction'
     ValidatorTransactionBase:
       type: object
       required:
@@ -2997,6 +2999,19 @@ components:
               minimum: 0
               maximum: 10000000000
               description: An integer between `0` and `10^10`, marking the new epoch
+    TimeUpdateValidatorTransaction:
+      allOf:
+        - $ref: "#/components/schemas/ValidatorTransactionBase"
+        - type: object
+          required:
+            - proposer_timestamp_ms
+          properties:
+            proposer_timestamp_ms:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 100000000000000
+              description: An integer between `0` and `10^14`, marking the round proposer's unix timestamp in ms
 ############################################################################################################
 # V0
 ###################################

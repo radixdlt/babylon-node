@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EpochUpdateValidatorTransaction;
+import com.radixdlt.api.core.generated.models.TimeUpdateValidatorTransaction;
 import com.radixdlt.api.core.generated.models.ValidatorTransactionType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -101,8 +102,12 @@ public class ValidatorTransaction extends AbstractOpenApiSchema {
                     deserialized = tree.traverse(jp.getCodec()).readValueAs(EpochUpdateValidatorTransaction.class);
                     newValidatorTransaction.setActualInstance(deserialized);
                     return newValidatorTransaction;
+                case "TimeUpdate":
+                    deserialized = tree.traverse(jp.getCodec()).readValueAs(TimeUpdateValidatorTransaction.class);
+                    newValidatorTransaction.setActualInstance(deserialized);
+                    return newValidatorTransaction;
                 default:
-                    log.log(Level.WARNING, String.format("Failed to lookup discriminator value `%s` for ValidatorTransaction. Possible values: EpochUpdate EpochUpdateValidatorTransaction", discriminatorValue));
+                    log.log(Level.WARNING, String.format("Failed to lookup discriminator value `%s` for ValidatorTransaction. Possible values: EpochUpdate EpochUpdateValidatorTransaction TimeUpdate", discriminatorValue));
             }
 
             boolean typeCoercion = ctxt.isEnabled(MapperFeature.ALLOW_COERCION_OF_SCALARS);
@@ -170,6 +175,7 @@ public class ValidatorTransaction extends AbstractOpenApiSchema {
         Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
         mappings.put("EpochUpdate", EpochUpdateValidatorTransaction.class);
         mappings.put("EpochUpdateValidatorTransaction", EpochUpdateValidatorTransaction.class);
+        mappings.put("TimeUpdate", TimeUpdateValidatorTransaction.class);
         mappings.put("ValidatorTransaction", ValidatorTransaction.class);
         JSON.registerDiscriminator(ValidatorTransaction.class, "type", mappings);
     }

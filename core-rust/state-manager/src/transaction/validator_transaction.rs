@@ -3,12 +3,15 @@ use radix_engine::types::EpochManagerSetEpochInvocation;
 use radix_engine::types::GlobalAddress;
 use radix_engine::types::NativeMethodIdent;
 use radix_engine::types::RENodeId;
+
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use radix_engine_interface::api::types::{ScryptoMethodIdent, ScryptoReceiver};
-use radix_engine_interface::constants::{EPOCH_MANAGER, FAUCET_COMPONENT};
+use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER, FAUCET_COMPONENT};
+
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::args;
 use radix_engine_interface::data::scrypto_encode;
+use radix_engine_interface::model::ClockSetCurrentTimeInvocation;
 use sbor::*;
 use std::collections::BTreeSet;
 use transaction::model::{
@@ -19,6 +22,7 @@ use transaction::model::{
 #[derive(Debug, Copy, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum ValidatorTransaction {
     EpochUpdate(u64),
+    TimeUpdate(u64),
 }
 
 impl ValidatorTransaction {
@@ -35,6 +39,17 @@ impl ValidatorTransaction {
                 args: scrypto_encode(&EpochManagerSetEpochInvocation {
                     receiver: EPOCH_MANAGER,
                     epoch: *epoch,
+                })
+                .unwrap(),
+            },
+            ValidatorTransaction::TimeUpdate(current_time_ms) => Instruction::CallNativeMethod {
+                method_ident: NativeMethodIdent {
+                    receiver: RENodeId::Global(GlobalAddress::System(CLOCK)),
+                    method_name: "set_current_time".to_string(),
+                },
+                args: scrypto_encode(&ClockSetCurrentTimeInvocation {
+                    receiver: CLOCK,
+                    current_time_ms: *current_time_ms,
                 })
                 .unwrap(),
             },
