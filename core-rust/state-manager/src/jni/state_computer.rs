@@ -67,7 +67,7 @@ use crate::transaction::UserTransactionValidator;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use scrypto::prelude::*;
+use radix_engine::types::{ComponentAddress, Decimal, Decode, Encode, TypeId, RADIX_TOKEN};
 
 use crate::jni::utils::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};

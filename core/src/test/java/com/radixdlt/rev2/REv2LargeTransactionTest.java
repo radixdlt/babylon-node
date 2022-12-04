@@ -128,7 +128,7 @@ public final class REv2LargeTransactionTest {
   public void large_transaction_should_be_committable() throws Exception {
     try (var test = createTest()) {
       // Arrange: Start single node network
-      var newAccountTransaction = createLargeValidTransaction();
+      var largeTransaction = createLargeValidTransaction();
 
       // Act: Submit transaction to mempool and run consensus
       test.startAllNodes();
@@ -138,11 +138,11 @@ public final class REv2LargeTransactionTest {
               Key.get(
                   new TypeLiteral<
                       MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
-      mempoolInserter.addTransaction(newAccountTransaction);
-      test.runUntilState(allCommittedTransaction(newAccountTransaction), onlyConsensusEvents());
+      mempoolInserter.addTransaction(largeTransaction);
+      test.runUntilState(allCommittedTransaction(largeTransaction), onlyConsensusEvents());
 
       // Assert: Check transaction and post submission state
-      NodesReader.getCommittedUserTransaction(test.getNodeInjectors(), newAccountTransaction);
+      NodesReader.getCommittedUserTransaction(test.getNodeInjectors(), largeTransaction);
     }
   }
 }

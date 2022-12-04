@@ -1,5 +1,5 @@
 use crate::transaction::ledger_transaction::LedgerTransaction;
-use scrypto::buffer::scrypto_decode;
+use radix_engine::types::scrypto_decode;
 use transaction::errors::TransactionValidationError;
 use transaction::model::{Executable, NotarizedTransaction};
 use transaction::validation::ValidationConfig;

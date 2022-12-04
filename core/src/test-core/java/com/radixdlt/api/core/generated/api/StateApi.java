@@ -18,6 +18,7 @@ import com.radixdlt.api.core.generated.client.ApiResponse;
 import com.radixdlt.api.core.generated.client.Pair;
 
 import com.radixdlt.api.core.generated.models.ErrorResponse;
+import com.radixdlt.api.core.generated.models.V0StateClockResponse;
 import com.radixdlt.api.core.generated.models.V0StateComponentRequest;
 import com.radixdlt.api.core.generated.models.V0StateComponentResponse;
 import com.radixdlt.api.core.generated.models.V0StateEpochResponse;
@@ -83,6 +84,72 @@ public class StateApi {
     return operationId + " call failed with: " + statusCode + " - " + body;
   }
 
+  /**
+   * Read current clock data
+   * 
+   * @return V0StateClockResponse
+   * @throws ApiException if fails to make API call
+   */
+  public V0StateClockResponse v0StateClockPost() throws ApiException {
+    ApiResponse<V0StateClockResponse> localVarResponse = v0StateClockPostWithHttpInfo();
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Read current clock data
+   * 
+   * @return ApiResponse&lt;V0StateClockResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<V0StateClockResponse> v0StateClockPostWithHttpInfo() throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = v0StateClockPostRequestBuilder();
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("v0StateClockPost", localVarResponse);
+        }
+        return new ApiResponse<V0StateClockResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<V0StateClockResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder v0StateClockPostRequestBuilder() throws ApiException {
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/v0/state/clock";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.noBody());
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
   /**
    * Read component data
    * 
@@ -162,7 +229,7 @@ public class StateApi {
     return localVarRequestBuilder;
   }
   /**
-   * Read Current Epoch
+   * Read current epoch data
    * 
    * @return V0StateEpochResponse
    * @throws ApiException if fails to make API call
@@ -173,7 +240,7 @@ public class StateApi {
   }
 
   /**
-   * Read Current Epoch
+   * Read current epoch data
    * 
    * @return ApiResponse&lt;V0StateEpochResponse&gt;
    * @throws ApiException if fails to make API call

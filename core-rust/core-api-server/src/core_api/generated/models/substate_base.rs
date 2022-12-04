@@ -13,16 +13,13 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct SubstateBase {
-    #[serde(rename = "entity_type")]
-    pub entity_type: crate::core_api::generated::models::EntityType,
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
 }
 
 impl SubstateBase {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType) -> SubstateBase {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType) -> SubstateBase {
         SubstateBase {
-            entity_type,
             substate_type,
         }
     }

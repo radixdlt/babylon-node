@@ -34,13 +34,13 @@ pub struct TransactionHeader {
     /// An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution.
     #[serde(rename = "cost_unit_limit")]
     pub cost_unit_limit: i64,
-    /// An integer between `0` and `2^32 - 1`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+    /// An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
     #[serde(rename = "tip_percentage")]
-    pub tip_percentage: i64,
+    pub tip_percentage: i32,
 }
 
 impl TransactionHeader {
-    pub fn new(version: i32, network_id: i32, start_epoch_inclusive: i64, end_epoch_exclusive: i64, nonce: String, notary_public_key: crate::core_api::generated::models::PublicKey, notary_as_signatory: bool, cost_unit_limit: i64, tip_percentage: i64) -> TransactionHeader {
+    pub fn new(version: i32, network_id: i32, start_epoch_inclusive: i64, end_epoch_exclusive: i64, nonce: String, notary_public_key: crate::core_api::generated::models::PublicKey, notary_as_signatory: bool, cost_unit_limit: i64, tip_percentage: i32) -> TransactionHeader {
         TransactionHeader {
             version,
             network_id,

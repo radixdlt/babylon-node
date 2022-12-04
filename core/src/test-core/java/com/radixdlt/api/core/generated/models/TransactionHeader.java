@@ -69,7 +69,7 @@ public class TransactionHeader {
   private Long costUnitLimit;
 
   public static final String JSON_PROPERTY_TIP_PERCENTAGE = "tip_percentage";
-  private Long tipPercentage;
+  private Integer tipPercentage;
 
   public TransactionHeader() { 
   }
@@ -292,30 +292,30 @@ public class TransactionHeader {
   }
 
 
-  public TransactionHeader tipPercentage(Long tipPercentage) {
+  public TransactionHeader tipPercentage(Integer tipPercentage) {
     this.tipPercentage = tipPercentage;
     return this;
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;2^32 - 1&#x60;, giving the validator tip as a percentage amount. A value of &#x60;1&#x60; corresponds to 1% of the fee.
+   * An integer between &#x60;0&#x60; and &#x60;255&#x60;, giving the validator tip as a percentage amount. A value of &#x60;1&#x60; corresponds to 1% of the fee.
    * minimum: 0
-   * maximum: 4294967295
+   * maximum: 255
    * @return tipPercentage
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `2^32 - 1`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.")
+  @ApiModelProperty(required = true, value = "An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.")
   @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getTipPercentage() {
+  public Integer getTipPercentage() {
     return tipPercentage;
   }
 
 
   @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTipPercentage(Long tipPercentage) {
+  public void setTipPercentage(Integer tipPercentage) {
     this.tipPercentage = tipPercentage;
   }
 

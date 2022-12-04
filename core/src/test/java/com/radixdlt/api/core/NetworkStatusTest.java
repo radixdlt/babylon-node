@@ -72,6 +72,7 @@ import org.junit.Test;
 
 public class NetworkStatusTest extends DeterministicCoreApiTestBase {
   @Test
+  @SuppressWarnings("try")
   public void test_core_api_status_response_at_startup() throws Exception {
     try (var ignored = buildRunningServerTest()) {
       final var response =

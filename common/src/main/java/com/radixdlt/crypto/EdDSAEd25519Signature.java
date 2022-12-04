@@ -65,7 +65,7 @@
 package com.radixdlt.crypto;
 
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.CustomTypeCodec;
+import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
@@ -76,8 +76,9 @@ public final class EdDSAEd25519Signature {
     codecMap.register(
         EdDSAEd25519Signature.class,
         codecs ->
-            new CustomTypeCodec<>(
+            new CustomTypeKnownLengthCodec<>(
                 TypeId.TYPE_CUSTOM_EDDSA_ED25519_SIGNATURE,
+                BYTE_LENGTH,
                 EdDSAEd25519Signature::getConcatRSBytes,
                 EdDSAEd25519Signature::fromConcatRSBytesUnchecked));
   }

@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.DynamicResourceDescriptorBase;
 import com.radixdlt.api.core.generated.models.DynamicResourceDescriptorType;
-import com.radixdlt.api.core.generated.models.NonFungibleFixedResourceDescriptorAllOf;
+import com.radixdlt.api.core.generated.models.NonFungibleDynamicResourceDescriptorAllOf;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;

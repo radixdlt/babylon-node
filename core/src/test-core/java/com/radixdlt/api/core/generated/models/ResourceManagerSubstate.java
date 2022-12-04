@@ -23,17 +23,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EntityReference;
-import com.radixdlt.api.core.generated.models.EntityType;
+import com.radixdlt.api.core.generated.models.NonFungibleIdType;
 import com.radixdlt.api.core.generated.models.ResourceManagerSubstateAllOf;
-import com.radixdlt.api.core.generated.models.ResourceManagerSubstateAllOfAuthRules;
-import com.radixdlt.api.core.generated.models.ResourceManagerSubstateAllOfMetadata;
 import com.radixdlt.api.core.generated.models.ResourceType;
 import com.radixdlt.api.core.generated.models.SubstateBase;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -41,20 +37,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * ResourceManagerSubstate
  */
 @JsonPropertyOrder({
-  ResourceManagerSubstate.JSON_PROPERTY_ENTITY_TYPE,
   ResourceManagerSubstate.JSON_PROPERTY_SUBSTATE_TYPE,
   ResourceManagerSubstate.JSON_PROPERTY_RESOURCE_TYPE,
   ResourceManagerSubstate.JSON_PROPERTY_FUNGIBLE_DIVISIBILITY,
-  ResourceManagerSubstate.JSON_PROPERTY_METADATA,
+  ResourceManagerSubstate.JSON_PROPERTY_NON_FUNGIBLE_ID_TYPE,
   ResourceManagerSubstate.JSON_PROPERTY_TOTAL_SUPPLY,
-  ResourceManagerSubstate.JSON_PROPERTY_OWNED_NON_FUNGIBLE_STORE,
-  ResourceManagerSubstate.JSON_PROPERTY_AUTH_RULES
+  ResourceManagerSubstate.JSON_PROPERTY_OWNED_NON_FUNGIBLE_STORE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ResourceManagerSubstate {
-  public static final String JSON_PROPERTY_ENTITY_TYPE = "entity_type";
-  private EntityType entityType;
-
   public static final String JSON_PROPERTY_SUBSTATE_TYPE = "substate_type";
   private SubstateType substateType;
 
@@ -64,8 +55,8 @@ public class ResourceManagerSubstate {
   public static final String JSON_PROPERTY_FUNGIBLE_DIVISIBILITY = "fungible_divisibility";
   private Integer fungibleDivisibility;
 
-  public static final String JSON_PROPERTY_METADATA = "metadata";
-  private List<ResourceManagerSubstateAllOfMetadata> metadata = new ArrayList<>();
+  public static final String JSON_PROPERTY_NON_FUNGIBLE_ID_TYPE = "non_fungible_id_type";
+  private NonFungibleIdType nonFungibleIdType;
 
   public static final String JSON_PROPERTY_TOTAL_SUPPLY = "total_supply";
   private String totalSupply;
@@ -73,37 +64,8 @@ public class ResourceManagerSubstate {
   public static final String JSON_PROPERTY_OWNED_NON_FUNGIBLE_STORE = "owned_non_fungible_store";
   private EntityReference ownedNonFungibleStore;
 
-  public static final String JSON_PROPERTY_AUTH_RULES = "auth_rules";
-  private ResourceManagerSubstateAllOfAuthRules authRules;
-
   public ResourceManagerSubstate() { 
   }
-
-  public ResourceManagerSubstate entityType(EntityType entityType) {
-    this.entityType = entityType;
-    return this;
-  }
-
-   /**
-   * Get entityType
-   * @return entityType
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ENTITY_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public EntityType getEntityType() {
-    return entityType;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ENTITY_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEntityType(EntityType entityType) {
-    this.entityType = entityType;
-  }
-
 
   public ResourceManagerSubstate substateType(SubstateType substateType) {
     this.substateType = substateType;
@@ -185,34 +147,29 @@ public class ResourceManagerSubstate {
   }
 
 
-  public ResourceManagerSubstate metadata(List<ResourceManagerSubstateAllOfMetadata> metadata) {
-    this.metadata = metadata;
-    return this;
-  }
-
-  public ResourceManagerSubstate addMetadataItem(ResourceManagerSubstateAllOfMetadata metadataItem) {
-    this.metadata.add(metadataItem);
+  public ResourceManagerSubstate nonFungibleIdType(NonFungibleIdType nonFungibleIdType) {
+    this.nonFungibleIdType = nonFungibleIdType;
     return this;
   }
 
    /**
-   * Get metadata
-   * @return metadata
+   * Get nonFungibleIdType
+   * @return nonFungibleIdType
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_METADATA)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID_TYPE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public List<ResourceManagerSubstateAllOfMetadata> getMetadata() {
-    return metadata;
+  public NonFungibleIdType getNonFungibleIdType() {
+    return nonFungibleIdType;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_METADATA)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMetadata(List<ResourceManagerSubstateAllOfMetadata> metadata) {
-    this.metadata = metadata;
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID_TYPE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setNonFungibleIdType(NonFungibleIdType nonFungibleIdType) {
+    this.nonFungibleIdType = nonFungibleIdType;
   }
 
 
@@ -268,32 +225,6 @@ public class ResourceManagerSubstate {
   }
 
 
-  public ResourceManagerSubstate authRules(ResourceManagerSubstateAllOfAuthRules authRules) {
-    this.authRules = authRules;
-    return this;
-  }
-
-   /**
-   * Get authRules
-   * @return authRules
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_AUTH_RULES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public ResourceManagerSubstateAllOfAuthRules getAuthRules() {
-    return authRules;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_AUTH_RULES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAuthRules(ResourceManagerSubstateAllOfAuthRules authRules) {
-    this.authRules = authRules;
-  }
-
-
   /**
    * Return true if this ResourceManagerSubstate object is equal to o.
    */
@@ -306,33 +237,29 @@ public class ResourceManagerSubstate {
       return false;
     }
     ResourceManagerSubstate resourceManagerSubstate = (ResourceManagerSubstate) o;
-    return Objects.equals(this.entityType, resourceManagerSubstate.entityType) &&
-        Objects.equals(this.substateType, resourceManagerSubstate.substateType) &&
+    return Objects.equals(this.substateType, resourceManagerSubstate.substateType) &&
         Objects.equals(this.resourceType, resourceManagerSubstate.resourceType) &&
         Objects.equals(this.fungibleDivisibility, resourceManagerSubstate.fungibleDivisibility) &&
-        Objects.equals(this.metadata, resourceManagerSubstate.metadata) &&
+        Objects.equals(this.nonFungibleIdType, resourceManagerSubstate.nonFungibleIdType) &&
         Objects.equals(this.totalSupply, resourceManagerSubstate.totalSupply) &&
-        Objects.equals(this.ownedNonFungibleStore, resourceManagerSubstate.ownedNonFungibleStore) &&
-        Objects.equals(this.authRules, resourceManagerSubstate.authRules);
+        Objects.equals(this.ownedNonFungibleStore, resourceManagerSubstate.ownedNonFungibleStore);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityType, substateType, resourceType, fungibleDivisibility, metadata, totalSupply, ownedNonFungibleStore, authRules);
+    return Objects.hash(substateType, resourceType, fungibleDivisibility, nonFungibleIdType, totalSupply, ownedNonFungibleStore);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ResourceManagerSubstate {\n");
-    sb.append("    entityType: ").append(toIndentedString(entityType)).append("\n");
     sb.append("    substateType: ").append(toIndentedString(substateType)).append("\n");
     sb.append("    resourceType: ").append(toIndentedString(resourceType)).append("\n");
     sb.append("    fungibleDivisibility: ").append(toIndentedString(fungibleDivisibility)).append("\n");
-    sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
+    sb.append("    nonFungibleIdType: ").append(toIndentedString(nonFungibleIdType)).append("\n");
     sb.append("    totalSupply: ").append(toIndentedString(totalSupply)).append("\n");
     sb.append("    ownedNonFungibleStore: ").append(toIndentedString(ownedNonFungibleStore)).append("\n");
-    sb.append("    authRules: ").append(toIndentedString(authRules)).append("\n");
     sb.append("}");
     return sb.toString();
   }

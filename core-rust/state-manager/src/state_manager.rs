@@ -81,13 +81,16 @@ use radix_engine::transaction::{
     execute_transaction_with_fee_reserve, ExecutionConfig, FeeReserveConfig, PreviewError,
     PreviewResult, TransactionOutcome, TransactionReceipt, TransactionResult,
 };
+use radix_engine::types::{
+    scrypto_encode, ComponentAddress, Decimal, Decode, Encode, GlobalAddress, PublicKey, RENodeId,
+    ResourceAddress, TypeId,
+};
 use radix_engine::wasm::{
     DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
 };
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
-use scrypto::engine::types::{GlobalAddress, RENodeId};
-use scrypto::prelude::*;
-use std::collections::HashMap;
+use radix_engine_interface::core::NetworkDefinition;
+use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tracing::info;
@@ -582,13 +585,10 @@ where
             let prepared_epoch_update_txn = epoch_update_txn.prepare();
             let executable = prepared_epoch_update_txn.get_executable();
 
-            let mut fee_reserve = SystemLoanFeeReserve::default();
-            // TODO: Clean up fee reserve
-            fee_reserve.credit(10_000_000);
             let receipt = execute_transaction_with_fee_reserve(
                 &staged_store,
                 &self.scrypto_interpreter,
-                fee_reserve,
+                SystemLoanFeeReserve::no_fee(),
                 &self.execution_config,
                 &executable,
             );
@@ -600,9 +600,9 @@ where
 
                     commit_result.state_updates.commit(&mut staged_store);
 
-                    committed.push(scrypto_encode(&LedgerTransaction::Validator(
-                        epoch_update_txn,
-                    )));
+                    committed.push(
+                        scrypto_encode(&LedgerTransaction::Validator(epoch_update_txn)).unwrap(),
+                    );
                 }
                 TransactionResult::Reject(reject_result) => {
                     panic!("Epoch Update rejected: {:?}", reject_result);
@@ -656,7 +656,7 @@ where
             match receipt.result {
                 TransactionResult::Commit(..) => {
                     already_committed_or_prepared_intent_hashes.insert(intent_hash);
-                    committed.push(LedgerTransaction::User(parsed).create_payload());
+                    committed.push(LedgerTransaction::User(parsed).create_payload().unwrap());
                 }
                 TransactionResult::Reject(reject_result) => {
                     rejected.push((proposed_payload, format!("{:?}", reject_result)));

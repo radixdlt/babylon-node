@@ -34,6 +34,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   GlobalEntityAssignment.JSON_PROPERTY_TARGET_ENTITY_TYPE,
   GlobalEntityAssignment.JSON_PROPERTY_TARGET_ENTITY_ID_HEX,
+  GlobalEntityAssignment.JSON_PROPERTY_GLOBAL_ENTITY_ID_HEX,
   GlobalEntityAssignment.JSON_PROPERTY_GLOBAL_ADDRESS_HEX,
   GlobalEntityAssignment.JSON_PROPERTY_GLOBAL_ADDRESS
 })
@@ -44,6 +45,9 @@ public class GlobalEntityAssignment {
 
   public static final String JSON_PROPERTY_TARGET_ENTITY_ID_HEX = "target_entity_id_hex";
   private String targetEntityIdHex;
+
+  public static final String JSON_PROPERTY_GLOBAL_ENTITY_ID_HEX = "global_entity_id_hex";
+  private String globalEntityIdHex;
 
   public static final String JSON_PROPERTY_GLOBAL_ADDRESS_HEX = "global_address_hex";
   private String globalAddressHex;
@@ -103,6 +107,32 @@ public class GlobalEntityAssignment {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setTargetEntityIdHex(String targetEntityIdHex) {
     this.targetEntityIdHex = targetEntityIdHex;
+  }
+
+
+  public GlobalEntityAssignment globalEntityIdHex(String globalEntityIdHex) {
+    this.globalEntityIdHex = globalEntityIdHex;
+    return this;
+  }
+
+   /**
+   * The hex-encoded bytes of the global entity id
+   * @return globalEntityIdHex
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The hex-encoded bytes of the global entity id")
+  @JsonProperty(JSON_PROPERTY_GLOBAL_ENTITY_ID_HEX)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getGlobalEntityIdHex() {
+    return globalEntityIdHex;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_GLOBAL_ENTITY_ID_HEX)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setGlobalEntityIdHex(String globalEntityIdHex) {
+    this.globalEntityIdHex = globalEntityIdHex;
   }
 
 
@@ -172,13 +202,14 @@ public class GlobalEntityAssignment {
     GlobalEntityAssignment globalEntityAssignment = (GlobalEntityAssignment) o;
     return Objects.equals(this.targetEntityType, globalEntityAssignment.targetEntityType) &&
         Objects.equals(this.targetEntityIdHex, globalEntityAssignment.targetEntityIdHex) &&
+        Objects.equals(this.globalEntityIdHex, globalEntityAssignment.globalEntityIdHex) &&
         Objects.equals(this.globalAddressHex, globalEntityAssignment.globalAddressHex) &&
         Objects.equals(this.globalAddress, globalEntityAssignment.globalAddress);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(targetEntityType, targetEntityIdHex, globalAddressHex, globalAddress);
+    return Objects.hash(targetEntityType, targetEntityIdHex, globalEntityIdHex, globalAddressHex, globalAddress);
   }
 
   @Override
@@ -187,6 +218,7 @@ public class GlobalEntityAssignment {
     sb.append("class GlobalEntityAssignment {\n");
     sb.append("    targetEntityType: ").append(toIndentedString(targetEntityType)).append("\n");
     sb.append("    targetEntityIdHex: ").append(toIndentedString(targetEntityIdHex)).append("\n");
+    sb.append("    globalEntityIdHex: ").append(toIndentedString(globalEntityIdHex)).append("\n");
     sb.append("    globalAddressHex: ").append(toIndentedString(globalAddressHex)).append("\n");
     sb.append("    globalAddress: ").append(toIndentedString(globalAddress)).append("\n");
     sb.append("}");

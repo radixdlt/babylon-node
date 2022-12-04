@@ -37,7 +37,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   V0StateComponentResponse.JSON_PROPERTY_INFO,
   V0StateComponentResponse.JSON_PROPERTY_STATE,
-  V0StateComponentResponse.JSON_PROPERTY_OWNED_VAULTS,
+  V0StateComponentResponse.JSON_PROPERTY_ROYALTY_CONFIG,
+  V0StateComponentResponse.JSON_PROPERTY_ROYALTY_ACCUMULATOR,
+  V0StateComponentResponse.JSON_PROPERTY_METADATA,
+  V0StateComponentResponse.JSON_PROPERTY_ACCESS_RULES,
+  V0StateComponentResponse.JSON_PROPERTY_STATE_OWNED_VAULTS,
   V0StateComponentResponse.JSON_PROPERTY_DESCENDENT_IDS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -48,8 +52,20 @@ public class V0StateComponentResponse {
   public static final String JSON_PROPERTY_STATE = "state";
   private Substate state;
 
-  public static final String JSON_PROPERTY_OWNED_VAULTS = "owned_vaults";
-  private List<Substate> ownedVaults = new ArrayList<>();
+  public static final String JSON_PROPERTY_ROYALTY_CONFIG = "royalty_config";
+  private Substate royaltyConfig;
+
+  public static final String JSON_PROPERTY_ROYALTY_ACCUMULATOR = "royalty_accumulator";
+  private Substate royaltyAccumulator;
+
+  public static final String JSON_PROPERTY_METADATA = "metadata";
+  private Substate metadata;
+
+  public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
+  private Substate accessRules;
+
+  public static final String JSON_PROPERTY_STATE_OWNED_VAULTS = "state_owned_vaults";
+  private List<Substate> stateOwnedVaults = new ArrayList<>();
 
   public static final String JSON_PROPERTY_DESCENDENT_IDS = "descendent_ids";
   private List<V0StateComponentDescendentId> descendentIds = new ArrayList<>();
@@ -109,34 +125,138 @@ public class V0StateComponentResponse {
   }
 
 
-  public V0StateComponentResponse ownedVaults(List<Substate> ownedVaults) {
-    this.ownedVaults = ownedVaults;
+  public V0StateComponentResponse royaltyConfig(Substate royaltyConfig) {
+    this.royaltyConfig = royaltyConfig;
     return this;
   }
 
-  public V0StateComponentResponse addOwnedVaultsItem(Substate ownedVaultsItem) {
-    this.ownedVaults.add(ownedVaultsItem);
+   /**
+   * Get royaltyConfig
+   * @return royaltyConfig
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Substate getRoyaltyConfig() {
+    return royaltyConfig;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setRoyaltyConfig(Substate royaltyConfig) {
+    this.royaltyConfig = royaltyConfig;
+  }
+
+
+  public V0StateComponentResponse royaltyAccumulator(Substate royaltyAccumulator) {
+    this.royaltyAccumulator = royaltyAccumulator;
+    return this;
+  }
+
+   /**
+   * Get royaltyAccumulator
+   * @return royaltyAccumulator
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ROYALTY_ACCUMULATOR)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Substate getRoyaltyAccumulator() {
+    return royaltyAccumulator;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ROYALTY_ACCUMULATOR)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setRoyaltyAccumulator(Substate royaltyAccumulator) {
+    this.royaltyAccumulator = royaltyAccumulator;
+  }
+
+
+  public V0StateComponentResponse metadata(Substate metadata) {
+    this.metadata = metadata;
+    return this;
+  }
+
+   /**
+   * Get metadata
+   * @return metadata
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_METADATA)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Substate getMetadata() {
+    return metadata;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_METADATA)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setMetadata(Substate metadata) {
+    this.metadata = metadata;
+  }
+
+
+  public V0StateComponentResponse accessRules(Substate accessRules) {
+    this.accessRules = accessRules;
+    return this;
+  }
+
+   /**
+   * Get accessRules
+   * @return accessRules
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Substate getAccessRules() {
+    return accessRules;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAccessRules(Substate accessRules) {
+    this.accessRules = accessRules;
+  }
+
+
+  public V0StateComponentResponse stateOwnedVaults(List<Substate> stateOwnedVaults) {
+    this.stateOwnedVaults = stateOwnedVaults;
+    return this;
+  }
+
+  public V0StateComponentResponse addStateOwnedVaultsItem(Substate stateOwnedVaultsItem) {
+    this.stateOwnedVaults.add(stateOwnedVaultsItem);
     return this;
   }
 
    /**
    * Any vaults owned directly or indirectly by the component
-   * @return ownedVaults
+   * @return stateOwnedVaults
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "Any vaults owned directly or indirectly by the component")
-  @JsonProperty(JSON_PROPERTY_OWNED_VAULTS)
+  @JsonProperty(JSON_PROPERTY_STATE_OWNED_VAULTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<Substate> getOwnedVaults() {
-    return ownedVaults;
+  public List<Substate> getStateOwnedVaults() {
+    return stateOwnedVaults;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_OWNED_VAULTS)
+  @JsonProperty(JSON_PROPERTY_STATE_OWNED_VAULTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setOwnedVaults(List<Substate> ownedVaults) {
-    this.ownedVaults = ownedVaults;
+  public void setStateOwnedVaults(List<Substate> stateOwnedVaults) {
+    this.stateOwnedVaults = stateOwnedVaults;
   }
 
 
@@ -185,13 +305,17 @@ public class V0StateComponentResponse {
     V0StateComponentResponse v0StateComponentResponse = (V0StateComponentResponse) o;
     return Objects.equals(this.info, v0StateComponentResponse.info) &&
         Objects.equals(this.state, v0StateComponentResponse.state) &&
-        Objects.equals(this.ownedVaults, v0StateComponentResponse.ownedVaults) &&
+        Objects.equals(this.royaltyConfig, v0StateComponentResponse.royaltyConfig) &&
+        Objects.equals(this.royaltyAccumulator, v0StateComponentResponse.royaltyAccumulator) &&
+        Objects.equals(this.metadata, v0StateComponentResponse.metadata) &&
+        Objects.equals(this.accessRules, v0StateComponentResponse.accessRules) &&
+        Objects.equals(this.stateOwnedVaults, v0StateComponentResponse.stateOwnedVaults) &&
         Objects.equals(this.descendentIds, v0StateComponentResponse.descendentIds);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(info, state, ownedVaults, descendentIds);
+    return Objects.hash(info, state, royaltyConfig, royaltyAccumulator, metadata, accessRules, stateOwnedVaults, descendentIds);
   }
 
   @Override
@@ -200,7 +324,11 @@ public class V0StateComponentResponse {
     sb.append("class V0StateComponentResponse {\n");
     sb.append("    info: ").append(toIndentedString(info)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
-    sb.append("    ownedVaults: ").append(toIndentedString(ownedVaults)).append("\n");
+    sb.append("    royaltyConfig: ").append(toIndentedString(royaltyConfig)).append("\n");
+    sb.append("    royaltyAccumulator: ").append(toIndentedString(royaltyAccumulator)).append("\n");
+    sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
+    sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
+    sb.append("    stateOwnedVaults: ").append(toIndentedString(stateOwnedVaults)).append("\n");
     sb.append("    descendentIds: ").append(toIndentedString(descendentIds)).append("\n");
     sb.append("}");
     return sb.toString();

@@ -17,26 +17,23 @@ pub struct ResourceManagerSubstateAllOf {
     pub resource_type: crate::core_api::generated::models::ResourceType,
     #[serde(rename = "fungible_divisibility", skip_serializing_if = "Option::is_none")]
     pub fungible_divisibility: Option<i32>,
-    #[serde(rename = "metadata")]
-    pub metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>,
+    #[serde(rename = "non_fungible_id_type", skip_serializing_if = "Option::is_none")]
+    pub non_fungible_id_type: Option<crate::core_api::generated::models::NonFungibleIdType>,
     /// The string-encoded decimal representing the total supply of this resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
     #[serde(rename = "total_supply")]
     pub total_supply: String,
     #[serde(rename = "owned_non_fungible_store", skip_serializing_if = "Option::is_none")]
     pub owned_non_fungible_store: Option<Box<crate::core_api::generated::models::EntityReference>>,
-    #[serde(rename = "auth_rules")]
-    pub auth_rules: Box<crate::core_api::generated::models::ResourceManagerSubstateAllOfAuthRules>,
 }
 
 impl ResourceManagerSubstateAllOf {
-    pub fn new(resource_type: crate::core_api::generated::models::ResourceType, metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>, total_supply: String, auth_rules: crate::core_api::generated::models::ResourceManagerSubstateAllOfAuthRules) -> ResourceManagerSubstateAllOf {
+    pub fn new(resource_type: crate::core_api::generated::models::ResourceType, total_supply: String) -> ResourceManagerSubstateAllOf {
         ResourceManagerSubstateAllOf {
             resource_type,
             fungible_divisibility: None,
-            metadata,
+            non_fungible_id_type: None,
             total_supply,
             owned_non_fungible_store: None,
-            auth_rules: Box::new(auth_rules),
         }
     }
 }

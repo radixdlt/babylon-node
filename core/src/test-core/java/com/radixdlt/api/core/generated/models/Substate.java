@@ -25,25 +25,33 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.AccessRules;
+import com.radixdlt.api.core.generated.models.AccessRulesChainSubstate;
 import com.radixdlt.api.core.generated.models.BlueprintData;
-import com.radixdlt.api.core.generated.models.ComponentAccessRulesLayer;
+import com.radixdlt.api.core.generated.models.BlueprintRoyaltyConfig;
+import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
 import com.radixdlt.api.core.generated.models.ComponentInfoSubstate;
+import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
+import com.radixdlt.api.core.generated.models.ComponentRoyaltyConfigSubstate;
 import com.radixdlt.api.core.generated.models.ComponentStateSubstate;
 import com.radixdlt.api.core.generated.models.DataStruct;
 import com.radixdlt.api.core.generated.models.EntityReference;
-import com.radixdlt.api.core.generated.models.EntityType;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
+import com.radixdlt.api.core.generated.models.GlobalAddressSubstate;
 import com.radixdlt.api.core.generated.models.GlobalEntityAssignment;
-import com.radixdlt.api.core.generated.models.GlobalSubstate;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
+import com.radixdlt.api.core.generated.models.MetadataSubstate;
+import com.radixdlt.api.core.generated.models.MetadataSubstateAllOfMetadata;
 import com.radixdlt.api.core.generated.models.NonFungibleData;
-import com.radixdlt.api.core.generated.models.NonFungibleSubstate;
-import com.radixdlt.api.core.generated.models.PackageSubstate;
+import com.radixdlt.api.core.generated.models.NonFungibleIdType;
+import com.radixdlt.api.core.generated.models.NonFungibleStoreEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageInfoSubstate;
+import com.radixdlt.api.core.generated.models.PackageRoyaltyAccumulatorSubstate;
+import com.radixdlt.api.core.generated.models.PackageRoyaltyConfigSubstate;
 import com.radixdlt.api.core.generated.models.ResourceAmount;
 import com.radixdlt.api.core.generated.models.ResourceManagerSubstate;
-import com.radixdlt.api.core.generated.models.ResourceManagerSubstateAllOfAuthRules;
-import com.radixdlt.api.core.generated.models.ResourceManagerSubstateAllOfMetadata;
 import com.radixdlt.api.core.generated.models.ResourceType;
+import com.radixdlt.api.core.generated.models.RoyaltyConfig;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.VaultSubstate;
 import io.swagger.annotations.ApiModel;
@@ -54,7 +62,6 @@ import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.io.IOException;
 import java.util.logging.Level;
@@ -66,11 +73,9 @@ import java.util.HashSet;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -79,7 +84,7 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.radixdlt.api.core.generated.client.JSON;
 
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-@JsonDeserialize(using = Substate.SubstateDeserializer.class)
+@JsonDeserialize(using=Substate.SubstateDeserializer.class)
 @JsonSerialize(using = Substate.SubstateSerializer.class)
 public class Substate extends AbstractOpenApiSchema {
     private static final Logger log = Logger.getLogger(Substate.class.getName());
@@ -111,330 +116,195 @@ public class Substate extends AbstractOpenApiSchema {
         @Override
         public Substate deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
             JsonNode tree = jp.readValueAsTree();
+
             Object deserialized = null;
-            Substate newSubstate = new Substate();
-            Map<String,Object> result2 = tree.traverse(jp.getCodec()).readValueAs(new TypeReference<Map<String, Object>>() {});
-            String discriminatorValue = (String)result2.get("substate_type");
-            switch (discriminatorValue) {
-                case "ComponentInfo":
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(ComponentInfoSubstate.class);
-                    newSubstate.setActualInstance(deserialized);
-                    return newSubstate;
-                case "ComponentInfoSubstate":
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(ComponentInfoSubstate.class);
-                    newSubstate.setActualInstance(deserialized);
-                    return newSubstate;
-                case "ComponentState":
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(ComponentStateSubstate.class);
-                    newSubstate.setActualInstance(deserialized);
-                    return newSubstate;
-                case "ComponentStateSubstate":
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(ComponentStateSubstate.class);
-                    newSubstate.setActualInstance(deserialized);
-                    return newSubstate;
-                case "EpochManager":
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(EpochManagerSubstate.class);
-                    newSubstate.setActualInstance(deserialized);
-                    return newSubstate;
-                case "EpochManagerSubstate":
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(EpochManagerSubstate.class);
-                    newSubstate.setActualInstance(deserialized);
-                    return newSubstate;
-                case "Global":
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(GlobalSubstate.class);
-                    newSubstate.setActualInstance(deserialized);
-                    return newSubstate;
-                case "GlobalSubstate":
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(GlobalSubstate.class);
-                    newSubstate.setActualInstance(deserialized);
-                    return newSubstate;
-                case "KeyValueStoreEntry":
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(KeyValueStoreEntrySubstate.class);
-                    newSubstate.setActualInstance(deserialized);
-                    return newSubstate;
-                case "KeyValueStoreEntrySubstate":
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(KeyValueStoreEntrySubstate.class);
-                    newSubstate.setActualInstance(deserialized);
-                    return newSubstate;
-                case "NonFungible":
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(NonFungibleSubstate.class);
-                    newSubstate.setActualInstance(deserialized);
-                    return newSubstate;
-                case "NonFungibleSubstate":
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(NonFungibleSubstate.class);
-                    newSubstate.setActualInstance(deserialized);
-                    return newSubstate;
-                case "Package":
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(PackageSubstate.class);
-                    newSubstate.setActualInstance(deserialized);
-                    return newSubstate;
-                case "PackageSubstate":
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(PackageSubstate.class);
-                    newSubstate.setActualInstance(deserialized);
-                    return newSubstate;
-                case "ResourceManager":
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(ResourceManagerSubstate.class);
-                    newSubstate.setActualInstance(deserialized);
-                    return newSubstate;
-                case "ResourceManagerSubstate":
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(ResourceManagerSubstate.class);
-                    newSubstate.setActualInstance(deserialized);
-                    return newSubstate;
-                case "Vault":
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(VaultSubstate.class);
-                    newSubstate.setActualInstance(deserialized);
-                    return newSubstate;
-                case "VaultSubstate":
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(VaultSubstate.class);
-                    newSubstate.setActualInstance(deserialized);
-                    return newSubstate;
-                default:
-                    log.log(Level.WARNING, String.format("Failed to lookup discriminator value `%s` for Substate. Possible values: ComponentInfo ComponentInfoSubstate ComponentState ComponentStateSubstate EpochManager EpochManagerSubstate Global GlobalSubstate KeyValueStoreEntry KeyValueStoreEntrySubstate NonFungible NonFungibleSubstate Package PackageSubstate ResourceManager ResourceManagerSubstate Vault VaultSubstate", discriminatorValue));
-            }
-
-            boolean typeCoercion = ctxt.isEnabled(MapperFeature.ALLOW_COERCION_OF_SCALARS);
-            int match = 0;
-            JsonToken token = tree.traverse(jp.getCodec()).nextToken();
-            // deserialize ComponentInfoSubstate
-            try {
-                boolean attemptParsing = true;
-                // ensure that we respect type coercion as set on the client ObjectMapper
-                if (ComponentInfoSubstate.class.equals(Integer.class) || ComponentInfoSubstate.class.equals(Long.class) || ComponentInfoSubstate.class.equals(Float.class) || ComponentInfoSubstate.class.equals(Double.class) || ComponentInfoSubstate.class.equals(Boolean.class) || ComponentInfoSubstate.class.equals(String.class)) {
-                    attemptParsing = typeCoercion;
-                    if (!attemptParsing) {
-                        attemptParsing |= ((ComponentInfoSubstate.class.equals(Integer.class) || ComponentInfoSubstate.class.equals(Long.class)) && token == JsonToken.VALUE_NUMBER_INT);
-                        attemptParsing |= ((ComponentInfoSubstate.class.equals(Float.class) || ComponentInfoSubstate.class.equals(Double.class)) && token == JsonToken.VALUE_NUMBER_FLOAT);
-                        attemptParsing |= (ComponentInfoSubstate.class.equals(Boolean.class) && (token == JsonToken.VALUE_FALSE || token == JsonToken.VALUE_TRUE));
-                        attemptParsing |= (ComponentInfoSubstate.class.equals(String.class) && token == JsonToken.VALUE_STRING);
-                    }
-                }
-                if (attemptParsing) {
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(ComponentInfoSubstate.class);
-                    // TODO: there is no validation against JSON schema constraints
-                    // (min, max, enum, pattern...), this does not perform a strict JSON
-                    // validation, which means the 'match' count may be higher than it should be.
-                    match++;
-                    log.log(Level.FINER, "Input data matches schema 'ComponentInfoSubstate'");
-                }
-            } catch (Exception e) {
-                // deserialization failed, continue
-                log.log(Level.FINER, "Input data does not match schema 'ComponentInfoSubstate'", e);
-            }
-
-            // deserialize ComponentStateSubstate
-            try {
-                boolean attemptParsing = true;
-                // ensure that we respect type coercion as set on the client ObjectMapper
-                if (ComponentStateSubstate.class.equals(Integer.class) || ComponentStateSubstate.class.equals(Long.class) || ComponentStateSubstate.class.equals(Float.class) || ComponentStateSubstate.class.equals(Double.class) || ComponentStateSubstate.class.equals(Boolean.class) || ComponentStateSubstate.class.equals(String.class)) {
-                    attemptParsing = typeCoercion;
-                    if (!attemptParsing) {
-                        attemptParsing |= ((ComponentStateSubstate.class.equals(Integer.class) || ComponentStateSubstate.class.equals(Long.class)) && token == JsonToken.VALUE_NUMBER_INT);
-                        attemptParsing |= ((ComponentStateSubstate.class.equals(Float.class) || ComponentStateSubstate.class.equals(Double.class)) && token == JsonToken.VALUE_NUMBER_FLOAT);
-                        attemptParsing |= (ComponentStateSubstate.class.equals(Boolean.class) && (token == JsonToken.VALUE_FALSE || token == JsonToken.VALUE_TRUE));
-                        attemptParsing |= (ComponentStateSubstate.class.equals(String.class) && token == JsonToken.VALUE_STRING);
-                    }
-                }
-                if (attemptParsing) {
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(ComponentStateSubstate.class);
-                    // TODO: there is no validation against JSON schema constraints
-                    // (min, max, enum, pattern...), this does not perform a strict JSON
-                    // validation, which means the 'match' count may be higher than it should be.
-                    match++;
-                    log.log(Level.FINER, "Input data matches schema 'ComponentStateSubstate'");
-                }
-            } catch (Exception e) {
-                // deserialization failed, continue
-                log.log(Level.FINER, "Input data does not match schema 'ComponentStateSubstate'", e);
-            }
-
-            // deserialize EpochManagerSubstate
-            try {
-                boolean attemptParsing = true;
-                // ensure that we respect type coercion as set on the client ObjectMapper
-                if (EpochManagerSubstate.class.equals(Integer.class) || EpochManagerSubstate.class.equals(Long.class) || EpochManagerSubstate.class.equals(Float.class) || EpochManagerSubstate.class.equals(Double.class) || EpochManagerSubstate.class.equals(Boolean.class) || EpochManagerSubstate.class.equals(String.class)) {
-                    attemptParsing = typeCoercion;
-                    if (!attemptParsing) {
-                        attemptParsing |= ((EpochManagerSubstate.class.equals(Integer.class) || EpochManagerSubstate.class.equals(Long.class)) && token == JsonToken.VALUE_NUMBER_INT);
-                        attemptParsing |= ((EpochManagerSubstate.class.equals(Float.class) || EpochManagerSubstate.class.equals(Double.class)) && token == JsonToken.VALUE_NUMBER_FLOAT);
-                        attemptParsing |= (EpochManagerSubstate.class.equals(Boolean.class) && (token == JsonToken.VALUE_FALSE || token == JsonToken.VALUE_TRUE));
-                        attemptParsing |= (EpochManagerSubstate.class.equals(String.class) && token == JsonToken.VALUE_STRING);
-                    }
-                }
-                if (attemptParsing) {
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(EpochManagerSubstate.class);
-                    // TODO: there is no validation against JSON schema constraints
-                    // (min, max, enum, pattern...), this does not perform a strict JSON
-                    // validation, which means the 'match' count may be higher than it should be.
-                    match++;
-                    log.log(Level.FINER, "Input data matches schema 'EpochManagerSubstate'");
-                }
-            } catch (Exception e) {
-                // deserialization failed, continue
-                log.log(Level.FINER, "Input data does not match schema 'EpochManagerSubstate'", e);
-            }
-
-            // deserialize GlobalSubstate
-            try {
-                boolean attemptParsing = true;
-                // ensure that we respect type coercion as set on the client ObjectMapper
-                if (GlobalSubstate.class.equals(Integer.class) || GlobalSubstate.class.equals(Long.class) || GlobalSubstate.class.equals(Float.class) || GlobalSubstate.class.equals(Double.class) || GlobalSubstate.class.equals(Boolean.class) || GlobalSubstate.class.equals(String.class)) {
-                    attemptParsing = typeCoercion;
-                    if (!attemptParsing) {
-                        attemptParsing |= ((GlobalSubstate.class.equals(Integer.class) || GlobalSubstate.class.equals(Long.class)) && token == JsonToken.VALUE_NUMBER_INT);
-                        attemptParsing |= ((GlobalSubstate.class.equals(Float.class) || GlobalSubstate.class.equals(Double.class)) && token == JsonToken.VALUE_NUMBER_FLOAT);
-                        attemptParsing |= (GlobalSubstate.class.equals(Boolean.class) && (token == JsonToken.VALUE_FALSE || token == JsonToken.VALUE_TRUE));
-                        attemptParsing |= (GlobalSubstate.class.equals(String.class) && token == JsonToken.VALUE_STRING);
-                    }
-                }
-                if (attemptParsing) {
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(GlobalSubstate.class);
-                    // TODO: there is no validation against JSON schema constraints
-                    // (min, max, enum, pattern...), this does not perform a strict JSON
-                    // validation, which means the 'match' count may be higher than it should be.
-                    match++;
-                    log.log(Level.FINER, "Input data matches schema 'GlobalSubstate'");
-                }
-            } catch (Exception e) {
-                // deserialization failed, continue
-                log.log(Level.FINER, "Input data does not match schema 'GlobalSubstate'", e);
-            }
-
-            // deserialize KeyValueStoreEntrySubstate
-            try {
-                boolean attemptParsing = true;
-                // ensure that we respect type coercion as set on the client ObjectMapper
-                if (KeyValueStoreEntrySubstate.class.equals(Integer.class) || KeyValueStoreEntrySubstate.class.equals(Long.class) || KeyValueStoreEntrySubstate.class.equals(Float.class) || KeyValueStoreEntrySubstate.class.equals(Double.class) || KeyValueStoreEntrySubstate.class.equals(Boolean.class) || KeyValueStoreEntrySubstate.class.equals(String.class)) {
-                    attemptParsing = typeCoercion;
-                    if (!attemptParsing) {
-                        attemptParsing |= ((KeyValueStoreEntrySubstate.class.equals(Integer.class) || KeyValueStoreEntrySubstate.class.equals(Long.class)) && token == JsonToken.VALUE_NUMBER_INT);
-                        attemptParsing |= ((KeyValueStoreEntrySubstate.class.equals(Float.class) || KeyValueStoreEntrySubstate.class.equals(Double.class)) && token == JsonToken.VALUE_NUMBER_FLOAT);
-                        attemptParsing |= (KeyValueStoreEntrySubstate.class.equals(Boolean.class) && (token == JsonToken.VALUE_FALSE || token == JsonToken.VALUE_TRUE));
-                        attemptParsing |= (KeyValueStoreEntrySubstate.class.equals(String.class) && token == JsonToken.VALUE_STRING);
-                    }
-                }
-                if (attemptParsing) {
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(KeyValueStoreEntrySubstate.class);
-                    // TODO: there is no validation against JSON schema constraints
-                    // (min, max, enum, pattern...), this does not perform a strict JSON
-                    // validation, which means the 'match' count may be higher than it should be.
-                    match++;
-                    log.log(Level.FINER, "Input data matches schema 'KeyValueStoreEntrySubstate'");
-                }
-            } catch (Exception e) {
-                // deserialization failed, continue
-                log.log(Level.FINER, "Input data does not match schema 'KeyValueStoreEntrySubstate'", e);
-            }
-
-            // deserialize NonFungibleSubstate
-            try {
-                boolean attemptParsing = true;
-                // ensure that we respect type coercion as set on the client ObjectMapper
-                if (NonFungibleSubstate.class.equals(Integer.class) || NonFungibleSubstate.class.equals(Long.class) || NonFungibleSubstate.class.equals(Float.class) || NonFungibleSubstate.class.equals(Double.class) || NonFungibleSubstate.class.equals(Boolean.class) || NonFungibleSubstate.class.equals(String.class)) {
-                    attemptParsing = typeCoercion;
-                    if (!attemptParsing) {
-                        attemptParsing |= ((NonFungibleSubstate.class.equals(Integer.class) || NonFungibleSubstate.class.equals(Long.class)) && token == JsonToken.VALUE_NUMBER_INT);
-                        attemptParsing |= ((NonFungibleSubstate.class.equals(Float.class) || NonFungibleSubstate.class.equals(Double.class)) && token == JsonToken.VALUE_NUMBER_FLOAT);
-                        attemptParsing |= (NonFungibleSubstate.class.equals(Boolean.class) && (token == JsonToken.VALUE_FALSE || token == JsonToken.VALUE_TRUE));
-                        attemptParsing |= (NonFungibleSubstate.class.equals(String.class) && token == JsonToken.VALUE_STRING);
-                    }
-                }
-                if (attemptParsing) {
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(NonFungibleSubstate.class);
-                    // TODO: there is no validation against JSON schema constraints
-                    // (min, max, enum, pattern...), this does not perform a strict JSON
-                    // validation, which means the 'match' count may be higher than it should be.
-                    match++;
-                    log.log(Level.FINER, "Input data matches schema 'NonFungibleSubstate'");
-                }
-            } catch (Exception e) {
-                // deserialization failed, continue
-                log.log(Level.FINER, "Input data does not match schema 'NonFungibleSubstate'", e);
-            }
-
-            // deserialize PackageSubstate
-            try {
-                boolean attemptParsing = true;
-                // ensure that we respect type coercion as set on the client ObjectMapper
-                if (PackageSubstate.class.equals(Integer.class) || PackageSubstate.class.equals(Long.class) || PackageSubstate.class.equals(Float.class) || PackageSubstate.class.equals(Double.class) || PackageSubstate.class.equals(Boolean.class) || PackageSubstate.class.equals(String.class)) {
-                    attemptParsing = typeCoercion;
-                    if (!attemptParsing) {
-                        attemptParsing |= ((PackageSubstate.class.equals(Integer.class) || PackageSubstate.class.equals(Long.class)) && token == JsonToken.VALUE_NUMBER_INT);
-                        attemptParsing |= ((PackageSubstate.class.equals(Float.class) || PackageSubstate.class.equals(Double.class)) && token == JsonToken.VALUE_NUMBER_FLOAT);
-                        attemptParsing |= (PackageSubstate.class.equals(Boolean.class) && (token == JsonToken.VALUE_FALSE || token == JsonToken.VALUE_TRUE));
-                        attemptParsing |= (PackageSubstate.class.equals(String.class) && token == JsonToken.VALUE_STRING);
-                    }
-                }
-                if (attemptParsing) {
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(PackageSubstate.class);
-                    // TODO: there is no validation against JSON schema constraints
-                    // (min, max, enum, pattern...), this does not perform a strict JSON
-                    // validation, which means the 'match' count may be higher than it should be.
-                    match++;
-                    log.log(Level.FINER, "Input data matches schema 'PackageSubstate'");
-                }
-            } catch (Exception e) {
-                // deserialization failed, continue
-                log.log(Level.FINER, "Input data does not match schema 'PackageSubstate'", e);
-            }
-
-            // deserialize ResourceManagerSubstate
-            try {
-                boolean attemptParsing = true;
-                // ensure that we respect type coercion as set on the client ObjectMapper
-                if (ResourceManagerSubstate.class.equals(Integer.class) || ResourceManagerSubstate.class.equals(Long.class) || ResourceManagerSubstate.class.equals(Float.class) || ResourceManagerSubstate.class.equals(Double.class) || ResourceManagerSubstate.class.equals(Boolean.class) || ResourceManagerSubstate.class.equals(String.class)) {
-                    attemptParsing = typeCoercion;
-                    if (!attemptParsing) {
-                        attemptParsing |= ((ResourceManagerSubstate.class.equals(Integer.class) || ResourceManagerSubstate.class.equals(Long.class)) && token == JsonToken.VALUE_NUMBER_INT);
-                        attemptParsing |= ((ResourceManagerSubstate.class.equals(Float.class) || ResourceManagerSubstate.class.equals(Double.class)) && token == JsonToken.VALUE_NUMBER_FLOAT);
-                        attemptParsing |= (ResourceManagerSubstate.class.equals(Boolean.class) && (token == JsonToken.VALUE_FALSE || token == JsonToken.VALUE_TRUE));
-                        attemptParsing |= (ResourceManagerSubstate.class.equals(String.class) && token == JsonToken.VALUE_STRING);
-                    }
-                }
-                if (attemptParsing) {
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(ResourceManagerSubstate.class);
-                    // TODO: there is no validation against JSON schema constraints
-                    // (min, max, enum, pattern...), this does not perform a strict JSON
-                    // validation, which means the 'match' count may be higher than it should be.
-                    match++;
-                    log.log(Level.FINER, "Input data matches schema 'ResourceManagerSubstate'");
-                }
-            } catch (Exception e) {
-                // deserialization failed, continue
-                log.log(Level.FINER, "Input data does not match schema 'ResourceManagerSubstate'", e);
-            }
-
-            // deserialize VaultSubstate
-            try {
-                boolean attemptParsing = true;
-                // ensure that we respect type coercion as set on the client ObjectMapper
-                if (VaultSubstate.class.equals(Integer.class) || VaultSubstate.class.equals(Long.class) || VaultSubstate.class.equals(Float.class) || VaultSubstate.class.equals(Double.class) || VaultSubstate.class.equals(Boolean.class) || VaultSubstate.class.equals(String.class)) {
-                    attemptParsing = typeCoercion;
-                    if (!attemptParsing) {
-                        attemptParsing |= ((VaultSubstate.class.equals(Integer.class) || VaultSubstate.class.equals(Long.class)) && token == JsonToken.VALUE_NUMBER_INT);
-                        attemptParsing |= ((VaultSubstate.class.equals(Float.class) || VaultSubstate.class.equals(Double.class)) && token == JsonToken.VALUE_NUMBER_FLOAT);
-                        attemptParsing |= (VaultSubstate.class.equals(Boolean.class) && (token == JsonToken.VALUE_FALSE || token == JsonToken.VALUE_TRUE));
-                        attemptParsing |= (VaultSubstate.class.equals(String.class) && token == JsonToken.VALUE_STRING);
-                    }
-                }
-                if (attemptParsing) {
-                    deserialized = tree.traverse(jp.getCodec()).readValueAs(VaultSubstate.class);
-                    // TODO: there is no validation against JSON schema constraints
-                    // (min, max, enum, pattern...), this does not perform a strict JSON
-                    // validation, which means the 'match' count may be higher than it should be.
-                    match++;
-                    log.log(Level.FINER, "Input data matches schema 'VaultSubstate'");
-                }
-            } catch (Exception e) {
-                // deserialization failed, continue
-                log.log(Level.FINER, "Input data does not match schema 'VaultSubstate'", e);
-            }
-
-            if (match == 1) {
+            Class<?> cls = JSON.getClassForElement(tree, Substate.class);
+            if (cls != null) {
+                // When the OAS schema includes a discriminator, use the discriminator value to
+                // discriminate the anyOf schemas.
+                // Get the discriminator mapping value to get the class.
+                deserialized = tree.traverse(jp.getCodec()).readValueAs(cls);
                 Substate ret = new Substate();
                 ret.setActualInstance(deserialized);
                 return ret;
             }
-            throw new IOException(String.format("Failed deserialization for Substate: %d classes match result, expected 1", match));
+            // deserialize AccessRulesChainSubstate
+            try {
+                deserialized = tree.traverse(jp.getCodec()).readValueAs(AccessRulesChainSubstate.class);
+                Substate ret = new Substate();
+                ret.setActualInstance(deserialized);
+                return ret;
+            } catch (Exception e) {
+                // deserialization failed, continue, log to help debugging
+                log.log(Level.FINER, "Input data does not match 'Substate'", e);
+            }
+
+            // deserialize ClockCurrentMinuteSubstate
+            try {
+                deserialized = tree.traverse(jp.getCodec()).readValueAs(ClockCurrentMinuteSubstate.class);
+                Substate ret = new Substate();
+                ret.setActualInstance(deserialized);
+                return ret;
+            } catch (Exception e) {
+                // deserialization failed, continue, log to help debugging
+                log.log(Level.FINER, "Input data does not match 'Substate'", e);
+            }
+
+            // deserialize ComponentInfoSubstate
+            try {
+                deserialized = tree.traverse(jp.getCodec()).readValueAs(ComponentInfoSubstate.class);
+                Substate ret = new Substate();
+                ret.setActualInstance(deserialized);
+                return ret;
+            } catch (Exception e) {
+                // deserialization failed, continue, log to help debugging
+                log.log(Level.FINER, "Input data does not match 'Substate'", e);
+            }
+
+            // deserialize ComponentRoyaltyAccumulatorSubstate
+            try {
+                deserialized = tree.traverse(jp.getCodec()).readValueAs(ComponentRoyaltyAccumulatorSubstate.class);
+                Substate ret = new Substate();
+                ret.setActualInstance(deserialized);
+                return ret;
+            } catch (Exception e) {
+                // deserialization failed, continue, log to help debugging
+                log.log(Level.FINER, "Input data does not match 'Substate'", e);
+            }
+
+            // deserialize ComponentRoyaltyConfigSubstate
+            try {
+                deserialized = tree.traverse(jp.getCodec()).readValueAs(ComponentRoyaltyConfigSubstate.class);
+                Substate ret = new Substate();
+                ret.setActualInstance(deserialized);
+                return ret;
+            } catch (Exception e) {
+                // deserialization failed, continue, log to help debugging
+                log.log(Level.FINER, "Input data does not match 'Substate'", e);
+            }
+
+            // deserialize ComponentStateSubstate
+            try {
+                deserialized = tree.traverse(jp.getCodec()).readValueAs(ComponentStateSubstate.class);
+                Substate ret = new Substate();
+                ret.setActualInstance(deserialized);
+                return ret;
+            } catch (Exception e) {
+                // deserialization failed, continue, log to help debugging
+                log.log(Level.FINER, "Input data does not match 'Substate'", e);
+            }
+
+            // deserialize EpochManagerSubstate
+            try {
+                deserialized = tree.traverse(jp.getCodec()).readValueAs(EpochManagerSubstate.class);
+                Substate ret = new Substate();
+                ret.setActualInstance(deserialized);
+                return ret;
+            } catch (Exception e) {
+                // deserialization failed, continue, log to help debugging
+                log.log(Level.FINER, "Input data does not match 'Substate'", e);
+            }
+
+            // deserialize GlobalAddressSubstate
+            try {
+                deserialized = tree.traverse(jp.getCodec()).readValueAs(GlobalAddressSubstate.class);
+                Substate ret = new Substate();
+                ret.setActualInstance(deserialized);
+                return ret;
+            } catch (Exception e) {
+                // deserialization failed, continue, log to help debugging
+                log.log(Level.FINER, "Input data does not match 'Substate'", e);
+            }
+
+            // deserialize KeyValueStoreEntrySubstate
+            try {
+                deserialized = tree.traverse(jp.getCodec()).readValueAs(KeyValueStoreEntrySubstate.class);
+                Substate ret = new Substate();
+                ret.setActualInstance(deserialized);
+                return ret;
+            } catch (Exception e) {
+                // deserialization failed, continue, log to help debugging
+                log.log(Level.FINER, "Input data does not match 'Substate'", e);
+            }
+
+            // deserialize MetadataSubstate
+            try {
+                deserialized = tree.traverse(jp.getCodec()).readValueAs(MetadataSubstate.class);
+                Substate ret = new Substate();
+                ret.setActualInstance(deserialized);
+                return ret;
+            } catch (Exception e) {
+                // deserialization failed, continue, log to help debugging
+                log.log(Level.FINER, "Input data does not match 'Substate'", e);
+            }
+
+            // deserialize NonFungibleStoreEntrySubstate
+            try {
+                deserialized = tree.traverse(jp.getCodec()).readValueAs(NonFungibleStoreEntrySubstate.class);
+                Substate ret = new Substate();
+                ret.setActualInstance(deserialized);
+                return ret;
+            } catch (Exception e) {
+                // deserialization failed, continue, log to help debugging
+                log.log(Level.FINER, "Input data does not match 'Substate'", e);
+            }
+
+            // deserialize PackageInfoSubstate
+            try {
+                deserialized = tree.traverse(jp.getCodec()).readValueAs(PackageInfoSubstate.class);
+                Substate ret = new Substate();
+                ret.setActualInstance(deserialized);
+                return ret;
+            } catch (Exception e) {
+                // deserialization failed, continue, log to help debugging
+                log.log(Level.FINER, "Input data does not match 'Substate'", e);
+            }
+
+            // deserialize PackageRoyaltyAccumulatorSubstate
+            try {
+                deserialized = tree.traverse(jp.getCodec()).readValueAs(PackageRoyaltyAccumulatorSubstate.class);
+                Substate ret = new Substate();
+                ret.setActualInstance(deserialized);
+                return ret;
+            } catch (Exception e) {
+                // deserialization failed, continue, log to help debugging
+                log.log(Level.FINER, "Input data does not match 'Substate'", e);
+            }
+
+            // deserialize PackageRoyaltyConfigSubstate
+            try {
+                deserialized = tree.traverse(jp.getCodec()).readValueAs(PackageRoyaltyConfigSubstate.class);
+                Substate ret = new Substate();
+                ret.setActualInstance(deserialized);
+                return ret;
+            } catch (Exception e) {
+                // deserialization failed, continue, log to help debugging
+                log.log(Level.FINER, "Input data does not match 'Substate'", e);
+            }
+
+            // deserialize ResourceManagerSubstate
+            try {
+                deserialized = tree.traverse(jp.getCodec()).readValueAs(ResourceManagerSubstate.class);
+                Substate ret = new Substate();
+                ret.setActualInstance(deserialized);
+                return ret;
+            } catch (Exception e) {
+                // deserialization failed, continue, log to help debugging
+                log.log(Level.FINER, "Input data does not match 'Substate'", e);
+            }
+
+            // deserialize VaultSubstate
+            try {
+                deserialized = tree.traverse(jp.getCodec()).readValueAs(VaultSubstate.class);
+                Substate ret = new Substate();
+                ret.setActualInstance(deserialized);
+                return ret;
+            } catch (Exception e) {
+                // deserialization failed, continue, log to help debugging
+                log.log(Level.FINER, "Input data does not match 'Substate'", e);
+            }
+
+            throw new IOException(String.format("Failed deserialization for Substate: no match found"));
         }
 
         /**
@@ -446,85 +316,141 @@ public class Substate extends AbstractOpenApiSchema {
         }
     }
 
-    // store a list of schema names defined in oneOf
-    public static final Map<String, Class<?>> schemas = new HashMap<>();
+    // store a list of schema names defined in anyOf
+    public static final Map<String, Class<?>> schemas = new HashMap<String, Class<?>>();
 
     public Substate() {
-        super("oneOf", Boolean.FALSE);
+        super("anyOf", Boolean.FALSE);
+    }
+
+    public Substate(AccessRulesChainSubstate o) {
+        super("anyOf", Boolean.FALSE);
+        setActualInstance(o);
+    }
+
+    public Substate(ClockCurrentMinuteSubstate o) {
+        super("anyOf", Boolean.FALSE);
+        setActualInstance(o);
     }
 
     public Substate(ComponentInfoSubstate o) {
-        super("oneOf", Boolean.FALSE);
+        super("anyOf", Boolean.FALSE);
+        setActualInstance(o);
+    }
+
+    public Substate(ComponentRoyaltyAccumulatorSubstate o) {
+        super("anyOf", Boolean.FALSE);
+        setActualInstance(o);
+    }
+
+    public Substate(ComponentRoyaltyConfigSubstate o) {
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
     public Substate(ComponentStateSubstate o) {
-        super("oneOf", Boolean.FALSE);
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
     public Substate(EpochManagerSubstate o) {
-        super("oneOf", Boolean.FALSE);
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
-    public Substate(GlobalSubstate o) {
-        super("oneOf", Boolean.FALSE);
+    public Substate(GlobalAddressSubstate o) {
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
     public Substate(KeyValueStoreEntrySubstate o) {
-        super("oneOf", Boolean.FALSE);
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
-    public Substate(NonFungibleSubstate o) {
-        super("oneOf", Boolean.FALSE);
+    public Substate(MetadataSubstate o) {
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
-    public Substate(PackageSubstate o) {
-        super("oneOf", Boolean.FALSE);
+    public Substate(NonFungibleStoreEntrySubstate o) {
+        super("anyOf", Boolean.FALSE);
+        setActualInstance(o);
+    }
+
+    public Substate(PackageInfoSubstate o) {
+        super("anyOf", Boolean.FALSE);
+        setActualInstance(o);
+    }
+
+    public Substate(PackageRoyaltyAccumulatorSubstate o) {
+        super("anyOf", Boolean.FALSE);
+        setActualInstance(o);
+    }
+
+    public Substate(PackageRoyaltyConfigSubstate o) {
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
     public Substate(ResourceManagerSubstate o) {
-        super("oneOf", Boolean.FALSE);
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
     public Substate(VaultSubstate o) {
-        super("oneOf", Boolean.FALSE);
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
     static {
+        schemas.put("AccessRulesChainSubstate", AccessRulesChainSubstate.class);
+        schemas.put("ClockCurrentMinuteSubstate", ClockCurrentMinuteSubstate.class);
         schemas.put("ComponentInfoSubstate", ComponentInfoSubstate.class);
+        schemas.put("ComponentRoyaltyAccumulatorSubstate", ComponentRoyaltyAccumulatorSubstate.class);
+        schemas.put("ComponentRoyaltyConfigSubstate", ComponentRoyaltyConfigSubstate.class);
         schemas.put("ComponentStateSubstate", ComponentStateSubstate.class);
         schemas.put("EpochManagerSubstate", EpochManagerSubstate.class);
-        schemas.put("GlobalSubstate", GlobalSubstate.class);
+        schemas.put("GlobalAddressSubstate", GlobalAddressSubstate.class);
         schemas.put("KeyValueStoreEntrySubstate", KeyValueStoreEntrySubstate.class);
-        schemas.put("NonFungibleSubstate", NonFungibleSubstate.class);
-        schemas.put("PackageSubstate", PackageSubstate.class);
+        schemas.put("MetadataSubstate", MetadataSubstate.class);
+        schemas.put("NonFungibleStoreEntrySubstate", NonFungibleStoreEntrySubstate.class);
+        schemas.put("PackageInfoSubstate", PackageInfoSubstate.class);
+        schemas.put("PackageRoyaltyAccumulatorSubstate", PackageRoyaltyAccumulatorSubstate.class);
+        schemas.put("PackageRoyaltyConfigSubstate", PackageRoyaltyConfigSubstate.class);
         schemas.put("ResourceManagerSubstate", ResourceManagerSubstate.class);
         schemas.put("VaultSubstate", VaultSubstate.class);
         JSON.registerDescendants(Substate.class, Collections.unmodifiableMap(schemas));
         // Initialize and register the discriminator mappings.
         Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
+        mappings.put("AccessRulesChain", AccessRulesChainSubstate.class);
+        mappings.put("AccessRulesChainSubstate", AccessRulesChainSubstate.class);
+        mappings.put("ClockCurrentMinute", ClockCurrentMinuteSubstate.class);
+        mappings.put("ClockCurrentMinuteSubstate", ClockCurrentMinuteSubstate.class);
         mappings.put("ComponentInfo", ComponentInfoSubstate.class);
         mappings.put("ComponentInfoSubstate", ComponentInfoSubstate.class);
+        mappings.put("ComponentRoyaltyAccumulator", ComponentRoyaltyAccumulatorSubstate.class);
+        mappings.put("ComponentRoyaltyAccumulatorSubstate", ComponentRoyaltyAccumulatorSubstate.class);
+        mappings.put("ComponentRoyaltyConfig", ComponentRoyaltyConfigSubstate.class);
+        mappings.put("ComponentRoyaltyConfigSubstate", ComponentRoyaltyConfigSubstate.class);
         mappings.put("ComponentState", ComponentStateSubstate.class);
         mappings.put("ComponentStateSubstate", ComponentStateSubstate.class);
         mappings.put("EpochManager", EpochManagerSubstate.class);
         mappings.put("EpochManagerSubstate", EpochManagerSubstate.class);
-        mappings.put("Global", GlobalSubstate.class);
-        mappings.put("GlobalSubstate", GlobalSubstate.class);
+        mappings.put("GlobalAddress", GlobalAddressSubstate.class);
+        mappings.put("GlobalAddressSubstate", GlobalAddressSubstate.class);
         mappings.put("KeyValueStoreEntry", KeyValueStoreEntrySubstate.class);
         mappings.put("KeyValueStoreEntrySubstate", KeyValueStoreEntrySubstate.class);
-        mappings.put("NonFungible", NonFungibleSubstate.class);
-        mappings.put("NonFungibleSubstate", NonFungibleSubstate.class);
-        mappings.put("Package", PackageSubstate.class);
-        mappings.put("PackageSubstate", PackageSubstate.class);
+        mappings.put("Metadata", MetadataSubstate.class);
+        mappings.put("MetadataSubstate", MetadataSubstate.class);
+        mappings.put("NonFungibleStoreEntry", NonFungibleStoreEntrySubstate.class);
+        mappings.put("NonFungibleStoreEntrySubstate", NonFungibleStoreEntrySubstate.class);
+        mappings.put("PackageInfo", PackageInfoSubstate.class);
+        mappings.put("PackageInfoSubstate", PackageInfoSubstate.class);
+        mappings.put("PackageRoyaltyAccumulator", PackageRoyaltyAccumulatorSubstate.class);
+        mappings.put("PackageRoyaltyAccumulatorSubstate", PackageRoyaltyAccumulatorSubstate.class);
+        mappings.put("PackageRoyaltyConfig", PackageRoyaltyConfigSubstate.class);
+        mappings.put("PackageRoyaltyConfigSubstate", PackageRoyaltyConfigSubstate.class);
         mappings.put("ResourceManager", ResourceManagerSubstate.class);
         mappings.put("ResourceManagerSubstate", ResourceManagerSubstate.class);
         mappings.put("Vault", VaultSubstate.class);
@@ -539,16 +465,36 @@ public class Substate extends AbstractOpenApiSchema {
     }
 
     /**
-     * Set the instance that matches the oneOf child schema, check
-     * the instance parameter is valid against the oneOf child schemas:
-     * ComponentInfoSubstate, ComponentStateSubstate, EpochManagerSubstate, GlobalSubstate, KeyValueStoreEntrySubstate, NonFungibleSubstate, PackageSubstate, ResourceManagerSubstate, VaultSubstate
+     * Set the instance that matches the anyOf child schema, check
+     * the instance parameter is valid against the anyOf child schemas:
+     * AccessRulesChainSubstate, ClockCurrentMinuteSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate, EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate, NonFungibleStoreEntrySubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate, ResourceManagerSubstate, VaultSubstate
      *
-     * It could be an instance of the 'oneOf' schemas.
-     * The oneOf child schemas may themselves be a composed schema (allOf, anyOf, oneOf).
+     * It could be an instance of the 'anyOf' schemas.
+     * The anyOf child schemas may themselves be a composed schema (allOf, anyOf, anyOf).
      */
     @Override
     public void setActualInstance(Object instance) {
+        if (JSON.isInstanceOf(AccessRulesChainSubstate.class, instance, new HashSet<Class<?>>())) {
+            super.setActualInstance(instance);
+            return;
+        }
+
+        if (JSON.isInstanceOf(ClockCurrentMinuteSubstate.class, instance, new HashSet<Class<?>>())) {
+            super.setActualInstance(instance);
+            return;
+        }
+
         if (JSON.isInstanceOf(ComponentInfoSubstate.class, instance, new HashSet<Class<?>>())) {
+            super.setActualInstance(instance);
+            return;
+        }
+
+        if (JSON.isInstanceOf(ComponentRoyaltyAccumulatorSubstate.class, instance, new HashSet<Class<?>>())) {
+            super.setActualInstance(instance);
+            return;
+        }
+
+        if (JSON.isInstanceOf(ComponentRoyaltyConfigSubstate.class, instance, new HashSet<Class<?>>())) {
             super.setActualInstance(instance);
             return;
         }
@@ -563,7 +509,7 @@ public class Substate extends AbstractOpenApiSchema {
             return;
         }
 
-        if (JSON.isInstanceOf(GlobalSubstate.class, instance, new HashSet<Class<?>>())) {
+        if (JSON.isInstanceOf(GlobalAddressSubstate.class, instance, new HashSet<Class<?>>())) {
             super.setActualInstance(instance);
             return;
         }
@@ -573,12 +519,27 @@ public class Substate extends AbstractOpenApiSchema {
             return;
         }
 
-        if (JSON.isInstanceOf(NonFungibleSubstate.class, instance, new HashSet<Class<?>>())) {
+        if (JSON.isInstanceOf(MetadataSubstate.class, instance, new HashSet<Class<?>>())) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(PackageSubstate.class, instance, new HashSet<Class<?>>())) {
+        if (JSON.isInstanceOf(NonFungibleStoreEntrySubstate.class, instance, new HashSet<Class<?>>())) {
+            super.setActualInstance(instance);
+            return;
+        }
+
+        if (JSON.isInstanceOf(PackageInfoSubstate.class, instance, new HashSet<Class<?>>())) {
+            super.setActualInstance(instance);
+            return;
+        }
+
+        if (JSON.isInstanceOf(PackageRoyaltyAccumulatorSubstate.class, instance, new HashSet<Class<?>>())) {
+            super.setActualInstance(instance);
+            return;
+        }
+
+        if (JSON.isInstanceOf(PackageRoyaltyConfigSubstate.class, instance, new HashSet<Class<?>>())) {
             super.setActualInstance(instance);
             return;
         }
@@ -593,18 +554,40 @@ public class Substate extends AbstractOpenApiSchema {
             return;
         }
 
-        throw new RuntimeException("Invalid instance type. Must be ComponentInfoSubstate, ComponentStateSubstate, EpochManagerSubstate, GlobalSubstate, KeyValueStoreEntrySubstate, NonFungibleSubstate, PackageSubstate, ResourceManagerSubstate, VaultSubstate");
+        throw new RuntimeException("Invalid instance type. Must be AccessRulesChainSubstate, ClockCurrentMinuteSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate, EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate, NonFungibleStoreEntrySubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate, ResourceManagerSubstate, VaultSubstate");
     }
 
     /**
      * Get the actual instance, which can be the following:
-     * ComponentInfoSubstate, ComponentStateSubstate, EpochManagerSubstate, GlobalSubstate, KeyValueStoreEntrySubstate, NonFungibleSubstate, PackageSubstate, ResourceManagerSubstate, VaultSubstate
+     * AccessRulesChainSubstate, ClockCurrentMinuteSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate, EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate, NonFungibleStoreEntrySubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate, ResourceManagerSubstate, VaultSubstate
      *
-     * @return The actual instance (ComponentInfoSubstate, ComponentStateSubstate, EpochManagerSubstate, GlobalSubstate, KeyValueStoreEntrySubstate, NonFungibleSubstate, PackageSubstate, ResourceManagerSubstate, VaultSubstate)
+     * @return The actual instance (AccessRulesChainSubstate, ClockCurrentMinuteSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate, EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate, NonFungibleStoreEntrySubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate, ResourceManagerSubstate, VaultSubstate)
      */
     @Override
     public Object getActualInstance() {
         return super.getActualInstance();
+    }
+
+    /**
+     * Get the actual instance of `AccessRulesChainSubstate`. If the actual instance is not `AccessRulesChainSubstate`,
+     * the ClassCastException will be thrown.
+     *
+     * @return The actual instance of `AccessRulesChainSubstate`
+     * @throws ClassCastException if the instance is not `AccessRulesChainSubstate`
+     */
+    public AccessRulesChainSubstate getAccessRulesChainSubstate() throws ClassCastException {
+        return (AccessRulesChainSubstate)super.getActualInstance();
+    }
+
+    /**
+     * Get the actual instance of `ClockCurrentMinuteSubstate`. If the actual instance is not `ClockCurrentMinuteSubstate`,
+     * the ClassCastException will be thrown.
+     *
+     * @return The actual instance of `ClockCurrentMinuteSubstate`
+     * @throws ClassCastException if the instance is not `ClockCurrentMinuteSubstate`
+     */
+    public ClockCurrentMinuteSubstate getClockCurrentMinuteSubstate() throws ClassCastException {
+        return (ClockCurrentMinuteSubstate)super.getActualInstance();
     }
 
     /**
@@ -616,6 +599,28 @@ public class Substate extends AbstractOpenApiSchema {
      */
     public ComponentInfoSubstate getComponentInfoSubstate() throws ClassCastException {
         return (ComponentInfoSubstate)super.getActualInstance();
+    }
+
+    /**
+     * Get the actual instance of `ComponentRoyaltyAccumulatorSubstate`. If the actual instance is not `ComponentRoyaltyAccumulatorSubstate`,
+     * the ClassCastException will be thrown.
+     *
+     * @return The actual instance of `ComponentRoyaltyAccumulatorSubstate`
+     * @throws ClassCastException if the instance is not `ComponentRoyaltyAccumulatorSubstate`
+     */
+    public ComponentRoyaltyAccumulatorSubstate getComponentRoyaltyAccumulatorSubstate() throws ClassCastException {
+        return (ComponentRoyaltyAccumulatorSubstate)super.getActualInstance();
+    }
+
+    /**
+     * Get the actual instance of `ComponentRoyaltyConfigSubstate`. If the actual instance is not `ComponentRoyaltyConfigSubstate`,
+     * the ClassCastException will be thrown.
+     *
+     * @return The actual instance of `ComponentRoyaltyConfigSubstate`
+     * @throws ClassCastException if the instance is not `ComponentRoyaltyConfigSubstate`
+     */
+    public ComponentRoyaltyConfigSubstate getComponentRoyaltyConfigSubstate() throws ClassCastException {
+        return (ComponentRoyaltyConfigSubstate)super.getActualInstance();
     }
 
     /**
@@ -641,14 +646,14 @@ public class Substate extends AbstractOpenApiSchema {
     }
 
     /**
-     * Get the actual instance of `GlobalSubstate`. If the actual instance is not `GlobalSubstate`,
+     * Get the actual instance of `GlobalAddressSubstate`. If the actual instance is not `GlobalAddressSubstate`,
      * the ClassCastException will be thrown.
      *
-     * @return The actual instance of `GlobalSubstate`
-     * @throws ClassCastException if the instance is not `GlobalSubstate`
+     * @return The actual instance of `GlobalAddressSubstate`
+     * @throws ClassCastException if the instance is not `GlobalAddressSubstate`
      */
-    public GlobalSubstate getGlobalSubstate() throws ClassCastException {
-        return (GlobalSubstate)super.getActualInstance();
+    public GlobalAddressSubstate getGlobalAddressSubstate() throws ClassCastException {
+        return (GlobalAddressSubstate)super.getActualInstance();
     }
 
     /**
@@ -663,25 +668,58 @@ public class Substate extends AbstractOpenApiSchema {
     }
 
     /**
-     * Get the actual instance of `NonFungibleSubstate`. If the actual instance is not `NonFungibleSubstate`,
+     * Get the actual instance of `MetadataSubstate`. If the actual instance is not `MetadataSubstate`,
      * the ClassCastException will be thrown.
      *
-     * @return The actual instance of `NonFungibleSubstate`
-     * @throws ClassCastException if the instance is not `NonFungibleSubstate`
+     * @return The actual instance of `MetadataSubstate`
+     * @throws ClassCastException if the instance is not `MetadataSubstate`
      */
-    public NonFungibleSubstate getNonFungibleSubstate() throws ClassCastException {
-        return (NonFungibleSubstate)super.getActualInstance();
+    public MetadataSubstate getMetadataSubstate() throws ClassCastException {
+        return (MetadataSubstate)super.getActualInstance();
     }
 
     /**
-     * Get the actual instance of `PackageSubstate`. If the actual instance is not `PackageSubstate`,
+     * Get the actual instance of `NonFungibleStoreEntrySubstate`. If the actual instance is not `NonFungibleStoreEntrySubstate`,
      * the ClassCastException will be thrown.
      *
-     * @return The actual instance of `PackageSubstate`
-     * @throws ClassCastException if the instance is not `PackageSubstate`
+     * @return The actual instance of `NonFungibleStoreEntrySubstate`
+     * @throws ClassCastException if the instance is not `NonFungibleStoreEntrySubstate`
      */
-    public PackageSubstate getPackageSubstate() throws ClassCastException {
-        return (PackageSubstate)super.getActualInstance();
+    public NonFungibleStoreEntrySubstate getNonFungibleStoreEntrySubstate() throws ClassCastException {
+        return (NonFungibleStoreEntrySubstate)super.getActualInstance();
+    }
+
+    /**
+     * Get the actual instance of `PackageInfoSubstate`. If the actual instance is not `PackageInfoSubstate`,
+     * the ClassCastException will be thrown.
+     *
+     * @return The actual instance of `PackageInfoSubstate`
+     * @throws ClassCastException if the instance is not `PackageInfoSubstate`
+     */
+    public PackageInfoSubstate getPackageInfoSubstate() throws ClassCastException {
+        return (PackageInfoSubstate)super.getActualInstance();
+    }
+
+    /**
+     * Get the actual instance of `PackageRoyaltyAccumulatorSubstate`. If the actual instance is not `PackageRoyaltyAccumulatorSubstate`,
+     * the ClassCastException will be thrown.
+     *
+     * @return The actual instance of `PackageRoyaltyAccumulatorSubstate`
+     * @throws ClassCastException if the instance is not `PackageRoyaltyAccumulatorSubstate`
+     */
+    public PackageRoyaltyAccumulatorSubstate getPackageRoyaltyAccumulatorSubstate() throws ClassCastException {
+        return (PackageRoyaltyAccumulatorSubstate)super.getActualInstance();
+    }
+
+    /**
+     * Get the actual instance of `PackageRoyaltyConfigSubstate`. If the actual instance is not `PackageRoyaltyConfigSubstate`,
+     * the ClassCastException will be thrown.
+     *
+     * @return The actual instance of `PackageRoyaltyConfigSubstate`
+     * @throws ClassCastException if the instance is not `PackageRoyaltyConfigSubstate`
+     */
+    public PackageRoyaltyConfigSubstate getPackageRoyaltyConfigSubstate() throws ClassCastException {
+        return (PackageRoyaltyConfigSubstate)super.getActualInstance();
     }
 
     /**
