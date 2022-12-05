@@ -2973,6 +2973,7 @@ components:
     ValidatorTransaction:
       oneOf:
         - $ref: '#/components/schemas/EpochUpdateValidatorTransaction'
+        - $ref: '#/components/schemas/TimeUpdateValidatorTransaction'
       discriminator:
         propertyName: type
         mapping:

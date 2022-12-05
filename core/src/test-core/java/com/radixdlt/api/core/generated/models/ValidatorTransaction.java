@@ -106,8 +106,12 @@ public class ValidatorTransaction extends AbstractOpenApiSchema {
                     deserialized = tree.traverse(jp.getCodec()).readValueAs(TimeUpdateValidatorTransaction.class);
                     newValidatorTransaction.setActualInstance(deserialized);
                     return newValidatorTransaction;
+                case "TimeUpdateValidatorTransaction":
+                    deserialized = tree.traverse(jp.getCodec()).readValueAs(TimeUpdateValidatorTransaction.class);
+                    newValidatorTransaction.setActualInstance(deserialized);
+                    return newValidatorTransaction;
                 default:
-                    log.log(Level.WARNING, String.format("Failed to lookup discriminator value `%s` for ValidatorTransaction. Possible values: EpochUpdate EpochUpdateValidatorTransaction TimeUpdate", discriminatorValue));
+                    log.log(Level.WARNING, String.format("Failed to lookup discriminator value `%s` for ValidatorTransaction. Possible values: EpochUpdate EpochUpdateValidatorTransaction TimeUpdate TimeUpdateValidatorTransaction", discriminatorValue));
             }
 
             boolean typeCoercion = ctxt.isEnabled(MapperFeature.ALLOW_COERCION_OF_SCALARS);
@@ -139,6 +143,32 @@ public class ValidatorTransaction extends AbstractOpenApiSchema {
                 log.log(Level.FINER, "Input data does not match schema 'EpochUpdateValidatorTransaction'", e);
             }
 
+            // deserialize TimeUpdateValidatorTransaction
+            try {
+                boolean attemptParsing = true;
+                // ensure that we respect type coercion as set on the client ObjectMapper
+                if (TimeUpdateValidatorTransaction.class.equals(Integer.class) || TimeUpdateValidatorTransaction.class.equals(Long.class) || TimeUpdateValidatorTransaction.class.equals(Float.class) || TimeUpdateValidatorTransaction.class.equals(Double.class) || TimeUpdateValidatorTransaction.class.equals(Boolean.class) || TimeUpdateValidatorTransaction.class.equals(String.class)) {
+                    attemptParsing = typeCoercion;
+                    if (!attemptParsing) {
+                        attemptParsing |= ((TimeUpdateValidatorTransaction.class.equals(Integer.class) || TimeUpdateValidatorTransaction.class.equals(Long.class)) && token == JsonToken.VALUE_NUMBER_INT);
+                        attemptParsing |= ((TimeUpdateValidatorTransaction.class.equals(Float.class) || TimeUpdateValidatorTransaction.class.equals(Double.class)) && token == JsonToken.VALUE_NUMBER_FLOAT);
+                        attemptParsing |= (TimeUpdateValidatorTransaction.class.equals(Boolean.class) && (token == JsonToken.VALUE_FALSE || token == JsonToken.VALUE_TRUE));
+                        attemptParsing |= (TimeUpdateValidatorTransaction.class.equals(String.class) && token == JsonToken.VALUE_STRING);
+                    }
+                }
+                if (attemptParsing) {
+                    deserialized = tree.traverse(jp.getCodec()).readValueAs(TimeUpdateValidatorTransaction.class);
+                    // TODO: there is no validation against JSON schema constraints
+                    // (min, max, enum, pattern...), this does not perform a strict JSON
+                    // validation, which means the 'match' count may be higher than it should be.
+                    match++;
+                    log.log(Level.FINER, "Input data matches schema 'TimeUpdateValidatorTransaction'");
+                }
+            } catch (Exception e) {
+                // deserialization failed, continue
+                log.log(Level.FINER, "Input data does not match schema 'TimeUpdateValidatorTransaction'", e);
+            }
+
             if (match == 1) {
                 ValidatorTransaction ret = new ValidatorTransaction();
                 ret.setActualInstance(deserialized);
@@ -168,14 +198,21 @@ public class ValidatorTransaction extends AbstractOpenApiSchema {
         setActualInstance(o);
     }
 
+    public ValidatorTransaction(TimeUpdateValidatorTransaction o) {
+        super("oneOf", Boolean.FALSE);
+        setActualInstance(o);
+    }
+
     static {
         schemas.put("EpochUpdateValidatorTransaction", EpochUpdateValidatorTransaction.class);
+        schemas.put("TimeUpdateValidatorTransaction", TimeUpdateValidatorTransaction.class);
         JSON.registerDescendants(ValidatorTransaction.class, Collections.unmodifiableMap(schemas));
         // Initialize and register the discriminator mappings.
         Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
         mappings.put("EpochUpdate", EpochUpdateValidatorTransaction.class);
         mappings.put("EpochUpdateValidatorTransaction", EpochUpdateValidatorTransaction.class);
         mappings.put("TimeUpdate", TimeUpdateValidatorTransaction.class);
+        mappings.put("TimeUpdateValidatorTransaction", TimeUpdateValidatorTransaction.class);
         mappings.put("ValidatorTransaction", ValidatorTransaction.class);
         JSON.registerDiscriminator(ValidatorTransaction.class, "type", mappings);
     }
@@ -188,7 +225,7 @@ public class ValidatorTransaction extends AbstractOpenApiSchema {
     /**
      * Set the instance that matches the oneOf child schema, check
      * the instance parameter is valid against the oneOf child schemas:
-     * EpochUpdateValidatorTransaction
+     * EpochUpdateValidatorTransaction, TimeUpdateValidatorTransaction
      *
      * It could be an instance of the 'oneOf' schemas.
      * The oneOf child schemas may themselves be a composed schema (allOf, anyOf, oneOf).
@@ -200,14 +237,19 @@ public class ValidatorTransaction extends AbstractOpenApiSchema {
             return;
         }
 
-        throw new RuntimeException("Invalid instance type. Must be EpochUpdateValidatorTransaction");
+        if (JSON.isInstanceOf(TimeUpdateValidatorTransaction.class, instance, new HashSet<Class<?>>())) {
+            super.setActualInstance(instance);
+            return;
+        }
+
+        throw new RuntimeException("Invalid instance type. Must be EpochUpdateValidatorTransaction, TimeUpdateValidatorTransaction");
     }
 
     /**
      * Get the actual instance, which can be the following:
-     * EpochUpdateValidatorTransaction
+     * EpochUpdateValidatorTransaction, TimeUpdateValidatorTransaction
      *
-     * @return The actual instance (EpochUpdateValidatorTransaction)
+     * @return The actual instance (EpochUpdateValidatorTransaction, TimeUpdateValidatorTransaction)
      */
     @Override
     public Object getActualInstance() {
@@ -223,6 +265,17 @@ public class ValidatorTransaction extends AbstractOpenApiSchema {
      */
     public EpochUpdateValidatorTransaction getEpochUpdateValidatorTransaction() throws ClassCastException {
         return (EpochUpdateValidatorTransaction)super.getActualInstance();
+    }
+
+    /**
+     * Get the actual instance of `TimeUpdateValidatorTransaction`. If the actual instance is not `TimeUpdateValidatorTransaction`,
+     * the ClassCastException will be thrown.
+     *
+     * @return The actual instance of `TimeUpdateValidatorTransaction`
+     * @throws ClassCastException if the instance is not `TimeUpdateValidatorTransaction`
+     */
+    public TimeUpdateValidatorTransaction getTimeUpdateValidatorTransaction() throws ClassCastException {
+        return (TimeUpdateValidatorTransaction)super.getActualInstance();
     }
 
 }
