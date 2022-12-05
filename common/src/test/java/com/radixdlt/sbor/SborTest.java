@@ -891,12 +891,14 @@ public class SborTest {
           0x20, // Array Type
           0x21, // Array of tuples (K, V)
           3, // 3 elements in map; implicitly ingestion ordering (at least in Java 17)
+          2, // Stored as tuple of length 2
           0x0C, // Key type: String
           2, // String length 2
           104, // "h"
           105, // "i"
           0x04, // Value type: Signed Integer
           1, 0, 0, 0, // 1
+          2, // Stored as tuple of length 2
           0x0C, // Key type: String
           3, // String length 3
           97, // "a"
@@ -904,6 +906,7 @@ public class SborTest {
           100, // "d"
           0x04, // Value type: Signed Integer
           2, 0, 0, 0, // 2
+          2, // Stored as tuple of length 2
           0x0C, // Key type: String
           3, // String length 3
           98, // "b"
@@ -936,6 +939,7 @@ public class SborTest {
           0x20, // Array Type
           0x21, // Array of tuples (K, V)
           3, // 3 elements in map; ordered by lexicographic key ordering
+          2, // Stored as tuple of length 2
           0x0C, // Key type: String
           3, // String length 3 - "and", first key in lexicographic ordering
           97, // "a"
@@ -943,6 +947,7 @@ public class SborTest {
           100, // "d"
           0x04, // Value type: Signed Integer
           2, 0, 0, 0, // 2
+          2, // Stored as tuple of length 2
           0x0C, // Key type: String
           3, // String length 3 - "bye", second key in lexicographic ordering
           98, // "b"
@@ -950,6 +955,7 @@ public class SborTest {
           101, // "e"
           0x04, // Value type: Signed Integer
           3, 0, 0, 0, // 3
+          2, // Stored as tuple of length 2
           0x0C, // Key type: String
           2, // String length 2 - "hi", third key in lexicographic ordering
           104, // "h"

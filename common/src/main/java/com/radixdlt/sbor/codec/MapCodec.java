@@ -96,6 +96,7 @@ public interface MapCodec {
       encoder.writeSize(size);
 
       for (var item : iterable) {
+        encoder.writeSize(2);
         keyCodec.encodeWithTypeId(encoder, item.getKey());
         itemCodec.encodeWithTypeId(encoder, item.getValue());
       }
@@ -114,6 +115,7 @@ public interface MapCodec {
       var map = createMapWithPreparedLength.apply(length);
 
       for (var i = 0; i < length; i++) {
+        decoder.expectSize(2);
         map.put(keyCodec.decodeWithTypeId(decoder), itemCodec.decodeWithTypeId(decoder));
       }
 
