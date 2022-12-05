@@ -64,8 +64,6 @@
 
 package com.radixdlt.api.system;
 
-import static java.lang.annotation.ElementType.*;
-
 import com.google.inject.*;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
@@ -78,6 +76,7 @@ import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
 import io.undertow.server.HttpHandler;
+
 import java.util.Map;
 
 public class SystemApiModule extends AbstractModule {
@@ -104,7 +103,6 @@ public class SystemApiModule extends AbstractModule {
         MapBinder.newMapBinder(
             binder(), HandlerRoute.class, HttpHandler.class, SystemApiEndpoints.class);
     binder.addBinding(HandlerRoute.get("/system/configuration")).to(ConfigurationHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/metrics")).to(MetricsHandler.class);
     binder.addBinding(HandlerRoute.get("/system/health")).to(HealthHandler.class);
     binder.addBinding(HandlerRoute.get("/system/version")).to(VersionHandler.class);
     binder.addBinding(HandlerRoute.get("/system/peers")).to(PeersHandler.class);
