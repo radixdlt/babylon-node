@@ -76,7 +76,6 @@ import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
 import io.undertow.server.HttpHandler;
-
 import java.util.Map;
 
 public class SystemApiModule extends AbstractModule {
