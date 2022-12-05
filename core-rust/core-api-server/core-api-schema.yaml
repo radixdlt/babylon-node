@@ -2373,6 +2373,8 @@ components:
           required:
             - account_package
             - faucet
+            - epoch_manager
+            - clock
             - ecdsa_secp256k1
             - eddsa_ed25519
             - xrd
@@ -2380,6 +2382,10 @@ components:
             account_package:
               type: string
             faucet:
+              type: string
+            epoch_manager:
+              type: string
+            clock:
               type: string
             ecdsa_secp256k1:
               type: string

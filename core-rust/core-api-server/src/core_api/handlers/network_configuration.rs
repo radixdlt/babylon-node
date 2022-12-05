@@ -34,6 +34,8 @@ pub(crate) fn handle_network_configuration_internal(
         well_known_addresses: Box::new(models::NetworkConfigurationResponseWellKnownAddresses {
             account_package: bech32_encoder.encode_package_address_to_string(&ACCOUNT_PACKAGE),
             faucet: bech32_encoder.encode_component_address_to_string(&FAUCET_COMPONENT),
+            epoch_manager: bech32_encoder.encode_system_address_to_string(&EPOCH_MANAGER),
+            clock: bech32_encoder.encode_system_address_to_string(&CLOCK),
             ecdsa_secp256k1: bech32_encoder
                 .encode_resource_address_to_string(&ECDSA_SECP256K1_TOKEN),
             eddsa_ed25519: bech32_encoder.encode_resource_address_to_string(&EDDSA_ED25519_TOKEN),
