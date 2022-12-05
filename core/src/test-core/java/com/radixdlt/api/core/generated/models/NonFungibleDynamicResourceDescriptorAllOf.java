@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.NonFungibleId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,15 +33,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   NonFungibleDynamicResourceDescriptorAllOf.JSON_PROPERTY_RESOURCE_ADDRESS,
-  NonFungibleDynamicResourceDescriptorAllOf.JSON_PROPERTY_NON_FUNGIBLE_ID_HEX
+  NonFungibleDynamicResourceDescriptorAllOf.JSON_PROPERTY_NON_FUNGIBLE_ID
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class NonFungibleDynamicResourceDescriptorAllOf {
   public static final String JSON_PROPERTY_RESOURCE_ADDRESS = "resource_address";
   private String resourceAddress;
 
-  public static final String JSON_PROPERTY_NON_FUNGIBLE_ID_HEX = "non_fungible_id_hex";
-  private String nonFungibleIdHex;
+  public static final String JSON_PROPERTY_NON_FUNGIBLE_ID = "non_fungible_id";
+  private NonFungibleId nonFungibleId;
 
   public NonFungibleDynamicResourceDescriptorAllOf() { 
   }
@@ -71,29 +72,29 @@ public class NonFungibleDynamicResourceDescriptorAllOf {
   }
 
 
-  public NonFungibleDynamicResourceDescriptorAllOf nonFungibleIdHex(String nonFungibleIdHex) {
-    this.nonFungibleIdHex = nonFungibleIdHex;
+  public NonFungibleDynamicResourceDescriptorAllOf nonFungibleId(NonFungibleId nonFungibleId) {
+    this.nonFungibleId = nonFungibleId;
     return this;
   }
 
    /**
-   * The hex-encoded bytes of a non-fungible id
-   * @return nonFungibleIdHex
+   * Get nonFungibleId
+   * @return nonFungibleId
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded bytes of a non-fungible id")
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID_HEX)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getNonFungibleIdHex() {
-    return nonFungibleIdHex;
+  public NonFungibleId getNonFungibleId() {
+    return nonFungibleId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID_HEX)
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNonFungibleIdHex(String nonFungibleIdHex) {
-    this.nonFungibleIdHex = nonFungibleIdHex;
+  public void setNonFungibleId(NonFungibleId nonFungibleId) {
+    this.nonFungibleId = nonFungibleId;
   }
 
 
@@ -110,12 +111,12 @@ public class NonFungibleDynamicResourceDescriptorAllOf {
     }
     NonFungibleDynamicResourceDescriptorAllOf nonFungibleDynamicResourceDescriptorAllOf = (NonFungibleDynamicResourceDescriptorAllOf) o;
     return Objects.equals(this.resourceAddress, nonFungibleDynamicResourceDescriptorAllOf.resourceAddress) &&
-        Objects.equals(this.nonFungibleIdHex, nonFungibleDynamicResourceDescriptorAllOf.nonFungibleIdHex);
+        Objects.equals(this.nonFungibleId, nonFungibleDynamicResourceDescriptorAllOf.nonFungibleId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resourceAddress, nonFungibleIdHex);
+    return Objects.hash(resourceAddress, nonFungibleId);
   }
 
   @Override
@@ -123,7 +124,7 @@ public class NonFungibleDynamicResourceDescriptorAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class NonFungibleDynamicResourceDescriptorAllOf {\n");
     sb.append("    resourceAddress: ").append(toIndentedString(resourceAddress)).append("\n");
-    sb.append("    nonFungibleIdHex: ").append(toIndentedString(nonFungibleIdHex)).append("\n");
+    sb.append("    nonFungibleId: ").append(toIndentedString(nonFungibleId)).append("\n");
     sb.append("}");
     return sb.toString();
   }

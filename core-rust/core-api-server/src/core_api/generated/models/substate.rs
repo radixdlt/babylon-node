@@ -77,13 +77,12 @@ pub enum Substate {
     },
     #[serde(rename="NonFungibleStoreEntry")]
     NonFungibleStoreEntrySubstate {
-        /// The hex-encoded bytes of its non-fungible id
-        #[serde(rename = "non_fungible_id_hex")]
-        non_fungible_id_hex: String,
-        #[serde(rename = "is_deleted")]
-        is_deleted: bool,
+        #[serde(rename = "non_fungible_id")]
+        non_fungible_id: Box<crate::core_api::generated::models::NonFungibleId>,
         #[serde(rename = "non_fungible_data", skip_serializing_if = "Option::is_none")]
         non_fungible_data: Option<Box<crate::core_api::generated::models::NonFungibleData>>,
+        #[serde(rename = "is_deleted")]
+        is_deleted: bool,
     },
     #[serde(rename="PackageInfo")]
     PackageInfoSubstate {

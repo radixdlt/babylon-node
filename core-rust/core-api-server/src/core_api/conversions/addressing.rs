@@ -1,11 +1,11 @@
-use std::{convert::TryFrom, str::FromStr};
+use std::convert::TryFrom;
 
 use crate::core_api::*;
 
 use models::{EntityType, SubstateKeyType, SubstateType};
 use radix_engine::types::{
-    ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, NonFungibleStoreOffset,
-    PackageOffset, ResourceManagerOffset, SubstateOffset, VaultOffset,
+    ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, NonFungibleIdType,
+    NonFungibleStoreOffset, PackageOffset, ResourceManagerOffset, SubstateOffset, VaultOffset,
 };
 use radix_engine::{
     model::GlobalAddressSubstate,
@@ -429,9 +429,18 @@ pub fn extract_resource_address(
         .map_err(ExtractionError::InvalidAddress)
 }
 
-pub fn extract_non_fungible_id(non_fungible_id: &str) -> Result<NonFungibleId, ExtractionError> {
-    // TODO - change when we have different ways of representing NonFungibleIds a strings
-    Ok(NonFungibleId::from_str(non_fungible_id)?)
+pub fn extract_non_fungible_id_from_simple_representation(
+    id_type: NonFungibleIdType,
+    simple_rep: &str,
+) -> Result<NonFungibleId, ExtractionError> {
+    Ok(match id_type {
+        NonFungibleIdType::String => NonFungibleId::String(simple_rep.to_owned()),
+        NonFungibleIdType::U32 => NonFungibleId::U32(simple_rep.parse()?),
+        NonFungibleIdType::U64 => NonFungibleId::U64(simple_rep.parse()?),
+        NonFungibleIdType::Decimal => NonFungibleId::Decimal(simple_rep.parse()?),
+        NonFungibleIdType::Bytes => NonFungibleId::Bytes(from_hex(simple_rep)?),
+        NonFungibleIdType::UUID => NonFungibleId::UUID(simple_rep.parse()?),
+    })
 }
 
 pub fn re_node_id_to_entity_id_bytes(re_node_id: &RENodeId) -> Result<Vec<u8>, MappingError> {

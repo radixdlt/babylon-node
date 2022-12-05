@@ -13,21 +13,20 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct NonFungibleStoreEntrySubstateAllOf {
-    /// The hex-encoded bytes of its non-fungible id
-    #[serde(rename = "non_fungible_id_hex")]
-    pub non_fungible_id_hex: String,
-    #[serde(rename = "is_deleted")]
-    pub is_deleted: bool,
+    #[serde(rename = "non_fungible_id")]
+    pub non_fungible_id: Box<crate::core_api::generated::models::NonFungibleId>,
     #[serde(rename = "non_fungible_data", skip_serializing_if = "Option::is_none")]
     pub non_fungible_data: Option<Box<crate::core_api::generated::models::NonFungibleData>>,
+    #[serde(rename = "is_deleted")]
+    pub is_deleted: bool,
 }
 
 impl NonFungibleStoreEntrySubstateAllOf {
-    pub fn new(non_fungible_id_hex: String, is_deleted: bool) -> NonFungibleStoreEntrySubstateAllOf {
+    pub fn new(non_fungible_id: crate::core_api::generated::models::NonFungibleId, is_deleted: bool) -> NonFungibleStoreEntrySubstateAllOf {
         NonFungibleStoreEntrySubstateAllOf {
-            non_fungible_id_hex,
-            is_deleted,
+            non_fungible_id: Box::new(non_fungible_id),
             non_fungible_data: None,
+            is_deleted,
         }
     }
 }

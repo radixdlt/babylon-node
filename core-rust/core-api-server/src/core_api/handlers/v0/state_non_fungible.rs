@@ -2,7 +2,7 @@ use crate::core_api::*;
 use radix_engine::model::PersistedSubstate;
 use radix_engine::types::{
     Bech32Decoder, Bech32Encoder, GlobalAddress, NonFungibleStoreOffset, RENodeId,
-    ResourceManagerOffset, SubstateId, SubstateOffset,
+    ResourceManagerOffset, ResourceType, SubstateId, SubstateOffset,
 };
 
 use crate::core_api::models::V0StateNonFungibleResponse;
@@ -25,9 +25,6 @@ fn handle_v0_state_non_fungible_internal(
     let resource_address = extract_resource_address(&bech32_decoder, &request.resource_address)
         .map_err(|err| err.into_response_error("resource_address"))?;
 
-    let non_fungible_id = extract_non_fungible_id(&request.non_fungible_id_hex)
-        .map_err(|err| err.into_response_error("non_fungible_id"))?;
-
     let resource_node_id =
         read_derefed_global_node_id(state_manager, GlobalAddress::Resource(resource_address))?;
 
@@ -41,6 +38,21 @@ fn handle_v0_state_non_fungible_internal(
         };
         substate
     };
+
+    let non_fungible_id_type = match resource_manager.resource_type {
+        ResourceType::Fungible { .. } => {
+            return Err(client_error(
+                "The specified resource is fungible, not non-fungible",
+            ))
+        }
+        ResourceType::NonFungible { id_type } => id_type,
+    };
+
+    let non_fungible_id = extract_non_fungible_id_from_simple_representation(
+        non_fungible_id_type,
+        &request.non_fungible_id,
+    )
+    .map_err(|err| err.into_response_error("non_fungible_id"))?;
 
     let Some(non_fungible_store_id) = resource_manager.nf_store_id else {
         return Err(MappingError::MismatchedSubstateId {

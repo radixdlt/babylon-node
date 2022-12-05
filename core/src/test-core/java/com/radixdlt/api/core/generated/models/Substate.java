@@ -43,6 +43,7 @@ import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.MetadataSubstate;
 import com.radixdlt.api.core.generated.models.MetadataSubstateAllOfMetadata;
 import com.radixdlt.api.core.generated.models.NonFungibleData;
+import com.radixdlt.api.core.generated.models.NonFungibleId;
 import com.radixdlt.api.core.generated.models.NonFungibleIdType;
 import com.radixdlt.api.core.generated.models.NonFungibleStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageInfoSubstate;

@@ -12,20 +12,23 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct V0StateNonFungibleRequest {
-    /// The Bech32m-encoded human readable version of the resource's global address
-    #[serde(rename = "resource_address")]
-    pub resource_address: String,
+pub struct NonFungibleId {
     /// The simple string representation of the non-fungible id. For string id types, this is simply the string itself; for integer types, this is the integer as a decimal; and for the bytes id type, this is the lower case hex representation. A non-fungible resource has a fixed `NonFungibleType`, so this representation uniquely identifies this non-fungible under the given resource address. 
-    #[serde(rename = "non_fungible_id")]
-    pub non_fungible_id: String,
+    #[serde(rename = "simple_rep")]
+    pub simple_rep: String,
+    #[serde(rename = "id_type")]
+    pub id_type: crate::core_api::generated::models::NonFungibleIdType,
+    /// The hex-encoded SBOR-encoded bytes of its non-fungible id
+    #[serde(rename = "sbor_hex")]
+    pub sbor_hex: String,
 }
 
-impl V0StateNonFungibleRequest {
-    pub fn new(resource_address: String, non_fungible_id: String) -> V0StateNonFungibleRequest {
-        V0StateNonFungibleRequest {
-            resource_address,
-            non_fungible_id,
+impl NonFungibleId {
+    pub fn new(simple_rep: String, id_type: crate::core_api::generated::models::NonFungibleIdType, sbor_hex: String) -> NonFungibleId {
+        NonFungibleId {
+            simple_rep,
+            id_type,
+            sbor_hex,
         }
     }
 }

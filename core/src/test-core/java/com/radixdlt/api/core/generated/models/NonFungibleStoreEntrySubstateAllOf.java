@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.NonFungibleData;
+import com.radixdlt.api.core.generated.models.NonFungibleId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,73 +33,47 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * NonFungibleStoreEntrySubstateAllOf
  */
 @JsonPropertyOrder({
-  NonFungibleStoreEntrySubstateAllOf.JSON_PROPERTY_NON_FUNGIBLE_ID_HEX,
-  NonFungibleStoreEntrySubstateAllOf.JSON_PROPERTY_IS_DELETED,
-  NonFungibleStoreEntrySubstateAllOf.JSON_PROPERTY_NON_FUNGIBLE_DATA
+  NonFungibleStoreEntrySubstateAllOf.JSON_PROPERTY_NON_FUNGIBLE_ID,
+  NonFungibleStoreEntrySubstateAllOf.JSON_PROPERTY_NON_FUNGIBLE_DATA,
+  NonFungibleStoreEntrySubstateAllOf.JSON_PROPERTY_IS_DELETED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class NonFungibleStoreEntrySubstateAllOf {
-  public static final String JSON_PROPERTY_NON_FUNGIBLE_ID_HEX = "non_fungible_id_hex";
-  private String nonFungibleIdHex;
-
-  public static final String JSON_PROPERTY_IS_DELETED = "is_deleted";
-  private Boolean isDeleted;
+  public static final String JSON_PROPERTY_NON_FUNGIBLE_ID = "non_fungible_id";
+  private NonFungibleId nonFungibleId;
 
   public static final String JSON_PROPERTY_NON_FUNGIBLE_DATA = "non_fungible_data";
   private NonFungibleData nonFungibleData;
 
+  public static final String JSON_PROPERTY_IS_DELETED = "is_deleted";
+  private Boolean isDeleted;
+
   public NonFungibleStoreEntrySubstateAllOf() { 
   }
 
-  public NonFungibleStoreEntrySubstateAllOf nonFungibleIdHex(String nonFungibleIdHex) {
-    this.nonFungibleIdHex = nonFungibleIdHex;
+  public NonFungibleStoreEntrySubstateAllOf nonFungibleId(NonFungibleId nonFungibleId) {
+    this.nonFungibleId = nonFungibleId;
     return this;
   }
 
    /**
-   * The hex-encoded bytes of its non-fungible id
-   * @return nonFungibleIdHex
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded bytes of its non-fungible id")
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID_HEX)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getNonFungibleIdHex() {
-    return nonFungibleIdHex;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID_HEX)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNonFungibleIdHex(String nonFungibleIdHex) {
-    this.nonFungibleIdHex = nonFungibleIdHex;
-  }
-
-
-  public NonFungibleStoreEntrySubstateAllOf isDeleted(Boolean isDeleted) {
-    this.isDeleted = isDeleted;
-    return this;
-  }
-
-   /**
-   * Get isDeleted
-   * @return isDeleted
+   * Get nonFungibleId
+   * @return nonFungibleId
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_IS_DELETED)
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Boolean getIsDeleted() {
-    return isDeleted;
+  public NonFungibleId getNonFungibleId() {
+    return nonFungibleId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_IS_DELETED)
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsDeleted(Boolean isDeleted) {
-    this.isDeleted = isDeleted;
+  public void setNonFungibleId(NonFungibleId nonFungibleId) {
+    this.nonFungibleId = nonFungibleId;
   }
 
 
@@ -128,6 +103,32 @@ public class NonFungibleStoreEntrySubstateAllOf {
   }
 
 
+  public NonFungibleStoreEntrySubstateAllOf isDeleted(Boolean isDeleted) {
+    this.isDeleted = isDeleted;
+    return this;
+  }
+
+   /**
+   * Get isDeleted
+   * @return isDeleted
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IS_DELETED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsDeleted() {
+    return isDeleted;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_DELETED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsDeleted(Boolean isDeleted) {
+    this.isDeleted = isDeleted;
+  }
+
+
   /**
    * Return true if this NonFungibleStoreEntrySubstate_allOf object is equal to o.
    */
@@ -140,23 +141,23 @@ public class NonFungibleStoreEntrySubstateAllOf {
       return false;
     }
     NonFungibleStoreEntrySubstateAllOf nonFungibleStoreEntrySubstateAllOf = (NonFungibleStoreEntrySubstateAllOf) o;
-    return Objects.equals(this.nonFungibleIdHex, nonFungibleStoreEntrySubstateAllOf.nonFungibleIdHex) &&
-        Objects.equals(this.isDeleted, nonFungibleStoreEntrySubstateAllOf.isDeleted) &&
-        Objects.equals(this.nonFungibleData, nonFungibleStoreEntrySubstateAllOf.nonFungibleData);
+    return Objects.equals(this.nonFungibleId, nonFungibleStoreEntrySubstateAllOf.nonFungibleId) &&
+        Objects.equals(this.nonFungibleData, nonFungibleStoreEntrySubstateAllOf.nonFungibleData) &&
+        Objects.equals(this.isDeleted, nonFungibleStoreEntrySubstateAllOf.isDeleted);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(nonFungibleIdHex, isDeleted, nonFungibleData);
+    return Objects.hash(nonFungibleId, nonFungibleData, isDeleted);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class NonFungibleStoreEntrySubstateAllOf {\n");
-    sb.append("    nonFungibleIdHex: ").append(toIndentedString(nonFungibleIdHex)).append("\n");
-    sb.append("    isDeleted: ").append(toIndentedString(isDeleted)).append("\n");
+    sb.append("    nonFungibleId: ").append(toIndentedString(nonFungibleId)).append("\n");
     sb.append("    nonFungibleData: ").append(toIndentedString(nonFungibleData)).append("\n");
+    sb.append("    isDeleted: ").append(toIndentedString(isDeleted)).append("\n");
     sb.append("}");
     return sb.toString();
   }

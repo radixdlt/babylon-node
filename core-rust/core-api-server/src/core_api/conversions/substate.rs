@@ -464,7 +464,7 @@ pub fn to_api_dynamic_resource_descriptor(
             models::DynamicResourceDescriptor::NonFungibleDynamicResourceDescriptor {
                 resource_address: bech32_encoder
                     .encode_resource_address_to_string(&nf.resource_address()),
-                non_fungible_id_hex: to_hex(nf.non_fungible_id().to_vec()),
+                non_fungible_id: Box::new(to_api_non_fungible_id(&nf.non_fungible_id())),
             }
         }
         SoftResourceOrNonFungible::StaticResource(resource) => {
@@ -478,6 +478,23 @@ pub fn to_api_dynamic_resource_descriptor(
             }
         }
     })
+}
+
+pub fn to_api_non_fungible_id(non_fungible_id: &NonFungibleId) -> models::NonFungibleId {
+    let simple_rep = match non_fungible_id {
+        NonFungibleId::String(id) => id.to_string(),
+        NonFungibleId::U32(id) => id.to_string(),
+        NonFungibleId::U64(id) => id.to_string(),
+        NonFungibleId::Decimal(id) => id.to_string(),
+        NonFungibleId::Bytes(id) => to_hex(id),
+        NonFungibleId::UUID(id) => id.to_string(),
+    };
+
+    models::NonFungibleId {
+        simple_rep,
+        id_type: to_api_fungible_id_type(&non_fungible_id.id_type()),
+        sbor_hex: to_hex(non_fungible_id.to_vec()),
+    }
 }
 
 pub fn to_api_schema_path(
@@ -769,13 +786,10 @@ fn to_api_non_fungible_resource_amount(
     _id_type: &NonFungibleIdType,
     ids: &BTreeSet<NonFungibleId>,
 ) -> Result<models::ResourceAmount, MappingError> {
-    let non_fungible_ids_hex = ids
-        .iter()
-        .map(|nf_id| to_hex(&nf_id.to_vec()))
-        .collect::<Vec<_>>();
+    let non_fungible_ids = ids.iter().map(to_api_non_fungible_id).collect();
     Ok(models::ResourceAmount::NonFungibleResourceAmount {
         resource_address: bech32_encoder.encode_resource_address_to_string(resource_address),
-        non_fungible_ids_hex,
+        non_fungible_ids,
     })
 }
 
@@ -787,11 +801,11 @@ pub fn to_api_non_fungible_substate(
     // Use compiler to unpack to ensure we map all fields
     let NonFungibleSubstate(non_fungible_option) = substate;
 
-    let nf_id_bytes = match substate_id {
+    let nf_id = match substate_id {
         SubstateId(
             RENodeId::NonFungibleStore(..),
             SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(nf_id)),
-        ) => nf_id.to_vec(),
+        ) => nf_id,
         _ => {
             return Err(MappingError::MismatchedSubstateId {
                 message: "NonFungibleStore substate was matched with a different substate id"
@@ -802,17 +816,17 @@ pub fn to_api_non_fungible_substate(
 
     Ok(match non_fungible_option {
         Some(non_fungible) => models::Substate::NonFungibleStoreEntrySubstate {
-            non_fungible_id_hex: to_hex(nf_id_bytes),
-            is_deleted: false,
+            non_fungible_id: Box::new(to_api_non_fungible_id(nf_id)),
             non_fungible_data: Some(Box::new(to_api_non_fungible_data(
                 bech32_encoder,
                 non_fungible,
             )?)),
+            is_deleted: false,
         },
         None => models::Substate::NonFungibleStoreEntrySubstate {
-            non_fungible_id_hex: to_hex(nf_id_bytes),
-            is_deleted: true,
+            non_fungible_id: Box::new(to_api_non_fungible_id(nf_id)),
             non_fungible_data: None,
+            is_deleted: true,
         },
     })
 }

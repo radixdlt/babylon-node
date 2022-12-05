@@ -1748,13 +1748,12 @@ components:
         - type: object
           required:
             - resource_address
-            - non_fungible_id_hex
+            - non_fungible_id
           properties:
             resource_address:
               $ref: '#/components/schemas/ResourceAddress'
-            non_fungible_id_hex:
-              type: string
-              description: The hex-encoded bytes of a non-fungible id
+            non_fungible_id:
+              $ref: '#/components/schemas/NonFungibleId'
     ResourceDynamicResourceDescriptor:
       allOf:
         - $ref: '#/components/schemas/DynamicResourceDescriptorBase'
@@ -1836,6 +1835,27 @@ components:
         - Decimal
         - Bytes
         - UUID
+    NonFungibleId:
+      type: object
+      required:
+        - simple_rep
+        - id_type
+        - sbor_hex
+      properties:
+        simple_rep:
+          $ref: '#/components/schemas/NonFungibleIdSimpleRepresentation'
+        id_type:
+          $ref: '#/components/schemas/NonFungibleIdType'
+        sbor_hex:
+          type: string
+          description: The hex-encoded SBOR-encoded bytes of its non-fungible id
+    NonFungibleIdSimpleRepresentation:
+      type: string
+      description: |
+        The simple string representation of the non-fungible id.
+        For string id types, this is simply the string itself; for integer types, this is the integer as a decimal; and for the bytes id type, this is the lower case hex representation.
+        A non-fungible resource has a fixed `NonFungibleType`, so this representation uniquely identifies this non-fungible
+        under the given resource address.
     ResourceAmount:
       oneOf:
         - $ref: '#/components/schemas/FungibleResourceAmount'
@@ -1873,13 +1893,12 @@ components:
         - $ref: '#/components/schemas/ResourceAmountBase'
         - type: object
           required:
-            - non_fungible_ids_hex
+            - non_fungible_ids
           properties:
-            non_fungible_ids_hex:
+            non_fungible_ids:
               type: array
               items:
-                type: string
-                description: The hex-encoded bytes of the non-fungible ids
+                $ref: '#/components/schemas/NonFungibleId'
 ##################################
 # GENERAL / SHARED MODELS - SBOR #
 ##################################
@@ -2296,16 +2315,15 @@ components:
         - $ref: '#/components/schemas/SubstateBase'
         - type: object
           required:
-            - non_fungible_id_hex
+            - non_fungible_id
             - is_deleted
           properties:
-            non_fungible_id_hex:
-              type: string
-              description: The hex-encoded bytes of its non-fungible id
-            is_deleted:
-              type: boolean
+            non_fungible_id:
+              $ref: '#/components/schemas/NonFungibleId'
             non_fungible_data:
               $ref: '#/components/schemas/NonFungibleData'
+            is_deleted:
+              type: boolean
     NonFungibleData:
       type: object
       description: Only present if the non fungible isn't deleted
@@ -3222,14 +3240,13 @@ components:
       type: object
       required:
         - resource_address
-        - non_fungible_id_hex
+        - non_fungible_id
       properties:
         resource_address:
           type: string
           description: The Bech32m-encoded human readable version of the resource's global address
-        non_fungible_id_hex:
-          type: string
-          description: The hex-encoded non-fungible id
+        non_fungible_id:
+          $ref: '#/components/schemas/NonFungibleIdSimpleRepresentation'
     V0StateNonFungibleResponse:
       type: object
       required:

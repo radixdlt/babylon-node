@@ -242,6 +242,8 @@ pub mod non_fungible_dynamic_resource_descriptor;
 pub use self::non_fungible_dynamic_resource_descriptor::NonFungibleDynamicResourceDescriptor;
 pub mod non_fungible_dynamic_resource_descriptor_all_of;
 pub use self::non_fungible_dynamic_resource_descriptor_all_of::NonFungibleDynamicResourceDescriptorAllOf;
+pub mod non_fungible_id;
+pub use self::non_fungible_id::NonFungibleId;
 pub mod non_fungible_id_type;
 pub use self::non_fungible_id_type::NonFungibleIdType;
 pub mod non_fungible_resource_amount;

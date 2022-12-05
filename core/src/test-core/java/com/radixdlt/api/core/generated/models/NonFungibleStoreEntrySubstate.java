@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.NonFungibleData;
+import com.radixdlt.api.core.generated.models.NonFungibleId;
 import com.radixdlt.api.core.generated.models.NonFungibleStoreEntrySubstateAllOf;
 import com.radixdlt.api.core.generated.models.SubstateBase;
 import com.radixdlt.api.core.generated.models.SubstateType;
@@ -36,23 +37,23 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   NonFungibleStoreEntrySubstate.JSON_PROPERTY_SUBSTATE_TYPE,
-  NonFungibleStoreEntrySubstate.JSON_PROPERTY_NON_FUNGIBLE_ID_HEX,
-  NonFungibleStoreEntrySubstate.JSON_PROPERTY_IS_DELETED,
-  NonFungibleStoreEntrySubstate.JSON_PROPERTY_NON_FUNGIBLE_DATA
+  NonFungibleStoreEntrySubstate.JSON_PROPERTY_NON_FUNGIBLE_ID,
+  NonFungibleStoreEntrySubstate.JSON_PROPERTY_NON_FUNGIBLE_DATA,
+  NonFungibleStoreEntrySubstate.JSON_PROPERTY_IS_DELETED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class NonFungibleStoreEntrySubstate {
   public static final String JSON_PROPERTY_SUBSTATE_TYPE = "substate_type";
   private SubstateType substateType;
 
-  public static final String JSON_PROPERTY_NON_FUNGIBLE_ID_HEX = "non_fungible_id_hex";
-  private String nonFungibleIdHex;
-
-  public static final String JSON_PROPERTY_IS_DELETED = "is_deleted";
-  private Boolean isDeleted;
+  public static final String JSON_PROPERTY_NON_FUNGIBLE_ID = "non_fungible_id";
+  private NonFungibleId nonFungibleId;
 
   public static final String JSON_PROPERTY_NON_FUNGIBLE_DATA = "non_fungible_data";
   private NonFungibleData nonFungibleData;
+
+  public static final String JSON_PROPERTY_IS_DELETED = "is_deleted";
+  private Boolean isDeleted;
 
   public NonFungibleStoreEntrySubstate() { 
   }
@@ -83,55 +84,29 @@ public class NonFungibleStoreEntrySubstate {
   }
 
 
-  public NonFungibleStoreEntrySubstate nonFungibleIdHex(String nonFungibleIdHex) {
-    this.nonFungibleIdHex = nonFungibleIdHex;
+  public NonFungibleStoreEntrySubstate nonFungibleId(NonFungibleId nonFungibleId) {
+    this.nonFungibleId = nonFungibleId;
     return this;
   }
 
    /**
-   * The hex-encoded bytes of its non-fungible id
-   * @return nonFungibleIdHex
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded bytes of its non-fungible id")
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID_HEX)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getNonFungibleIdHex() {
-    return nonFungibleIdHex;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID_HEX)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNonFungibleIdHex(String nonFungibleIdHex) {
-    this.nonFungibleIdHex = nonFungibleIdHex;
-  }
-
-
-  public NonFungibleStoreEntrySubstate isDeleted(Boolean isDeleted) {
-    this.isDeleted = isDeleted;
-    return this;
-  }
-
-   /**
-   * Get isDeleted
-   * @return isDeleted
+   * Get nonFungibleId
+   * @return nonFungibleId
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_IS_DELETED)
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Boolean getIsDeleted() {
-    return isDeleted;
+  public NonFungibleId getNonFungibleId() {
+    return nonFungibleId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_IS_DELETED)
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIsDeleted(Boolean isDeleted) {
-    this.isDeleted = isDeleted;
+  public void setNonFungibleId(NonFungibleId nonFungibleId) {
+    this.nonFungibleId = nonFungibleId;
   }
 
 
@@ -161,6 +136,32 @@ public class NonFungibleStoreEntrySubstate {
   }
 
 
+  public NonFungibleStoreEntrySubstate isDeleted(Boolean isDeleted) {
+    this.isDeleted = isDeleted;
+    return this;
+  }
+
+   /**
+   * Get isDeleted
+   * @return isDeleted
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IS_DELETED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsDeleted() {
+    return isDeleted;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_DELETED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsDeleted(Boolean isDeleted) {
+    this.isDeleted = isDeleted;
+  }
+
+
   /**
    * Return true if this NonFungibleStoreEntrySubstate object is equal to o.
    */
@@ -174,14 +175,14 @@ public class NonFungibleStoreEntrySubstate {
     }
     NonFungibleStoreEntrySubstate nonFungibleStoreEntrySubstate = (NonFungibleStoreEntrySubstate) o;
     return Objects.equals(this.substateType, nonFungibleStoreEntrySubstate.substateType) &&
-        Objects.equals(this.nonFungibleIdHex, nonFungibleStoreEntrySubstate.nonFungibleIdHex) &&
-        Objects.equals(this.isDeleted, nonFungibleStoreEntrySubstate.isDeleted) &&
-        Objects.equals(this.nonFungibleData, nonFungibleStoreEntrySubstate.nonFungibleData);
+        Objects.equals(this.nonFungibleId, nonFungibleStoreEntrySubstate.nonFungibleId) &&
+        Objects.equals(this.nonFungibleData, nonFungibleStoreEntrySubstate.nonFungibleData) &&
+        Objects.equals(this.isDeleted, nonFungibleStoreEntrySubstate.isDeleted);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(substateType, nonFungibleIdHex, isDeleted, nonFungibleData);
+    return Objects.hash(substateType, nonFungibleId, nonFungibleData, isDeleted);
   }
 
   @Override
@@ -189,9 +190,9 @@ public class NonFungibleStoreEntrySubstate {
     StringBuilder sb = new StringBuilder();
     sb.append("class NonFungibleStoreEntrySubstate {\n");
     sb.append("    substateType: ").append(toIndentedString(substateType)).append("\n");
-    sb.append("    nonFungibleIdHex: ").append(toIndentedString(nonFungibleIdHex)).append("\n");
-    sb.append("    isDeleted: ").append(toIndentedString(isDeleted)).append("\n");
+    sb.append("    nonFungibleId: ").append(toIndentedString(nonFungibleId)).append("\n");
     sb.append("    nonFungibleData: ").append(toIndentedString(nonFungibleData)).append("\n");
+    sb.append("    isDeleted: ").append(toIndentedString(isDeleted)).append("\n");
     sb.append("}");
     return sb.toString();
   }

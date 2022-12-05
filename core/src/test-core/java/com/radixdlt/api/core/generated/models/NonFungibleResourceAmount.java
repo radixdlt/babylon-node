@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.NonFungibleId;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceAmountAllOf;
 import com.radixdlt.api.core.generated.models.ResourceAmountBase;
 import com.radixdlt.api.core.generated.models.ResourceType;
@@ -38,7 +39,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   NonFungibleResourceAmount.JSON_PROPERTY_RESOURCE_TYPE,
   NonFungibleResourceAmount.JSON_PROPERTY_RESOURCE_ADDRESS,
-  NonFungibleResourceAmount.JSON_PROPERTY_NON_FUNGIBLE_IDS_HEX
+  NonFungibleResourceAmount.JSON_PROPERTY_NON_FUNGIBLE_IDS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class NonFungibleResourceAmount {
@@ -48,8 +49,8 @@ public class NonFungibleResourceAmount {
   public static final String JSON_PROPERTY_RESOURCE_ADDRESS = "resource_address";
   private String resourceAddress;
 
-  public static final String JSON_PROPERTY_NON_FUNGIBLE_IDS_HEX = "non_fungible_ids_hex";
-  private List<String> nonFungibleIdsHex = new ArrayList<>();
+  public static final String JSON_PROPERTY_NON_FUNGIBLE_IDS = "non_fungible_ids";
+  private List<NonFungibleId> nonFungibleIds = new ArrayList<>();
 
   public NonFungibleResourceAmount() { 
   }
@@ -106,34 +107,34 @@ public class NonFungibleResourceAmount {
   }
 
 
-  public NonFungibleResourceAmount nonFungibleIdsHex(List<String> nonFungibleIdsHex) {
-    this.nonFungibleIdsHex = nonFungibleIdsHex;
+  public NonFungibleResourceAmount nonFungibleIds(List<NonFungibleId> nonFungibleIds) {
+    this.nonFungibleIds = nonFungibleIds;
     return this;
   }
 
-  public NonFungibleResourceAmount addNonFungibleIdsHexItem(String nonFungibleIdsHexItem) {
-    this.nonFungibleIdsHex.add(nonFungibleIdsHexItem);
+  public NonFungibleResourceAmount addNonFungibleIdsItem(NonFungibleId nonFungibleIdsItem) {
+    this.nonFungibleIds.add(nonFungibleIdsItem);
     return this;
   }
 
    /**
-   * Get nonFungibleIdsHex
-   * @return nonFungibleIdsHex
+   * Get nonFungibleIds
+   * @return nonFungibleIds
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_IDS_HEX)
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_IDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<String> getNonFungibleIdsHex() {
-    return nonFungibleIdsHex;
+  public List<NonFungibleId> getNonFungibleIds() {
+    return nonFungibleIds;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_IDS_HEX)
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_IDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNonFungibleIdsHex(List<String> nonFungibleIdsHex) {
-    this.nonFungibleIdsHex = nonFungibleIdsHex;
+  public void setNonFungibleIds(List<NonFungibleId> nonFungibleIds) {
+    this.nonFungibleIds = nonFungibleIds;
   }
 
 
@@ -151,12 +152,12 @@ public class NonFungibleResourceAmount {
     NonFungibleResourceAmount nonFungibleResourceAmount = (NonFungibleResourceAmount) o;
     return Objects.equals(this.resourceType, nonFungibleResourceAmount.resourceType) &&
         Objects.equals(this.resourceAddress, nonFungibleResourceAmount.resourceAddress) &&
-        Objects.equals(this.nonFungibleIdsHex, nonFungibleResourceAmount.nonFungibleIdsHex);
+        Objects.equals(this.nonFungibleIds, nonFungibleResourceAmount.nonFungibleIds);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resourceType, resourceAddress, nonFungibleIdsHex);
+    return Objects.hash(resourceType, resourceAddress, nonFungibleIds);
   }
 
   @Override
@@ -165,7 +166,7 @@ public class NonFungibleResourceAmount {
     sb.append("class NonFungibleResourceAmount {\n");
     sb.append("    resourceType: ").append(toIndentedString(resourceType)).append("\n");
     sb.append("    resourceAddress: ").append(toIndentedString(resourceAddress)).append("\n");
-    sb.append("    nonFungibleIdsHex: ").append(toIndentedString(nonFungibleIdsHex)).append("\n");
+    sb.append("    nonFungibleIds: ").append(toIndentedString(nonFungibleIds)).append("\n");
     sb.append("}");
     return sb.toString();
   }
