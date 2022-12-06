@@ -62,8 +62,12 @@
  * permissions under this License.
  */
 
-use scrypto::engine::types::{GlobalAddress, RENodeId};
-use scrypto::prelude::*;
+use radix_engine::types::{
+    scrypto_encode, AccessRule, EpochManagerSetEpochInvocation, GlobalAddress, PublicKey, RENodeId,
+    Signature, SignatureWithPublicKey, EPOCH_MANAGER, FAUCET_COMPONENT, RADIX_TOKEN,
+};
+use radix_engine_interface::args;
+use radix_engine_interface::core::NetworkDefinition;
 
 use transaction::builder::ManifestBuilder;
 use transaction::manifest::{compile, CompileError};
@@ -85,7 +89,8 @@ pub fn create_set_epoch_intent(
             scrypto_encode(&EpochManagerSetEpochInvocation {
                 receiver: EPOCH_MANAGER,
                 epoch,
-            }),
+            })
+            .unwrap(),
         )
         .build();
     TransactionIntent {
@@ -131,7 +136,7 @@ pub fn create_new_account_intent_bytes(
         manifest,
     };
 
-    intent.to_bytes()
+    intent.to_bytes().unwrap()
 }
 
 pub fn create_intent_bytes(
@@ -142,7 +147,7 @@ pub fn create_intent_bytes(
 ) -> Result<Vec<u8>, CompileError> {
     let manifest = create_manifest(network_definition, &manifest_str, blobs)?;
     let intent = TransactionIntent { header, manifest };
-    Ok(intent.to_bytes())
+    Ok(intent.to_bytes().unwrap())
 }
 
 pub fn create_manifest(
@@ -161,7 +166,7 @@ pub fn create_signed_intent_bytes(
         intent,
         intent_signatures: signatures,
     };
-    signed_intent.to_bytes()
+    signed_intent.to_bytes().unwrap()
 }
 
 pub fn create_notarized_bytes(
@@ -172,5 +177,5 @@ pub fn create_notarized_bytes(
         signed_intent,
         notary_signature,
     };
-    notarized.to_bytes()
+    notarized.to_bytes().unwrap()
 }

@@ -74,8 +74,7 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use parking_lot::RwLock;
-
-use scrypto::core::NetworkDefinition;
+use radix_engine_interface::core::NetworkDefinition;
 
 const POINTER_JNI_FIELD_NAME: &str = "rustStateManagerPointer";
 

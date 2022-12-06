@@ -87,7 +87,7 @@ use crate::{
     AccumulatorHash, CommittedTransactionIdentifiers, IntentHash, LedgerPayloadHash,
     LedgerTransactionReceipt,
 };
-use scrypto::engine::types::{KeyValueStoreId, SubstateId};
+use radix_engine::types::{KeyValueStoreId, SubstateId};
 
 use tracing::debug;
 

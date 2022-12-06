@@ -22,11 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ComponentAccessRulesLayer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -35,8 +32,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   ComponentInfoSubstateAllOf.JSON_PROPERTY_PACKAGE_ADDRESS,
-  ComponentInfoSubstateAllOf.JSON_PROPERTY_BLUEPRINT_NAME,
-  ComponentInfoSubstateAllOf.JSON_PROPERTY_ACCESS_RULES_LAYERS
+  ComponentInfoSubstateAllOf.JSON_PROPERTY_BLUEPRINT_NAME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ComponentInfoSubstateAllOf {
@@ -45,9 +41,6 @@ public class ComponentInfoSubstateAllOf {
 
   public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
   private String blueprintName;
-
-  public static final String JSON_PROPERTY_ACCESS_RULES_LAYERS = "access_rules_layers";
-  private List<ComponentAccessRulesLayer> accessRulesLayers = new ArrayList<>();
 
   public ComponentInfoSubstateAllOf() { 
   }
@@ -104,37 +97,6 @@ public class ComponentInfoSubstateAllOf {
   }
 
 
-  public ComponentInfoSubstateAllOf accessRulesLayers(List<ComponentAccessRulesLayer> accessRulesLayers) {
-    this.accessRulesLayers = accessRulesLayers;
-    return this;
-  }
-
-  public ComponentInfoSubstateAllOf addAccessRulesLayersItem(ComponentAccessRulesLayer accessRulesLayersItem) {
-    this.accessRulesLayers.add(accessRulesLayersItem);
-    return this;
-  }
-
-   /**
-   * Get accessRulesLayers
-   * @return accessRulesLayers
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULES_LAYERS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public List<ComponentAccessRulesLayer> getAccessRulesLayers() {
-    return accessRulesLayers;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULES_LAYERS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccessRulesLayers(List<ComponentAccessRulesLayer> accessRulesLayers) {
-    this.accessRulesLayers = accessRulesLayers;
-  }
-
-
   /**
    * Return true if this ComponentInfoSubstate_allOf object is equal to o.
    */
@@ -148,13 +110,12 @@ public class ComponentInfoSubstateAllOf {
     }
     ComponentInfoSubstateAllOf componentInfoSubstateAllOf = (ComponentInfoSubstateAllOf) o;
     return Objects.equals(this.packageAddress, componentInfoSubstateAllOf.packageAddress) &&
-        Objects.equals(this.blueprintName, componentInfoSubstateAllOf.blueprintName) &&
-        Objects.equals(this.accessRulesLayers, componentInfoSubstateAllOf.accessRulesLayers);
+        Objects.equals(this.blueprintName, componentInfoSubstateAllOf.blueprintName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageAddress, blueprintName, accessRulesLayers);
+    return Objects.hash(packageAddress, blueprintName);
   }
 
   @Override
@@ -163,7 +124,6 @@ public class ComponentInfoSubstateAllOf {
     sb.append("class ComponentInfoSubstateAllOf {\n");
     sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
     sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
-    sb.append("    accessRulesLayers: ").append(toIndentedString(accessRulesLayers)).append("\n");
     sb.append("}");
     return sb.toString();
   }

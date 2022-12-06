@@ -66,7 +66,7 @@ use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
-use scrypto::constants::{ACCOUNT_PACKAGE, FAUCET_COMPONENT, RADIX_TOKEN};
+use radix_engine::types::{ACCOUNT_PACKAGE, FAUCET_COMPONENT, RADIX_TOKEN};
 
 use super::utils::jni_static_sbor_call;
 

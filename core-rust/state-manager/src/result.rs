@@ -62,13 +62,15 @@
  * permissions under this License.
  */
 
-use sbor::{Decode, DecodeError, Encode, TypeId};
+use radix_engine_interface::scrypto;
+use sbor::{DecodeError, EncodeError};
 
 // System Errors.
 pub const ERRCODE_JNI: i16 = 0;
 pub const ERRCODE_SBOR: i16 = 1;
 
-#[derive(TypeId, Encode, Decode, Debug)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct StateManagerError {
     error_code: i16,
     error_msg: String,
@@ -90,6 +92,12 @@ impl StateManagerError {
 impl From<DecodeError> for StateManagerError {
     fn from(err: DecodeError) -> Self {
         StateManagerError::create(ERRCODE_SBOR, format!("SBOR decode failed: {:?}", err))
+    }
+}
+
+impl From<EncodeError> for StateManagerError {
+    fn from(err: EncodeError) -> Self {
+        StateManagerError::create(ERRCODE_SBOR, format!("SBOR encode failed: {:?}", err))
     }
 }
 

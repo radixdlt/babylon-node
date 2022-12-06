@@ -315,7 +315,7 @@ public interface EnumEntry<T> extends UntypedCodec<T> {
 
     @Override
     public void encodeWithoutTypeId(EncoderApi encoder, T value) {
-      encoder.writeInt(fields.size());
+      encoder.writeSize(fields.size());
 
       for (var field : fields) {
         field.encode(encoder, value);
@@ -324,7 +324,7 @@ public interface EnumEntry<T> extends UntypedCodec<T> {
 
     @Override
     public T decodeWithoutTypeId(DecoderApi decoder) {
-      var decodedFieldsLength = decoder.readInt();
+      var decodedFieldsLength = decoder.readSize();
 
       if (decodedFieldsLength != fields.size()) {
         throw new SborDecodeException(

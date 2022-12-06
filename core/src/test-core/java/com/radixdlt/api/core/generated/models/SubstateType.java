@@ -28,23 +28,37 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum SubstateType {
   
-  EPOCHMANAGER("EpochManager"),
+  METADATA("Metadata"),
   
-  RESOURCEMANAGER("ResourceManager"),
+  ACCESSRULESCHAIN("AccessRulesChain"),
+  
+  GLOBALADDRESS("GlobalAddress"),
   
   COMPONENTINFO("ComponentInfo"),
   
   COMPONENTSTATE("ComponentState"),
   
-  PACKAGE("Package"),
+  COMPONENTROYALTYCONFIG("ComponentRoyaltyConfig"),
   
-  VAULT("Vault"),
+  COMPONENTROYALTYACCUMULATOR("ComponentRoyaltyAccumulator"),
   
-  NONFUNGIBLE("NonFungible"),
+  PACKAGEINFO("PackageInfo"),
+  
+  PACKAGEROYALTYCONFIG("PackageRoyaltyConfig"),
+  
+  PACKAGEROYALTYACCUMULATOR("PackageRoyaltyAccumulator"),
+  
+  RESOURCEMANAGER("ResourceManager"),
+  
+  EPOCHMANAGER("EpochManager"),
+  
+  CLOCKCURRENTMINUTE("ClockCurrentMinute"),
   
   KEYVALUESTOREENTRY("KeyValueStoreEntry"),
   
-  GLOBAL("Global");
+  NONFUNGIBLESTOREENTRY("NonFungibleStoreEntry"),
+  
+  VAULT("Vault");
 
   private String value;
 

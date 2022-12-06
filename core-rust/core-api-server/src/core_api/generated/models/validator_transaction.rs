@@ -19,6 +19,12 @@ pub enum ValidatorTransaction {
         #[serde(rename = "epoch")]
         epoch: i64,
     },
+    #[serde(rename="TimeUpdate")]
+    TimeUpdateValidatorTransaction {
+        /// An integer between `0` and `10^14`, marking the round proposer's unix timestamp in ms
+        #[serde(rename = "proposer_timestamp_ms")]
+        proposer_timestamp_ms: i64,
+    },
 }
 
 

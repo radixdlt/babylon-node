@@ -71,7 +71,7 @@ use axum::{
     Extension, Router,
 };
 use parking_lot::RwLock;
-use scrypto::prelude::*;
+use radix_engine::types::{Decode, Encode, TypeId};
 use state_manager::jni::state_manager::ActualStateManager;
 use tower_http::limit::RequestBodyLimitLayer;
 
@@ -150,10 +150,11 @@ pub async fn create_server<F>(
             post(handle_v0_transaction_receipt),
         )
         .route("/v0/state/epoch", post(handle_v0_state_epoch))
+        .route("/v0/state/clock", post(handle_v0_state_clock))
         .route("/v0/state/component", post(handle_v0_state_component))
+        .route("/v0/state/package", post(handle_v0_state_package))
         .route("/v0/state/resource", post(handle_v0_state_resource))
         .route("/v0/state/non-fungible", post(handle_v0_state_non_fungible))
-        .route("/v0/state/package", post(handle_v0_state_package))
         .layer(Extension(core_api_state));
 
     let prefixed_router = Router::new()

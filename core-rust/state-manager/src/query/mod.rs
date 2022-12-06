@@ -63,13 +63,13 @@
  */
 
 mod component_dumper;
+mod component_state_tree_traverser;
 mod resource_accounter;
 mod state_manager_substate_queries;
-mod state_tree_traverser;
 mod transaction_identifiers;
 
 pub use component_dumper::*;
+pub use component_state_tree_traverser::StateTreeTraverserError;
 pub use resource_accounter::*;
 pub use state_manager_substate_queries::*;
-pub use state_tree_traverser::StateTreeTraverserError;
 pub use transaction_identifiers::*;

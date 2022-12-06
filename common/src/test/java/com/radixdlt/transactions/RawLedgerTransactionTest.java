@@ -67,7 +67,7 @@ package com.radixdlt.transactions;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.sbor.Sbor;
+import com.radixdlt.sbor.BasicSbor;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import org.junit.Test;
@@ -87,8 +87,7 @@ public class RawLedgerTransactionTest {
   @Test
   public void testSBORSerialization() {
     var sbor =
-        new Sbor(
-            true,
+        new BasicSbor(
             new CodecMap()
                 .register(RawLedgerTransactionTest::registerHashCodeCodec)
                 .register(RawLedgerTransaction::registerCodec));
@@ -96,8 +95,8 @@ public class RawLedgerTransactionTest {
     byte[] payload = new byte[10];
     RawLedgerTransaction t0 = RawLedgerTransaction.create(payload);
 
-    var r0 = sbor.encode(t0, RawLedgerTransaction.class);
-    var t1 = sbor.decode(r0, RawLedgerTransaction.class);
+    var r0 = sbor.encode_payload(t0, RawLedgerTransaction.class);
+    var t1 = sbor.decode_payload(r0, RawLedgerTransaction.class);
 
     assertEquals(t0, t1);
   }

@@ -74,7 +74,7 @@ import com.radixdlt.sbor.coding.EncoderApi;
 public interface StructCodec<T> extends Codec<T> {
   @Override
   default TypeId getTypeId() {
-    return TypeId.TYPE_STRUCT;
+    return TypeId.TYPE_TUPLE;
   }
 
   record StructCodecImpl<T>(UntypedCodec<T> fields) implements StructCodec<T> {

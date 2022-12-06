@@ -13,14 +13,14 @@ openapi: 3.1.0
 #       type: integer, format: int64, minimum: 0, maximum: 4294967295 = 2^32 - 1
 # => If an i32, use type: integer, format: int32
 # => If a u64:
-#    => The maximum safe integer in Javascript is (+-)9,007,199,254,740,991 = 2^53 – 1 (Nine thousand billion)
+#    => The maximum safe integer in Javascript is (+-)2^53 – 1 = 9,007,199,254,740,991 ~ 9 * 10^15
 #       To be pragmatic, any numbers outside this range we will choose to represent as strings.
 #    => So if it's possible for us to assert that: value <= bound B <= 2^53 - 1, then use:
 #       type: integer, format: int64, minimum: 0, maximum: B
 #       And be sure to validate against B in the code which maps into the type. See EG epoch max length in numerics.rs
 #    => If not, use a string instead
 # => If an i64:
-#    => The maximum safe integer in Javascript is (+-)9,007,199,254,740,991 = 2^53 – 1 (Nine thousand billion)
+#    => The maximum safe integer in Javascript is (+-)2^53 – 1 = 9,007,199,254,740,991 ~ 9 * 10^15
 #       To be pragmatic, any numbers outside this range we will choose to represent as strings.
 #    => So if it's possible for us to assert that: -(2^53 - 1) <= B1 <= value <= B2 <= 2^53 - 1, then use:
 #       type: integer, format: int64, minimum: B1, maximum: B2
@@ -454,7 +454,7 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
   "/v0/state/epoch":
     post:
-      summary: Read Current Epoch
+      summary: Read current epoch data
       tags:
         - State
         - V0
@@ -465,6 +465,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/V0StateEpochResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/v0/state/clock":
+    post:
+      summary: Read current clock data
+      tags:
+        - State
+        - V0
+      responses:
+        '200':
+          description: Current state response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/V0StateClockResponse"
         '400':
           description: Client error
           content:
@@ -628,9 +653,9 @@ paths:
 #############################################################################################
 components:
   schemas:
-###########################
-# GENERAL / SHARED MODELS #
-###########################
+##########################################
+# GENERAL / SHARED MODELS - Transactions #
+##########################################
     TransactionStatus:
       type: string
       enum:
@@ -755,10 +780,10 @@ components:
           description: An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution.
         tip_percentage:
           type: integer
-          format: int64
+          format: int32
           minimum: 0
-          maximum: 4294967295
-          description: An integer between `0` and `2^32 - 1`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+          maximum: 255
+          description: An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
     TransactionManifest:
       type: object
       required:
@@ -846,24 +871,34 @@ components:
         trace_id:
           description: A GUID to be used when reporting errors, to allow correlation with the Core API's error logs, in the case where the Core API details are hidden.
           type: string
-#########################################
-# GENERAL / SHARED MODELS - Transaction #
-#########################################
+######################################
+# GENERAL / SHARED MODELS - Receipts #
+######################################
     FeeSummary:
       description: Fees paid
       type: object
       required:
-        - loan_fully_repaid
-        - cost_unit_limit
-        - cost_units_consumed
         - cost_unit_price
         - tip_percentage
-        - xrd_burned
-        - xrd_tipped
+        - cost_unit_limit
+        - cost_units_consumed
+        - xrd_total_execution_cost
+        - xrd_total_royalty_cost
+        - xrd_total_tipped
+        - cost_unit_execution_breakdown
+        - cost_unit_royalty_breakdown
       properties:
-        loan_fully_repaid:
-          type: boolean
-          description: Specifies whether the transaction execution loan has been fully repaid.
+        cost_unit_price:
+          type: string
+          description: |
+            The string-encoded decimal representing the XRD price of a single cost unit.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+        tip_percentage:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+          description: An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
         cost_unit_limit:
           type: integer
           format: int64
@@ -876,27 +911,70 @@ components:
           minimum: 0
           maximum: 4294967295
           description: An integer between `0` and `2^32 - 1`, representing the amount of cost units consumed by the transaction execution.
-        cost_unit_price:
+        xrd_total_execution_cost:
           type: string
           description: |
-            The string-encoded decimal representing the XRD price of a single cost unit.
+            The string-encoded decimal representing the total amount of XRD burned in the transaction as part of execution costs.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
-        tip_percentage:
-          type: integer
-          format: int64
-          minimum: 0
-          maximum: 4294967295
-          description: An integer between `0` and `2^32 - 1`, specifying the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
-        xrd_burned:
+        xrd_total_royalty_cost:
           type: string
           description: |
-            The string-encoded decimal representing the total amount of XRD burned in the transaction.
+            The string-encoded decimal representing the total amount of XRD paid in royalties as part of the transaction.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
-        xrd_tipped:
+        xrd_total_tipped:
           type: string
           description: |
             The string-encoded decimal representing the total amount of XRD tipped to validators in the transaction.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+        xrd_vault_payments:
+          type: array
+          description: |
+            A summary of which vaults were used to pay the fee. This is only present if the transaction was committed.
+          items:
+            $ref: "#/components/schemas/VaultPayment"
+        cost_unit_execution_breakdown:
+          type: string
+          description: |
+            A summary of where the execution cost went.
+          additionalProperties:
+            type: integer
+            format: int64
+            minimum: 0
+            maximum: 4294967295
+            description: An integer between `0` and `2^32 - 1`, representing the amount of cost units paid for this aspect of execution
+        cost_unit_royalty_breakdown:
+          type: string
+          description: |
+            A summary of where the royalties were paid to.
+          items:
+            $ref: "#/components/schemas/RoyaltyPayment"
+    VaultPayment:
+      type: object
+      required:
+        - vault_entity
+        - xrd_amount
+      properties:
+        vault_entity:
+          $ref: "#/components/schemas/EntityReference"
+        xrd_amount:
+          type: string
+          description: |
+            The string-encoded decimal representing the amount of fee in XRD paid by this vault.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    RoyaltyPayment:
+      type: object
+      required:
+        - royalty_receiver
+        - cost_unit_amount
+      properties:
+        royalty_receiver:
+          $ref: "#/components/schemas/GlobalEntityReference"
+        cost_unit_amount:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: An integer between `0` and `2^32 - 1`, representing the amount of cost units of royalty paid to this receiver.
     StateUpdates:
       type: object
       description: Transaction state updates (only present if status is Succeeded or Failed)
@@ -997,6 +1075,7 @@ components:
         - entity_type
         - entity_id_hex
         - substate_type
+        - substate_key_type
         - substate_key_hex
       properties:
         entity_type:
@@ -1006,6 +1085,8 @@ components:
           description: The hex-encoded bytes of the entity id
         substate_type:
           $ref: "#/components/schemas/SubstateType"
+        substate_key_type:
+          $ref: "#/components/schemas/SubstateKeyType"
         substate_key_hex:
           type: string
           description: The hex-encoded bytes of the substate key, under the entity
@@ -1175,357 +1256,260 @@ components:
           $ref: '#/components/schemas/EddsaEd25519PublicKey'
         signature:
           $ref: '#/components/schemas/EddsaEd25519Signature'
-##############################################
-# GENERAL / SHARED MODELS - Fixed auth rules #
-##############################################
-    FixedActionAuthRules:
-      type: object
-      required:
-        - perform_action
-        - update_rules
-      description: The auth rules for method access
-      properties:
-        perform_action:
-          $ref: '#/components/schemas/FixedAuthorization'
-        update_rules:
-          $ref: '#/components/schemas/FixedAuthorization'
-    FixedAuthorizationType:
-      type: string
-      enum:
-        - Protected
-        - AllowAll
-        - DenyAll
-    FixedAuthorization:
-      anyOf:
-        - $ref: '#/components/schemas/ProtectedFixedAuthorization'
-        - $ref: '#/components/schemas/AllowAllFixedAuthorization'
-        - $ref: '#/components/schemas/DenyAllFixedAuthorization'
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match FixedAuthorizationType options above
-          Protected: '#/components/schemas/ProtectedFixedAuthorization'
-          AllowAll: '#/components/schemas/AllowAllFixedAuthorization'
-          DenyAll: '#/components/schemas/DenyAllFixedAuthorization'
-    FixedAuthorizationBase:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          $ref: '#/components/schemas/FixedAuthorizationType'
-    ProtectedFixedAuthorization:
-      allOf:
-        - $ref: '#/components/schemas/FixedAuthorizationBase'
-        - type: object
-          required:
-            - auth_rule
-          properties:
-            auth_rule:
-              $ref: '#/components/schemas/FixedAuthRule'
-    AllowAllFixedAuthorization:
-      allOf:
-        - $ref: '#/components/schemas/FixedAuthorizationBase'
-        - type: object
-    DenyAllFixedAuthorization:
-      allOf:
-        - $ref: '#/components/schemas/FixedAuthorizationBase'
-        - type: object
-    FixedAuthRuleType:
-      type: string
-      enum:
-        - ProofRule
-        - AnyOf
-        - AllOf
-    FixedAuthRule:
-      anyOf:
-        - $ref: '#/components/schemas/ProofFixedAuthRule'
-        - $ref: '#/components/schemas/AnyOfFixedAuthRule'
-        - $ref: '#/components/schemas/AllOfFixedAuthRule'
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match FixedAuthRuleType options above
-          ProofRule: '#/components/schemas/ProofFixedAuthRule'
-          AnyOf: '#/components/schemas/AnyOfFixedAuthRule'
-          AllOf: '#/components/schemas/AllOfFixedAuthRule'
-    FixedAuthRuleBase:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          $ref: '#/components/schemas/FixedAuthRuleType'
-    ProofFixedAuthRule:
-      allOf:
-        - $ref: '#/components/schemas/FixedAuthRuleBase'
-        - type: object
-          required:
-            - proof_rule
-          properties:
-            proof_rule:
-              $ref: '#/components/schemas/FixedProofRule'
-    AnyOfFixedAuthRule:
-      allOf:
-        - $ref: '#/components/schemas/FixedAuthRuleBase'
-        - type: object
-          required:
-            - auth_rules
-          properties:
-            auth_rules:
-              type: array
-              items:
-                $ref: '#/components/schemas/FixedAuthRule'
-    AllOfFixedAuthRule:
-      allOf:
-        - $ref: '#/components/schemas/FixedAuthRuleBase'
-        - type: object
-          required:
-            - auth_rules
-          properties:
-            auth_rules:
-              type: array
-              items:
-                $ref: '#/components/schemas/FixedAuthRule'
-    FixedProofRuleType:
-      type: string
-      enum:
-        - Require
-        - AmountOf
-        - AllOf
-        - AnyOf
-        - CountOf
-    FixedProofRule:
-      anyOf:
-        - $ref: '#/components/schemas/RequireFixedProofRule'
-        - $ref: '#/components/schemas/AmountOfFixedProofRule'
-        - $ref: '#/components/schemas/AllOfFixedProofRule'
-        - $ref: '#/components/schemas/AnyOfFixedProofRule'
-        - $ref: '#/components/schemas/CountOfFixedProofRule'
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match FixedProofRuleType options above
-          Require: '#/components/schemas/RequireFixedProofRule'
-          AmountOf: '#/components/schemas/AmountOfFixedProofRule'
-          AllOf: '#/components/schemas/AllOfFixedProofRule'
-          AnyOf: '#/components/schemas/AnyOfFixedProofRule'
-          CountOf: '#/components/schemas/CountOfFixedProofRule'
-    FixedProofRuleBase:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          $ref: '#/components/schemas/FixedProofRuleType'
-    RequireFixedProofRule:
-      allOf:
-        - $ref: '#/components/schemas/FixedProofRuleBase'
-        - type: object
-          required:
-            - resource
-          properties:
-            resource:
-              $ref: '#/components/schemas/FixedResourceDescriptor'
-    AmountOfFixedProofRule:
-      allOf:
-        - $ref: '#/components/schemas/FixedProofRuleBase'
-        - type: object
-          required:
-            - amount
-            - resource
-          properties:
-            amount:
-              type: string
-              description: |
-                The string-encoded decimal representing the amount of resource required to pass the proof rule.
-                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
-            resource:
-              $ref: '#/components/schemas/FixedResourceDescriptor'
-    AllOfFixedProofRule:
-      allOf:
-        - $ref: '#/components/schemas/FixedProofRuleBase'
-        - type: object
-          required:
-            - resources
-          properties:
-            resources:
-              type: array
-              items:
-                $ref: '#/components/schemas/FixedResourceDescriptor'
-    AnyOfFixedProofRule:
-      allOf:
-        - $ref: '#/components/schemas/FixedProofRuleBase'
-        - type: object
-          required:
-            - resources
-          properties:
-            resources:
-              type: array
-              items:
-                $ref: '#/components/schemas/FixedResourceDescriptor'
-    CountOfFixedProofRule:
-      allOf:
-        - $ref: '#/components/schemas/FixedProofRuleBase'
-        - type: object
-          required:
-            - count
-            - resources
-          properties:
-            count:
-              type: integer
-              minimum: 0
-              maximum: 255
-            resources:
-              type: array
-              items:
-                $ref: '#/components/schemas/FixedResourceDescriptor'
-    FixedResourceDescriptorType:
-      type: string
-      enum:
-        - NonFungible
-        - Resource
-    FixedResourceDescriptor:
-      anyOf:
-        - $ref: '#/components/schemas/NonFungibleFixedResourceDescriptor'
-        - $ref: '#/components/schemas/ResourceFixedResourceDescriptor'
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match FixedResourceDescriptorType options above
-          NonFungible: '#/components/schemas/NonFungibleFixedResourceDescriptor'
-          Resource: '#/components/schemas/ResourceFixedResourceDescriptor'
-    FixedResourceDescriptorBase:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          $ref: '#/components/schemas/FixedResourceDescriptorType'
-    NonFungibleFixedResourceDescriptor:
-      allOf:
-        - $ref: '#/components/schemas/FixedResourceDescriptorBase'
-        - type: object
-          required:
-            - resource_address
-            - non_fungible_id_hex
-          properties:
-            resource_address:
-              $ref: '#/components/schemas/ResourceAddress'
-            non_fungible_id_hex:
-              type: string
-              description: The hex-encoded bytes of a non-fungible id
-    ResourceFixedResourceDescriptor:
-      allOf:
-        - $ref: '#/components/schemas/FixedResourceDescriptorBase'
-        - type: object
-          required:
-            - resource_address
-          properties:
-            resource_address:
-              $ref: '#/components/schemas/ResourceAddress'
 ################################################
 # GENERAL / SHARED MODELS - Dynamic auth rules #
 ################################################
-    DynamicAuthorizationType:
+    AccessRules:
+      type: object
+      required:
+        - method_auth
+        - grouped_auth
+        - default_auth
+        - method_auth_mutability
+        - grouped_auth_mutability
+        - default_auth_mutability
+      properties:
+        method_auth:
+          type: array
+          items:
+            $ref: '#/components/schemas/MethodAuthEntry'
+        grouped_auth:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupedAuthEntry'
+        default_auth:
+          $ref: '#/components/schemas/AccessRule'
+        method_auth_mutability:
+          type: array
+          items:
+            $ref: '#/components/schemas/MethodAuthMutabilityEntry'
+        grouped_auth_mutability:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupedAuthEntry'
+        default_auth_mutability:
+          $ref: '#/components/schemas/AccessRule'
+    MethodAuthEntry:
+      type: object
+      required:
+        - method
+        - access_rule_reference
+      properties:
+        method:
+          $ref: '#/components/schemas/LocalMethodReference'
+        access_rule_reference:
+          $ref: '#/components/schemas/AccessRuleReference'
+    MethodAuthMutabilityEntry:
+      type: object
+      required:
+        - method
+        - access_rule
+      properties:
+        method:
+          $ref: '#/components/schemas/LocalMethodReference'
+        access_rule:
+          $ref: '#/components/schemas/AccessRule'
+    LocalMethodReferenceType:
+      type: string
+      enum:
+        - NativeMethod
+        - NativeFunction
+        - ScryptoMethod
+    LocalMethodReference:
+      anyOf:
+        - $ref: '#/components/schemas/LocalNativeMethodReference'
+        - $ref: '#/components/schemas/LocalNativeFunctionReference'
+        - $ref: '#/components/schemas/LocalScryptoMethodReference'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match LocalMethodReferenceType options above
+          NativeMethod: '#/components/schemas/LocalNativeMethodReference'
+          NativeFunction: '#/components/schemas/LocalNativeFunctionReference'
+          ScryptoMethod: '#/components/schemas/LocalScryptoMethodReference'
+    LocalMethodReferenceBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/LocalMethodReferenceType'
+    LocalNativeMethodReference:
+      allOf:
+        - $ref: '#/components/schemas/LocalMethodReferenceBase'
+        - type: object
+          required:
+            - name
+          properties:
+            name:
+              type: string
+    LocalNativeFunctionReference:
+      allOf:
+        - $ref: '#/components/schemas/LocalMethodReferenceBase'
+        - type: object
+          required:
+            - name
+          properties:
+            name:
+              type: string
+    LocalScryptoMethodReference:
+      allOf:
+        - $ref: '#/components/schemas/LocalMethodReferenceBase'
+        - type: object
+          required:
+            - name
+          properties:
+            name:
+              type: string
+    AccessRuleReferenceType:
+      type: string
+      enum:
+        - Group
+        - Rule
+    AccessRuleReference:
+      anyOf:
+        - $ref: '#/components/schemas/GroupAccessRuleReference'
+        - $ref: '#/components/schemas/RuleAccessRuleReference'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match AccessRuleReferenceType options above
+          Group: '#/components/schemas/GroupAccessRuleReference'
+          Rule: '#/components/schemas/RuleAccessRuleReference'
+    AccessRuleReferenceBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/AccessRuleReferenceType'
+    GroupAccessRuleReference:
+      allOf:
+        - $ref: '#/components/schemas/AccessRuleReferenceBase'
+        - type: object
+          required:
+            - group_name
+          properties:
+            group_name:
+              type: string
+    RuleAccessRuleReference:
+      allOf:
+        - $ref: '#/components/schemas/AccessRuleReferenceBase'
+        - type: object
+          required:
+            - access_rule
+          properties:
+            access_rule:
+              $ref: '#/components/schemas/AccessRule'
+    GroupedAuthEntry:
+      type: object
+      required:
+        - group_name
+        - access_rule
+      properties:
+        group_name:
+          type: string
+        access_rule:
+          $ref: '#/components/schemas/AccessRule'
+    AccessRuleType:
       type: string
       enum:
         - Protected
         - AllowAll
         - DenyAll
-    DynamicAuthorization:
+    AccessRule:
       anyOf:
-        - $ref: '#/components/schemas/ProtectedDynamicAuthorization'
-        - $ref: '#/components/schemas/AllowAllDynamicAuthorization'
-        - $ref: '#/components/schemas/DenyAllDynamicAuthorization'
+        - $ref: '#/components/schemas/ProtectedAccessRule'
+        - $ref: '#/components/schemas/AllowAllAccessRule'
+        - $ref: '#/components/schemas/DenyAllAccessRule'
       discriminator:
         propertyName: type
         mapping:
           # NOTE: These need to match DynamicAuthorizationType options above
-          Protected: '#/components/schemas/ProtectedDynamicAuthorization'
-          AllowAll: '#/components/schemas/AllowAllDynamicAuthorization'
-          DenyAll: '#/components/schemas/DenyAllDynamicAuthorization'
-    DynamicAuthorizationBase:
+          Protected: '#/components/schemas/ProtectedAccessRule'
+          AllowAll: '#/components/schemas/AllowAllAccessRule'
+          DenyAll: '#/components/schemas/DenyAllAccessRule'
+    AccessRuleBase:
       type: object
       required:
         - type
       properties:
         type:
-          $ref: '#/components/schemas/DynamicAuthorizationType'
-    ProtectedDynamicAuthorization:
+          $ref: '#/components/schemas/AccessRuleType'
+    ProtectedAccessRule:
       allOf:
-        - $ref: '#/components/schemas/DynamicAuthorizationBase'
+        - $ref: '#/components/schemas/AccessRuleBase'
         - type: object
           required:
-            - auth_rule
+            - access_rule
           properties:
-            auth_rule:
-              $ref: '#/components/schemas/DynamicAuthRule'
-    AllowAllDynamicAuthorization:
+            access_rule:
+              $ref: '#/components/schemas/AccessRuleNode'
+    AllowAllAccessRule:
       allOf:
-        - $ref: '#/components/schemas/DynamicAuthorizationBase'
+        - $ref: '#/components/schemas/AccessRuleBase'
         - type: object
-    DenyAllDynamicAuthorization:
+    DenyAllAccessRule:
       allOf:
-        - $ref: '#/components/schemas/DynamicAuthorizationBase'
+        - $ref: '#/components/schemas/AccessRuleBase'
         - type: object
-    DynamicAuthRuleType:
+    AccessRuleNodeType:
       type: string
       enum:
         - ProofRule
         - AnyOf
         - AllOf
-    DynamicAuthRule:
+    AccessRuleNode:
       anyOf:
-        - $ref: '#/components/schemas/ProofDynamicAuthRule'
-        - $ref: '#/components/schemas/AnyOfDynamicAuthRule'
-        - $ref: '#/components/schemas/AllOfDynamicAuthRule'
+        - $ref: '#/components/schemas/ProofAccessRuleNode'
+        - $ref: '#/components/schemas/AnyOfAccessRuleNode'
+        - $ref: '#/components/schemas/AllOfAccessRuleNode'
       discriminator:
         propertyName: type
         mapping:
-          # NOTE: These need to match DynamicAuthRuleType options above
-          ProofRule: '#/components/schemas/ProofDynamicAuthRule'
-          AnyOf: '#/components/schemas/AnyOfDynamicAuthRule'
-          AllOf: '#/components/schemas/AllOfDynamicAuthRule'
-    DynamicAuthRuleBase:
+          # NOTE: These need to match AccessRuleNodeType options above
+          ProofRule: '#/components/schemas/ProofAccessRuleNode'
+          AnyOf: '#/components/schemas/AnyOfAccessRuleNode'
+          AllOf: '#/components/schemas/AllOfAccessRuleNode'
+    AccessRuleNodeBase:
       type: object
       required:
         - type
       properties:
         type:
-          $ref: '#/components/schemas/DynamicAuthRuleType'
-    ProofDynamicAuthRule:
+          $ref: '#/components/schemas/AccessRuleNodeType'
+    ProofAccessRuleNode:
       allOf:
-        - $ref: '#/components/schemas/DynamicAuthRuleBase'
+        - $ref: '#/components/schemas/AccessRuleNodeBase'
         - type: object
           required:
             - proof_rule
           properties:
             proof_rule:
-              $ref: '#/components/schemas/DynamicProofRule'
-    AnyOfDynamicAuthRule:
+              $ref: '#/components/schemas/ProofRule'
+    AnyOfAccessRuleNode:
       allOf:
-        - $ref: '#/components/schemas/DynamicAuthRuleBase'
+        - $ref: '#/components/schemas/AccessRuleNodeBase'
         - type: object
           required:
-            - auth_rules
+            - access_rules
           properties:
-            auth_rules:
+            access_rules:
               type: array
               items:
-                $ref: '#/components/schemas/DynamicAuthRule'
-    AllOfDynamicAuthRule:
+                $ref: '#/components/schemas/AccessRuleNode'
+    AllOfAccessRuleNode:
       allOf:
-        - $ref: '#/components/schemas/DynamicAuthRuleBase'
+        - $ref: '#/components/schemas/AccessRuleNodeBase'
         - type: object
           required:
-            - auth_rules
+            - access_rules
           properties:
-            auth_rules:
+            access_rules:
               type: array
               items:
-                $ref: '#/components/schemas/DynamicAuthRule'
-    DynamicProofRuleType:
+                $ref: '#/components/schemas/AccessRuleNode'
+    ProofRuleType:
       type: string
       enum:
         - Require
@@ -1533,41 +1517,41 @@ components:
         - AllOf
         - AnyOf
         - CountOf
-    DynamicProofRule:
+    ProofRule:
       anyOf:
-        - $ref: '#/components/schemas/RequireDynamicProofRule'
-        - $ref: '#/components/schemas/AmountOfDynamicProofRule'
-        - $ref: '#/components/schemas/AllOfDynamicProofRule'
-        - $ref: '#/components/schemas/AnyOfDynamicProofRule'
-        - $ref: '#/components/schemas/CountOfDynamicProofRule'
+        - $ref: '#/components/schemas/RequireProofRule'
+        - $ref: '#/components/schemas/AmountOfProofRule'
+        - $ref: '#/components/schemas/AllOfProofRule'
+        - $ref: '#/components/schemas/AnyOfProofRule'
+        - $ref: '#/components/schemas/CountOfProofRule'
       discriminator:
         propertyName: type
         mapping:
-          # NOTE: These need to match DynamicProofRuleType options above
-          Require: '#/components/schemas/RequireDynamicProofRule'
-          AmountOf: '#/components/schemas/AmountOfDynamicProofRule'
-          AllOf: '#/components/schemas/AllOfDynamicProofRule'
-          AnyOf: '#/components/schemas/AnyOfDynamicProofRule'
-          CountOf: '#/components/schemas/CountOfDynamicProofRule'
-    DynamicProofRuleBase:
+          # NOTE: These need to match ProofRuleType options above
+          Require: '#/components/schemas/RequireProofRule'
+          AmountOf: '#/components/schemas/AmountOfProofRule'
+          AllOf: '#/components/schemas/AllOfProofRule'
+          AnyOf: '#/components/schemas/AnyOfProofRule'
+          CountOf: '#/components/schemas/CountOfProofRule'
+    ProofRuleBase:
       type: object
       required:
         - type
       properties:
         type:
-          $ref: '#/components/schemas/DynamicProofRuleType'
-    RequireDynamicProofRule:
+          $ref: '#/components/schemas/ProofRuleType'
+    RequireProofRule:
       allOf:
-        - $ref: '#/components/schemas/DynamicProofRuleBase'
+        - $ref: '#/components/schemas/ProofRuleBase'
         - type: object
           required:
             - resource
           properties:
             resource:
               $ref: '#/components/schemas/DynamicResourceDescriptor'
-    AmountOfDynamicProofRule:
+    AmountOfProofRule:
       allOf:
-        - $ref: '#/components/schemas/DynamicProofRuleBase'
+        - $ref: '#/components/schemas/ProofRuleBase'
         - type: object
           required:
             - amount
@@ -1577,27 +1561,27 @@ components:
               $ref: '#/components/schemas/DynamicAmount'
             resource:
               $ref: '#/components/schemas/DynamicResourceDescriptor'
-    AllOfDynamicProofRule:
+    AllOfProofRule:
       allOf:
-        - $ref: '#/components/schemas/DynamicProofRuleBase'
+        - $ref: '#/components/schemas/ProofRuleBase'
         - type: object
           required:
             - list
           properties:
             list:
               $ref: '#/components/schemas/DynamicResourceDescriptorList'
-    AnyOfDynamicProofRule:
+    AnyOfProofRule:
       allOf:
-        - $ref: '#/components/schemas/DynamicProofRuleBase'
+        - $ref: '#/components/schemas/ProofRuleBase'
         - type: object
           required:
             - list
           properties:
             list:
               $ref: '#/components/schemas/DynamicResourceDescriptorList'
-    CountOfDynamicProofRule:
+    CountOfProofRule:
       allOf:
-        - $ref: '#/components/schemas/DynamicProofRuleBase'
+        - $ref: '#/components/schemas/ProofRuleBase'
         - type: object
           required:
             - count
@@ -1764,13 +1748,12 @@ components:
         - type: object
           required:
             - resource_address
-            - non_fungible_id_hex
+            - non_fungible_id
           properties:
             resource_address:
               $ref: '#/components/schemas/ResourceAddress'
-            non_fungible_id_hex:
-              type: string
-              description: The hex-encoded bytes of a non-fungible id
+            non_fungible_id:
+              $ref: '#/components/schemas/NonFungibleId'
     ResourceDynamicResourceDescriptor:
       allOf:
         - $ref: '#/components/schemas/DynamicResourceDescriptorBase'
@@ -1836,240 +1819,42 @@ components:
               type: string
               description: The name of the field
 #######################################
-# GENERAL / SHARED MODELS - substates #
+# GENERAL / SHARED MODELS - Resources #
 #######################################
-    EntityType:
-      type: string
-      enum:
-        - EpochManager
-        - ResourceManager
-        - Component
-        - Package
-        - Vault
-        - KeyValueStore
-        - Global
-        - NonFungibleStore
-    Substate:
-      oneOf:
-        - $ref: '#/components/schemas/EpochManagerSubstate'
-        - $ref: '#/components/schemas/ResourceManagerSubstate'
-        - $ref: '#/components/schemas/ComponentInfoSubstate'
-        - $ref: '#/components/schemas/ComponentStateSubstate'
-        - $ref: '#/components/schemas/PackageSubstate'
-        - $ref: '#/components/schemas/VaultSubstate'
-        - $ref: '#/components/schemas/NonFungibleSubstate'
-        - $ref: '#/components/schemas/KeyValueStoreEntrySubstate'
-        - $ref: '#/components/schemas/GlobalSubstate'
-      discriminator:
-        propertyName: substate_type
-        mapping:
-          # NOTE: These need to match SubstateType options below
-          EpochManager: '#/components/schemas/EpochManagerSubstate'
-          ResourceManager: '#/components/schemas/ResourceManagerSubstate'
-          ComponentInfo: '#/components/schemas/ComponentInfoSubstate'
-          ComponentState: '#/components/schemas/ComponentStateSubstate'
-          Package: '#/components/schemas/PackageSubstate'
-          Vault: '#/components/schemas/VaultSubstate'
-          NonFungible: '#/components/schemas/NonFungibleSubstate'
-          KeyValueStoreEntry: '#/components/schemas/KeyValueStoreEntrySubstate'
-          Global: '#/components/schemas/GlobalSubstate'
-    SubstateType:
-      type: string
-      enum:
-        - EpochManager
-        - ResourceManager
-        - ComponentInfo
-        - ComponentState
-        - Package
-        - Vault
-        - NonFungible
-        - KeyValueStoreEntry
-        - Global
-    SubstateBase:
-      type: object
-      required:
-        - entity_type
-        - substate_type
-      properties:
-        entity_type:
-          $ref: '#/components/schemas/EntityType'
-        substate_type:
-          $ref: '#/components/schemas/SubstateType'
-    EpochManagerSubstate:
-      allOf:
-        - $ref: '#/components/schemas/SubstateBase'
-        - type: object
-          required:
-            - epoch
-          properties:
-            epoch:
-              type: integer
-              format: int64
-              minimum: 0
-              maximum: 10000000000
-              description: An integer between `0` and `10^10`, marking the current epoch
-    ResourceManagerSubstate:
-      allOf:
-        - $ref: '#/components/schemas/SubstateBase'
-        - type: object
-          required:
-            - resource_type
-            - metadata
-            - total_supply
-            - auth_rules
-          properties:
-            resource_type:
-              $ref: '#/components/schemas/ResourceType'
-            fungible_divisibility:
-              type: integer
-              minimum: 0
-              maximum: 18
-            metadata:
-              type: array
-              items:
-                type: object
-                required:
-                  - key
-                  - value
-                properties:
-                  key:
-                    type: string
-                  value:
-                    type: string
-            total_supply:
-              type: string
-              description: |
-                The string-encoded decimal representing the total supply of this resource.
-                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
-            owned_non_fungible_store:
-              $ref: '#/components/schemas/EntityReference'
-            auth_rules:
-              type: object
-              required:
-                - mint
-                - burn
-                - withdraw
-                - deposit
-                - update_metadata
-                - update_non_fungible_data
-              properties:
-                mint:
-                  $ref: '#/components/schemas/FixedActionAuthRules'
-                burn:
-                  $ref: '#/components/schemas/FixedActionAuthRules'
-                withdraw:
-                  $ref: '#/components/schemas/FixedActionAuthRules'
-                deposit:
-                  $ref: '#/components/schemas/FixedActionAuthRules'
-                update_metadata:
-                  $ref: '#/components/schemas/FixedActionAuthRules'
-                update_non_fungible_data:
-                  $ref: '#/components/schemas/FixedActionAuthRules'
     ResourceType:
       type: string
       enum:
         - Fungible
         - NonFungible
-    ComponentInfoSubstate:
-      allOf:
-        - $ref: '#/components/schemas/SubstateBase'
-        - type: object
-          required:
-            - package_address
-            - blueprint_name
-            - access_rules_layers
-          properties:
-            package_address:
-              $ref: '#/components/schemas/PackageAddress'
-            blueprint_name:
-              type: string
-            access_rules_layers:
-              type: array
-              items:
-                $ref: '#/components/schemas/ComponentAccessRulesLayer'
-    ComponentAccessRulesLayer:
+    NonFungibleIdType:
+      type: string
+      enum:
+        - String
+        - U32
+        - U64
+        - Bytes
+        - UUID
+    NonFungibleId:
       type: object
       required:
-        - method_auth
-        - default_auth
+        - simple_rep
+        - id_type
+        - sbor_hex
       properties:
-        method_auth:
-          description: A map from the method name to method access rules
-          additionalProperties:
-            $ref: '#/components/schemas/DynamicAuthorization'
-        default_auth:
-          $ref: '#/components/schemas/DynamicAuthorization'
-    ComponentStateSubstate:
-      allOf:
-        - $ref: '#/components/schemas/SubstateBase'
-        - type: object
-          required:
-            - data_struct
-          properties:
-            data_struct:
-              $ref: '#/components/schemas/DataStruct'
-    DataStruct:
-      type: object
-      required:
-        - struct_data
-        - owned_entities
-        - referenced_entities
-      properties:
-        struct_data:
-          $ref: '#/components/schemas/SborData'
-          description: The struct data
-        owned_entities:
-          type: array
-          items:
-            $ref: '#/components/schemas/EntityReference'
-        referenced_entities:
-          type: array
-          items:
-            $ref: '#/components/schemas/GlobalEntityReference'
-    SborData:
-      type: object
-      required:
-        - data_hex
-        - data_json
-      properties:
-        data_hex:
+        simple_rep:
+          $ref: '#/components/schemas/NonFungibleIdSimpleRepresentation'
+        id_type:
+          $ref: '#/components/schemas/NonFungibleIdType'
+        sbor_hex:
           type: string
-          description: The hex-encoded, raw SBOR-encoded data
-        data_json:
-          description: An untyped JSON body representing the content of the SBOR data
-    PackageSubstate:
-      allOf:
-        - $ref: '#/components/schemas/SubstateBase'
-        - type: object
-          required:
-            - code_hex
-            - blueprints
-          properties:
-            code_hex:
-              type: string
-              description: The hex-encoded package code
-            blueprints:
-              type: object
-              description: A map from the blueprint name to BlueprintData
-              additionalProperties:
-                $ref: '#/components/schemas/BlueprintData'
-    BlueprintData:
-      type: object
-      required:
-        - abi_hex
-      properties:
-        abi_hex:
-          type: string
-          description: The hex-encoded, sbor-encoded package abi
-    VaultSubstate:
-      allOf:
-        - $ref: '#/components/schemas/SubstateBase'
-        - type: object
-          required:
-            - resource_amount
-          properties:
-            resource_amount:
-              $ref: '#/components/schemas/ResourceAmount'
+          description: The hex-encoded SBOR-encoded bytes of its non-fungible id
+    NonFungibleIdSimpleRepresentation:
+      type: string
+      description: |
+        The simple string representation of the non-fungible id.
+        For string id types, this is simply the string itself; for integer types, this is the integer as a decimal; and for the bytes id type, this is the lower case hex representation.
+        A non-fungible resource has a fixed `NonFungibleIdType`, so this representation uniquely identifies this non-fungible
+        under the given resource address.
     ResourceAmount:
       oneOf:
         - $ref: '#/components/schemas/FungibleResourceAmount'
@@ -2107,39 +1892,399 @@ components:
         - $ref: '#/components/schemas/ResourceAmountBase'
         - type: object
           required:
-            - non_fungible_ids_hex
+            - non_fungible_ids
           properties:
-            non_fungible_ids_hex:
+            non_fungible_ids:
               type: array
               items:
-                type: string
-                description: The hex-encoded bytes of the non-fungible ids
-    NonFungibleSubstate:
+                $ref: '#/components/schemas/NonFungibleId'
+##################################
+# GENERAL / SHARED MODELS - SBOR #
+##################################
+    DataStruct:
+      type: object
+      required:
+        - struct_data
+        - owned_entities
+        - referenced_entities
+      properties:
+        struct_data:
+          $ref: '#/components/schemas/SborData'
+          description: The struct data
+        owned_entities:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntityReference'
+        referenced_entities:
+          type: array
+          items:
+            $ref: '#/components/schemas/GlobalEntityReference'
+    SborData:
+      type: object
+      required:
+        - data_hex
+        - data_json
+      properties:
+        data_hex:
+          type: string
+          description: The hex-encoded, raw SBOR-encoded data
+        data_json:
+          description: An untyped JSON body representing the content of the SBOR data
+#####################################
+# GENERAL / SHARED MODELS - Royalty #
+#####################################
+    BlueprintRoyaltyConfig:
+      type: object
+      required:
+        - blueprint_name
+        - royalty_config
+      properties:
+        blueprint_name:
+          type: string
+        royalty_config:
+          $ref: '#/components/schemas/RoyaltyConfig'
+    RoyaltyConfig:
+      type: object
+      required:
+        - method_rules
+        - default_rule
+      properties:
+        method_rules:
+          description: The royalty rules by method
+          type: array
+          items:
+            $ref: '#/components/schemas/MethodRoyaltyRule'
+        default_rule:
+          $ref: '#/components/schemas/RoyaltyRule'
+    MethodRoyaltyRule:
+      type: object
+      required:
+        - method_name
+        - royalty_rule
+      properties:
+        method_name:
+          type: string
+        royalty_rule:
+          $ref: '#/components/schemas/RoyaltyRule'
+    RoyaltyRule:
+      type: integer
+      format: int64
+      minimum: 0
+      maximum: 4294967295
+      description: An integer between `0` and `2^32 - 1`, representing the number of cost units required to access this method.
+#######################################
+# GENERAL / SHARED MODELS - substates #
+#######################################
+    EntityType:
+      type: string
+      enum:
+        - EpochManager
+        - ResourceManager
+        - Component
+        - Package
+        - Vault
+        - KeyValueStore
+        - Global
+        - NonFungibleStore
+        - Clock
+    Substate:
+      anyOf:
+        - $ref: '#/components/schemas/MetadataSubstate'
+        - $ref: '#/components/schemas/AccessRulesChainSubstate'
+        - $ref: '#/components/schemas/GlobalAddressSubstate'
+        - $ref: '#/components/schemas/ComponentInfoSubstate'
+        - $ref: '#/components/schemas/ComponentStateSubstate'
+        - $ref: '#/components/schemas/ComponentRoyaltyConfigSubstate'
+        - $ref: '#/components/schemas/ComponentRoyaltyAccumulatorSubstate'
+        - $ref: '#/components/schemas/PackageInfoSubstate'
+        - $ref: '#/components/schemas/PackageRoyaltyConfigSubstate'
+        - $ref: '#/components/schemas/PackageRoyaltyAccumulatorSubstate'
+        - $ref: '#/components/schemas/ResourceManagerSubstate'
+        - $ref: '#/components/schemas/EpochManagerSubstate'
+        - $ref: '#/components/schemas/ClockCurrentMinuteSubstate'
+        - $ref: '#/components/schemas/KeyValueStoreEntrySubstate'
+        - $ref: '#/components/schemas/VaultSubstate'
+        - $ref: '#/components/schemas/NonFungibleStoreEntrySubstate'
+      discriminator:
+        propertyName: substate_type
+        mapping:
+          # NOTE: These need to match SubstateType options below
+          Metadata: '#/components/schemas/MetadataSubstate'
+          AccessRulesChain: '#/components/schemas/AccessRulesChainSubstate'
+          GlobalAddress: '#/components/schemas/GlobalAddressSubstate'
+          ComponentInfo: '#/components/schemas/ComponentInfoSubstate'
+          ComponentState: '#/components/schemas/ComponentStateSubstate'
+          ComponentRoyaltyConfig: '#/components/schemas/ComponentRoyaltyConfigSubstate'
+          ComponentRoyaltyAccumulator: '#/components/schemas/ComponentRoyaltyAccumulatorSubstate'
+          PackageInfo: '#/components/schemas/PackageInfoSubstate'
+          PackageRoyaltyConfig: '#/components/schemas/PackageRoyaltyConfigSubstate'
+          PackageRoyaltyAccumulator: '#/components/schemas/PackageRoyaltyAccumulatorSubstate'
+          ResourceManager: '#/components/schemas/ResourceManagerSubstate'
+          EpochManager: '#/components/schemas/EpochManagerSubstate'
+          ClockCurrentMinute: '#/components/schemas/ClockCurrentMinuteSubstate'
+          KeyValueStoreEntry: '#/components/schemas/KeyValueStoreEntrySubstate'
+          Vault: '#/components/schemas/VaultSubstate'
+          NonFungibleStoreEntry: '#/components/schemas/NonFungibleStoreEntrySubstate'
+    SubstateType:
+      type: string
+      enum:
+        # Common
+        - Metadata
+        - AccessRulesChain
+        # Specific
+        - GlobalAddress
+        - ComponentInfo
+        - ComponentState
+        - ComponentRoyaltyConfig
+        - ComponentRoyaltyAccumulator
+        - PackageInfo
+        - PackageRoyaltyConfig
+        - PackageRoyaltyAccumulator
+        - ResourceManager
+        - EpochManager
+        - ClockCurrentMinute
+        - KeyValueStoreEntry
+        - NonFungibleStoreEntry
+        - Vault
+    SubstateKeyType:
+      # This corresponds to what's currently referred to as the "SubstateOffset"
+      # This is roughly the same as the substate type, but some entities have two of the same substates
+      # (eg ResourceManagers have two AccessRulesChain substates)
+      type: string
+      description: |
+        Slightly different to the SubstateType - some entities have two of the same substate (eg ResouceManager AccessRuleChains)
+      enum:
+        # Common
+        - Metadata
+        - AccessRulesChain
+        # Specific
+        - GlobalAddress
+        - ComponentInfo
+        - ComponentState
+        - ComponentRoyaltyConfig
+        - ComponentRoyaltyAccumulator
+        - PackageInfo
+        - PackageRoyaltyConfig
+        - PackageRoyaltyAccumulator
+        - ResourceManager
+        - ResourceManagerVaultAccessRulesChain
+        - EpochManager
+        - ClockCurrentMinute
+        - KeyValueStoreEntry
+        - NonFungibleStoreEntry
+        - Vault
+    SubstateBase:
+      type: object
+      required:
+        - substate_type
+      properties:
+        substate_type:
+          $ref: '#/components/schemas/SubstateType'
+### COMMON SUBSTATES
+    AccessRulesChainSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
         - type: object
           required:
-            - non_fungible_id_hex
-            - is_deleted
+            - chain
           properties:
-            non_fungible_id_hex:
-              type: string
-              description: The hex-encoded bytes of its non-fungible id
-            is_deleted:
-              type: boolean
-            non_fungible_data:
-              $ref: '#/components/schemas/NonFungibleData'
-    NonFungibleData:
+            chain:
+              type: array
+              description: |
+                The layers of access rules applied.
+              items:
+                $ref: '#/components/schemas/AccessRules'
+    MetadataSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - metadata
+          properties:
+            metadata:
+              type: array
+              items:
+                type: object
+                required:
+                  - key
+                  - value
+                properties:
+                  key:
+                    type: string
+                  value:
+                    type: string
+### SPECIFIC SUBSTATES
+    GlobalAddressSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - target_entity
+          properties:
+            target_entity:
+              $ref: '#/components/schemas/GlobalEntityAssignment'
+    GlobalEntityAssignment:
       type: object
-      description: Only present if the non fungible isn't deleted
       required:
-        - immutable_data
-        - mutable_data
+        - target_entity_type
+        - target_entity_id_hex
+        - global_entity_id_hex
+        - global_address_hex
+        - global_address
       properties:
-        immutable_data:
-          $ref: '#/components/schemas/DataStruct'
-        mutable_data:
-          $ref: '#/components/schemas/DataStruct'
+        target_entity_type:
+          $ref: "#/components/schemas/EntityType"
+        target_entity_id_hex:
+          type: string
+          description: The hex-encoded bytes of the target entity id
+        global_entity_id_hex:
+          type: string
+          description: The hex-encoded bytes of the global entity id
+        global_address_hex:
+          type: string
+          description: The hex-encoded bytes of the assigned global address.
+        global_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the assigned global address
+    ComponentInfoSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - package_address
+            - blueprint_name
+          properties:
+            package_address:
+              $ref: '#/components/schemas/PackageAddress'
+            blueprint_name:
+              type: string
+    ComponentStateSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - data_struct
+          properties:
+            data_struct:
+              $ref: '#/components/schemas/DataStruct'
+    ComponentRoyaltyConfigSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - royalty_config
+          properties:
+            royalty_config:
+              $ref: '#/components/schemas/RoyaltyConfig'
+    ComponentRoyaltyAccumulatorSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - xrd_amount
+          properties:
+            xrd_amount:
+              type: string
+              description: |
+                The string-encoded decimal representing the amount of XRD available for claim in the royalty accumulator.
+                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    PackageInfoSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - code_hex
+            - blueprints
+          properties:
+            code_hex:
+              type: string
+              description: The hex-encoded package code
+            blueprints:
+              type: object
+              description: A map from the blueprint name to BlueprintData
+              additionalProperties:
+                $ref: '#/components/schemas/BlueprintData'
+    BlueprintData:
+      type: object
+      required:
+        - abi
+      properties:
+        abi:
+          $ref: '#/components/schemas/SborData'
+          description: The abi data
+    PackageRoyaltyConfigSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - blueprint_royalties
+          properties:
+            blueprint_royalties:
+              type: array
+              items:
+                $ref: '#/components/schemas/BlueprintRoyaltyConfig'
+    PackageRoyaltyAccumulatorSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - xrd_amount
+          properties:
+            xrd_amount:
+              type: string
+              description: |
+                The string-encoded decimal representing the amount of XRD available for claim in the royalty accumulator.
+                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    ResourceManagerSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - resource_type
+            - total_supply
+            - auth_rules
+          properties:
+            resource_type:
+              $ref: '#/components/schemas/ResourceType'
+            fungible_divisibility:
+              type: integer
+              minimum: 0
+              maximum: 18
+            non_fungible_id_type:
+              $ref: '#/components/schemas/NonFungibleIdType'
+            total_supply:
+              type: string
+              description: |
+                The string-encoded decimal representing the total supply of this resource.
+                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            owned_non_fungible_store:
+              $ref: '#/components/schemas/EntityReference'
+    EpochManagerSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - epoch
+          properties:
+            epoch:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description: An integer between `0` and `10^10`, marking the current epoch
+    ClockCurrentMinuteSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - timestamp_ms_rounded_down_to_minute
+          properties:
+            timestamp_ms_rounded_down_to_minute:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 100000000000000
+              description: An integer between `0` and `10^14`, marking the ledger unix timestamp in ms (rounded down to the current minute)
     KeyValueStoreEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
@@ -2155,34 +2300,40 @@ components:
               type: boolean
             data_struct:
               $ref: '#/components/schemas/DataStruct'
-    GlobalSubstate:
+    VaultSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
         - type: object
           required:
-            - target_entity
+            - resource_amount
           properties:
-            target_entity:
-              $ref: '#/components/schemas/GlobalEntityAssignment'
-    GlobalEntityAssignment:
+            resource_amount:
+              $ref: '#/components/schemas/ResourceAmount'
+    NonFungibleStoreEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - non_fungible_id
+            - is_deleted
+          properties:
+            non_fungible_id:
+              $ref: '#/components/schemas/NonFungibleId'
+            non_fungible_data:
+              $ref: '#/components/schemas/NonFungibleData'
+            is_deleted:
+              type: boolean
+    NonFungibleData:
       type: object
+      description: Only present if the non fungible isn't deleted
       required:
-        - target_entity_type
-        - target_entity_id_hex
-        - global_address_hex
-        - global_address
+        - immutable_data
+        - mutable_data
       properties:
-        target_entity_type:
-          $ref: "#/components/schemas/EntityType"
-        target_entity_id_hex:
-          type: string
-          description: The hex-encoded bytes of the target entity id
-        global_address_hex:
-          type: string
-          description: The hex-encoded bytes of the assigned global address.
-        global_address:
-          type: string
-          description: The Bech32m-encoded human readable version of the assigned global address
+        immutable_data:
+          $ref: '#/components/schemas/DataStruct'
+        mutable_data:
+          $ref: '#/components/schemas/DataStruct'
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################
@@ -2221,6 +2372,8 @@ components:
           required:
             - account_package
             - faucet
+            - epoch_manager
+            - clock
             - ecdsa_secp256k1
             - eddsa_ed25519
             - xrd
@@ -2228,6 +2381,10 @@ components:
             account_package:
               type: string
             faucet:
+              type: string
+            epoch_manager:
+              type: string
+            clock:
               type: string
             ecdsa_secp256k1:
               type: string
@@ -2254,6 +2411,7 @@ components:
             - EcdsaSecp256k1VirtualAccountComponent
             - EddsaEd25519VirtualAccountComponent
             - EpochManager
+            - Clock
         hrp_prefix:
           type: string
         entity_type:
@@ -2562,9 +2720,9 @@ components:
         duplicate:
           description: Is true if the transaction is a duplicate of an existing transaction in the mempool.
           type: boolean
-#################################
+#####################################
 # REQUEST: /transaction/callpreview #
-#################################
+#####################################
     TransactionCallPreviewRequest:
       type: object
       required:
@@ -2650,10 +2808,10 @@ components:
           description: An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution
         tip_percentage:
           type: integer
-          format: int64
+          format: int32
           minimum: 0
-          maximum: 4294967295
-          description: An integer between `0` and `2^32 - 1`, specifying the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+          maximum: 255
+          description: An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
         nonce:
           type: string
           description: A decimal-string-encoded integer between `0` and `2^64 - 1`, used to ensure the transaction intent is unique.
@@ -2834,14 +2992,17 @@ components:
       description: The type of the validator transaction
       enum:
         - EpochUpdate
+        - TimeUpdate
     ValidatorTransaction:
       oneOf:
         - $ref: '#/components/schemas/EpochUpdateValidatorTransaction'
+        - $ref: '#/components/schemas/TimeUpdateValidatorTransaction'
       discriminator:
         propertyName: type
         mapping:
           # NOTE: These need to match ValidatorTransactionType
           EpochUpdate: '#/components/schemas/EpochUpdateValidatorTransaction'
+          TimeUpdate: '#/components/schemas/TimeUpdateValidatorTransaction'
     ValidatorTransactionBase:
       type: object
       required:
@@ -2862,6 +3023,19 @@ components:
               minimum: 0
               maximum: 10000000000
               description: An integer between `0` and `10^10`, marking the new epoch
+    TimeUpdateValidatorTransaction:
+      allOf:
+        - $ref: "#/components/schemas/ValidatorTransactionBase"
+        - type: object
+          required:
+            - proposer_timestamp_ms
+          properties:
+            proposer_timestamp_ms:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 100000000000000
+              description: An integer between `0` and `10^14`, marking the round proposer's unix timestamp in ms
 ############################################################################################################
 # V0
 ###################################
@@ -2964,6 +3138,17 @@ components:
           minimum: 0
           maximum: 10000000000
           description: An integer between `0` and `10^10`, marking the current epoch
+############################
+# REQUEST: /v0/state/clock #
+############################
+    # No request body required
+    V0StateClockResponse:
+      type: object
+      required:
+        - current_minute
+      properties:
+        current_minute:
+          $ref: "#/components/schemas/Substate"
 ################################
 # REQUEST: /v0/state/component #
 ################################
@@ -2980,14 +3165,26 @@ components:
       required:
         - info
         - state
-        - owned_vaults
+        - royalty_config
+        - royalty_accumulator
+        - metadata
+        - access_rules
+        - state_owned_vaults
         - descendent_ids
       properties:
         info:
           $ref: "#/components/schemas/Substate"
         state:
           $ref: "#/components/schemas/Substate"
-        owned_vaults:
+        royalty_config:
+          $ref: "#/components/schemas/Substate"
+        royalty_accumulator:
+          $ref: "#/components/schemas/Substate"
+        metadata:
+          $ref: "#/components/schemas/Substate"
+        access_rules:
+          $ref: "#/components/schemas/Substate"
+        state_owned_vaults:
           type: array
           description: Any vaults owned directly or indirectly by the component
           items:
@@ -3029,8 +3226,17 @@ components:
       type: object
       required:
         - manager
+        - metadata
+        - access_rules
+        - vault_access_rules
       properties:
         manager:
+          $ref: "#/components/schemas/Substate"
+        metadata:
+          $ref: "#/components/schemas/Substate"
+        access_rules:
+          $ref: "#/components/schemas/Substate"
+        vault_access_rules:
           $ref: "#/components/schemas/Substate"
 ###################################
 # REQUEST: /v0/state/non-fungible #
@@ -3039,14 +3245,13 @@ components:
       type: object
       required:
         - resource_address
-        - non_fungible_id_hex
+        - non_fungible_id
       properties:
         resource_address:
           type: string
           description: The Bech32m-encoded human readable version of the resource's global address
-        non_fungible_id_hex:
-          type: string
-          description: The hex-encoded non-fungible id
+        non_fungible_id:
+          $ref: '#/components/schemas/NonFungibleIdSimpleRepresentation'
     V0StateNonFungibleResponse:
       type: object
       required:
@@ -3068,7 +3273,19 @@ components:
     V0StatePackageResponse:
       type: object
       required:
-        - package
+        - info
+        - royalty_config
+        - royalty_accumulator
+        - metadata
+        - access_rules
       properties:
-        package:
+        info:
+          $ref: "#/components/schemas/Substate"
+        royalty_config:
+          $ref: "#/components/schemas/Substate"
+        royalty_accumulator:
+          $ref: "#/components/schemas/Substate"
+        metadata:
+          $ref: "#/components/schemas/Substate"
+        access_rules:
           $ref: "#/components/schemas/Substate"

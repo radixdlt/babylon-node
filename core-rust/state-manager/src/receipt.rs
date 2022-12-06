@@ -8,14 +8,13 @@ use radix_engine::transaction::{
     CommitResult, EntityChanges, TransactionOutcome,
     TransactionReceipt as EngineTransactionReceipt, TransactionResult,
 };
-use radix_engine::types::{hash, Hash, SubstateId};
-use sbor::{Decode, Encode, TypeId};
-use scrypto::buffer::scrypto_encode;
-use scrypto::engine::types::Level;
+use radix_engine::types::{hash, scrypto_encode, Hash, Level, SubstateId};
+use radix_engine_interface::scrypto;
 
 use crate::AccumulatorHash;
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct CommittedTransactionIdentifiers {
     pub state_version: u64,
     pub accumulator_hash: AccumulatorHash,
@@ -30,26 +29,30 @@ impl CommittedTransactionIdentifiers {
     }
 }
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum CommittedTransactionStatus {
     Success(Vec<Vec<u8>>),
     Failure(RuntimeError),
 }
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct SubstateChanges {
     pub created: BTreeMap<SubstateId, OutputValue>,
     pub updated: BTreeMap<SubstateId, OutputValue>,
     pub deleted: BTreeMap<SubstateId, DeletedSubstateVersion>,
 }
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct DeletedSubstateVersion {
     pub substate_hash: Hash,
     pub version: u32,
 }
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct LedgerTransactionReceipt {
     pub outcome: TransactionOutcome,
     pub fee_summary: FeeSummary,
@@ -115,7 +118,8 @@ fn map_state_updates(state_updates: StateDiff) -> SubstateChanges {
         match possible_creations.remove(&substate_id) {
             Some(up_substate_output_value) => {
                 // TODO - this check can be removed when the bug is fixed
-                let up_substate_hash = hash(&scrypto_encode(&up_substate_output_value.substate));
+                let up_substate_hash =
+                    hash(&scrypto_encode(&up_substate_output_value.substate).unwrap());
                 if up_substate_hash != down_substate_hash {
                     updated.insert(substate_id, up_substate_output_value);
                 } else {

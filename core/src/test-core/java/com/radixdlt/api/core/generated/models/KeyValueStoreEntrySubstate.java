@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.DataStruct;
-import com.radixdlt.api.core.generated.models.EntityType;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstateAllOf;
 import com.radixdlt.api.core.generated.models.SubstateBase;
 import com.radixdlt.api.core.generated.models.SubstateType;
@@ -36,7 +35,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * KeyValueStoreEntrySubstate
  */
 @JsonPropertyOrder({
-  KeyValueStoreEntrySubstate.JSON_PROPERTY_ENTITY_TYPE,
   KeyValueStoreEntrySubstate.JSON_PROPERTY_SUBSTATE_TYPE,
   KeyValueStoreEntrySubstate.JSON_PROPERTY_KEY_HEX,
   KeyValueStoreEntrySubstate.JSON_PROPERTY_IS_DELETED,
@@ -44,9 +42,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class KeyValueStoreEntrySubstate {
-  public static final String JSON_PROPERTY_ENTITY_TYPE = "entity_type";
-  private EntityType entityType;
-
   public static final String JSON_PROPERTY_SUBSTATE_TYPE = "substate_type";
   private SubstateType substateType;
 
@@ -61,32 +56,6 @@ public class KeyValueStoreEntrySubstate {
 
   public KeyValueStoreEntrySubstate() { 
   }
-
-  public KeyValueStoreEntrySubstate entityType(EntityType entityType) {
-    this.entityType = entityType;
-    return this;
-  }
-
-   /**
-   * Get entityType
-   * @return entityType
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ENTITY_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public EntityType getEntityType() {
-    return entityType;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ENTITY_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEntityType(EntityType entityType) {
-    this.entityType = entityType;
-  }
-
 
   public KeyValueStoreEntrySubstate substateType(SubstateType substateType) {
     this.substateType = substateType;
@@ -204,8 +173,7 @@ public class KeyValueStoreEntrySubstate {
       return false;
     }
     KeyValueStoreEntrySubstate keyValueStoreEntrySubstate = (KeyValueStoreEntrySubstate) o;
-    return Objects.equals(this.entityType, keyValueStoreEntrySubstate.entityType) &&
-        Objects.equals(this.substateType, keyValueStoreEntrySubstate.substateType) &&
+    return Objects.equals(this.substateType, keyValueStoreEntrySubstate.substateType) &&
         Objects.equals(this.keyHex, keyValueStoreEntrySubstate.keyHex) &&
         Objects.equals(this.isDeleted, keyValueStoreEntrySubstate.isDeleted) &&
         Objects.equals(this.dataStruct, keyValueStoreEntrySubstate.dataStruct);
@@ -213,14 +181,13 @@ public class KeyValueStoreEntrySubstate {
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityType, substateType, keyHex, isDeleted, dataStruct);
+    return Objects.hash(substateType, keyHex, isDeleted, dataStruct);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class KeyValueStoreEntrySubstate {\n");
-    sb.append("    entityType: ").append(toIndentedString(entityType)).append("\n");
     sb.append("    substateType: ").append(toIndentedString(substateType)).append("\n");
     sb.append("    keyHex: ").append(toIndentedString(keyHex)).append("\n");
     sb.append("    isDeleted: ").append(toIndentedString(isDeleted)).append("\n");

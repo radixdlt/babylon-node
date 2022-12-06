@@ -72,6 +72,8 @@ public interface EncoderApi {
 
   void encodeTypeId(TypeId typeId);
 
+  void writeSize(int value);
+
   void writeBoolean(boolean value);
 
   void writeByte(byte value);

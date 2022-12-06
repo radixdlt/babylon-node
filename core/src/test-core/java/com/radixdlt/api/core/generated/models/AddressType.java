@@ -56,7 +56,9 @@ public class AddressType {
     
     EDDSAED25519VIRTUALACCOUNTCOMPONENT("EddsaEd25519VirtualAccountComponent"),
     
-    EPOCHMANAGER("EpochManager");
+    EPOCHMANAGER("EpochManager"),
+    
+    CLOCK("Clock");
 
     private String value;
 
