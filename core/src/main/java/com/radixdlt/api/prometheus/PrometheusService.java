@@ -66,11 +66,9 @@ package com.radixdlt.api.prometheus;
 
 import static com.radixdlt.RadixNodeApplication.SYSTEM_VERSION_KEY;
 import static com.radixdlt.RadixNodeApplication.VERSION_STRING_KEY;
-import static com.radixdlt.api.prometheus.PrometheusService.JmxMetric.jmxMetric;
 
 import com.google.inject.Inject;
 import com.radixdlt.RadixNodeApplication;
-import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -81,41 +79,12 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.prometheus.StateManagerPrometheus;
-import com.radixdlt.utils.properties.RuntimeProperties;
-import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.util.*;
-import javax.management.InstanceNotFoundException;
-import javax.management.MBeanServerConnection;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
-import javax.management.ReflectionException;
-import javax.management.openmbean.CompositeDataSupport;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.AbstractCollection;
+import java.util.List;
 
 public class PrometheusService {
-  private static final Logger log = LogManager.getLogger();
 
   private static final List<CounterType> EXPORT_LIST = List.of(CounterType.values());
-
-  public static final String USAGE = "Usage";
-  private static final List<JmxMetric> JMX_METRICS =
-      List.of(
-          jmxMetric("java.lang:type=MemoryPool,name=G1 Eden Space", USAGE),
-          jmxMetric("java.lang:type=MemoryPool,name=G1 Survivor Space", USAGE),
-          jmxMetric("java.lang:type=MemoryPool,name=G1 Old Gen", USAGE),
-          jmxMetric("java.lang:type=MemoryPool,name=Metaspace", USAGE),
-          jmxMetric("java.lang:type=GarbageCollector,name=G1 Old Generation", USAGE),
-          jmxMetric("java.lang:type=GarbageCollector,name=G1 Young Generation", USAGE),
-          jmxMetric(
-              "java.lang:type=OperatingSystem",
-              "SystemCpuLoad",
-              "ProcessCpuLoad",
-              "SystemLoadAverage"),
-          jmxMetric("java.lang:type=Threading", "ThreadCount", "DaemonThreadCount"),
-          jmxMetric("java.lang:type=Memory", "HeapMemoryUsage", "NonHeapMemoryUsage"),
-          jmxMetric("java.lang:type=ClassLoading", "LoadedClassCount"));
 
   private static final String COUNTER = "counter";
   private static final String COUNTER_PREFIX = "info_counters_";
@@ -124,40 +93,38 @@ public class PrometheusService {
   private static final String MISSED_PROPOSALS =
       COUNTER_PREFIX + "radix_engine_cur_epoch_missed_proposals";
 
+  private final JavaPrometheus javaPrometheus;
   private final StateManagerPrometheus stateManagerPrometheus;
   private final SystemCounters systemCounters;
   private final HealthInfoService healthInfoService;
-  private final Addressing addressing;
   private final InMemorySystemInfo inMemorySystemInfo;
   private final BFTNode self;
   private final PeersView peersView;
 
   @Inject
   public PrometheusService(
-      RuntimeProperties properties,
       SystemCounters systemCounters,
       PeersView peersView,
       HealthInfoService healthInfoService,
       InMemorySystemInfo inMemorySystemInfo,
       @Self BFTNode self,
-      Addressing addressing,
-      StateManagerPrometheus stateManagerPrometheus) {
+      StateManagerPrometheus stateManagerPrometheus,
+      JavaPrometheus javaPrometheus) {
     this.systemCounters = systemCounters;
     this.peersView = peersView;
     this.healthInfoService = healthInfoService;
     this.inMemorySystemInfo = inMemorySystemInfo;
     this.self = self;
-    this.addressing = addressing;
     this.stateManagerPrometheus = stateManagerPrometheus;
+    this.javaPrometheus = javaPrometheus;
   }
 
   public String getMetrics() {
     var builder = new StringBuilder();
-
-    exportCounters(builder);
     builder.append(this.stateManagerPrometheus.prometheusMetrics());
+    builder.append(this.javaPrometheus.prometheusMetrics());
+    exportCounters(builder);
     exportSystemInfo(builder);
-
     return builder.append('\n').toString();
   }
 
@@ -179,8 +146,6 @@ public class PrometheusService {
 
     appendCounter(builder, "total_validators", totalValidators);
 
-    appendJMXCounters(builder);
-
     appendCounterExtended(
         builder,
         prepareNodeInfo(),
@@ -196,7 +161,6 @@ public class PrometheusService {
     addValidatorAddress(builder);
     appendField(builder, "health", healthInfoService.nodeStatus().name());
     appendField(builder, "key", self.getKey().toHex());
-
     return builder.append("}").toString();
   }
 
@@ -264,58 +228,5 @@ public class PrometheusService {
         .append(' ')
         .append(value)
         .append('\n');
-  }
-
-  static class JmxMetric {
-    private final String objectNameString;
-    private final String[] metricAttributes;
-
-    private JmxMetric(String objectNameString, String[] metricAttributes) {
-      this.objectNameString = objectNameString;
-      this.metricAttributes = metricAttributes;
-    }
-
-    static JmxMetric jmxMetric(String objectName, String... attributes) {
-      return new JmxMetric(objectName, attributes);
-    }
-
-    void readCounter(MBeanServerConnection connection, StringBuilder builder) {
-      try {
-        var objectName =
-            connection.queryNames(new ObjectName(objectNameString), null).iterator().next();
-
-        var attributes = connection.getAttributes(objectName, metricAttributes).asList();
-
-        for (var attribute : attributes) {
-          var name = attribute.getName();
-
-          if (name.equals(USAGE)) {
-            name = objectName.getKeyProperty("name");
-          }
-
-          var outName = name.toLowerCase(Locale.US).replace('.', '_').replace(' ', '_');
-
-          // this might break if more beans are parsed
-          if (attribute.getValue() instanceof CompositeDataSupport cds) {
-            appendCounter(builder, outName + "_init", (Number) cds.get("init"));
-            appendCounter(builder, outName + "_max", (Number) cds.get("max"));
-            appendCounter(builder, outName + "_committed", (Number) cds.get("committed"));
-            appendCounter(builder, outName + "_used", (Number) cds.get("used"));
-          } else {
-            appendCounter(builder, outName, (Number) attribute.getValue());
-          }
-        }
-      } catch (InstanceNotFoundException
-          | ReflectionException
-          | IOException
-          | MalformedObjectNameException e) {
-        log.error("Error while retrieving JMX metric " + objectNameString, e);
-      }
-    }
-  }
-
-  private void appendJMXCounters(StringBuilder builder) {
-    var connection = ManagementFactory.getPlatformMBeanServer();
-    JMX_METRICS.forEach(metric -> metric.readCounter(connection, builder));
   }
 }
