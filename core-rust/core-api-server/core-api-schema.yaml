@@ -3015,20 +3015,24 @@ components:
         - $ref: "#/components/schemas/ValidatorTransactionBase"
         - type: object
           required:
-            - epoch
+            - scrypto_epoch
           properties:
-            epoch:
+            scrypto_epoch:
               type: integer
               format: int64
               minimum: 0
               maximum: 10000000000
-              description: An integer between `0` and `10^10`, marking the new epoch
+              description: |
+                An integer between `0` and `10^10`, marking the new epoch.
+                Note that currently this is not the same as `consensus_epoch`, but eventually will be.
     TimeUpdateValidatorTransaction:
       allOf:
         - $ref: "#/components/schemas/ValidatorTransactionBase"
         - type: object
           required:
             - proposer_timestamp_ms
+            - consensus_epoch
+            - round_in_epoch
           properties:
             proposer_timestamp_ms:
               type: integer
@@ -3036,6 +3040,20 @@ components:
               minimum: 0
               maximum: 100000000000000
               description: An integer between `0` and `10^14`, marking the round proposer's unix timestamp in ms
+            consensus_epoch:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description: |
+                An integer between `0` and `10^10`, marking the consensus epoch.
+                Note that currently this is not the same as `scrypto_epoch`, but eventually will be.
+            round_in_epoch:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description: An integer between `0` and `10^10`, marking the consensus round in the epoch
 ############################################################################################################
 # V0
 ###################################

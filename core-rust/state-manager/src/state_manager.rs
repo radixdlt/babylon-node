@@ -585,7 +585,9 @@ where
                 &self.scrypto_interpreter,
                 &self.fee_reserve_config,
                 &self.execution_config,
-                ValidatorTransaction::EpochUpdate(new_epoch),
+                ValidatorTransaction::EpochUpdate {
+                    scrypto_epoch: new_epoch,
+                },
                 &mut staged_store,
             )
             .expect("Epoch update txn failed");
@@ -597,7 +599,11 @@ where
             &self.scrypto_interpreter,
             &self.fee_reserve_config,
             &self.execution_config,
-            ValidatorTransaction::TimeUpdate(prepare_request.proposer_timestamp),
+            ValidatorTransaction::RoundUpdate {
+                proposer_timestamp_ms: prepare_request.proposer_timestamp_ms,
+                consensus_epoch: prepare_request.consensus_epoch,
+                round_in_epoch: prepare_request.round_number,
+            },
             &mut staged_store,
         )
         .expect("Time update txn failed");

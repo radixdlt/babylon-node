@@ -190,6 +190,19 @@ impl<'db> RocksDBCommitTransaction<'db> {
                 )
                 .expect("RocksDB: failure to put intent hash");
         }
+        let transaction_key = get_transaction_key(&transaction.get_hash());
+        // TODO: We really need to re-work how we store this data!
+        // For now, panic if we have duplicate transactions to prevent incorrect receipt/identifiers being saved
+        // There shouldn't be any possibility of this happening at the moment, so better to panic if it does as
+        // it indicates a bug.
+        let transaction_already_exists = self
+            .db_txn
+            .get(transaction_key)
+            .expect("RocksDB: failure to check for transaction presence")
+            .is_some();
+        if transaction_already_exists {
+            panic!("Attempt to persist a duplicate transaction payload - which isn't supported at the moment in our database structure: {:?}", transaction)
+        }
         self.db_txn
             .put(
                 get_transaction_key(&transaction.get_hash()),

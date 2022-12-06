@@ -8,6 +8,7 @@ use super::*;
 // If mapped to i64, these need to be below 9223372036854775807 = 2^63 - 1 to ensure they fit into an i64 on the OAS.
 
 const MAX_API_EPOCH: u64 = 10000000000;
+const MAX_API_ROUND: u64 = 10000000000;
 const MAX_API_STATE_VERSION: u64 = 100000000000000;
 const MAX_API_SUBSTATE_VERSION: u64 = 100000000000000;
 const MAX_API_TIMESTAMP_MS: u64 = 100000000000000;
@@ -20,6 +21,16 @@ pub fn to_api_epoch(epoch: u64) -> Result<i64, MappingError> {
         });
     }
     Ok(epoch.try_into().expect("Epoch too large somehow"))
+}
+
+#[tracing::instrument(skip_all)]
+pub fn to_api_round(round: u64) -> Result<i64, MappingError> {
+    if round > MAX_API_ROUND {
+        return Err(MappingError::IntegerError {
+            message: "Round larger than max api round".to_owned(),
+        });
+    }
+    Ok(round.try_into().expect("Round too large somehow"))
 }
 
 #[tracing::instrument(skip_all)]
