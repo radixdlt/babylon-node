@@ -464,7 +464,7 @@ pub fn to_api_dynamic_resource_descriptor(
             models::DynamicResourceDescriptor::NonFungibleDynamicResourceDescriptor {
                 resource_address: bech32_encoder
                     .encode_resource_address_to_string(&nf.resource_address()),
-                non_fungible_id: Box::new(to_api_non_fungible_id(&nf.non_fungible_id())),
+                non_fungible_id: Box::new(to_api_non_fungible_id(nf.non_fungible_id())),
             }
         }
         SoftResourceOrNonFungible::StaticResource(resource) => {

@@ -74,12 +74,11 @@ use crate::{
 use prometheus::core::Collector;
 use prometheus::{IntCounter, IntCounterVec, IntGauge, Registry};
 use radix_engine::engine::ScryptoInterpreter;
-use radix_engine::fee::SystemLoanFeeReserve;
 use radix_engine::state_manager::{StagedSubstateStore, StagedSubstateStoreManager};
 use radix_engine::transaction::{
-    execute_and_commit_transaction, execute_preview, execute_transaction,
-    execute_transaction_with_fee_reserve, ExecutionConfig, FeeReserveConfig, PreviewError,
-    PreviewResult, TransactionOutcome, TransactionReceipt, TransactionResult,
+    execute_and_commit_transaction, execute_preview, execute_transaction, ExecutionConfig,
+    FeeReserveConfig, PreviewError, PreviewResult, TransactionOutcome, TransactionReceipt,
+    TransactionResult,
 };
 use radix_engine::types::{
     scrypto_encode, ComponentAddress, Decimal, Decode, Encode, GlobalAddress, PublicKey, RENodeId,
@@ -582,8 +581,9 @@ where
         // Update the epoch
         if prepare_request.round_number % self.rounds_per_epoch == 0 {
             let new_epoch = (prepare_request.round_number / self.rounds_per_epoch) + 1;
-            let epoch_update_ledger_txn = Self::execute_validator_transaction(
+            let epoch_update_ledger_txn = Self::execute_and_commit_validator_transaction(
                 &self.scrypto_interpreter,
+                &self.fee_reserve_config,
                 &self.execution_config,
                 ValidatorTransaction::EpochUpdate(new_epoch),
                 &mut staged_store,
@@ -593,8 +593,9 @@ where
         }
 
         // Update the time
-        let time_update_ledger_txn = Self::execute_validator_transaction(
+        let time_update_ledger_txn = Self::execute_and_commit_validator_transaction(
             &self.scrypto_interpreter,
+            &self.fee_reserve_config,
             &self.execution_config,
             ValidatorTransaction::TimeUpdate(prepare_request.proposer_timestamp),
             &mut staged_store,
@@ -668,8 +669,9 @@ where
         }
     }
 
-    fn execute_validator_transaction(
+    fn execute_and_commit_validator_transaction(
         scrypto_interpreter: &ScryptoInterpreter<DefaultWasmEngine>,
+        fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
         validator_transaction: ValidatorTransaction,
         staged_store: &mut StagedSubstateStore<S>,
@@ -677,10 +679,10 @@ where
         let prepared_txn = validator_transaction.prepare();
         let executable = prepared_txn.get_executable();
 
-        let receipt = execute_transaction_with_fee_reserve(
+        let receipt = execute_transaction(
             staged_store,
             scrypto_interpreter,
-            SystemLoanFeeReserve::no_fee(),
+            fee_reserve_config,
             execution_config,
             &executable,
         );
