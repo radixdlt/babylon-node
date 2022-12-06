@@ -16,7 +16,7 @@ pub struct V0StateNonFungibleRequest {
     /// The Bech32m-encoded human readable version of the resource's global address
     #[serde(rename = "resource_address")]
     pub resource_address: String,
-    /// The simple string representation of the non-fungible id. For string id types, this is simply the string itself; for integer types, this is the integer as a decimal; and for the bytes id type, this is the lower case hex representation. A non-fungible resource has a fixed `NonFungibleType`, so this representation uniquely identifies this non-fungible under the given resource address. 
+    /// The simple string representation of the non-fungible id. For string id types, this is simply the string itself; for integer types, this is the integer as a decimal; and for the bytes id type, this is the lower case hex representation. A non-fungible resource has a fixed `NonFungibleIdType`, so this representation uniquely identifies this non-fungible under the given resource address. 
     #[serde(rename = "non_fungible_id")]
     pub non_fungible_id: String,
 }
