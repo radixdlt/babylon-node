@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use im::hashmap::HashMap as PersistentHashMap;
+use im::hashmap::HashMap as ImmutableHashMap;
 use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::wasm::WasmEngine;
 use slotmap::{new_key_type, SlotMap};
@@ -92,10 +92,10 @@ enum StagedSubstateStoreKey {
 
 pub struct StagedSubstateStoreNode {
     parent_key: StagedSubstateStoreKey,
-    next_keys: Vec<StagedSubstateStoreNodeKey>,
+    children_keys: Vec<StagedSubstateStoreNodeKey>,
     pub accumulator_hash: AccumulatorHash,
     pub receipt: TransactionReceipt,
-    data: PersistentHashMap<SubstateId, OutputValue>,
+    data: ImmutableHashMap<SubstateId, OutputValue>,
 }
 
 impl StagedSubstateStoreNode {
@@ -103,11 +103,11 @@ impl StagedSubstateStoreNode {
         parent_key: StagedSubstateStoreKey,
         accumulator_hash: AccumulatorHash,
         receipt: TransactionReceipt,
-        data: PersistentHashMap<SubstateId, OutputValue>,
+        data: ImmutableHashMap<SubstateId, OutputValue>,
     ) -> Self {
         StagedSubstateStoreNode {
             parent_key,
-            next_keys: Vec::new(),
+            children_keys: Vec::new(),
             accumulator_hash,
             receipt,
             data,
@@ -133,21 +133,23 @@ fn recompute_data_recursive(
 ) {
     let parent_data = nodes.get(node_key).unwrap().data.clone();
 
-    let next_keys = nodes.get(node_key).unwrap().next_keys.clone();
-    for next_key in next_keys.iter() {
-        let next_node = nodes.get_mut(*next_key).unwrap();
-        next_node.data = parent_data.clone();
-        if let TransactionResult::Commit(commit) = &next_node.receipt.result {
+    let children_keys = nodes.get(node_key).unwrap().children_keys.clone();
+    for child_key in children_keys.iter() {
+        let child_node = nodes.get_mut(*child_key).unwrap();
+        child_node.data = parent_data.clone();
+        if let TransactionResult::Commit(commit) = &child_node.receipt.result {
             for (substate_id, output_value) in &commit.state_updates.up_substates {
-                next_node
+                child_node
                     .data
                     .insert(substate_id.clone(), output_value.clone());
             }
         }
-        recompute_data_recursive(nodes, *next_key);
+        recompute_data_recursive(nodes, *child_key);
     }
 }
 
+/// Recursively deletes all nodes that are not in new_root_key subtree and returns the length of chain from
+/// current root to new_root_key.
 fn delete_recursive(
     nodes: &mut SlotMap<StagedSubstateStoreNodeKey, StagedSubstateStoreNode>,
     accumulator_hash_to_node: &mut HashMap<AccumulatorHash, StagedSubstateStoreNodeKey>,
@@ -160,12 +162,13 @@ fn delete_recursive(
     }
 
     let mut dead_weight = 0;
-    let children = nodes.get(*node_key).unwrap().next_keys.clone();
-    for next_key in children {
+    let children_keys = nodes.get(*node_key).unwrap().children_keys.clone();
+    for child_key in children_keys {
+        // Instead of doing max([0, 0, 0, max, 0,.. 0]) we can do sum()
         dead_weight += delete_recursive(
             nodes,
             accumulator_hash_to_node,
-            &next_key,
+            &child_key,
             new_root_key,
             depth + 1,
         );
@@ -248,7 +251,7 @@ where
         );
 
         let mut new_data = match parent_key {
-            StagedSubstateStoreKey::RootStoreKey => PersistentHashMap::new(),
+            StagedSubstateStoreKey::RootStoreKey => ImmutableHashMap::new(),
             StagedSubstateStoreKey::InternalNodeStoreKey(key) => {
                 self.nodes.get(key).unwrap().data.clone()
             }
@@ -272,7 +275,7 @@ where
         match parent_key {
             StagedSubstateStoreKey::InternalNodeStoreKey(parent_node_key) => {
                 let parent_node = self.nodes.get_mut(parent_node_key).unwrap();
-                parent_node.next_keys.push(new_node_key);
+                parent_node.children_keys.push(new_node_key);
             }
             StagedSubstateStoreKey::RootStoreKey => {
                 self.first_layer.push(new_node_key);
@@ -287,7 +290,7 @@ where
 
         for node_key in self.first_layer.iter() {
             let node = self.nodes.get_mut(*node_key).unwrap();
-            node.data = PersistentHashMap::new();
+            node.data = ImmutableHashMap::new();
             recompute_data_recursive(&mut self.nodes, *node_key);
         }
     }
@@ -298,6 +301,7 @@ where
         match new_root_key {
             StagedSubstateStoreKey::RootStoreKey => {}
             StagedSubstateStoreKey::InternalNodeStoreKey(new_root_key) => {
+                // Delete all nodes that are not in new_root_key subtree
                 for node_key in self.first_layer.iter() {
                     self.dead_weight += delete_recursive(
                         &mut self.nodes,
@@ -309,8 +313,8 @@ where
                 }
 
                 let new_root = self.nodes.get(new_root_key).unwrap();
-
-                self.first_layer = new_root.next_keys.clone();
+                // Reparent to new_root node and delete
+                self.first_layer = new_root.children_keys.clone();
                 for key in self.first_layer.iter() {
                     let node = self.nodes.get_mut(*key).unwrap();
                     node.parent_key = StagedSubstateStoreKey::RootStoreKey;
@@ -322,6 +326,9 @@ where
                     .remove(&new_root.accumulator_hash);
                 self.nodes.remove(new_root_key);
 
+                // If the number of transactions updates that overlap with the self.root store is greater
+                // than the number of transactions applied on top of it, we recalculate the ImmutableHashMaps
+                // in order to free up memory.
                 if self.dead_weight as usize > self.nodes.len() {
                     self.recompute_data();
                 }
