@@ -179,8 +179,13 @@ impl SimpleMempool {
         let transactions = self
             .data
             .iter()
-            .filter(|&(tid, _)| !prepared_ids.contains(tid))
-            .map(|(_, data)| data.transaction.clone())
+            .filter_map(|(tid, data)| {
+                if !prepared_ids.contains(tid) {
+                    Some(data.transaction.clone())
+                } else {
+                    None
+                }
+            })
             .take(count as usize)
             .collect();
 
