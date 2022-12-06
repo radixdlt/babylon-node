@@ -433,14 +433,7 @@ pub fn extract_non_fungible_id_from_simple_representation(
     id_type: NonFungibleIdType,
     simple_rep: &str,
 ) -> Result<NonFungibleId, ExtractionError> {
-    Ok(match id_type {
-        NonFungibleIdType::String => NonFungibleId::String(simple_rep.to_owned()),
-        NonFungibleIdType::U32 => NonFungibleId::U32(simple_rep.parse()?),
-        NonFungibleIdType::U64 => NonFungibleId::U64(simple_rep.parse()?),
-        NonFungibleIdType::Decimal => NonFungibleId::Decimal(simple_rep.parse()?),
-        NonFungibleIdType::Bytes => NonFungibleId::Bytes(from_hex(simple_rep)?),
-        NonFungibleIdType::UUID => NonFungibleId::UUID(simple_rep.parse()?),
-    })
+    Ok(NonFungibleId::try_from_simple_string(id_type, simple_rep)?)
 }
 
 pub fn re_node_id_to_entity_id_bytes(re_node_id: &RENodeId) -> Result<Vec<u8>, MappingError> {

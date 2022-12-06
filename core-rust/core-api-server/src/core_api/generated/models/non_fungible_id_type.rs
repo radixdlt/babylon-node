@@ -18,8 +18,6 @@ pub enum NonFungibleIdType {
     U32,
     #[serde(rename = "U64")]
     U64,
-    #[serde(rename = "Decimal")]
-    Decimal,
     #[serde(rename = "Bytes")]
     Bytes,
     #[serde(rename = "UUID")]
@@ -33,7 +31,6 @@ impl ToString for NonFungibleIdType {
             Self::String => String::from("String"),
             Self::U32 => String::from("U32"),
             Self::U64 => String::from("U64"),
-            Self::Decimal => String::from("Decimal"),
             Self::Bytes => String::from("Bytes"),
             Self::UUID => String::from("UUID"),
         }

@@ -1,7 +1,5 @@
-use std::num::ParseIntError;
-
 use radix_engine::types::{AddressError, ParseNonFungibleIdError};
-use radix_engine_interface::{data::ScryptoValueDecodeError, math::ParseDecimalError};
+use radix_engine_interface::data::ScryptoValueDecodeError;
 use sbor::{DecodeError, EncodeError};
 use tracing::warn;
 use transaction::errors::TransactionValidationError;
@@ -72,8 +70,6 @@ pub enum ExtractionError {
     InvalidTransaction(TransactionValidationError),
     InvalidAddress(AddressError),
     InvalidNonFungibleId(ParseNonFungibleIdError),
-    ParseIntError(ParseIntError),
-    ParseDecimalError(ParseDecimalError),
 }
 
 impl ExtractionError {
@@ -82,18 +78,6 @@ impl ExtractionError {
             "Error extracting {} from request: {:?}",
             field_name, self
         ))
-    }
-}
-
-impl From<ParseIntError> for ExtractionError {
-    fn from(err: ParseIntError) -> Self {
-        ExtractionError::ParseIntError(err)
-    }
-}
-
-impl From<ParseDecimalError> for ExtractionError {
-    fn from(err: ParseDecimalError) -> Self {
-        ExtractionError::ParseDecimalError(err)
     }
 }
 

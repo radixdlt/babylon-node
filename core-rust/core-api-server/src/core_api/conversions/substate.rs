@@ -182,7 +182,6 @@ pub fn to_api_fungible_id_type(id_type: &NonFungibleIdType) -> models::NonFungib
         NonFungibleIdType::String => models::NonFungibleIdType::String,
         NonFungibleIdType::U32 => models::NonFungibleIdType::U32,
         NonFungibleIdType::U64 => models::NonFungibleIdType::U64,
-        NonFungibleIdType::Decimal => models::NonFungibleIdType::Decimal,
         NonFungibleIdType::Bytes => models::NonFungibleIdType::Bytes,
         NonFungibleIdType::UUID => models::NonFungibleIdType::UUID,
     }
@@ -481,17 +480,8 @@ pub fn to_api_dynamic_resource_descriptor(
 }
 
 pub fn to_api_non_fungible_id(non_fungible_id: &NonFungibleId) -> models::NonFungibleId {
-    let simple_rep = match non_fungible_id {
-        NonFungibleId::String(id) => id.to_string(),
-        NonFungibleId::U32(id) => id.to_string(),
-        NonFungibleId::U64(id) => id.to_string(),
-        NonFungibleId::Decimal(id) => id.to_string(),
-        NonFungibleId::Bytes(id) => to_hex(id),
-        NonFungibleId::UUID(id) => id.to_string(),
-    };
-
     models::NonFungibleId {
-        simple_rep,
+        simple_rep: non_fungible_id.to_simple_string(),
         id_type: to_api_fungible_id_type(&non_fungible_id.id_type()),
         sbor_hex: to_hex(non_fungible_id.to_vec()),
     }

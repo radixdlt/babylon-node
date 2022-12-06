@@ -34,8 +34,6 @@ public enum NonFungibleIdType {
   
   U64("U64"),
   
-  DECIMAL("Decimal"),
-  
   BYTES("Bytes"),
   
   UUID("UUID");

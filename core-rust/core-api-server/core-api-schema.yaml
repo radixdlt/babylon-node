@@ -1832,7 +1832,6 @@ components:
         - String
         - U32
         - U64
-        - Decimal
         - Bytes
         - UUID
     NonFungibleId:
