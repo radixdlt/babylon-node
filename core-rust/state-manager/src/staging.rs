@@ -127,6 +127,58 @@ pub struct StagedSubstateStoreManager<S: ReadableSubstateStore> {
     dead_weight: u32,
 }
 
+fn recompute_data_recursive(
+    nodes: &mut SlotMap<StagedSubstateStoreNodeKey, StagedSubstateStoreNode>,
+    node_key: StagedSubstateStoreNodeKey,
+) {
+    let parent_data = nodes.get(node_key).unwrap().data.clone();
+
+    let next_keys = nodes.get(node_key).unwrap().next_keys.clone();
+    for next_key in next_keys.iter() {
+        let next_node = nodes.get_mut(*next_key).unwrap();
+        next_node.data = parent_data.clone();
+        if let TransactionResult::Commit(commit) = &next_node.receipt.result {
+            for (substate_id, output_value) in &commit.state_updates.up_substates {
+                next_node
+                    .data
+                    .insert(substate_id.clone(), output_value.clone());
+            }
+        }
+        recompute_data_recursive(nodes, *next_key);
+    }
+}
+
+fn delete_recursive(
+    nodes: &mut SlotMap<StagedSubstateStoreNodeKey, StagedSubstateStoreNode>,
+    accumulator_hash_to_node: &mut HashMap<AccumulatorHash, StagedSubstateStoreNodeKey>,
+    node_key: &StagedSubstateStoreNodeKey,
+    new_root_key: &StagedSubstateStoreNodeKey,
+    depth: u32,
+) -> u32 {
+    if *node_key == *new_root_key {
+        return depth;
+    }
+
+    let mut dead_weight = 0;
+    let children = nodes.get(*node_key).unwrap().next_keys.clone();
+    for next_key in children {
+        dead_weight += delete_recursive(
+            nodes,
+            accumulator_hash_to_node,
+            &next_key,
+            new_root_key,
+            depth + 1,
+        );
+    }
+
+    let node = nodes.get(*node_key).unwrap();
+
+    accumulator_hash_to_node.remove(&node.accumulator_hash);
+    nodes.remove(*node_key);
+
+    dead_weight
+}
+
 impl<S> StagedSubstateStoreManager<S>
 where
     S: ReadableSubstateStore,
@@ -233,28 +285,10 @@ where
     fn recompute_data(&mut self) {
         self.dead_weight = 0;
 
-        let mut stack = Vec::new();
         for node_key in self.first_layer.iter() {
             let node = self.nodes.get_mut(*node_key).unwrap();
             node.data = PersistentHashMap::new();
-            stack.push((*node_key, node.data.clone()));
-        }
-
-        while let Some((node_key, parent_data)) = stack.pop() {
-
-            let next_keys = self.nodes.get(node_key).unwrap().next_keys.clone();
-            for next_key in next_keys.iter() {
-                let next_node = self.nodes.get_mut(*next_key).unwrap();
-                next_node.data = parent_data.clone();
-                if let TransactionResult::Commit(commit) = &next_node.receipt.result {
-                    for (substate_id, output_value) in &commit.state_updates.up_substates {
-                        next_node
-                            .data
-                            .insert(substate_id.clone(), output_value.clone());
-                    }
-                }
-                stack.push((*next_key, next_node.data.clone()));
-            }
+            recompute_data_recursive(&mut self.nodes, *node_key);
         }
     }
 
@@ -264,24 +298,14 @@ where
         match new_root_key {
             StagedSubstateStoreKey::RootStoreKey => {}
             StagedSubstateStoreKey::InternalNodeStoreKey(new_root_key) => {
-                let mut stack = Vec::new();
                 for node_key in self.first_layer.iter() {
-                    stack.push((*node_key, 1));
-                }
-
-                while let Some((node_key, depth)) = stack.pop() {
-                    if node_key == new_root_key {
-                        self.dead_weight += depth;
-                        continue;
-                    }
-
-                    let node = self.nodes.get(node_key).unwrap();
-                    stack.extend(node.next_keys
-                        .iter()
-                        .map(|next_key| (*next_key, depth + 1)));
-
-                    self.accumulator_hash_to_node.remove(&node.accumulator_hash);
-                    self.nodes.remove(node_key);
+                    self.dead_weight += delete_recursive(
+                        &mut self.nodes,
+                        &mut self.accumulator_hash_to_node,
+                        node_key,
+                        &new_root_key,
+                        1,
+                    );
                 }
 
                 let new_root = self.nodes.get(new_root_key).unwrap();
