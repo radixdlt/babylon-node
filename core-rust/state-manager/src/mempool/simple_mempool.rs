@@ -180,8 +180,8 @@ impl SimpleMempool {
             .data
             .iter()
             .filter(|&(tid, _)| !prepared_ids.contains(tid))
-            .take(count as usize)
             .map(|(_, data)| data.transaction.clone())
+            .take(count as usize)
             .collect();
 
         transactions
