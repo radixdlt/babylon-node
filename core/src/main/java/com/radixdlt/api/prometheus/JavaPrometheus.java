@@ -62,52 +62,39 @@
  * permissions under this License.
  */
 
-apply plugin: 'java-library'
+package com.radixdlt.api.prometheus;
 
-tasks.withType(GenerateModuleMetadata) {
-    enabled = false
-}
+import com.google.inject.Inject;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.exporter.common.TextFormat;
+import io.prometheus.client.hotspot.DefaultExports;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.UncheckedIOException;
 
-dependencyManagement {
-    imports {
-        // the Maven BOM which contains a coherent set of module versions
-        // for Vaadin dependencies
-        mavenBom ('software.amazon.awssdk:bom:2.16.3')
+/** Prometheus registry instance associated with the Java part of the node. */
+public class JavaPrometheus {
+
+  /** Prometheus registry. */
+  private final CollectorRegistry registry;
+
+  @Inject
+  public JavaPrometheus(CollectorRegistry registry) {
+    this.registry = registry;
+    DefaultExports.register(registry);
+  }
+
+  /**
+   * Returns metrics registered by Prometheus' measurement primitives.
+   *
+   * @return Metrics rendered in a "Prometheus 0.0.4" exposition format.
+   */
+  public String prometheusMetrics() {
+    try (var writer = new StringWriter()) {
+      TextFormat.write004(writer, this.registry.metricFamilySamples());
+      return writer.toString();
+    } catch (IOException ioe) {
+      throw new UncheckedIOException(ioe);
     }
-}
-
-dependencies {
-    api 'org.apache.logging.log4j:log4j-api'
-    api 'org.apache.logging.log4j:log4j-core'
-    api 'org.reflections:reflections'
-    api 'org.bouncycastle:bcprov-jdk15on'
-    api 'org.bouncycastle:bcpkix-jdk15on'
-    api 'org.json:json'
-    api 'com.fasterxml.jackson.core:jackson-databind'
-    api 'com.fasterxml.jackson.core:jackson-core'
-    api 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor'
-    api 'com.fasterxml.jackson.datatype:jackson-datatype-json-org'
-    api 'com.fasterxml.jackson.datatype:jackson-datatype-guava'
-    api 'com.google.guava:guava'
-    api 'com.google.inject:guice'
-    api 'io.prometheus:simpleclient'
-    api 'io.prometheus:simpleclient_common'
-    api 'io.prometheus:simpleclient_hotspot'
-    implementation('software.amazon.awssdk:secretsmanager:2.16.3')
-            {
-                exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
-            }
-    testImplementation 'junit:junit'
-    testImplementation 'org.mockito:mockito-core'
-    testImplementation 'nl.jqno.equalsverifier:equalsverifier'
-    testImplementation 'org.assertj:assertj-core'
-    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl'
-}
-
-jacocoTestReport {
-    dependsOn test
-    reports {
-        xml.enabled true
-        csv.enabled false
-    }
+  }
 }
