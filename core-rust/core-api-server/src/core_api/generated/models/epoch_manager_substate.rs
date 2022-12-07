@@ -13,8 +13,6 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct EpochManagerSubstate {
-    #[serde(rename = "entity_type")]
-    pub entity_type: crate::core_api::generated::models::EntityType,
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
     /// An integer between `0` and `10^10`, marking the current epoch
@@ -23,9 +21,8 @@ pub struct EpochManagerSubstate {
 }
 
 impl EpochManagerSubstate {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, epoch: i64) -> EpochManagerSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, epoch: i64) -> EpochManagerSubstate {
         EpochManagerSubstate {
-            entity_type,
             substate_type,
             epoch,
         }

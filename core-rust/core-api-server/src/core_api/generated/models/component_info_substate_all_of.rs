@@ -18,16 +18,13 @@ pub struct ComponentInfoSubstateAllOf {
     pub package_address: String,
     #[serde(rename = "blueprint_name")]
     pub blueprint_name: String,
-    #[serde(rename = "access_rules_layers")]
-    pub access_rules_layers: Vec<crate::core_api::generated::models::ComponentAccessRulesLayer>,
 }
 
 impl ComponentInfoSubstateAllOf {
-    pub fn new(package_address: String, blueprint_name: String, access_rules_layers: Vec<crate::core_api::generated::models::ComponentAccessRulesLayer>) -> ComponentInfoSubstateAllOf {
+    pub fn new(package_address: String, blueprint_name: String) -> ComponentInfoSubstateAllOf {
         ComponentInfoSubstateAllOf {
             package_address,
             blueprint_name,
-            access_rules_layers,
         }
     }
 }

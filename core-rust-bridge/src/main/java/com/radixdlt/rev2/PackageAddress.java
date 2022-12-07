@@ -65,7 +65,7 @@
 package com.radixdlt.rev2;
 
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.CustomTypeCodec;
+import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import java.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
@@ -75,8 +75,11 @@ public record PackageAddress(byte[] value) {
     codecMap.register(
         PackageAddress.class,
         codecs ->
-            new CustomTypeCodec<>(
-                TypeId.TYPE_CUSTOM_PACKAGE_ADDRESS, PackageAddress::value, PackageAddress::new));
+            new CustomTypeKnownLengthCodec<>(
+                TypeId.TYPE_CUSTOM_PACKAGE_ADDRESS,
+                BYTE_LENGTH,
+                PackageAddress::value,
+                PackageAddress::new));
   }
 
   private static final int BYTE_LENGTH = 27;

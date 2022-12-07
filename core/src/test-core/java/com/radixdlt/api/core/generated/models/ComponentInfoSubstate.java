@@ -22,15 +22,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ComponentAccessRulesLayer;
 import com.radixdlt.api.core.generated.models.ComponentInfoSubstateAllOf;
-import com.radixdlt.api.core.generated.models.EntityType;
 import com.radixdlt.api.core.generated.models.SubstateBase;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -38,17 +34,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * ComponentInfoSubstate
  */
 @JsonPropertyOrder({
-  ComponentInfoSubstate.JSON_PROPERTY_ENTITY_TYPE,
   ComponentInfoSubstate.JSON_PROPERTY_SUBSTATE_TYPE,
   ComponentInfoSubstate.JSON_PROPERTY_PACKAGE_ADDRESS,
-  ComponentInfoSubstate.JSON_PROPERTY_BLUEPRINT_NAME,
-  ComponentInfoSubstate.JSON_PROPERTY_ACCESS_RULES_LAYERS
+  ComponentInfoSubstate.JSON_PROPERTY_BLUEPRINT_NAME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ComponentInfoSubstate {
-  public static final String JSON_PROPERTY_ENTITY_TYPE = "entity_type";
-  private EntityType entityType;
-
   public static final String JSON_PROPERTY_SUBSTATE_TYPE = "substate_type";
   private SubstateType substateType;
 
@@ -58,37 +49,8 @@ public class ComponentInfoSubstate {
   public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
   private String blueprintName;
 
-  public static final String JSON_PROPERTY_ACCESS_RULES_LAYERS = "access_rules_layers";
-  private List<ComponentAccessRulesLayer> accessRulesLayers = new ArrayList<>();
-
   public ComponentInfoSubstate() { 
   }
-
-  public ComponentInfoSubstate entityType(EntityType entityType) {
-    this.entityType = entityType;
-    return this;
-  }
-
-   /**
-   * Get entityType
-   * @return entityType
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ENTITY_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public EntityType getEntityType() {
-    return entityType;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ENTITY_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEntityType(EntityType entityType) {
-    this.entityType = entityType;
-  }
-
 
   public ComponentInfoSubstate substateType(SubstateType substateType) {
     this.substateType = substateType;
@@ -168,37 +130,6 @@ public class ComponentInfoSubstate {
   }
 
 
-  public ComponentInfoSubstate accessRulesLayers(List<ComponentAccessRulesLayer> accessRulesLayers) {
-    this.accessRulesLayers = accessRulesLayers;
-    return this;
-  }
-
-  public ComponentInfoSubstate addAccessRulesLayersItem(ComponentAccessRulesLayer accessRulesLayersItem) {
-    this.accessRulesLayers.add(accessRulesLayersItem);
-    return this;
-  }
-
-   /**
-   * Get accessRulesLayers
-   * @return accessRulesLayers
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULES_LAYERS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public List<ComponentAccessRulesLayer> getAccessRulesLayers() {
-    return accessRulesLayers;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULES_LAYERS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccessRulesLayers(List<ComponentAccessRulesLayer> accessRulesLayers) {
-    this.accessRulesLayers = accessRulesLayers;
-  }
-
-
   /**
    * Return true if this ComponentInfoSubstate object is equal to o.
    */
@@ -211,27 +142,23 @@ public class ComponentInfoSubstate {
       return false;
     }
     ComponentInfoSubstate componentInfoSubstate = (ComponentInfoSubstate) o;
-    return Objects.equals(this.entityType, componentInfoSubstate.entityType) &&
-        Objects.equals(this.substateType, componentInfoSubstate.substateType) &&
+    return Objects.equals(this.substateType, componentInfoSubstate.substateType) &&
         Objects.equals(this.packageAddress, componentInfoSubstate.packageAddress) &&
-        Objects.equals(this.blueprintName, componentInfoSubstate.blueprintName) &&
-        Objects.equals(this.accessRulesLayers, componentInfoSubstate.accessRulesLayers);
+        Objects.equals(this.blueprintName, componentInfoSubstate.blueprintName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityType, substateType, packageAddress, blueprintName, accessRulesLayers);
+    return Objects.hash(substateType, packageAddress, blueprintName);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ComponentInfoSubstate {\n");
-    sb.append("    entityType: ").append(toIndentedString(entityType)).append("\n");
     sb.append("    substateType: ").append(toIndentedString(substateType)).append("\n");
     sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
     sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
-    sb.append("    accessRulesLayers: ").append(toIndentedString(accessRulesLayers)).append("\n");
     sb.append("}");
     return sb.toString();
   }

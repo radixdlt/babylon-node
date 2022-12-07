@@ -64,6 +64,9 @@
 
 package com.radixdlt.sbor.codec;
 
+import static com.radixdlt.sbor.codec.constants.TypeId.TYPE_ARRAY;
+import static com.radixdlt.sbor.codec.constants.TypeId.TYPE_TUPLE;
+
 import com.radixdlt.lang.Functions;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
@@ -74,8 +77,7 @@ import java.util.*;
 
 @SuppressWarnings("unused")
 public interface MapCodec {
-  record MapCodecViaHashMap<TMap extends Map<TKey, TItem>, TKey, TItem>(
-      TypeId mapTypeId,
+  record MapCodecInternal<TMap extends Map<TKey, TItem>, TKey, TItem>(
       Codec<TKey> keyCodec,
       Codec<TItem> itemCodec,
       Functions.Func1<TMap, Integer> getSize,
@@ -85,18 +87,18 @@ public interface MapCodec {
 
     @Override
     public TypeId getTypeId() {
-      return mapTypeId;
+      return TYPE_ARRAY;
     }
 
     public void encodeFromIterable(
         EncoderApi encoder, int size, Iterable<Map.Entry<TKey, TItem>> iterable) {
-      encoder.encodeTypeId(keyCodec.getTypeId());
-      encoder.encodeTypeId(itemCodec.getTypeId());
-      encoder.writeInt(size);
+      encoder.encodeTypeId(TYPE_TUPLE);
+      encoder.writeSize(size);
 
       for (var item : iterable) {
-        keyCodec.encodeWithoutTypeId(encoder, item.getKey());
-        itemCodec.encodeWithoutTypeId(encoder, item.getValue());
+        encoder.writeSize(2);
+        keyCodec.encodeWithTypeId(encoder, item.getKey());
+        itemCodec.encodeWithTypeId(encoder, item.getValue());
       }
     }
 
@@ -107,14 +109,14 @@ public interface MapCodec {
 
     @Override
     public TMap decodeWithoutTypeId(DecoderApi decoder) {
-      decoder.expectType(keyCodec.getTypeId());
-      decoder.expectType(itemCodec.getTypeId());
+      decoder.expectType(TYPE_TUPLE);
+      var length = decoder.readSize();
 
-      var length = decoder.readInt();
       var map = createMapWithPreparedLength.apply(length);
 
       for (var i = 0; i < length; i++) {
-        map.put(keyCodec.decodeWithoutTypeId(decoder), itemCodec.decodeWithoutTypeId(decoder));
+        decoder.expectSize(2);
+        map.put(keyCodec.decodeWithTypeId(decoder), itemCodec.decodeWithTypeId(decoder));
       }
 
       if (map.size() != length) {
@@ -148,11 +150,9 @@ public interface MapCodec {
   static <TKey, TItem> Codec<Map<TKey, TItem>> forMap(
       Codec<TKey> keyCodec,
       Codec<TItem> itemCodec,
-      TypeId mapTypeId,
       Functions.Func1<Integer, Map<TKey, TItem>> createEmptyMapWithSize) {
-    mapTypeId.assertMapType();
-    return new MapCodec.MapCodecViaHashMap<>(
-        mapTypeId, keyCodec, itemCodec, Map::size, Map::entrySet, createEmptyMapWithSize);
+    return new MapCodecInternal<>(
+        keyCodec, itemCodec, Map::size, Map::entrySet, createEmptyMapWithSize);
   }
 
   /**
@@ -164,33 +164,26 @@ public interface MapCodec {
    * In the future, we may wish to add a forHashMapWithDeterministicOrder method.
    */
   static <TKey, TItem> Codec<HashMap<TKey, TItem>> forHashMap(
-      Codec<TKey> keyCodec, Codec<TItem> itemCodec, TypeId mapTypeId) {
-    mapTypeId.assertMapType();
-    return new MapCodec.MapCodecViaHashMap<>(
-        mapTypeId, keyCodec, itemCodec, HashMap::size, HashMap::entrySet, HashMap::new);
+      Codec<TKey> keyCodec, Codec<TItem> itemCodec) {
+    return new MapCodecInternal<>(
+        keyCodec, itemCodec, HashMap::size, HashMap::entrySet, HashMap::new);
   }
 
   @SuppressWarnings("SortedCollectionWithNonComparableKeys")
   static <TKey, TItem> Codec<TreeMap<TKey, TItem>> forTreeMap(
-      Codec<TKey> keyCodec, Codec<TItem> itemCodec, TypeId mapTypeId) {
-    mapTypeId.assertMapType();
-    return new MapCodec.MapCodecViaHashMap<>(
-        mapTypeId,
-        keyCodec,
-        itemCodec,
-        TreeMap::size,
-        TreeMap::entrySet,
-        length -> new TreeMap<>());
+      Codec<TKey> keyCodec, Codec<TItem> itemCodec) {
+    return new MapCodecInternal<>(
+        keyCodec, itemCodec, TreeMap::size, TreeMap::entrySet, length -> new TreeMap<>());
   }
 
-  static void registerMapToMapTo(CodecMap codecMap, TypeId mapTypeId) {
+  static void registerMapToMapTo(CodecMap codecMap) {
     codecMap.registerForGeneric(
         Map.class,
         (codecs, mapType) -> {
           try {
             var keyType = TypeTokenUtils.getGenericTypeParameter(mapType, 0);
             var itemType = TypeTokenUtils.getGenericTypeParameter(mapType, 1);
-            return forMap(codecs.of(keyType), codecs.of(itemType), mapTypeId, HashMap::new);
+            return forMap(codecs.of(keyType), codecs.of(itemType), HashMap::new);
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating Map type codec for %s", mapType), ex);
@@ -198,14 +191,14 @@ public interface MapCodec {
         });
   }
 
-  static void registerHashMapToMapTo(CodecMap codecMap, TypeId mapTypeId) {
+  static void registerHashMapToMapTo(CodecMap codecMap) {
     codecMap.registerForGeneric(
         HashMap.class,
         (codecs, mapType) -> {
           try {
             var keyType = TypeTokenUtils.getGenericTypeParameter(mapType, 0);
             var itemType = TypeTokenUtils.getGenericTypeParameter(mapType, 1);
-            return forHashMap(codecs.of(keyType), codecs.of(itemType), mapTypeId);
+            return forHashMap(codecs.of(keyType), codecs.of(itemType));
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating HashMap type codec for %s", mapType), ex);
@@ -213,14 +206,14 @@ public interface MapCodec {
         });
   }
 
-  static void registerTreeMapToMapTo(CodecMap codecMap, TypeId mapTypeId) {
+  static void registerTreeMapToMapTo(CodecMap codecMap) {
     codecMap.registerForGeneric(
         TreeMap.class,
         (codecs, mapType) -> {
           try {
             var keyType = TypeTokenUtils.getGenericTypeParameter(mapType, 0);
             var itemType = TypeTokenUtils.getGenericTypeParameter(mapType, 1);
-            return forTreeMap(codecs.of(keyType), codecs.of(itemType), mapTypeId);
+            return forTreeMap(codecs.of(keyType), codecs.of(itemType));
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating TreeMap type codec for %s", mapType), ex);

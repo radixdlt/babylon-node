@@ -64,8 +64,8 @@
 
 package com.radixdlt.sbor.codec.core;
 
+import static com.radixdlt.sbor.codec.constants.TypeId.TYPE_ARRAY;
 import static com.radixdlt.sbor.codec.constants.TypeId.TYPE_I32;
-import static com.radixdlt.sbor.codec.constants.TypeId.TYPE_LIST;
 
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.constants.TypeId;
@@ -73,26 +73,15 @@ import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
 
 public final class IntegerArrayCodec implements Codec<int[]> {
-  private final TypeId collectionTypeId;
-
-  public IntegerArrayCodec(TypeId collectionTypeId) {
-    collectionTypeId.assertCollectionType();
-    this.collectionTypeId = collectionTypeId;
-  }
-
-  public IntegerArrayCodec() {
-    this(TYPE_LIST);
-  }
-
   @Override
   public TypeId getTypeId() {
-    return collectionTypeId;
+    return TYPE_ARRAY;
   }
 
   @Override
   public void encodeWithoutTypeId(EncoderApi encoder, int[] value) {
     encoder.encodeTypeId(TYPE_I32);
-    encoder.writeInt(value.length);
+    encoder.writeSize(value.length);
 
     for (var singleValue : value) {
       encoder.writeInt(singleValue);
@@ -102,7 +91,7 @@ public final class IntegerArrayCodec implements Codec<int[]> {
   @Override
   public int[] decodeWithoutTypeId(DecoderApi decoder) {
     decoder.expectType(TYPE_I32);
-    var length = decoder.readInt();
+    var length = decoder.readSize();
     return decoder.readIntegers(length);
   }
 }

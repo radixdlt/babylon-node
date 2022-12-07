@@ -15,6 +15,8 @@
 pub enum ValidatorTransactionType {
     #[serde(rename = "EpochUpdate")]
     EpochUpdate,
+    #[serde(rename = "TimeUpdate")]
+    TimeUpdate,
 
 }
 
@@ -22,6 +24,7 @@ impl ToString for ValidatorTransactionType {
     fn to_string(&self) -> String {
         match self {
             Self::EpochUpdate => String::from("EpochUpdate"),
+            Self::TimeUpdate => String::from("TimeUpdate"),
         }
     }
 }

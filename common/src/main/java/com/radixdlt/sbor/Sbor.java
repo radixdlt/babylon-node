@@ -78,53 +78,49 @@ import java.io.ByteArrayOutputStream;
  * DefaultUntypedSbor.
  */
 @SuppressWarnings("unused")
-public final class Sbor {
-  private final boolean withTypeIds;
+public class Sbor {
   private final CodecMap.CodecResolver codecResolver;
+  private final byte prefixByte;
 
-  public Sbor(boolean withTypeIds) {
-    this(withTypeIds, new CodecMap());
-  }
-
-  public Sbor(boolean withTypeIds, CodecMap codecMap) {
-    this.withTypeIds = withTypeIds;
+  public Sbor(byte prefixByte, CodecMap codecMap) {
+    this.prefixByte = prefixByte;
     this.codecResolver = codecMap.resolver;
   }
 
-  public Sbor(boolean withTypeIds, CodecMap.CodecResolver codecResolver) {
-    this.withTypeIds = withTypeIds;
+  public Sbor(byte prefixByte, CodecMap.CodecResolver codecResolver) {
+    this.prefixByte = prefixByte;
     this.codecResolver = codecResolver;
   }
 
   @SuppressWarnings("unchecked")
-  public <T> byte[] encode(T value) {
-    return encode(value, (Class<? super T>) value.getClass());
+  public <T> byte[] encode_payload(T value) {
+    return encode_payload(value, (Class<? super T>) value.getClass());
   }
 
-  public <T> byte[] encode(T value, Class<T> clazz) {
-    return encode(value, codecResolver.of(clazz));
+  public <T> byte[] encode_payload(T value, Class<T> clazz) {
+    return encode_payload(value, codecResolver.of(clazz));
   }
 
-  public <T> byte[] encode(T value, TypeToken<T> type) {
-    return encode(value, codecResolver.of(type));
+  public <T> byte[] encode_payload(T value, TypeToken<T> type) {
+    return encode_payload(value, codecResolver.of(type));
   }
 
-  public <T> byte[] encode(T value, Codec<T> codec) {
+  public <T> byte[] encode_payload(T value, Codec<T> codec) {
     var outputStream = new ByteArrayOutputStream();
-    new Encoder(outputStream, withTypeIds).encodeWithTypeId(value, codec);
+    new Encoder(outputStream).encodePayload(prefixByte, value, codec);
     return outputStream.toByteArray();
   }
 
-  public <T> T decode(byte[] input, Class<T> clazz) {
-    return decode(input, codecResolver.of(clazz));
+  public <T> T decode_payload(byte[] input, Class<T> clazz) {
+    return decode_payload(input, codecResolver.of(clazz));
   }
 
-  public <T> T decode(byte[] input, TypeToken<T> type) {
-    return decode(input, codecResolver.of(type));
+  public <T> T decode_payload(byte[] input, TypeToken<T> type) {
+    return decode_payload(input, codecResolver.of(type));
   }
 
-  public <T> T decode(byte[] input, Codec<T> codec) {
-    return new Decoder(new ByteArrayInputStream(input), withTypeIds).decodeFromAllOfStream(codec);
+  public <T> T decode_payload(byte[] input, Codec<T> codec) {
+    return new Decoder(new ByteArrayInputStream(input)).decodePayload(prefixByte, codec);
   }
 
   public <T> Codec<T> createCodec(CodecMap.ClassCodecCreator<T> codecCreator) {

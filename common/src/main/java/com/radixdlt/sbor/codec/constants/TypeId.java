@@ -67,10 +67,7 @@ package com.radixdlt.sbor.codec.constants;
 import static com.radixdlt.lang.Option.none;
 import static com.radixdlt.lang.Option.some;
 
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.lang.Option;
-import com.radixdlt.sbor.exceptions.SborCodecException;
-import java.util.Set;
 
 public enum TypeId {
   // Primitive Types
@@ -88,20 +85,10 @@ public enum TypeId {
   TYPE_U128(0x0b),
   TYPE_STRING(0x0c),
 
-  // Enum and struct
-  TYPE_STRUCT(0x10),
-  TYPE_ENUM(0x11),
-  TYPE_OPTION(0x12),
-  TYPE_RESULT(0x13),
-
   // Composite types
+  TYPE_TUPLE(0x21), // Any "product type" - Tuples and Structs (T1, T2, T3)
+  TYPE_ENUM(0x11),
   TYPE_ARRAY(0x20),
-  TYPE_TUPLE(0x21),
-
-  // Collections + Maps
-  TYPE_LIST(0x30),
-  TYPE_SET(0x31),
-  TYPE_MAP(0x32),
 
   // Custom Start
   // custom types start from 0x80 and values are encoded as `len + data`
@@ -123,30 +110,6 @@ public enum TypeId {
 
   public byte id() {
     return id;
-  }
-
-  public static final Set<TypeId> collectionTypes =
-      ImmutableSet.of(TYPE_LIST, TYPE_ARRAY, TYPE_SET);
-  public static final Set<TypeId> mapTypes = ImmutableSet.of(TYPE_MAP);
-
-  public boolean isCollectionType() {
-    return collectionTypes.contains(this);
-  }
-
-  public void assertCollectionType() {
-    if (!isCollectionType()) {
-      throw new SborCodecException(String.format("Type id %s is not a collection type id", this));
-    }
-  }
-
-  public boolean isMapType() {
-    return mapTypes.contains(this);
-  }
-
-  public void assertMapType() {
-    if (!isMapType()) {
-      throw new SborCodecException(String.format("Type id %s is not a map type id", this));
-    }
   }
 
   /** Intended for debugging - not particularly performant. */

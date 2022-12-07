@@ -68,9 +68,15 @@ import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 
 public interface DecoderApi {
-  void expectType(TypeId typeId);
+  <T> T decodePayload(byte prefixByte, Codec<T> codec);
 
   <T> T decodeWithTypeId(Codec<T> codec);
+
+  void expectType(TypeId typeId);
+
+  void expectSize(int size);
+
+  int readSize();
 
   boolean readBoolean();
 

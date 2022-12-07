@@ -14,40 +14,52 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct FeeSummary {
-    /// Specifies whether the transaction execution loan has been fully repaid.
-    #[serde(rename = "loan_fully_repaid")]
-    pub loan_fully_repaid: bool,
+    /// The string-encoded decimal representing the XRD price of a single cost unit. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    #[serde(rename = "cost_unit_price")]
+    pub cost_unit_price: String,
+    /// An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+    #[serde(rename = "tip_percentage")]
+    pub tip_percentage: i32,
     /// An integer between `0` and `2^32 - 1`, representing the maximum amount of cost units available for the transaction execution.
     #[serde(rename = "cost_unit_limit")]
     pub cost_unit_limit: i64,
     /// An integer between `0` and `2^32 - 1`, representing the amount of cost units consumed by the transaction execution.
     #[serde(rename = "cost_units_consumed")]
     pub cost_units_consumed: i64,
-    /// The string-encoded decimal representing the XRD price of a single cost unit. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
-    #[serde(rename = "cost_unit_price")]
-    pub cost_unit_price: String,
-    /// An integer between `0` and `2^32 - 1`, specifying the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
-    #[serde(rename = "tip_percentage")]
-    pub tip_percentage: i64,
-    /// The string-encoded decimal representing the total amount of XRD burned in the transaction. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
-    #[serde(rename = "xrd_burned")]
-    pub xrd_burned: String,
+    /// The string-encoded decimal representing the total amount of XRD burned in the transaction as part of execution costs. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    #[serde(rename = "xrd_total_execution_cost")]
+    pub xrd_total_execution_cost: String,
+    /// The string-encoded decimal representing the total amount of XRD paid in royalties as part of the transaction. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    #[serde(rename = "xrd_total_royalty_cost")]
+    pub xrd_total_royalty_cost: String,
     /// The string-encoded decimal representing the total amount of XRD tipped to validators in the transaction. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
-    #[serde(rename = "xrd_tipped")]
-    pub xrd_tipped: String,
+    #[serde(rename = "xrd_total_tipped")]
+    pub xrd_total_tipped: String,
+    /// A summary of which vaults were used to pay the fee. This is only present if the transaction was committed. 
+    #[serde(rename = "xrd_vault_payments", skip_serializing_if = "Option::is_none")]
+    pub xrd_vault_payments: Option<Vec<crate::core_api::generated::models::VaultPayment>>,
+    /// A summary of where the execution cost went. 
+    #[serde(rename = "cost_unit_execution_breakdown")]
+    pub cost_unit_execution_breakdown: ::std::collections::HashMap<String, i64>,
+    /// A summary of where the royalties were paid to. 
+    #[serde(rename = "cost_unit_royalty_breakdown")]
+    pub cost_unit_royalty_breakdown: Vec<crate::core_api::generated::models::RoyaltyPayment>,
 }
 
 impl FeeSummary {
     /// Fees paid
-    pub fn new(loan_fully_repaid: bool, cost_unit_limit: i64, cost_units_consumed: i64, cost_unit_price: String, tip_percentage: i64, xrd_burned: String, xrd_tipped: String) -> FeeSummary {
+    pub fn new(cost_unit_price: String, tip_percentage: i32, cost_unit_limit: i64, cost_units_consumed: i64, xrd_total_execution_cost: String, xrd_total_royalty_cost: String, xrd_total_tipped: String, cost_unit_execution_breakdown: ::std::collections::HashMap<String, i64>, cost_unit_royalty_breakdown: Vec<crate::core_api::generated::models::RoyaltyPayment>) -> FeeSummary {
         FeeSummary {
-            loan_fully_repaid,
-            cost_unit_limit,
-            cost_units_consumed,
             cost_unit_price,
             tip_percentage,
-            xrd_burned,
-            xrd_tipped,
+            cost_unit_limit,
+            cost_units_consumed,
+            xrd_total_execution_cost,
+            xrd_total_royalty_cost,
+            xrd_total_tipped,
+            xrd_vault_payments: None,
+            cost_unit_execution_breakdown,
+            cost_unit_royalty_breakdown,
         }
     }
 }

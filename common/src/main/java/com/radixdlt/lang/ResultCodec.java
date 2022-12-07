@@ -67,7 +67,7 @@ package com.radixdlt.lang;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.TypeTokenUtils;
-import com.radixdlt.sbor.codec.constants.ResultTypeId;
+import com.radixdlt.sbor.codec.constants.ResultVariants;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
@@ -78,31 +78,39 @@ public record ResultCodec<T, E>(Codec<T> okCodec, Codec<E> errCodec)
     implements Codec<Result<T, E>> {
   @Override
   public TypeId getTypeId() {
-    return TypeId.TYPE_RESULT;
+    return TypeId.TYPE_ENUM;
   }
 
   @Override
   public void encodeWithoutTypeId(EncoderApi encoder, Result<T, E> result) {
     result.apply(
         value -> {
-          encoder.writeByte(ResultTypeId.OK);
+          encoder.writeString(ResultVariants.OK);
+          encoder.writeSize(1);
           encoder.encodeWithTypeId(value, okCodec);
         },
         error -> {
-          encoder.writeByte(ResultTypeId.ERR);
+          encoder.writeString(ResultVariants.ERR);
+          encoder.writeSize(1);
           encoder.encodeWithTypeId(error, errCodec);
         });
   }
 
   @Override
   public Result<T, E> decodeWithoutTypeId(DecoderApi decoder) {
-    var resultTypeByte = decoder.readByte();
+    var variantName = decoder.readString();
 
-    return switch (resultTypeByte) {
-      case ResultTypeId.OK -> Result.success(decoder.decodeWithTypeId(okCodec));
-      case ResultTypeId.ERR -> Result.error(decoder.decodeWithTypeId(errCodec));
+    return switch (variantName) {
+      case ResultVariants.OK -> {
+        decoder.expectSize(1);
+        yield Result.success(decoder.decodeWithTypeId(okCodec));
+      }
+      case ResultVariants.ERR -> {
+        decoder.expectSize(1);
+        yield Result.error(decoder.decodeWithTypeId(errCodec));
+      }
       default -> throw new SborDecodeException(
-          String.format("Unknown result type id %s", resultTypeByte));
+          String.format("Unknown result variant %s", variantName));
     };
   }
 

@@ -74,20 +74,22 @@ use crate::{
 use prometheus::core::Collector;
 use prometheus::{IntCounter, IntCounterVec, IntGauge, Registry};
 use radix_engine::engine::ScryptoInterpreter;
-use radix_engine::fee::SystemLoanFeeReserve;
-use radix_engine::state_manager::StagedSubstateStoreManager;
+use radix_engine::state_manager::{StagedSubstateStore, StagedSubstateStoreManager};
 use radix_engine::transaction::{
-    execute_and_commit_transaction, execute_preview, execute_transaction,
-    execute_transaction_with_fee_reserve, ExecutionConfig, FeeReserveConfig, PreviewError,
-    PreviewResult, TransactionOutcome, TransactionReceipt, TransactionResult,
+    execute_and_commit_transaction, execute_preview, execute_transaction, ExecutionConfig,
+    FeeReserveConfig, PreviewError, PreviewResult, TransactionOutcome, TransactionReceipt,
+    TransactionResult,
+};
+use radix_engine::types::{
+    scrypto_encode, ComponentAddress, Decimal, Decode, Encode, GlobalAddress, PublicKey, RENodeId,
+    ResourceAddress, TypeId,
 };
 use radix_engine::wasm::{
     DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
 };
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
-use scrypto::engine::types::{GlobalAddress, RENodeId};
-use scrypto::prelude::*;
-use std::collections::HashMap;
+use radix_engine_interface::core::NetworkDefinition;
+use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tracing::info;
@@ -576,39 +578,30 @@ where
 
         let mut committed = Vec::new();
 
+        // Update the epoch
         if prepare_request.round_number % self.rounds_per_epoch == 0 {
             let new_epoch = (prepare_request.round_number / self.rounds_per_epoch) + 1;
-            let epoch_update_txn = ValidatorTransaction::EpochUpdate(new_epoch);
-            let prepared_epoch_update_txn = epoch_update_txn.prepare();
-            let executable = prepared_epoch_update_txn.get_executable();
-
-            let mut fee_reserve = SystemLoanFeeReserve::default();
-            // TODO: Clean up fee reserve
-            fee_reserve.credit(10_000_000);
-            let receipt = execute_transaction_with_fee_reserve(
-                &staged_store,
+            let epoch_update_ledger_txn = Self::execute_and_commit_validator_transaction(
                 &self.scrypto_interpreter,
-                fee_reserve,
+                &self.fee_reserve_config,
                 &self.execution_config,
-                &executable,
-            );
-            match receipt.result {
-                TransactionResult::Commit(commit_result) => {
-                    if let TransactionOutcome::Failure(failure) = commit_result.outcome {
-                        panic!("Epoch Update failed: {:?}", failure);
-                    }
-
-                    commit_result.state_updates.commit(&mut staged_store);
-
-                    committed.push(scrypto_encode(&LedgerTransaction::Validator(
-                        epoch_update_txn,
-                    )));
-                }
-                TransactionResult::Reject(reject_result) => {
-                    panic!("Epoch Update rejected: {:?}", reject_result);
-                }
-            }
+                ValidatorTransaction::EpochUpdate(new_epoch),
+                &mut staged_store,
+            )
+            .expect("Epoch update txn failed");
+            committed.push(scrypto_encode(&epoch_update_ledger_txn).unwrap());
         }
+
+        // Update the time
+        let time_update_ledger_txn = Self::execute_and_commit_validator_transaction(
+            &self.scrypto_interpreter,
+            &self.fee_reserve_config,
+            &self.execution_config,
+            ValidatorTransaction::TimeUpdate(prepare_request.proposer_timestamp),
+            &mut staged_store,
+        )
+        .expect("Time update txn failed");
+        committed.push(scrypto_encode(&time_update_ledger_txn).unwrap());
 
         let mut rejected = Vec::new();
 
@@ -656,7 +649,7 @@ where
             match receipt.result {
                 TransactionResult::Commit(..) => {
                     already_committed_or_prepared_intent_hashes.insert(intent_hash);
-                    committed.push(LedgerTransaction::User(parsed).create_payload());
+                    committed.push(LedgerTransaction::User(parsed).create_payload().unwrap());
                 }
                 TransactionResult::Reject(reject_result) => {
                     rejected.push((proposed_payload, format!("{:?}", reject_result)));
@@ -671,8 +664,42 @@ where
         }
 
         PrepareResult {
-            rejected,
             committed,
+            rejected,
+        }
+    }
+
+    fn execute_and_commit_validator_transaction(
+        scrypto_interpreter: &ScryptoInterpreter<DefaultWasmEngine>,
+        fee_reserve_config: &FeeReserveConfig,
+        execution_config: &ExecutionConfig,
+        validator_transaction: ValidatorTransaction,
+        staged_store: &mut StagedSubstateStore<S>,
+    ) -> Result<LedgerTransaction, String> {
+        let prepared_txn = validator_transaction.prepare();
+        let executable = prepared_txn.get_executable();
+
+        let receipt = execute_transaction(
+            staged_store,
+            scrypto_interpreter,
+            fee_reserve_config,
+            execution_config,
+            &executable,
+        );
+
+        match receipt.result {
+            TransactionResult::Commit(commit_result) => match commit_result.outcome {
+                TransactionOutcome::Failure(error) => {
+                    Err(format!("Validator txn failed: {:?}", error))
+                }
+                TransactionOutcome::Success(..) => {
+                    commit_result.state_updates.commit(staged_store);
+                    Ok(LedgerTransaction::Validator(validator_transaction))
+                }
+            },
+            TransactionResult::Reject(reject_result) => {
+                Err(format!("Validator txn rejected: {:?}", reject_result))
+            }
         }
     }
 }

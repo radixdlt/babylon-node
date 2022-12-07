@@ -1,12 +1,11 @@
 use super::addressing::*;
 use crate::core_api::*;
 use radix_engine::{
-    fee::FeeSummary as EngineFeeSummary,
+    fee::{FeeSummary, RoyaltyReceiver},
     ledger::OutputValue,
     transaction::TransactionOutcome,
-    types::{hash, scrypto_encode, SubstateId},
+    types::{hash, scrypto_encode, Bech32Encoder, Decimal, GlobalAddress, RENodeId, SubstateId},
 };
-use scrypto::address::Bech32Encoder;
 
 use state_manager::{DeletedSubstateVersion, LedgerTransactionReceipt};
 
@@ -51,10 +50,9 @@ pub fn to_api_receipt(
         .iter()
         .filter_map(|substate| {
             substate.substate_data.as_ref().and_then(|data| match data {
-                models::Substate::GlobalSubstate {
-                    entity_type: _,
-                    target_entity,
-                } => Some(target_entity.as_ref().clone()),
+                models::Substate::GlobalAddressSubstate { target_entity } => {
+                    Some(target_entity.as_ref().clone())
+                }
                 _ => None,
             })
         })
@@ -67,7 +65,7 @@ pub fn to_api_receipt(
         new_global_entities,
     };
 
-    let api_fee_summary = to_api_fee_summary(fee_summary);
+    let api_fee_summary = to_api_fee_summary(bech32_encoder, fee_summary)?;
 
     let api_output = match output {
         Some(output) => Some(
@@ -93,7 +91,11 @@ pub fn to_api_new_substate_version(
     bech32_encoder: &Bech32Encoder,
     (substate_id, output_value): (SubstateId, OutputValue),
 ) -> Result<models::NewSubstateVersion, MappingError> {
-    let substate_bytes = scrypto_encode(&output_value.substate);
+    let substate_bytes =
+        scrypto_encode(&output_value.substate).map_err(|err| MappingError::SborEncodeError {
+            encode_error: err,
+            message: "Substate bytes could not be encoded".to_string(),
+        })?;
     let hash = to_hex(hash(&substate_bytes));
 
     let api_substate_data = Some(to_api_substate(
@@ -123,14 +125,53 @@ pub fn to_api_deleted_substate(
 }
 
 #[tracing::instrument(skip_all)]
-pub fn to_api_fee_summary(fee_summary: EngineFeeSummary) -> models::FeeSummary {
-    models::FeeSummary {
-        loan_fully_repaid: fee_summary.loan_fully_repaid,
+pub fn to_api_fee_summary(
+    bech32_encoder: &Bech32Encoder,
+    fee_summary: FeeSummary,
+) -> Result<models::FeeSummary, MappingError> {
+    Ok(models::FeeSummary {
+        cost_unit_price: to_api_decimal(&fee_summary.cost_unit_price),
+        tip_percentage: to_api_u8_as_i32(fee_summary.tip_percentage),
         cost_unit_limit: to_api_u32_as_i64(fee_summary.cost_unit_limit),
         cost_units_consumed: to_api_u32_as_i64(fee_summary.cost_unit_consumed),
-        cost_unit_price: to_api_decimal(&fee_summary.cost_unit_price),
-        tip_percentage: to_api_u32_as_i64(fee_summary.tip_percentage),
-        xrd_burned: to_api_decimal(&fee_summary.burned),
-        xrd_tipped: to_api_decimal(&fee_summary.tipped),
-    }
+        xrd_total_execution_cost: to_api_decimal(&fee_summary.total_execution_cost_xrd),
+        xrd_total_royalty_cost: to_api_decimal(&fee_summary.total_royalty_cost_xrd),
+        xrd_total_tipped: to_api_decimal(&Decimal::ZERO),
+        xrd_vault_payments: fee_summary
+            .vault_payments_xrd
+            .map(|vault_payments| {
+                vault_payments
+                    .into_iter()
+                    .map(|(vault_id, amount)| {
+                        Ok(models::VaultPayment {
+                            vault_entity: Box::new(to_entity_reference(RENodeId::Vault(vault_id))?),
+                            xrd_amount: to_api_decimal(&amount),
+                        })
+                    })
+                    .collect::<Result<_, _>>()
+            })
+            .transpose()?,
+        cost_unit_execution_breakdown: fee_summary
+            .execution_cost_unit_breakdown
+            .into_iter()
+            .map(|(key, cost_unit_amount)| (key, to_api_u32_as_i64(cost_unit_amount)))
+            .collect(),
+        cost_unit_royalty_breakdown: fee_summary
+            .royalty_cost_unit_breakdown
+            .into_iter()
+            .map(|(receiver, cost_unit_amount)| {
+                let global_address = match receiver {
+                    RoyaltyReceiver::Package(address, _) => GlobalAddress::Package(address),
+                    RoyaltyReceiver::Component(address, _) => GlobalAddress::Component(address),
+                };
+                models::RoyaltyPayment {
+                    royalty_receiver: Box::new(to_global_entity_reference(
+                        bech32_encoder,
+                        &global_address,
+                    )),
+                    cost_unit_amount: to_api_u32_as_i64(cost_unit_amount),
+                }
+            })
+            .collect(),
+    })
 }

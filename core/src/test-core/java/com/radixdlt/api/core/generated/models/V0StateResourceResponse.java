@@ -32,12 +32,24 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * V0StateResourceResponse
  */
 @JsonPropertyOrder({
-  V0StateResourceResponse.JSON_PROPERTY_MANAGER
+  V0StateResourceResponse.JSON_PROPERTY_MANAGER,
+  V0StateResourceResponse.JSON_PROPERTY_METADATA,
+  V0StateResourceResponse.JSON_PROPERTY_ACCESS_RULES,
+  V0StateResourceResponse.JSON_PROPERTY_VAULT_ACCESS_RULES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class V0StateResourceResponse {
   public static final String JSON_PROPERTY_MANAGER = "manager";
   private Substate manager;
+
+  public static final String JSON_PROPERTY_METADATA = "metadata";
+  private Substate metadata;
+
+  public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
+  private Substate accessRules;
+
+  public static final String JSON_PROPERTY_VAULT_ACCESS_RULES = "vault_access_rules";
+  private Substate vaultAccessRules;
 
   public V0StateResourceResponse() { 
   }
@@ -68,6 +80,84 @@ public class V0StateResourceResponse {
   }
 
 
+  public V0StateResourceResponse metadata(Substate metadata) {
+    this.metadata = metadata;
+    return this;
+  }
+
+   /**
+   * Get metadata
+   * @return metadata
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_METADATA)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Substate getMetadata() {
+    return metadata;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_METADATA)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setMetadata(Substate metadata) {
+    this.metadata = metadata;
+  }
+
+
+  public V0StateResourceResponse accessRules(Substate accessRules) {
+    this.accessRules = accessRules;
+    return this;
+  }
+
+   /**
+   * Get accessRules
+   * @return accessRules
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Substate getAccessRules() {
+    return accessRules;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAccessRules(Substate accessRules) {
+    this.accessRules = accessRules;
+  }
+
+
+  public V0StateResourceResponse vaultAccessRules(Substate vaultAccessRules) {
+    this.vaultAccessRules = vaultAccessRules;
+    return this;
+  }
+
+   /**
+   * Get vaultAccessRules
+   * @return vaultAccessRules
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VAULT_ACCESS_RULES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Substate getVaultAccessRules() {
+    return vaultAccessRules;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_VAULT_ACCESS_RULES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setVaultAccessRules(Substate vaultAccessRules) {
+    this.vaultAccessRules = vaultAccessRules;
+  }
+
+
   /**
    * Return true if this V0StateResourceResponse object is equal to o.
    */
@@ -80,12 +170,15 @@ public class V0StateResourceResponse {
       return false;
     }
     V0StateResourceResponse v0StateResourceResponse = (V0StateResourceResponse) o;
-    return Objects.equals(this.manager, v0StateResourceResponse.manager);
+    return Objects.equals(this.manager, v0StateResourceResponse.manager) &&
+        Objects.equals(this.metadata, v0StateResourceResponse.metadata) &&
+        Objects.equals(this.accessRules, v0StateResourceResponse.accessRules) &&
+        Objects.equals(this.vaultAccessRules, v0StateResourceResponse.vaultAccessRules);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(manager);
+    return Objects.hash(manager, metadata, accessRules, vaultAccessRules);
   }
 
   @Override
@@ -93,6 +186,9 @@ public class V0StateResourceResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class V0StateResourceResponse {\n");
     sb.append("    manager: ").append(toIndentedString(manager)).append("\n");
+    sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
+    sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
+    sb.append("    vaultAccessRules: ").append(toIndentedString(vaultAccessRules)).append("\n");
     sb.append("}");
     return sb.toString();
   }

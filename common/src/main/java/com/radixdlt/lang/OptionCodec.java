@@ -67,7 +67,7 @@ package com.radixdlt.lang;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.TypeTokenUtils;
-import com.radixdlt.sbor.codec.constants.OptionTypeId;
+import com.radixdlt.sbor.codec.constants.OptionVariants;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
@@ -77,28 +77,38 @@ import com.radixdlt.sbor.exceptions.SborDecodeException;
 public record OptionCodec<T>(Codec<T> innerTypeCodec) implements Codec<Option<T>> {
   @Override
   public TypeId getTypeId() {
-    return TypeId.TYPE_OPTION;
+    return TypeId.TYPE_ENUM;
   }
 
   @Override
   public void encodeWithoutTypeId(EncoderApi encoder, Option<T> option) {
     option.apply(
-        () -> encoder.writeByte(OptionTypeId.NONE),
+        () -> {
+          encoder.writeString(OptionVariants.NONE);
+          encoder.writeSize(0);
+        },
         value -> {
-          encoder.writeByte(OptionTypeId.SOME);
+          encoder.writeString(OptionVariants.SOME);
+          encoder.writeSize(1);
           encoder.encodeWithTypeId(value, innerTypeCodec);
         });
   }
 
   @Override
   public Option<T> decodeWithoutTypeId(DecoderApi decoder) {
-    var typeByte = decoder.readByte();
+    var variantName = decoder.readString();
 
-    return switch (typeByte) {
-      case OptionTypeId.NONE -> Option.NONE;
-      case OptionTypeId.SOME -> Option.some(decoder.decodeWithTypeId(innerTypeCodec));
+    return switch (variantName) {
+      case OptionVariants.NONE -> {
+        decoder.expectSize(0);
+        yield Option.NONE;
+      }
+      case OptionVariants.SOME -> {
+        decoder.expectSize(1);
+        yield Option.some(decoder.decodeWithTypeId(innerTypeCodec));
+      }
       default -> throw new SborDecodeException(
-          String.format("Unknown option type id %s", typeByte));
+          String.format("Unknown option variant %s", variantName));
     };
   }
 

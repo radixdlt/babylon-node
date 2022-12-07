@@ -69,14 +69,14 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::transaction::TransactionOutcome;
-use sbor::{Decode, Encode, TypeId};
-use scrypto::buffer::scrypto_encode;
-use scrypto::prelude::ComponentAddress;
+use radix_engine::types::{scrypto_encode, ComponentAddress};
+use radix_engine_interface::scrypto;
 
 use super::mempool::JavaPayloadHash;
 use super::utils::jni_state_manager_sbor_read_call;
 
-#[derive(Encode, Decode, TypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 struct ExecutedTransaction {
     outcome: TransactionOutcomeJava,
     ledger_receipt_bytes: Vec<u8>,
@@ -85,7 +85,8 @@ struct ExecutedTransaction {
     new_component_addresses: Vec<ComponentAddress>,
 }
 
-#[derive(Encode, Decode, TypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum TransactionOutcomeJava {
     Success(Vec<Vec<u8>>),
     Failure(String),
@@ -116,7 +117,7 @@ fn do_get_transaction_at_state_version(
         .store
         .get_committed_transaction(&payload_hash)?;
 
-    let ledger_receipt_bytes = scrypto_encode(&ledger_receipt);
+    let ledger_receipt_bytes = scrypto_encode(&ledger_receipt).unwrap();
 
     Some(ExecutedTransaction {
         outcome: match ledger_receipt.outcome {
@@ -126,7 +127,7 @@ fn do_get_transaction_at_state_version(
             }
         },
         ledger_receipt_bytes,
-        transaction_bytes: stored_transaction.create_payload(),
+        transaction_bytes: stored_transaction.create_payload().unwrap(),
         new_component_addresses: ledger_receipt.entity_changes.new_component_addresses,
     })
 }

@@ -1,6 +1,6 @@
 use radix_engine::model::EpochManagerSubstate;
 use radix_engine::types::{EpochManagerOffset, SubstateId, EPOCH_MANAGER};
-use scrypto::engine::types::{GlobalAddress, GlobalOffset, RENodeId, SubstateOffset};
+use radix_engine::types::{GlobalAddress, GlobalOffset, RENodeId, SubstateOffset};
 
 use crate::store::traits::*;
 

@@ -18,6 +18,9 @@ pub struct GlobalEntityAssignment {
     /// The hex-encoded bytes of the target entity id
     #[serde(rename = "target_entity_id_hex")]
     pub target_entity_id_hex: String,
+    /// The hex-encoded bytes of the global entity id
+    #[serde(rename = "global_entity_id_hex")]
+    pub global_entity_id_hex: String,
     /// The hex-encoded bytes of the assigned global address.
     #[serde(rename = "global_address_hex")]
     pub global_address_hex: String,
@@ -27,10 +30,11 @@ pub struct GlobalEntityAssignment {
 }
 
 impl GlobalEntityAssignment {
-    pub fn new(target_entity_type: crate::core_api::generated::models::EntityType, target_entity_id_hex: String, global_address_hex: String, global_address: String) -> GlobalEntityAssignment {
+    pub fn new(target_entity_type: crate::core_api::generated::models::EntityType, target_entity_id_hex: String, global_entity_id_hex: String, global_address_hex: String, global_address: String) -> GlobalEntityAssignment {
         GlobalEntityAssignment {
             target_entity_type,
             target_entity_id_hex,
+            global_entity_id_hex,
             global_address_hex,
             global_address,
         }

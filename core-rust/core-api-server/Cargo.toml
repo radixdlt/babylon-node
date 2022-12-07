@@ -23,22 +23,19 @@ parking_lot = { version = "0.12" }
 #
 # Ensure this version is also identically updated in ../state-manager/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "2022-11-14-v1", features = ["serde"] }
-scrypto = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "2022-11-14-v1" }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "2022-11-14-v1" }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "2022-11-14-v1" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "2022-11-14-v1" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "2022-11-14-v1" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-6f1a42125", features = ["serde", "indexmap"] }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-6f1a42125" }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-6f1a42125" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-6f1a42125" }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-6f1a42125", features = ["serde"] }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-6f1a42125" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-6f1a42125" }
+indexmap = { version = "1.9.2" }
 
 jni = "0.19.0"
 
 serde = { version = "1.0.81", features = ["derive"] }
-# Note:
-# Use of the arbitrary_precision allows u128s / i128s to be output as numbers.
-# This is a temporary workaround for encoding SBOR Values, which include u128/i128. Value will be changed upstream,
-# so that these values will be written as strings - this means we can drop the `arbitrary_precision` feature once the
-# upstream changes (SCRY-287) have been merged in.
-serde_json = { version = "1.0.81", features = ["arbitrary_precision"] }
+serde_json = { version = "1.0.81" }
 hex = { version = "0.4.3", default-features = false }
 futures = "0.3"
 

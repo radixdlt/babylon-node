@@ -27,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.DynamicResourceDescriptorType;
 import com.radixdlt.api.core.generated.models.NonFungibleDynamicResourceDescriptor;
+import com.radixdlt.api.core.generated.models.NonFungibleId;
 import com.radixdlt.api.core.generated.models.ResourceDynamicResourceDescriptor;
 import com.radixdlt.api.core.generated.models.SchemaPathDynamicResourceDescriptor;
 import com.radixdlt.api.core.generated.models.SchemaSubpath;
