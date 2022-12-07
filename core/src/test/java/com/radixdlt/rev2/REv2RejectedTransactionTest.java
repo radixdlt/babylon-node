@@ -131,18 +131,19 @@ public final class REv2RejectedTransactionTest {
     var proposalGenerator = new ControlledProposerGenerator();
 
     try (var test = createTest(proposalGenerator)) {
-      var rejectableTransaction = REv2TestTransactions.constructValidButRejectTransaction(1, 1);
+      var rawRejectableTransaction =
+          REv2TestTransactions.validButRejectTransaction(1, 1).constructRawTransaction();
 
       // Act: Submit transaction to mempool and run consensus
       test.startAllNodes();
-      proposalGenerator.nextTransaction = rejectableTransaction;
+      proposalGenerator.nextTransaction = rawRejectableTransaction;
       test.runUntilState(ignored -> proposalGenerator.nextTransaction == null);
       test.runForCount(100, onlyConsensusEvents());
 
       // Assert: Check transaction and post submission state
       assertThat(proposalGenerator.nextTransaction).isNull();
       // Verify that transaction was not committed
-      assertTransactionNotCommitted(test.getNodeInjectors(), rejectableTransaction);
+      assertTransactionNotCommitted(test.getNodeInjectors(), rawRejectableTransaction);
     }
   }
 }

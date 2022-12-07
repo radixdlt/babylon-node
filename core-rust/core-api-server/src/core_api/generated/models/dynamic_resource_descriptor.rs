@@ -18,9 +18,8 @@ pub enum DynamicResourceDescriptor {
         /// The Bech32m-encoded human readable version of the resource address
         #[serde(rename = "resource_address")]
         resource_address: String,
-        /// The hex-encoded bytes of a non-fungible id
-        #[serde(rename = "non_fungible_id_hex")]
-        non_fungible_id_hex: String,
+        #[serde(rename = "non_fungible_id")]
+        non_fungible_id: Box<crate::core_api::generated::models::NonFungibleId>,
     },
     #[serde(rename="Resource")]
     ResourceDynamicResourceDescriptor {

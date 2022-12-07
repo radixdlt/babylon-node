@@ -136,6 +136,6 @@ public final class REv2SimpleFuzzerTransactionGenerator
     var intentBytes =
         TransactionBuilder.createIntent(
             NetworkDefinition.LOCAL_SIMULATOR, header, manifestBuilder.toString(), List.of());
-    return REv2TestTransactions.constructTransaction(intentBytes, keyPair, List.of(keyPair));
+    return REv2TestTransactions.constructRawTransaction(intentBytes, keyPair, List.of(keyPair));
   }
 }

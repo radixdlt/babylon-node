@@ -76,10 +76,16 @@ import java.nio.charset.StandardCharsets;
  *
  * @param input
  */
-public record Decoder(ByteArrayInputStream input, boolean decodeTypeIds) implements DecoderApi {
+public record Decoder(ByteArrayInputStream input) implements DecoderApi {
   private static final int EOF_RC = -1;
 
-  public <T> T decodeFromAllOfStream(Codec<T> codec) {
+  public <T> T decodePayload(byte prefixByte, Codec<T> codec) {
+    var readPrefixByte = readByte();
+    if (readPrefixByte != prefixByte) {
+      throw new SborDecodeException(
+          String.format(
+              "First byte of payload was %s but expected %s", readPrefixByte, prefixByte));
+    }
     var output = decodeWithTypeId(codec);
     if (input.read() != EOF_RC) {
       throw new SborDecodeException(
@@ -95,10 +101,6 @@ public record Decoder(ByteArrayInputStream input, boolean decodeTypeIds) impleme
 
   @Override
   public void expectType(TypeId typeId) {
-    if (!decodeTypeIds) {
-      return;
-    }
-
     var typeByte = readByte();
 
     if (typeByte != typeId.id()) {
@@ -108,6 +110,35 @@ public record Decoder(ByteArrayInputStream input, boolean decodeTypeIds) impleme
               "Decoded Type ID %s (%s) but expected %s (%s)",
               typeByte, typeByteName, typeId.id(), typeId));
     }
+  }
+
+  @Override
+  public void expectSize(int expected) {
+    var actual = readSize();
+    if (expected != actual) {
+      throw new SborDecodeException(
+          String.format("Expected to have size %s, but found %s", expected, actual));
+    }
+  }
+
+  @Override
+  public int readSize() {
+    // LEB128 and 4 bytes max
+    int size = 0;
+    int shift = 0;
+    while (true) {
+      var readByte = readByte();
+      size |= ((readByte & 0x7F)) << shift;
+      if (readByte >= 0) { // First bit is 0 (because bytes are signed in Java)
+        break;
+      }
+      shift += 7;
+      if (shift >= 28) {
+        throw new SborDecodeException(
+            String.format("Read size was larger than the maximum allowed %s", 0x0FFFFFFF));
+      }
+    }
+    return size;
   }
 
   @Override
@@ -202,7 +233,7 @@ public record Decoder(ByteArrayInputStream input, boolean decodeTypeIds) impleme
 
   @Override
   public String readString() {
-    var length = readInt();
+    var length = readSize();
     var bytes = readBytes(length);
     return new String(bytes, StandardCharsets.UTF_8);
   }

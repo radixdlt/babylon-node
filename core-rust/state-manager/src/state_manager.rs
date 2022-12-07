@@ -64,10 +64,10 @@
 
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::mempool::transaction_rejection_cache::{RejectionCache, RejectionReason};
-use crate::query::*;
 use crate::staging::StagedSubstateStoreManager;
 use crate::store::traits::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult, PreviewRequest};
+use crate::{query::*, AccumulatorHash};
 use crate::{
     CommittedTransactionIdentifiers, HasIntentHash, HasUserPayloadHash, IntentHash,
     LedgerTransactionReceipt, MempoolAddError, PendingTransaction,
@@ -79,13 +79,16 @@ use radix_engine::transaction::{
     execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
     PreviewResult, TransactionOutcome, TransactionReceipt, TransactionResult,
 };
+use radix_engine::types::{
+    scrypto_encode, ComponentAddress, Decimal, Decode, Encode, GlobalAddress, PublicKey, RENodeId,
+    ResourceAddress, TypeId,
+};
 use radix_engine::wasm::{
     DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
 };
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
-use scrypto::engine::types::{GlobalAddress, RENodeId};
-use scrypto::prelude::*;
-use std::collections::HashMap;
+use radix_engine_interface::core::NetworkDefinition;
+use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tracing::info;
@@ -586,38 +589,31 @@ where
 
         let mut committed = Vec::new();
 
+        // Update the epoch
         if prepare_request.round_number % self.rounds_per_epoch == 0 {
             let new_epoch = (prepare_request.round_number / self.rounds_per_epoch) + 1;
-            let epoch_update_txn = ValidatorTransaction::EpochUpdate(new_epoch);
-            let prepared_epoch_update_txn = epoch_update_txn.prepare();
-            let executable = prepared_epoch_update_txn.get_executable();
-
-            let staged_substate_store_node = self.staged_store.execute_with_cache(
-                &parent_accumulator,
-                &LedgerTransaction::Validator(epoch_update_txn).get_hash(),
-                &self.scrypto_interpreter,
-                &self.fee_reserve_config,
-                &self.execution_config,
-                &executable,
-            );
-            let receipt = staged_substate_store_node.receipt.clone();
-            match receipt.result {
-                TransactionResult::Commit(commit_result) => {
-                    if let TransactionOutcome::Failure(failure) = commit_result.outcome {
-                        panic!("Epoch Update failed: {:?}", failure);
-                    }
-
-                    parent_accumulator = staged_substate_store_node.accumulator_hash;
-
-                    committed.push(scrypto_encode(&LedgerTransaction::Validator(
-                        epoch_update_txn,
-                    )));
-                }
-                TransactionResult::Reject(reject_result) => {
-                    panic!("Epoch Update rejected: {:?}", reject_result);
-                }
-            }
+            let epoch_update_ledger_txn = self
+                .execute_validator_transaction(
+                    &mut parent_accumulator,
+                    ValidatorTransaction::EpochUpdate {
+                        scrypto_epoch: new_epoch,
+                    },
+                )
+                .expect("Epoch update txn failed");
+            committed.push(scrypto_encode(&epoch_update_ledger_txn).unwrap());
         }
+
+        let time_update_ledger_txn = self
+            .execute_validator_transaction(
+                &mut parent_accumulator,
+                ValidatorTransaction::RoundUpdate {
+                    proposer_timestamp_ms: prepare_request.proposer_timestamp_ms,
+                    consensus_epoch: prepare_request.consensus_epoch,
+                    round_in_epoch: prepare_request.round_number,
+                },
+            )
+            .expect("Time update txn failed");
+        committed.push(scrypto_encode(&time_update_ledger_txn).unwrap());
 
         let mut rejected = Vec::new();
 
@@ -668,7 +664,7 @@ where
                 TransactionResult::Commit(..) => {
                     parent_accumulator = staged_substate_store_node.accumulator_hash;
                     already_committed_or_prepared_intent_hashes.insert(intent_hash);
-                    committed.push(LedgerTransaction::User(parsed).create_payload());
+                    committed.push(LedgerTransaction::User(parsed).create_payload().unwrap());
                 }
                 TransactionResult::Reject(reject_result) => {
                     rejected.push((proposed_payload, format!("{:?}", reject_result)));
@@ -683,8 +679,40 @@ where
         }
 
         PrepareResult {
-            rejected,
             committed,
+            rejected,
+        }
+    }
+
+    fn execute_validator_transaction(
+        &mut self,
+        parent_accumulator: &mut AccumulatorHash,
+        validator_transaction: ValidatorTransaction,
+    ) -> Result<LedgerTransaction, String> {
+        let prepared_txn = validator_transaction.prepare();
+        let executable = prepared_txn.get_executable();
+
+        let staged_substate_store_node = self.staged_store.execute_with_cache(
+            parent_accumulator,
+            &LedgerTransaction::Validator(validator_transaction).get_hash(),
+            &self.scrypto_interpreter,
+            &self.fee_reserve_config,
+            &self.execution_config,
+            &executable,
+        );
+        match &staged_substate_store_node.receipt.result {
+            TransactionResult::Commit(commit_result) => match &commit_result.outcome {
+                TransactionOutcome::Failure(error) => {
+                    Err(format!("Validator txn failed: {:?}", error))
+                }
+                TransactionOutcome::Success(..) => {
+                    *parent_accumulator = staged_substate_store_node.accumulator_hash;
+                    Ok(LedgerTransaction::Validator(validator_transaction))
+                }
+            },
+            TransactionResult::Reject(reject_result) => {
+                panic!("Validator transaction rejected: {:?}", reject_result);
+            }
         }
     }
 }

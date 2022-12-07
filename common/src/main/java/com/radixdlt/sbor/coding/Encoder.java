@@ -66,6 +66,7 @@ package com.radixdlt.sbor.coding;
 
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.sbor.exceptions.SborEncodeException;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 
@@ -74,7 +75,13 @@ import java.nio.charset.StandardCharsets;
  *
  * @param output
  */
-public record Encoder(ByteArrayOutputStream output, boolean encodeTypeIds) implements EncoderApi {
+public record Encoder(ByteArrayOutputStream output) implements EncoderApi {
+
+  public <T> void encodePayload(byte prefixByte, T value, Codec<T> codec) {
+    writeByte(prefixByte);
+    codec.encodeWithTypeId(this, value);
+  }
+
   @Override
   public <T> void encodeWithTypeId(T value, Codec<T> codec) {
     codec.encodeWithTypeId(this, value);
@@ -82,8 +89,28 @@ public record Encoder(ByteArrayOutputStream output, boolean encodeTypeIds) imple
 
   @Override
   public void encodeTypeId(TypeId typeId) {
-    if (encodeTypeIds) {
-      writeByte(typeId.id());
+    writeByte(typeId.id());
+  }
+
+  @Override
+  public void writeSize(int size) {
+    // LEB128 and 4 bytes max
+    // This means the max size is 0x0FFFFFFF = 268,435,455
+    final int MAX_SIZE = 0x0FFFFFFF;
+    if (size > MAX_SIZE) {
+      throw new SborEncodeException(
+          String.format("Size was %s, larger than max allowed %s", size, MAX_SIZE));
+    }
+    while (true) {
+      var sevenBits = (byte) (size & 0x7F);
+      size = size >> 7;
+      if (size == 0) {
+        writeByte(sevenBits);
+        return;
+      } else {
+        var bytesWithContinuePrefix = (byte) (sevenBits | 0x80);
+        writeByte(bytesWithContinuePrefix);
+      }
     }
   }
 
@@ -133,7 +160,7 @@ public record Encoder(ByteArrayOutputStream output, boolean encodeTypeIds) imple
   @Override
   public void writeString(String value) {
     var stringBytes = value.getBytes(StandardCharsets.UTF_8);
-    writeInt(stringBytes.length);
+    writeSize(stringBytes.length);
     writeBytes(stringBytes);
   }
 }

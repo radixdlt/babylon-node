@@ -214,7 +214,7 @@ pub struct JavaRawTransaction {
 impl From<PendingTransaction> for JavaRawTransaction {
     fn from(transaction: PendingTransaction) -> Self {
         JavaRawTransaction {
-            payload: scrypto_encode(&transaction.payload),
+            payload: scrypto_encode(&transaction.payload).unwrap(),
             payload_hash: JavaPayloadHash(transaction.payload_hash.into_bytes().to_vec()),
         }
     }

@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.NonFungibleId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -33,44 +34,44 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * NonFungibleResourceAmountAllOf
  */
 @JsonPropertyOrder({
-  NonFungibleResourceAmountAllOf.JSON_PROPERTY_NON_FUNGIBLE_IDS_HEX
+  NonFungibleResourceAmountAllOf.JSON_PROPERTY_NON_FUNGIBLE_IDS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class NonFungibleResourceAmountAllOf {
-  public static final String JSON_PROPERTY_NON_FUNGIBLE_IDS_HEX = "non_fungible_ids_hex";
-  private List<String> nonFungibleIdsHex = new ArrayList<>();
+  public static final String JSON_PROPERTY_NON_FUNGIBLE_IDS = "non_fungible_ids";
+  private List<NonFungibleId> nonFungibleIds = new ArrayList<>();
 
   public NonFungibleResourceAmountAllOf() { 
   }
 
-  public NonFungibleResourceAmountAllOf nonFungibleIdsHex(List<String> nonFungibleIdsHex) {
-    this.nonFungibleIdsHex = nonFungibleIdsHex;
+  public NonFungibleResourceAmountAllOf nonFungibleIds(List<NonFungibleId> nonFungibleIds) {
+    this.nonFungibleIds = nonFungibleIds;
     return this;
   }
 
-  public NonFungibleResourceAmountAllOf addNonFungibleIdsHexItem(String nonFungibleIdsHexItem) {
-    this.nonFungibleIdsHex.add(nonFungibleIdsHexItem);
+  public NonFungibleResourceAmountAllOf addNonFungibleIdsItem(NonFungibleId nonFungibleIdsItem) {
+    this.nonFungibleIds.add(nonFungibleIdsItem);
     return this;
   }
 
    /**
-   * Get nonFungibleIdsHex
-   * @return nonFungibleIdsHex
+   * Get nonFungibleIds
+   * @return nonFungibleIds
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_IDS_HEX)
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_IDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<String> getNonFungibleIdsHex() {
-    return nonFungibleIdsHex;
+  public List<NonFungibleId> getNonFungibleIds() {
+    return nonFungibleIds;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_IDS_HEX)
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_IDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNonFungibleIdsHex(List<String> nonFungibleIdsHex) {
-    this.nonFungibleIdsHex = nonFungibleIdsHex;
+  public void setNonFungibleIds(List<NonFungibleId> nonFungibleIds) {
+    this.nonFungibleIds = nonFungibleIds;
   }
 
 
@@ -86,19 +87,19 @@ public class NonFungibleResourceAmountAllOf {
       return false;
     }
     NonFungibleResourceAmountAllOf nonFungibleResourceAmountAllOf = (NonFungibleResourceAmountAllOf) o;
-    return Objects.equals(this.nonFungibleIdsHex, nonFungibleResourceAmountAllOf.nonFungibleIdsHex);
+    return Objects.equals(this.nonFungibleIds, nonFungibleResourceAmountAllOf.nonFungibleIds);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(nonFungibleIdsHex);
+    return Objects.hash(nonFungibleIds);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class NonFungibleResourceAmountAllOf {\n");
-    sb.append("    nonFungibleIdsHex: ").append(toIndentedString(nonFungibleIdsHex)).append("\n");
+    sb.append("    nonFungibleIds: ").append(toIndentedString(nonFungibleIds)).append("\n");
     sb.append("}");
     return sb.toString();
   }

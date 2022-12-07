@@ -71,6 +71,7 @@ import org.junit.Test;
 
 public class NetworkConfigurationTest extends DeterministicCoreApiTestBase {
   @Test
+  @SuppressWarnings("try")
   public void test_network_configuration() throws Exception {
     try (var ignored = buildRunningServerTest()) {
       final var response = getStatusApi().statusNetworkConfigurationPost();

@@ -68,7 +68,6 @@ import com.google.common.primitives.UnsignedInteger;
 import com.google.common.primitives.UnsignedLong;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.*;
-import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.codec.core.*;
 import com.radixdlt.sbor.exceptions.SborCodecException;
 import com.radixdlt.utils.Int128Codec;
@@ -123,14 +122,11 @@ public final class CodecMap {
   private final Map<Class, ClassCodecCreator> classCodecCreators = new HashMap<>();
   private final Map<Class, TypedCodecCreator> typedCodecCreators = new HashMap<>();
 
-  private final TypeId sborTypeIdForArrayType;
-
   public CodecMap() {
-    this(true, TypeId.TYPE_LIST);
+    this(true);
   }
 
-  public CodecMap(boolean includeCoreCodecs, TypeId sborTypeIdForArrayType) {
-    this.sborTypeIdForArrayType = sborTypeIdForArrayType;
+  public CodecMap(boolean includeCoreCodecs) {
     if (includeCoreCodecs) {
       addCoreSchemaCodecs();
     }
@@ -170,25 +166,25 @@ public final class CodecMap {
 
     storeCodec(UInt128.class, new Int128Codec(false));
 
-    storeCodec(byte[].class, new ByteArrayCodec(sborTypeIdForArrayType));
-    storeCodec(short[].class, new ShortArrayCodec(sborTypeIdForArrayType));
-    storeCodec(int[].class, new IntegerArrayCodec(sborTypeIdForArrayType));
-    storeCodec(long[].class, new LongArrayCodec(sborTypeIdForArrayType));
+    storeCodec(byte[].class, new ByteArrayCodec());
+    storeCodec(short[].class, new ShortArrayCodec());
+    storeCodec(int[].class, new IntegerArrayCodec());
+    storeCodec(long[].class, new LongArrayCodec());
 
     OptionCodec.registerWith(this);
     EitherCodec.registerWith(this);
     ResultCodec.registerWith(this);
     TupleCodec.registerAllWith(this);
 
-    CollectionCodec.registerListToMapTo(this, TypeId.TYPE_LIST);
-    CollectionCodec.registerArrayListToMapTo(this, TypeId.TYPE_LIST);
-    CollectionCodec.registerSetToMapTo(this, TypeId.TYPE_SET);
-    CollectionCodec.registerHashSetToMapTo(this, TypeId.TYPE_SET);
-    CollectionCodec.registerTreeSetToMapTo(this, TypeId.TYPE_SET);
+    CollectionCodec.registerListToMapTo(this);
+    CollectionCodec.registerArrayListToMapTo(this);
+    CollectionCodec.registerSetToMapTo(this);
+    CollectionCodec.registerHashSetToMapTo(this);
+    CollectionCodec.registerTreeSetToMapTo(this);
 
-    MapCodec.registerMapToMapTo(this, TypeId.TYPE_MAP);
-    MapCodec.registerHashMapToMapTo(this, TypeId.TYPE_MAP);
-    MapCodec.registerTreeMapToMapTo(this, TypeId.TYPE_MAP);
+    MapCodec.registerMapToMapTo(this);
+    MapCodec.registerHashMapToMapTo(this);
+    MapCodec.registerTreeMapToMapTo(this);
 
     return this;
   }
@@ -386,8 +382,7 @@ public final class CodecMap {
       var componentClass = componentType.getRawType();
       var componentCodec = of(componentType);
 
-      return CollectionCodec.forArray(
-          (Class) componentClass, componentCodec, sborTypeIdForArrayType);
+      return CollectionCodec.forArray((Class) componentClass, componentCodec);
     }
 
     // NB - Arrays have to be handled separately because they're special types in Java
@@ -396,8 +391,7 @@ public final class CodecMap {
       var componentType = TypeToken.of(componentClass);
       var componentCodec = of(componentType);
 
-      return CollectionCodec.forArray(
-          (Class) componentClass, componentCodec, sborTypeIdForArrayType);
+      return CollectionCodec.forArray((Class) componentClass, componentCodec);
     }
   }
 }

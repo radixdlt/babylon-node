@@ -1,9 +1,9 @@
 use crate::core_api::*;
 use radix_engine::{
     transaction::{PreviewError, PreviewResult, TransactionResult},
-    types::Bech32Encoder,
+    types::{Bech32Encoder, RENodeId},
 };
-use scrypto::prelude::*;
+use radix_engine_interface::core::NetworkDefinition;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::{LedgerTransactionReceipt, PreviewRequest};
 use transaction::manifest;
@@ -76,7 +76,7 @@ fn parse_preview_request(
         notary_as_signatory: request.notary_as_signatory.unwrap_or(false),
         cost_unit_limit: extract_api_u32_as_i64(request.cost_unit_limit)
             .map_err(|err| err.into_response_error("cost_unit_limit"))?,
-        tip_percentage: extract_api_u32_as_i64(request.tip_percentage)
+        tip_percentage: extract_api_u8_as_i32(request.tip_percentage)
             .map_err(|err| err.into_response_error("tip_percentage"))?,
         nonce: extract_api_u64_as_string(request.nonce)
             .map_err(|err| err.into_response_error("nonce"))?,
@@ -113,20 +113,19 @@ fn to_api_response(
             let api_resource_changes = commit_result
                 .resource_changes
                 .iter()
-                .map(|v| models::ResourceChange {
-                    resource_address: bech32_encoder
-                        .encode_resource_address_to_string(&v.resource_address),
-                    component_entity: Box::new(to_entity_reference(
-                        models::EntityType::Component,
-                        &v.component_id,
-                    )),
-                    vault_entity: Box::new(to_entity_reference(
-                        models::EntityType::Vault,
-                        &v.vault_id,
-                    )),
-                    amount: to_api_decimal(&v.amount),
+                .map(|v| {
+                    Ok(models::ResourceChange {
+                        resource_address: bech32_encoder
+                            .encode_resource_address_to_string(&v.resource_address),
+                        component_entity: Box::new(to_entity_reference(RENodeId::Component(
+                            v.component_id,
+                        ))?),
+                        vault_entity: Box::new(to_entity_reference(RENodeId::Vault(v.vault_id))?),
+                        amount: to_api_decimal(&v.amount),
+                    })
                 })
-                .collect();
+                .collect::<Result<_, MappingError>>()
+                .map_err(|_| server_error("Can't map entity references"))?;
 
             let ledger_receipt: LedgerTransactionReceipt = receipt
                 .try_into()
@@ -141,7 +140,10 @@ fn to_api_response(
         TransactionResult::Reject(reject_result) => models::TransactionPreviewResponse {
             receipt: Box::new(models::TransactionReceipt {
                 status: models::TransactionStatus::Rejected,
-                fee_summary: Box::new(to_api_fee_summary(receipt.execution.fee_summary)),
+                fee_summary: Box::new(to_api_fee_summary(
+                    bech32_encoder,
+                    receipt.execution.fee_summary,
+                )?),
                 state_updates: Box::default(),
                 output: None,
                 error_message: Some(format!("{:?}", reject_result)),

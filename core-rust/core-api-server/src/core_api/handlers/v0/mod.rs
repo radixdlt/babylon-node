@@ -1,3 +1,4 @@
+mod state_clock;
 mod state_component;
 mod state_epoch;
 mod state_non_fungible;
@@ -7,6 +8,7 @@ mod transaction_receipt;
 mod transaction_status;
 mod transaction_submit;
 
+pub(crate) use state_clock::*;
 pub(crate) use state_component::*;
 pub(crate) use state_epoch::*;
 pub(crate) use state_non_fungible::*;

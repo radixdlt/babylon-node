@@ -24,7 +24,8 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.DynamicResourceDescriptorBase;
 import com.radixdlt.api.core.generated.models.DynamicResourceDescriptorType;
-import com.radixdlt.api.core.generated.models.NonFungibleFixedResourceDescriptorAllOf;
+import com.radixdlt.api.core.generated.models.NonFungibleDynamicResourceDescriptorAllOf;
+import com.radixdlt.api.core.generated.models.NonFungibleId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -36,7 +37,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   NonFungibleDynamicResourceDescriptor.JSON_PROPERTY_TYPE,
   NonFungibleDynamicResourceDescriptor.JSON_PROPERTY_RESOURCE_ADDRESS,
-  NonFungibleDynamicResourceDescriptor.JSON_PROPERTY_NON_FUNGIBLE_ID_HEX
+  NonFungibleDynamicResourceDescriptor.JSON_PROPERTY_NON_FUNGIBLE_ID
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class NonFungibleDynamicResourceDescriptor {
@@ -46,8 +47,8 @@ public class NonFungibleDynamicResourceDescriptor {
   public static final String JSON_PROPERTY_RESOURCE_ADDRESS = "resource_address";
   private String resourceAddress;
 
-  public static final String JSON_PROPERTY_NON_FUNGIBLE_ID_HEX = "non_fungible_id_hex";
-  private String nonFungibleIdHex;
+  public static final String JSON_PROPERTY_NON_FUNGIBLE_ID = "non_fungible_id";
+  private NonFungibleId nonFungibleId;
 
   public NonFungibleDynamicResourceDescriptor() { 
   }
@@ -104,29 +105,29 @@ public class NonFungibleDynamicResourceDescriptor {
   }
 
 
-  public NonFungibleDynamicResourceDescriptor nonFungibleIdHex(String nonFungibleIdHex) {
-    this.nonFungibleIdHex = nonFungibleIdHex;
+  public NonFungibleDynamicResourceDescriptor nonFungibleId(NonFungibleId nonFungibleId) {
+    this.nonFungibleId = nonFungibleId;
     return this;
   }
 
    /**
-   * The hex-encoded bytes of a non-fungible id
-   * @return nonFungibleIdHex
+   * Get nonFungibleId
+   * @return nonFungibleId
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded bytes of a non-fungible id")
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID_HEX)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getNonFungibleIdHex() {
-    return nonFungibleIdHex;
+  public NonFungibleId getNonFungibleId() {
+    return nonFungibleId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID_HEX)
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNonFungibleIdHex(String nonFungibleIdHex) {
-    this.nonFungibleIdHex = nonFungibleIdHex;
+  public void setNonFungibleId(NonFungibleId nonFungibleId) {
+    this.nonFungibleId = nonFungibleId;
   }
 
 
@@ -144,12 +145,12 @@ public class NonFungibleDynamicResourceDescriptor {
     NonFungibleDynamicResourceDescriptor nonFungibleDynamicResourceDescriptor = (NonFungibleDynamicResourceDescriptor) o;
     return Objects.equals(this.type, nonFungibleDynamicResourceDescriptor.type) &&
         Objects.equals(this.resourceAddress, nonFungibleDynamicResourceDescriptor.resourceAddress) &&
-        Objects.equals(this.nonFungibleIdHex, nonFungibleDynamicResourceDescriptor.nonFungibleIdHex);
+        Objects.equals(this.nonFungibleId, nonFungibleDynamicResourceDescriptor.nonFungibleId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, resourceAddress, nonFungibleIdHex);
+    return Objects.hash(type, resourceAddress, nonFungibleId);
   }
 
   @Override
@@ -158,7 +159,7 @@ public class NonFungibleDynamicResourceDescriptor {
     sb.append("class NonFungibleDynamicResourceDescriptor {\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("    resourceAddress: ").append(toIndentedString(resourceAddress)).append("\n");
-    sb.append("    nonFungibleIdHex: ").append(toIndentedString(nonFungibleIdHex)).append("\n");
+    sb.append("    nonFungibleId: ").append(toIndentedString(nonFungibleId)).append("\n");
     sb.append("}");
     return sb.toString();
   }

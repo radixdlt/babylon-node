@@ -88,6 +88,6 @@ public final class REv2LargeTransactionGenerator implements TransactionGenerator
     var intentBytes =
         REv2TestTransactions.constructLargeValidTransactionIntent(
             networkDefinition, 0, 1, notary.getPublicKey().toPublicKey(), size);
-    return REv2TestTransactions.constructTransaction(intentBytes, notary, List.of());
+    return REv2TestTransactions.constructRawTransaction(intentBytes, notary, List.of());
   }
 }

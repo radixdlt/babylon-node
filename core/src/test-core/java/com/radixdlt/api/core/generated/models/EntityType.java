@@ -42,7 +42,9 @@ public enum EntityType {
   
   GLOBAL("Global"),
   
-  NONFUNGIBLESTORE("NonFungibleStore");
+  NONFUNGIBLESTORE("NonFungibleStore"),
+  
+  CLOCK("Clock");
 
   private String value;
 

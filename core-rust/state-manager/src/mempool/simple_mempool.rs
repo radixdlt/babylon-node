@@ -225,8 +225,8 @@ mod tests {
 
     use radix_engine::types::{
         EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, PublicKey, Signature,
+        SignatureWithPublicKey,
     };
-    use scrypto::prelude::SignatureWithPublicKey;
     use transaction::model::{
         NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
         TransactionManifest,

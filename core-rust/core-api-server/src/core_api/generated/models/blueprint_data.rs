@@ -13,15 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct BlueprintData {
-    /// The hex-encoded, sbor-encoded package abi
-    #[serde(rename = "abi_hex")]
-    pub abi_hex: String,
+    #[serde(rename = "abi")]
+    pub abi: Box<crate::core_api::generated::models::SborData>,
 }
 
 impl BlueprintData {
-    pub fn new(abi_hex: String) -> BlueprintData {
+    pub fn new(abi: crate::core_api::generated::models::SborData) -> BlueprintData {
         BlueprintData {
-            abi_hex,
+            abi: Box::new(abi),
         }
     }
 }

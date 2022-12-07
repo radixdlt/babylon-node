@@ -36,9 +36,9 @@ pub struct TransactionPreviewRequest {
     /// An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution
     #[serde(rename = "cost_unit_limit")]
     pub cost_unit_limit: i64,
-    /// An integer between `0` and `2^32 - 1`, specifying the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+    /// An integer between `0` and `255`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
     #[serde(rename = "tip_percentage")]
-    pub tip_percentage: i64,
+    pub tip_percentage: i32,
     /// A decimal-string-encoded integer between `0` and `2^64 - 1`, used to ensure the transaction intent is unique.
     #[serde(rename = "nonce")]
     pub nonce: String,
@@ -50,7 +50,7 @@ pub struct TransactionPreviewRequest {
 }
 
 impl TransactionPreviewRequest {
-    pub fn new(network: String, manifest: String, start_epoch_inclusive: i64, end_epoch_exclusive: i64, cost_unit_limit: i64, tip_percentage: i64, nonce: String, signer_public_keys: Vec<crate::core_api::generated::models::PublicKey>, flags: crate::core_api::generated::models::TransactionPreviewRequestFlags) -> TransactionPreviewRequest {
+    pub fn new(network: String, manifest: String, start_epoch_inclusive: i64, end_epoch_exclusive: i64, cost_unit_limit: i64, tip_percentage: i32, nonce: String, signer_public_keys: Vec<crate::core_api::generated::models::PublicKey>, flags: crate::core_api::generated::models::TransactionPreviewRequestFlags) -> TransactionPreviewRequest {
         TransactionPreviewRequest {
             network,
             manifest,

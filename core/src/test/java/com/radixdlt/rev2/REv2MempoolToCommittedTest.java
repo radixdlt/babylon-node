@@ -115,7 +115,7 @@ public class REv2MempoolToCommittedTest {
               Key.get(
                   new TypeLiteral<
                       MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
-      var transaction = REv2TestTransactions.constructValidTransaction(0, 5);
+      var transaction = REv2TestTransactions.constructValidRawTransaction(0, 5);
       mempoolInserter.addTransaction(transaction);
 
       // Act/Assert

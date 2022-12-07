@@ -18,6 +18,10 @@ pub struct NetworkConfigurationResponseWellKnownAddresses {
     pub account_package: String,
     #[serde(rename = "faucet")]
     pub faucet: String,
+    #[serde(rename = "epoch_manager")]
+    pub epoch_manager: String,
+    #[serde(rename = "clock")]
+    pub clock: String,
     #[serde(rename = "ecdsa_secp256k1")]
     pub ecdsa_secp256k1: String,
     #[serde(rename = "eddsa_ed25519")]
@@ -28,10 +32,12 @@ pub struct NetworkConfigurationResponseWellKnownAddresses {
 
 impl NetworkConfigurationResponseWellKnownAddresses {
     /// Key addresses for this network.
-    pub fn new(account_package: String, faucet: String, ecdsa_secp256k1: String, eddsa_ed25519: String, xrd: String) -> NetworkConfigurationResponseWellKnownAddresses {
+    pub fn new(account_package: String, faucet: String, epoch_manager: String, clock: String, ecdsa_secp256k1: String, eddsa_ed25519: String, xrd: String) -> NetworkConfigurationResponseWellKnownAddresses {
         NetworkConfigurationResponseWellKnownAddresses {
             account_package,
             faucet,
+            epoch_manager,
+            clock,
             ecdsa_secp256k1,
             eddsa_ed25519,
             xrd,

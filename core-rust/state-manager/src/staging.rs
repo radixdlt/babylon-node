@@ -72,8 +72,6 @@ use radix_engine::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
-
-use scrypto::engine::types::SubstateId;
 use transaction::model::Executable;
 
 use crate::query::TransactionIdentifierLoader;
@@ -123,7 +121,7 @@ pub struct StagedSubstateStoreManager<S: ReadableSubstateStore> {
     pub root: S,
     nodes: SlotMap<StagedSubstateStoreNodeKey, StagedSubstateStoreNode>,
     accumulator_hash_to_node: HashMap<AccumulatorHash, StagedSubstateStoreNodeKey>,
-    first_layer: Vec<StagedSubstateStoreNodeKey>,
+    children_keys: Vec<StagedSubstateStoreNodeKey>,
     dead_weight: u32,
 }
 
@@ -192,7 +190,7 @@ where
             root,
             nodes: SlotMap::with_capacity_and_key(1000),
             accumulator_hash_to_node: HashMap::new(),
-            first_layer: Vec::new(),
+            children_keys: Vec::new(),
             dead_weight: 0,
         }
     }
@@ -278,7 +276,7 @@ where
                 parent_node.children_keys.push(new_node_key);
             }
             StagedSubstateStoreKey::RootStoreKey => {
-                self.first_layer.push(new_node_key);
+                self.children_keys.push(new_node_key);
             }
         }
 
@@ -288,7 +286,7 @@ where
     fn recompute_data(&mut self) {
         self.dead_weight = 0;
 
-        for node_key in self.first_layer.iter() {
+        for node_key in self.children_keys.iter() {
             let node = self.nodes.get_mut(*node_key).unwrap();
             node.data = ImmutableHashMap::new();
             recompute_data_recursive(&mut self.nodes, *node_key);
@@ -302,7 +300,7 @@ where
             StagedSubstateStoreKey::RootStoreKey => {}
             StagedSubstateStoreKey::InternalNodeStoreKey(new_root_key) => {
                 // Delete all nodes that are not in new_root_key subtree
-                for node_key in self.first_layer.iter() {
+                for node_key in self.children_keys.iter() {
                     self.dead_weight += delete_recursive(
                         &mut self.nodes,
                         &mut self.accumulator_hash_to_node,
@@ -314,8 +312,8 @@ where
 
                 let new_root = self.nodes.get(new_root_key).unwrap();
                 // Reparent to new_root node and delete
-                self.first_layer = new_root.children_keys.clone();
-                for key in self.first_layer.iter() {
+                self.children_keys = new_root.children_keys.clone();
+                for key in self.children_keys.iter() {
                     let node = self.nodes.get_mut(*key).unwrap();
                     node.parent_key = StagedSubstateStoreKey::RootStoreKey;
                 }

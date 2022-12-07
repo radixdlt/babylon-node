@@ -18,17 +18,16 @@ pub struct NonFungibleDynamicResourceDescriptor {
     /// The Bech32m-encoded human readable version of the resource address
     #[serde(rename = "resource_address")]
     pub resource_address: String,
-    /// The hex-encoded bytes of a non-fungible id
-    #[serde(rename = "non_fungible_id_hex")]
-    pub non_fungible_id_hex: String,
+    #[serde(rename = "non_fungible_id")]
+    pub non_fungible_id: Box<crate::core_api::generated::models::NonFungibleId>,
 }
 
 impl NonFungibleDynamicResourceDescriptor {
-    pub fn new(_type: crate::core_api::generated::models::DynamicResourceDescriptorType, resource_address: String, non_fungible_id_hex: String) -> NonFungibleDynamicResourceDescriptor {
+    pub fn new(_type: crate::core_api::generated::models::DynamicResourceDescriptorType, resource_address: String, non_fungible_id: crate::core_api::generated::models::NonFungibleId) -> NonFungibleDynamicResourceDescriptor {
         NonFungibleDynamicResourceDescriptor {
             _type,
             resource_address,
-            non_fungible_id_hex,
+            non_fungible_id: Box::new(non_fungible_id),
         }
     }
 }

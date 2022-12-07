@@ -23,13 +23,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EntityReference;
-import com.radixdlt.api.core.generated.models.ResourceManagerSubstateAllOfAuthRules;
-import com.radixdlt.api.core.generated.models.ResourceManagerSubstateAllOfMetadata;
+import com.radixdlt.api.core.generated.models.NonFungibleIdType;
 import com.radixdlt.api.core.generated.models.ResourceType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -39,10 +36,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   ResourceManagerSubstateAllOf.JSON_PROPERTY_RESOURCE_TYPE,
   ResourceManagerSubstateAllOf.JSON_PROPERTY_FUNGIBLE_DIVISIBILITY,
-  ResourceManagerSubstateAllOf.JSON_PROPERTY_METADATA,
+  ResourceManagerSubstateAllOf.JSON_PROPERTY_NON_FUNGIBLE_ID_TYPE,
   ResourceManagerSubstateAllOf.JSON_PROPERTY_TOTAL_SUPPLY,
-  ResourceManagerSubstateAllOf.JSON_PROPERTY_OWNED_NON_FUNGIBLE_STORE,
-  ResourceManagerSubstateAllOf.JSON_PROPERTY_AUTH_RULES
+  ResourceManagerSubstateAllOf.JSON_PROPERTY_OWNED_NON_FUNGIBLE_STORE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ResourceManagerSubstateAllOf {
@@ -52,17 +48,14 @@ public class ResourceManagerSubstateAllOf {
   public static final String JSON_PROPERTY_FUNGIBLE_DIVISIBILITY = "fungible_divisibility";
   private Integer fungibleDivisibility;
 
-  public static final String JSON_PROPERTY_METADATA = "metadata";
-  private List<ResourceManagerSubstateAllOfMetadata> metadata = new ArrayList<>();
+  public static final String JSON_PROPERTY_NON_FUNGIBLE_ID_TYPE = "non_fungible_id_type";
+  private NonFungibleIdType nonFungibleIdType;
 
   public static final String JSON_PROPERTY_TOTAL_SUPPLY = "total_supply";
   private String totalSupply;
 
   public static final String JSON_PROPERTY_OWNED_NON_FUNGIBLE_STORE = "owned_non_fungible_store";
   private EntityReference ownedNonFungibleStore;
-
-  public static final String JSON_PROPERTY_AUTH_RULES = "auth_rules";
-  private ResourceManagerSubstateAllOfAuthRules authRules;
 
   public ResourceManagerSubstateAllOf() { 
   }
@@ -121,34 +114,29 @@ public class ResourceManagerSubstateAllOf {
   }
 
 
-  public ResourceManagerSubstateAllOf metadata(List<ResourceManagerSubstateAllOfMetadata> metadata) {
-    this.metadata = metadata;
-    return this;
-  }
-
-  public ResourceManagerSubstateAllOf addMetadataItem(ResourceManagerSubstateAllOfMetadata metadataItem) {
-    this.metadata.add(metadataItem);
+  public ResourceManagerSubstateAllOf nonFungibleIdType(NonFungibleIdType nonFungibleIdType) {
+    this.nonFungibleIdType = nonFungibleIdType;
     return this;
   }
 
    /**
-   * Get metadata
-   * @return metadata
+   * Get nonFungibleIdType
+   * @return nonFungibleIdType
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_METADATA)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID_TYPE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public List<ResourceManagerSubstateAllOfMetadata> getMetadata() {
-    return metadata;
+  public NonFungibleIdType getNonFungibleIdType() {
+    return nonFungibleIdType;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_METADATA)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMetadata(List<ResourceManagerSubstateAllOfMetadata> metadata) {
-    this.metadata = metadata;
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID_TYPE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setNonFungibleIdType(NonFungibleIdType nonFungibleIdType) {
+    this.nonFungibleIdType = nonFungibleIdType;
   }
 
 
@@ -204,32 +192,6 @@ public class ResourceManagerSubstateAllOf {
   }
 
 
-  public ResourceManagerSubstateAllOf authRules(ResourceManagerSubstateAllOfAuthRules authRules) {
-    this.authRules = authRules;
-    return this;
-  }
-
-   /**
-   * Get authRules
-   * @return authRules
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_AUTH_RULES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public ResourceManagerSubstateAllOfAuthRules getAuthRules() {
-    return authRules;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_AUTH_RULES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAuthRules(ResourceManagerSubstateAllOfAuthRules authRules) {
-    this.authRules = authRules;
-  }
-
-
   /**
    * Return true if this ResourceManagerSubstate_allOf object is equal to o.
    */
@@ -244,15 +206,14 @@ public class ResourceManagerSubstateAllOf {
     ResourceManagerSubstateAllOf resourceManagerSubstateAllOf = (ResourceManagerSubstateAllOf) o;
     return Objects.equals(this.resourceType, resourceManagerSubstateAllOf.resourceType) &&
         Objects.equals(this.fungibleDivisibility, resourceManagerSubstateAllOf.fungibleDivisibility) &&
-        Objects.equals(this.metadata, resourceManagerSubstateAllOf.metadata) &&
+        Objects.equals(this.nonFungibleIdType, resourceManagerSubstateAllOf.nonFungibleIdType) &&
         Objects.equals(this.totalSupply, resourceManagerSubstateAllOf.totalSupply) &&
-        Objects.equals(this.ownedNonFungibleStore, resourceManagerSubstateAllOf.ownedNonFungibleStore) &&
-        Objects.equals(this.authRules, resourceManagerSubstateAllOf.authRules);
+        Objects.equals(this.ownedNonFungibleStore, resourceManagerSubstateAllOf.ownedNonFungibleStore);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resourceType, fungibleDivisibility, metadata, totalSupply, ownedNonFungibleStore, authRules);
+    return Objects.hash(resourceType, fungibleDivisibility, nonFungibleIdType, totalSupply, ownedNonFungibleStore);
   }
 
   @Override
@@ -261,10 +222,9 @@ public class ResourceManagerSubstateAllOf {
     sb.append("class ResourceManagerSubstateAllOf {\n");
     sb.append("    resourceType: ").append(toIndentedString(resourceType)).append("\n");
     sb.append("    fungibleDivisibility: ").append(toIndentedString(fungibleDivisibility)).append("\n");
-    sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
+    sb.append("    nonFungibleIdType: ").append(toIndentedString(nonFungibleIdType)).append("\n");
     sb.append("    totalSupply: ").append(toIndentedString(totalSupply)).append("\n");
     sb.append("    ownedNonFungibleStore: ").append(toIndentedString(ownedNonFungibleStore)).append("\n");
-    sb.append("    authRules: ").append(toIndentedString(authRules)).append("\n");
     sb.append("}");
     return sb.toString();
   }

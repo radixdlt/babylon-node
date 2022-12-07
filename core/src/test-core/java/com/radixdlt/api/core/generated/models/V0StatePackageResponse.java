@@ -32,39 +32,159 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * V0StatePackageResponse
  */
 @JsonPropertyOrder({
-  V0StatePackageResponse.JSON_PROPERTY_PACKAGE
+  V0StatePackageResponse.JSON_PROPERTY_INFO,
+  V0StatePackageResponse.JSON_PROPERTY_ROYALTY_CONFIG,
+  V0StatePackageResponse.JSON_PROPERTY_ROYALTY_ACCUMULATOR,
+  V0StatePackageResponse.JSON_PROPERTY_METADATA,
+  V0StatePackageResponse.JSON_PROPERTY_ACCESS_RULES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class V0StatePackageResponse {
-  public static final String JSON_PROPERTY_PACKAGE = "package";
-  private Substate _package;
+  public static final String JSON_PROPERTY_INFO = "info";
+  private Substate info;
+
+  public static final String JSON_PROPERTY_ROYALTY_CONFIG = "royalty_config";
+  private Substate royaltyConfig;
+
+  public static final String JSON_PROPERTY_ROYALTY_ACCUMULATOR = "royalty_accumulator";
+  private Substate royaltyAccumulator;
+
+  public static final String JSON_PROPERTY_METADATA = "metadata";
+  private Substate metadata;
+
+  public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
+  private Substate accessRules;
 
   public V0StatePackageResponse() { 
   }
 
-  public V0StatePackageResponse _package(Substate _package) {
-    this._package = _package;
+  public V0StatePackageResponse info(Substate info) {
+    this.info = info;
     return this;
   }
 
    /**
-   * Get _package
-   * @return _package
+   * Get info
+   * @return info
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_PACKAGE)
+  @JsonProperty(JSON_PROPERTY_INFO)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Substate getPackage() {
-    return _package;
+  public Substate getInfo() {
+    return info;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PACKAGE)
+  @JsonProperty(JSON_PROPERTY_INFO)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPackage(Substate _package) {
-    this._package = _package;
+  public void setInfo(Substate info) {
+    this.info = info;
+  }
+
+
+  public V0StatePackageResponse royaltyConfig(Substate royaltyConfig) {
+    this.royaltyConfig = royaltyConfig;
+    return this;
+  }
+
+   /**
+   * Get royaltyConfig
+   * @return royaltyConfig
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Substate getRoyaltyConfig() {
+    return royaltyConfig;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setRoyaltyConfig(Substate royaltyConfig) {
+    this.royaltyConfig = royaltyConfig;
+  }
+
+
+  public V0StatePackageResponse royaltyAccumulator(Substate royaltyAccumulator) {
+    this.royaltyAccumulator = royaltyAccumulator;
+    return this;
+  }
+
+   /**
+   * Get royaltyAccumulator
+   * @return royaltyAccumulator
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ROYALTY_ACCUMULATOR)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Substate getRoyaltyAccumulator() {
+    return royaltyAccumulator;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ROYALTY_ACCUMULATOR)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setRoyaltyAccumulator(Substate royaltyAccumulator) {
+    this.royaltyAccumulator = royaltyAccumulator;
+  }
+
+
+  public V0StatePackageResponse metadata(Substate metadata) {
+    this.metadata = metadata;
+    return this;
+  }
+
+   /**
+   * Get metadata
+   * @return metadata
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_METADATA)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Substate getMetadata() {
+    return metadata;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_METADATA)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setMetadata(Substate metadata) {
+    this.metadata = metadata;
+  }
+
+
+  public V0StatePackageResponse accessRules(Substate accessRules) {
+    this.accessRules = accessRules;
+    return this;
+  }
+
+   /**
+   * Get accessRules
+   * @return accessRules
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Substate getAccessRules() {
+    return accessRules;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAccessRules(Substate accessRules) {
+    this.accessRules = accessRules;
   }
 
 
@@ -80,19 +200,27 @@ public class V0StatePackageResponse {
       return false;
     }
     V0StatePackageResponse v0StatePackageResponse = (V0StatePackageResponse) o;
-    return Objects.equals(this._package, v0StatePackageResponse._package);
+    return Objects.equals(this.info, v0StatePackageResponse.info) &&
+        Objects.equals(this.royaltyConfig, v0StatePackageResponse.royaltyConfig) &&
+        Objects.equals(this.royaltyAccumulator, v0StatePackageResponse.royaltyAccumulator) &&
+        Objects.equals(this.metadata, v0StatePackageResponse.metadata) &&
+        Objects.equals(this.accessRules, v0StatePackageResponse.accessRules);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(_package);
+    return Objects.hash(info, royaltyConfig, royaltyAccumulator, metadata, accessRules);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class V0StatePackageResponse {\n");
-    sb.append("    _package: ").append(toIndentedString(_package)).append("\n");
+    sb.append("    info: ").append(toIndentedString(info)).append("\n");
+    sb.append("    royaltyConfig: ").append(toIndentedString(royaltyConfig)).append("\n");
+    sb.append("    royaltyAccumulator: ").append(toIndentedString(royaltyAccumulator)).append("\n");
+    sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
+    sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
     sb.append("}");
     return sb.toString();
   }
