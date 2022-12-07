@@ -35,7 +35,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   TimeUpdateValidatorTransaction.JSON_PROPERTY_TYPE,
-  TimeUpdateValidatorTransaction.JSON_PROPERTY_PROPOSER_TIMESTAMP_MS
+  TimeUpdateValidatorTransaction.JSON_PROPERTY_PROPOSER_TIMESTAMP_MS,
+  TimeUpdateValidatorTransaction.JSON_PROPERTY_CONSENSUS_EPOCH,
+  TimeUpdateValidatorTransaction.JSON_PROPERTY_ROUND_IN_EPOCH
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TimeUpdateValidatorTransaction {
@@ -44,6 +46,12 @@ public class TimeUpdateValidatorTransaction {
 
   public static final String JSON_PROPERTY_PROPOSER_TIMESTAMP_MS = "proposer_timestamp_ms";
   private Long proposerTimestampMs;
+
+  public static final String JSON_PROPERTY_CONSENSUS_EPOCH = "consensus_epoch";
+  private Long consensusEpoch;
+
+  public static final String JSON_PROPERTY_ROUND_IN_EPOCH = "round_in_epoch";
+  private Long roundInEpoch;
 
   public TimeUpdateValidatorTransaction() { 
   }
@@ -102,6 +110,62 @@ public class TimeUpdateValidatorTransaction {
   }
 
 
+  public TimeUpdateValidatorTransaction consensusEpoch(Long consensusEpoch) {
+    this.consensusEpoch = consensusEpoch;
+    return this;
+  }
+
+   /**
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the consensus epoch. Note that currently this is not the same as &#x60;scrypto_epoch&#x60;, but eventually will be. 
+   * minimum: 0
+   * maximum: 10000000000
+   * @return consensusEpoch
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the consensus epoch. Note that currently this is not the same as `scrypto_epoch`, but eventually will be. ")
+  @JsonProperty(JSON_PROPERTY_CONSENSUS_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getConsensusEpoch() {
+    return consensusEpoch;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_CONSENSUS_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setConsensusEpoch(Long consensusEpoch) {
+    this.consensusEpoch = consensusEpoch;
+  }
+
+
+  public TimeUpdateValidatorTransaction roundInEpoch(Long roundInEpoch) {
+    this.roundInEpoch = roundInEpoch;
+    return this;
+  }
+
+   /**
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the consensus round in the epoch
+   * minimum: 0
+   * maximum: 10000000000
+   * @return roundInEpoch
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the consensus round in the epoch")
+  @JsonProperty(JSON_PROPERTY_ROUND_IN_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getRoundInEpoch() {
+    return roundInEpoch;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ROUND_IN_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setRoundInEpoch(Long roundInEpoch) {
+    this.roundInEpoch = roundInEpoch;
+  }
+
+
   /**
    * Return true if this TimeUpdateValidatorTransaction object is equal to o.
    */
@@ -115,12 +179,14 @@ public class TimeUpdateValidatorTransaction {
     }
     TimeUpdateValidatorTransaction timeUpdateValidatorTransaction = (TimeUpdateValidatorTransaction) o;
     return Objects.equals(this.type, timeUpdateValidatorTransaction.type) &&
-        Objects.equals(this.proposerTimestampMs, timeUpdateValidatorTransaction.proposerTimestampMs);
+        Objects.equals(this.proposerTimestampMs, timeUpdateValidatorTransaction.proposerTimestampMs) &&
+        Objects.equals(this.consensusEpoch, timeUpdateValidatorTransaction.consensusEpoch) &&
+        Objects.equals(this.roundInEpoch, timeUpdateValidatorTransaction.roundInEpoch);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, proposerTimestampMs);
+    return Objects.hash(type, proposerTimestampMs, consensusEpoch, roundInEpoch);
   }
 
   @Override
@@ -129,6 +195,8 @@ public class TimeUpdateValidatorTransaction {
     sb.append("class TimeUpdateValidatorTransaction {\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("    proposerTimestampMs: ").append(toIndentedString(proposerTimestampMs)).append("\n");
+    sb.append("    consensusEpoch: ").append(toIndentedString(consensusEpoch)).append("\n");
+    sb.append("    roundInEpoch: ").append(toIndentedString(roundInEpoch)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -156,8 +156,9 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         new PrepareRequest(
             previousTransactions,
             proposedTransactions,
+            UInt64.fromNonNegativeLong(roundDetails.epoch()),
             UInt64.fromNonNegativeLong(roundDetails.roundNumber()),
-            UInt64.fromNonNegativeLong(roundDetails.proposerTimestamp()));
+            UInt64.fromNonNegativeLong(roundDetails.proposerTimestampMs()));
 
     var result = stateComputer.prepare(prepareRequest);
     var committableTransactions =

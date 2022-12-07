@@ -15,15 +15,21 @@
 pub enum ValidatorTransaction {
     #[serde(rename="EpochUpdate")]
     EpochUpdateValidatorTransaction {
-        /// An integer between `0` and `10^10`, marking the new epoch
-        #[serde(rename = "epoch")]
-        epoch: i64,
+        /// An integer between `0` and `10^10`, marking the new epoch. Note that currently this is not the same as `consensus_epoch`, but eventually will be. 
+        #[serde(rename = "scrypto_epoch")]
+        scrypto_epoch: i64,
     },
     #[serde(rename="TimeUpdate")]
     TimeUpdateValidatorTransaction {
         /// An integer between `0` and `10^14`, marking the round proposer's unix timestamp in ms
         #[serde(rename = "proposer_timestamp_ms")]
         proposer_timestamp_ms: i64,
+        /// An integer between `0` and `10^10`, marking the consensus epoch. Note that currently this is not the same as `scrypto_epoch`, but eventually will be. 
+        #[serde(rename = "consensus_epoch")]
+        consensus_epoch: i64,
+        /// An integer between `0` and `10^10`, marking the consensus round in the epoch
+        #[serde(rename = "round_in_epoch")]
+        round_in_epoch: i64,
     },
 }
 

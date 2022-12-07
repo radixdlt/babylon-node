@@ -13,15 +13,15 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct EpochUpdateValidatorTransactionAllOf {
-    /// An integer between `0` and `10^10`, marking the new epoch
-    #[serde(rename = "epoch")]
-    pub epoch: i64,
+    /// An integer between `0` and `10^10`, marking the new epoch. Note that currently this is not the same as `consensus_epoch`, but eventually will be. 
+    #[serde(rename = "scrypto_epoch")]
+    pub scrypto_epoch: i64,
 }
 
 impl EpochUpdateValidatorTransactionAllOf {
-    pub fn new(epoch: i64) -> EpochUpdateValidatorTransactionAllOf {
+    pub fn new(scrypto_epoch: i64) -> EpochUpdateValidatorTransactionAllOf {
         EpochUpdateValidatorTransactionAllOf {
-            epoch,
+            scrypto_epoch,
         }
     }
 }

@@ -15,16 +15,16 @@
 pub struct EpochUpdateValidatorTransaction {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::ValidatorTransactionType,
-    /// An integer between `0` and `10^10`, marking the new epoch
-    #[serde(rename = "epoch")]
-    pub epoch: i64,
+    /// An integer between `0` and `10^10`, marking the new epoch. Note that currently this is not the same as `consensus_epoch`, but eventually will be. 
+    #[serde(rename = "scrypto_epoch")]
+    pub scrypto_epoch: i64,
 }
 
 impl EpochUpdateValidatorTransaction {
-    pub fn new(_type: crate::core_api::generated::models::ValidatorTransactionType, epoch: i64) -> EpochUpdateValidatorTransaction {
+    pub fn new(_type: crate::core_api::generated::models::ValidatorTransactionType, scrypto_epoch: i64) -> EpochUpdateValidatorTransaction {
         EpochUpdateValidatorTransaction {
             _type,
-            epoch,
+            scrypto_epoch,
         }
     }
 }

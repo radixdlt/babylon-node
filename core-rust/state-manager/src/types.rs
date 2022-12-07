@@ -395,8 +395,9 @@ pub struct CommitRequest {
 pub struct PrepareRequest {
     pub already_prepared_payloads: Vec<Vec<u8>>,
     pub proposed_payloads: Vec<Vec<u8>>,
+    pub consensus_epoch: u64,
     pub round_number: u64,
-    pub proposer_timestamp: u64,
+    pub proposer_timestamp_ms: u64,
 }
 
 #[derive(Debug, Decode, Encode, TypeId)]
