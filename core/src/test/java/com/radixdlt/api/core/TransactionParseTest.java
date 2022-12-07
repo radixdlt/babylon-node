@@ -62,79 +62,36 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.api.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.lang.Option;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.modules.CryptoModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev1.RoundDetails;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.REv2StateConfig;
-import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.UInt64;
-import java.util.List;
+import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.TransactionParseRequest;
+import com.radixdlt.rev2.REv2TestTransactions;
+import com.radixdlt.utils.Bytes;
 import org.junit.Test;
 
-public class REv2StateComputerTest {
-  private Injector createInjector() {
-    return Guice.createInjector(
-        new CryptoModule(),
-        REv2StateManagerModule.create(
-            Network.INTEGRATIONTESTNET.getId(),
-            10,
-            new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
-            REv2DatabaseConfig.inMemory(),
-            Option.none()),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
-            bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-          }
-        });
-  }
-
+public class TransactionParseTest extends DeterministicCoreApiTestBase {
   @Test
-  public void test_valid_rev2_transaction_passes() {
-    // Arrange
-    var injector = createInjector();
-    var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var validTransaction = REv2TestTransactions.constructValidRawTransaction(0, 0);
+  public void test_parse_rejected_transaction() throws Exception {
+    try (var test = buildRunningServerTest()) {
 
-    // Act
-    var result =
-        stateComputer.prepare(List.of(), List.of(validTransaction), mock(RoundDetails.class));
+      var rawTransaction =
+          REv2TestTransactions.validButRejectTransaction(0, 0).constructRawTransaction();
 
-    // Assert
-    assertThat(result.getFailedTransactions()).isEmpty();
-  }
+      // Submit transaction
+      var response =
+          getTransactionApi()
+              .transactionParsePost(
+                  new TransactionParseRequest()
+                      .network(networkLogicalName)
+                      .validationMode(TransactionParseRequest.ValidationModeEnum.FULL)
+                      .payloadHex(Bytes.toHexString(rawTransaction.getPayload())));
 
-  @Test
-  public void test_invalid_rev2_transaction_fails() {
-    // Arrange
-    var injector = createInjector();
-    var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var invalidTransaction = RawNotarizedTransaction.create(new byte[1]);
-
-    // Act
-    var result =
-        stateComputer.prepare(List.of(), List.of(invalidTransaction), mock(RoundDetails.class));
-
-    // Assert
-    assertThat(result.getSuccessfullyExecutedTransactions().isEmpty());
-    assertThat(result.getFailedTransactions()).hasSize(1);
+      var parsed = response.getParsed().getParsedNotarizedTransaction();
+      assertThat(parsed.getValidationError().getReason())
+          .isEqualTo("FromExecution(SuccessButFeeLoanNotRepaid)");
+    }
   }
 }

@@ -120,7 +120,8 @@ public class REv2RejectedTransactionMempoolTest {
     try (var test = createTest(1)) {
       // Arrange
       test.startAllNodes();
-      var rejectableTransaction = REv2TestTransactions.constructValidButRejectTransaction(0, 1);
+      var rawRejectableTransaction =
+          REv2TestTransactions.validButRejectTransaction(0, 1).constructRawTransaction();
       var mempoolInserter =
           test.getInstance(
               0,
@@ -128,13 +129,13 @@ public class REv2RejectedTransactionMempoolTest {
                   new TypeLiteral<
                       MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
       try {
-        mempoolInserter.addTransaction(rejectableTransaction);
+        mempoolInserter.addTransaction(rawRejectableTransaction);
       } catch (MempoolRejectedException ignored) {
       }
       test.runForCount(100, onlyConsensusEvents());
 
       // Act: Submit valid transaction to mempool
-      mempoolInserter.addTransaction(REv2TestTransactions.constructValidTransaction(0, 0));
+      mempoolInserter.addTransaction(REv2TestTransactions.constructValidRawTransaction(0, 0));
 
       // Assert
       var mempoolReader =
@@ -142,7 +143,7 @@ public class REv2RejectedTransactionMempoolTest {
               0, Key.get(new TypeLiteral<MempoolReader<RawNotarizedTransaction>>() {}));
       assertThat(mempoolReader.getCount()).isEqualTo(1);
       // Verify that transaction was not committed
-      assertTransactionNotCommitted(test.getNodeInjectors(), rejectableTransaction);
+      assertTransactionNotCommitted(test.getNodeInjectors(), rawRejectableTransaction);
     }
   }
 

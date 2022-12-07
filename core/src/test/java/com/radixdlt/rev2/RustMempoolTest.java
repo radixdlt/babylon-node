@@ -64,7 +64,7 @@
 
 package com.radixdlt.rev2;
 
-import static com.radixdlt.rev2.REv2TestTransactions.constructValidTransaction;
+import static com.radixdlt.rev2.REv2TestTransactions.constructValidRawTransaction;
 
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.MempoolDuplicateException;
@@ -93,9 +93,9 @@ public final class RustMempoolTest {
             LoggingConfig.getDefault());
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager);
-      var transaction1 = constructValidTransaction(0, 0);
-      var transaction2 = constructValidTransaction(0, 1);
-      var transaction3 = constructValidTransaction(0, 2);
+      var transaction1 = constructValidRawTransaction(0, 0);
+      var transaction2 = constructValidRawTransaction(0, 1);
+      var transaction3 = constructValidRawTransaction(0, 2);
 
       Assert.assertEquals(0, rustMempool.getCount());
 
@@ -153,9 +153,9 @@ public final class RustMempoolTest {
             LoggingConfig.getDefault());
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager);
-      var transaction1 = constructValidTransaction(0, 0);
-      var transaction2 = constructValidTransaction(0, 1);
-      var transaction3 = constructValidTransaction(0, 2);
+      var transaction1 = constructValidRawTransaction(0, 0);
+      var transaction2 = constructValidRawTransaction(0, 1);
+      var transaction3 = constructValidRawTransaction(0, 2);
 
       // Add Transactions
       rustMempool.addTransaction(transaction1);
@@ -251,9 +251,9 @@ public final class RustMempoolTest {
             LoggingConfig.getDefault());
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager);
-      var transaction1 = constructValidTransaction(0, 0);
-      var transaction2 = constructValidTransaction(0, 1);
-      var transaction3 = constructValidTransaction(0, 2);
+      var transaction1 = constructValidRawTransaction(0, 0);
+      var transaction2 = constructValidRawTransaction(0, 1);
+      var transaction3 = constructValidRawTransaction(0, 2);
 
       rustMempool.addTransaction(transaction1);
       rustMempool.addTransaction(transaction2);
