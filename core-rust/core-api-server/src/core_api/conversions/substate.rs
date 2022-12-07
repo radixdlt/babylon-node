@@ -825,15 +825,19 @@ fn to_api_non_fungible_data(
     bech32_encoder: &Bech32Encoder,
     non_fungible: &NonFungible,
 ) -> Result<models::NonFungibleData, MappingError> {
+    // NOTE - There's currently no schema / validation of non-fungible id data at the moment
+    // It's not even guaranteed to be valid SBOR
+    // Therefore we attempt to decode it as valid SBOR (becuase it will be in the 99% case), but
+    // also provide the raw hex bytes for the cases where it's not
+    let immutable_data = non_fungible.immutable_data();
+    let mutable_data = non_fungible.mutable_data();
+    let immutable_data_sbor_option = to_api_data_struct(bech32_encoder, &immutable_data).ok();
+    let mutable_data_sbor_option = to_api_data_struct(bech32_encoder, &mutable_data).ok();
     Ok(models::NonFungibleData {
-        immutable_data: Box::new(to_api_data_struct(
-            bech32_encoder,
-            &non_fungible.immutable_data(),
-        )?),
-        mutable_data: Box::new(to_api_data_struct(
-            bech32_encoder,
-            &non_fungible.mutable_data(),
-        )?),
+        immutable_data: immutable_data_sbor_option.map(Box::new),
+        immutable_data_raw_hex: to_hex(&immutable_data),
+        mutable_data: mutable_data_sbor_option.map(Box::new),
+        mutable_data_raw_hex: to_hex(&mutable_data),
     })
 }
 
