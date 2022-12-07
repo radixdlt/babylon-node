@@ -2325,15 +2325,28 @@ components:
               type: boolean
     NonFungibleData:
       type: object
-      description: Only present if the non fungible isn't deleted
+      description: |
+        Only present if the non fungible isn't deleted.
+        NOTE: Currently there is no schema for mutable/immutable data, and it's not even guaranteed to be SBOR-encoded.
+        But from scrypto, it likely always will be. For now, immutable_data / mutable_data is optional, and only included
+        if the data is valid SBOR. When the payload is validated, `immutable_data_raw_hex` / `mutable_data_raw_hex` will
+        be removed.
       required:
-        - immutable_data
-        - mutable_data
+        - immutable_data_raw_hex
+        - mutable_data_raw_hex
       properties:
         immutable_data:
           $ref: '#/components/schemas/DataStruct'
+        immutable_data_raw_hex:
+          type: string
+          description: |
+            The hex-encoded raw bytes of the immutable data of the NF.
         mutable_data:
           $ref: '#/components/schemas/DataStruct'
+        mutable_data_raw_hex:
+          type: string
+          description: |
+            The hex-encoded raw bytes of the mutadata data of the NF.
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################
