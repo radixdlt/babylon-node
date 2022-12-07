@@ -73,8 +73,8 @@ public record RoundDetails(
     long previousQcRoundNumber,
     BFTNode roundProposer,
     boolean roundWasTimeout,
-    long consensusParentRoundTimestamp,
-    long proposerTimestamp) {
+    long consensusParentRoundTimestampMs,
+    long proposerTimestampMs) {
 
   public static RoundDetails fromVertex(VertexWithHash vertexWithHash) {
     final var vertex = vertexWithHash.vertex();

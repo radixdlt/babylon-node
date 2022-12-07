@@ -339,7 +339,7 @@ public final class RadixEngineStateComputer implements StateComputer {
           new NextRound(
               roundDetails.roundNumber(),
               roundDetails.roundWasTimeout(),
-              roundDetails.consensusParentRoundTimestamp(),
+              roundDetails.consensusParentRoundTimestampMs(),
               getValidatorMapping()));
     } else {
       // We shouldn't record the outcome of rounds beyond the end of the epoch, BUT we do need to
@@ -351,10 +351,10 @@ public final class RadixEngineStateComputer implements StateComputer {
             new NextRound(
                 epochMaxRoundNumber,
                 true,
-                roundDetails.consensusParentRoundTimestamp(),
+                roundDetails.consensusParentRoundTimestampMs(),
                 getValidatorMapping()));
       }
-      systemActions.action(new NextEpoch(roundDetails.consensusParentRoundTimestamp()));
+      systemActions.action(new NextEpoch(roundDetails.consensusParentRoundTimestampMs()));
     }
 
     try {

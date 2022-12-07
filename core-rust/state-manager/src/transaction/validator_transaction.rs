@@ -17,8 +17,17 @@ use transaction::model::{
 
 #[derive(Debug, Copy, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum ValidatorTransaction {
-    EpochUpdate(u64),
-    TimeUpdate(u64),
+    EpochUpdate {
+        scrypto_epoch: u64,
+    },
+    RoundUpdate {
+        proposer_timestamp_ms: u64,
+        // We include epoch because our current database implementation needs
+        // to ensure all ledger payloads are unique.
+        // Currently scrypto epoch != consensus epoch, but this will change
+        consensus_epoch: u64,
+        round_in_epoch: u64,
+    },
 }
 
 impl ValidatorTransaction {
@@ -27,25 +36,28 @@ impl ValidatorTransaction {
         let validator_role_nf_address = hash(scrypto_encode(self).unwrap());
 
         let instruction = match self {
-            ValidatorTransaction::EpochUpdate(epoch) => Instruction::CallNativeMethod {
+            ValidatorTransaction::EpochUpdate { scrypto_epoch } => Instruction::CallNativeMethod {
                 method_ident: NativeMethodIdent {
                     receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
                     method_name: "set_epoch".to_string(),
                 },
                 args: scrypto_encode(&EpochManagerSetEpochInvocation {
                     receiver: EPOCH_MANAGER,
-                    epoch: *epoch,
+                    epoch: *scrypto_epoch,
                 })
                 .unwrap(),
             },
-            ValidatorTransaction::TimeUpdate(current_time_ms) => Instruction::CallNativeMethod {
+            ValidatorTransaction::RoundUpdate {
+                proposer_timestamp_ms: timestamp_ms,
+                ..
+            } => Instruction::CallNativeMethod {
                 method_ident: NativeMethodIdent {
                     receiver: RENodeId::Global(GlobalAddress::System(CLOCK)),
                     method_name: "set_current_time".to_string(),
                 },
                 args: scrypto_encode(&ClockSetCurrentTimeInvocation {
                     receiver: CLOCK,
-                    current_time_ms: *current_time_ms,
+                    current_time_ms: *timestamp_ms,
                 })
                 .unwrap(),
             },

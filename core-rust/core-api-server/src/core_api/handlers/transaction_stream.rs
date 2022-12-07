@@ -285,15 +285,19 @@ pub fn to_api_validator_transaction(
     _network: &NetworkDefinition,
 ) -> Result<models::ValidatorTransaction, MappingError> {
     Ok(match validator_transaction {
-        ValidatorTransaction::EpochUpdate(epoch) => {
+        ValidatorTransaction::EpochUpdate { scrypto_epoch } => {
             models::ValidatorTransaction::EpochUpdateValidatorTransaction {
-                epoch: to_api_epoch(*epoch)?,
+                scrypto_epoch: to_api_epoch(*scrypto_epoch)?,
             }
         }
-        ValidatorTransaction::TimeUpdate(proposer_timestamp_ms) => {
-            models::ValidatorTransaction::TimeUpdateValidatorTransaction {
-                proposer_timestamp_ms: to_api_timestamp_ms(*proposer_timestamp_ms)?,
-            }
-        }
+        ValidatorTransaction::RoundUpdate {
+            proposer_timestamp_ms,
+            consensus_epoch,
+            round_in_epoch,
+        } => models::ValidatorTransaction::TimeUpdateValidatorTransaction {
+            proposer_timestamp_ms: to_api_timestamp_ms(*proposer_timestamp_ms)?,
+            consensus_epoch: to_api_epoch(*consensus_epoch)?,
+            round_in_epoch: to_api_round(*round_in_epoch)?,
+        },
     })
 }
