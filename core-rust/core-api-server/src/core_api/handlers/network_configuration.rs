@@ -1,6 +1,6 @@
 use crate::core_api::*;
 use radix_engine::types::*;
-use scrypto::address::{EntityType, HrpSet};
+use radix_engine_interface::address::{EntityType, HrpSet};
 use state_manager::jni::state_manager::ActualStateManager;
 
 #[tracing::instrument(err(Debug), skip(state))]
@@ -9,8 +9,6 @@ pub(crate) async fn handle_network_configuration(
 ) -> Result<Json<models::NetworkConfigurationResponse>, RequestHandlingError> {
     core_api_handler_empty_request(state, handle_network_configuration_internal)
 }
-
-type AddressSubType = models::address_type::Subtype;
 
 pub(crate) fn handle_network_configuration_internal(
     state_manager: &mut ActualStateManager,
@@ -36,6 +34,8 @@ pub(crate) fn handle_network_configuration_internal(
         well_known_addresses: Box::new(models::NetworkConfigurationResponseWellKnownAddresses {
             account_package: bech32_encoder.encode_package_address_to_string(&ACCOUNT_PACKAGE),
             faucet: bech32_encoder.encode_component_address_to_string(&FAUCET_COMPONENT),
+            epoch_manager: bech32_encoder.encode_system_address_to_string(&EPOCH_MANAGER),
+            clock: bech32_encoder.encode_system_address_to_string(&CLOCK),
             ecdsa_secp256k1: bech32_encoder
                 .encode_resource_address_to_string(&ECDSA_SECP256K1_TOKEN),
             eddsa_ed25519: bech32_encoder.encode_resource_address_to_string(&EDDSA_ED25519_TOKEN),
@@ -44,7 +44,7 @@ pub(crate) fn handle_network_configuration_internal(
     })
 }
 
-const ALL_ENTITY_TYPES: [EntityType; 7] = [
+const ALL_ENTITY_TYPES: [EntityType; 8] = [
     EntityType::Resource,
     EntityType::Package,
     EntityType::NormalComponent,
@@ -52,6 +52,7 @@ const ALL_ENTITY_TYPES: [EntityType; 7] = [
     EntityType::EcdsaSecp256k1VirtualAccountComponent,
     EntityType::EddsaEd25519VirtualAccountComponent,
     EntityType::EpochManager,
+    EntityType::Clock,
 ];
 
 fn to_api_address_type(hrp_set: &HrpSet, entity_type: EntityType) -> models::AddressType {
@@ -59,39 +60,44 @@ fn to_api_address_type(hrp_set: &HrpSet, entity_type: EntityType) -> models::Add
     // We do it like this in a match statement so that we catch a compile error if a new entity type is added :)
     let (subtype, api_entity_type, address_length) = match entity_type {
         EntityType::Resource => (
-            AddressSubType::Resource,
+            models::address_type::Subtype::Resource,
             models::EntityType::ResourceManager,
             extract_length(ResourceAddress::Normal),
         ),
         EntityType::Package => (
-            AddressSubType::Package,
+            models::address_type::Subtype::Package,
             models::EntityType::Package,
             extract_length(PackageAddress::Normal),
         ),
         EntityType::NormalComponent => (
-            AddressSubType::NormalComponent,
+            models::address_type::Subtype::NormalComponent,
             models::EntityType::Component,
             extract_length(ComponentAddress::Normal),
         ),
         EntityType::AccountComponent => (
-            AddressSubType::AccountComponent,
+            models::address_type::Subtype::AccountComponent,
             models::EntityType::Component,
             extract_length(ComponentAddress::Account),
         ),
         EntityType::EcdsaSecp256k1VirtualAccountComponent => (
-            AddressSubType::EcdsaSecp256k1VirtualAccountComponent,
+            models::address_type::Subtype::EcdsaSecp256k1VirtualAccountComponent,
             models::EntityType::Component,
             extract_length(ComponentAddress::EcdsaSecp256k1VirtualAccount),
         ),
         EntityType::EddsaEd25519VirtualAccountComponent => (
-            AddressSubType::EddsaEd25519VirtualAccountComponent,
+            models::address_type::Subtype::EddsaEd25519VirtualAccountComponent,
             models::EntityType::Component,
             extract_length(ComponentAddress::EddsaEd25519VirtualAccount),
         ),
         EntityType::EpochManager => (
-            AddressSubType::EpochManager,
+            models::address_type::Subtype::EpochManager,
             models::EntityType::EpochManager,
             extract_length(SystemAddress::EpochManager),
+        ),
+        EntityType::Clock => (
+            models::address_type::Subtype::Clock,
+            models::EntityType::Clock,
+            extract_length(SystemAddress::Clock),
         ),
     };
     models::AddressType {

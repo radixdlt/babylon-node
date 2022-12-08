@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.SborData;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -31,39 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * BlueprintData
  */
 @JsonPropertyOrder({
-  BlueprintData.JSON_PROPERTY_ABI_HEX
+  BlueprintData.JSON_PROPERTY_ABI
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BlueprintData {
-  public static final String JSON_PROPERTY_ABI_HEX = "abi_hex";
-  private String abiHex;
+  public static final String JSON_PROPERTY_ABI = "abi";
+  private SborData abi;
 
   public BlueprintData() { 
   }
 
-  public BlueprintData abiHex(String abiHex) {
-    this.abiHex = abiHex;
+  public BlueprintData abi(SborData abi) {
+    this.abi = abi;
     return this;
   }
 
    /**
-   * The hex-encoded, sbor-encoded package abi
-   * @return abiHex
+   * Get abi
+   * @return abi
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded, sbor-encoded package abi")
-  @JsonProperty(JSON_PROPERTY_ABI_HEX)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ABI)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getAbiHex() {
-    return abiHex;
+  public SborData getAbi() {
+    return abi;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ABI_HEX)
+  @JsonProperty(JSON_PROPERTY_ABI)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAbiHex(String abiHex) {
-    this.abiHex = abiHex;
+  public void setAbi(SborData abi) {
+    this.abi = abi;
   }
 
 
@@ -79,19 +80,19 @@ public class BlueprintData {
       return false;
     }
     BlueprintData blueprintData = (BlueprintData) o;
-    return Objects.equals(this.abiHex, blueprintData.abiHex);
+    return Objects.equals(this.abi, blueprintData.abi);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(abiHex);
+    return Objects.hash(abi);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class BlueprintData {\n");
-    sb.append("    abiHex: ").append(toIndentedString(abiHex)).append("\n");
+    sb.append("    abi: ").append(toIndentedString(abi)).append("\n");
     sb.append("}");
     return sb.toString();
   }

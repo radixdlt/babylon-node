@@ -13,14 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct NonFungibleResourceAmountAllOf {
-    #[serde(rename = "non_fungible_ids_hex")]
-    pub non_fungible_ids_hex: Vec<String>,
+    #[serde(rename = "non_fungible_ids")]
+    pub non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleId>,
 }
 
 impl NonFungibleResourceAmountAllOf {
-    pub fn new(non_fungible_ids_hex: Vec<String>) -> NonFungibleResourceAmountAllOf {
+    pub fn new(non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleId>) -> NonFungibleResourceAmountAllOf {
         NonFungibleResourceAmountAllOf {
-            non_fungible_ids_hex,
+            non_fungible_ids,
         }
     }
 }

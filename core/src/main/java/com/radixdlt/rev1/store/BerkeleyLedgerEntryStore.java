@@ -838,7 +838,7 @@ public final class BerkeleyLedgerEntryStore
   }
 
   private void doSave(com.sleepycat.je.Transaction transaction, VertexStoreState vertexStoreState) {
-    var rootId = vertexStoreState.getRoot().getHash();
+    var rootId = vertexStoreState.getRoot().hash();
     var vertexKey = entry(rootId.asBytes());
     var vertexEntry = serializeAll(vertexStoreState.toSerialized());
 

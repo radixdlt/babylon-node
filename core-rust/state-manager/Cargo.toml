@@ -25,12 +25,12 @@ prometheus = { version = "0.13.2", default-features = false, features = [] }
 # 
 # Ensure this version is also identically updated in ../core-api-server/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "2022-11-14-v1" }
-scrypto = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "2022-11-14-v1" }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "2022-11-14-v1" }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "2022-11-14-v1" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "2022-11-14-v1" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "2022-11-14-v1" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-24d36f6a3", features = ["indexmap"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-24d36f6a3" }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-24d36f6a3" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-24d36f6a3" }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-24d36f6a3" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-24d36f6a3" }
 
 # Non-Radix Engine Dependencies:
 rocksdb = { version = "0.19.0" }

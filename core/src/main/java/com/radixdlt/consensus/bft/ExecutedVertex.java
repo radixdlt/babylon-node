@@ -66,6 +66,7 @@ package com.radixdlt.consensus.bft;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.transactions.RawLedgerTransaction;
@@ -87,7 +88,7 @@ import java.util.stream.Stream;
  */
 public final class ExecutedVertex {
   private final long timeOfExecution;
-  private final VertexWithHash vertex;
+  private final VertexWithHash vertexWithHash;
 
   private final LedgerHeader ledgerHeader;
 
@@ -95,12 +96,12 @@ public final class ExecutedVertex {
   private final Map<RawLedgerTransaction, Exception> transactionsWhichRaisedAnException;
 
   public ExecutedVertex(
-      VertexWithHash vertex,
+      VertexWithHash vertexWithHash,
       LedgerHeader ledgerHeader,
       List<ExecutedTransaction> executedTransactions,
       Map<RawLedgerTransaction, Exception> transactionsWhichRaisedAnException,
       long timeOfExecution) {
-    this.vertex = Objects.requireNonNull(vertex);
+    this.vertexWithHash = Objects.requireNonNull(vertexWithHash);
     this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
     this.executedTransactions = Objects.requireNonNull(executedTransactions);
     this.transactionsWhichRaisedAnException =
@@ -108,20 +109,24 @@ public final class ExecutedVertex {
     this.timeOfExecution = timeOfExecution;
   }
 
+  public Vertex vertex() {
+    return this.vertexWithHash.vertex();
+  }
+
   public long getTimeOfExecution() {
     return timeOfExecution;
   }
 
   public HashCode getVertexHash() {
-    return vertex.getHash();
+    return vertexWithHash.hash();
   }
 
   public HashCode getParentId() {
-    return vertex.getParentVertexId();
+    return vertex().getParentVertexId();
   }
 
   public Round getRound() {
-    return vertex.getRound();
+    return vertex().getRound();
   }
 
   public Stream<ExecutedTransaction> successfulTransactions() {
@@ -153,14 +158,14 @@ public final class ExecutedVertex {
    *
    * @return the executed vertex
    */
-  public VertexWithHash getVertex() {
-    return vertex;
+  public VertexWithHash getVertexWithHash() {
+    return vertexWithHash;
   }
 
   @Override
   public String toString() {
     return String.format(
         "%s{vertex=%s ledgerHeader=%s}",
-        this.getClass().getSimpleName(), this.vertex, this.ledgerHeader);
+        this.getClass().getSimpleName(), this.vertex(), this.ledgerHeader);
   }
 }

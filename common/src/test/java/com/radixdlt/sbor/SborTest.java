@@ -74,7 +74,6 @@ import com.google.common.primitives.UnsignedLong;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.*;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.dto.SimpleEnum;
 import com.radixdlt.sbor.dto.SimpleRecord;
 import com.radixdlt.sbor.exceptions.SborDecodeException;
@@ -87,80 +86,85 @@ public class SborTest {
   @Test
   public void unitCanBeEncodedAndDecoded() {
 
-    var r0 = DefaultTypedSbor.encode(Unit.unit(), Unit.class);
+    var r0 = BasicDefaultSbor.encode(Unit.unit(), Unit.class);
 
-    assertEquals(2, r0.length);
-    assertEquals(0, r0[0]); // Type == 0x00 - Unit
-    assertEquals(0, r0[1]); // Followed by a single 0x00 byte
+    assertEquals(3, r0.length);
+    assertEquals(0x5b, r0[0]); // Prefix byte
+    assertEquals(0x00, r0[1]); // Type == 0x00 - Unit
+    assertEquals(0x00, r0[2]); // Followed by a single 0x00 byte
 
-    var r1 = DefaultTypedSbor.decode(r0, Unit.class);
+    var r1 = BasicDefaultSbor.decode(r0, Unit.class);
 
     assertEquals(Unit.unit(), r1);
   }
 
   @Test
   public void booleanCanBeEncodedAndDecoded() {
-    var r0 = DefaultTypedSbor.encode(true, boolean.class);
+    var r0 = BasicDefaultSbor.encode(true, boolean.class);
 
-    assertEquals(2, r0.length);
-    assertEquals(1, r0[0]); // Type == 0x01 - Boolean
-    assertEquals(1, r0[1]); // Value = 1 == true
+    assertEquals(3, r0.length);
+    assertEquals(0x5b, r0[0]); // Prefix byte
+    assertEquals(0x01, r0[1]); // Type == 0x01 - Boolean
+    assertEquals(0x01, r0[2]); // Value = 1 == true
 
-    var r1 = DefaultTypedSbor.decode(r0, boolean.class);
+    var r1 = BasicDefaultSbor.decode(r0, boolean.class);
 
     assertTrue(r1);
   }
 
   @Test
   public void byteCanBeEncodedAndDecoded() {
-    var r0 = DefaultTypedSbor.encode((byte) 0x5A, byte.class);
+    var r0 = BasicDefaultSbor.encode((byte) 0x5A, byte.class);
 
-    assertEquals(2, r0.length);
-    assertEquals(7, r0[0]); // Type == 0x07 - u8
-    assertEquals(0x5A, r0[1]); // Value == 0x5A
+    assertEquals(3, r0.length);
+    assertEquals(0x5b, r0[0]); // Prefix byte
+    assertEquals(0x07, r0[1]); // Type == 0x07 - u8
+    assertEquals(0x5A, r0[2]); // Value == 0x5A
 
-    var r1 = DefaultTypedSbor.decode(r0, byte.class);
+    var r1 = BasicDefaultSbor.decode(r0, byte.class);
 
     assertEquals((byte) 0x5A, (byte) r1);
   }
 
   @Test
   public void shortCanBeEncodedAndDecoded() {
-    var r0 = DefaultTypedSbor.encode((short) 0x1234, short.class);
+    var r0 = BasicDefaultSbor.encode((short) 0x1234, short.class);
 
-    assertEquals(3, r0.length);
-    assertEquals(3, r0[0]); // Type == 0x03 - i16
-    assertEquals(0x34, r0[1]); // Value
-    assertEquals(0x12, r0[2]); // Value
+    assertEquals(4, r0.length);
+    assertEquals(0x5b, r0[0]); // Prefix byte
+    assertEquals(0x03, r0[1]); // Type == 0x03 - i16
+    assertEquals(0x34, r0[2]); // Value
+    assertEquals(0x12, r0[3]); // Value
 
-    var r1 = DefaultTypedSbor.decode(r0, short.class);
+    var r1 = BasicDefaultSbor.decode(r0, short.class);
 
     assertEquals((short) 0x1234, (short) r1);
   }
 
   @Test
   public void intCanBeEncodedAndDecoded() {
-    var r0 = DefaultTypedSbor.encode(0x12345678, int.class);
+    var r0 = BasicDefaultSbor.encode(0x12345678, int.class);
 
-    assertEquals(5, r0.length);
-    assertEquals(4, r0[0]); // Type == 0x04 - i32
-    assertEquals(0x78, r0[1]); // Value
-    assertEquals(0x56, r0[2]); // Value
-    assertEquals(0x34, r0[3]); // Value
-    assertEquals(0x12, r0[4]); // Value
+    assertEquals(6, r0.length);
+    assertEquals(0x5b, r0[0]); // Prefix byte
+    assertEquals(4, r0[1]); // Type == 0x04 - i32
+    assertEquals(0x78, r0[2]); // Value
+    assertEquals(0x56, r0[3]); // Value
+    assertEquals(0x34, r0[4]); // Value
+    assertEquals(0x12, r0[5]); // Value
 
-    var r1 = DefaultTypedSbor.decode(r0, int.class);
+    var r1 = BasicDefaultSbor.decode(r0, int.class);
 
     assertEquals(0x12345678, (int) r1);
   }
 
   @Test
   public void intEdgeCasesCanBeEncodedAndDecoded() {
-    var encodedMaxValue = DefaultTypedSbor.encode(Integer.MAX_VALUE, int.class);
-    var encodedMinValue = DefaultTypedSbor.encode(Integer.MIN_VALUE, int.class);
+    var encodedMaxValue = BasicDefaultSbor.encode(Integer.MAX_VALUE, int.class);
+    var encodedMinValue = BasicDefaultSbor.encode(Integer.MIN_VALUE, int.class);
 
-    var decodedMaxValue = DefaultTypedSbor.decode(encodedMaxValue, int.class);
-    var decodedMinValue = DefaultTypedSbor.decode(encodedMinValue, int.class);
+    var decodedMaxValue = BasicDefaultSbor.decode(encodedMaxValue, int.class);
+    var decodedMinValue = BasicDefaultSbor.decode(encodedMinValue, int.class);
 
     assertEquals(Integer.MAX_VALUE, (int) decodedMaxValue);
     assertEquals(Integer.MIN_VALUE, (int) decodedMinValue);
@@ -168,11 +172,11 @@ public class SborTest {
 
   @Test
   public void unsignedIntEdgeCasesCanBeEncodedAndDecoded() {
-    var encodedMaxValue = DefaultTypedSbor.encode(UnsignedInteger.MAX_VALUE);
-    var encodedMinValue = DefaultTypedSbor.encode(UnsignedInteger.ZERO);
+    var encodedMaxValue = BasicDefaultSbor.encode(UnsignedInteger.MAX_VALUE);
+    var encodedMinValue = BasicDefaultSbor.encode(UnsignedInteger.ZERO);
 
-    var decodedMaxValue = DefaultTypedSbor.decode(encodedMaxValue, UnsignedInteger.class);
-    var decodedMinValue = DefaultTypedSbor.decode(encodedMinValue, UnsignedInteger.class);
+    var decodedMaxValue = BasicDefaultSbor.decode(encodedMaxValue, UnsignedInteger.class);
+    var decodedMinValue = BasicDefaultSbor.decode(encodedMinValue, UnsignedInteger.class);
 
     assertEquals(UnsignedInteger.MAX_VALUE, decodedMaxValue);
     assertEquals(UnsignedInteger.ZERO, decodedMinValue);
@@ -180,31 +184,32 @@ public class SborTest {
 
   @Test
   public void longCanBeEncodedAndDecoded() {
-    var r0 = DefaultTypedSbor.encode(0x0123_4567_89AB_CDEFL, long.class);
+    var r0 = BasicDefaultSbor.encode(0x0123_4567_89AB_CDEFL, long.class);
 
-    assertEquals(9, r0.length);
-    assertEquals(5, r0[0]); // Type == 0x05 - i64
-    assertEquals(0xEF, r0[1] & 0xFF); // Value
-    assertEquals(0xCD, r0[2] & 0xFF); // Value
-    assertEquals(0xAB, r0[3] & 0xFF); // Value
-    assertEquals(0x89, r0[4] & 0xFF); // Value
-    assertEquals(0x67, r0[5]); // Value
-    assertEquals(0x45, r0[6]); // Value
-    assertEquals(0x23, r0[7]); // Value
-    assertEquals(0x01, r0[8]); // Value
+    assertEquals(10, r0.length);
+    assertEquals(0x5b, r0[0]); // Prefix byte
+    assertEquals(5, r0[1]); // Type == 0x05 - i64
+    assertEquals(0xEF, r0[2] & 0xFF); // Value
+    assertEquals(0xCD, r0[3] & 0xFF); // Value
+    assertEquals(0xAB, r0[4] & 0xFF); // Value
+    assertEquals(0x89, r0[5] & 0xFF); // Value
+    assertEquals(0x67, r0[6]); // Value
+    assertEquals(0x45, r0[7]); // Value
+    assertEquals(0x23, r0[8]); // Value
+    assertEquals(0x01, r0[9]); // Value
 
-    var r1 = DefaultTypedSbor.decode(r0, long.class);
+    var r1 = BasicDefaultSbor.decode(r0, long.class);
 
     assertEquals(0x0123_4567_89AB_CDEFL, (long) r1);
   }
 
   @Test
   public void unsignedLongEdgeCasesCanBeEncodedAndDecoded() {
-    var encodedMaxValue = DefaultTypedSbor.encode(UnsignedLong.MAX_VALUE);
-    var encodedMinValue = DefaultTypedSbor.encode(UnsignedLong.ZERO);
+    var encodedMaxValue = BasicDefaultSbor.encode(UnsignedLong.MAX_VALUE);
+    var encodedMinValue = BasicDefaultSbor.encode(UnsignedLong.ZERO);
 
-    var decodedMaxValue = DefaultTypedSbor.decode(encodedMaxValue, UnsignedLong.class);
-    var decodedMinValue = DefaultTypedSbor.decode(encodedMinValue, UnsignedLong.class);
+    var decodedMaxValue = BasicDefaultSbor.decode(encodedMaxValue, UnsignedLong.class);
+    var decodedMinValue = BasicDefaultSbor.decode(encodedMinValue, UnsignedLong.class);
 
     assertEquals(UnsignedLong.MAX_VALUE, decodedMaxValue);
     assertEquals(UnsignedLong.ZERO, decodedMinValue);
@@ -214,10 +219,11 @@ public class SborTest {
   public void unsignedInteger128EncodedCorrectly() {
     var value = UInt128.THREE;
 
-    var encoded = DefaultTypedSbor.encode(value);
+    var encoded = BasicDefaultSbor.encode(value);
 
     assertArrayEquals(
         new byte[] {
+          0x5b, // Prefix Byte
           11, // UINT128 Type
           3,
           0,
@@ -238,17 +244,17 @@ public class SborTest {
         },
         encoded);
 
-    var decoded = DefaultTypedSbor.decode(encoded, UInt128.class);
+    var decoded = BasicDefaultSbor.decode(encoded, UInt128.class);
     assertEquals(value, decoded);
   }
 
   @Test
   public void unsignedInteger128EdgeCasesCanBeEncodedAndDecoded() {
-    var encodedMaxValue = DefaultTypedSbor.encode(UInt128.MAX_VALUE);
-    var encodedMinValue = DefaultTypedSbor.encode(UInt128.ZERO);
+    var encodedMaxValue = BasicDefaultSbor.encode(UInt128.MAX_VALUE);
+    var encodedMinValue = BasicDefaultSbor.encode(UInt128.ZERO);
 
-    var decodedMaxValue = DefaultTypedSbor.decode(encodedMaxValue, UInt128.class);
-    var decodedMinValue = DefaultTypedSbor.decode(encodedMinValue, UInt128.class);
+    var decodedMaxValue = BasicDefaultSbor.decode(encodedMaxValue, UInt128.class);
+    var decodedMinValue = BasicDefaultSbor.decode(encodedMinValue, UInt128.class);
 
     assertEquals(UInt128.MAX_VALUE, decodedMaxValue);
     assertEquals(UInt128.ZERO, decodedMinValue);
@@ -262,10 +268,11 @@ public class SborTest {
     var negativeValue = UInt128.MAX_VALUE.subtract(UInt128.from(-1L));
 
     var signedCodecWithNoAsserts = new Int128Codec(true, false);
-    var encodedNegativeValue = DefaultTypedSbor.encode(negativeValue, signedCodecWithNoAsserts);
+    var encodedNegativeValue = BasicDefaultSbor.encode(negativeValue, signedCodecWithNoAsserts);
 
     assertArrayEquals(
         new byte[] {
+          0x5b, // Prefix Byte
           6, // Signed Int128 Type
           0, 0, 0, 0, 0, 0, 0, 0, // The lower long in little endian
           -1, -1, -1, -1, -1, -1, -1, -1, // The upper long in little endian
@@ -275,7 +282,7 @@ public class SborTest {
         encodedNegativeValue);
 
     var decodedNegativeValue =
-        DefaultTypedSbor.decode(encodedNegativeValue, signedCodecWithNoAsserts);
+        BasicDefaultSbor.decode(encodedNegativeValue, signedCodecWithNoAsserts);
     assertEquals(negativeValue, decodedNegativeValue);
   }
 
@@ -288,36 +295,37 @@ public class SborTest {
 
     // Put assertions on for possibly-negative values
     var signedCodecWithAsserts = new Int128Codec(true, true);
-    var encodedNegativeValue = DefaultTypedSbor.encode(negativeValue, signedCodecWithAsserts);
+    var encodedNegativeValue = BasicDefaultSbor.encode(negativeValue, signedCodecWithAsserts);
 
     assertThrows(
         SborDecodeException.class,
-        () -> DefaultTypedSbor.decode(encodedNegativeValue, signedCodecWithAsserts));
+        () -> BasicDefaultSbor.decode(encodedNegativeValue, signedCodecWithAsserts));
   }
 
   @Test
   public void stringCanBeEncodedAndDecoded() {
-    var r0 = DefaultTypedSbor.encode("Test string", String.class);
+    var encoded = BasicDefaultSbor.encode("Test string", String.class);
 
-    assertEquals(16, r0.length);
-    assertEquals(0x0C, r0[0]); // Type == 0x0C - String
-    assertEquals(11, r0[1]); // String length 0
-    assertEquals(0, r0[2]); // String length 1
-    assertEquals(0, r0[3]); // String length 2
-    assertEquals(0, r0[4]); // String length 3
-    assertEquals('T', r0[5]);
-    assertEquals('e', r0[6]);
-    assertEquals('s', r0[7]);
-    assertEquals('t', r0[8]);
-    assertEquals(' ', r0[9]);
-    assertEquals('s', r0[10]);
-    assertEquals('t', r0[11]);
-    assertEquals('r', r0[12]);
-    assertEquals('i', r0[13]);
-    assertEquals('n', r0[14]);
-    assertEquals('g', r0[15]);
+    assertArrayEquals(
+        new byte[] {
+          0x5b, // Prefix Byte
+          0x0C, // Type == 0x0C - String
+          11, // String length 11
+          'T',
+          'e',
+          's',
+          't',
+          ' ', // Start of string
+          's',
+          't',
+          'r',
+          'i',
+          'n',
+          'g' // End of string
+        },
+        encoded);
 
-    var r1 = DefaultTypedSbor.decode(r0, String.class);
+    var r1 = BasicDefaultSbor.decode(encoded, String.class);
 
     assertEquals("Test string", r1);
   }
@@ -327,23 +335,24 @@ public class SborTest {
     var testArray = new byte[] {0x01, 0x02, 0x03, 0x04, 0x05};
 
     // Define Java arrays to map to SBOR fixed-length Arrays, instead of the default, List
-    var sbor = new Sbor(true, new CodecMap(true, TypeId.TYPE_ARRAY));
-    var r0 = sbor.encode(testArray, byte[].class);
+    var sbor = new BasicSbor(new CodecMap(true));
+    var encodedArray = sbor.encode_payload(testArray, byte[].class);
 
-    assertEquals(11, r0.length);
-    assertEquals(0x20, r0[0]); // Type == 0x20 - Fixed length array
-    assertEquals(0x07, r0[1]); // Type == 0x07 - u8
-    assertEquals(5, r0[2]); // Array length 0
-    assertEquals(0, r0[3]); // Array length 1
-    assertEquals(0, r0[4]); // Array length 2
-    assertEquals(0, r0[5]); // Array length 3
-    assertEquals(0x01, r0[6]);
-    assertEquals(0x02, r0[7]);
-    assertEquals(0x03, r0[8]);
-    assertEquals(0x04, r0[9]);
-    assertEquals(0x05, r0[10]);
+    assertArrayEquals(
+        new byte[] {
+          0x5b, // Prefix Byte
+          0x20, // Type == 0x20 - Array
+          0x07, // Type == 0x07 - u8
+          5, // Array length 5
+          0x01,
+          0x02,
+          0x03,
+          0x04,
+          0x05 // Five bytes
+        },
+        encodedArray);
 
-    var r1 = sbor.decode(r0, byte[].class);
+    var r1 = sbor.decode_payload(encodedArray, byte[].class);
 
     assertArrayEquals(testArray, r1);
   }
@@ -352,21 +361,20 @@ public class SborTest {
   public void shortArrayCanBeEncodedAndDecoded() {
     var testArray = new short[] {0x0102, 0x0304};
 
-    var r0 = DefaultTypedSbor.encode(testArray, short[].class);
+    var encodedArray = BasicDefaultSbor.encode(testArray, short[].class);
 
-    assertEquals(10, r0.length);
-    assertEquals(0x30, r0[0]); // Type == 0x30 - List
-    assertEquals(0x03, r0[1]); // Type == 0x03 - i16
-    assertEquals(2, r0[2]); // Array length 0
-    assertEquals(0, r0[3]); // Array length 1
-    assertEquals(0, r0[4]); // Array length 2
-    assertEquals(0, r0[5]); // Array length 3
-    assertEquals(0x02, r0[6]);
-    assertEquals(0x01, r0[7]);
-    assertEquals(0x04, r0[8]);
-    assertEquals(0x03, r0[9]);
+    assertArrayEquals(
+        new byte[] {
+          0x5b, // Prefix Byte
+          0x20, // Type == 0x20 - Array
+          0x03, // Type == 0x04 - i16
+          2, // Array length 2
+          0x02, 0x01, // First short
+          0x04, 0x03, // Second short
+        },
+        encodedArray);
 
-    var r1 = DefaultTypedSbor.decode(r0, short[].class);
+    var r1 = BasicDefaultSbor.decode(encodedArray, short[].class);
 
     assertArrayEquals(testArray, r1);
   }
@@ -375,29 +383,21 @@ public class SborTest {
   public void intArrayCanBeEncodedAndDecoded() {
     var testArray = new int[] {0x01020304, 0x05060708, 0x090A0B0C};
 
-    var r0 = DefaultTypedSbor.encode(testArray, int[].class);
+    var encodedArray = BasicDefaultSbor.encode(testArray, int[].class);
 
-    assertEquals(18, r0.length);
-    assertEquals(0x30, r0[0]); // Type == 0x30 - List
-    assertEquals(0x04, r0[1]); // Type == 0x04 - i32
-    assertEquals(3, r0[2]); // Array length 0
-    assertEquals(0, r0[3]); // Array length 1
-    assertEquals(0, r0[4]); // Array length 2
-    assertEquals(0, r0[5]); // Array length 3
-    assertEquals(0x04, r0[6]);
-    assertEquals(0x03, r0[7]);
-    assertEquals(0x02, r0[8]);
-    assertEquals(0x01, r0[9]);
-    assertEquals(0x08, r0[10]);
-    assertEquals(0x07, r0[11]);
-    assertEquals(0x06, r0[12]);
-    assertEquals(0x05, r0[13]);
-    assertEquals(0x0C, r0[14]);
-    assertEquals(0x0B, r0[15]);
-    assertEquals(0x0A, r0[16]);
-    assertEquals(0x09, r0[17]);
+    assertArrayEquals(
+        new byte[] {
+          0x5b, // Prefix Byte
+          0x20, // Type == 0x20 - Array
+          0x04, // Type == 0x04 - i32
+          3, // Array length 2
+          0x04, 0x03, 0x02, 0x01, // First int
+          0x08, 0x07, 0x06, 0x05, // Second int
+          0x0C, 0x0B, 0x0A, 0x09, // Third int
+        },
+        encodedArray);
 
-    var r1 = DefaultTypedSbor.decode(r0, int[].class);
+    var r1 = BasicDefaultSbor.decode(encodedArray, int[].class);
 
     assertArrayEquals(testArray, r1);
   }
@@ -406,33 +406,22 @@ public class SborTest {
   public void longArrayCanBeEncodedAndDecoded() {
     var testArray = new long[] {0x0102030405060708L, 0x090A0B0C11121314L};
 
-    var r0 = DefaultTypedSbor.encode(testArray);
+    var encodedArray = BasicDefaultSbor.encode(testArray);
 
-    assertEquals(22, r0.length);
-    assertEquals(0x30, r0[0]); // Type == 0x30 - List
-    assertEquals(0x05, r0[1]); // Type == 0x05 - i64
-    assertEquals(2, r0[2]); // Array length 0
-    assertEquals(0, r0[3]); // Array length 1
-    assertEquals(0, r0[4]); // Array length 2
-    assertEquals(0, r0[5]); // Array length 3
-    assertEquals(0x08, r0[6]);
-    assertEquals(0x07, r0[7]);
-    assertEquals(0x06, r0[8]);
-    assertEquals(0x05, r0[9]);
-    assertEquals(0x04, r0[10]);
-    assertEquals(0x03, r0[11]);
-    assertEquals(0x02, r0[12]);
-    assertEquals(0x01, r0[13]);
-    assertEquals(0x14, r0[14]);
-    assertEquals(0x13, r0[15]);
-    assertEquals(0x12, r0[16]);
-    assertEquals(0x11, r0[17]);
-    assertEquals(0x0C, r0[18]);
-    assertEquals(0x0B, r0[19]);
-    assertEquals(0x0A, r0[20]);
-    assertEquals(0x09, r0[21]);
+    assertArrayEquals(
+        new byte[] {
+          0x5b, // Prefix Byte
+          0x20, // Type == 0x20 - Array
+          0x05, // Type == 0x05 - i64
+          2, // Array length 2
+          0x08, 0x07, 0x06, 0x05, // First half of first long
+          0x04, 0x03, 0x02, 0x01, // Second half of first long
+          0x14, 0x13, 0x12, 0x11, // First half of second long
+          0x0C, 0x0B, 0x0A, 0x09, // Second half of second long
+        },
+        encodedArray);
 
-    var r1 = DefaultTypedSbor.decode(r0, long[].class);
+    var r1 = BasicDefaultSbor.decode(encodedArray, long[].class);
 
     assertArrayEquals(testArray, r1);
   }
@@ -440,14 +429,23 @@ public class SborTest {
   @Test
   public void someOptionCanBeEncodedAndDecoded() {
     var optionTypeLiteral = new TypeToken<Option<String>>() {};
-    var r0 = DefaultTypedSbor.encode(some("Test value"), optionTypeLiteral);
+    var encoded = BasicDefaultSbor.encode(some("Test value"), optionTypeLiteral);
 
-    assertEquals(17, r0.length);
-    assertEquals(0x12, r0[0]); // Type == 0x12 - Option
-    assertEquals(0x00, r0[1]); // Value - present
-    assertEquals(0x0C, r0[2]); // Stored type - 0x0C - String
+    assertArrayEquals(
+        new byte[] {
+          0x5b, // Prefix Byte
+          0x11, // Type == 0x11 - Enum
+          4, // Variant Name Length 4
+          'S', 'o', 'm', 'e', // Some
+          1, // Enum variant length
+          0x0C, // Stored type - 0x0C - String
+          10, // Length of string
+          'T', 'e', 's', 't', ' ', // First half of string
+          'v', 'a', 'l', 'u', 'e', // Second half of string
+        },
+        encoded);
 
-    var r1 = DefaultTypedSbor.decode(r0, optionTypeLiteral);
+    var r1 = BasicDefaultSbor.decode(encoded, optionTypeLiteral);
 
     assertEquals(some("Test value"), r1);
   }
@@ -455,13 +453,19 @@ public class SborTest {
   @Test
   public void noneOptionCanBeEncodedAndDecoded() {
     var optionTypeLiteral = new TypeToken<Option<String>>() {};
-    var r0 = DefaultTypedSbor.encode(none(), optionTypeLiteral);
+    var encoded = BasicDefaultSbor.encode(none(), optionTypeLiteral);
 
-    assertEquals(2, r0.length);
-    assertEquals(0x12, r0[0]); // Type == 0x12 - Option
-    assertEquals(0x01, r0[1]); // Value - missing
+    assertArrayEquals(
+        new byte[] {
+          0x5b, // Prefix Byte
+          0x11, // Type == 0x11 - Enum
+          4, // Variant Name Length 4
+          'N', 'o', 'n', 'e', // None
+          0, // Enum variant length
+        },
+        encoded);
 
-    var r1 = DefaultTypedSbor.decode(r0, optionTypeLiteral);
+    var r1 = BasicDefaultSbor.decode(encoded, optionTypeLiteral);
 
     assertEquals(none(), r1);
   }
@@ -471,24 +475,33 @@ public class SborTest {
     var resultTypeLiteral = new TypeToken<Result<String, Long>>() {};
 
     var successResult = Result.<String, Long>success("Some value");
-    var successEncoded = DefaultTypedSbor.encode(successResult, resultTypeLiteral);
+    var successEncoded = BasicDefaultSbor.encode(successResult, resultTypeLiteral);
 
-    assertEquals(17, successEncoded.length);
-    assertEquals(0x13, successEncoded[0]); // Type == 0x13 - Result
-    assertEquals(0x00, successEncoded[1]); // Value - Success
-    assertEquals(0x0C, successEncoded[2]); // Value type - String
+    assertEquals(18, successEncoded.length);
+    assertEquals(0x5b, successEncoded[0]); // Prefix Byte
+    assertEquals(0x11, successEncoded[1]); // Type == 0x11 - Enum
+    assertEquals(2, successEncoded[2]); // "Ok" length
+    assertEquals('O', successEncoded[3]);
+    assertEquals('k', successEncoded[4]);
+    assertEquals(1, successEncoded[5]); // Enum variant length of 1
+    assertEquals(0x0C, successEncoded[6]); // Value type - String
 
-    var successDecoded = DefaultTypedSbor.decode(successEncoded, resultTypeLiteral);
+    var successDecoded = BasicDefaultSbor.decode(successEncoded, resultTypeLiteral);
     assertEquals(successResult, successDecoded);
 
     var errorResult = Result.<String, Long>error(123L);
-    var errorEncoded = DefaultTypedSbor.encode(errorResult, resultTypeLiteral);
-    assertEquals(11, errorEncoded.length);
-    assertEquals(0x13, errorEncoded[0]); // Type == 0x13 - Result
-    assertEquals(0x01, errorEncoded[1]); // Value - Failure
-    assertEquals(0x05, errorEncoded[2]); // Value type - i64
+    var errorEncoded = BasicDefaultSbor.encode(errorResult, resultTypeLiteral);
+    assertEquals(16, errorEncoded.length);
+    assertEquals(0x5b, errorEncoded[0]); // Prefix Byte
+    assertEquals(0x11, errorEncoded[1]); // Type == 0x11 - Enum
+    assertEquals(3, errorEncoded[2]); // "Err" length
+    assertEquals('E', errorEncoded[3]);
+    assertEquals('r', errorEncoded[4]);
+    assertEquals('r', errorEncoded[5]);
+    assertEquals(1, errorEncoded[6]); // Enum variant length of 1
+    assertEquals(0x05, errorEncoded[7]); // Value type - i64
 
-    var failureDecoded = DefaultTypedSbor.decode(errorEncoded, resultTypeLiteral);
+    var failureDecoded = BasicDefaultSbor.decode(errorEncoded, resultTypeLiteral);
     assertEquals(errorResult, failureDecoded);
   }
 
@@ -497,27 +510,36 @@ public class SborTest {
     var eitherTypeLiteral = new TypeToken<Either<String, Long>>() {};
 
     var leftValue = Either.<String, Long>left("Some value");
-    var leftEncoded = DefaultTypedSbor.encode(leftValue, eitherTypeLiteral);
+    var leftEncoded = BasicDefaultSbor.encode(leftValue, eitherTypeLiteral);
 
     // NB - Left is "not-right", AKA failure
-    assertEquals(17, leftEncoded.length);
-    assertEquals(0x13, leftEncoded[0]); // Type == 0x13 - Result
-    assertEquals(0x01, leftEncoded[1]); // Value - Failure
-    assertEquals(0x0C, leftEncoded[2]); // Value type - String
+    assertEquals(19, leftEncoded.length);
+    assertEquals(0x5b, leftEncoded[0]); // Prefix Byte
+    assertEquals(0x11, leftEncoded[1]); // Type == 0x11 - Enum
+    assertEquals(3, leftEncoded[2]); // "Err" length
+    assertEquals('E', leftEncoded[3]);
+    assertEquals('r', leftEncoded[4]);
+    assertEquals('r', leftEncoded[5]);
+    assertEquals(1, leftEncoded[6]); // Enum variant length of 1
+    assertEquals(0x0C, leftEncoded[7]); // Value type - String
 
-    var leftOut = DefaultTypedSbor.decode(leftEncoded, eitherTypeLiteral);
+    var leftOut = BasicDefaultSbor.decode(leftEncoded, eitherTypeLiteral);
     assertEquals(leftValue, leftOut);
 
     var rightValue = Either.<String, Long>right(123L);
-    var rightEncoded = DefaultTypedSbor.encode(rightValue, eitherTypeLiteral);
+    var rightEncoded = BasicDefaultSbor.encode(rightValue, eitherTypeLiteral);
 
     // NB - Right is "right", AKA success
-    assertEquals(11, rightEncoded.length);
-    assertEquals(0x13, rightEncoded[0]); // Type == 0x13 - Result
-    assertEquals(0x00, rightEncoded[1]); // Value - Success
-    assertEquals(0x05, rightEncoded[2]); // Value type - i64
+    assertEquals(15, rightEncoded.length);
+    assertEquals(0x5b, rightEncoded[0]); // Prefix Byte
+    assertEquals(0x11, rightEncoded[1]); // Type == 0x11 - Enum
+    assertEquals(2, rightEncoded[2]); // "Ok" length
+    assertEquals('O', rightEncoded[3]);
+    assertEquals('k', rightEncoded[4]);
+    assertEquals(1, rightEncoded[5]); // Enum variant length of 1
+    assertEquals(0x05, rightEncoded[6]); // Value type - i64
 
-    var rightOut = DefaultTypedSbor.decode(rightEncoded, eitherTypeLiteral);
+    var rightOut = BasicDefaultSbor.decode(rightEncoded, eitherTypeLiteral);
     assertEquals(rightValue, rightOut);
   }
 
@@ -527,31 +549,29 @@ public class SborTest {
 
     // PART 1 - We use codec variant 1 (StructCodec.with)
     var sborUsingWith =
-        new Sbor(true, new CodecMap().register(SimpleRecord::registerCodecUsingStructCodecWith));
+        new BasicSbor(new CodecMap().register(SimpleRecord::registerCodecUsingStructCodecWith));
 
-    var encoded1 = sborUsingWith.encode(testValue, SimpleRecord.class);
+    var encoded1 = sborUsingWith.encode_payload(testValue, SimpleRecord.class);
 
-    assertEquals(41, encoded1.length);
-    assertEquals(0x10, encoded1[0]); // Type == 0x10 - Struct
-    assertEquals(0x04, encoded1[1]); // Field count - 4
-    assertEquals(0x00, encoded1[2]); //
-    assertEquals(0x00, encoded1[3]); //
-    assertEquals(0x00, encoded1[4]); //
+    assertEquals(45, encoded1.length);
+    assertEquals(0x5b, encoded1[0]); // Prefix byte
+    assertEquals(0x21, encoded1[1]); // Type == 0x21 - Struct
+    assertEquals(0x04, encoded1[2]); // Field count - 4
 
-    var decoded1 = sborUsingWith.decode(encoded1, SimpleRecord.class);
+    var decoded1 = sborUsingWith.decode_payload(encoded1, SimpleRecord.class);
 
     assertEquals(testValue, decoded1);
 
     // PART 2 - We use codec variant 2 (StructCodec.fromEntries), and check they match
     var sborUsingFromFields =
-        new Sbor(
-            true, new CodecMap().register(SimpleRecord::registerCodecUsingStructCodecFromEntries));
+        new BasicSbor(
+            new CodecMap().register(SimpleRecord::registerCodecUsingStructCodecFromEntries));
 
-    var encoded2 = sborUsingFromFields.encode(testValue, SimpleRecord.class);
+    var encoded2 = sborUsingFromFields.encode_payload(testValue, SimpleRecord.class);
 
     assertArrayEquals(encoded1, encoded2);
 
-    var decoded2 = sborUsingFromFields.decode(encoded2, SimpleRecord.class);
+    var decoded2 = sborUsingFromFields.decode_payload(encoded2, SimpleRecord.class);
 
     assertEquals(testValue, decoded2);
   }
@@ -562,43 +582,43 @@ public class SborTest {
     var enumTwo = new SimpleEnum.B(Either.left(5L));
 
     // PART 1 - We use codec variant 1 (EnumEntry.with)
-    var sborUsingWith = new Sbor(true, new CodecMap().register(SimpleEnum::registerCodecUsingWith));
+    var sborUsingWith = new BasicSbor(new CodecMap().register(SimpleEnum::registerCodecUsingWith));
 
     // Enum one
-    var encodedEnumOne = sborUsingWith.encode(enumOne, SimpleEnum.class);
+    var encodedEnumOne = sborUsingWith.encode_payload(enumOne, SimpleEnum.class);
     assertArrayEquals(
         new byte[] {
+          0x5b, // Prefix Byte
           17, // Enum Type
-          1, 0, 0, 0, // String length 1
+          1, // String length 1
           65, // "A"
-          2, 0, 0, 0, // Number of fields
+          2, // Number of fields
           4, // Field 1 - Int Type
           4, 0, 0, 0, // Field 1 value
           0x0c, // Field 2 - String Type
-          1, 0, 0, 0, // String length 1
+          1, // String length 1
           67, // "C"
         },
         encodedEnumOne);
-    var decodedEnumOne = sborUsingWith.decode(encodedEnumOne, SimpleEnum.class);
+    var decodedEnumOne = sborUsingWith.decode_payload(encodedEnumOne, SimpleEnum.class);
     assertEquals(enumOne, decodedEnumOne);
 
     // Enum two
-    var encodedEnumTwo = sborUsingWith.encode(enumTwo, SimpleEnum.class);
+    var encodedEnumTwo = sborUsingWith.encode_payload(enumTwo, SimpleEnum.class);
     assertArrayEquals(
         new byte[] {
+          0x5b, // Prefix Byte
           17, // Enum Type
-          1,
-          0,
-          0,
-          0, // String length 1
+          1, // String length 1
           66, // "B"
-          1,
-          0,
-          0,
-          0, // number of fields
-          0x13, // Field 1 - Either Type
-          0x01, // Field 1 - Left subtype
-          5, // Field 1 - Either left is of long type
+          1, // number of fields
+          0x11, // Field 1 - Enum Type
+          3, // Variant name length
+          'E',
+          'r',
+          'r', // Variant name
+          1, // Variant size
+          0x05, // Field 1 - Either left is of long type
           5,
           0,
           0,
@@ -609,23 +629,23 @@ public class SborTest {
           0 // Field 1 - long value
         },
         encodedEnumTwo);
-    var decodedEnumTwo = sborUsingWith.decode(encodedEnumTwo, SimpleEnum.class);
+    var decodedEnumTwo = sborUsingWith.decode_payload(encodedEnumTwo, SimpleEnum.class);
     assertEquals(enumTwo, decodedEnumTwo);
 
     // PART 2 - We use codec variant 2 (EnumEntry.fromEntries)
     var sborUsingFromEntries =
-        new Sbor(true, new CodecMap().register(SimpleEnum::registerCodecUsingFromEntries));
+        new BasicSbor(new CodecMap().register(SimpleEnum::registerCodecUsingFromEntries));
 
     // Check Enum 1
-    var encodedEnumOneV2 = sborUsingFromEntries.encode(enumOne, SimpleEnum.class);
+    var encodedEnumOneV2 = sborUsingFromEntries.encode_payload(enumOne, SimpleEnum.class);
     assertArrayEquals(encodedEnumOne, encodedEnumOneV2);
-    var decodedEnumOneV2 = sborUsingFromEntries.decode(encodedEnumOne, SimpleEnum.class);
+    var decodedEnumOneV2 = sborUsingFromEntries.decode_payload(encodedEnumOne, SimpleEnum.class);
     assertEquals(decodedEnumOneV2, decodedEnumOne);
 
     // Check Enum 2
-    var encodedEnumTwoV2 = sborUsingFromEntries.encode(enumTwo, SimpleEnum.class);
+    var encodedEnumTwoV2 = sborUsingFromEntries.encode_payload(enumTwo, SimpleEnum.class);
     assertArrayEquals(encodedEnumTwo, encodedEnumTwoV2);
-    var decodedEnumTwoV2 = sborUsingFromEntries.decode(encodedEnumTwo, SimpleEnum.class);
+    var decodedEnumTwoV2 = sborUsingFromEntries.decode_payload(encodedEnumTwo, SimpleEnum.class);
     assertEquals(decodedEnumTwoV2, decodedEnumTwo);
   }
 
@@ -728,8 +748,8 @@ public class SborTest {
     for (var testCase : allTupleSizes) {
       //noinspection unchecked
       TypeToken<Tuple> type = (TypeToken<Tuple>) testCase.type;
-      var encoded = DefaultTypedSbor.encode(testCase.value, type);
-      var decoded = DefaultTypedSbor.decode(encoded, type);
+      var encoded = BasicDefaultSbor.encode(testCase.value, type);
+      var decoded = BasicDefaultSbor.decode(encoded, type);
       assertEquals(testCase.value, decoded);
     }
   }
@@ -739,31 +759,21 @@ public class SborTest {
     var tupleValue = tuple("hi", 1);
     var type = new TypeToken<Tuple2<String, Integer>>() {};
 
-    var encoded = DefaultTypedSbor.encode(tupleValue, type);
+    var encoded = BasicDefaultSbor.encode(tupleValue, type);
 
     assertArrayEquals(
         new byte[] {
+          0x5b, // Prefix Byte
           33, // Tuple Type
-          2,
-          0,
-          0,
-          0, // 2 elements in tuple
+          2, // 2 elements in tuple
           12, // String type
-          2,
-          0,
-          0,
-          0, // String length 2
-          104, // "h"
-          105, // "i"
-          4, // Int type
-          1,
-          0,
-          0,
-          0 // 1 encoded as int
+          2, // String length 2
+          'h', 'i', 4, // Int type
+          1, 0, 0, 0, // 1 encoded as int
         },
         encoded);
 
-    var decoded = DefaultTypedSbor.decode(encoded, type);
+    var decoded = BasicDefaultSbor.decode(encoded, type);
 
     assertEquals(tupleValue, decoded);
   }
@@ -773,28 +783,29 @@ public class SborTest {
     var value = List.of("hi", "and", "bye");
     var type = new TypeToken<List<String>>() {};
 
-    var encoded = DefaultTypedSbor.encode(value, type);
+    var encoded = BasicDefaultSbor.encode(value, type);
 
     assertArrayEquals(
         new byte[] {
-          0x30, // List Type
+          0x5b, // Prefix Byte
+          0x20, // Array Type
           12, // String type
-          3, 0, 0, 0, // 3 elements in array
-          2, 0, 0, 0, // String length 2
+          3, // 3 elements in array
+          2, // String length 2
           104, // "h"
           105, // "i"
-          3, 0, 0, 0, // String length 3
+          3, // String length 3
           97, // "a"
           110, // "n"
           100, // "d"
-          3, 0, 0, 0, // String length 3
+          3, // String length 3
           98, // "b"
           121, // "y"
           101, // "e"
         },
         encoded);
 
-    var decoded = DefaultTypedSbor.decode(encoded, type);
+    var decoded = BasicDefaultSbor.decode(encoded, type);
 
     assertEquals(value, decoded);
   }
@@ -804,28 +815,29 @@ public class SborTest {
     var value = new HashSet<>(List.of("hi", "and", "bye"));
     var type = new TypeToken<HashSet<String>>() {};
 
-    var encoded = DefaultTypedSbor.encode(value, type);
+    var encoded = BasicDefaultSbor.encode(value, type);
 
     assertArrayEquals(
         new byte[] {
-          0x31, // Set Type
+          0x5b, // Prefix Byte
+          0x20, // Array Type
           12, // String type
-          3, 0, 0, 0, // 3 elements in set; implicitly ingestion ordering (at least in Java 17)
-          2, 0, 0, 0, // String length 2
+          3, // 3 elements in set; implicitly ingestion ordering (at least in Java 17)
+          2, // String length 2
           104, // "h"
           105, // "i"
-          3, 0, 0, 0, // String length 3
+          3, // String length 3
           97, // "a"
           110, // "n"
           100, // "d"
-          3, 0, 0, 0, // String length 3
+          3, // String length 3
           98, // "b"
           121, // "y"
           101, // "e"
         },
         encoded);
 
-    var decoded = DefaultTypedSbor.decode(encoded, type);
+    var decoded = BasicDefaultSbor.decode(encoded, type);
 
     assertEquals(value, decoded);
   }
@@ -835,28 +847,29 @@ public class SborTest {
     var value = new TreeSet<>(List.of("hi", "and", "bye"));
     var type = new TypeToken<TreeSet<String>>() {};
 
-    var encoded = DefaultTypedSbor.encode(value, type);
+    var encoded = BasicDefaultSbor.encode(value, type);
 
     assertArrayEquals(
         new byte[] {
-          0x31, // Set Type
+          0x5b, // Prefix Byte
+          0x20, // Array Type
           12, // String type
-          3, 0, 0, 0, // 3 elements in set; ordered by lexicographic key ordering
-          3, 0, 0, 0, // String length 3 - "and", first value in lexicographic ordering
+          3, // 3 elements in set; ordered by lexicographic key ordering
+          3, // String length 3 - "and", first value in lexicographic ordering
           97, // "a"
           110, // "n"
           100, // "d"
-          3, 0, 0, 0, // String length 3 - "bye", first value in lexicographic ordering
+          3, // String length 3 - "bye", first value in lexicographic ordering
           98, // "b"
           121, // "y"
           101, // "e"
-          2, 0, 0, 0, // String length 2 - "hi", first value in lexicographic ordering
+          2, // String length 2 - "hi", first value in lexicographic ordering
           104, // "h"
           105, // "i"
         },
         encoded);
 
-    var decoded = DefaultTypedSbor.decode(encoded, type);
+    var decoded = BasicDefaultSbor.decode(encoded, type);
 
     assertEquals(value, decoded);
   }
@@ -870,32 +883,41 @@ public class SborTest {
 
     var type = new TypeToken<HashMap<String, Integer>>() {};
 
-    var encoded = DefaultTypedSbor.encode(map, type);
+    var encoded = BasicDefaultSbor.encode(map, type);
 
     assertArrayEquals(
         new byte[] {
-          0x32, // Map Type
-          12, // Key type: String
-          0x04, // Value type: Signed Integer
-          3, 0, 0, 0, // 3 elements in map; implicitly ingestion ordering (at least in Java 17)
-          2, 0, 0, 0, // String length 2
+          0x5b, // Prefix Byte
+          0x20, // Array Type
+          0x21, // Array of tuples (K, V)
+          3, // 3 elements in map; implicitly ingestion ordering (at least in Java 17)
+          2, // Stored as tuple of length 2
+          0x0C, // Key type: String
+          2, // String length 2
           104, // "h"
           105, // "i"
+          0x04, // Value type: Signed Integer
           1, 0, 0, 0, // 1
-          3, 0, 0, 0, // String length 3
+          2, // Stored as tuple of length 2
+          0x0C, // Key type: String
+          3, // String length 3
           97, // "a"
           110, // "n"
           100, // "d"
+          0x04, // Value type: Signed Integer
           2, 0, 0, 0, // 2
-          3, 0, 0, 0, // String length 3
+          2, // Stored as tuple of length 2
+          0x0C, // Key type: String
+          3, // String length 3
           98, // "b"
           121, // "y"
           101, // "e"
+          0x04, // Value type: Signed Integer
           3, 0, 0, 0, // 2
         },
         encoded);
 
-    var decoded = DefaultTypedSbor.decode(encoded, type);
+    var decoded = BasicDefaultSbor.decode(encoded, type);
 
     assertEquals(map, decoded);
   }
@@ -909,32 +931,41 @@ public class SborTest {
 
     var type = new TypeToken<TreeMap<String, Integer>>() {};
 
-    var encoded = DefaultTypedSbor.encode(map, type);
+    var encoded = BasicDefaultSbor.encode(map, type);
 
     assertArrayEquals(
         new byte[] {
-          0x32, // Map Type
-          12, // Key type: String
-          0x04, // Value type: Signed Integer
-          3, 0, 0, 0, // 3 elements in map; ordered by lexicographic key ordering
-          3, 0, 0, 0, // String length 3 - "and", first key in lexicographic ordering
+          0x5b, // Prefix Byte
+          0x20, // Array Type
+          0x21, // Array of tuples (K, V)
+          3, // 3 elements in map; ordered by lexicographic key ordering
+          2, // Stored as tuple of length 2
+          0x0C, // Key type: String
+          3, // String length 3 - "and", first key in lexicographic ordering
           97, // "a"
           110, // "n"
           100, // "d"
+          0x04, // Value type: Signed Integer
           2, 0, 0, 0, // 2
-          3, 0, 0, 0, // String length 3 - "bye", second key in lexicographic ordering
+          2, // Stored as tuple of length 2
+          0x0C, // Key type: String
+          3, // String length 3 - "bye", second key in lexicographic ordering
           98, // "b"
           121, // "y"
           101, // "e"
-          3, 0, 0, 0, // 2
-          2, 0, 0, 0, // String length 2 - "hi", third key in lexicographic ordering
+          0x04, // Value type: Signed Integer
+          3, 0, 0, 0, // 3
+          2, // Stored as tuple of length 2
+          0x0C, // Key type: String
+          2, // String length 2 - "hi", third key in lexicographic ordering
           104, // "h"
           105, // "i"
+          0x04, // Value type: Signed Integer
           1, 0, 0, 0, // 1
         },
         encoded);
 
-    var decoded = DefaultTypedSbor.decode(encoded, type);
+    var decoded = BasicDefaultSbor.decode(encoded, type);
 
     assertEquals(map, decoded);
   }

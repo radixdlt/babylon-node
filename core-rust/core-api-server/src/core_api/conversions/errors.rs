@@ -1,5 +1,6 @@
-use radix_engine::types::AddressError;
-use sbor::DecodeError;
+use radix_engine::types::{AddressError, ParseNonFungibleIdError};
+use radix_engine_interface::data::ScryptoValueDecodeError;
+use sbor::{DecodeError, EncodeError};
 use tracing::warn;
 use transaction::errors::TransactionValidationError;
 
@@ -14,8 +15,23 @@ pub enum MappingError {
     TransientSubstatePersisted {
         message: String,
     },
+    TransientRENodePersisted {
+        message: String,
+    },
+    ScryptoValueDecode {
+        decode_error: ScryptoValueDecodeError,
+        bytes: Vec<u8>,
+    },
     InvalidSbor {
         decode_error: DecodeError,
+        bytes: Vec<u8>,
+    },
+    SborEncodeError {
+        encode_error: EncodeError,
+        message: String,
+    },
+    SborSerializationError {
+        message: String,
         bytes: Vec<u8>,
     },
     InvalidComponentStateEntities {
@@ -30,10 +46,7 @@ pub enum MappingError {
     IntegerError {
         message: String,
     },
-    AuthRuleNotFound {
-        message: String,
-    },
-    UnsupportedAuthRulePartPersisted {
+    NotXrdError {
         message: String,
     },
 }
@@ -56,6 +69,7 @@ pub enum ExtractionError {
     InvalidHash,
     InvalidTransaction(TransactionValidationError),
     InvalidAddress(AddressError),
+    InvalidNonFungibleId(ParseNonFungibleIdError),
 }
 
 impl ExtractionError {
@@ -70,5 +84,11 @@ impl ExtractionError {
 impl From<TransactionValidationError> for ExtractionError {
     fn from(err: TransactionValidationError) -> Self {
         ExtractionError::InvalidTransaction(err)
+    }
+}
+
+impl From<ParseNonFungibleIdError> for ExtractionError {
+    fn from(err: ParseNonFungibleIdError) -> Self {
+        ExtractionError::InvalidNonFungibleId(err)
     }
 }

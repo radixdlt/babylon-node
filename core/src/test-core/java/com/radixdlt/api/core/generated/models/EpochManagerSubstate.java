@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EntityType;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstateAllOf;
 import com.radixdlt.api.core.generated.models.SubstateBase;
 import com.radixdlt.api.core.generated.models.SubstateType;
@@ -35,15 +34,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * EpochManagerSubstate
  */
 @JsonPropertyOrder({
-  EpochManagerSubstate.JSON_PROPERTY_ENTITY_TYPE,
   EpochManagerSubstate.JSON_PROPERTY_SUBSTATE_TYPE,
   EpochManagerSubstate.JSON_PROPERTY_EPOCH
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class EpochManagerSubstate {
-  public static final String JSON_PROPERTY_ENTITY_TYPE = "entity_type";
-  private EntityType entityType;
-
   public static final String JSON_PROPERTY_SUBSTATE_TYPE = "substate_type";
   private SubstateType substateType;
 
@@ -52,32 +47,6 @@ public class EpochManagerSubstate {
 
   public EpochManagerSubstate() { 
   }
-
-  public EpochManagerSubstate entityType(EntityType entityType) {
-    this.entityType = entityType;
-    return this;
-  }
-
-   /**
-   * Get entityType
-   * @return entityType
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ENTITY_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public EntityType getEntityType() {
-    return entityType;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ENTITY_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEntityType(EntityType entityType) {
-    this.entityType = entityType;
-  }
-
 
   public EpochManagerSubstate substateType(SubstateType substateType) {
     this.substateType = substateType;
@@ -145,21 +114,19 @@ public class EpochManagerSubstate {
       return false;
     }
     EpochManagerSubstate epochManagerSubstate = (EpochManagerSubstate) o;
-    return Objects.equals(this.entityType, epochManagerSubstate.entityType) &&
-        Objects.equals(this.substateType, epochManagerSubstate.substateType) &&
+    return Objects.equals(this.substateType, epochManagerSubstate.substateType) &&
         Objects.equals(this.epoch, epochManagerSubstate.epoch);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityType, substateType, epoch);
+    return Objects.hash(substateType, epoch);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class EpochManagerSubstate {\n");
-    sb.append("    entityType: ").append(toIndentedString(entityType)).append("\n");
     sb.append("    substateType: ").append(toIndentedString(substateType)).append("\n");
     sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
     sb.append("}");

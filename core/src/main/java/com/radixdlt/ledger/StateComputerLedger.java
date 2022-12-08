@@ -209,7 +209,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
   @Override
   public Optional<ExecutedVertex> prepare(
-      LinkedList<ExecutedVertex> previous, VertexWithHash vertex) {
+      LinkedList<ExecutedVertex> previous, VertexWithHash vertexWithHash) {
+    final var vertex = vertexWithHash.vertex();
     final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
     final AccumulatorState parentAccumulatorState = parentHeader.getAccumulatorState();
     final ImmutableList<ExecutedTransaction> prevTransactions =
@@ -226,9 +227,11 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       if (parentHeader.isEndOfEpoch()) {
         return Optional.of(
             new ExecutedVertex(
-                vertex,
-                parentHeader.updateRoundAndTimestamp(
-                    vertex.getRound(), vertex.getWeightedTimestampOfQCToParent()),
+                vertexWithHash,
+                parentHeader.updateRoundAndTimestamps(
+                    vertex.getRound(),
+                    vertex.getQCToParent().getWeightedTimestampOfSignatures(),
+                    vertex.parentLedgerHeader().proposerTimestamp()),
                 ImmutableList.of(),
                 ImmutableMap.of(),
                 timeSupplier.currentTime()));
@@ -251,7 +254,9 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
       final StateComputerResult result =
           stateComputer.prepare(
-              executedTransactions, vertex.getTransactions(), RoundDetails.fromVertex(vertex));
+              executedTransactions,
+              vertex.getTransactions(),
+              RoundDetails.fromVertex(vertexWithHash));
 
       AccumulatorState accumulatorState = parentHeader.getAccumulatorState();
       for (ExecutedTransaction transaction : result.getSuccessfullyExecutedTransactions()) {
@@ -265,12 +270,13 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               parentHeader.getEpoch(),
               vertex.getRound(),
               accumulatorState,
-              vertex.getWeightedTimestampOfQCToParent(),
+              vertex.getQCToParent().getWeightedTimestampOfSignatures(),
+              vertex.proposerTimestamp(),
               result.getNextValidatorSet().orElse(null));
 
       return Optional.of(
           new ExecutedVertex(
-              vertex,
+              vertexWithHash,
               ledgerHeader,
               result.getSuccessfullyExecutedTransactions(),
               result.getFailedTransactions(),

@@ -193,15 +193,17 @@ public class EpochManagerTest {
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<EpochLocalTimeoutOccurrence>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<EventDispatcher<EpochRound>>() {})
-            .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<LocalSyncRequest>>() {})
             .toInstance(syncLedgerRequestSender);
         bind(new TypeLiteral<EventDispatcher<RoundQuorumReached>>() {})
             .toInstance(rmock(EventDispatcher.class));
+        bind(new TypeLiteral<EventDispatcher<RoundUpdate>>() {})
+            .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<EpochRoundUpdate>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<EventDispatcher<RoundUpdate>>() {})
+        bind(new TypeLiteral<EventDispatcher<RoundLeaderFailure>>() {})
+            .toInstance(rmock(EventDispatcher.class));
+        bind(new TypeLiteral<EventDispatcher<EpochRoundLeaderFailure>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<NoVote>>() {})
             .toInstance(rmock(EventDispatcher.class));
@@ -262,14 +264,14 @@ public class EpochManagerTest {
       @LastProof
       LedgerProof verifiedLedgerHeaderAndProof(BFTValidatorSet validatorSet) {
         var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-        return LedgerProof.genesis(accumulatorState, validatorSet, 0);
+        return LedgerProof.genesis(accumulatorState, validatorSet, 0, 0);
       }
 
       @Provides
       @LastEpochProof
       LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
         var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-        return LedgerProof.genesis(accumulatorState, validatorSet, 0);
+        return LedgerProof.genesis(accumulatorState, validatorSet, 0, 0);
       }
 
       @Provides
@@ -277,11 +279,11 @@ public class EpochManagerTest {
           @Self BFTNode self, Hasher hasher, BFTValidatorSet validatorSet) {
         var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
         var vertex =
-            Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0))
+            Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0, 0))
                 .withId(hasher);
         var qc =
             QuorumCertificate.ofGenesis(
-                vertex, LedgerHeader.genesis(accumulatorState, validatorSet, 0));
+                vertex, LedgerHeader.genesis(accumulatorState, validatorSet, 0, 0));
         var proposerElection = new WeightedRotatingLeaders(validatorSet);
         return new BFTConfiguration(
             proposerElection,
@@ -309,14 +311,15 @@ public class EpochManagerTest {
     BFTValidatorSet nextValidatorSet =
         BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    LedgerHeader header = LedgerHeader.genesis(accumulatorState, nextValidatorSet, 0);
+    LedgerHeader header = LedgerHeader.genesis(accumulatorState, nextValidatorSet, 0, 0);
     VertexWithHash verifiedGenesisVertex = Vertex.createGenesis(header).withId(hasher);
     LedgerHeader nextLedgerHeader =
         LedgerHeader.create(
             header.getEpoch() + 1,
             Round.genesis(),
             header.getAccumulatorState(),
-            header.roundTimestamp());
+            header.consensusParentRoundTimestamp(),
+            header.proposerTimestamp());
     var genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
     var proposerElection = new WeightedRotatingLeaders(nextValidatorSet);
     var bftConfiguration =

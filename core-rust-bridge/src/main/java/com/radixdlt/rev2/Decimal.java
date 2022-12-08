@@ -67,7 +67,7 @@ package com.radixdlt.rev2;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.CustomTypeCodec;
+import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -83,8 +83,9 @@ public class Decimal implements Comparable<Decimal> {
     codecMap.register(
         Decimal.class,
         codecs ->
-            new CustomTypeCodec<>(
+            new CustomTypeKnownLengthCodec<>(
                 TypeId.TYPE_CUSTOM_DECIMAL,
+                SBOR_BYTE_LENGTH,
                 decimal -> {
                   final var bytes = decimal.underlyingValue.unscaledValue().toByteArray();
                   return Arrays.reverse(bytes);
@@ -94,6 +95,8 @@ public class Decimal implements Comparable<Decimal> {
                   return new Decimal(new BigDecimal(new BigInteger(reversed), SCALE));
                 }));
   }
+
+  public static final int SBOR_BYTE_LENGTH = 32;
 
   private final BigDecimal underlyingValue;
 

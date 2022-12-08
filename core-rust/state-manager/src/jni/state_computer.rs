@@ -67,7 +67,7 @@ use crate::transaction::UserTransactionValidator;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use scrypto::prelude::*;
+use radix_engine::types::{ComponentAddress, Decimal, Decode, Encode, TypeId, RADIX_TOKEN};
 
 use crate::jni::utils::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
@@ -220,7 +220,9 @@ impl From<JavaCommitRequest> for CommitRequest {
 pub struct JavaPrepareRequest {
     pub already_prepared: Vec<JavaRawTransaction>,
     pub proposed: Vec<JavaRawTransaction>,
+    pub consensus_epoch: u64,
     pub round_number: u64,
+    pub proposer_timestamp_ms: u64,
 }
 
 impl From<JavaPrepareRequest> for PrepareRequest {
@@ -236,7 +238,9 @@ impl From<JavaPrepareRequest> for PrepareRequest {
                 .into_iter()
                 .map(|t| t.payload)
                 .collect(),
+            consensus_epoch: prepare_request.consensus_epoch,
             round_number: prepare_request.round_number,
+            proposer_timestamp_ms: prepare_request.proposer_timestamp_ms,
         }
     }
 }

@@ -112,7 +112,7 @@ public interface UntypedCodec<T> {
 
   static <T> UntypedCodec<T> emptyWithLength(Functions.Func0<T> creator) {
     return UntypedCodec.of(
-        (encoder, value) -> encoder.writeInt(0),
+        (encoder, value) -> encoder.writeSize(0),
         decoder -> {
           expectFieldCount(decoder, 0);
           return creator.apply();
@@ -123,7 +123,7 @@ public interface UntypedCodec<T> {
       Functions.Func1<T, T1> wrap, Codec<T1> codec1, Functions.Func1<T1, T> unwrap) {
     return UntypedCodec.of(
         (encoder, value) -> {
-          encoder.writeInt(1);
+          encoder.writeSize(1);
           codec1.encodeWithTypeId(encoder, wrap.apply(value));
         },
         decoder -> {
@@ -141,7 +141,7 @@ public interface UntypedCodec<T> {
   static <T> UntypedCodec<T> fromWithLength(
       Functions.Func0<T> creator, Separator<T, FieldsEncoder0> separator) {
     return UntypedCodec.of(
-        (encoder, value) -> separator.accept(value, () -> encoder.writeInt(0)),
+        (encoder, value) -> separator.accept(value, () -> encoder.writeSize(0)),
         decoder -> {
           expectFieldCount(decoder, 0);
           return creator.apply();
@@ -157,7 +157,7 @@ public interface UntypedCodec<T> {
             separator.accept(
                 value,
                 (param1) -> {
-                  encoder.writeInt(1);
+                  encoder.writeSize(1);
                   codec1.encodeWithTypeId(encoder, param1);
                 }),
         decoder -> {
@@ -176,7 +176,7 @@ public interface UntypedCodec<T> {
             separator.accept(
                 value,
                 (param1, param2) -> {
-                  encoder.writeInt(2);
+                  encoder.writeSize(2);
                   codec1.encodeWithTypeId(encoder, param1);
                   codec2.encodeWithTypeId(encoder, param2);
                 }),
@@ -197,7 +197,7 @@ public interface UntypedCodec<T> {
             separator.accept(
                 value,
                 (param1, param2, param3) -> {
-                  encoder.writeInt(3);
+                  encoder.writeSize(3);
                   codec1.encodeWithTypeId(encoder, param1);
                   codec2.encodeWithTypeId(encoder, param2);
                   codec3.encodeWithTypeId(encoder, param3);
@@ -223,7 +223,7 @@ public interface UntypedCodec<T> {
             separator.accept(
                 value,
                 (param1, param2, param3, param4) -> {
-                  encoder.writeInt(4);
+                  encoder.writeSize(4);
                   codec1.encodeWithTypeId(encoder, param1);
                   codec2.encodeWithTypeId(encoder, param2);
                   codec3.encodeWithTypeId(encoder, param3);
@@ -252,7 +252,7 @@ public interface UntypedCodec<T> {
             separator.accept(
                 value,
                 (param1, param2, param3, param4, param5) -> {
-                  encoder.writeInt(5);
+                  encoder.writeSize(5);
                   codec1.encodeWithTypeId(encoder, param1);
                   codec2.encodeWithTypeId(encoder, param2);
                   codec3.encodeWithTypeId(encoder, param3);
@@ -284,7 +284,7 @@ public interface UntypedCodec<T> {
             separator.accept(
                 value,
                 (param1, param2, param3, param4, param5, param6) -> {
-                  encoder.writeInt(6);
+                  encoder.writeSize(6);
                   codec1.encodeWithTypeId(encoder, param1);
                   codec2.encodeWithTypeId(encoder, param2);
                   codec3.encodeWithTypeId(encoder, param3);
@@ -319,7 +319,7 @@ public interface UntypedCodec<T> {
             separator.accept(
                 value,
                 (param1, param2, param3, param4, param5, param6, param7) -> {
-                  encoder.writeInt(7);
+                  encoder.writeSize(7);
                   codec1.encodeWithTypeId(encoder, param1);
                   codec2.encodeWithTypeId(encoder, param2);
                   codec3.encodeWithTypeId(encoder, param3);
@@ -357,7 +357,7 @@ public interface UntypedCodec<T> {
             separator.accept(
                 value,
                 (param1, param2, param3, param4, param5, param6, param7, param8) -> {
-                  encoder.writeInt(8);
+                  encoder.writeSize(8);
                   codec1.encodeWithTypeId(encoder, param1);
                   codec2.encodeWithTypeId(encoder, param2);
                   codec3.encodeWithTypeId(encoder, param3);
@@ -398,7 +398,7 @@ public interface UntypedCodec<T> {
             separator.accept(
                 value,
                 (param1, param2, param3, param4, param5, param6, param7, param8, param9) -> {
-                  encoder.writeInt(9);
+                  encoder.writeSize(9);
                   codec1.encodeWithTypeId(encoder, param1);
                   codec2.encodeWithTypeId(encoder, param2);
                   codec3.encodeWithTypeId(encoder, param3);
@@ -451,7 +451,7 @@ public interface UntypedCodec<T> {
                     param8,
                     param9,
                     param10) -> {
-                  encoder.writeInt(10);
+                  encoder.writeSize(10);
                   codec1.encodeWithTypeId(encoder, param1);
                   codec2.encodeWithTypeId(encoder, param2);
                   codec3.encodeWithTypeId(encoder, param3);
@@ -508,7 +508,7 @@ public interface UntypedCodec<T> {
                     param9,
                     param10,
                     param11) -> {
-                  encoder.writeInt(11);
+                  encoder.writeSize(11);
                   codec1.encodeWithTypeId(encoder, param1);
                   codec2.encodeWithTypeId(encoder, param2);
                   codec3.encodeWithTypeId(encoder, param3);
@@ -569,7 +569,7 @@ public interface UntypedCodec<T> {
                     param10,
                     param11,
                     param12) -> {
-                  encoder.writeInt(12);
+                  encoder.writeSize(12);
                   codec1.encodeWithTypeId(encoder, param1);
                   codec2.encodeWithTypeId(encoder, param2);
                   codec3.encodeWithTypeId(encoder, param3);
@@ -602,7 +602,7 @@ public interface UntypedCodec<T> {
   }
 
   private static void expectFieldCount(DecoderApi decoder, int expected) {
-    var actual = decoder.readInt();
+    var actual = decoder.readSize();
     if (expected != actual) {
       throw new SborDecodeException(
           String.format("Expected to have %s fields, but there were %s", expected, actual));

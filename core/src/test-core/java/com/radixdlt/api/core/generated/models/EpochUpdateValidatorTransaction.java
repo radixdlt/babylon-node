@@ -35,15 +35,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   EpochUpdateValidatorTransaction.JSON_PROPERTY_TYPE,
-  EpochUpdateValidatorTransaction.JSON_PROPERTY_EPOCH
+  EpochUpdateValidatorTransaction.JSON_PROPERTY_SCRYPTO_EPOCH
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class EpochUpdateValidatorTransaction {
   public static final String JSON_PROPERTY_TYPE = "type";
   private ValidatorTransactionType type;
 
-  public static final String JSON_PROPERTY_EPOCH = "epoch";
-  private Long epoch;
+  public static final String JSON_PROPERTY_SCRYPTO_EPOCH = "scrypto_epoch";
+  private Long scryptoEpoch;
 
   public EpochUpdateValidatorTransaction() { 
   }
@@ -74,31 +74,31 @@ public class EpochUpdateValidatorTransaction {
   }
 
 
-  public EpochUpdateValidatorTransaction epoch(Long epoch) {
-    this.epoch = epoch;
+  public EpochUpdateValidatorTransaction scryptoEpoch(Long scryptoEpoch) {
+    this.scryptoEpoch = scryptoEpoch;
     return this;
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the new epoch
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the new epoch. Note that currently this is not the same as &#x60;consensus_epoch&#x60;, but eventually will be. 
    * minimum: 0
    * maximum: 10000000000
-   * @return epoch
+   * @return scryptoEpoch
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the new epoch")
-  @JsonProperty(JSON_PROPERTY_EPOCH)
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the new epoch. Note that currently this is not the same as `consensus_epoch`, but eventually will be. ")
+  @JsonProperty(JSON_PROPERTY_SCRYPTO_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getEpoch() {
-    return epoch;
+  public Long getScryptoEpoch() {
+    return scryptoEpoch;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EPOCH)
+  @JsonProperty(JSON_PROPERTY_SCRYPTO_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEpoch(Long epoch) {
-    this.epoch = epoch;
+  public void setScryptoEpoch(Long scryptoEpoch) {
+    this.scryptoEpoch = scryptoEpoch;
   }
 
 
@@ -115,12 +115,12 @@ public class EpochUpdateValidatorTransaction {
     }
     EpochUpdateValidatorTransaction epochUpdateValidatorTransaction = (EpochUpdateValidatorTransaction) o;
     return Objects.equals(this.type, epochUpdateValidatorTransaction.type) &&
-        Objects.equals(this.epoch, epochUpdateValidatorTransaction.epoch);
+        Objects.equals(this.scryptoEpoch, epochUpdateValidatorTransaction.scryptoEpoch);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, epoch);
+    return Objects.hash(type, scryptoEpoch);
   }
 
   @Override
@@ -128,7 +128,7 @@ public class EpochUpdateValidatorTransaction {
     StringBuilder sb = new StringBuilder();
     sb.append("class EpochUpdateValidatorTransaction {\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
-    sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
+    sb.append("    scryptoEpoch: ").append(toIndentedString(scryptoEpoch)).append("\n");
     sb.append("}");
     return sb.toString();
   }

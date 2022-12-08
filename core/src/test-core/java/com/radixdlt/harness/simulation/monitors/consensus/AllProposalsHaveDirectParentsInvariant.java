@@ -93,7 +93,7 @@ public class AllProposalsHaveDirectParentsInvariant implements TestInvariant {
               // Skip check on first round of epoch 1 as simulation nodes startup time is
               // unpredictable
               if (v.getRound().equals(Round.of(2))
-                  && v.getQCToParent().getProposedHeader().getRound().isGenesis()
+                  && v.parentBFTHeader().getRound().isGenesis()
                   && v.getQCToParent().getEpoch() == 1) {
                 return Observable.empty();
               }

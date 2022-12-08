@@ -64,7 +64,7 @@
 
 package com.radixdlt.sbor.codec.core;
 
-import static com.radixdlt.sbor.codec.constants.TypeId.TYPE_LIST;
+import static com.radixdlt.sbor.codec.constants.TypeId.TYPE_ARRAY;
 import static com.radixdlt.sbor.codec.constants.TypeId.TYPE_U8;
 
 import com.radixdlt.sbor.codec.Codec;
@@ -73,33 +73,22 @@ import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
 
 public final class ByteArrayCodec implements Codec<byte[]> {
-  private final TypeId collectionTypeId;
-
-  public ByteArrayCodec(TypeId collectionTypeId) {
-    collectionTypeId.assertCollectionType();
-    this.collectionTypeId = collectionTypeId;
-  }
-
-  public ByteArrayCodec() {
-    this(TYPE_LIST);
-  }
-
   @Override
   public TypeId getTypeId() {
-    return collectionTypeId;
+    return TYPE_ARRAY;
   }
 
   @Override
   public void encodeWithoutTypeId(EncoderApi encoder, byte[] value) {
     encoder.encodeTypeId(TYPE_U8);
-    encoder.writeInt(value.length);
+    encoder.writeSize(value.length);
     encoder.writeBytes(value);
   }
 
   @Override
   public byte[] decodeWithoutTypeId(DecoderApi decoder) {
     decoder.expectType(TYPE_U8);
-    var length = decoder.readInt();
+    var length = decoder.readSize();
     return decoder.readBytes(length);
   }
 }

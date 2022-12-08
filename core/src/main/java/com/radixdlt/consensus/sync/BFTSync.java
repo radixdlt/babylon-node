@@ -234,7 +234,7 @@ public final class BFTSync implements BFTSyncer {
     this.runOnThreads.add(Thread.currentThread().getName());
     final var qc = highQC.highestQC();
 
-    if (qc.getProposedHeader().getRound().lt(vertexStore.getRoot().getRound())) {
+    if (qc.getProposedHeader().getRound().lt(vertexStore.getRoot().vertex().getRound())) {
       return SyncResult.INVALID;
     }
 
@@ -424,7 +424,7 @@ public final class BFTSync implements BFTSyncer {
 
     // TODO: check if there are any vertices which haven't been local sync processed yet
     if (requiresLedgerSync(syncState)) {
-      syncState.fetched.sort(Comparator.comparing(VertexWithHash::getRound));
+      syncState.fetched.sort(Comparator.comparing(v -> v.vertex().getRound()));
       ImmutableList<VertexWithHash> nonRootVertices =
           syncState.fetched.stream().skip(1).collect(ImmutableList.toImmutableList());
       var vertexStoreState =
@@ -453,7 +453,7 @@ public final class BFTSync implements BFTSyncer {
     log.debug(
         "SYNC_STATE: Processing vertices {} Round {} From {} CurrentLedgerHeader {}",
         syncState,
-        response.getVertices().get(0).getRound(),
+        response.getVertices().get(0).vertex().getRound(),
         sender,
         this.currentLedgerHeader);
 
@@ -479,8 +479,9 @@ public final class BFTSync implements BFTSyncer {
   }
 
   private void processVerticesResponseForQCSync(SyncState syncState, GetVerticesResponse response) {
-    var vertex = response.getVertices().get(0);
-    syncState.fetched.addFirst(vertex);
+    final var vertexWithHash = response.getVertices().get(0);
+    final var vertex = vertexWithHash.vertex();
+    syncState.fetched.addFirst(vertexWithHash);
 
     var parentId = vertex.getParentVertexId();
 
@@ -549,7 +550,7 @@ public final class BFTSync implements BFTSyncer {
   private void processGetVerticesResponse(BFTNode sender, GetVerticesResponse response) {
     final var allVerticesHaveValidQc =
         response.getVertices().stream()
-            .allMatch(v -> safetyRules.verifyQcAgainstTheValidatorSet(v.getQCToParent()));
+            .allMatch(v -> safetyRules.verifyQcAgainstTheValidatorSet(v.vertex().getQCToParent()));
 
     if (!allVerticesHaveValidQc) {
       // If the response is invalid we just ignore it and wait for the timeout event
@@ -562,7 +563,7 @@ public final class BFTSync implements BFTSyncer {
     log.debug("SYNC_VERTICES: Received GetVerticesResponse {}", response);
 
     var firstVertex = response.getVertices().get(0);
-    var requestInfo = new GetVerticesRequest(firstVertex.getHash(), response.getVertices().size());
+    var requestInfo = new GetVerticesRequest(firstVertex.hash(), response.getVertices().size());
     var syncRequestState = bftSyncing.remove(requestInfo);
 
     if (syncRequestState != null) {

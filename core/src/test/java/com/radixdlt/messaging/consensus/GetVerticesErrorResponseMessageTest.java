@@ -72,6 +72,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
@@ -83,9 +84,11 @@ import org.junit.Test;
 public class GetVerticesErrorResponseMessageTest {
   @Test
   public void sensibleToString() {
-    VertexWithHash vertexWithHash = mock(VertexWithHash.class);
-    when(vertexWithHash.getRound()).thenReturn(Round.genesis());
-    when(vertexWithHash.getHash()).thenReturn(HashCode.fromInt(1));
+    final var vertexWithHash = mock(VertexWithHash.class);
+    final var vertex = mock(Vertex.class);
+    when(vertexWithHash.vertex()).thenReturn(vertex);
+    when(vertex.getRound()).thenReturn(Round.genesis());
+    when(vertexWithHash.hash()).thenReturn(HashCode.fromInt(1));
     QuorumCertificate qc = QuorumCertificate.ofGenesis(vertexWithHash, mock(LedgerHeader.class));
     HighQC highQC = HighQC.from(qc, qc, Optional.empty());
     final var request = mock(GetVerticesRequestMessage.class);

@@ -87,7 +87,7 @@ use crate::{
     AccumulatorHash, CommittedTransactionIdentifiers, IntentHash, LedgerPayloadHash,
     LedgerTransactionReceipt,
 };
-use scrypto::engine::types::{KeyValueStoreId, SubstateId};
+use radix_engine::types::{KeyValueStoreId, SubstateId};
 
 use tracing::debug;
 
@@ -139,7 +139,9 @@ impl StateManagerDatabase {
                     .expect("Failed to convert genesis receipt to LedgerTransactionReceipt");
 
                 let mock_genesis =
-                    LedgerTransaction::Validator(ValidatorTransaction::EpochUpdate(0)); // Mocked
+                    LedgerTransaction::Validator(ValidatorTransaction::EpochUpdate {
+                        scrypto_epoch: 0,
+                    }); // Mocked genesis transaction for the purposes of ledger state
                 let payload_hash = mock_genesis.get_hash();
                 let identifiers = CommittedTransactionIdentifiers {
                     state_version: 1,

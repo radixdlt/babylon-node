@@ -95,10 +95,8 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
 #[tracing::instrument(skip_all)]
 fn do_add(
     state_manager: &mut ActualStateManager,
-    args: JavaRawTransaction,
+    transaction: JavaRawTransaction,
 ) -> Result<JavaPayloadHash, MempoolAddErrorJava> {
-    let transaction = args;
-
     let notarized_transaction =
         UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
             &transaction.payload,
@@ -128,10 +126,8 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForPropo
 #[tracing::instrument(skip_all)]
 fn do_get_transactions_for_proposal(
     state_manager: &ActualStateManager,
-    args: (u32, Vec<JavaPayloadHash>),
+    (count, prepared_transactions): (u32, Vec<JavaPayloadHash>),
 ) -> Vec<JavaRawTransaction> {
-    let (count, prepared_transactions) = args;
-
     let prepared_ids: HashSet<UserPayloadHash> = prepared_transactions
         .into_iter()
         .map(|id| {
@@ -214,7 +210,7 @@ pub struct JavaRawTransaction {
 impl From<PendingTransaction> for JavaRawTransaction {
     fn from(transaction: PendingTransaction) -> Self {
         JavaRawTransaction {
-            payload: scrypto_encode(&transaction.payload),
+            payload: scrypto_encode(&transaction.payload).unwrap(),
             payload_hash: JavaPayloadHash(transaction.payload_hash.into_bytes().to_vec()),
         }
     }

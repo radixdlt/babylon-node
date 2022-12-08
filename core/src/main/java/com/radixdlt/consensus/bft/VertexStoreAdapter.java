@@ -179,7 +179,7 @@ public final class VertexStoreAdapter {
     if (vertexStore.containsVertex(committedHeader.getVertexId())) {
       return true;
     } else {
-      final var rootRound = vertexStore.getRoot().getRound();
+      final var rootRound = vertexStore.getRoot().vertex().getRound();
       return rootRound.gte(committedHeader.getRound());
     }
   }

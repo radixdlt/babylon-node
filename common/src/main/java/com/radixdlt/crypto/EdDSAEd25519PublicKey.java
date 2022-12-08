@@ -65,7 +65,7 @@
 package com.radixdlt.crypto;
 
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.CustomTypeCodec;
+import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
@@ -79,13 +79,14 @@ public final class EdDSAEd25519PublicKey {
     codecMap.register(
         EdDSAEd25519PublicKey.class,
         codecs ->
-            new CustomTypeCodec<>(
+            new CustomTypeKnownLengthCodec<>(
                 TypeId.TYPE_CUSTOM_EDDSA_ED25519_PUBLIC_KEY,
+                COMPRESSED_BYTES_LENGTH,
                 EdDSAEd25519PublicKey::getCompressedBytes,
                 EdDSAEd25519PublicKey::fromCompressedBytesUnchecked));
   }
 
-  public static final int COMPRESSED_BYTES = 33; // 32 + header byte
+  public static final int COMPRESSED_BYTES_LENGTH = 32;
 
   private final byte[] compressed;
 

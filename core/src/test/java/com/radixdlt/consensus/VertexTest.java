@@ -94,7 +94,8 @@ public class VertexTest {
     VoteData voteData = new VoteData(header, parent, parent);
 
     this.qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-    this.testObject = Vertex.create(this.qc, baseRound.next().next(), List.of(), BFTNode.random());
+    this.testObject =
+        Vertex.create(this.qc, baseRound.next().next(), List.of(), BFTNode.random(), 0);
   }
 
   @Test
@@ -113,13 +114,13 @@ public class VertexTest {
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullThrowsException() throws PublicKeyException {
     var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
-    Vertex.create(null, 1, List.of(), proposer, false);
+    Vertex.create(null, 1, List.of(), proposer, false, 0);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void deserializationWithInvalidRoundThrowsException() throws PublicKeyException {
     var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
-    Vertex.create(mock(QuorumCertificate.class), -1, List.of(), proposer, false);
+    Vertex.create(mock(QuorumCertificate.class), -1, List.of(), proposer, false, 0);
   }
 
   @Test(expected = NullPointerException.class)
@@ -127,7 +128,7 @@ public class VertexTest {
     var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
     var list = new ArrayList<byte[]>();
     list.add(null);
-    Vertex.create(mock(QuorumCertificate.class), 1, list, proposer, false);
+    Vertex.create(mock(QuorumCertificate.class), 1, list, proposer, false, 0);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -136,12 +137,12 @@ public class VertexTest {
     var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
     var list = new ArrayList<byte[]>();
     list.add(new byte[0]);
-    Vertex.create(mock(QuorumCertificate.class), 1, list, proposer, true);
+    Vertex.create(mock(QuorumCertificate.class), 1, list, proposer, true, 0);
   }
 
   @Test(expected = PublicKeyException.class)
   public void deserializationWithInvalidPublicKeyThrowsException() throws PublicKeyException {
     var proposer = new byte[] {0x00};
-    Vertex.create(mock(QuorumCertificate.class), 1, List.of(), proposer, false);
+    Vertex.create(mock(QuorumCertificate.class), 1, List.of(), proposer, false, 0);
   }
 }

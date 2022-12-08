@@ -74,11 +74,11 @@ use radix_engine::ledger::{
     OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
 };
 use radix_engine::model::PersistedSubstate;
-use rocksdb::{Direction, IteratorMode, SingleThreaded, TransactionDB};
-use scrypto::buffer::{scrypto_decode, scrypto_encode};
-use scrypto::engine::types::{
-    KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateId, SubstateOffset,
+use radix_engine::types::{
+    scrypto_decode, scrypto_encode, KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateId,
+    SubstateOffset,
 };
+use rocksdb::{Direction, IteratorMode, SingleThreaded, TransactionDB};
 use std::path::PathBuf;
 
 #[macro_export]
@@ -152,8 +152,8 @@ impl WriteableSubstateStore for RocksDBStore {
     fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
         self.db
             .put(
-                db_key!(Substates, &scrypto_encode(&substate_id)),
-                scrypto_encode(&substate),
+                db_key!(Substates, &scrypto_encode(&substate_id).unwrap()),
+                scrypto_encode(&substate).unwrap(),
             )
             .expect("RockDB: put_substate unexpected error");
     }
@@ -190,10 +190,23 @@ impl<'db> RocksDBCommitTransaction<'db> {
                 )
                 .expect("RocksDB: failure to put intent hash");
         }
+        let transaction_key = get_transaction_key(&transaction.get_hash());
+        // TODO: We really need to re-work how we store this data!
+        // For now, panic if we have duplicate transactions to prevent incorrect receipt/identifiers being saved
+        // There shouldn't be any possibility of this happening at the moment, so better to panic if it does as
+        // it indicates a bug.
+        let transaction_already_exists = self
+            .db_txn
+            .get(transaction_key)
+            .expect("RocksDB: failure to check for transaction presence")
+            .is_some();
+        if transaction_already_exists {
+            panic!("Attempt to persist a duplicate transaction payload - which isn't supported at the moment in our database structure: {:?}", transaction)
+        }
         self.db_txn
             .put(
                 get_transaction_key(&transaction.get_hash()),
-                scrypto_encode(&(transaction, receipt, identifiers)),
+                scrypto_encode(&(transaction, receipt, identifiers)).unwrap(),
             )
             .expect("RocksDB: failure to put transaction");
     }
@@ -203,7 +216,7 @@ impl<'db> ReadableSubstateStore for RocksDBCommitTransaction<'db> {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
         // TODO: Use get_pinned
         self.db_txn
-            .get(db_key!(Substates, &scrypto_encode(substate_id)))
+            .get(db_key!(Substates, &scrypto_encode(substate_id).unwrap()))
             .unwrap()
             .map(|b| scrypto_decode(&b).unwrap())
     }
@@ -253,8 +266,8 @@ impl<'db> WriteableSubstateStore for RocksDBCommitTransaction<'db> {
     fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
         self.db_txn
             .put(
-                db_key!(Substates, &scrypto_encode(&substate_id)),
-                scrypto_encode(&substate),
+                db_key!(Substates, &scrypto_encode(&substate_id).unwrap()),
+                scrypto_encode(&substate).unwrap(),
             )
             .expect("RocksDB: put_substate unexpected error");
     }
@@ -280,7 +293,7 @@ impl ReadableSubstateStore for RocksDBStore {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
         // TODO: Use get_pinned
         self.db
-            .get(db_key!(Substates, &scrypto_encode(substate_id)))
+            .get(db_key!(Substates, &scrypto_encode(substate_id).unwrap()))
             .unwrap()
             .map(|b| scrypto_decode(&b).unwrap())
     }
@@ -414,7 +427,8 @@ impl QueryableSubstateStore for RocksDBStore {
         let id = scrypto_encode(&SubstateId(
             RENodeId::KeyValueStore(*kv_store_id),
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(vec![])),
-        ));
+        ))
+        .unwrap();
 
         let iter = self.db.iterator(IteratorMode::From(
             &db_key!(Substates, &id),

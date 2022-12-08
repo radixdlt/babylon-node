@@ -112,7 +112,7 @@ public class REv2StateComputerTest {
     // Arrange
     var injector = createInjector();
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var validTransaction = REv2TestTransactions.constructValidTransaction(0, 0);
+    var validTransaction = REv2TestTransactions.constructValidRawTransaction(0, 0);
 
     // Act
     var result =

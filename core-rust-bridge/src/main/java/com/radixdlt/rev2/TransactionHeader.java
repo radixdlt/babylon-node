@@ -79,7 +79,7 @@ public record TransactionHeader(
     PublicKey notaryPublicKey,
     boolean notaryAsSignatory,
     UInt32 costUnitLimit,
-    UInt32 tipPercentage) {
+    byte tipPercentage) {
 
   public static final UInt32 MAX_COST_UNIT_LIMIT = UInt32.fromNonNegativeInt(100_000_000);
 
@@ -97,7 +97,7 @@ public record TransactionHeader(
                 codecs.of(PublicKey.class),
                 codecs.of(boolean.class),
                 codecs.of(UInt32.class),
-                codecs.of(UInt32.class),
+                codecs.of(byte.class),
                 (t, encoder) ->
                     encoder.encode(
                         t.version,
@@ -131,7 +131,7 @@ public record TransactionHeader(
         notary,
         notaryIsSignatory,
         MAX_COST_UNIT_LIMIT, // Max Cost Units
-        UInt32.fromNonNegativeInt(0) // Tip percentage
+        (byte) 0 // Tip percentage
         );
   }
 
@@ -157,7 +157,7 @@ public record TransactionHeader(
         notary,
         notaryIsSignatory,
         costUnitLimitToUse,
-        UInt32.fromNonNegativeInt(0) // Tip percentage
+        (byte) 0 // Tip percentage
         );
   }
 }

@@ -32,15 +32,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   V0StateNonFungibleRequest.JSON_PROPERTY_RESOURCE_ADDRESS,
-  V0StateNonFungibleRequest.JSON_PROPERTY_NON_FUNGIBLE_ID_HEX
+  V0StateNonFungibleRequest.JSON_PROPERTY_NON_FUNGIBLE_ID
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class V0StateNonFungibleRequest {
   public static final String JSON_PROPERTY_RESOURCE_ADDRESS = "resource_address";
   private String resourceAddress;
 
-  public static final String JSON_PROPERTY_NON_FUNGIBLE_ID_HEX = "non_fungible_id_hex";
-  private String nonFungibleIdHex;
+  public static final String JSON_PROPERTY_NON_FUNGIBLE_ID = "non_fungible_id";
+  private String nonFungibleId;
 
   public V0StateNonFungibleRequest() { 
   }
@@ -71,29 +71,29 @@ public class V0StateNonFungibleRequest {
   }
 
 
-  public V0StateNonFungibleRequest nonFungibleIdHex(String nonFungibleIdHex) {
-    this.nonFungibleIdHex = nonFungibleIdHex;
+  public V0StateNonFungibleRequest nonFungibleId(String nonFungibleId) {
+    this.nonFungibleId = nonFungibleId;
     return this;
   }
 
    /**
-   * The hex-encoded non-fungible id
-   * @return nonFungibleIdHex
+   * The simple string representation of the non-fungible id. For string id types, this is simply the string itself; for integer types, this is the integer as a decimal; and for the bytes id type, this is the lower case hex representation. A non-fungible resource has a fixed &#x60;NonFungibleIdType&#x60;, so this representation uniquely identifies this non-fungible under the given resource address. 
+   * @return nonFungibleId
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded non-fungible id")
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID_HEX)
+  @ApiModelProperty(required = true, value = "The simple string representation of the non-fungible id. For string id types, this is simply the string itself; for integer types, this is the integer as a decimal; and for the bytes id type, this is the lower case hex representation. A non-fungible resource has a fixed `NonFungibleIdType`, so this representation uniquely identifies this non-fungible under the given resource address. ")
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getNonFungibleIdHex() {
-    return nonFungibleIdHex;
+  public String getNonFungibleId() {
+    return nonFungibleId;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID_HEX)
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNonFungibleIdHex(String nonFungibleIdHex) {
-    this.nonFungibleIdHex = nonFungibleIdHex;
+  public void setNonFungibleId(String nonFungibleId) {
+    this.nonFungibleId = nonFungibleId;
   }
 
 
@@ -110,12 +110,12 @@ public class V0StateNonFungibleRequest {
     }
     V0StateNonFungibleRequest v0StateNonFungibleRequest = (V0StateNonFungibleRequest) o;
     return Objects.equals(this.resourceAddress, v0StateNonFungibleRequest.resourceAddress) &&
-        Objects.equals(this.nonFungibleIdHex, v0StateNonFungibleRequest.nonFungibleIdHex);
+        Objects.equals(this.nonFungibleId, v0StateNonFungibleRequest.nonFungibleId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resourceAddress, nonFungibleIdHex);
+    return Objects.hash(resourceAddress, nonFungibleId);
   }
 
   @Override
@@ -123,7 +123,7 @@ public class V0StateNonFungibleRequest {
     StringBuilder sb = new StringBuilder();
     sb.append("class V0StateNonFungibleRequest {\n");
     sb.append("    resourceAddress: ").append(toIndentedString(resourceAddress)).append("\n");
-    sb.append("    nonFungibleIdHex: ").append(toIndentedString(nonFungibleIdHex)).append("\n");
+    sb.append("    nonFungibleId: ").append(toIndentedString(nonFungibleId)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -83,17 +83,22 @@ import java.util.concurrent.TimeUnit;
 
 /** Monitors which checks things in the consensus module */
 public final class ConsensusMonitors {
-
-  public static Module timestampChecker() {
-    return timestampChecker(Duration.ofSeconds(2));
-  }
-
-  public static Module timestampChecker(Duration maxDelay) {
+  public static Module consensusTimestampChecker(Duration maxDelay) {
     return new AbstractModule() {
       @ProvidesIntoMap
       @MonitorKey(Monitor.CONSENSUS_TIMESTAMP_CHECK)
-      public TestInvariant timestampsInvariant() {
-        return new TimestampChecker(maxDelay);
+      public TestInvariant consensusTimestampChecker() {
+        return new ConsensusTimestampChecker(maxDelay);
+      }
+    };
+  }
+
+  public static Module proposerTimestampChecker() {
+    return new AbstractModule() {
+      @ProvidesIntoMap
+      @MonitorKey(Monitor.PROPOSER_TIMESTAMP_CHECK)
+      public TestInvariant proposerTimestampChecker(NodeEvents nodeEvents) {
+        return new ProposerTimestampChecker(nodeEvents);
       }
     };
   }

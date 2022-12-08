@@ -13,8 +13,6 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct VaultSubstate {
-    #[serde(rename = "entity_type")]
-    pub entity_type: crate::core_api::generated::models::EntityType,
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
     #[serde(rename = "resource_amount")]
@@ -22,9 +20,8 @@ pub struct VaultSubstate {
 }
 
 impl VaultSubstate {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, resource_amount: crate::core_api::generated::models::ResourceAmount) -> VaultSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, resource_amount: crate::core_api::generated::models::ResourceAmount) -> VaultSubstate {
         VaultSubstate {
-            entity_type,
             substate_type,
             resource_amount: Option::Some(resource_amount),
         }

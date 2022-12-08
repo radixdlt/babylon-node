@@ -87,22 +87,21 @@ import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 
 public final class StateManagerSbor {
-  private static final Sbor sbor = createSborForStateManager();
+  private static final ScryptoSbor sbor = createSborForStateManager();
 
-  private static Sbor createSborForStateManager() {
-    return new Sbor(
-        true,
+  private static ScryptoSbor createSborForStateManager() {
+    return new ScryptoSbor(
         new CodecMap()
             .register(StateManagerSbor::registerCodecsWithCodecMap)
             .register(StateManagerSbor::registerCodecsForExistingTypes));
   }
 
   public static <T> byte[] encode(T value, Codec<T> codec) {
-    return sbor.encode(value, codec);
+    return sbor.encode_payload(value, codec);
   }
 
   public static <T> T decode(byte[] sborBytes, Codec<T> codec) {
-    return sbor.decode(sborBytes, codec);
+    return sbor.decode_payload(sborBytes, codec);
   }
 
   public static <T> Codec<T> resolveCodec(TypeToken<T> typeToken) {

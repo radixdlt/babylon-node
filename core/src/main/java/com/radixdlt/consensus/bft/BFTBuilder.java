@@ -65,11 +65,20 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.*;
+import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
+import com.radixdlt.consensus.bft.processor.BFTEventReducer;
+import com.radixdlt.consensus.bft.processor.BFTEventStatefulVerifier;
+import com.radixdlt.consensus.bft.processor.BFTEventStatelessVerifier;
+import com.radixdlt.consensus.bft.processor.EmptyBFTEventProcessor;
+import com.radixdlt.consensus.bft.processor.ProposalTimestampVerifier;
+import com.radixdlt.consensus.bft.processor.SyncUpPreprocessor;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.utils.TimeSupplier;
 
 /** A helper class to help in constructing a BFT validator state machine */
 public final class BFTBuilder {
@@ -85,6 +94,7 @@ public final class BFTBuilder {
   private EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher;
   private EventDispatcher<DoubleVote> doubleVoteEventDispatcher;
   private EventDispatcher<NoVote> noVoteEventDispatcher;
+  private EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher;
 
   // Instance specific objects
   private BFTNode self;
@@ -92,6 +102,9 @@ public final class BFTBuilder {
   private RoundUpdate roundUpdate;
   private RemoteEventDispatcher<Vote> voteDispatcher;
   private SafetyRules safetyRules;
+
+  private TimeSupplier timeSupplier;
+  private SystemCounters systemCounters;
 
   private BFTBuilder() {
     // Just making this inaccessible
@@ -113,6 +126,12 @@ public final class BFTBuilder {
 
   public BFTBuilder voteDispatcher(RemoteEventDispatcher<Vote> voteDispatcher) {
     this.voteDispatcher = voteDispatcher;
+    return this;
+  }
+
+  public BFTBuilder roundLeaderFailureEventDispatcher(
+      EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher) {
+    this.roundLeaderFailureEventDispatcher = roundLeaderFailureEventDispatcher;
     return this;
   }
 
@@ -157,6 +176,11 @@ public final class BFTBuilder {
     return this;
   }
 
+  public BFTBuilder timeSupplier(TimeSupplier timeSupplier) {
+    this.timeSupplier = timeSupplier;
+    return this;
+  }
+
   public BFTBuilder roundQuorumReachedEventDispatcher(
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher) {
     this.roundQuorumReachedEventDispatcher = roundQuorumReachedEventDispatcher;
@@ -168,13 +192,25 @@ public final class BFTBuilder {
     return this;
   }
 
+  public BFTBuilder systemCounters(SystemCounters systemCounters) {
+    this.systemCounters = systemCounters;
+    return this;
+  }
+
   public BFTEventProcessor build() {
     if (!validatorSet.containsNode(self)) {
       return EmptyBFTEventProcessor.INSTANCE;
     }
     final PendingVotes pendingVotes = new PendingVotes(hasher, doubleVoteEventDispatcher);
 
-    BFTEventReducer reducer =
+    /* Setting up the following BFT event processing pipeline:
+    BFTEventStatelessVerifier (verify against stateless parameters [e.g. validator set] and the signatures)
+       -> SyncUpPreprocessor (if needed, sync up to match BFT event's round)
+       -> BFTEventStatefulVerifier (verify against the current round state)
+       -> ProposalTimestampVerifier (verify proposal timestamp)
+       -> BFTEventReducer (actually process the event) */
+
+    final var bftEventReducer =
         new BFTEventReducer(
             self,
             pacemaker,
@@ -183,13 +219,23 @@ public final class BFTBuilder {
             noVoteEventDispatcher,
             voteDispatcher,
             hasher,
+            systemCounters,
             safetyRules,
             validatorSet,
             pendingVotes,
             roundUpdate);
 
-    BFTEventPreprocessor preprocessor = new BFTEventPreprocessor(reducer, bftSyncer, roundUpdate);
+    final var proposalTimestampVerifier =
+        new ProposalTimestampVerifier(
+            bftEventReducer, timeSupplier, systemCounters, roundLeaderFailureEventDispatcher);
 
-    return new BFTEventVerifier(validatorSet, preprocessor, hasher, verifier, safetyRules);
+    final var bftEventStatefulVerifier =
+        new BFTEventStatefulVerifier(proposalTimestampVerifier, systemCounters, roundUpdate);
+
+    final var syncUpPreprocessor =
+        new SyncUpPreprocessor(bftEventStatefulVerifier, bftSyncer, roundUpdate);
+
+    return new BFTEventStatelessVerifier(
+        validatorSet, syncUpPreprocessor, hasher, verifier, safetyRules, systemCounters);
   }
 }

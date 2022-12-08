@@ -1,59 +1,72 @@
 use radix_engine::types::EpochManagerSetEpochInvocation;
+use radix_engine::types::GlobalAddress;
+use radix_engine::types::NativeMethodIdent;
+use radix_engine::types::RENodeId;
+
+use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
+
+use radix_engine_interface::crypto::{hash, Hash};
+use radix_engine_interface::data::scrypto_encode;
+use radix_engine_interface::model::ClockSetCurrentTimeInvocation;
 use sbor::*;
-use scrypto::args;
-use scrypto::buffer::scrypto_encode;
-use scrypto::constants::{EPOCH_MANAGER, FAUCET_COMPONENT};
-use scrypto::crypto::{hash, Hash};
-use scrypto::engine::types::{
-    GlobalAddress, NativeMethodIdent, RENodeId, ScryptoMethodIdent, ScryptoReceiver,
-};
-use scrypto::math::Decimal;
 use std::collections::BTreeSet;
 use transaction::model::{
     AuthModule, AuthZoneParams, Executable, ExecutionContext, FeePayment, Instruction,
-    TransactionManifest, DEFAULT_COST_UNIT_LIMIT,
+    TransactionManifest,
 };
 
 #[derive(Debug, Copy, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum ValidatorTransaction {
-    EpochUpdate(u64),
+    EpochUpdate {
+        scrypto_epoch: u64,
+    },
+    RoundUpdate {
+        proposer_timestamp_ms: u64,
+        // We include epoch because our current database implementation needs
+        // to ensure all ledger payloads are unique.
+        // Currently scrypto epoch != consensus epoch, but this will change
+        consensus_epoch: u64,
+        round_in_epoch: u64,
+    },
 }
 
 impl ValidatorTransaction {
     pub fn prepare(&self) -> PreparedValidatorTransaction {
         // TODO: Figure out better way to do this or if we even do need it
-        let validator_role_nf_address = hash(scrypto_encode(self));
+        let validator_role_nf_address = hash(scrypto_encode(self).unwrap());
 
-        let main_instruction = match self {
-            ValidatorTransaction::EpochUpdate(epoch) => Instruction::CallNativeMethod {
+        let instruction = match self {
+            ValidatorTransaction::EpochUpdate { scrypto_epoch } => Instruction::CallNativeMethod {
                 method_ident: NativeMethodIdent {
                     receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
                     method_name: "set_epoch".to_string(),
                 },
                 args: scrypto_encode(&EpochManagerSetEpochInvocation {
                     receiver: EPOCH_MANAGER,
-                    epoch: *epoch,
-                }),
+                    epoch: *scrypto_epoch,
+                })
+                .unwrap(),
+            },
+            ValidatorTransaction::RoundUpdate {
+                proposer_timestamp_ms: timestamp_ms,
+                ..
+            } => Instruction::CallNativeMethod {
+                method_ident: NativeMethodIdent {
+                    receiver: RENodeId::Global(GlobalAddress::System(CLOCK)),
+                    method_name: "set_current_time".to_string(),
+                },
+                args: scrypto_encode(&ClockSetCurrentTimeInvocation {
+                    receiver: CLOCK,
+                    current_time_ms: *timestamp_ms,
+                })
+                .unwrap(),
             },
         };
-
-        let instructions = vec![
-            // TODO - given that we use the system fee reserve to run this
-            // We should be able to try to remove the lock fee here?
-            Instruction::CallMethod {
-                method_ident: ScryptoMethodIdent {
-                    receiver: ScryptoReceiver::Global(FAUCET_COMPONENT),
-                    method_name: "lock_fee".to_string(),
-                },
-                args: args!(Decimal::from(100u32)),
-            },
-            main_instruction,
-        ];
 
         PreparedValidatorTransaction {
             hash: validator_role_nf_address,
             manifest: TransactionManifest {
-                instructions,
+                instructions: vec![instruction],
                 blobs: vec![],
             },
         }
@@ -81,10 +94,7 @@ impl PreparedValidatorTransaction {
             ExecutionContext {
                 transaction_hash,
                 auth_zone_params,
-                fee_payment: FeePayment {
-                    cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
-                    tip_percentage: 0,
-                },
+                fee_payment: FeePayment::NoFee,
                 runtime_validations: vec![],
             },
         )

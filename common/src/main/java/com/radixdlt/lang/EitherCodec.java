@@ -67,7 +67,7 @@ package com.radixdlt.lang;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.TypeTokenUtils;
-import com.radixdlt.sbor.codec.constants.ResultTypeId;
+import com.radixdlt.sbor.codec.constants.ResultVariants;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
@@ -78,31 +78,39 @@ public record EitherCodec<L, R>(Codec<L> leftType, Codec<R> rightType)
     implements Codec<Either<L, R>> {
   @Override
   public TypeId getTypeId() {
-    return TypeId.TYPE_RESULT;
+    return TypeId.TYPE_ENUM;
   }
 
   @Override
   public void encodeWithoutTypeId(EncoderApi encoder, Either<L, R> either) {
     either.apply(
         left -> {
-          encoder.writeByte(ResultTypeId.ERR);
+          encoder.writeString(ResultVariants.ERR);
+          encoder.writeSize(1);
           encoder.encodeWithTypeId(left, leftType);
         },
         right -> {
-          encoder.writeByte(ResultTypeId.OK);
+          encoder.writeString(ResultVariants.OK);
+          encoder.writeSize(1);
           encoder.encodeWithTypeId(right, rightType);
         });
   }
 
   @Override
   public Either<L, R> decodeWithoutTypeId(DecoderApi decoder) {
-    var typeByte = decoder.readByte();
+    var variantName = decoder.readString();
 
-    return switch (typeByte) {
-      case ResultTypeId.OK -> Either.right(decoder.decodeWithTypeId(rightType));
-      case ResultTypeId.ERR -> Either.left(decoder.decodeWithTypeId(leftType));
+    return switch (variantName) {
+      case ResultVariants.OK -> {
+        decoder.expectSize(1);
+        yield Either.right(decoder.decodeWithTypeId(rightType));
+      }
+      case ResultVariants.ERR -> {
+        decoder.expectSize(1);
+        yield Either.left(decoder.decodeWithTypeId(leftType));
+      }
       default -> throw new SborDecodeException(
-          String.format("Unknown result type id %s", typeByte));
+          String.format("Unknown result variant %s", variantName));
     };
   }
 

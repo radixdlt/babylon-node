@@ -372,14 +372,15 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         Hasher hasher) {
                       var genesisVertex =
                           Vertex.createGenesis(
-                                  LedgerHeader.genesis(initialAccumulatorState, validatorSet, 0))
+                                  LedgerHeader.genesis(initialAccumulatorState, validatorSet, 0, 0))
                               .withId(hasher);
                       var nextLedgerHeader =
                           LedgerHeader.create(
                               proof.getNextEpoch(),
                               Round.genesis(),
                               proof.getAccumulatorState(),
-                              proof.timestamp());
+                              proof.consensusParentRoundTimestamp(),
+                              proof.proposerTimestamp());
                       var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
                       var proposerElection = new WeightedRotatingLeaders(validatorSet);
                       return new BFTConfiguration(

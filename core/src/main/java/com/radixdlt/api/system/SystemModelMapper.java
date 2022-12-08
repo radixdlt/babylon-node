@@ -64,27 +64,15 @@
 
 package com.radixdlt.api.system;
 
-import static com.radixdlt.monitoring.SystemCounters.CounterType.*;
-
 import com.google.inject.Inject;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.system.generated.models.Address;
 import com.radixdlt.api.system.generated.models.AddressBookEntry;
-import com.radixdlt.api.system.generated.models.BFTMetrics;
-import com.radixdlt.api.system.generated.models.BFTPacemakerMetrics;
-import com.radixdlt.api.system.generated.models.BFTSyncMetrics;
-import com.radixdlt.api.system.generated.models.BFTVertexStoreMetrics;
-import com.radixdlt.api.system.generated.models.MempoolMetrics;
 import com.radixdlt.api.system.generated.models.NetworkingConfiguration;
-import com.radixdlt.api.system.generated.models.NetworkingInboundMetrics;
-import com.radixdlt.api.system.generated.models.NetworkingMetrics;
-import com.radixdlt.api.system.generated.models.NetworkingOutboundMetrics;
 import com.radixdlt.api.system.generated.models.Peer;
 import com.radixdlt.api.system.generated.models.PeerChannel;
 import com.radixdlt.api.system.generated.models.SyncConfiguration;
-import com.radixdlt.api.system.generated.models.SyncMetrics;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.RadixNodeUri;
@@ -127,83 +115,6 @@ public final class SystemModelMapper {
         .requestTimeout(syncRelayConfig.requestTimeout())
         .ledgerStatusUpdateMaxPeersToNotify(syncRelayConfig.ledgerStatusUpdateMaxPeersToNotify())
         .maxLedgerUpdatesRate(BigDecimal.valueOf(syncRelayConfig.maxLedgerUpdatesRate()));
-  }
-
-  public NetworkingMetrics networkingMetrics(SystemCounters counters) {
-    return new NetworkingMetrics()
-        .bytesReceived(counters.get(NETWORKING_BYTES_RECEIVED))
-        .bytesSent(counters.get(NETWORKING_BYTES_SENT))
-        .inbound(networkingInboundMetrics(counters))
-        .outbound(networkingOutboundMetrics(counters));
-  }
-
-  public NetworkingInboundMetrics networkingInboundMetrics(SystemCounters counters) {
-    return new NetworkingInboundMetrics()
-        .discarded(counters.get(MESSAGES_INBOUND_DISCARDED))
-        .processed(counters.get(MESSAGES_INBOUND_PROCESSED))
-        .received(counters.get(MESSAGES_INBOUND_RECEIVED));
-  }
-
-  public NetworkingOutboundMetrics networkingOutboundMetrics(SystemCounters counters) {
-    return new NetworkingOutboundMetrics()
-        .aborted(counters.get(MESSAGES_OUTBOUND_ABORTED))
-        .processed(counters.get(MESSAGES_OUTBOUND_PROCESSED))
-        .pending(counters.get(MESSAGES_OUTBOUND_PENDING))
-        .aborted(counters.get(MESSAGES_OUTBOUND_ABORTED))
-        .sent(counters.get(MESSAGES_OUTBOUND_SENT));
-  }
-
-  public MempoolMetrics mempoolMetrics(SystemCounters counters) {
-    return new MempoolMetrics()
-        .addFailure(counters.get(MEMPOOL_ADD_FAILURE))
-        .addSuccess(counters.get(MEMPOOL_ADD_SUCCESS))
-        .currentSize(counters.get(MEMPOOL_CURRENT_SIZE))
-        .relaysSent(counters.get(MEMPOOL_RELAYS_SENT));
-  }
-
-  public BFTMetrics bftMetrics(SystemCounters counters) {
-    return new BFTMetrics()
-        .committedVertices(counters.get(BFT_COMMITTED_VERTICES))
-        .eventsReceived(counters.get(BFT_EVENTS_RECEIVED))
-        .noVotesSent(counters.get(BFT_NO_VOTES_SENT))
-        .timeoutQuorums(counters.get(BFT_TIMEOUT_QUORUMS))
-        .voteQuorums(counters.get(BFT_VOTE_QUORUMS))
-        .sync(bftSyncMetrics(counters))
-        .pacemaker(bftPacemakerMetrics(counters))
-        .vertexStore(bftVertexStoreMetrics(counters));
-  }
-
-  public SyncMetrics syncMetrics(SystemCounters counters) {
-    return new SyncMetrics()
-        .currentStateVersion(counters.get(SYNC_CURRENT_STATE_VERSION))
-        .targetStateVersion(counters.get(SYNC_TARGET_STATE_VERSION))
-        .invalidResponsesReceived(counters.get(SYNC_INVALID_RESPONSES_RECEIVED))
-        .validResponsesReceived(counters.get(SYNC_VALID_RESPONSES_RECEIVED))
-        .remoteRequestsReceived(counters.get(SYNC_REMOTE_REQUESTS_RECEIVED));
-  }
-
-  public BFTVertexStoreMetrics bftVertexStoreMetrics(SystemCounters counters) {
-    return new BFTVertexStoreMetrics()
-        .forks(counters.get(BFT_VERTEX_STORE_FORKS))
-        .indirectParents(counters.get(BFT_VERTEX_STORE_INDIRECT_PARENTS))
-        .rebuilds(counters.get(BFT_VERTEX_STORE_REBUILDS))
-        .size(counters.get(BFT_VERTEX_STORE_SIZE));
-  }
-
-  public BFTPacemakerMetrics bftPacemakerMetrics(SystemCounters counters) {
-    return new BFTPacemakerMetrics()
-        .proposalsSent(counters.get(BFT_PACEMAKER_PROPOSALS_SENT))
-        .proposedTransactions(counters.get(BFT_PACEMAKER_PROPOSED_TRANSACTIONS))
-        .round(counters.get(BFT_PACEMAKER_ROUND))
-        .timedOutRounds(counters.get(BFT_PACEMAKER_TIMED_OUT_ROUNDS))
-        .timeoutsSent(counters.get(BFT_PACEMAKER_TIMEOUTS_SENT));
-  }
-
-  public BFTSyncMetrics bftSyncMetrics(SystemCounters counters) {
-    return new BFTSyncMetrics()
-        .requestsReceived(counters.get(BFT_SYNC_REQUESTS_RECEIVED))
-        .requestsSent(counters.get(BFT_SYNC_REQUESTS_SENT))
-        .requestTimeouts(counters.get(BFT_SYNC_REQUEST_TIMEOUTS));
   }
 
   public Peer peer(PeersView.PeerInfo peerInfo) {

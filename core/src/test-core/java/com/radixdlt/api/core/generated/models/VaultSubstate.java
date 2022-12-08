@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EntityType;
 import com.radixdlt.api.core.generated.models.ResourceAmount;
 import com.radixdlt.api.core.generated.models.SubstateBase;
 import com.radixdlt.api.core.generated.models.SubstateType;
@@ -36,15 +35,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * VaultSubstate
  */
 @JsonPropertyOrder({
-  VaultSubstate.JSON_PROPERTY_ENTITY_TYPE,
   VaultSubstate.JSON_PROPERTY_SUBSTATE_TYPE,
   VaultSubstate.JSON_PROPERTY_RESOURCE_AMOUNT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class VaultSubstate {
-  public static final String JSON_PROPERTY_ENTITY_TYPE = "entity_type";
-  private EntityType entityType;
-
   public static final String JSON_PROPERTY_SUBSTATE_TYPE = "substate_type";
   private SubstateType substateType;
 
@@ -53,32 +48,6 @@ public class VaultSubstate {
 
   public VaultSubstate() { 
   }
-
-  public VaultSubstate entityType(EntityType entityType) {
-    this.entityType = entityType;
-    return this;
-  }
-
-   /**
-   * Get entityType
-   * @return entityType
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ENTITY_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public EntityType getEntityType() {
-    return entityType;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ENTITY_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEntityType(EntityType entityType) {
-    this.entityType = entityType;
-  }
-
 
   public VaultSubstate substateType(SubstateType substateType) {
     this.substateType = substateType;
@@ -144,21 +113,19 @@ public class VaultSubstate {
       return false;
     }
     VaultSubstate vaultSubstate = (VaultSubstate) o;
-    return Objects.equals(this.entityType, vaultSubstate.entityType) &&
-        Objects.equals(this.substateType, vaultSubstate.substateType) &&
+    return Objects.equals(this.substateType, vaultSubstate.substateType) &&
         Objects.equals(this.resourceAmount, vaultSubstate.resourceAmount);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityType, substateType, resourceAmount);
+    return Objects.hash(substateType, resourceAmount);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class VaultSubstate {\n");
-    sb.append("    entityType: ").append(toIndentedString(entityType)).append("\n");
     sb.append("    substateType: ").append(toIndentedString(substateType)).append("\n");
     sb.append("    resourceAmount: ").append(toIndentedString(resourceAmount)).append("\n");
     sb.append("}");
