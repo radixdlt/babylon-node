@@ -64,38 +64,76 @@
 
 package com.radixdlt.api.throughput;
 
-import com.radixdlt.api.RealisticCoreApiTestBase;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.TransactionSubmitRequest;
+import com.radixdlt.api.core.generated.models.V0TransactionStatusRequest;
+import com.radixdlt.api.core.generated.models.V0TransactionStatusResponse;
+import com.radixdlt.rev2.REv2TestTransactions;
+import com.radixdlt.utils.Bytes;
+import java.util.stream.IntStream;
 import org.junit.Test;
 
-public class CoreApiThroughputTest extends RealisticCoreApiTestBase {
-  @Test
-  public void fill_mempool_and_empty_test() throws Exception {
-    // Need to change this to a non-deterministic test.
-    // Try to use the default node setup for things like:
-    // * Proposal size
-    // * Other things like mempool sync delay
-    // try (var test = buildRunningServerTest()) {
-    var test = buildRunningServerTest();
-    // PART 1 - Populate mempool with 1000 transactions
+public class DeterministicCoreApiThroughputTest extends DeterministicCoreApiTestBase {
+  @Test(timeout = 30_000)
+  public void test_core_api_can_submit_and_commit_transaction() throws Exception {
+    try (var test = buildRunningServerTest()) {
 
-    // PART 2 - Start stop-watch and Start consensus
+      var intentHashes =
+          IntStream.range(0, 1000)
+              .parallel()
+              .mapToObj(
+                  i -> {
+                    var transaction = REv2TestTransactions.constructValidTransaction(0, i);
+                    var rawTransaction = transaction.constructRawTransaction();
+                    var intentHash = transaction.hashedIntent().asBytes();
 
-    // PART 3 - wait till mempool empties and record time and TPS
-    // }
-  }
+                    try {
+                      // Submit transaction
+                      var response =
+                          getTransactionApi()
+                              .transactionSubmitPost(
+                                  new TransactionSubmitRequest()
+                                      .network(networkLogicalName)
+                                      .notarizedTransactionHex(
+                                          Bytes.toHexString(rawTransaction.getPayload())));
 
-  @Test
-  public void concurrent_actors_test() throws Exception {
-    // Need to change this to a non-deterministic test.
-    // Try to use the default node setup for things like:
-    // * Proposal size
-    // * Other things like mempool sync delay
-    // try (var test = buildRunningServerTest()) {
-    // PART 1 - Start stopwatch + node, and count of 10000 transactions
-    // PART 2 - Spin up 1000 concurrent actors
-    // PART 3 - Each actor tries to submit transaction every few seconds, and waits for commit
-    //          As actors complete, replace with new transaction
-    // PART 4 - Once all transactions complete, record time and TPS
-    // }
+                      assertThat(response.getDuplicate()).isFalse();
+                    } catch (Exception e) {
+                      throw new RuntimeException(e);
+                    }
+                    return intentHash;
+                  })
+              .toList();
+
+      // Now we run consensus
+      test.runForCount(10000);
+
+      var statuses =
+          intentHashes.stream()
+              .parallel()
+              .map(
+                  intentHash -> {
+                    V0TransactionStatusResponse statusResponse2 = null;
+                    try {
+                      statusResponse2 =
+                          getTransactionApi()
+                              .v0TransactionStatusPost(
+                                  new V0TransactionStatusRequest()
+                                      .intentHash(Bytes.toHexString(intentHash)));
+                    } catch (Exception e) {
+                      throw new RuntimeException(e);
+                    }
+
+                    return statusResponse2.getIntentStatus();
+                  });
+
+      assertThat(
+              statuses
+                  .filter(i -> i == V0TransactionStatusResponse.IntentStatusEnum.COMMITTEDSUCCESS)
+                  .count())
+          .isEqualTo(1000);
+    }
   }
 }

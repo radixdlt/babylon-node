@@ -122,13 +122,13 @@ public abstract class RealisticCoreApiTestBase {
                             StateComputerConfig.REV2ProposerConfig.mempool(
                                 50, 1000, MempoolRelayConfig.of())),
                         SyncRelayConfig.of(200, 10, 2000))));
-    var test = testBuilder.build();
+    var test = testBuilder.build().run();
     // TODO - need to implement auto-closeable on test, and change it to support
     // shutdown and ongoing running
     try {
-      test.runOngoing();
+      // test.run();
     } catch (Exception ex) {
-      test.close();
+      // test.close();
       throw ex;
     }
     return test;
