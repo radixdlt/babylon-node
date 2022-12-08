@@ -1,7 +1,7 @@
 ## Development Environment Setup
 
 - Java 17.0.4+ SDK installed and configured. It's very important to have at least 17.0.4, else you will hit Java Compiler bugs.
-- rust/cargo 1.60.0+ installed and configured (recommended via rustup)
+- latest stable installed and configured (recommended via rustup)
 - More or less recent Linux or MacOS (Windows WSL2 may work, but not tested)
 - git 2.27+
 - docker version 20.10+
