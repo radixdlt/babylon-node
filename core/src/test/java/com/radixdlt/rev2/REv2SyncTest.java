@@ -108,18 +108,27 @@ public class REv2SyncTest {
   }
 
   @Test
-  public void few_transactions_sync_should_work() {
+  public void single_transaction_sync_should_work() {
+    test_sync_n_txns(1);
+  }
+
+  @Test
+  public void few_transaction_sync_should_work() {
+    test_sync_n_txns(50);
+  }
+
+  private void test_sync_n_txns(int n) {
     try (var test = buildTest()) {
-      // Arrange: 50 transactions committed
+      // Arrange: n transactions committed
       test.startAllNodes();
-      test.runUntilState(nodeAt(0, atOrOverStateVersion(50)), onlyConsensusEvents());
+      test.runUntilState(nodeAt(0, atOrOverStateVersion(n)), onlyConsensusEvents());
 
       // Act: Sync
-      test.runUntilState(nodeAt(1, atOrOverStateVersion(50)), onlyLedgerSyncEvents());
+      test.runUntilState(nodeAt(1, atOrOverStateVersion(n)), onlyLedgerSyncEvents());
 
       // Assert
       Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
-      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 50);
+      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), n);
     }
   }
 }
