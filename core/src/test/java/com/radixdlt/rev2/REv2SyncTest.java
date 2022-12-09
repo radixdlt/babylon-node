@@ -108,7 +108,7 @@ public class REv2SyncTest {
   }
 
   @Test
-  public void single_transaction_sync_should_work() {
+  public void few_transactions_sync_should_work() {
     try (var test = buildTest()) {
       // Arrange: 50 transactions committed
       test.startAllNodes();
