@@ -66,6 +66,7 @@ package com.radixdlt.rev2;
 
 import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.serialization.DeserializeException;
@@ -73,11 +74,14 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawLedgerTransaction;
+import java.util.ArrayList;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.LongStream;
 
 public final class REv2TransactionsAndProofReader implements TransactionsAndProofReader {
+
+  /* Maximum transactions (in terms of their total byte size) to return in a single getTransactions response */
+  private static final int MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE = 900_000; // 900 KB
+
   private final REv2TransactionAndProofStore transactionStore;
   private final Serialization serialization;
 
@@ -90,30 +94,60 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
 
   @Override
   public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
-    var stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
-    var proofBytes = this.transactionStore.getNextProof(stateVersion);
-    return proofBytes
+    final var startStateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
+
+    var latestStateVersion = startStateVersion;
+    var maybeNextProof = getNextProof(startStateVersion);
+    var maybeLatestUsableProof = maybeNextProof;
+    var transactionsUpToLatestUsableProof = new ArrayList<RawLedgerTransaction>();
+    var totalTxnBytesSoFar = 0;
+
+    top_level_while:
+    while (maybeNextProof.isPresent()) {
+      final var nextProofStateVersion = maybeNextProof.unwrap().getStateVersion();
+      // Using a separate list for next proof txns, in case we run out
+      // of space mid-proof and need to ignore the txns read so far
+      final var transactionsUpToNextProof = new ArrayList<RawLedgerTransaction>();
+      for (var i = latestStateVersion + 1; i <= nextProofStateVersion; i++) {
+        final var executedTxn = transactionStore.getTransactionAtStateVersion(i).unwrap();
+        totalTxnBytesSoFar += executedTxn.transactionBytes().length;
+        if (totalTxnBytesSoFar > MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE) {
+          // At this point we know that the additional transactions up to nextProof
+          // can't fit. Stop the processing and use the transactions up to latestUsableProof.
+          break top_level_while;
+        }
+        transactionsUpToNextProof.add(RawLedgerTransaction.create(executedTxn.transactionBytes()));
+      }
+
+      // All transactions up to the next proof could fit.
+      // Added them to the list and use a new latestUsableProof.
+      transactionsUpToLatestUsableProof.addAll(transactionsUpToNextProof);
+      maybeLatestUsableProof = maybeNextProof;
+
+      // Continue the loop: try fitting some more txns up to the next proof (if there is any)
+      latestStateVersion = nextProofStateVersion;
+      maybeNextProof = getNextProof(nextProofStateVersion);
+    }
+
+    if (maybeLatestUsableProof.isPresent() && !transactionsUpToLatestUsableProof.isEmpty()) {
+      return CommittedTransactionsWithProof.create(
+          transactionsUpToLatestUsableProof, maybeLatestUsableProof.unwrap());
+    } else {
+      return null;
+    }
+  }
+
+  private Option<LedgerProof> getNextProof(long stateVersion) {
+    return this.transactionStore
+        .getNextProof(stateVersion)
         .map(
-            b -> {
-              final LedgerProof proof;
+            rawProof -> {
               try {
-                proof = serialization.fromDson(b.last(), LedgerProof.class);
+                return serialization.fromDson(rawProof.last(), LedgerProof.class);
               } catch (DeserializeException e) {
                 throw new RuntimeException(e);
               }
-
-              var transactions =
-                  LongStream.rangeClosed(stateVersion + 1, proof.getStateVersion())
-                      .mapToObj(
-                          i -> {
-                            var receipt = transactionStore.getTransactionAtStateVersion(i).unwrap();
-                            return RawLedgerTransaction.create(receipt.transactionBytes());
-                          })
-                      .collect(Collectors.toList());
-
-              return CommittedTransactionsWithProof.create(transactions, proof);
-            })
-        .orElse(null);
+            });
   }
 
   @Override
