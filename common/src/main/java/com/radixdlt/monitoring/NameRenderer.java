@@ -64,27 +64,22 @@
 
 package com.radixdlt.monitoring;
 
-
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Converter;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.RecordComponent;
 import java.util.stream.Stream;
 
-/**
- * A static utility for converting strings into a format accepted by metrics infra.
- */
+/** A static utility for converting strings into a format accepted by metrics infra. */
 public abstract class NameRenderer {
 
-  /**
-   * An impl delegate for {@link #render(String)}.
-   */
+  /** An impl delegate for {@link #render(String)}. */
   private static final Converter<String, String> JAVA_TO_PROMETHEUS =
       CaseFormat.LOWER_CAMEL.converterTo(CaseFormat.LOWER_UNDERSCORE);
 
   /**
    * Renders a Java identifier in a format accepted by Prometheus.
+   *
    * @param javaIdentifier A Java identifier.
    * @return A valid Prometheus name.
    */
@@ -94,7 +89,9 @@ public abstract class NameRenderer {
 
   /**
    * Renders label names.
-   * These will be {@link #render(String) rendered} names of the given record's components.
+   *
+   * <p>These will be {@link #render(String) rendered} names of the given record's components.
+   *
    * @param labelRecordClass A class of a {@link Record} representing a complete set of labels.
    * @return Label names.
    */
@@ -107,10 +104,12 @@ public abstract class NameRenderer {
 
   /**
    * Renders label values.
-   * These can be arbitrary strings, so simply an {@link Object#toString()} is used for each value
-   * within the given record. However, {@literal null}s are not supported, and instead they are
-   * represented by empty strings (consistently with how Prometheus Query Language treats missing
-   * label values as empty strings).
+   *
+   * <p>These can be arbitrary strings, so simply an {@link Object#toString()} is used for each
+   * value within the given record. However, {@literal null}s are not supported, and instead they
+   * are represented by empty strings (consistently with how Prometheus Query Language treats
+   * missing label values as empty strings).
+   *
    * @param record A record containing a label set.
    * @return Label values.
    * @param <R> The record's type.
@@ -124,6 +123,7 @@ public abstract class NameRenderer {
 
   /**
    * Accesses the specific record's component.
+   *
    * @param record A record.
    * @param component A component.
    * @return The component's value.
@@ -133,8 +133,7 @@ public abstract class NameRenderer {
       return component.getAccessor().invoke(record);
     } catch (IllegalAccessException | InvocationTargetException e) {
       throw new IllegalStateException(
-          "cannot access %s.%s()".formatted(record, component.getName()), e
-      );
+          "cannot access %s.%s()".formatted(record, component.getName()), e);
     }
   }
 }

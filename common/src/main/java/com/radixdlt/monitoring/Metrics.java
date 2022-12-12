@@ -64,38 +64,27 @@
 
 package com.radixdlt.monitoring;
 
-
 import com.google.common.base.Preconditions;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Summary;
-
 import javax.annotation.Nullable;
 
 /**
  * An entry point to metrics tracked by the Java part of the Node application.
  *
- * The record hierarchy represents different sub-systems and services, and the leafs are:
+ * <p>The record hierarchy represents different sub-systems and services, and the leafs are:
+ *
  * <ul>
- *   <li>
- *     {@link Counter}: a Prometheus-native up/down counter.
- *   </li>
- *   <li>
- *     {@link Gauge}: a Prometheus-native indicator of an arbitrarily changing value.
- *   </li>
- *   <li>
- *     {@link Summary}: a Prometheus-native [occurrence count + value sum] pair, by convention
- *     appropriate for representing a timer which tracks an average latency of an operation (note:
- *     we don't use Prometheus' "quantiles" support within the {@link Summary} yet).
- *   </li>
- *   <li>
- *     {@link LabelledCounter}: our type-safe wrapper for a {@link Counter} with labels (i.e. to be
- *     used instead of Prometheus-native typo-prone {@link Counter#labels(String...)}.
- *   </li>
- *   <li>
- *     {@link LabelledGauge}: our type-safe wrapper for a {@link Gauge} with labels (i.e. to be
- *     used instead of Prometheus-native typo-prone {@link Gauge#labels(String...)}.
- *   </li>
+ *   <li>{@link Counter}: a Prometheus-native up/down counter.
+ *   <li>{@link Gauge}: a Prometheus-native indicator of an arbitrarily changing value.
+ *   <li>{@link Summary}: a Prometheus-native [occurrence count + value sum] pair, by convention
+ *       appropriate for representing a timer which tracks an average latency of an operation (note:
+ *       we don't use Prometheus' "quantiles" support within the {@link Summary} yet).
+ *   <li>{@link LabelledCounter}: our type-safe wrapper for a {@link Counter} with labels (i.e. to
+ *       be used instead of Prometheus-native typo-prone {@link Counter#labels(String...)}.
+ *   <li>{@link LabelledGauge}: our type-safe wrapper for a {@link Gauge} with labels (i.e. to be
+ *       used instead of Prometheus-native typo-prone {@link Gauge#labels(String...)}.
  * </ul>
  *
  * Apart from that, this class also holds record definitions for the aforementioned type-safe labels
@@ -111,8 +100,7 @@ public record Metrics(
     Messages messages,
     Networking networking,
     Crypto crypto,
-    Misc misc
-) {
+    Misc misc) {
 
   public record Bft(
       Counter successfullyProcessedVotes,
@@ -128,8 +116,7 @@ public record Metrics(
       LabelledCounter<RejectedConsensusEvent> rejectedConsensusEvents,
       Pacemaker pacemaker,
       Sync sync,
-      VertexStore vertexStore
-  ) {
+      VertexStore vertexStore) {
 
     public record Pacemaker(
         Counter timeoutsSent,
@@ -137,32 +124,15 @@ public record Metrics(
         Counter proposedTransactions,
         Counter proposalsSent,
         Counter timedOutRounds,
-        Counter proposalsWithSubstituteTimestamp
-    ) {
-    }
+        Counter proposalsWithSubstituteTimestamp) {}
 
-    public record Sync(
-        Counter requestsSent,
-        Counter requestsReceived,
-        Counter requestTimeouts
-    ) {
-    }
+    public record Sync(Counter requestsSent, Counter requestsReceived, Counter requestTimeouts) {}
 
     public record VertexStore(
-        Gauge size,
-        Counter forks,
-        Counter rebuilds,
-        Counter indirectParents
-    ) {
-    }
+        Gauge size, Counter forks, Counter rebuilds, Counter indirectParents) {}
   }
 
-  public record Bdb(
-
-      V1Ledger ledger,
-      AddressBook addressBook,
-      SafetyState safetyState
-  ) {
+  public record Bdb(V1Ledger ledger, AddressBook addressBook, SafetyState safetyState) {
 
     public record V1Ledger(
         Counter commits,
@@ -177,77 +147,36 @@ public record Metrics(
         Counter bytesWritten,
         Counter proofsAdded,
         Counter proofsRemoved,
-        Counter headerBytesWritten
-    ) {
-    }
+        Counter headerBytesWritten) {}
 
     public record AddressBook(
-        Summary interact,
-        Counter bytesRead,
-        Counter bytesWritten,
-        Counter entriesDeleted
-    ) {
-    }
+        Summary interact, Counter bytesRead, Counter bytesWritten, Counter entriesDeleted) {}
 
-    public record SafetyState(
-        Summary commitState,
-        Counter bytesRead,
-        Counter bytesWritten
-    ) {
-    }
+    public record SafetyState(Summary commitState, Counter bytesRead, Counter bytesWritten) {}
   }
 
   public record Ledger(
-      Gauge stateVersion,
-      Counter syncTransactionsProcessed,
-      Counter bftTransactionsProcessed
-  ) {
-  }
+      Gauge stateVersion, Counter syncTransactionsProcessed, Counter bftTransactionsProcessed) {}
 
   public record LedgerSync(
       Counter invalidResponsesReceived,
       Counter validResponsesReceived,
       Counter remoteRequestsReceived,
       Gauge currentStateVersion,
-      Gauge targetStateVersion
-  ) {
-  }
+      Gauge targetStateVersion) {}
 
   public record V1Mempool(
-      Gauge size,
-      Counter relaysSent,
-      Counter addSuccesses,
-      Counter addFailures
-  ) {
-  }
+      Gauge size, Counter relaysSent, Counter addSuccesses, Counter addFailures) {}
 
   public record V1RadixEngine(
-      Counter invalidProposedTransactions,
-      Counter userTransactions,
-      Counter systemTransactions
-  ) {
-  }
+      Counter invalidProposedTransactions, Counter userTransactions, Counter systemTransactions) {}
 
-  public record Messages(
-      Inbound inbound,
-      Outbound outbound
-  ) {
+  public record Messages(Inbound inbound, Outbound outbound) {
 
     public record Inbound(
-        Summary queueWait,
-        Summary process,
-        Counter received,
-        Counter discarded
-    ) {
-    }
+        Summary queueWait, Summary process, Counter received, Counter discarded) {}
 
-    public record Outbound(
-        Counter aborted,
-        Gauge queued,
-        Counter processed,
-        Counter sent
-    ) {
-    }
+    public record Outbound(Counter aborted, Gauge queued, Counter processed, Counter sent) {}
   }
 
   public record Networking(
@@ -255,27 +184,17 @@ public record Metrics(
       Counter bytesSent,
       Counter bytesReceived,
       LabelledGauge<ChannelProperties> activeChannels,
-      Counter channelsInitialized
-  ) {
-  }
+      Counter channelsInitialized) {}
 
-  public record Crypto(
-      Counter bytesHashed,
-      Counter signaturesSigned,
-      Counter signaturesVerified
-  ) {
-  }
+  public record Crypto(Counter bytesHashed, Counter signaturesSigned, Counter signaturesVerified) {}
 
   public record Misc(
       Summary applicationStart,
       Counter epochManagerEnqueuedConsensusEvents,
-      Counter vertexStoreSaved
-  ) {
-  }
+      Counter vertexStoreSaved) {}
 
   public record RejectedConsensusEvent(
-      Type type, Cause cause, @Nullable TimestampIssue timestampIssue
-  ) {
+      Type type, Cause cause, @Nullable TimestampIssue timestampIssue) {
 
     public RejectedConsensusEvent(Type type, Cause cause) {
       this(type, cause, null);
@@ -287,24 +206,30 @@ public record Metrics(
     }
 
     public enum Type {
-      VOTE, PROPOSAL
+      VOTE,
+      PROPOSAL
     }
 
     public enum Cause {
-      AUTHORS, SIGNATURES, QCS, TIMEOUT_SIGNATURES, TIMESTAMP
+      AUTHORS,
+      SIGNATURES,
+      QCS,
+      TIMEOUT_SIGNATURES,
+      TIMESTAMP
     }
 
     public enum TimestampIssue {
-      TOO_OLD, TOO_YOUNG, NOT_MONOTONIC
+      TOO_OLD,
+      TOO_YOUNG,
+      NOT_MONOTONIC
     }
   }
 
-  public record ChannelProperties(
-      Direction direction
-  ) {
+  public record ChannelProperties(Direction direction) {
 
     public enum Direction {
-      INBOUND, OUTBOUND;
+      INBOUND,
+      OUTBOUND;
     }
   }
 }

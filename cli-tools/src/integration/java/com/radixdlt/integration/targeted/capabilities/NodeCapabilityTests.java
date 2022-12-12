@@ -64,25 +64,24 @@
 
 package com.radixdlt.integration.targeted.capabilities;
 
+import static com.radixdlt.shell.RadixShell.nodeBuilder;
+import static org.awaitility.Awaitility.await;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.messaging.ledgersync.StatusRequestMessage;
 import com.radixdlt.messaging.ledgersync.StatusResponseMessage;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.shell.RadixShell;
 import io.prometheus.client.Counter;
-import org.awaitility.core.ConditionTimeoutException;
-import org.junit.Test;
-
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-
-import static com.radixdlt.shell.RadixShell.nodeBuilder;
-import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.awaitility.core.ConditionTimeoutException;
+import org.junit.Test;
 
 public class NodeCapabilityTests {
 
@@ -141,9 +140,7 @@ public class NodeCapabilityTests {
       var node2Counters = node2.getInstance(Metrics.class);
 
       // verify the discarded count is 1.
-      var result =
-          waitForCounterValueEquals(
-              node2Counters.messages().inbound().discarded(), 1, 2);
+      var result = waitForCounterValueEquals(node2Counters.messages().inbound().discarded(), 1, 2);
 
       assertTrue(result.message, result.testOk);
 
@@ -280,9 +277,7 @@ public class NodeCapabilityTests {
 
       // Ensure Node3 doesn't have a discarded message (i.e. Node's 1 and 2 shouldn't send a status
       // request message to node 3)
-      result =
-          waitForCounterValueEquals(
-              node3Counters.messages().inbound().discarded(), 0, 1);
+      result = waitForCounterValueEquals(node3Counters.messages().inbound().discarded(), 0, 1);
       assertTrue(result.message, result.testOk);
 
     } catch (Exception ex) {
@@ -365,9 +360,7 @@ public class NodeCapabilityTests {
   // Check a specified counter value. The value is checked every 100ms until either the value
   // matches, or the maxWaitTimeSecs expires
   private Result waitForCounterValueEquals(
-      Counter counter,
-      long expectedValue,
-      int maxWaitTimeSecs) {
+      Counter counter, long expectedValue, int maxWaitTimeSecs) {
     var result = new Result();
     result.testOk = false;
 
@@ -377,8 +370,7 @@ public class NodeCapabilityTests {
           .pollInterval(Duration.ofMillis(100))
           .until(() -> counter.get() == expectedValue);
       result.testOk = true;
-      result.message =
-          String.format("%s equals expected value: %s", counter, expectedValue);
+      result.message = String.format("%s equals expected value: %s", counter, expectedValue);
     } catch (ConditionTimeoutException e) {
       result.message =
           String.format(

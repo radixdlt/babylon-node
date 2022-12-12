@@ -64,6 +64,8 @@
 
 package com.radixdlt.cli;
 
+import static com.radixdlt.substate.TxAction.StakeTokens;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.*;
 import com.google.inject.multibindings.OptionalBinder;
@@ -87,11 +89,6 @@ import com.radixdlt.substate.TxAction;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
-import org.apache.commons.cli.*;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.util.encoders.Hex;
-import org.json.JSONObject;
-
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.security.Security;
@@ -101,8 +98,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import static com.radixdlt.substate.TxAction.StakeTokens;
+import org.apache.commons.cli.*;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.util.encoders.Hex;
+import org.json.JSONObject;
 
 /** Generates the universe (genesis commit) for the Olympia Radix Engine */
 public final class GenerateUniverses {

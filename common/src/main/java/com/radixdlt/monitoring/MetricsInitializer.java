@@ -64,41 +64,32 @@
 
 package com.radixdlt.monitoring;
 
-
 import com.google.common.base.Joiner;
 import io.prometheus.client.*;
-
-import javax.annotation.Nullable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
-/**
- * An initializer for {@link Metrics}.
- */
+/** An initializer for {@link Metrics}. */
 public class MetricsInitializer {
 
-  /**
-   * A way of joining name parts in the final metric.
-   */
+  /** A way of joining name parts in the final metric. */
   private static final Joiner NAME_JOINER = Joiner.on('_').skipNulls();
 
-  /**
-   * A Prometheus registry.
-   */
+  /** A Prometheus registry. */
   private final CollectorRegistry registry;
 
-  /**
-   * An ad-hoc constructor (with an internal Prometheus registry); to be used mostly for test.
-   */
+  /** An ad-hoc constructor (with an internal Prometheus registry); to be used mostly for test. */
   public MetricsInitializer() {
     this(new CollectorRegistry());
   }
 
   /**
    * A direct constructor.
+   *
    * @param registry A Prometheus registry.
    */
   public MetricsInitializer(CollectorRegistry registry) {
@@ -106,8 +97,9 @@ public class MetricsInitializer {
   }
 
   /**
-   * Instantiates a complete hierarchy of a {@link Metrics} record and registers its
-   * collectors with Prometheus.
+   * Instantiates a complete hierarchy of a {@link Metrics} record and registers its collectors with
+   * Prometheus.
+   *
    * @return Initialized instance.
    */
   public Metrics initialize() {
@@ -117,6 +109,7 @@ public class MetricsInitializer {
   /**
    * Instantiates a complete hierarchy of the given record class and registers its collectors with
    * Prometheus.
+   *
    * @param namePrefix A prefix to apply for metric names down the hierarchy tree.
    * @param recordClass A class to instantiate.
    * @return Initialized instance.
@@ -124,32 +117,32 @@ public class MetricsInitializer {
    */
   @SuppressWarnings("unchecked")
   private <R extends Record> R createCollectorHierarchy(
-      @Nullable String namePrefix, Class<R> recordClass
-  ) {
+      @Nullable String namePrefix, Class<R> recordClass) {
     Constructor<?> constructor = recordClass.getConstructors()[0];
-    Object[] rowValues = Stream.of(recordClass.getRecordComponents())
-        .map(
-            component -> createComponentValue(
-                NAME_JOINER.join(namePrefix, NameRenderer.render(component.getName())),
-                component.getGenericType()
-            )
-        )
-        .toArray();
+    Object[] rowValues =
+        Stream.of(recordClass.getRecordComponents())
+            .map(
+                component ->
+                    createComponentValue(
+                        NAME_JOINER.join(namePrefix, NameRenderer.render(component.getName())),
+                        component.getGenericType()))
+            .toArray();
     try {
       return (R) constructor.newInstance(rowValues);
     } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
       throw new IllegalStateException(
-          "cannot instantiate %s(%s)".formatted(recordClass, Joiner.on(", ").join(rowValues)), e
-      );
+          "cannot instantiate %s(%s)".formatted(recordClass, Joiner.on(", ").join(rowValues)), e);
     }
   }
 
   /**
    * Instantiates a specific component of a record, which may either be:
+   *
    * <ul>
-   *   <li>a sub-record (i.e. recursing into {@link #createCollectorHierarchy(String, Class)});</li>
-   *   <li>or a leaf collector, to be registered with Prometheus under the given name.</li>
+   *   <li>a sub-record (i.e. recursing into {@link #createCollectorHierarchy(String, Class)});
+   *   <li>or a leaf collector, to be registered with Prometheus under the given name.
    * </ul>
+   *
    * @param name A name.
    * @param componentType A component's type.
    * @return Instantiated component.
@@ -168,6 +161,7 @@ public class MetricsInitializer {
    * Resolves a required collector from the given type and instantiates it with the given name.
    * Supports a subset of standard Prometheus collectors and our type-safe label-support wrappers
    * (see {@link Metrics}).
+   *
    * @param name A name.
    * @param type A type.
    * @return Collector.
@@ -194,7 +188,6 @@ public class MetricsInitializer {
       }
     }
     throw new IllegalArgumentException(
-        "unknown collector type %s used for metric %s".formatted(type.getTypeName(), name)
-    );
+        "unknown collector type %s used for metric %s".formatted(type.getTypeName(), name));
   }
 }

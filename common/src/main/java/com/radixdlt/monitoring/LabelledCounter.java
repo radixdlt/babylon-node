@@ -64,10 +64,8 @@
 
 package com.radixdlt.monitoring;
 
-
 import io.prometheus.client.Collector;
 import io.prometheus.client.Counter;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,37 +77,33 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class LabelledCounter<L extends Record> extends Collector implements Collector.Describable {
 
-  /**
-   * A wrapped {@link Counter}.
-   */
+  /** A wrapped {@link Counter}. */
   private final Counter wrapped;
 
-  /**
-   * A map of children created for each label set.
-   */
+  /** A map of children created for each label set. */
   private final Map<L, Counter.Child> labelledChildren;
 
   /**
    * A direct constructor.
+   *
    * @param name A metric name; will also be used as a description.
    * @param labelClass A class of a {@link Record} representing a complete set of labels.
    */
   public LabelledCounter(String name, Class<L> labelClass) {
-    this.wrapped = Counter.build(name, name)
-        .labelNames(NameRenderer.labelNames(labelClass))
-        .create();
+    this.wrapped =
+        Counter.build(name, name).labelNames(NameRenderer.labelNames(labelClass)).create();
     this.labelledChildren = new ConcurrentHashMap<>();
   }
 
   /**
    * Returns a child for the given label set.
+   *
    * @param labelRecord A record containing a label set.
    * @return Child to be used.
    */
   public Counter.Child label(L labelRecord) {
     return this.labelledChildren.computeIfAbsent(
-        labelRecord, record -> this.wrapped.labels(NameRenderer.labelValues(record))
-    );
+        labelRecord, record -> this.wrapped.labels(NameRenderer.labelValues(record)));
   }
 
   @Override

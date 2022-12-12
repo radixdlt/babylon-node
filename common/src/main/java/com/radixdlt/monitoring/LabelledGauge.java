@@ -64,10 +64,8 @@
 
 package com.radixdlt.monitoring;
 
-
 import io.prometheus.client.Collector;
 import io.prometheus.client.Gauge;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,37 +77,32 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class LabelledGauge<L extends Record> extends Collector implements Collector.Describable {
 
-  /**
-   * A wrapped {@link Gauge}.
-   */
+  /** A wrapped {@link Gauge}. */
   private final Gauge wrapped;
 
-  /**
-   * A map of children created for each label set.
-   */
+  /** A map of children created for each label set. */
   private final Map<L, Gauge.Child> labelledChildren;
 
   /**
    * A direct constructor.
+   *
    * @param name A metric name; will also be used as a description.
    * @param labelClass A class of a {@link Record} representing a complete set of labels.
    */
   public LabelledGauge(String name, Class<L> labelClass) {
-    this.wrapped = Gauge.build(name, name)
-        .labelNames(NameRenderer.labelNames(labelClass))
-        .create();
+    this.wrapped = Gauge.build(name, name).labelNames(NameRenderer.labelNames(labelClass)).create();
     this.labelledChildren = new ConcurrentHashMap<>();
   }
 
   /**
    * Returns a child for the given label set.
+   *
    * @param labelRecord A record containing a label set.
    * @return Child to be used.
    */
   public Gauge.Child label(L labelRecord) {
     return this.labelledChildren.computeIfAbsent(
-        labelRecord, record -> this.wrapped.labels(NameRenderer.labelValues(record))
-    );
+        labelRecord, record -> this.wrapped.labels(NameRenderer.labelValues(record)));
   }
 
   @Override
