@@ -77,7 +77,6 @@ import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.sync.SometimesByzantineCommittedReader;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.sync.TransactionsAndProofReader;
@@ -138,8 +137,7 @@ public class ByzantineSyncTest {
 
     LongSummaryStatistics statistics =
         runningTest.getNetwork().getSystemCounters().values().stream()
-            .map(s -> s.get(CounterType.SYNC_VALID_RESPONSES_RECEIVED))
-            .mapToLong(l -> l)
+            .mapToLong(s -> (long) s.sync().validResponsesReceived().get())
             .summaryStatistics();
 
     logger.info("{}", statistics);
@@ -160,8 +158,7 @@ public class ByzantineSyncTest {
 
     LongSummaryStatistics statistics =
         runningTest.getNetwork().getSystemCounters().values().stream()
-            .map(s -> s.get(CounterType.SYNC_VALID_RESPONSES_RECEIVED))
-            .mapToLong(l -> l)
+            .mapToLong(s -> (long) s.sync().validResponsesReceived().get())
             .summaryStatistics();
 
     logger.info("{}", statistics);

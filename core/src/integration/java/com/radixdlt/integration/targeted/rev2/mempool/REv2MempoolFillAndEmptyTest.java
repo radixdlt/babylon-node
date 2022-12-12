@@ -64,10 +64,13 @@
 
 package com.radixdlt.integration.targeted.rev2.mempool;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.util.concurrent.RateLimiter;
-import com.google.inject.*;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
@@ -92,10 +95,12 @@ import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.*;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev2.NetworkDefinition;
@@ -171,7 +176,7 @@ public final class REv2MempoolFillAndEmptyTest {
         new AbstractModule() {
           @Override
           protected void configure() {
-            bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+            bind(SystemCounters.class).toInstance(new MetricsInitializer().initialize());
             bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
           }
         });
@@ -218,9 +223,6 @@ public final class REv2MempoolFillAndEmptyTest {
       fillAndEmptyMempool();
     }
 
-    assertThat(
-            systemCounters.get(
-                SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_TRANSACTIONS))
-        .isZero();
+    assertThat(systemCounters.radixEngine().invalidProposedTransactions().get()).isZero();
   }
 }

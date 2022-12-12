@@ -102,8 +102,8 @@ public class ProcessCachedEventsWithTimeoutCertTest {
 
     // just to check if the node indeed needed to sync
     final var counters = test.getInstance(TEST_NODE, SystemCounters.class);
-    assertThat(counters.get(SystemCounters.CounterType.BFT_TIMEOUT_QUORUMS)).isEqualTo(0);
-    assertThat(counters.get(SystemCounters.CounterType.BFT_VOTE_QUORUMS)).isEqualTo(0);
+    assertThat(counters.bft().timeoutQuorums().get()).isEqualTo(0);
+    assertThat(counters.bft().voteQuorums().get()).isEqualTo(0);
   }
 
   private static MessageMutator dropProposalToNodes(Round round, ImmutableList<Integer> nodes) {

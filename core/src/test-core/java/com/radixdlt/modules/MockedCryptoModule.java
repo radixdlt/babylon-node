@@ -100,7 +100,7 @@ public class MockedCryptoModule extends AbstractModule {
       System.arraycopy(hash.asBytes(), 0, concat, 0, hash.asBytes().length);
       System.arraycopy(pubKey.getBytes(), 0, concat, 32, 32);
       var hashCode = hashFunction.hashBytes(concat).asBytes();
-      counters.increment(SystemCounters.CounterType.SIGNATURES_VERIFIED);
+      counters.crypto().signaturesVerified().inc();
       var hashCodeBI = new BigInteger(1, hashCode);
       return sig.getR().equals(hashCodeBI);
     };

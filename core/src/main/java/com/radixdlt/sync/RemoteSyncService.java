@@ -71,20 +71,11 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
-import com.radixdlt.ledger.CommittedTransactionsWithProofDto;
-import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.*;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.store.LastProof;
-import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
-import com.radixdlt.sync.messages.remote.StatusRequest;
-import com.radixdlt.sync.messages.remote.StatusResponse;
-import com.radixdlt.sync.messages.remote.SyncRequest;
-import com.radixdlt.sync.messages.remote.SyncResponse;
+import com.radixdlt.sync.messages.remote.*;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Objects;
@@ -164,7 +155,7 @@ public final class RemoteSyncService {
         remoteCurrentHeader,
         sender);
 
-    systemCounters.increment(CounterType.SYNC_REMOTE_REQUESTS_RECEIVED);
+    systemCounters.sync().remoteRequestsReceived().inc();
     syncResponseDispatcher.dispatch(sender, SyncResponse.create(verifiable));
   }
 

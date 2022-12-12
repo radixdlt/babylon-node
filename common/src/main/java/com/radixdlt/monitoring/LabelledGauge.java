@@ -62,86 +62,63 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.consensus;
+package com.radixdlt.monitoring;
 
-import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
-import com.radixdlt.monitoring.SystemCounters;
-import java.util.Random;
-import org.junit.Test;
+import io.prometheus.client.Collector;
+import io.prometheus.client.Gauge;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * When original votes (to next round leader, non timed out) are dropped, nodes should be able to
- * resend those votes to each other (with timeout) and form the quorum themselves. As a result,
- * there should be no timeout (non-QC) quorums and no indirect parents.
+ * A Prometheus {@link Gauge} wrapper defining a typed set of labels.
+ *
+ * @param <L> A type of record representing a complete set of labels.
  */
-public class QuorumWithoutALeaderWithTimeoutsTest {
+public class LabelledGauge<L extends Record> extends Collector implements Collector.Describable {
 
-  private final Random random = new Random(123456);
+  /**
+   * A wrapped {@link Gauge}.
+   */
+  private final Gauge wrapped;
 
-  private void run(int numValidatorNodes, long numRounds) {
-    final DeterministicTest test =
-        DeterministicTest.builder()
-            .numNodes(numValidatorNodes, 0)
-            .messageSelector(MessageSelector.randomSelector(random))
-            .messageMutator(dropAllNonTimeoutVotes())
-            .functionalNodeModule(
-                new FunctionalRadixNodeModule(
-                    false,
-                    SafetyRecoveryConfig.mocked(),
-                    ConsensusConfig.of(),
-                    LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
-    test.startAllNodes();
-    test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(numRounds)));
+  /**
+   * A map of children created for each label set.
+   */
+  private final Map<L, Gauge.Child> labelledChildren;
 
-    for (int nodeIndex = 0; nodeIndex < numValidatorNodes; ++nodeIndex) {
-      final SystemCounters counters = test.getInstance(nodeIndex, SystemCounters.class);
-      long numberOfIndirectParents = (long) counters.bft().vertexStore().indirectParents().get();
-      long totalNumberOfTimeouts = (long) counters.bft().pacemaker().timeoutsSent().get();
-      long totalNumberOfTimeoutQuorums = (long) counters.bft().timeoutQuorums().get();
-      long totalNumberOfVoteQuorums = (long) counters.bft().voteQuorums().get();
-      assertThat(totalNumberOfTimeoutQuorums).isEqualTo(0); // no TCs
-      assertThat(numberOfIndirectParents).isEqualTo(0); // no indirect parents
-      assertThat(totalNumberOfTimeouts).isEqualTo(numRounds - 1); // a timeout for each round
-      assertThat(totalNumberOfVoteQuorums)
-          .isBetween(numRounds - 2, numRounds); // quorum count matches rounds
-    }
+  /**
+   * A direct constructor.
+   * @param name A metric name; will also be used as a description.
+   * @param labelClass A class of a {@link Record} representing a complete set of labels.
+   */
+  public LabelledGauge(String name, Class<L> labelClass) {
+    this.wrapped = Gauge.build(name, name)
+        .labelNames(NameRenderer.labelNames(labelClass))
+        .create();
+    this.labelledChildren = new ConcurrentHashMap<>();
   }
 
-  private static MessageMutator dropAllNonTimeoutVotes() {
-    return (message, queue) -> {
-      final Object msg = message.message();
-      if (msg instanceof final Vote vote) {
-        return vote.getTimeoutSignature().isEmpty();
-      }
-      return false;
-    };
+  /**
+   * Returns a child for the given label set.
+   * @param labelRecord A record containing a label set.
+   * @return Child to be used.
+   */
+  public Gauge.Child label(L labelRecord) {
+    return this.labelledChildren.computeIfAbsent(
+        labelRecord, record -> this.wrapped.labels(NameRenderer.labelValues(record))
+    );
   }
 
-  @Test
-  public void when_run_3_correct_nodes_for_50k_rounds__then_bft_should_be_responsive() {
-    this.run(3, 50_000);
+  @Override
+  public List<MetricFamilySamples> collect() {
+    return this.wrapped.collect();
   }
 
-  @Test
-  public void when_run_10_correct_nodes_with_for_2k_rounds__then_bft_should_be_responsive() {
-    this.run(10, 2000);
-  }
-
-  @Test
-  public void when_run_100_correct_nodes_with_for_50_rounds__then_bft_should_be_responsive() {
-    this.run(100, 50);
+  @Override
+  public List<MetricFamilySamples> describe() {
+    return this.wrapped.describe();
   }
 }

@@ -72,7 +72,6 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
@@ -103,7 +102,7 @@ public final class CryptoModule extends AbstractModule {
 
       @Override
       public HashCode hashBytes(byte[] bytes) {
-        counters.add(CounterType.HASHED_BYTES, bytes.length);
+        counters.crypto().bytesHashed().inc(bytes.length);
         return hasher.hashBytes(bytes);
       }
     };
@@ -113,7 +112,7 @@ public final class CryptoModule extends AbstractModule {
   @Singleton
   HashVerifier hashVerifier(SystemCounters counters) {
     return (pubKey, hash, signature) -> {
-      counters.increment(CounterType.SIGNATURES_VERIFIED);
+      counters.crypto().signaturesVerified().inc();
       return pubKey.verify(hash, signature);
     };
   }

@@ -72,7 +72,6 @@ import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerManager;
 import com.radixdlt.p2p.transport.PeerChannel;
@@ -128,7 +127,7 @@ class MessageDispatcher {
               message.getClass().getSimpleName(),
               addressing.encodeNodeAddress(receiver.getPublicKey()));
       log.warn(msg);
-      this.counters.increment(CounterType.MESSAGES_OUTBOUND_ABORTED);
+      this.counters.messages().outbound().aborted().inc();
       return CompletableFuture.completedFuture(MESSAGE_EXPIRED.result());
     }
 
@@ -142,7 +141,7 @@ class MessageDispatcher {
   }
 
   private Result<Unit, Cause> send(PeerChannel channel, byte[] bytes) {
-    this.counters.add(CounterType.NETWORKING_BYTES_SENT, bytes.length);
+    this.counters.networking().bytesSent().inc(bytes.length);
     return channel.send(bytes);
   }
 
@@ -158,9 +157,9 @@ class MessageDispatcher {
   }
 
   private Result<Unit, Cause> updateStatistics(Result<Unit, Cause> result) {
-    this.counters.increment(CounterType.MESSAGES_OUTBOUND_PROCESSED);
+    this.counters.messages().outbound().processed().inc();
     if (result.isSuccess()) {
-      this.counters.increment(CounterType.MESSAGES_OUTBOUND_SENT);
+      this.counters.messages().outbound().sent().inc();
     }
     return result;
   }

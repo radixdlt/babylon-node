@@ -87,11 +87,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.security.Security;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
+import java.util.*;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -241,7 +237,7 @@ public final class RadixNodeApplication {
     final BFTNode self = injector.getInstance(Key.get(BFTNode.class, Self.class));
     long finish = System.currentTimeMillis();
     var systemCounters = injector.getInstance(SystemCounters.class);
-    systemCounters.set(SystemCounters.CounterType.STARTUP_TIME_MS, finish - start);
+    systemCounters.misc().applicationStart().observe(finish - start);
 
     Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown(injector)));
 

@@ -64,27 +64,13 @@
 
 package com.radixdlt.modules;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
+import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.system.health.ScheduledStatsCollecting;
 import com.radixdlt.consensus.DoubleVote;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.NoVote;
-import com.radixdlt.consensus.bft.RoundLeaderFailure;
-import com.radixdlt.consensus.bft.RoundQuorumReached;
-import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.bft.RoundVotingResult;
-import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochRoundLeaderFailure;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
@@ -95,21 +81,13 @@ import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
-import com.radixdlt.environment.Dispatchers;
-import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.EventProcessorOnDispatch;
-import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.environment.*;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.p2p.PeerEvent;
 import com.radixdlt.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
 import com.radixdlt.p2p.discovery.DiscoverPeers;
@@ -119,16 +97,9 @@ import com.radixdlt.p2p.liveness.PeerPingTimeout;
 import com.radixdlt.p2p.liveness.PeersLivenessCheckTrigger;
 import com.radixdlt.p2p.liveness.Ping;
 import com.radixdlt.p2p.liveness.Pong;
-import com.radixdlt.sync.messages.local.LocalSyncRequest;
-import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
-import com.radixdlt.sync.messages.local.SyncCheckTrigger;
-import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
-import com.radixdlt.sync.messages.local.SyncRequestTimeout;
-import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
-import com.radixdlt.sync.messages.remote.StatusRequest;
-import com.radixdlt.sync.messages.remote.StatusResponse;
-import com.radixdlt.sync.messages.remote.SyncRequest;
-import com.radixdlt.sync.messages.remote.SyncResponse;
+import com.radixdlt.sync.messages.local.*;
+import com.radixdlt.sync.messages.remote.*;
+import io.prometheus.client.Gauge;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -159,7 +130,8 @@ public class DispatcherModule extends AbstractModule {
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<EventDispatcher<NoVote>>() {})
         .toProvider(
-            Dispatchers.dispatcherProvider(NoVote.class, v -> CounterType.BFT_NO_VOTES_SENT))
+            Dispatchers.dispatcherProvider(
+                NoVote.class, (counters, event) -> counters.bft().noVotesSent()))
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>>>() {})
         .toProvider(
@@ -260,11 +232,12 @@ public class DispatcherModule extends AbstractModule {
         .toProvider(
             Dispatchers.dispatcherProvider(
                 RoundQuorumReached.class,
-                v -> {
-                  if (v.votingResult() instanceof RoundVotingResult.FormedTC) {
-                    return CounterType.BFT_TIMEOUT_QUORUMS;
+                (counters, event) -> {
+                  if (event.votingResult() instanceof RoundVotingResult.FormedTC) {
+                    counters.bft().timeoutQuorums().inc();
+                  } else {
+                    counters.bft().voteQuorums().inc();
                   }
-                  return CounterType.BFT_VOTE_QUORUMS;
                 }));
 
     Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() {});
@@ -339,11 +312,9 @@ public class DispatcherModule extends AbstractModule {
         throw new IllegalStateException("Should not be targeting self.");
       }
 
-      long stateVersion = systemCounters.get(CounterType.SYNC_TARGET_STATE_VERSION);
-      if (req.getTarget().getStateVersion() > stateVersion) {
-        systemCounters.set(
-            CounterType.SYNC_TARGET_STATE_VERSION, req.getTarget().getStateVersion());
-      }
+      Gauge syncTargetStateVersion = systemCounters.sync().targetStateVersion();
+      syncTargetStateVersion.set(
+          Math.max(syncTargetStateVersion.labels().get(), req.getTarget().getStateVersion()));
 
       syncProcessors.forEach(e -> e.process(req));
       envDispatcher.dispatch(req);
@@ -369,12 +340,12 @@ public class DispatcherModule extends AbstractModule {
     var dispatcher = environment.getDispatcher(BFTInsertUpdate.class);
     return update -> {
       if (update.getSiblingsCount() > 1) {
-        systemCounters.increment(CounterType.BFT_VERTEX_STORE_FORKS);
+        systemCounters.bft().vertexStore().forks().inc();
       }
       if (!update.getInserted().getVertexWithHash().vertex().hasDirectParent()) {
-        systemCounters.increment(CounterType.BFT_VERTEX_STORE_INDIRECT_PARENTS);
+        systemCounters.bft().vertexStore().indirectParents().inc();
       }
-      systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, update.getVertexStoreSize());
+      systemCounters.bft().vertexStore().size().set(update.getVertexStoreSize());
       dispatcher.dispatch(update);
       processors.forEach(p -> p.process(update));
     };
@@ -385,9 +356,12 @@ public class DispatcherModule extends AbstractModule {
       Environment environment, SystemCounters systemCounters) {
     var dispatcher = environment.getDispatcher(BFTRebuildUpdate.class);
     return update -> {
-      systemCounters.set(
-          CounterType.BFT_VERTEX_STORE_SIZE, update.getVertexStoreState().getVertices().size());
-      systemCounters.increment(CounterType.BFT_VERTEX_STORE_REBUILDS);
+      systemCounters
+          .bft()
+          .vertexStore()
+          .size()
+          .set(update.getVertexStoreState().getVertices().size());
+      systemCounters.bft().vertexStore().rebuilds().inc();
       dispatcher.dispatch(update);
     };
   }
@@ -407,8 +381,7 @@ public class DispatcherModule extends AbstractModule {
       @ProcessOnDispatch Set<EventProcessor<CommittedTransactionsWithProof>> processors,
       SystemCounters systemCounters) {
     return commit -> {
-      systemCounters.add(
-          CounterType.SYNC_VALID_RESPONSES_RECEIVED, commit.getTransactions().size());
+      systemCounters.sync().validResponsesReceived().inc(commit.getTransactions().size());
       processors.forEach(e -> e.process(commit));
     };
   }
@@ -421,15 +394,15 @@ public class DispatcherModule extends AbstractModule {
       SystemCounters systemCounters) {
     if (asyncProcessors.isEmpty()) {
       return commit -> {
-        systemCounters.add(CounterType.BFT_COMMITTED_VERTICES, commit.committed().size());
-        systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, commit.vertexStoreSize());
+        systemCounters.bft().committedVertices().inc(commit.committed().size());
+        systemCounters.bft().vertexStore().size().set(commit.vertexStoreSize());
         processors.forEach(e -> e.process(commit));
       };
     } else {
       var dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
       return commit -> {
-        systemCounters.add(CounterType.BFT_COMMITTED_VERTICES, commit.committed().size());
-        systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, commit.vertexStoreSize());
+        systemCounters.bft().committedVertices().inc(commit.committed().size());
+        systemCounters.bft().vertexStore().size().set(commit.vertexStoreSize());
         processors.forEach(e -> e.process(commit));
         dispatcher.dispatch(commit);
       };
@@ -459,7 +432,7 @@ public class DispatcherModule extends AbstractModule {
       SystemCounters counters) {
     var dispatcher = environment.getRemoteDispatcher(GetVerticesRequest.class);
     return (node, request) -> {
-      counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);
+      counters.bft().sync().requestsSent().inc();
       dispatcher.dispatch(node, request);
       processors.forEach(e -> e.process(request));
     };

@@ -64,14 +64,16 @@
 
 package com.radixdlt.api.prometheus;
 
-import com.google.inject.*;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.Singleton;
 import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.api.common.HandlerRoute;
-import io.prometheus.client.CollectorRegistry;
 import io.undertow.server.HttpHandler;
 import java.util.Map;
 
-public class PrometheusApiModule extends PrivateModule {
+public class PrometheusApiModule extends AbstractModule {
   private static final int MAXIMUM_CONCURRENT_REQUESTS =
       Runtime.getRuntime().availableProcessors() * 8; // same as workerThreads = ioThreads * 8
   private static final int QUEUE_SIZE = 2000;
@@ -93,15 +95,8 @@ public class PrometheusApiModule extends PrivateModule {
   }
 
   @Provides
-  @Exposed
   @Singleton
   public PrometheusApi api(@PrometheusApiEndpoints Map<HandlerRoute, HttpHandler> handlers) {
     return new PrometheusApi(bindAddress, port, handlers, MAXIMUM_CONCURRENT_REQUESTS, QUEUE_SIZE);
-  }
-
-  @Provides
-  @Singleton
-  public CollectorRegistry prometheusRegistry() {
-    return new CollectorRegistry();
   }
 }

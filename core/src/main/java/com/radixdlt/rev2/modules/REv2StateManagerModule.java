@@ -64,7 +64,10 @@
 
 package com.radixdlt.rev2.modules;
 
-import com.google.inject.*;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.environment.EventDispatcher;
@@ -240,7 +243,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                 SystemCounters systemCounters,
                 Serialization serialization) {
               return s -> {
-                systemCounters.increment(SystemCounters.CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
+                systemCounters.misc().vertexStoreSaved().inc();
                 var vertexStoreBytes =
                     serialization.toDson(s.toSerialized(), DsonOutput.Output.ALL);
                 stateComputer.saveVertexStore(vertexStoreBytes);

@@ -76,18 +76,18 @@ import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -120,21 +120,21 @@ public class RandomVoteAndRoundTimeoutDropperTest {
     final var runningTest = simulationTest.run(Duration.of(2, ChronoUnit.MINUTES));
     final var checkResults = runningTest.awaitCompletion();
 
-    List<CounterType> counterTypes =
-        List.of(
-            CounterType.BFT_VERTEX_STORE_FORKS,
-            CounterType.BFT_COMMITTED_VERTICES,
-            CounterType.BFT_PACEMAKER_TIMEOUTS_SENT,
-            CounterType.LEDGER_STATE_VERSION);
+    Map<String, ToLongFunction<SystemCounters>> counterTypes =
+        Map.of(
+            "vertex store forks", s -> (long) s.bft().vertexStore().forks().get(),
+            "commited vertices", s -> (long) s.bft().committedVertices().get(),
+            "pacemaker timeouts sent", s -> (long) s.bft().pacemaker().timeoutsSent().get(),
+            "ledger state version", s -> (long) s.ledger().stateVersion().get());
 
-    Map<CounterType, LongSummaryStatistics> statistics =
-        counterTypes.stream()
+    Map<String, LongSummaryStatistics> statistics =
+        counterTypes.entrySet().stream()
             .collect(
                 Collectors.toMap(
-                    counterType -> counterType,
+                    Map.Entry::getKey,
                     counterType ->
                         runningTest.getNetwork().getSystemCounters().values().stream()
-                            .mapToLong(s -> s.get(counterType))
+                            .mapToLong(counterType.getValue())
                             .summaryStatistics()));
 
     System.out.println("statistics:\n" + print(statistics.entrySet()));
@@ -143,7 +143,7 @@ public class RandomVoteAndRoundTimeoutDropperTest {
         .allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
   }
 
-  private String print(Set<Map.Entry<CounterType, LongSummaryStatistics>> entrySet) {
+  private String print(Set<Map.Entry<String, LongSummaryStatistics>> entrySet) {
     var builder = new StringBuilder();
 
     entrySet.forEach(

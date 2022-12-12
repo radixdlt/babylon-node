@@ -70,7 +70,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.Collections;
@@ -133,7 +132,7 @@ public final class MempoolRelayer {
         .limit(maxPeers)
         .forEach(
             peer -> {
-              counters.add(CounterType.MEMPOOL_RELAYS_SENT, transactions.size());
+              counters.mempool().relaysSent().inc(transactions.size());
               this.remoteEventDispatcher.dispatch(peer, mempoolAddMsg);
             });
   }

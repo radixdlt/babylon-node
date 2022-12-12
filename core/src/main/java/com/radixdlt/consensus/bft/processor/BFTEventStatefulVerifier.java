@@ -118,7 +118,7 @@ public final class BFTEventStatefulVerifier implements BFTEventProcessor {
     // This should never happen but adding a guard just in case (e.g. if there's a bug in
     // SyncUpPreprocessor)
     if (!this.latestRoundUpdate.getCurrentRound().equals(vote.getRound())) {
-      this.systemCounters.increment(SystemCounters.CounterType.BFT_PRECONDITION_VIOLATIONS);
+      this.systemCounters.bft().preconditionViolations().inc();
       log.warn(
           "Precondition violation: ignoring a vote for round {} current round is {}",
           vote.getRound(),
@@ -134,7 +134,7 @@ public final class BFTEventStatefulVerifier implements BFTEventProcessor {
     // This should never happen but adding a guard just in case (e.g. if there's a bug in
     // SyncUpPreprocessor)
     if (!this.latestRoundUpdate.getCurrentRound().equals(proposal.getRound())) {
-      this.systemCounters.increment(SystemCounters.CounterType.BFT_PRECONDITION_VIOLATIONS);
+      this.systemCounters.bft().preconditionViolations().inc();
       log.warn(
           "Precondition violation: ignoring a proposal for round {} current round is {}",
           proposal.getRound(),
@@ -143,8 +143,7 @@ public final class BFTEventStatefulVerifier implements BFTEventProcessor {
     }
 
     if (!proposal.getAuthor().equals(latestRoundUpdate.getLeader())) {
-      this.systemCounters.increment(
-          SystemCounters.CounterType.BFT_PROPOSALS_RECEIVED_FROM_NON_LEADERS);
+      this.systemCounters.bft().proposalsReceivedFromNonLeaders().inc();
       log.warn(
           "Ignoring a proposal from non-leader node {}, current_leader is {} at round {}",
           proposal.getAuthor(),
@@ -154,7 +153,7 @@ public final class BFTEventStatefulVerifier implements BFTEventProcessor {
     }
 
     if (genuineProposalReceived) {
-      this.systemCounters.increment(SystemCounters.CounterType.BFT_DUPLICATE_PROPOSALS_RECEIVED);
+      this.systemCounters.bft().duplicateProposalsReceived().inc();
       log.warn(
           "Received a duplicate proposal from {} for round {}",
           proposal.getAuthor(),

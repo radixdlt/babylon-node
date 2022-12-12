@@ -75,7 +75,6 @@ import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.time.Duration;
 import java.util.LongSummaryStatistics;
@@ -120,8 +119,7 @@ public class OneNodeFallingBehindTest {
 
     LongSummaryStatistics statistics =
         runningTest.getNetwork().getSystemCounters().values().stream()
-            .map(s -> s.get(CounterType.BFT_SYNC_REQUESTS_SENT))
-            .mapToLong(l -> l)
+            .mapToLong(s -> (long) s.bft().sync().requestsSent().get())
             .summaryStatistics();
 
     System.out.println(statistics);

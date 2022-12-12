@@ -67,12 +67,7 @@ package com.radixdlt.consensus.epoch;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.BFTFactory;
-import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
 import com.radixdlt.consensus.bft.processor.EmptyBFTEventProcessor;
@@ -93,15 +88,8 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
@@ -322,7 +310,7 @@ public final class EpochManager {
   }
 
   private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
-    this.counters.increment(CounterType.BFT_EVENTS_RECEIVED);
+    this.counters.bft().eventsReceived().inc();
 
     switch (consensusEvent) {
       case Proposal proposal -> bftEventProcessor.processProposal(proposal);
@@ -344,7 +332,7 @@ public final class EpochManager {
       queuedEvents
           .computeIfAbsent(consensusEvent.getEpoch(), e -> new ArrayList<>())
           .add(consensusEvent);
-      counters.increment(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS);
+      counters.misc().epochManagerEnqueuedConsensusEvents().inc();
       return;
     }
 

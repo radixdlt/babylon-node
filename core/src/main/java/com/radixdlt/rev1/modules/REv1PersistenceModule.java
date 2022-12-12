@@ -68,11 +68,13 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.rev1.store.BerkeleyLedgerEntryStore;
 import com.radixdlt.rev1.store.StoreConfig;
 import com.radixdlt.store.ResourceStore;
@@ -103,7 +105,7 @@ public class REv1PersistenceModule extends AbstractModule {
   public EventProcessor<BFTHighQCUpdate> persistQC(
       PersistentVertexStore persistentVertexStore, SystemCounters systemCounters) {
     return update -> {
-      systemCounters.increment(CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
+      systemCounters.misc().vertexStoreSaved().inc();
       persistentVertexStore.save(update.getVertexStoreState());
     };
   }
@@ -113,7 +115,7 @@ public class REv1PersistenceModule extends AbstractModule {
   public EventProcessor<BFTInsertUpdate> persistUpdates(
       PersistentVertexStore persistentVertexStore, SystemCounters systemCounters) {
     return update -> {
-      systemCounters.increment(CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
+      systemCounters.misc().vertexStoreSaved().inc();
       persistentVertexStore.save(update.getVertexStoreState());
     };
   }

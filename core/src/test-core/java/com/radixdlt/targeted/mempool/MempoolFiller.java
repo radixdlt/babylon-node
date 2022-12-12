@@ -186,12 +186,12 @@ public final class MempoolFiller {
       if (txns.size() == 1) {
         logger.info(
             "Mempool Filler mempool: {} Adding txn {} to mempool...",
-            systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE),
+            systemCounters.mempool().size().get(),
             txns.get(0).getPayloadHash());
       } else {
         logger.info(
             "Mempool Filler mempool: {} Adding {} txns to mempool...",
-            systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE),
+            systemCounters.mempool().size().get(),
             txns.size());
       }
 

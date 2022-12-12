@@ -78,7 +78,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import java.util.Random;
 import org.junit.Test;
 
@@ -116,9 +115,9 @@ public class OneProposalTimeoutResponsiveTest {
 
     for (int nodeIndex = 0; nodeIndex < numValidatorNodes; ++nodeIndex) {
       SystemCounters counters = test.getInstance(nodeIndex, SystemCounters.class);
-      long numberOfIndirectParents = counters.get(CounterType.BFT_VERTEX_STORE_INDIRECT_PARENTS);
-      long totalNumberOfTimeouts = counters.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT);
-      long totalNumberOfTimeoutQuorums = counters.get(CounterType.BFT_TIMEOUT_QUORUMS);
+      long numberOfIndirectParents = (long) counters.bft().vertexStore().indirectParents().get();
+      long totalNumberOfTimeouts = (long) counters.bft().pacemaker().timeoutsSent().get();
+      long totalNumberOfTimeoutQuorums = (long) counters.bft().timeoutQuorums().get();
       assertThat(numberOfIndirectParents).isEqualTo(requiredIndirectParents);
       assertThat(totalNumberOfTimeouts).isEqualTo(requiredTimeouts);
       assertThat(totalNumberOfTimeoutQuorums).isBetween(timeoutQuorums - 1, timeoutQuorums);

@@ -91,7 +91,7 @@ public final class MockedKeyModule extends AbstractModule {
       System.arraycopy(node.getKey().getBytes(), 0, concat, 32, 32);
 
       var hashCode = hashFunction.hashBytes(concat).asBytes();
-      counters.increment(SystemCounters.CounterType.SIGNATURES_SIGNED);
+      counters.crypto().signaturesSigned().inc();
 
       return ECDSASecp256k1Signature.create(
           new BigInteger(1, hashCode), new BigInteger(1, hashCode), 0);

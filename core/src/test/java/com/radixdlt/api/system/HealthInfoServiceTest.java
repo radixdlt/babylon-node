@@ -64,21 +64,16 @@
 
 package com.radixdlt.api.system;
 
-import static com.radixdlt.api.system.health.HealthInfoService.LEDGER_KEY;
-import static com.radixdlt.api.system.health.HealthInfoService.TARGET_KEY;
-import static com.radixdlt.api.system.health.NodeStatus.BOOTING;
-import static com.radixdlt.api.system.health.NodeStatus.STALLED;
-import static com.radixdlt.api.system.health.NodeStatus.SYNCING;
-import static com.radixdlt.api.system.health.NodeStatus.UP;
-import static com.radixdlt.monitoring.SystemCounters.CounterType;
+import static com.radixdlt.api.system.health.NodeStatus.*;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.api.system.health.ScheduledStatsCollecting;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
+import io.prometheus.client.Gauge;
 import java.util.stream.IntStream;
 import org.junit.Test;
 
@@ -87,45 +82,47 @@ public class HealthInfoServiceTest {
   private final ScheduledEventDispatcher<ScheduledStatsCollecting> dispatcher =
       mock(ScheduledEventDispatcher.class);
 
-  private final SystemCounters systemCounters = new SystemCountersImpl();
+  private final SystemCounters systemCounters = new MetricsInitializer().initialize();
   private final HealthInfoService healthInfoService =
       new HealthInfoService(systemCounters, dispatcher);
 
   @Test
   public void testNodeStatus() {
+    Gauge ledgerGauge = systemCounters.ledger().stateVersion();
+    Gauge targetGauge = systemCounters.sync().targetStateVersion();
     assertEquals(BOOTING, healthInfoService.nodeStatus());
 
-    updateStatsSync(10, TARGET_KEY, 5, LEDGER_KEY);
+    updateStatsSync(10, targetGauge, 5, ledgerGauge);
 
     assertEquals(SYNCING, healthInfoService.nodeStatus());
 
-    updateStatsSync(10, TARGET_KEY, 15, LEDGER_KEY);
+    updateStatsSync(10, targetGauge, 15, ledgerGauge);
 
     assertEquals(UP, healthInfoService.nodeStatus());
 
-    updateStatsSync(10, TARGET_KEY, 0, LEDGER_KEY);
+    updateStatsSync(10, targetGauge, 0, ledgerGauge);
 
     assertEquals(STALLED, healthInfoService.nodeStatus());
   }
 
-  private void updateStatsSync(int count1, CounterType key1, int count2, CounterType key2) {
+  private void updateStatsSync(int count1, Gauge gauge1, int count2, Gauge gauge2) {
     var count = Math.min(count1, count2);
 
     IntStream.range(0, count)
         .forEach(
             __ -> {
-              systemCounters.increment(key1);
-              systemCounters.increment(key2);
+              gauge1.inc();
+              gauge2.inc();
               healthInfoService.updateStats().process(ScheduledStatsCollecting.create());
             });
 
     var remaining = Math.max(count1, count2) - count;
-    var key = count1 > count2 ? key1 : key2;
+    var gauge = count1 > count2 ? gauge1 : gauge2;
 
     IntStream.range(0, remaining)
         .forEach(
             __ -> {
-              systemCounters.increment(key);
+              gauge.inc();
               healthInfoService.updateStats().process(ScheduledStatsCollecting.create());
             });
   }

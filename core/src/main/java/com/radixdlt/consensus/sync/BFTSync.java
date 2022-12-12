@@ -76,14 +76,9 @@ import com.radixdlt.consensus.bft.RoundVotingResult.FormedTC;
 import com.radixdlt.consensus.liveness.PacemakerReducer;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.RemoteEventProcessor;
-import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.environment.*;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -356,7 +351,7 @@ public final class BFTSync implements BFTSyncer {
 
     //noinspection UnstableApiUsage
     for (var syncId : syncIds) {
-      systemCounters.increment(CounterType.BFT_SYNC_REQUEST_TIMEOUTS);
+      systemCounters.bft().sync().requestTimeouts().inc();
       var syncState = syncing.remove(syncId);
 
       if (syncState == null) {

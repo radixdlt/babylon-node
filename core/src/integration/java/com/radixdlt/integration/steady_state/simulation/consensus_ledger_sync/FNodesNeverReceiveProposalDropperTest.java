@@ -74,7 +74,6 @@ import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.Collection;
 import java.util.List;
@@ -126,8 +125,7 @@ public class FNodesNeverReceiveProposalDropperTest {
 
     LongSummaryStatistics statistics =
         runningTest.getNetwork().getSystemCounters().values().stream()
-            .map(s -> s.get(CounterType.SYNC_VALID_RESPONSES_RECEIVED))
-            .mapToLong(l -> l)
+            .mapToLong(s -> (long) s.sync().validResponsesReceived().get())
             .summaryStatistics();
 
     logger.info("{}", statistics);

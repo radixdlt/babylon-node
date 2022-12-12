@@ -71,18 +71,15 @@ import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.RoundLeaderFailure;
-import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.VoteTimeout;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters.RejectedConsensusEvent.Cause;
+import com.radixdlt.monitoring.SystemCounters.RejectedConsensusEvent.Type;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -130,7 +127,11 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
   @Override
   public void processVote(Vote vote) {
     if (!isAuthorInValidatorSet(vote)) {
-      systemCounters.increment(SystemCounters.CounterType.BFT_VERIFIER_INVALID_VOTE_AUTHORS);
+      systemCounters
+          .bft()
+          .rejectedConsensusEvents()
+          .label(new SystemCounters.RejectedConsensusEvent(Type.VOTE, Cause.AUTHORS))
+          .inc();
       log.warn("Ignoring a vote from {}: not a validator", vote.getAuthor());
       return;
     }
@@ -140,7 +141,11 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
             vote.getAuthor(), vote.getHashOfData(hasher), vote.getSignature(), vote);
     if (!verifiedVoteData) {
       log.warn("Ignoring invalid vote data {}", vote);
-      systemCounters.increment(SystemCounters.CounterType.BFT_VERIFIER_INVALID_VOTE_SIGNATURES);
+      systemCounters
+          .bft()
+          .rejectedConsensusEvents()
+          .label(new SystemCounters.RejectedConsensusEvent(Type.VOTE, Cause.SIGNATURES))
+          .inc();
       return;
     }
 
@@ -154,14 +159,21 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
 
     if (!verifiedTimeoutData) {
       log.warn("Ignoring invalid timeout data {}", vote);
-      systemCounters.increment(
-          SystemCounters.CounterType.BFT_VERIFIER_INVALID_VOTE_TIMEOUT_SIGNATURES);
+      systemCounters
+          .bft()
+          .rejectedConsensusEvents()
+          .label(new SystemCounters.RejectedConsensusEvent(Type.VOTE, Cause.TIMEOUT_SIGNATURES))
+          .inc();
       return;
     }
 
     if (!safetyRules.verifyHighQcAgainstTheValidatorSet(vote.highQC())) {
       log.warn("Ignoring a vote {} with invalid high QC", vote);
-      systemCounters.increment(SystemCounters.CounterType.BFT_VERIFIER_INVALID_VOTE_QCS);
+      systemCounters
+          .bft()
+          .rejectedConsensusEvents()
+          .label(new SystemCounters.RejectedConsensusEvent(Type.VOTE, Cause.QCS))
+          .inc();
       return;
     }
 
@@ -171,21 +183,33 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
   @Override
   public void processProposal(Proposal proposal) {
     if (!isAuthorInValidatorSet(proposal)) {
-      systemCounters.increment(SystemCounters.CounterType.BFT_VERIFIER_INVALID_PROPOSAL_AUTHORS);
+      systemCounters
+          .bft()
+          .rejectedConsensusEvents()
+          .label(new SystemCounters.RejectedConsensusEvent(Type.PROPOSAL, Cause.AUTHORS))
+          .inc();
       log.warn("Ignoring a proposal from {}: not a validator", proposal.getAuthor());
       return;
     }
 
     if (!verifyObjectSignature(
         proposal.getAuthor(), proposal.getVertex(), proposal.getSignature(), proposal)) {
-      systemCounters.increment(SystemCounters.CounterType.BFT_VERIFIER_INVALID_PROPOSAL_SIGNATURES);
+      systemCounters
+          .bft()
+          .rejectedConsensusEvents()
+          .label(new SystemCounters.RejectedConsensusEvent(Type.PROPOSAL, Cause.SIGNATURES))
+          .inc();
       log.warn("Ignoring a proposal {} with invalid signature", proposal);
       return;
     }
 
     if (!safetyRules.verifyHighQcAgainstTheValidatorSet(proposal.highQC())) {
       log.warn("Ignoring a proposal {} with invalid high QC", proposal);
-      systemCounters.increment(SystemCounters.CounterType.BFT_VERIFIER_INVALID_PROPOSAL_QCS);
+      systemCounters
+          .bft()
+          .rejectedConsensusEvents()
+          .label(new SystemCounters.RejectedConsensusEvent(Type.PROPOSAL, Cause.QCS))
+          .inc();
       return;
     }
 

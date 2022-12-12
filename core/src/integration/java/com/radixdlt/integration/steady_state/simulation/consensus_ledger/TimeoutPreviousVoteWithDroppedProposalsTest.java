@@ -81,7 +81,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import java.time.Duration;
 import java.util.stream.LongStream;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -133,8 +132,8 @@ public class TimeoutPreviousVoteWithDroppedProposalsTest {
             .map(
                 s ->
                     LongStream.of(
-                        s.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT),
-                        s.get(CounterType.BFT_PACEMAKER_TIMED_OUT_ROUNDS)))
+                        (long) s.bft().pacemaker().timeoutsSent().get(),
+                        (long) s.bft().pacemaker().timedOutRounds().get()))
             .map(LongStream::summaryStatistics)
             .collect(ImmutableList.toImmutableList());
 

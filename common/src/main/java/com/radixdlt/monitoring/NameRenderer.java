@@ -62,86 +62,79 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.consensus;
+package com.radixdlt.monitoring;
 
-import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
-import com.radixdlt.monitoring.SystemCounters;
-import java.util.Random;
-import org.junit.Test;
+import com.google.common.base.CaseFormat;
+import com.google.common.base.Converter;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.RecordComponent;
+import java.util.stream.Stream;
 
 /**
- * When original votes (to next round leader, non timed out) are dropped, nodes should be able to
- * resend those votes to each other (with timeout) and form the quorum themselves. As a result,
- * there should be no timeout (non-QC) quorums and no indirect parents.
+ * A static utility for converting strings into a format accepted by metrics infra.
  */
-public class QuorumWithoutALeaderWithTimeoutsTest {
+public abstract class NameRenderer {
 
-  private final Random random = new Random(123456);
+  /**
+   * An impl delegate for {@link #render(String)}.
+   */
+  private static final Converter<String, String> JAVA_TO_PROMETHEUS =
+      CaseFormat.LOWER_CAMEL.converterTo(CaseFormat.LOWER_UNDERSCORE);
 
-  private void run(int numValidatorNodes, long numRounds) {
-    final DeterministicTest test =
-        DeterministicTest.builder()
-            .numNodes(numValidatorNodes, 0)
-            .messageSelector(MessageSelector.randomSelector(random))
-            .messageMutator(dropAllNonTimeoutVotes())
-            .functionalNodeModule(
-                new FunctionalRadixNodeModule(
-                    false,
-                    SafetyRecoveryConfig.mocked(),
-                    ConsensusConfig.of(),
-                    LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
-    test.startAllNodes();
-    test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(numRounds)));
+  /**
+   * Renders a Java identifier in a format accepted by Prometheus.
+   * @param javaIdentifier A Java identifier.
+   * @return A valid Prometheus name.
+   */
+  public static String render(String javaIdentifier) {
+    return JAVA_TO_PROMETHEUS.convert(javaIdentifier);
+  }
 
-    for (int nodeIndex = 0; nodeIndex < numValidatorNodes; ++nodeIndex) {
-      final SystemCounters counters = test.getInstance(nodeIndex, SystemCounters.class);
-      long numberOfIndirectParents = (long) counters.bft().vertexStore().indirectParents().get();
-      long totalNumberOfTimeouts = (long) counters.bft().pacemaker().timeoutsSent().get();
-      long totalNumberOfTimeoutQuorums = (long) counters.bft().timeoutQuorums().get();
-      long totalNumberOfVoteQuorums = (long) counters.bft().voteQuorums().get();
-      assertThat(totalNumberOfTimeoutQuorums).isEqualTo(0); // no TCs
-      assertThat(numberOfIndirectParents).isEqualTo(0); // no indirect parents
-      assertThat(totalNumberOfTimeouts).isEqualTo(numRounds - 1); // a timeout for each round
-      assertThat(totalNumberOfVoteQuorums)
-          .isBetween(numRounds - 2, numRounds); // quorum count matches rounds
+  /**
+   * Renders label names.
+   * These will be {@link #render(String) rendered} names of the given record's components.
+   * @param labelRecordClass A class of a {@link Record} representing a complete set of labels.
+   * @return Label names.
+   */
+  public static String[] labelNames(Class<? extends Record> labelRecordClass) {
+    return Stream.of(labelRecordClass.getRecordComponents())
+        .map(RecordComponent::getName)
+        .map(NameRenderer::render)
+        .toArray(String[]::new);
+  }
+
+  /**
+   * Renders label values.
+   * These can be arbitrary strings, so simply an {@link Object#toString()} is used for each value
+   * within the given record. However, {@literal null}s are not supported, and instead they are
+   * represented by empty strings (consistently with how Prometheus Query Language treats missing
+   * label values as empty strings).
+   * @param record A record containing a label set.
+   * @return Label values.
+   * @param <R> The record's type.
+   */
+  public static <R extends Record> String[] labelValues(R record) {
+    return Stream.of(record.getClass().getRecordComponents())
+        .map(component -> access(record, component))
+        .map(label -> label == null ? "" : label.toString())
+        .toArray(String[]::new);
+  }
+
+  /**
+   * Accesses the specific record's component.
+   * @param record A record.
+   * @param component A component.
+   * @return The component's value.
+   */
+  private static Object access(Record record, RecordComponent component) {
+    try {
+      return component.getAccessor().invoke(record);
+    } catch (IllegalAccessException | InvocationTargetException e) {
+      throw new IllegalStateException(
+          "cannot access %s.%s()".formatted(record, component.getName()), e
+      );
     }
-  }
-
-  private static MessageMutator dropAllNonTimeoutVotes() {
-    return (message, queue) -> {
-      final Object msg = message.message();
-      if (msg instanceof final Vote vote) {
-        return vote.getTimeoutSignature().isEmpty();
-      }
-      return false;
-    };
-  }
-
-  @Test
-  public void when_run_3_correct_nodes_for_50k_rounds__then_bft_should_be_responsive() {
-    this.run(3, 50_000);
-  }
-
-  @Test
-  public void when_run_10_correct_nodes_with_for_2k_rounds__then_bft_should_be_responsive() {
-    this.run(10, 2000);
-  }
-
-  @Test
-  public void when_run_100_correct_nodes_with_for_50_rounds__then_bft_should_be_responsive() {
-    this.run(100, 50);
   }
 }

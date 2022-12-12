@@ -69,13 +69,8 @@ import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.mempool.MempoolReader;
-import com.radixdlt.mempool.MempoolRelayMaxPeers;
-import com.radixdlt.mempool.MempoolRelayTrigger;
+import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -146,7 +141,7 @@ public final class ReV1MempoolRelayer {
         .limit(maxPeers)
         .forEach(
             peer -> {
-              counters.add(CounterType.MEMPOOL_RELAYS_SENT, transactions.size());
+              counters.mempool().relaysSent().inc(transactions.size());
               this.remoteEventDispatcher.dispatch(peer, mempoolAddMsg);
             });
   }

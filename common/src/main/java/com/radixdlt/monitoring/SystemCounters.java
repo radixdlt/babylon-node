@@ -64,234 +64,218 @@
 
 package com.radixdlt.monitoring;
 
-import java.util.Map;
 
-/** System counters interface. */
-public interface SystemCounters {
+import com.google.common.base.Preconditions;
+import io.prometheus.client.Counter;
+import io.prometheus.client.Gauge;
+import io.prometheus.client.Summary;
 
-  enum CounterType {
-    // Please keep these sorted
+import javax.annotation.Nullable;
 
-    BFT_SUCCESSFULLY_PROCESSED_VOTES("bft.successfully_processed_votes"),
-    BFT_SUCCESSFULLY_PROCESSED_PROPOSALS("bft.successfully_processed_proposals"),
+public record SystemCounters(
+    Bft bft,
+    Bdb bdb,
+    Ledger ledger,
+    LedgerSync sync,
+    V1Mempool mempool,
+    V1RadixEngine radixEngine,
+    Messages messages,
+    Networking networking,
+    Crypto crypto,
+    Misc misc
+) {
 
-    BFT_PRECONDITION_VIOLATIONS("bft.precondition_violations"),
-    BFT_PROPOSALS_RECEIVED_FROM_NON_LEADERS("bft.proposals_received_from_non_leaders"),
-    BFT_DUPLICATE_PROPOSALS_RECEIVED("bft.duplicate_proposals_received"),
-    BFT_EVENTS_RECEIVED("bft.events_received"),
-    BFT_COMMITTED_VERTICES("bft.committed_vertices"),
-    /** Number of proposals rejected. */
-    BFT_NO_VOTES_SENT("bft.no_votes_sent"),
-    /** Number of vote quorums formed. */
-    BFT_VOTE_QUORUMS("bft.vote_quorums"),
-    /** Number of round-timeout quorums formed. */
-    BFT_TIMEOUT_QUORUMS("bft.timeout_quorums"),
+  public record Bft(
+      Counter successfullyProcessedVotes,
+      Counter successfullyProcessedProposals,
+      Counter preconditionViolations,
+      Counter proposalsReceivedFromNonLeaders,
+      Counter duplicateProposalsReceived,
+      Counter eventsReceived,
+      Counter committedVertices,
+      Counter noVotesSent,
+      Counter voteQuorums,
+      Counter timeoutQuorums,
+      LabelledCounter<RejectedConsensusEvent> rejectedConsensusEvents,
+      Pacemaker pacemaker,
+      Sync sync,
+      VertexStore vertexStore
+  ) {
 
-    BFT_VERIFIER_INVALID_VOTE_AUTHORS("bft.verifier.invalid_vote_authors"),
-    BFT_VERIFIER_INVALID_VOTE_SIGNATURES("bft.verifier.invalid_vote_signatures"),
-    BFT_VERIFIER_INVALID_VOTE_TIMEOUT_SIGNATURES("bft.verifier.invalid_vote_timeout_signatures"),
-    BFT_VERIFIER_INVALID_VOTE_QCS("bft.verifier.invalid_vote_qcs"),
-    BFT_VERIFIER_INVALID_PROPOSAL_AUTHORS("bft.verifier.invalid_proposal_authors"),
-    BFT_VERIFIER_INVALID_PROPOSAL_SIGNATURES("bft.verifier.invalid_proposal_signatures"),
-    BFT_VERIFIER_INVALID_PROPOSAL_QCS("bft.verifier.invalid_proposal_qcs"),
-
-    BFT_INVALID_PROPOSAL_TIMESTAMPS("bft.invalid_proposal_timestamps"),
-    BFT_INVALID_PROPOSAL_TIMESTAMP_WAS_TOO_BEHIND("bft.invalid_proposal_timestamp_was_too_behind"),
-    BFT_INVALID_PROPOSAL_TIMESTAMP_WAS_TOO_AHEAD("bft.invalid_proposal_timestamp_was_too_ahead"),
-    BFT_INVALID_PROPOSAL_TIMESTAMP_WAS_LOWER_THAN_PREVIOUS(
-        "bft.invalid_proposal_timestamp_was_lower_than_previous"),
-
-    /** Number of times a round-timeout message was broadcast. */
-    BFT_PACEMAKER_TIMEOUTS_SENT("bft.pacemaker.timeouts_sent"),
-    BFT_PACEMAKER_ROUND("bft.pacemaker.round"),
-    BFT_PACEMAKER_PROPOSED_TRANSACTIONS("bft.pacemaker.proposed_transactions"),
-    BFT_PACEMAKER_PROPOSALS_SENT("bft.pacemaker.proposals_sent"),
-    BFT_PACEMAKER_TIMED_OUT_ROUNDS("bft.pacemaker.timed_out_rounds"),
-    BFT_PACEMAKER_PROPOSALS_WITH_SUBSTITUTE_TIMESTAMP(
-        "bft.pacemaker.proposals_with_substitute_timestamp"),
-
-    BFT_SYNC_REQUESTS_SENT("bft.sync.requests_sent"),
-    BFT_SYNC_REQUESTS_RECEIVED("bft.sync.requests_received"),
-    BFT_SYNC_REQUEST_TIMEOUTS("bft.sync.request_timeouts"),
-
-    BFT_VERTEX_STORE_SIZE("bft.vertex_store.size"),
-    BFT_VERTEX_STORE_FORKS("bft.vertex_store.forks"),
-    BFT_VERTEX_STORE_REBUILDS("bft.vertex_store.rebuilds"),
-    BFT_VERTEX_STORE_INDIRECT_PARENTS("bft.vertex_store.indirect_parents"),
-
-    // Count of database accesses
-    COUNT_BDB_LEDGER_COMMIT("count.bdb.ledger.commit"),
-    COUNT_BDB_LEDGER_CREATE_TX("count.bdb.ledger.create_tx"),
-    COUNT_BDB_LEDGER_CONTAINS("count.bdb.ledger.contains"),
-    COUNT_BDB_LEDGER_CONTAINS_TX("count.bdb.ledger.contains_tx"),
-    COUNT_BDB_LEDGER_ENTRIES("count.bdb.ledger.entries"),
-    COUNT_BDB_LEDGER_GET_FIRST("count.bdb.ledger.get_first"),
-    COUNT_BDB_LEDGER_GET_LAST("count.bdb.ledger.get_last"),
-    COUNT_BDB_LEDGER_GET_NEXT("count.bdb.ledger.get_next"),
-    COUNT_BDB_LEDGER_GET_PREV("count.bdb.ledger.get_prev"),
-    COUNT_BDB_LEDGER_STORE("count.bdb.ledger.store"),
-    COUNT_BDB_LEDGER_LAST_COMMITTED("count.bdb.ledger.last_committed"),
-    COUNT_BDB_LEDGER_LAST_VERTEX("count.bdb.ledger.last_vertex"),
-    COUNT_BDB_LEDGER_SAVE("count.bdb.ledger.save"),
-    COUNT_BDB_LEDGER_SEARCH("count.bdb.ledger.search"),
-    COUNT_BDB_LEDGER_TOTAL("count.bdb.ledger.total"),
-    COUNT_BDB_LEDGER_BYTES_READ("count.bdb.ledger.bytes.read"),
-    COUNT_BDB_LEDGER_BYTES_WRITE("count.bdb.ledger.bytes.write"),
-    COUNT_BDB_LEDGER_DELETES("count.bdb.ledger.deletes"),
-    COUNT_BDB_LEDGER_PROOFS_ADDED("count.bdb.ledger.proofs.added"),
-    COUNT_BDB_LEDGER_PROOFS_REMOVED("count.bdb.ledger.proofs.removed"),
-
-    COUNT_BDB_ADDRESS_BOOK_TOTAL("count.bdb.address_book.total"),
-    COUNT_BDB_ADDRESS_BOOK_BYTES_READ("count.bdb.address_book.bytes.read"),
-    COUNT_BDB_ADDRESS_BOOK_BYTES_WRITE("count.bdb.address_book.bytes.write"),
-    COUNT_BDB_ADDRESS_BOOK_DELETES("count.bdb.address_book.deletes"),
-
-    COUNT_BDB_SAFETY_STATE_TOTAL("count.bdb.safety_state.total"),
-    COUNT_BDB_SAFETY_STATE_BYTES_READ("count.bdb.safety_state.bytes.read"),
-    COUNT_BDB_SAFETY_STATE_BYTES_WRITE("count.bdb.safety_state.bytes.write"),
-
-    COUNT_BDB_HEADER_BYTES_WRITE("count.bdb.header.bytes.write"),
-
-    // Total elapsed time for database access, in microseconds
-    ELAPSED_APIDB_BALANCE_READ("elapsed.apidb.balance.read"),
-    ELAPSED_APIDB_BALANCE_WRITE("elapsed.apidb.balance.write"),
-
-    ELAPSED_APIDB_TOKEN_READ("elapsed.apidb.token.read"),
-    ELAPSED_APIDB_TOKEN_WRITE("elapsed.apidb.token.write"),
-
-    ELAPSED_APIDB_TRANSACTION_READ("elapsed.apidb.transaction.read"),
-    ELAPSED_APIDB_TRANSACTION_WRITE("elapsed.apidb.transaction.write"),
-
-    ELAPSED_APIDB_FLUSH_TIME("elapsed.apidb.flush.time"),
-
-    ELAPSED_BDB_ADDRESS_BOOK("elapsed.bdb.address_book"),
-
-    ELAPSED_BDB_LEDGER_COMMIT("elapsed.bdb.ledger.commit"),
-    ELAPSED_BDB_LEDGER_CREATE_TX("elapsed.bdb.ledger.create_tx"),
-    ELAPSED_BDB_LEDGER_CONTAINS_TX("elapsed.bdb.ledger.contains_tx"),
-    ELAPSED_BDB_LEDGER_ENTRIES("elapsed.bdb.ledger.entries"),
-    ELAPSED_BDB_LEDGER_GET("elapsed.bdb.ledger.get"),
-    ELAPSED_BDB_LEDGER_GET_FIRST("elapsed.bdb.ledger.get_first"),
-    ELAPSED_BDB_LEDGER_GET_LAST("elapsed.bdb.ledger.get_last"),
-    ELAPSED_BDB_LEDGER_STORE("elapsed.bdb.ledger.store"),
-    ELAPSED_BDB_LEDGER_LAST_COMMITTED("elapsed.bdb.ledger.last_committed"),
-    ELAPSED_BDB_LEDGER_LAST_VERTEX("elapsed.bdb.ledger.last_vertex"),
-    ELAPSED_BDB_LEDGER_SAVE("elapsed.bdb.ledger.save"),
-    ELAPSED_BDB_LEDGER_SEARCH("elapsed.bdb.ledger.search"),
-    ELAPSED_BDB_LEDGER_TOTAL("elapsed.bdb.ledger.total"),
-
-    ELAPSED_BDB_SAFETY_STATE("elapsed.bdb.safety_state"),
-
-    PERSISTENCE_VERTEX_STORE_SAVES("persistence.vertex_store_saves"),
-    PERSISTENCE_SAFETY_STORE_SAVES("persistence.safety_store_saves"),
-
-    PERSISTENCE_TRANSACTION_LOG_WRITE_BYTES("persistence.transaction_log.write_bytes"),
-    PERSISTENCE_TRANSACTION_LOG_WRITE_COMPRESSED("persistence.transaction_log.write_compressed"),
-
-    EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS("epoch_manager.queued_consensus_events"),
-
-    STARTUP_TIME_MS("startup.time_ms"),
-
-    HASHED_BYTES("hashed.bytes"),
-
-    LEDGER_STATE_VERSION("ledger.state_version"),
-    LEDGER_SYNC_TRANSACTIONS_PROCESSED("ledger.sync_transactions_processed"),
-    LEDGER_BFT_TRANSACTIONS_PROCESSED("ledger.bft_transactions_processed"),
-
-    SYNC_INVALID_RESPONSES_RECEIVED("sync.invalid_responses_received"),
-    SYNC_VALID_RESPONSES_RECEIVED("sync.valid_responses_received"),
-    SYNC_REMOTE_REQUESTS_RECEIVED("sync.remote_requests_received"),
-    SYNC_CURRENT_STATE_VERSION("sync.current_state_version"),
-    SYNC_TARGET_STATE_VERSION("sync.target_state_version"),
-
-    MEMPOOL_CURRENT_SIZE("mempool.current_size"),
-    MEMPOOL_RELAYS_SENT("mempool.relays_sent"),
-    MEMPOOL_ADD_SUCCESS("mempool.add_success"),
-    MEMPOOL_ADD_FAILURE("mempool.add_failure"),
-
-    RADIX_ENGINE_INVALID_PROPOSED_TRANSACTIONS("radix_engine.invalid_proposed_transactions"),
-    RADIX_ENGINE_USER_TRANSACTIONS("radix_engine.user_transactions"),
-    RADIX_ENGINE_SYSTEM_TRANSACTIONS("radix_engine.system_transactions"),
-
-    MESSAGES_INBOUND_AVG_QUEUED_TIME("messages.inbound.avg_queued_time"),
-    MESSAGES_INBOUND_TOTAL_QUEUED_TIME("messages.inbound.total_queued_time"),
-    MESSAGES_INBOUND_AVG_PROCESSING_TIME("messages.inbound.avg_processing_time"),
-    MESSAGES_INBOUND_TOTAL_PROCESSING_TIME("messages.inbound.total_processing_time"),
-    MESSAGES_INBOUND_RECEIVED("messages.inbound.received"),
-    MESSAGES_INBOUND_PROCESSED("messages.inbound.processed"),
-    MESSAGES_INBOUND_DISCARDED("messages.inbound.discarded"),
-    MESSAGES_OUTBOUND_ABORTED("messages.outbound.aborted"),
-    MESSAGES_OUTBOUND_PENDING("messages.outbound.pending"),
-    MESSAGES_OUTBOUND_PROCESSED("messages.outbound.processed"),
-    MESSAGES_OUTBOUND_SENT("messages.outbound.sent"),
-
-    NETWORKING_TCP_DROPPED_MESSAGES("networking.tcp.dropped_messages"),
-    NETWORKING_BYTES_SENT("networking.bytes_sent"),
-    NETWORKING_BYTES_RECEIVED("networking.bytes_received"),
-    NETWORKING_P2P_ACTIVE_INBOUND_CHANNELS("networking.p2p.active_inbound_channels"),
-    NETWORKING_P2P_ACTIVE_OUTBOUND_CHANNELS("networking.p2p.active_outbound_channels"),
-    NETWORKING_P2P_ACTIVE_CHANNELS("networking.p2p.active_channels"),
-    NETWORKING_P2P_CHANNELS_INITIALIZED("networking.p2p.channels_initialized"),
-
-    SIGNATURES_SIGNED("signatures.signed"),
-    SIGNATURES_VERIFIED("signatures.verified"),
-    TIME_DURATION("time.duration");
-
-    private final String jsonPath;
-
-    CounterType(String jsonPath) {
-      this.jsonPath = jsonPath;
+    public record Pacemaker(
+        Counter timeoutsSent,
+        Gauge round,
+        Counter proposedTransactions,
+        Counter proposalsSent,
+        Counter timedOutRounds,
+        Counter proposalsWithSubstituteTimestamp
+    ) {
     }
 
-    public String jsonPath() {
-      return jsonPath;
+    public record Sync(
+        Counter requestsSent,
+        Counter requestsReceived,
+        Counter requestTimeouts
+    ) {
+    }
+
+    public record VertexStore(
+        Gauge size,
+        Counter forks,
+        Counter rebuilds,
+        Counter indirectParents
+    ) {
     }
   }
 
-  /**
-   * Increments the specified counter, returning the new value.
-   *
-   * @param counterType The counter to increment
-   * @return The new incremented value
-   */
-  long increment(CounterType counterType);
+  public record Bdb(
 
-  /**
-   * Increments the specified counter by the specified amount, returning the new value.
-   *
-   * @param counterType The counter to increment
-   * @return The new incremented value
-   */
-  long add(CounterType counterType, long amount);
+      V1Ledger ledger,
+      AddressBook addressBook,
+      SafetyState safetyState
+  ) {
 
-  /**
-   * Sets the specified counter to the specified value, returning the previous value.
-   *
-   * @param counterType The counter to increment
-   * @return The previous value
-   */
-  long set(CounterType counterType, long value);
+    public record V1Ledger(
+        Counter commits,
+        Summary transactionCreate,
+        Summary read,
+        Summary store,
+        Summary lastCommittedRead,
+        Summary lastVertexRead,
+        Summary save,
+        Summary interact,
+        Counter bytesRead,
+        Counter bytesWritten,
+        Counter proofsAdded,
+        Counter proofsRemoved,
+        Counter headerBytesWritten
+    ) {
+    }
 
-  /**
-   * Returns the current value of the specified counter.
-   *
-   * @param counterType The counter value to return
-   * @return The current value of the counter
-   */
-  long get(CounterType counterType);
+    public record AddressBook(
+        Summary interact,
+        Counter bytesRead,
+        Counter bytesWritten,
+        Counter entriesDeleted
+    ) {
+    }
 
-  /**
-   * Set a group of values. Values are updates in such a way as to prevent read-tearing when {@link
-   * #toMap()} is called.
-   *
-   * @param newValues The values to update.
-   */
-  void setAll(Map<CounterType, Long> newValues);
+    public record SafetyState(
+        Summary commitState,
+        Counter bytesRead,
+        Counter bytesWritten
+    ) {
+    }
+  }
 
-  /**
-   * Returns the current values as a map.
-   *
-   * @return the current values as a map
-   */
-  Map<String, Object> toMap();
+  public record Ledger(
+      Gauge stateVersion,
+      Counter syncTransactionsProcessed,
+      Counter bftTransactionsProcessed
+  ) {
+  }
+
+  public record LedgerSync(
+      Counter invalidResponsesReceived,
+      Counter validResponsesReceived,
+      Counter remoteRequestsReceived,
+      Gauge currentStateVersion,
+      Gauge targetStateVersion
+  ) {
+  }
+
+  public record V1Mempool(
+      Gauge size,
+      Counter relaysSent,
+      Counter addSuccesses,
+      Counter addFailures
+  ) {
+  }
+
+  public record V1RadixEngine(
+      Counter invalidProposedTransactions,
+      Counter userTransactions,
+      Counter systemTransactions
+  ) {
+  }
+
+  public record Messages(
+      Inbound inbound,
+      Outbound outbound
+  ) {
+
+    public record Inbound(
+        Summary queueWait,
+        Summary process,
+        Counter received,
+        Counter discarded
+    ) {
+    }
+
+    public record Outbound(
+        Counter aborted,
+        Gauge queued,
+        Counter processed,
+        Counter sent
+    ) {
+    }
+  }
+
+  public record Networking(
+      Counter messagesDropped,
+      Counter bytesSent,
+      Counter bytesReceived,
+      LabelledGauge<ChannelProperties> activeChannels,
+      Counter channelsInitialized
+  ) {
+  }
+
+  public record Crypto(
+      Counter bytesHashed,
+      Counter signaturesSigned,
+      Counter signaturesVerified
+  ) {
+  }
+
+  public record Misc(
+      Summary applicationStart,
+      Counter epochManagerEnqueuedConsensusEvents,
+      Counter vertexStoreSaved
+  ) {
+  }
+
+  public record RejectedConsensusEvent(
+      Type type, Cause cause, @Nullable TimestampIssue timestampIssue
+  ) {
+
+    public RejectedConsensusEvent(Type type, Cause cause) {
+      this(type, cause, null);
+      Preconditions.checkArgument(cause != Cause.TIMESTAMP);
+    }
+
+    public RejectedConsensusEvent(Type type, TimestampIssue timestampIssue) {
+      this(type, Cause.TIMESTAMP, timestampIssue);
+    }
+
+    public enum Type {
+      VOTE, PROPOSAL
+    }
+
+    public enum Cause {
+      AUTHORS, SIGNATURES, QCS, TIMEOUT_SIGNATURES, TIMESTAMP
+    }
+
+    public enum TimestampIssue {
+      TOO_OLD, TOO_YOUNG, NOT_MONOTONIC
+    }
+  }
+
+  public record ChannelProperties(
+      Direction direction
+  ) {
+
+    public enum Direction {
+      INBOUND, OUTBOUND;
+    }
+  }
 }

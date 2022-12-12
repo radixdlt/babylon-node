@@ -67,7 +67,6 @@ package com.radixdlt.p2p;
 import static com.radixdlt.lang.Unit.unitResult;
 import static com.radixdlt.messaging.core.MessagingErrors.PEER_BANNED;
 import static com.radixdlt.messaging.core.MessagingErrors.SELF_CONNECTION_ATTEMPT;
-import static com.radixdlt.monitoring.SystemCounters.CounterType.*;
 import static java.util.function.Predicate.not;
 
 import com.google.common.collect.ImmutableList;
@@ -83,24 +82,16 @@ import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.messaging.core.InboundMessage;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.p2p.PeerEvent.PeerBanned;
-import com.radixdlt.p2p.PeerEvent.PeerConnected;
-import com.radixdlt.p2p.PeerEvent.PeerConnectionTimeout;
-import com.radixdlt.p2p.PeerEvent.PeerDisconnected;
-import com.radixdlt.p2p.PeerEvent.PeerHandshakeFailed;
-import com.radixdlt.p2p.PeerEvent.PeerLostLiveness;
+import com.radixdlt.monitoring.SystemCounters.ChannelProperties;
+import com.radixdlt.monitoring.SystemCounters.ChannelProperties.Direction;
+import com.radixdlt.p2p.PeerEvent.*;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.p2p.addressbook.AddressBookEntry;
 import com.radixdlt.p2p.transport.PeerChannel;
 import com.radixdlt.utils.Lists;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.logging.log4j.LogManager;
@@ -376,12 +367,16 @@ public final class PeerManager {
   }
 
   private void updateChannelsCounters() {
-    long inboundCount = activeChannels().stream().filter(PeerChannel::isInbound).count();
-    long outboundCount = activeChannels().stream().filter(PeerChannel::isOutbound).count();
-
-    counters.set(NETWORKING_P2P_ACTIVE_CHANNELS, activeChannels().size());
-    counters.set(NETWORKING_P2P_ACTIVE_INBOUND_CHANNELS, inboundCount);
-    counters.set(NETWORKING_P2P_ACTIVE_OUTBOUND_CHANNELS, outboundCount);
+    counters
+        .networking()
+        .activeChannels()
+        .label(new ChannelProperties(Direction.INBOUND))
+        .set(activeChannels().stream().filter(PeerChannel::isInbound).count());
+    counters
+        .networking()
+        .activeChannels()
+        .label(new ChannelProperties(Direction.OUTBOUND))
+        .set(activeChannels().stream().filter(PeerChannel::isOutbound).count());
   }
 
   private String nodeAddress(NodeId nodeId) {

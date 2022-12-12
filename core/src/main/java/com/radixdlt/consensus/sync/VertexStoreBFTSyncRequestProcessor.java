@@ -98,7 +98,7 @@ public final class VertexStoreBFTSyncRequestProcessor
   @Override
   public void process(BFTNode sender, GetVerticesRequest request) {
     // TODO: Handle nodes trying to DDOS this endpoint
-    systemCounters.increment(SystemCounters.CounterType.BFT_SYNC_REQUESTS_RECEIVED);
+    systemCounters.bft().sync().requestsReceived().inc();
 
     log.debug("SYNC_VERTICES: Received GetVerticesRequest {}", request);
     var verticesMaybe = vertexStore.getVertices(request.getVertexId(), request.getCount());

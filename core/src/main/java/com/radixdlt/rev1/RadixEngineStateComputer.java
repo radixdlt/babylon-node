@@ -64,8 +64,8 @@
 
 package com.radixdlt.rev1;
 
-import static com.radixdlt.monitoring.SystemCounters.*;
-import static com.radixdlt.substate.TxAction.*;
+import static com.radixdlt.substate.TxAction.NextEpoch;
+import static com.radixdlt.substate.TxAction.NextRound;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
@@ -73,7 +73,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
@@ -101,7 +100,9 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev1.forks.Forks;
-import com.radixdlt.substate.*;
+import com.radixdlt.substate.TxBuilderException;
+import com.radixdlt.substate.TxLowLevelBuilder;
+import com.radixdlt.substate.TxnConstructionRequest;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
@@ -198,8 +199,8 @@ public final class RadixEngineStateComputer implements StateComputer {
       try {
         var processed = mempool.addTransaction(transaction);
 
-        systemCounters.increment(CounterType.MEMPOOL_ADD_SUCCESS);
-        systemCounters.set(CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+        systemCounters.mempool().addSuccesses().inc();
+        systemCounters.mempool().size().set(mempool.getCount());
 
         var success =
             MempoolAddSuccess.create(
@@ -210,7 +211,7 @@ public final class RadixEngineStateComputer implements StateComputer {
       } catch (MempoolDuplicateException e) {
         throw e;
       } catch (MempoolRejectedException e) {
-        systemCounters.increment(CounterType.MEMPOOL_ADD_FAILURE);
+        systemCounters.mempool().addFailures().inc();
         throw e;
       }
     }
@@ -431,12 +432,13 @@ public final class RadixEngineStateComputer implements StateComputer {
     result
         .getProcessedTxns()
         .forEach(
-            t ->
-                systemCounters.increment(
-                    t.isSystemOnly()
-                        ? CounterType.RADIX_ENGINE_SYSTEM_TRANSACTIONS
-                        : CounterType.RADIX_ENGINE_USER_TRANSACTIONS));
-
+            t -> {
+              if (t.isSystemOnly()) {
+                systemCounters.radixEngine().systemTransactions().inc();
+              } else {
+                systemCounters.radixEngine().userTransactions().inc();
+              }
+            });
     return result;
   }
 
@@ -467,7 +469,7 @@ public final class RadixEngineStateComputer implements StateComputer {
       // TODO: refactor mempool to be less generic and make this more efficient
       // TODO: Move this into engine
       this.mempool.handleTransactionsCommitted(txCommitted);
-      systemCounters.set(CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+      systemCounters.mempool().size().set(mempool.getCount());
 
       var epochChangeOptional =
           txnsAndProof

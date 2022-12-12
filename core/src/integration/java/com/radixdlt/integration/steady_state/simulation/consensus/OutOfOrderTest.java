@@ -76,7 +76,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import java.util.Collection;
 import java.util.List;
 import java.util.LongSummaryStatistics;
@@ -134,8 +133,7 @@ public final class OutOfOrderTest {
 
     LongSummaryStatistics statistics =
         runningTest.getNetwork().getSystemCounters().values().stream()
-            .map(s -> s.get(CounterType.BFT_SYNC_REQUESTS_SENT))
-            .mapToLong(l -> l)
+            .mapToLong(s -> (long) s.bft().sync().requestsSent().get())
             .summaryStatistics();
     logger.info(statistics);
     assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());

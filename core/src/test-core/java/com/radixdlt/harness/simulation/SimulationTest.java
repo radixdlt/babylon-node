@@ -68,15 +68,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
+import com.google.inject.*;
 import com.google.inject.Module;
-import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.addressing.Addressing;
@@ -84,16 +77,11 @@ import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.harness.simulation.TestInvariant.TestInvariantError;
-import com.radixdlt.harness.simulation.application.BFTValidatorSetNodeSelector;
-import com.radixdlt.harness.simulation.application.EpochsNodeSelector;
-import com.radixdlt.harness.simulation.application.LocalMempoolPeriodicSubmitter;
-import com.radixdlt.harness.simulation.application.NodeSelector;
-import com.radixdlt.harness.simulation.application.TransactionGenerator;
+import com.radixdlt.harness.simulation.application.*;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.monitors.SimulationNodeEventsModule;
 import com.radixdlt.harness.simulation.network.SimulationNetwork;
@@ -110,8 +98,8 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.EpochMaxRound;
@@ -134,11 +122,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -473,7 +457,7 @@ public final class SimulationTest {
           new AbstractModule() {
             @Override
             public void configure() {
-              bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+              bind(SystemCounters.class).toInstance(new MetricsInitializer().initialize());
               bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
               bind(NodeEvents.class).toInstance(nodeEvents);
             }
@@ -531,7 +515,7 @@ public final class SimulationTest {
                         Amount.ofTokens(1000000),
                         Amount.ofTokens(10000)));
                 bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-                bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+                bind(SystemCounters.class).toInstance(new MetricsInitializer().initialize());
                 bind(TransactionsAndProofReader.class).toInstance(new NoOpCommittedReader());
                 bind(ForksEpochStore.class).toInstance(new NoOpForksEpochStore());
               }

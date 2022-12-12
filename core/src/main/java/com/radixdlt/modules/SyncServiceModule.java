@@ -77,7 +77,6 @@ import com.radixdlt.environment.*;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerControl;
 import com.radixdlt.store.LastProof;
@@ -143,7 +142,7 @@ public class SyncServiceModule extends AbstractModule {
           NodeId.fromPublicKey(sender.getKey()),
           Duration.ofMinutes(10),
           "Received invalid sync response");
-      counters.increment(CounterType.SYNC_INVALID_RESPONSES_RECEIVED);
+      counters.sync().invalidResponsesReceived().inc();
     };
   }
 

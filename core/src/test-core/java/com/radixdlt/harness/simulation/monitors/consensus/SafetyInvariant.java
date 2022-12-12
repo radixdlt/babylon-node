@@ -95,7 +95,7 @@ public class SafetyInvariant implements TestInvariant {
             e -> {
               for (var node : network.getNodes()) {
                 final var nodeCounters = network.getInstance(SystemCounters.class, node);
-                if (nodeCounters.get(SystemCounters.CounterType.BFT_PRECONDITION_VIOLATIONS) != 0) {
+                if (nodeCounters.bft().preconditionViolations().get() != 0) {
                   return Observable.just(
                       new TestInvariantError(
                           String.format("BFT precondition violation on node %s", node)));

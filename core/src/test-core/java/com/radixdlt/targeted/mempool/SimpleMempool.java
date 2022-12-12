@@ -144,7 +144,7 @@ public final class SimpleMempool
   }
 
   private void updateCounts() {
-    this.counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, this.data.size());
+    this.counters.mempool().size().set(this.data.size());
   }
 
   @Override

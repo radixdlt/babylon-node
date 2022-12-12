@@ -78,23 +78,14 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.p2p.capability.RemotePeerCapability;
 import com.radixdlt.sync.SyncState.IdleState;
 import com.radixdlt.sync.SyncState.SyncCheckState;
 import com.radixdlt.sync.SyncState.SyncingState;
-import com.radixdlt.sync.messages.local.LocalSyncRequest;
-import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
-import com.radixdlt.sync.messages.local.SyncCheckTrigger;
-import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
-import com.radixdlt.sync.messages.local.SyncRequestTimeout;
-import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
-import com.radixdlt.sync.messages.remote.StatusRequest;
-import com.radixdlt.sync.messages.remote.StatusResponse;
-import com.radixdlt.sync.messages.remote.SyncRequest;
-import com.radixdlt.sync.messages.remote.SyncResponse;
+import com.radixdlt.sync.messages.local.*;
+import com.radixdlt.sync.messages.remote.*;
 import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
 import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.transactions.RawLedgerTransaction;
@@ -559,19 +550,26 @@ public final class LocalSyncService {
 
   private <T extends SyncState> T updateSyncTargetDiffCounter(T syncState) {
     if (syncState instanceof final SyncingState syncingState) {
-      this.systemCounters.set(
-          CounterType.SYNC_CURRENT_STATE_VERSION,
-          syncingState.getCurrentHeader().getStateVersion());
-      this.systemCounters.set(
-          CounterType.SYNC_TARGET_STATE_VERSION,
-          Math.max(
-              syncingState.getTargetHeader().getStateVersion(),
-              syncingState.getTargetHeader().getAccumulatorState().getStateVersion()));
+      this.systemCounters
+          .sync()
+          .currentStateVersion()
+          .set(syncingState.getCurrentHeader().getStateVersion());
+      this.systemCounters
+          .sync()
+          .targetStateVersion()
+          .set(
+              Math.max(
+                  syncingState.getTargetHeader().getStateVersion(),
+                  syncingState.getTargetHeader().getAccumulatorState().getStateVersion()));
     } else {
-      this.systemCounters.set(
-          CounterType.SYNC_CURRENT_STATE_VERSION, syncState.getCurrentHeader().getStateVersion());
-      this.systemCounters.set(
-          CounterType.SYNC_TARGET_STATE_VERSION, syncState.getCurrentHeader().getStateVersion());
+      this.systemCounters
+          .sync()
+          .currentStateVersion()
+          .set(syncState.getCurrentHeader().getStateVersion());
+      this.systemCounters
+          .sync()
+          .targetStateVersion()
+          .set(syncState.getCurrentHeader().getStateVersion());
     }
 
     return syncState;

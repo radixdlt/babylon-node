@@ -81,7 +81,6 @@ import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.consensus.SyncMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
@@ -154,8 +153,8 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
         runningTest.getNetwork().getSystemCounters().get(BFTNode.create(nodeUnderTestKey));
 
     // just to be sure that node wasn't a validator
-    assertEquals(0, testNodeCounters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT));
-    assertEquals(0, testNodeCounters.get(CounterType.BFT_COMMITTED_VERTICES));
+    assertEquals(0, (long) testNodeCounters.bft().pacemaker().proposalsSent().get());
+    assertEquals(0, (long) testNodeCounters.bft().committedVertices().get());
 
     final var syncNodeCounters =
         runningTest.getNetwork().getSystemCounters().get(BFTNode.create(nonValidatorSyncNodeKey));
@@ -163,8 +162,8 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
     // make sure that the sync target node actually processed all the requests from test node
     // and test node didn't communicate directly with a validator
     assertThat(
-            syncNodeCounters.get(CounterType.SYNC_REMOTE_REQUESTS_RECEIVED)
-                - testNodeCounters.get(CounterType.SYNC_VALID_RESPONSES_RECEIVED))
+            (long) syncNodeCounters.sync().remoteRequestsReceived().get()
+                - (long) testNodeCounters.sync().validResponsesReceived().get())
         .isBetween(-4L, 4L); // small discrepancies are fine
   }
 }

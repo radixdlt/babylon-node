@@ -65,14 +65,13 @@
 package com.radixdlt.integration.steady_state.deterministic.ledger_sync;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.predicates.NodePredicate.*;
-import static com.radixdlt.harness.predicates.NodesPredicate.*;
+import static com.radixdlt.harness.predicates.NodePredicate.atOrOverStateVersion;
+import static com.radixdlt.harness.predicates.NodesPredicate.nodeAt;
 import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.stream.IntStream;
 import org.junit.Test;
@@ -105,14 +104,14 @@ public class FullNodeSyncTest {
 
     final var validatorsMaxStateVersion =
         validatorsCounters
-            .map(sc -> sc.get(CounterType.LEDGER_STATE_VERSION))
-            .max(Long::compareTo)
-            .get();
+            .mapToLong(sc -> (long) sc.ledger().stateVersion().get())
+            .max()
+            .getAsLong();
 
     final var nonValidatorsStateVersions =
         IntStream.range(numValidators, numNodes - numValidators)
             .mapToObj(i -> test.getInstance(i, SystemCounters.class))
-            .map(sc -> sc.get(CounterType.LEDGER_STATE_VERSION))
+            .map(sc -> (long) sc.ledger().stateVersion().get())
             .toList();
 
     nonValidatorsStateVersions.forEach(

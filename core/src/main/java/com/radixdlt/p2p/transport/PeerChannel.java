@@ -191,7 +191,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   }
 
   private void onInboundMessageBufferOverflow() {
-    this.counters.increment(SystemCounters.CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
+    this.counters.networking().messagesDropped().inc();
     final var logLevel = droppedMessagesRateLimiter.tryAcquire() ? Level.WARN : Level.TRACE;
     if (log.isEnabled(logLevel)) {
       log.log(logLevel, "TCP msg buffer overflow, dropping msg on {}", this);

@@ -66,15 +66,10 @@ package com.radixdlt.mempool;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
+import com.google.inject.*;
 import com.google.inject.Module;
-import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.LedgerProof;
@@ -95,8 +90,8 @@ import com.radixdlt.modules.DispatcherModule;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.modules.ModuleRunner;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Network;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -121,7 +116,7 @@ public final class MempoolRunnerTest {
         bind(BFTNode.class).annotatedWith(Self.class).toInstance(BFTNode.random());
         bind(LedgerProof.class).annotatedWith(LastProof.class).toInstance(mock(LedgerProof.class));
         bind(StateComputer.class).toInstance(stateComputer);
-        bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+        bind(SystemCounters.class).toInstance(new MetricsInitializer().initialize());
         bind(RxRemoteEnvironment.class)
             .toInstance(
                 new RxRemoteEnvironment() {

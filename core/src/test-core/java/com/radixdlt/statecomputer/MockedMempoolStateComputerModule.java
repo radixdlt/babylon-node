@@ -65,11 +65,7 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
+import com.google.inject.*;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
@@ -132,8 +128,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
                 txn -> {
                   try {
                     mempool.addTransaction(txn);
-                    counters.set(
-                        SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+                    counters.mempool().size().set(mempool.getCount());
                   } catch (MempoolRejectedException e) {
                     log.error(e);
                   }
@@ -167,8 +162,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
                 // This is a workaround for the mocking to keep things lightweight
                 .map(RawLedgerTransaction::INCORRECTInterpretDirectlyAsRawNotarizedTransaction)
                 .toList());
-        counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
-
+        counters.mempool().size().set(mempool.getCount());
         var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
         ledgerUpdateDispatcher.dispatch(ledgerUpdate);
       }

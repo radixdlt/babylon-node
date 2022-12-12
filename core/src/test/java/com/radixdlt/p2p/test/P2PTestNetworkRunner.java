@@ -65,12 +65,7 @@
 package com.radixdlt.p2p.test;
 
 import com.google.common.collect.ImmutableList;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.Provides;
-import com.google.inject.Scopes;
+import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.addressing.Addressing;
@@ -87,8 +82,8 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.modules.CapabilitiesModule;
 import com.radixdlt.modules.DispatcherModule;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PConfig;
@@ -177,7 +172,7 @@ public final class P2PTestNetworkRunner {
                     bind(TestCounters.class).toInstance(new TestCounters());
                     bind(P2PConfig.class).toInstance(p2pConfig);
                     bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
-                    bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+                    bind(SystemCounters.class).toInstance(new MetricsInitializer().initialize());
                   }
 
                   @Provides

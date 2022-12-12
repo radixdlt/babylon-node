@@ -74,7 +74,6 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import java.util.Random;
 import org.junit.Test;
 
@@ -113,7 +112,7 @@ public class SyncToTimeoutQcTest {
     for (int nodeIndex = 0; nodeIndex < NUM_NODES; ++nodeIndex) {
       final var counters = test.getInstance(nodeIndex, SystemCounters.class);
       // no bft sync requests were needed
-      assertEquals(0, counters.get(CounterType.BFT_SYNC_REQUESTS_SENT));
+      assertEquals(0, (int) counters.bft().sync().requestsSent().get());
     }
   }
 
