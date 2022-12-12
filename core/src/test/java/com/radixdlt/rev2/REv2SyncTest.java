@@ -69,6 +69,7 @@ import static com.radixdlt.harness.predicates.EventPredicate.*;
 import static com.radixdlt.harness.predicates.NodePredicate.*;
 import static com.radixdlt.harness.predicates.NodesPredicate.*;
 
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -81,7 +82,10 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.sync.messages.local.SyncRequestTimeout;
+import com.radixdlt.sync.messages.remote.SyncResponse;
 import com.radixdlt.utils.UInt64;
+import java.util.function.Predicate;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -118,13 +122,23 @@ public class REv2SyncTest {
   }
 
   private void test_sync_n_txns(int n) {
+    final Predicate<ControlledMessage> isSyncResponse =
+        msg -> msg.message() instanceof SyncResponse;
+    final Predicate<ControlledMessage> isSyncRequestTimeout =
+        msg -> msg.message() instanceof SyncRequestTimeout;
+
     try (var test = buildTest()) {
-      // Arrange: n transactions committed
+      // Arrange: n transactions committed - across a number of rounds
       test.startAllNodes();
       test.runUntilState(nodeAt(0, atOrOverStateVersion(n)), onlyConsensusEvents());
 
-      // Act: Sync
-      test.runUntilState(nodeAt(1, atOrOverStateVersion(n)), onlyLedgerSyncEvents());
+      // Process all noisy sync events except SyncResponses (and also filter out timeouts)
+      test.runUntilOutOfMessagesOfType(
+          1000, onlyLedgerSyncEvents().and(Predicate.not(isSyncResponse.or(isSyncRequestTimeout))));
+
+      // Act: Only allow through a single Sync Response
+      // Allowing through only one sync response ensures it's been batched together
+      test.runForCount(1, msg -> msg.message() instanceof SyncResponse);
 
       // Assert
       Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());

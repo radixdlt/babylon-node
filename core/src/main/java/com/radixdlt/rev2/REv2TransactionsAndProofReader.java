@@ -76,11 +76,16 @@ import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.ArrayList;
 import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class REv2TransactionsAndProofReader implements TransactionsAndProofReader {
 
-  /* Maximum transactions (in terms of their total byte size) to return in a single getTransactions response */
-  private static final int MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE = 900_000; // 900 KB
+  private static final Logger logger = LogManager.getLogger();
+
+  /* Maximum transaction size (in terms of their total byte size) to return in a single getTransactions response.
+   * See also MAX_PACKET_LENGTH in PeerChannelInitializer and OVERRIDE_MAX_PAYLOAD_SIZE for transaction size */
+  private static final int MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE = 24_800_000; // 24.8MB
 
   private final REv2TransactionAndProofStore transactionStore;
   private final Serialization serialization;
@@ -94,6 +99,7 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
 
   @Override
   public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
+    // TODO - It would likely be more efficient to move this down into the State Manager.
     final var startStateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
 
     var latestStateVersion = startStateVersion;
@@ -101,6 +107,11 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
     var maybeLatestUsableProof = maybeNextProof;
     var transactionsUpToLatestUsableProof = new ArrayList<RawLedgerTransaction>();
     var totalTxnBytesSoFar = 0;
+
+    if (!maybeNextProof.isPresent()) {
+      // No transactions to ledger sync
+      return null;
+    }
 
     top_level_while:
     while (maybeNextProof.isPresent()) {
@@ -133,6 +144,16 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
       return CommittedTransactionsWithProof.create(
           transactionsUpToLatestUsableProof, maybeLatestUsableProof.unwrap());
     } else {
+      // Once we fix block limits, this shouldn't be possible
+      logger.warn(
+          String.format(
+              "Unable to form a ledger sync response from version %s - there are more than %s bytes"
+                  + " of transactions between that version and the next proof at %s",
+              startStateVersion,
+              MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
+              maybeNextProof
+                  .map(p -> String.format("%s", p.getStateVersion()))
+                  .or(() -> "UNKNOWN")));
       return null;
     }
   }
