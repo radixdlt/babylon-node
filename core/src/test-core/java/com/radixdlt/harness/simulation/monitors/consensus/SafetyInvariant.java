@@ -70,7 +70,7 @@ import com.radixdlt.harness.invariants.SafetyChecker;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 
@@ -94,7 +94,7 @@ public class SafetyInvariant implements TestInvariant {
         .flatMap(
             e -> {
               for (var node : network.getNodes()) {
-                final var nodeCounters = network.getInstance(SystemCounters.class, node);
+                final var nodeCounters = network.getInstance(Metrics.class, node);
                 if (nodeCounters.bft().preconditionViolations().get() != 0) {
                   return Observable.just(
                       new TestInvariantError(

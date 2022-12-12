@@ -134,7 +134,7 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
 
     final var results = runningTest.awaitCompletion();
 
-    final var nodeCounters = runningTest.getNetwork().getSystemCounters().get(nodeUnderTest);
+    final var nodeCounters = runningTest.getNetwork().getMetrics().get(nodeUnderTest);
 
     assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
 

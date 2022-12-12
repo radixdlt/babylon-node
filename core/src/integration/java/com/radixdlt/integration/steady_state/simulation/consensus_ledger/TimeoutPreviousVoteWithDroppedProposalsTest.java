@@ -128,7 +128,7 @@ public class TimeoutPreviousVoteWithDroppedProposalsTest {
 
     // Post-Execution Assertions
     final var statistics =
-        runningTest.getNetwork().getSystemCounters().values().stream()
+        runningTest.getNetwork().getMetrics().values().stream()
             .map(
                 s ->
                     LongStream.of(

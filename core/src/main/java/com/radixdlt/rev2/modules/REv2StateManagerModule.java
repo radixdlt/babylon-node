@@ -80,7 +80,7 @@ import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.*;
@@ -239,11 +239,9 @@ public final class REv2StateManagerModule extends AbstractModule {
 
             @Provides
             PersistentVertexStore vertexStore(
-                RustStateComputer stateComputer,
-                SystemCounters systemCounters,
-                Serialization serialization) {
+                RustStateComputer stateComputer, Metrics metrics, Serialization serialization) {
               return s -> {
-                systemCounters.misc().vertexStoreSaved().inc();
+                metrics.misc().vertexStoreSaved().inc();
                 var vertexStoreBytes =
                     serialization.toDson(s.toSerialized(), DsonOutput.Output.ALL);
                 stateComputer.saveVertexStore(vertexStoreBytes);

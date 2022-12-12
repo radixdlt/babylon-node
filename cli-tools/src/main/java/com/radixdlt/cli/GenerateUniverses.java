@@ -75,8 +75,8 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.modules.CryptoModule;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev1.MaxValidators;
 import com.radixdlt.rev1.checkpoint.Genesis;
@@ -201,7 +201,7 @@ public final class GenerateUniverses {
                         .annotatedWith(Genesis.class)
                         .toInstance(List.of());
                     bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-                    bind(SystemCounters.class).toInstance(new MetricsInitializer().initialize());
+                    bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
                     bindConstant().annotatedWith(Genesis.class).to(timestamp);
                     bind(new TypeLiteral<Set<StakeTokens>>() {})
                         .annotatedWith(Genesis.class)

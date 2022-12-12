@@ -78,7 +78,7 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.*;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -164,7 +164,7 @@ public final class BFTSync implements BFTSyncer {
   private final ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher;
   private final Random random;
   private final int bftSyncPatienceMillis;
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
   private LedgerProof currentLedgerHeader;
 
   // TODO: remove once we figure that out
@@ -187,7 +187,7 @@ public final class BFTSync implements BFTSyncer {
       LedgerProof currentLedgerHeader,
       Random random,
       int bftSyncPatienceMillis,
-      SystemCounters systemCounters) {
+      Metrics metrics) {
     this.self = self;
     this.syncRequestRateLimiter = Objects.requireNonNull(syncRequestRateLimiter);
     this.vertexStore = vertexStore;
@@ -201,7 +201,7 @@ public final class BFTSync implements BFTSyncer {
     this.currentLedgerHeader = Objects.requireNonNull(currentLedgerHeader);
     this.random = random;
     this.bftSyncPatienceMillis = bftSyncPatienceMillis;
-    this.systemCounters = Objects.requireNonNull(systemCounters);
+    this.metrics = Objects.requireNonNull(metrics);
   }
 
   public EventProcessor<RoundQuorumReached> roundQuorumReachedEventProcessor() {
@@ -351,7 +351,7 @@ public final class BFTSync implements BFTSyncer {
 
     //noinspection UnstableApiUsage
     for (var syncId : syncIds) {
-      systemCounters.bft().sync().requestTimeouts().inc();
+      metrics.bft().sync().requestTimeouts().inc();
       var syncState = syncing.remove(syncId);
 
       if (syncState == null) {

@@ -75,7 +75,7 @@ import com.radixdlt.environment.deterministic.network.ChannelId;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import java.util.LinkedList;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -106,7 +106,7 @@ public class MovingWindowValidatorsTest {
     bftTest.runUntilMessage(
         DeterministicTest.hasReachedEpochRound(EpochRound.of(maxEpoch, epochMaxRound)));
 
-    LinkedList<SystemCounters> testCounters = systemCounters(bftTest);
+    LinkedList<Metrics> testCounters = metrics(bftTest);
     assertThat(testCounters)
         .extracting(sc -> (long) sc.bft().vertexStore().indirectParents().get())
         .containsOnly(0L);
@@ -173,9 +173,9 @@ public class MovingWindowValidatorsTest {
     return epochMaxRound * epochs * numValidators / numNodes;
   }
 
-  private static LinkedList<SystemCounters> systemCounters(DeterministicTest bftTest) {
+  private static LinkedList<Metrics> metrics(DeterministicTest bftTest) {
     return IntStream.range(0, bftTest.numNodes())
-        .mapToObj(i -> bftTest.getInstance(i, SystemCounters.class))
+        .mapToObj(i -> bftTest.getInstance(i, Metrics.class))
         .collect(Collectors.toCollection(LinkedList::new));
   }
 

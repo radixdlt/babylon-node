@@ -68,7 +68,7 @@ import com.google.inject.Inject;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeerEvent;
@@ -90,7 +90,7 @@ public final class PeerServerBootstrap {
   private final Addressing addressing;
   private final int networkId;
   private final String newestForkName;
-  private final SystemCounters counters;
+  private final Metrics metrics;
   private final Serialization serialization;
   private final SecureRandom secureRandom;
   private final ECKeyOps ecKeyOps;
@@ -103,7 +103,7 @@ public final class PeerServerBootstrap {
       P2PConfig config,
       Addressing addressing,
       @NetworkId int networkId,
-      SystemCounters counters,
+      Metrics metrics,
       Serialization serialization,
       SecureRandom secureRandom,
       ECKeyOps ecKeyOps,
@@ -113,7 +113,7 @@ public final class PeerServerBootstrap {
     this.addressing = Objects.requireNonNull(addressing);
     this.networkId = networkId;
     this.newestForkName = "SomeForkName";
-    this.counters = Objects.requireNonNull(counters);
+    this.metrics = Objects.requireNonNull(metrics);
     this.serialization = Objects.requireNonNull(serialization);
     this.secureRandom = Objects.requireNonNull(secureRandom);
     this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
@@ -138,7 +138,7 @@ public final class PeerServerBootstrap {
                 addressing,
                 networkId,
                 newestForkName,
-                counters,
+                metrics,
                 serialization,
                 secureRandom,
                 ecKeyOps,

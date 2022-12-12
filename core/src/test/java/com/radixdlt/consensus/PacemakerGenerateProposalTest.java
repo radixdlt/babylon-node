@@ -75,8 +75,8 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt256;
@@ -102,7 +102,7 @@ public final class PacemakerGenerateProposalTest {
   private Hasher hasher;
   private TimeSupplier timeSupplier;
   private RoundUpdate initialRoundUpdate;
-  private SystemCounters systemCounters;
+  private Metrics metrics;
 
   private Pacemaker sut;
 
@@ -111,7 +111,7 @@ public final class PacemakerGenerateProposalTest {
     this.self = BFTNode.random();
     this.validator1 = BFTNode.random();
     this.validator2 = BFTNode.random();
-    this.systemCounters = new MetricsInitializer().initialize();
+    this.metrics = new MetricsInitializer().initialize();
     this.validatorSet =
         BFTValidatorSet.from(
             Stream.of(
@@ -148,7 +148,7 @@ public final class PacemakerGenerateProposalTest {
             hasher,
             timeSupplier,
             initialRoundUpdate,
-            systemCounters);
+            metrics);
   }
 
   @Test

@@ -159,7 +159,7 @@ public final class ProposerTimestampSanityTest {
 
     // In this test scenario there should be no liveness whatsoever.
     // Making sure that not a single transaction went through.
-    for (final var nodeCounters : runningTest.getNetwork().getSystemCounters().values()) {
+    for (final var nodeCounters : runningTest.getNetwork().getMetrics().values()) {
       assertEquals(0, (long) nodeCounters.ledger().bftTransactionsProcessed().get());
     }
   }

@@ -77,7 +77,7 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.p2p.capability.RemotePeerCapability;
@@ -127,7 +127,7 @@ public final class LocalSyncService {
   private final ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher;
   private final ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher;
   private final SyncRelayConfig syncRelayConfig;
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
   private final PeersView peersView;
   private final Comparator<AccumulatorState> accComparator;
   private final RemoteSyncResponseValidatorSetVerifier validatorSetVerifier;
@@ -149,7 +149,7 @@ public final class LocalSyncService {
       ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher,
       ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher,
       SyncRelayConfig syncRelayConfig,
-      SystemCounters systemCounters,
+      Metrics metrics,
       PeersView peersView,
       Comparator<AccumulatorState> accComparator,
       RemoteSyncResponseValidatorSetVerifier validatorSetVerifier,
@@ -166,7 +166,7 @@ public final class LocalSyncService {
     this.syncLedgerUpdateTimeoutDispatcher =
         Objects.requireNonNull(syncLedgerUpdateTimeoutDispatcher);
     this.syncRelayConfig = Objects.requireNonNull(syncRelayConfig);
-    this.systemCounters = Objects.requireNonNull(systemCounters);
+    this.metrics = Objects.requireNonNull(metrics);
     this.peersView = Objects.requireNonNull(peersView);
     this.accComparator = Objects.requireNonNull(accComparator);
     this.validatorSetVerifier = Objects.requireNonNull(validatorSetVerifier);
@@ -550,11 +550,11 @@ public final class LocalSyncService {
 
   private <T extends SyncState> T updateSyncTargetDiffCounter(T syncState) {
     if (syncState instanceof final SyncingState syncingState) {
-      this.systemCounters
+      this.metrics
           .sync()
           .currentStateVersion()
           .set(syncingState.getCurrentHeader().getStateVersion());
-      this.systemCounters
+      this.metrics
           .sync()
           .targetStateVersion()
           .set(
@@ -562,14 +562,8 @@ public final class LocalSyncService {
                   syncingState.getTargetHeader().getStateVersion(),
                   syncingState.getTargetHeader().getAccumulatorState().getStateVersion()));
     } else {
-      this.systemCounters
-          .sync()
-          .currentStateVersion()
-          .set(syncState.getCurrentHeader().getStateVersion());
-      this.systemCounters
-          .sync()
-          .targetStateVersion()
-          .set(syncState.getCurrentHeader().getStateVersion());
+      this.metrics.sync().currentStateVersion().set(syncState.getCurrentHeader().getStateVersion());
+      this.metrics.sync().targetStateVersion().set(syncState.getCurrentHeader().getStateVersion());
     }
 
     return syncState;

@@ -98,7 +98,7 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.rev1.forks.Forks;
 import com.radixdlt.substate.TxBuilderException;
 import com.radixdlt.substate.TxLowLevelBuilder;
@@ -124,7 +124,7 @@ public final class RadixEngineStateComputer implements StateComputer {
   private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
   private final EventDispatcher<InvalidProposedTransaction>
       invalidProposedTransactionEventDispatcher;
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
   private final Hasher hasher;
   private final Forks forks;
   private final Object lock = new Object();
@@ -145,7 +145,7 @@ public final class RadixEngineStateComputer implements StateComputer {
       EventDispatcher<InvalidProposedTransaction> invalidProposedTransactionEventDispatcher,
       EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
       Hasher hasher,
-      SystemCounters systemCounters) {
+      Metrics metrics) {
     if (epochMaxRound.isGenesis()) {
       throw new IllegalArgumentException("Epoch change round must not be genesis.");
     }
@@ -161,7 +161,7 @@ public final class RadixEngineStateComputer implements StateComputer {
         Objects.requireNonNull(invalidProposedTransactionEventDispatcher);
     this.ledgerUpdateDispatcher = Objects.requireNonNull(ledgerUpdateDispatcher);
     this.hasher = Objects.requireNonNull(hasher);
-    this.systemCounters = Objects.requireNonNull(systemCounters);
+    this.metrics = Objects.requireNonNull(metrics);
     this.proposerElection = proposerElection;
   }
 
@@ -199,8 +199,8 @@ public final class RadixEngineStateComputer implements StateComputer {
       try {
         var processed = mempool.addTransaction(transaction);
 
-        systemCounters.mempool().addSuccesses().inc();
-        systemCounters.mempool().size().set(mempool.getCount());
+        metrics.mempool().addSuccesses().inc();
+        metrics.mempool().size().set(mempool.getCount());
 
         var success =
             MempoolAddSuccess.create(
@@ -211,7 +211,7 @@ public final class RadixEngineStateComputer implements StateComputer {
       } catch (MempoolDuplicateException e) {
         throw e;
       } catch (MempoolRejectedException e) {
-        systemCounters.mempool().addFailures().inc();
+        metrics.mempool().addFailures().inc();
         throw e;
       }
     }
@@ -434,9 +434,9 @@ public final class RadixEngineStateComputer implements StateComputer {
         .forEach(
             t -> {
               if (t.isSystemOnly()) {
-                systemCounters.radixEngine().systemTransactions().inc();
+                metrics.radixEngine().systemTransactions().inc();
               } else {
-                systemCounters.radixEngine().userTransactions().inc();
+                metrics.radixEngine().userTransactions().inc();
               }
             });
     return result;
@@ -469,7 +469,7 @@ public final class RadixEngineStateComputer implements StateComputer {
       // TODO: refactor mempool to be less generic and make this more efficient
       // TODO: Move this into engine
       this.mempool.handleTransactionsCommitted(txCommitted);
-      systemCounters.mempool().size().set(mempool.getCount());
+      metrics.mempool().size().set(mempool.getCount());
 
       var epochChangeOptional =
           txnsAndProof

@@ -66,7 +66,7 @@ package com.radixdlt.store;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.addressbook.AddressBookEntry;
 import com.radixdlt.p2p.addressbook.AddressBookPersistence;
@@ -85,15 +85,15 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
 
   private final Serialization serialization;
   private final DatabaseEnvironment dbEnv;
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
   private Database entriesDb;
 
   @Inject
   public BerkeleyAddressBookStore(
-      Serialization serialization, DatabaseEnvironment dbEnv, SystemCounters systemCounters) {
+      Serialization serialization, DatabaseEnvironment dbEnv, Metrics metrics) {
     this.serialization = Objects.requireNonNull(serialization);
     this.dbEnv = Objects.requireNonNull(dbEnv);
-    this.systemCounters = Objects.requireNonNull(systemCounters);
+    this.metrics = Objects.requireNonNull(metrics);
 
     this.open();
   }
@@ -168,7 +168,7 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
       final var key = new DatabaseEntry(nodeId.getPublicKey().getBytes());
 
       if (entriesDb.delete(null, key) == OperationStatus.SUCCESS) {
-        systemCounters.bdb().addressBook().entriesDeleted().inc();
+        metrics.bdb().addressBook().entriesDeleted().inc();
         return true;
       }
       return false;
@@ -203,14 +203,14 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
 
   private void addTime(long start) {
     final var elapsed = (System.nanoTime() - start + 500L) / 1000L;
-    this.systemCounters.bdb().addressBook().interact().observe(elapsed);
+    this.metrics.bdb().addressBook().interact().observe(elapsed);
   }
 
   private void addBytesRead(int bytesRead) {
-    this.systemCounters.bdb().addressBook().bytesRead().inc(bytesRead);
+    this.metrics.bdb().addressBook().bytesRead().inc(bytesRead);
   }
 
   private void addBytesWrite(int bytesWrite) {
-    this.systemCounters.bdb().addressBook().bytesWritten().inc(bytesWrite);
+    this.metrics.bdb().addressBook().bytesWritten().inc(bytesWrite);
   }
 }

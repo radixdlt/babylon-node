@@ -97,13 +97,13 @@ public final class MaxLedgerSyncLagInvariant implements TestInvariant {
         .flatMap(
             unused -> {
               final long maxStateVersion =
-                  network.getSystemCounters().values().stream()
+                  network.getMetrics().values().stream()
                       .mapToLong(sc -> (long) sc.ledger().stateVersion().get())
                       .max()
                       .orElse(0L);
 
               final var maybeTooMuchLag =
-                  network.getSystemCounters().entrySet().stream()
+                  network.getMetrics().entrySet().stream()
                       .map(
                           e ->
                               Pair.of(

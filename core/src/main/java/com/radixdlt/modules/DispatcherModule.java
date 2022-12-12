@@ -87,7 +87,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolRelayTrigger;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.PeerEvent;
 import com.radixdlt.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
 import com.radixdlt.p2p.discovery.DiscoverPeers;
@@ -299,7 +299,7 @@ public class DispatcherModule extends AbstractModule {
       @Self BFTNode self,
       @ProcessOnDispatch Set<EventProcessor<LocalSyncRequest>> syncProcessors,
       Environment environment,
-      SystemCounters systemCounters) {
+      Metrics metrics) {
     var envDispatcher = environment.getDispatcher(LocalSyncRequest.class);
     return req -> {
       if (logger.isTraceEnabled()) {
@@ -312,7 +312,7 @@ public class DispatcherModule extends AbstractModule {
         throw new IllegalStateException("Should not be targeting self.");
       }
 
-      Gauge syncTargetStateVersion = systemCounters.sync().targetStateVersion();
+      Gauge syncTargetStateVersion = metrics.sync().targetStateVersion();
       syncTargetStateVersion.set(
           Math.max(syncTargetStateVersion.labels().get(), req.getTarget().getStateVersion()));
 
@@ -336,16 +336,16 @@ public class DispatcherModule extends AbstractModule {
   private EventDispatcher<BFTInsertUpdate> bftInsertUpdateEventDispatcher(
       @ProcessOnDispatch Set<EventProcessor<BFTInsertUpdate>> processors,
       Environment environment,
-      SystemCounters systemCounters) {
+      Metrics metrics) {
     var dispatcher = environment.getDispatcher(BFTInsertUpdate.class);
     return update -> {
       if (update.getSiblingsCount() > 1) {
-        systemCounters.bft().vertexStore().forks().inc();
+        metrics.bft().vertexStore().forks().inc();
       }
       if (!update.getInserted().getVertexWithHash().vertex().hasDirectParent()) {
-        systemCounters.bft().vertexStore().indirectParents().inc();
+        metrics.bft().vertexStore().indirectParents().inc();
       }
-      systemCounters.bft().vertexStore().size().set(update.getVertexStoreSize());
+      metrics.bft().vertexStore().size().set(update.getVertexStoreSize());
       dispatcher.dispatch(update);
       processors.forEach(p -> p.process(update));
     };
@@ -353,15 +353,11 @@ public class DispatcherModule extends AbstractModule {
 
   @Provides
   private EventDispatcher<BFTRebuildUpdate> bftRebuildUpdateEventDispatcher(
-      Environment environment, SystemCounters systemCounters) {
+      Environment environment, Metrics metrics) {
     var dispatcher = environment.getDispatcher(BFTRebuildUpdate.class);
     return update -> {
-      systemCounters
-          .bft()
-          .vertexStore()
-          .size()
-          .set(update.getVertexStoreState().getVertices().size());
-      systemCounters.bft().vertexStore().rebuilds().inc();
+      metrics.bft().vertexStore().size().set(update.getVertexStoreState().getVertices().size());
+      metrics.bft().vertexStore().rebuilds().inc();
       dispatcher.dispatch(update);
     };
   }
@@ -379,9 +375,9 @@ public class DispatcherModule extends AbstractModule {
   @Provides
   private EventDispatcher<CommittedTransactionsWithProof> syncUpdateEventDispatcher(
       @ProcessOnDispatch Set<EventProcessor<CommittedTransactionsWithProof>> processors,
-      SystemCounters systemCounters) {
+      Metrics metrics) {
     return commit -> {
-      systemCounters.sync().validResponsesReceived().inc(commit.getTransactions().size());
+      metrics.sync().validResponsesReceived().inc(commit.getTransactions().size());
       processors.forEach(e -> e.process(commit));
     };
   }
@@ -391,18 +387,18 @@ public class DispatcherModule extends AbstractModule {
       @ProcessOnDispatch Set<EventProcessor<BFTCommittedUpdate>> processors,
       Set<EventProcessor<BFTCommittedUpdate>> asyncProcessors,
       Environment environment,
-      SystemCounters systemCounters) {
+      Metrics metrics) {
     if (asyncProcessors.isEmpty()) {
       return commit -> {
-        systemCounters.bft().committedVertices().inc(commit.committed().size());
-        systemCounters.bft().vertexStore().size().set(commit.vertexStoreSize());
+        metrics.bft().committedVertices().inc(commit.committed().size());
+        metrics.bft().vertexStore().size().set(commit.vertexStoreSize());
         processors.forEach(e -> e.process(commit));
       };
     } else {
       var dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
       return commit -> {
-        systemCounters.bft().committedVertices().inc(commit.committed().size());
-        systemCounters.bft().vertexStore().size().set(commit.vertexStoreSize());
+        metrics.bft().committedVertices().inc(commit.committed().size());
+        metrics.bft().vertexStore().size().set(commit.vertexStoreSize());
         processors.forEach(e -> e.process(commit));
         dispatcher.dispatch(commit);
       };
@@ -429,10 +425,10 @@ public class DispatcherModule extends AbstractModule {
   private RemoteEventDispatcher<GetVerticesRequest> verticesRequestDispatcher(
       @ProcessOnDispatch Set<EventProcessor<GetVerticesRequest>> processors,
       Environment environment,
-      SystemCounters counters) {
+      Metrics metrics) {
     var dispatcher = environment.getRemoteDispatcher(GetVerticesRequest.class);
     return (node, request) -> {
-      counters.bft().sync().requestsSent().inc();
+      metrics.bft().sync().requestsSent().inc();
       dispatcher.dispatch(node, request);
       processors.forEach(e -> e.process(request));
     };

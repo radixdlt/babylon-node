@@ -69,10 +69,10 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.RejectedConsensusEvent;
-import com.radixdlt.monitoring.SystemCounters.RejectedConsensusEvent.TimestampIssue;
-import com.radixdlt.monitoring.SystemCounters.RejectedConsensusEvent.Type;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent;
+import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.TimestampIssue;
+import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.Type;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -96,17 +96,17 @@ public final class ProposalTimestampVerifier implements BFTEventProcessor {
 
   private final BFTEventProcessor forwardTo;
   private final TimeSupplier timeSupplier;
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
   private final EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher;
 
   public ProposalTimestampVerifier(
       BFTEventProcessor forwardTo,
       TimeSupplier timeSupplier,
-      SystemCounters systemCounters,
+      Metrics metrics,
       EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher) {
     this.forwardTo = Objects.requireNonNull(forwardTo);
     this.timeSupplier = Objects.requireNonNull(timeSupplier);
-    this.systemCounters = Objects.requireNonNull(systemCounters);
+    this.metrics = Objects.requireNonNull(metrics);
     this.roundLeaderFailureDispatcher = Objects.requireNonNull(roundLeaderFailureDispatcher);
   }
 
@@ -137,21 +137,21 @@ public final class ProposalTimestampVerifier implements BFTEventProcessor {
 
     final boolean isAcceptable;
     if (proposalTimestamp < lowerBoundInclusive) {
-      systemCounters
+      metrics
           .bft()
           .rejectedConsensusEvents()
           .label(new RejectedConsensusEvent(Type.PROPOSAL, TimestampIssue.TOO_OLD))
           .inc();
       isAcceptable = false;
     } else if (proposalTimestamp > upperBoundInclusive) {
-      systemCounters
+      metrics
           .bft()
           .rejectedConsensusEvents()
           .label(new RejectedConsensusEvent(Type.PROPOSAL, TimestampIssue.TOO_YOUNG))
           .inc();
       isAcceptable = false;
     } else if (proposalTimestamp < prevTimestamp) {
-      systemCounters
+      metrics
           .bft()
           .rejectedConsensusEvents()
           .label(new RejectedConsensusEvent(Type.PROPOSAL, TimestampIssue.NOT_MONOTONIC))

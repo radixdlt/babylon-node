@@ -69,7 +69,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerControl;
 import com.radixdlt.p2p.PeerManager;
@@ -90,7 +90,7 @@ public final class MessageCentralImpl implements MessageCentral {
   private static final Logger log = LogManager.getLogger();
 
   // Dependencies
-  private final SystemCounters counters;
+  private final Metrics metrics;
 
   // Message dispatching
   private final MessageDispatcher messageDispatcher;
@@ -115,11 +115,11 @@ public final class MessageCentralImpl implements MessageCentral {
       PeerManager peerManager,
       TimeSupplier timeSource,
       EventQueueFactory<OutboundMessageEvent> outboundEventQueueFactory,
-      SystemCounters counters,
+      Metrics metrics,
       Provider<PeerControl> peerControl,
       Addressing addressing,
       Capabilities capabilities) {
-    this.counters = Objects.requireNonNull(counters);
+    this.metrics = Objects.requireNonNull(metrics);
     this.outboundQueue =
         outboundEventQueueFactory.createEventQueue(
             config.messagingOutboundQueueMax(16384), OutboundMessageEvent.comparator());
@@ -128,11 +128,11 @@ public final class MessageCentralImpl implements MessageCentral {
     Objects.requireNonNull(serialization);
 
     this.messageDispatcher =
-        new MessageDispatcher(counters, config, serialization, timeSource, peerManager, addressing);
+        new MessageDispatcher(metrics, config, serialization, timeSource, peerManager, addressing);
 
     this.messagePreprocessor =
         new MessagePreprocessor(
-            counters, config, timeSource, serialization, peerControl, addressing, capabilities);
+            metrics, config, timeSource, serialization, peerControl, addressing, capabilities);
 
     // Start outbound processing thread
     this.outboundThreadPool =
@@ -157,7 +157,7 @@ public final class MessageCentralImpl implements MessageCentral {
 
   private Optional<MessageFromPeer<Message>> processInboundMessage(InboundMessage inboundMessage) {
     final var messageQueuedTime = Time.currentTimestamp() - inboundMessage.receiveTime();
-    this.counters.messages().inbound().queueWait().observe(messageQueuedTime);
+    this.metrics.messages().inbound().queueWait().observe(messageQueuedTime);
     final var processingStopwatch = Stopwatch.createStarted();
     try {
       return this.messagePreprocessor
@@ -188,7 +188,7 @@ public final class MessageCentralImpl implements MessageCentral {
   private <T> void logPreprocessedMessageAndUpdateCounters(
       MessageFromPeer<T> message, Stopwatch processingStopwatch) {
     final var messageProcessingTime = processingStopwatch.elapsed(TimeUnit.MILLISECONDS);
-    this.counters.messages().inbound().process().observe(messageProcessingTime);
+    this.metrics.messages().inbound().process().observe(messageProcessingTime);
     if (log.isTraceEnabled()) {
       log.trace("Received from {}: {}", message.source(), message.message());
     }
@@ -216,7 +216,7 @@ public final class MessageCentralImpl implements MessageCentral {
   }
 
   private void outboundMessageProcessor(OutboundMessageEvent outbound) {
-    this.counters.messages().outbound().queued().set(outboundQueue.size());
+    this.metrics.messages().outbound().queued().set(outboundQueue.size());
     messageDispatcher.send(outbound);
   }
 }

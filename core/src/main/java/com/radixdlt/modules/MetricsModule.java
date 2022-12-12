@@ -67,8 +67,8 @@ package com.radixdlt.modules;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.monitoring.SystemCounters;
 import io.prometheus.client.CollectorRegistry;
 
 public class MetricsModule extends AbstractModule {
@@ -81,7 +81,7 @@ public class MetricsModule extends AbstractModule {
 
   @Provides
   @Singleton
-  public SystemCounters counters(CollectorRegistry prometheusRegistry) {
+  public Metrics metrics(CollectorRegistry prometheusRegistry) {
     return new MetricsInitializer(prometheusRegistry).initialize();
   }
 }

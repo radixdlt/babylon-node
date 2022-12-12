@@ -95,7 +95,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.TID;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.forks.CandidateForkVote;
 import com.radixdlt.rev1.forks.ForkConfig;
@@ -139,7 +139,7 @@ public final class BerkeleyLedgerEntryStore
 
   private final Serialization serialization;
   private final DatabaseEnvironment dbEnv;
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
   private final StoreConfig storeConfig;
 
   // Engine Store databases
@@ -180,11 +180,11 @@ public final class BerkeleyLedgerEntryStore
       Serialization serialization,
       DatabaseEnvironment dbEnv,
       StoreConfig storeConfig,
-      SystemCounters systemCounters,
+      Metrics metrics,
       Set<BerkeleyAdditionalStore> additionalStores) {
     this.serialization = Objects.requireNonNull(serialization);
     this.dbEnv = Objects.requireNonNull(dbEnv);
-    this.systemCounters = Objects.requireNonNull(systemCounters);
+    this.metrics = Objects.requireNonNull(metrics);
     this.storeConfig = storeConfig;
     this.additionalStores = additionalStores;
 
@@ -216,7 +216,7 @@ public final class BerkeleyLedgerEntryStore
   }
 
   private com.sleepycat.je.Transaction createTransaction() {
-    return withTime(() -> beginTransaction(), systemCounters.bdb().ledger().transactionCreate());
+    return withTime(() -> beginTransaction(), metrics.bdb().ledger().transactionCreate());
   }
 
   @Override
@@ -314,7 +314,7 @@ public final class BerkeleyLedgerEntryStore
   }
 
   private void storeTxn(com.sleepycat.je.Transaction dbTransaction, REProcessedTxn txn) {
-    withTime(() -> doStore(dbTransaction, txn), systemCounters.bdb().ledger().store());
+    withTime(() -> doStore(dbTransaction, txn), metrics.bdb().ledger().store());
   }
 
   private void storeMetadata(
@@ -350,7 +350,7 @@ public final class BerkeleyLedgerEntryStore
           if (versionDiff <= storeConfig.getMinimumProofBlockSize()) {
             executeOrElseThrow(() -> proofCursor.getNext(null, null, DEFAULT), "Missing next.");
             executeOrElseThrow(proofCursor::delete, "Could not delete header.");
-            systemCounters.bdb().ledger().proofsRemoved().inc();
+            metrics.bdb().ledger().proofsRemoved().inc();
           }
         }
       }
@@ -362,9 +362,9 @@ public final class BerkeleyLedgerEntryStore
           headerKey,
           headerData,
           "Header write failed: " + proof,
-          systemCounters.bdb().ledger().headerBytesWritten());
+          metrics.bdb().ledger().headerBytesWritten());
 
-      systemCounters.bdb().ledger().proofsAdded().inc();
+      metrics.bdb().ledger().proofsAdded().inc();
     }
 
     ledgerAndBFTProof.vertexStoreState().ifPresent(v -> doSave(dbTransaction, v));
@@ -564,7 +564,7 @@ public final class BerkeleyLedgerEntryStore
             }
           }
         },
-        systemCounters.bdb().ledger().lastVertexRead());
+        metrics.bdb().ledger().lastVertexRead());
   }
 
   @Override
@@ -575,7 +575,7 @@ public final class BerkeleyLedgerEntryStore
           doSave(transaction, vertexStoreState);
           transaction.commit();
         },
-        systemCounters.bdb().ledger().save());
+        metrics.bdb().ledger().save());
   }
 
   private void open() {
@@ -1073,7 +1073,7 @@ public final class BerkeleyLedgerEntryStore
           "Transaction write for",
           transactionHash);
       addBytesWrite(transactionPosData, pKey);
-      systemCounters.bdb().ledger().commits().inc();
+      metrics.bdb().ledger().commits().inc();
 
       // State database
       var elapsed = Stopwatch.createStarted();
@@ -1171,7 +1171,7 @@ public final class BerkeleyLedgerEntryStore
     } catch (IOException e) {
       throw new BerkeleyStoreException("Unable to read from transaction store.", e);
     } finally {
-      addTime(startTime, systemCounters.bdb().ledger().read());
+      addTime(startTime, metrics.bdb().ledger().read());
     }
   }
 
@@ -1268,7 +1268,7 @@ public final class BerkeleyLedgerEntryStore
                     });
           }
         },
-        systemCounters.bdb().ledger().lastCommittedRead());
+        metrics.bdb().ledger().lastCommittedRead());
   }
 
   @Override
@@ -1331,18 +1331,18 @@ public final class BerkeleyLedgerEntryStore
 
   private void addTime(long start, Summary detailTimer) {
     final var elapsed = (System.nanoTime() - start + 500L) / 1000L;
-    systemCounters.bdb().ledger().interact().observe(elapsed);
+    metrics.bdb().ledger().interact().observe(elapsed);
     detailTimer.observe(elapsed);
   }
 
   private void addBytesRead(DatabaseEntry entryA, DatabaseEntry entryB) {
     long amount = (long) entryA.getSize() + (long) entryB.getSize();
-    systemCounters.bdb().ledger().bytesRead().inc(amount);
+    metrics.bdb().ledger().bytesRead().inc(amount);
   }
 
   private void addBytesWrite(DatabaseEntry entryA, DatabaseEntry entryB) {
     long amount = (long) entryA.getSize() + (long) entryB.getSize();
-    systemCounters.bdb().ledger().bytesWritten().inc(amount);
+    metrics.bdb().ledger().bytesWritten().inc(amount);
   }
 
   private static void executeOrElseThrow(Supplier<OperationStatus> execute, String errorMessage) {
@@ -1365,7 +1365,7 @@ public final class BerkeleyLedgerEntryStore
       Counter additionalCounter) {
     executeOrElseThrow(() -> cursor.putNoOverwrite(key, value), errorMessage);
     long amount = (long) key.getSize() + (long) value.getSize();
-    systemCounters.bdb().ledger().bytesWritten().inc(amount);
+    metrics.bdb().ledger().bytesWritten().inc(amount);
     if (additionalCounter != null) {
       additionalCounter.inc(amount);
     }

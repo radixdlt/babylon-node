@@ -72,7 +72,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.*;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.remote.*;
@@ -94,7 +94,7 @@ public final class RemoteSyncService {
   private final RemoteEventDispatcher<SyncResponse> syncResponseDispatcher;
   private final RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher;
   private final SyncRelayConfig syncRelayConfig;
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
   private final Comparator<AccumulatorState> accComparator;
   private final RateLimiter ledgerStatusUpdateSendRateLimiter;
 
@@ -109,7 +109,7 @@ public final class RemoteSyncService {
       RemoteEventDispatcher<SyncResponse> syncResponseDispatcher,
       RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher,
       SyncRelayConfig syncRelayConfig,
-      SystemCounters systemCounters,
+      Metrics metrics,
       Comparator<AccumulatorState> accComparator,
       @LastProof LedgerProof initialHeader) {
     this.peersView = Objects.requireNonNull(peersView);
@@ -119,7 +119,7 @@ public final class RemoteSyncService {
     this.statusResponseDispatcher = Objects.requireNonNull(statusResponseDispatcher);
     this.syncResponseDispatcher = Objects.requireNonNull(syncResponseDispatcher);
     this.statusUpdateDispatcher = Objects.requireNonNull(statusUpdateDispatcher);
-    this.systemCounters = systemCounters;
+    this.metrics = metrics;
     this.accComparator = Objects.requireNonNull(accComparator);
     this.ledgerStatusUpdateSendRateLimiter =
         RateLimiter.create(syncRelayConfig.maxLedgerUpdatesRate());
@@ -155,7 +155,7 @@ public final class RemoteSyncService {
         remoteCurrentHeader,
         sender);
 
-    systemCounters.sync().remoteRequestsReceived().inc();
+    metrics.sync().remoteRequestsReceived().inc();
     syncResponseDispatcher.dispatch(sender, SyncResponse.create(verifiable));
   }
 

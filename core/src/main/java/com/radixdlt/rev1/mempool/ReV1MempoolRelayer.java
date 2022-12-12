@@ -70,7 +70,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.mempool.*;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -86,7 +86,7 @@ public final class ReV1MempoolRelayer {
   private final PeersView peersView;
   private final RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher;
 
-  private final SystemCounters counters;
+  private final Metrics metrics;
 
   private final MempoolReader<RawLedgerTransaction> mempoolRelayReader;
 
@@ -98,12 +98,12 @@ public final class ReV1MempoolRelayer {
       RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher,
       PeersView peersView,
       @MempoolRelayMaxPeers int maxPeers,
-      SystemCounters counters) {
+      Metrics metrics) {
     this.mempoolRelayReader = mempoolRelayReader;
     this.remoteEventDispatcher = Objects.requireNonNull(remoteEventDispatcher);
     this.peersView = Objects.requireNonNull(peersView);
     this.maxPeers = maxPeers;
-    this.counters = Objects.requireNonNull(counters);
+    this.metrics = Objects.requireNonNull(metrics);
   }
 
   public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
@@ -141,7 +141,7 @@ public final class ReV1MempoolRelayer {
         .limit(maxPeers)
         .forEach(
             peer -> {
-              counters.mempool().relaysSent().inc(transactions.size());
+              metrics.mempool().relaysSent().inc(transactions.size());
               this.remoteEventDispatcher.dispatch(peer, mempoolAddMsg);
             });
   }

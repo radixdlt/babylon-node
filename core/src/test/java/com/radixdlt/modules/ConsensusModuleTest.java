@@ -89,8 +89,8 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
@@ -199,7 +199,7 @@ public class ConsensusModuleTest {
         bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
         bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
         bind(ProposalGenerator.class).toInstance(mock(ProposalGenerator.class));
-        bind(SystemCounters.class).toInstance(new MetricsInitializer().initialize());
+        bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
         bind(TimeSupplier.class).toInstance(mock(TimeSupplier.class));
         bind(BFTConfiguration.class).toInstance(bftConfiguration);
         bind(BFTValidatorSet.class).toInstance(bftConfiguration.getValidatorSet());

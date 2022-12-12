@@ -71,7 +71,7 @@ import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.RoundLeaderFailure;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -86,15 +86,15 @@ public final class BFTEventStatefulVerifier implements BFTEventProcessor {
   private static final Logger log = LogManager.getLogger();
 
   private final BFTEventProcessor forwardTo;
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
 
   private RoundUpdate latestRoundUpdate;
   private boolean genuineProposalReceived = false;
 
   public BFTEventStatefulVerifier(
-      BFTEventProcessor forwardTo, SystemCounters systemCounters, RoundUpdate initialRoundUpdate) {
+      BFTEventProcessor forwardTo, Metrics metrics, RoundUpdate initialRoundUpdate) {
     this.forwardTo = Objects.requireNonNull(forwardTo);
-    this.systemCounters = Objects.requireNonNull(systemCounters);
+    this.metrics = Objects.requireNonNull(metrics);
     this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
   }
 
@@ -118,7 +118,7 @@ public final class BFTEventStatefulVerifier implements BFTEventProcessor {
     // This should never happen but adding a guard just in case (e.g. if there's a bug in
     // SyncUpPreprocessor)
     if (!this.latestRoundUpdate.getCurrentRound().equals(vote.getRound())) {
-      this.systemCounters.bft().preconditionViolations().inc();
+      this.metrics.bft().preconditionViolations().inc();
       log.warn(
           "Precondition violation: ignoring a vote for round {} current round is {}",
           vote.getRound(),
@@ -134,7 +134,7 @@ public final class BFTEventStatefulVerifier implements BFTEventProcessor {
     // This should never happen but adding a guard just in case (e.g. if there's a bug in
     // SyncUpPreprocessor)
     if (!this.latestRoundUpdate.getCurrentRound().equals(proposal.getRound())) {
-      this.systemCounters.bft().preconditionViolations().inc();
+      this.metrics.bft().preconditionViolations().inc();
       log.warn(
           "Precondition violation: ignoring a proposal for round {} current round is {}",
           proposal.getRound(),
@@ -143,7 +143,7 @@ public final class BFTEventStatefulVerifier implements BFTEventProcessor {
     }
 
     if (!proposal.getAuthor().equals(latestRoundUpdate.getLeader())) {
-      this.systemCounters.bft().proposalsReceivedFromNonLeaders().inc();
+      this.metrics.bft().proposalsReceivedFromNonLeaders().inc();
       log.warn(
           "Ignoring a proposal from non-leader node {}, current_leader is {} at round {}",
           proposal.getAuthor(),
@@ -153,7 +153,7 @@ public final class BFTEventStatefulVerifier implements BFTEventProcessor {
     }
 
     if (genuineProposalReceived) {
-      this.systemCounters.bft().duplicateProposalsReceived().inc();
+      this.metrics.bft().duplicateProposalsReceived().inc();
       log.warn(
           "Received a duplicate proposal from {} for round {}",
           proposal.getAuthor(),

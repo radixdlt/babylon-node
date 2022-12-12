@@ -76,7 +76,7 @@ import java.lang.reflect.Type;
 import java.util.stream.Stream;
 
 /**
- * An initializer for {@link SystemCounters}.
+ * An initializer for {@link Metrics}.
  */
 public class MetricsInitializer {
 
@@ -106,12 +106,12 @@ public class MetricsInitializer {
   }
 
   /**
-   * Instantiates a complete hierarchy of a {@link SystemCounters} record and registers its
+   * Instantiates a complete hierarchy of a {@link Metrics} record and registers its
    * collectors with Prometheus.
    * @return Initialized instance.
    */
-  public SystemCounters initialize() {
-    return createCollectorHierarchy("node", SystemCounters.class);
+  public Metrics initialize() {
+    return createCollectorHierarchy("node", Metrics.class);
   }
 
   /**
@@ -166,7 +166,8 @@ public class MetricsInitializer {
 
   /**
    * Resolves a required collector from the given type and instantiates it with the given name.
-   * Supports standard Prometheus collectors and our type-safe label-support wrappers.
+   * Supports a subset of standard Prometheus collectors and our type-safe label-support wrappers
+   * (see {@link Metrics}).
    * @param name A name.
    * @param type A type.
    * @return Collector.

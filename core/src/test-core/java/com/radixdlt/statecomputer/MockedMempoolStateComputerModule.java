@@ -76,7 +76,7 @@ import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.targeted.mempool.SimpleMempool;
 import com.radixdlt.transactions.RawLedgerTransaction;
@@ -109,8 +109,8 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
   @Provides
   @Singleton
   private Mempool<RawNotarizedTransaction, RawNotarizedTransaction> mempool(
-      SystemCounters systemCounters, Random random) {
-    return new SimpleMempool(systemCounters, mempoolMaxSize, random);
+      Metrics metrics, Random random) {
+    return new SimpleMempool(metrics, mempoolMaxSize, random);
   }
 
   @Provides
@@ -118,7 +118,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
   private StateComputerLedger.StateComputer stateComputer(
       Mempool<RawNotarizedTransaction, RawNotarizedTransaction> mempool,
       EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
-      SystemCounters counters) {
+      Metrics metrics) {
     return new StateComputerLedger.StateComputer() {
       @Override
       public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
@@ -128,7 +128,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
                 txn -> {
                   try {
                     mempool.addTransaction(txn);
-                    counters.mempool().size().set(mempool.getCount());
+                    metrics.mempool().size().set(mempool.getCount());
                   } catch (MempoolRejectedException e) {
                     log.error(e);
                   }
@@ -162,7 +162,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
                 // This is a workaround for the mocking to keep things lightweight
                 .map(RawLedgerTransaction::INCORRECTInterpretDirectlyAsRawNotarizedTransaction)
                 .toList());
-        counters.mempool().size().set(mempool.getCount());
+        metrics.mempool().size().set(mempool.getCount());
         var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
         ledgerUpdateDispatcher.dispatch(ledgerUpdate);
       }

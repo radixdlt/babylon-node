@@ -82,8 +82,8 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.modules.CapabilitiesModule;
 import com.radixdlt.modules.DispatcherModule;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PConfig;
@@ -172,7 +172,7 @@ public final class P2PTestNetworkRunner {
                     bind(TestCounters.class).toInstance(new TestCounters());
                     bind(P2PConfig.class).toInstance(p2pConfig);
                     bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
-                    bind(SystemCounters.class).toInstance(new MetricsInitializer().initialize());
+                    bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
                   }
 
                   @Provides

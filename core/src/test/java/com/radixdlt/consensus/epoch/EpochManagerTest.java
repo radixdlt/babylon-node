@@ -96,8 +96,8 @@ import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.modules.ConsensusModule;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.LedgerModule;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
@@ -216,7 +216,7 @@ public class EpochManagerTest {
 
         bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
         bind(ProposalGenerator.class).toInstance(proposalGenerator);
-        bind(SystemCounters.class).toInstance(new MetricsInitializer().initialize());
+        bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
         bind(Mempool.class).toInstance(mempool);
         bind(StateComputer.class).toInstance(stateComputer);
         bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));

@@ -84,7 +84,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.utils.KeyComparator;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.*;
@@ -158,7 +158,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
     test.startAllNodes();
     test.runUntilMessage(nodeUnderTestReachesRound(Round.of(3)));
 
-    final var counters = test.getInstance(nodeUnderTestIndex, SystemCounters.class);
+    final var counters = test.getInstance(nodeUnderTestIndex, Metrics.class);
     assertThat(counters.bft().voteQuorums().get()).isEqualTo(2); // ensure that quorum was formed
     assertThat(counters.bft().pacemaker().timeoutsSent().get())
         .isEqualTo(2); // ensure that timeouts were processed

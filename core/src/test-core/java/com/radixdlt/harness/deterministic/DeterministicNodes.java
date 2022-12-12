@@ -81,8 +81,8 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
@@ -137,7 +137,7 @@ public final class DeterministicNodes implements AutoCloseable {
                         new EventLoggerConfig(k -> "Node" + nodeLookup.get(BFTNode.create(k)))));
                 bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
                 bind(Environment.class).toInstance(network.createSender(self));
-                bind(SystemCounters.class).toInstance(new MetricsInitializer().initialize());
+                bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
               }
             },
             baseModule);

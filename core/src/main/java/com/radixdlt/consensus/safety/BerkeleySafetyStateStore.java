@@ -67,7 +67,7 @@ package com.radixdlt.consensus.safety;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
@@ -92,18 +92,18 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 
   private final DatabaseEnvironment dbEnv;
   private final Database safetyStore;
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
   private final AtomicLong cleanupCounter = new AtomicLong();
   private final Serialization serialization;
 
   @Inject
   public BerkeleySafetyStateStore(
-      DatabaseEnvironment dbEnv, Serialization serialization, SystemCounters systemCounters) {
+      DatabaseEnvironment dbEnv, Serialization serialization, Metrics metrics) {
     this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
     this.serialization = Objects.requireNonNull(serialization);
 
     this.safetyStore = this.open();
-    this.systemCounters = Objects.requireNonNull(systemCounters);
+    this.metrics = Objects.requireNonNull(metrics);
 
     if (Boolean.valueOf(System.getProperty("db.check_integrity", "true"))) {
       // TODO implement integrity check
@@ -246,15 +246,15 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 
   private void addTime(long start) {
     final var elapsed = (System.nanoTime() - start + 500L) / 1000L;
-    this.systemCounters.bdb().safetyState().commitState().observe(elapsed);
+    this.metrics.bdb().safetyState().commitState().observe(elapsed);
   }
 
   private void addBytesRead(int bytesRead) {
-    this.systemCounters.bdb().safetyState().bytesRead().inc(bytesRead);
+    this.metrics.bdb().safetyState().bytesRead().inc(bytesRead);
   }
 
   private void addBytesWrite(int bytesWrite) {
-    this.systemCounters.bdb().safetyState().bytesWritten().inc(bytesWrite);
+    this.metrics.bdb().safetyState().bytesWritten().inc(bytesWrite);
   }
 
   private byte[] keyFor(SafetyState safetyState) {

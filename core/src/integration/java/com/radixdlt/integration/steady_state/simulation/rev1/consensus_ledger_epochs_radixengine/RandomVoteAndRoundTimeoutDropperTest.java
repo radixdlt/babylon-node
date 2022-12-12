@@ -76,7 +76,7 @@ import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
@@ -120,7 +120,7 @@ public class RandomVoteAndRoundTimeoutDropperTest {
     final var runningTest = simulationTest.run(Duration.of(2, ChronoUnit.MINUTES));
     final var checkResults = runningTest.awaitCompletion();
 
-    Map<String, ToLongFunction<SystemCounters>> counterTypes =
+    Map<String, ToLongFunction<Metrics>> counterTypes =
         Map.of(
             "vertex store forks", s -> (long) s.bft().vertexStore().forks().get(),
             "commited vertices", s -> (long) s.bft().committedVertices().get(),
@@ -133,7 +133,7 @@ public class RandomVoteAndRoundTimeoutDropperTest {
                 Collectors.toMap(
                     Map.Entry::getKey,
                     counterType ->
-                        runningTest.getNetwork().getSystemCounters().values().stream()
+                        runningTest.getNetwork().getMetrics().values().stream()
                             .mapToLong(counterType.getValue())
                             .summaryStatistics()));
 

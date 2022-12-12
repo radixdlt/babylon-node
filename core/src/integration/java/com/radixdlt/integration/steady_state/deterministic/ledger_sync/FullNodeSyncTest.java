@@ -71,7 +71,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.stream.IntStream;
 import org.junit.Test;
@@ -100,7 +100,7 @@ public class FullNodeSyncTest {
     test.runUntilState(nodeAt(numNodes - 1, atOrOverStateVersion(targetStateVersion)), 10000000);
 
     final var validatorsCounters =
-        IntStream.range(0, numValidators).mapToObj(i -> test.getInstance(i, SystemCounters.class));
+        IntStream.range(0, numValidators).mapToObj(i -> test.getInstance(i, Metrics.class));
 
     final var validatorsMaxStateVersion =
         validatorsCounters
@@ -110,7 +110,7 @@ public class FullNodeSyncTest {
 
     final var nonValidatorsStateVersions =
         IntStream.range(numValidators, numNodes - numValidators)
-            .mapToObj(i -> test.getInstance(i, SystemCounters.class))
+            .mapToObj(i -> test.getInstance(i, Metrics.class))
             .map(sc -> (long) sc.ledger().stateVersion().get())
             .toList();
 

@@ -76,7 +76,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.*;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerControl;
 import com.radixdlt.store.LastProof;
@@ -136,13 +136,13 @@ public class SyncServiceModule extends AbstractModule {
 
   @Provides
   private InvalidSyncResponseHandler invalidSyncResponseHandler(
-      SystemCounters counters, PeerControl peerControl) {
+      Metrics metrics, PeerControl peerControl) {
     return (sender, resp) -> {
       peerControl.banPeer(
           NodeId.fromPublicKey(sender.getKey()),
           Duration.ofMinutes(10),
           "Received invalid sync response");
-      counters.sync().invalidResponsesReceived().inc();
+      metrics.sync().invalidResponsesReceived().inc();
     };
   }
 

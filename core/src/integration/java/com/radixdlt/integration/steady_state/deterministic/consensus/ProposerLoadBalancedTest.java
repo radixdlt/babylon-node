@@ -80,7 +80,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -110,7 +110,7 @@ public class ProposerLoadBalancedTest {
     test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
     return IntStream.range(0, numValidatorNodes)
-        .mapToObj(i -> test.getInstance(i, SystemCounters.class))
+        .mapToObj(i -> test.getInstance(i, Metrics.class))
         .map(counters -> (long) counters.bft().pacemaker().proposalsSent().get())
         .collect(ImmutableList.toImmutableList());
   }

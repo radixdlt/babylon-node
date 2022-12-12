@@ -72,7 +72,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyOps;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.util.function.Function;
 
@@ -117,9 +117,9 @@ public final class PersistedBFTKeyModule extends AbstractModule {
 
   @Provides
   @Singleton
-  HashSigner hashSigner(PersistedBFTKeyManager bftKeyManager, SystemCounters counters) {
+  HashSigner hashSigner(PersistedBFTKeyManager bftKeyManager, Metrics metrics) {
     return hash -> {
-      counters.crypto().signaturesSigned().inc();
+      metrics.crypto().signaturesSigned().inc();
       return bftKeyManager.sign(hash);
     };
   }

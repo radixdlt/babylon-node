@@ -67,14 +67,7 @@ package com.radixdlt.sync;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
@@ -85,13 +78,9 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
-import com.radixdlt.ledger.CommittedTransactionsWithProofDto;
-import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.LedgerAccumulatorVerifier;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.ledger.*;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.PeersView.PeerInfo;
@@ -102,11 +91,7 @@ import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.local.SyncRequestTimeout;
-import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
-import com.radixdlt.sync.messages.remote.StatusRequest;
-import com.radixdlt.sync.messages.remote.StatusResponse;
-import com.radixdlt.sync.messages.remote.SyncRequest;
-import com.radixdlt.sync.messages.remote.SyncResponse;
+import com.radixdlt.sync.messages.remote.*;
 import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
 import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.transactions.RawLedgerTransaction;
@@ -127,7 +112,7 @@ public class LocalSyncServiceTest {
   private ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher;
   private ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher;
   private SyncRelayConfig syncRelayConfig;
-  private SystemCounters systemCounters;
+  private Metrics metrics;
   private PeersView peersView;
   private Comparator<AccumulatorState> accComparator;
   private RemoteSyncResponseValidatorSetVerifier validatorSetVerifier;
@@ -144,7 +129,7 @@ public class LocalSyncServiceTest {
     this.syncRequestTimeoutDispatcher = rmock(ScheduledEventDispatcher.class);
     this.syncLedgerUpdateTimeoutDispatcher = rmock(ScheduledEventDispatcher.class);
     this.syncRelayConfig = SyncRelayConfig.of(1000L, 10, 10000L);
-    this.systemCounters = mock(SystemCounters.class);
+    this.metrics = new MetricsInitializer().initialize();
     this.peersView = mock(PeersView.class);
     this.accComparator = Comparator.comparingLong(AccumulatorState::getStateVersion);
     this.validatorSetVerifier = mock(RemoteSyncResponseValidatorSetVerifier.class);
@@ -163,7 +148,7 @@ public class LocalSyncServiceTest {
             syncRequestTimeoutDispatcher,
             syncLedgerUpdateTimeoutDispatcher,
             syncRelayConfig,
-            systemCounters,
+            metrics,
             peersView,
             accComparator,
             validatorSetVerifier,

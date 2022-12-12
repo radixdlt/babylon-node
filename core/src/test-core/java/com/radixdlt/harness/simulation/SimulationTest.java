@@ -98,8 +98,8 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.EpochMaxRound;
@@ -457,7 +457,7 @@ public final class SimulationTest {
           new AbstractModule() {
             @Override
             public void configure() {
-              bind(SystemCounters.class).toInstance(new MetricsInitializer().initialize());
+              bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
               bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
               bind(NodeEvents.class).toInstance(nodeEvents);
             }
@@ -515,7 +515,7 @@ public final class SimulationTest {
                         Amount.ofTokens(1000000),
                         Amount.ofTokens(10000)));
                 bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-                bind(SystemCounters.class).toInstance(new MetricsInitializer().initialize());
+                bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
                 bind(TransactionsAndProofReader.class).toInstance(new NoOpCommittedReader());
                 bind(ForksEpochStore.class).toInstance(new NoOpForksEpochStore());
               }

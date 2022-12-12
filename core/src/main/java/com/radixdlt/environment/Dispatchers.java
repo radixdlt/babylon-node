@@ -69,7 +69,7 @@ import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -83,7 +83,7 @@ public final class Dispatchers {
   private static class DispatcherProvider<T> implements Provider<EventDispatcher<T>> {
     @Inject private Provider<Environment> environmentProvider;
 
-    @Inject private SystemCounters systemCounters;
+    @Inject private Metrics metrics;
 
     @Inject private Set<EventProcessorOnDispatch<?>> onDispatchProcessors;
 
@@ -105,7 +105,7 @@ public final class Dispatchers {
       return e -> {
         dispatcher.dispatch(e);
         processors.forEach(p -> p.process(e));
-        metricUpdater.update(systemCounters, e);
+        metricUpdater.update(metrics, e);
       };
     }
   }
@@ -141,7 +141,7 @@ public final class Dispatchers {
       implements Provider<RemoteEventDispatcher<T>> {
     @Inject private Provider<Environment> environmentProvider;
 
-    @Inject private SystemCounters systemCounters;
+    @Inject private Metrics metrics;
 
     @Inject @Self private BFTNode self;
 
@@ -206,9 +206,9 @@ public final class Dispatchers {
     /**
      * Updates the metrics according to the event.
      *
-     * @param counters Metrics.
+     * @param metrics Metrics.
      * @param event Event.
      */
-    void update(SystemCounters counters, T event);
+    void update(Metrics metrics, T event);
   }
 }

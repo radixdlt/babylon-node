@@ -68,7 +68,7 @@ import com.google.common.collect.Lists;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.*;
 
@@ -76,15 +76,15 @@ import java.util.*;
 public final class SimpleMempool
     implements Mempool<RawNotarizedTransaction, RawNotarizedTransaction> {
   private final Set<RawNotarizedTransaction> data = new HashSet<>();
-  private final SystemCounters counters;
+  private final Metrics metrics;
   private final Random random;
   private final int maxSize;
 
-  public SimpleMempool(SystemCounters counters, int maxSize, Random random) {
+  public SimpleMempool(Metrics metrics, int maxSize, Random random) {
     if (maxSize <= 0) {
       throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
     }
-    this.counters = Objects.requireNonNull(counters);
+    this.metrics = Objects.requireNonNull(metrics);
     this.maxSize = maxSize;
     this.random = Objects.requireNonNull(random);
   }
@@ -144,7 +144,7 @@ public final class SimpleMempool
   }
 
   private void updateCounts() {
-    this.counters.mempool().size().set(this.data.size());
+    this.metrics.mempool().size().set(this.data.size());
   }
 
   @Override

@@ -83,10 +83,10 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.RejectedConsensusEvent;
-import com.radixdlt.monitoring.SystemCounters.RejectedConsensusEvent.TimestampIssue;
-import com.radixdlt.monitoring.SystemCounters.RejectedConsensusEvent.Type;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent;
+import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.TimestampIssue;
+import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.Type;
 import com.radixdlt.utils.TimeSupplier;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -163,7 +163,7 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
 
     final var network = runningTest.getNetwork();
     for (final var node : network.getNodes()) {
-      final var counters = network.getInstance(SystemCounters.class, node);
+      final var counters = network.getInstance(Metrics.class, node);
       if (node.equals(rushingNode.get())) {
         // There are some invalid timestamp proposals reported (delayed from this node's point of
         // view)

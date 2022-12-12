@@ -99,8 +99,8 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev2.NetworkDefinition;
@@ -136,7 +136,7 @@ public final class REv2MempoolFillAndEmptyTest {
   private final REV2TransactionGenerator transactionGenerator =
       new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
 
-  @Inject private SystemCounters systemCounters;
+  @Inject private Metrics metrics;
   @Inject private DeterministicProcessor processor;
   @Inject private MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction> mempoolInserter;
   @Inject private MempoolReader<RawNotarizedTransaction> mempoolReader;
@@ -176,7 +176,7 @@ public final class REv2MempoolFillAndEmptyTest {
         new AbstractModule() {
           @Override
           protected void configure() {
-            bind(SystemCounters.class).toInstance(new MetricsInitializer().initialize());
+            bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
             bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
           }
         });
@@ -223,6 +223,6 @@ public final class REv2MempoolFillAndEmptyTest {
       fillAndEmptyMempool();
     }
 
-    assertThat(systemCounters.radixEngine().invalidProposedTransactions().get()).isZero();
+    assertThat(metrics.radixEngine().invalidProposedTransactions().get()).isZero();
   }
 }

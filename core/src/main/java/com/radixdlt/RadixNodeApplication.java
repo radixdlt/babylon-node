@@ -77,7 +77,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.modules.ModuleRunner;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.store.BerkeleyAddressBookStore;
 import com.radixdlt.utils.IOUtils;
@@ -236,8 +236,8 @@ public final class RadixNodeApplication {
 
     final BFTNode self = injector.getInstance(Key.get(BFTNode.class, Self.class));
     long finish = System.currentTimeMillis();
-    var systemCounters = injector.getInstance(SystemCounters.class);
-    systemCounters.misc().applicationStart().observe(finish - start);
+    var metrics = injector.getInstance(Metrics.class);
+    metrics.misc().applicationStart().observe(finish - start);
 
     Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown(injector)));
 

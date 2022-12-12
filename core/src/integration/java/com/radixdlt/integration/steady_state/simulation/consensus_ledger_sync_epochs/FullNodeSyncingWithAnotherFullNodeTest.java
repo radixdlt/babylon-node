@@ -150,14 +150,14 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
     assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
 
     final var testNodeCounters =
-        runningTest.getNetwork().getSystemCounters().get(BFTNode.create(nodeUnderTestKey));
+        runningTest.getNetwork().getMetrics().get(BFTNode.create(nodeUnderTestKey));
 
     // just to be sure that node wasn't a validator
     assertEquals(0, (long) testNodeCounters.bft().pacemaker().proposalsSent().get());
     assertEquals(0, (long) testNodeCounters.bft().committedVertices().get());
 
     final var syncNodeCounters =
-        runningTest.getNetwork().getSystemCounters().get(BFTNode.create(nonValidatorSyncNodeKey));
+        runningTest.getNetwork().getMetrics().get(BFTNode.create(nonValidatorSyncNodeKey));
 
     // make sure that the sync target node actually processed all the requests from test node
     // and test node didn't communicate directly with a validator

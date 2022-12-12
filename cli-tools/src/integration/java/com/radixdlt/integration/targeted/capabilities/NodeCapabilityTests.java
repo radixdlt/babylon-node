@@ -67,7 +67,7 @@ package com.radixdlt.integration.targeted.capabilities;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.messaging.ledgersync.StatusRequestMessage;
 import com.radixdlt.messaging.ledgersync.StatusResponseMessage;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.shell.RadixShell;
 import io.prometheus.client.Counter;
 import org.awaitility.core.ConditionTimeoutException;
@@ -138,7 +138,7 @@ public class NodeCapabilityTests {
       // Node 1 will not automatically send a status request message to Node2. So send one.
       node1.sendMsg(node2.self().getNodeId(), new StatusRequestMessage());
 
-      var node2Counters = node2.getInstance(SystemCounters.class);
+      var node2Counters = node2.getInstance(Metrics.class);
 
       // verify the discarded count is 1.
       var result =
@@ -276,7 +276,7 @@ public class NodeCapabilityTests {
       var result = waitForMessagesReceived(expectedResultMap, messagesReceived, 2);
       assertTrue(result.message, result.testOk);
 
-      var node3Counters = node2.getInstance(SystemCounters.class);
+      var node3Counters = node2.getInstance(Metrics.class);
 
       // Ensure Node3 doesn't have a discarded message (i.e. Node's 1 and 2 shouldn't send a status
       // request message to node 3)

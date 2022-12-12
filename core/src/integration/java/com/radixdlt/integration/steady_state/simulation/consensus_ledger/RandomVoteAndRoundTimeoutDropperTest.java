@@ -109,7 +109,7 @@ public class RandomVoteAndRoundTimeoutDropperTest {
     final var checkResults = runningTest.awaitCompletion();
 
     LongSummaryStatistics statistics =
-        runningTest.getNetwork().getSystemCounters().values().stream()
+        runningTest.getNetwork().getMetrics().values().stream()
             .mapToLong(s -> (long) s.bft().vertexStore().forks().get())
             .summaryStatistics();
 

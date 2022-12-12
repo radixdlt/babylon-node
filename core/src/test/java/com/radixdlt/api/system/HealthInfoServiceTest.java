@@ -71,8 +71,8 @@ import static org.mockito.Mockito.mock;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.api.system.health.ScheduledStatsCollecting;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.monitoring.SystemCounters;
 import io.prometheus.client.Gauge;
 import java.util.stream.IntStream;
 import org.junit.Test;
@@ -82,14 +82,13 @@ public class HealthInfoServiceTest {
   private final ScheduledEventDispatcher<ScheduledStatsCollecting> dispatcher =
       mock(ScheduledEventDispatcher.class);
 
-  private final SystemCounters systemCounters = new MetricsInitializer().initialize();
-  private final HealthInfoService healthInfoService =
-      new HealthInfoService(systemCounters, dispatcher);
+  private final Metrics metrics = new MetricsInitializer().initialize();
+  private final HealthInfoService healthInfoService = new HealthInfoService(metrics, dispatcher);
 
   @Test
   public void testNodeStatus() {
-    Gauge ledgerGauge = systemCounters.ledger().stateVersion();
-    Gauge targetGauge = systemCounters.sync().targetStateVersion();
+    Gauge ledgerGauge = metrics.ledger().stateVersion();
+    Gauge targetGauge = metrics.sync().targetStateVersion();
     assertEquals(BOOTING, healthInfoService.nodeStatus());
 
     updateStatsSync(10, targetGauge, 5, ledgerGauge);

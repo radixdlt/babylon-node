@@ -77,7 +77,7 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
@@ -98,7 +98,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
   private final EventDispatcher<NoVote> noVoteDispatcher;
   private final RemoteEventDispatcher<Vote> voteDispatcher;
   private final Hasher hasher;
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
   private final SafetyRules safetyRules;
   private final BFTValidatorSet validatorSet;
   private final PendingVotes pendingVotes;
@@ -122,7 +122,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
       EventDispatcher<NoVote> noVoteDispatcher,
       RemoteEventDispatcher<Vote> voteDispatcher,
       Hasher hasher,
-      SystemCounters systemCounters,
+      Metrics metrics,
       SafetyRules safetyRules,
       BFTValidatorSet validatorSet,
       PendingVotes pendingVotes,
@@ -135,7 +135,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
     this.noVoteDispatcher = Objects.requireNonNull(noVoteDispatcher);
     this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
     this.hasher = Objects.requireNonNull(hasher);
-    this.systemCounters = Objects.requireNonNull(systemCounters);
+    this.metrics = Objects.requireNonNull(metrics);
     this.safetyRules = Objects.requireNonNull(safetyRules);
     this.validatorSet = Objects.requireNonNull(validatorSet);
     this.pendingVotes = Objects.requireNonNull(pendingVotes);
@@ -242,7 +242,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
       }
     }
 
-    systemCounters.bft().successfullyProcessedVotes().inc();
+    metrics.bft().successfullyProcessedVotes().inc();
   }
 
   @Override
@@ -253,7 +253,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
     final var proposedVertex = proposal.getVertex().withId(hasher);
     this.vertexStore.insertVertex(proposedVertex);
 
-    systemCounters.bft().successfullyProcessedProposals().inc();
+    metrics.bft().successfullyProcessedProposals().inc();
   }
 
   @Override

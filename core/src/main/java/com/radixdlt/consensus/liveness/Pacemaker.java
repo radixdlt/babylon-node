@@ -73,7 +73,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.List;
@@ -107,7 +107,7 @@ public final class Pacemaker {
   private final EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher;
   private final EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher;
   private final TimeSupplier timeSupplier;
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
 
   private RoundUpdate latestRoundUpdate;
   private RoundStatus roundStatus = RoundStatus.UNDISTURBED;
@@ -132,7 +132,7 @@ public final class Pacemaker {
       Hasher hasher,
       TimeSupplier timeSupplier,
       RoundUpdate initialRoundUpdate,
-      SystemCounters systemCounters) {
+      Metrics metrics) {
     this.self = Objects.requireNonNull(self);
     this.validatorSet = Objects.requireNonNull(validatorSet);
     this.vertexStore = Objects.requireNonNull(vertexStore);
@@ -147,7 +147,7 @@ public final class Pacemaker {
     this.hasher = Objects.requireNonNull(hasher);
     this.timeSupplier = Objects.requireNonNull(timeSupplier);
     this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
-    this.systemCounters = Objects.requireNonNull(systemCounters);
+    this.metrics = Objects.requireNonNull(metrics);
   }
 
   public void start() {
@@ -162,12 +162,12 @@ public final class Pacemaker {
     final var previousRound = this.latestRoundUpdate.getCurrentRound();
     if (roundUpdate.getCurrentRound().lte(previousRound)) {
       // This shouldn't really happen but ignore any outdated updates
-      systemCounters.bft().preconditionViolations().inc();
+      metrics.bft().preconditionViolations().inc();
       return;
     }
 
     this.latestRoundUpdate = roundUpdate;
-    this.systemCounters.bft().pacemaker().round().set(roundUpdate.getCurrentRound().number());
+    this.metrics.bft().pacemaker().round().set(roundUpdate.getCurrentRound().number());
 
     this.startRound();
   }
@@ -216,7 +216,7 @@ public final class Pacemaker {
           proposal -> {
             log.trace("Broadcasting proposal: {}", proposal);
             this.proposalDispatcher.dispatch(this.validatorSet.nodes(), proposal);
-            this.systemCounters.bft().pacemaker().proposalsSent().inc();
+            this.metrics.bft().pacemaker().proposalsSent().inc();
           });
     }
   }
@@ -250,7 +250,7 @@ public final class Pacemaker {
                 + "This may (but doesn't have to) indicate system clock malfunction. "
                 + "Consider further investigation if this log message appears on a regular basis.");
       }
-      this.systemCounters.bft().pacemaker().proposalsWithSubstituteTimestamp().inc();
+      this.metrics.bft().pacemaker().proposalsWithSubstituteTimestamp().inc();
       return previousProposerTimestamp;
     }
   }
@@ -268,7 +268,7 @@ public final class Pacemaker {
         vertexStore.getPathFromRoot(highestQC.getProposedHeader().getVertexId());
     final var nextTransactions =
         proposalGenerator.getTransactionsForProposal(round, alreadyExecutedVertices);
-    this.systemCounters.bft().pacemaker().proposedTransactions().inc(nextTransactions.size());
+    this.metrics.bft().pacemaker().proposedTransactions().inc(nextTransactions.size());
     return nextTransactions;
   }
 
@@ -399,9 +399,9 @@ public final class Pacemaker {
 
   private void updateTimeoutCounters(ScheduledLocalTimeout scheduledTimeout) {
     if (scheduledTimeout.count() == 0) {
-      systemCounters.bft().pacemaker().timedOutRounds().inc();
+      metrics.bft().pacemaker().timedOutRounds().inc();
     }
-    systemCounters.bft().pacemaker().timeoutsSent().inc();
+    metrics.bft().pacemaker().timeoutsSent().inc();
   }
 
   private void rescheduleTimeout(ScheduledLocalTimeout scheduledTimeout) {

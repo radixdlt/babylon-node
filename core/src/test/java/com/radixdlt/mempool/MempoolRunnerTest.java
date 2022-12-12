@@ -90,8 +90,8 @@ import com.radixdlt.modules.DispatcherModule;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.modules.ModuleRunner;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.networks.Network;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -116,7 +116,7 @@ public final class MempoolRunnerTest {
         bind(BFTNode.class).annotatedWith(Self.class).toInstance(BFTNode.random());
         bind(LedgerProof.class).annotatedWith(LastProof.class).toInstance(mock(LedgerProof.class));
         bind(StateComputer.class).toInstance(stateComputer);
-        bind(SystemCounters.class).toInstance(new MetricsInitializer().initialize());
+        bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
         bind(RxRemoteEnvironment.class)
             .toInstance(
                 new RxRemoteEnvironment() {

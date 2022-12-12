@@ -74,7 +74,7 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.Random;
 import java.util.function.Predicate;
@@ -101,7 +101,7 @@ public class ProcessCachedEventsWithTimeoutCertTest {
     test.runUntilMessage(nodeVotesForRound(Round.of(3), TEST_NODE));
 
     // just to check if the node indeed needed to sync
-    final var counters = test.getInstance(TEST_NODE, SystemCounters.class);
+    final var counters = test.getInstance(TEST_NODE, Metrics.class);
     assertThat(counters.bft().timeoutQuorums().get()).isEqualTo(0);
     assertThat(counters.bft().voteQuorums().get()).isEqualTo(0);
   }

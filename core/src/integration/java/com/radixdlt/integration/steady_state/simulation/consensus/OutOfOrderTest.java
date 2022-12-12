@@ -132,7 +132,7 @@ public final class OutOfOrderTest {
     final var checkResults = runningTest.awaitCompletion();
 
     LongSummaryStatistics statistics =
-        runningTest.getNetwork().getSystemCounters().values().stream()
+        runningTest.getNetwork().getMetrics().values().stream()
             .mapToLong(s -> (long) s.bft().sync().requestsSent().get())
             .summaryStatistics();
     logger.info(statistics);

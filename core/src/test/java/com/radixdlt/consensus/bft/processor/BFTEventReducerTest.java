@@ -76,7 +76,8 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -85,7 +86,7 @@ public class BFTEventReducerTest {
 
   private BFTNode self = mock(BFTNode.class);
   private Hasher hasher = mock(Hasher.class);
-  private SystemCounters systemCounters = mock(SystemCounters.class);
+  private Metrics metrics = new MetricsInitializer().initialize();
   private RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
   private PendingVotes pendingVotes = mock(PendingVotes.class);
   private BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
@@ -109,7 +110,7 @@ public class BFTEventReducerTest {
             this.noVoteEventDispatcher,
             this.voteDispatcher,
             this.hasher,
-            this.systemCounters,
+            this.metrics,
             this.safetyRules,
             this.validatorSet,
             this.pendingVotes,

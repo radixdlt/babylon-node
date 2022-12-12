@@ -81,9 +81,9 @@ import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.messaging.core.InboundMessage;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.ChannelProperties;
-import com.radixdlt.monitoring.SystemCounters.ChannelProperties.Direction;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.ChannelProperties;
+import com.radixdlt.monitoring.Metrics.ChannelProperties.Direction;
 import com.radixdlt.p2p.PeerEvent.*;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.p2p.addressbook.AddressBookEntry;
@@ -108,7 +108,7 @@ public final class PeerManager {
   private final Addressing addressing;
   private final Provider<AddressBook> addressBook;
   private final Provider<PendingOutboundChannelsManager> pendingOutboundChannelsManager;
-  private final SystemCounters counters;
+  private final Metrics metrics;
   private final Object lock = new Object();
   private final Map<NodeId, Set<PeerChannel>> activeChannels = new ConcurrentHashMap<>();
   private final PublishSubject<Observable<InboundMessage>> inboundMessagesFromChannels =
@@ -121,13 +121,13 @@ public final class PeerManager {
       Addressing addressing,
       Provider<AddressBook> addressBook,
       Provider<PendingOutboundChannelsManager> pendingOutboundChannelsManager,
-      SystemCounters counters) {
+      Metrics metrics) {
     this.self = Objects.requireNonNull(self.getNodeId());
     this.config = Objects.requireNonNull(config);
     this.addressing = addressing;
     this.addressBook = Objects.requireNonNull(addressBook);
     this.pendingOutboundChannelsManager = Objects.requireNonNull(pendingOutboundChannelsManager);
-    this.counters = Objects.requireNonNull(counters);
+    this.metrics = Objects.requireNonNull(metrics);
 
     log.info("Node URI: {}", self);
   }
@@ -367,12 +367,12 @@ public final class PeerManager {
   }
 
   private void updateChannelsCounters() {
-    counters
+    metrics
         .networking()
         .activeChannels()
         .label(new ChannelProperties(Direction.INBOUND))
         .set(activeChannels().stream().filter(PeerChannel::isInbound).count());
-    counters
+    metrics
         .networking()
         .activeChannels()
         .label(new ChannelProperties(Direction.OUTBOUND))

@@ -70,7 +70,7 @@ import static com.radixdlt.api.system.health.NodeStatus.*;
 import com.google.inject.Inject;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 
 public class HealthInfoService {
   private static final long THRESHOLD = 3; // Maximum difference between ledger and target
@@ -78,17 +78,17 @@ public class HealthInfoService {
   private static final long STATUS_AVERAGING_FACTOR =
       3L; // averaging time in multiples of collecting interval
 
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
   private final ScheduledEventDispatcher<ScheduledStatsCollecting> scheduledStatsCollecting;
   private final ValueHolder ledgerStateVersion;
   private final ValueHolder syncTargetStateVersion;
 
   @Inject
   public HealthInfoService(
-      SystemCounters systemCounters,
+      Metrics metrics,
       ScheduledEventDispatcher<ScheduledStatsCollecting> scheduledStatsCollecting) {
     this.scheduledStatsCollecting = scheduledStatsCollecting;
-    this.systemCounters = systemCounters;
+    this.metrics = metrics;
     this.ledgerStateVersion = new ValueHolder(STATUS_AVERAGING_FACTOR, ABSOLUTE);
     this.syncTargetStateVersion = new ValueHolder(STATUS_AVERAGING_FACTOR, ABSOLUTE);
     scheduledStatsCollecting.dispatch(
@@ -119,8 +119,8 @@ public class HealthInfoService {
   }
 
   private void collectStats() {
-    ledgerStateVersion.update((long) systemCounters.ledger().stateVersion().get());
-    syncTargetStateVersion.update((long) systemCounters.sync().targetStateVersion().get());
+    ledgerStateVersion.update((long) metrics.ledger().stateVersion().get());
+    syncTargetStateVersion.update((long) metrics.sync().targetStateVersion().get());
   }
 
   private boolean ledgerIsCloseToTarget() {

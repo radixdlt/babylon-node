@@ -72,7 +72,36 @@ import io.prometheus.client.Summary;
 
 import javax.annotation.Nullable;
 
-public record SystemCounters(
+/**
+ * An entry point to metrics tracked by the Java part of the Node application.
+ *
+ * The record hierarchy represents different sub-systems and services, and the leafs are:
+ * <ul>
+ *   <li>
+ *     {@link Counter}: a Prometheus-native up/down counter.
+ *   </li>
+ *   <li>
+ *     {@link Gauge}: a Prometheus-native indicator of an arbitrarily changing value.
+ *   </li>
+ *   <li>
+ *     {@link Summary}: a Prometheus-native [occurrence count + value sum] pair, by convention
+ *     appropriate for representing a timer which tracks an average latency of an operation (note:
+ *     we don't use Prometheus' "quantiles" support within the {@link Summary} yet).
+ *   </li>
+ *   <li>
+ *     {@link LabelledCounter}: our type-safe wrapper for a {@link Counter} with labels (i.e. to be
+ *     used instead of Prometheus-native typo-prone {@link Counter#labels(String...)}.
+ *   </li>
+ *   <li>
+ *     {@link LabelledGauge}: our type-safe wrapper for a {@link Gauge} with labels (i.e. to be
+ *     used instead of Prometheus-native typo-prone {@link Gauge#labels(String...)}.
+ *   </li>
+ * </ul>
+ *
+ * Apart from that, this class also holds record definitions for the aforementioned type-safe labels
+ * (see at the end).
+ */
+public record Metrics(
     Bft bft,
     Bdb bdb,
     Ledger ledger,
