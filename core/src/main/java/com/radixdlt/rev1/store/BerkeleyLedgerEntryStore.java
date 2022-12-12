@@ -216,7 +216,7 @@ public final class BerkeleyLedgerEntryStore
   }
 
   private com.sleepycat.je.Transaction createTransaction() {
-    return withTime(() -> beginTransaction(), metrics.bdb().ledger().transactionCreate());
+    return withTime(this::beginTransaction, metrics.bdb().ledger().transactionCreate());
   }
 
   @Override

@@ -103,7 +103,7 @@ public class LabelledCounter<L extends Record> extends Collector implements Coll
    */
   public Counter.Child label(L labelRecord) {
     return this.labelledChildren.computeIfAbsent(
-        labelRecord, record -> this.wrapped.labels(NameRenderer.labelValues(record)));
+        labelRecord, value -> this.wrapped.labels(NameRenderer.labelValues(value)));
   }
 
   @Override

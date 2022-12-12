@@ -102,7 +102,7 @@ public class LabelledGauge<L extends Record> extends Collector implements Collec
    */
   public Gauge.Child label(L labelRecord) {
     return this.labelledChildren.computeIfAbsent(
-        labelRecord, record -> this.wrapped.labels(NameRenderer.labelValues(record)));
+        labelRecord, value -> this.wrapped.labels(NameRenderer.labelValues(value)));
   }
 
   @Override

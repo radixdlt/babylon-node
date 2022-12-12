@@ -78,6 +78,12 @@ public abstract class NameRenderer {
       CaseFormat.LOWER_CAMEL.converterTo(CaseFormat.LOWER_UNDERSCORE);
 
   /**
+   * Hiding constructor.
+   */
+  private NameRenderer() {
+  }
+
+  /**
    * Renders a Java identifier in a format accepted by Prometheus.
    *
    * @param javaIdentifier A Java identifier.
@@ -110,13 +116,13 @@ public abstract class NameRenderer {
    * are represented by empty strings (consistently with how Prometheus Query Language treats
    * missing label values as empty strings).
    *
-   * @param record A record containing a label set.
+   * @param labelRecord A record containing a label set.
    * @return Label values.
    * @param <R> The record's type.
    */
-  public static <R extends Record> String[] labelValues(R record) {
-    return Stream.of(record.getClass().getRecordComponents())
-        .map(component -> access(record, component))
+  public static <R extends Record> String[] labelValues(R labelRecord) {
+    return Stream.of(labelRecord.getClass().getRecordComponents())
+        .map(component -> access(labelRecord, component))
         .map(label -> label == null ? "" : label.toString())
         .toArray(String[]::new);
   }
@@ -124,16 +130,16 @@ public abstract class NameRenderer {
   /**
    * Accesses the specific record's component.
    *
-   * @param record A record.
+   * @param labelRecord A record.
    * @param component A component.
    * @return The component's value.
    */
-  private static Object access(Record record, RecordComponent component) {
+  private static Object access(Record labelRecord, RecordComponent component) {
     try {
-      return component.getAccessor().invoke(record);
+      return component.getAccessor().invoke(labelRecord);
     } catch (IllegalAccessException | InvocationTargetException e) {
       throw new IllegalStateException(
-          "cannot access %s.%s()".formatted(record, component.getName()), e);
+          "cannot access %s.%s()".formatted(labelRecord, component.getName()), e);
     }
   }
 }
