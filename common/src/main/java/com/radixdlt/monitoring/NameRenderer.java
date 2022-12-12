@@ -77,11 +77,8 @@ public abstract class NameRenderer {
   private static final Converter<String, String> JAVA_TO_PROMETHEUS =
       CaseFormat.LOWER_CAMEL.converterTo(CaseFormat.LOWER_UNDERSCORE);
 
-  /**
-   * Hiding constructor.
-   */
-  private NameRenderer() {
-  }
+  /** Hiding constructor. */
+  private NameRenderer() {}
 
   /**
    * Renders a Java identifier in a format accepted by Prometheus.
