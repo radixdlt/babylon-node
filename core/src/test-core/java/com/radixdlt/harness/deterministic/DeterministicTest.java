@@ -456,6 +456,19 @@ public final class DeterministicTest implements AutoCloseable {
     return this.runUntilState(nodeStatePredicate, 10000, m -> true);
   }
 
+  public void runUntilOutOfMessagesOfType(int count, Predicate<ControlledMessage> predicate) {
+    for (int i = 0; i < count; i++) {
+      var nextMsg = this.network.nextMessageIfExists(predicate);
+      if (nextMsg.isEmpty()) {
+        return;
+      } else {
+        handleMessage(nextMsg.get());
+      }
+    }
+    throw new IllegalStateException(
+        String.format("Run for %s messages, but didn't run out", count));
+  }
+
   public DeterministicTest runUntilMessage(Predicate<Timed<ControlledMessage>> stopPredicate) {
     while (true) {
       Timed<ControlledMessage> nextMsg = this.network.nextMessage();

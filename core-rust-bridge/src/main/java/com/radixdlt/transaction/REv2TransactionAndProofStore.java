@@ -103,8 +103,8 @@ public final class REv2TransactionAndProofStore {
     return this.getTransactionAtStateVersionFunc.call(UInt64.fromNonNegativeLong(stateVersion));
   }
 
-  public Optional<Tuple.Tuple2<List<HashCode>, byte[]>> getNextProof(long stateVersion) {
-    return this.getNextProofFunc.call(UInt64.fromNonNegativeLong(stateVersion)).toOptional();
+  public Option<Tuple.Tuple2<List<HashCode>, byte[]>> getNextProof(long stateVersion) {
+    return this.getNextProofFunc.call(UInt64.fromNonNegativeLong(stateVersion));
   }
 
   public Optional<byte[]> getLastProof() {

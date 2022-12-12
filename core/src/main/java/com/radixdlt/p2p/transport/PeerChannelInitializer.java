@@ -97,6 +97,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
   private static final Logger log = LogManager.getLogger();
 
   // This needs to be larger than proposals / vertices
+  // See also constant/s in REv2TransactionsAndProofReader
   // TODO - update this number once we have a REP/RNP for these numbers
   private static final int MAX_PACKET_LENGTH = 25 * 1024 * 1024;
   private static final int FRAME_HEADER_LENGTH = Integer.BYTES;
