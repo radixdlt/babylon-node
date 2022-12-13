@@ -63,7 +63,7 @@
  */
 
 use radix_engine_interface::scrypto;
-use sbor::{DecodeError, EncodeError};
+use sbor::{Decode, DecodeError, Encode, EncodeError, TypeId};
 
 // System Errors.
 pub const ERRCODE_JNI: i16 = 0;
