@@ -1041,7 +1041,7 @@ dependencies = [
 [[package]]
 name = "native-sdk"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-24d36f6a3#24d36f6a38c5b7d6bcb1fa58869dc70042dec36c"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v1-9ec92c1ab#9ec92c1ab5159f82fcab1ee43c9f384c15de4eb4"
 dependencies = [
  "radix-engine-derive",
  "radix-engine-interface",
@@ -1398,7 +1398,7 @@ dependencies = [
 [[package]]
 name = "radix-engine"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-24d36f6a3#24d36f6a38c5b7d6bcb1fa58869dc70042dec36c"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v1-9ec92c1ab#9ec92c1ab5159f82fcab1ee43c9f384c15de4eb4"
 dependencies = [
  "bitflags",
  "colored",
@@ -1421,12 +1421,12 @@ dependencies = [
 [[package]]
 name = "radix-engine-constants"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-24d36f6a3#24d36f6a38c5b7d6bcb1fa58869dc70042dec36c"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v1-9ec92c1ab#9ec92c1ab5159f82fcab1ee43c9f384c15de4eb4"
 
 [[package]]
 name = "radix-engine-derive"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-24d36f6a3#24d36f6a38c5b7d6bcb1fa58869dc70042dec36c"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v1-9ec92c1ab#9ec92c1ab5159f82fcab1ee43c9f384c15de4eb4"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1439,7 +1439,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-interface"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-24d36f6a3#24d36f6a38c5b7d6bcb1fa58869dc70042dec36c"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v1-9ec92c1ab#9ec92c1ab5159f82fcab1ee43c9f384c15de4eb4"
 dependencies = [
  "bech32",
  "forward_ref",
@@ -1460,7 +1460,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-stores"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-24d36f6a3#24d36f6a38c5b7d6bcb1fa58869dc70042dec36c"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v1-9ec92c1ab#9ec92c1ab5159f82fcab1ee43c9f384c15de4eb4"
 dependencies = [
  "radix-engine",
  "radix-engine-interface",
@@ -1620,7 +1620,7 @@ dependencies = [
 [[package]]
 name = "sbor"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-24d36f6a3#24d36f6a38c5b7d6bcb1fa58869dc70042dec36c"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v1-9ec92c1ab#9ec92c1ab5159f82fcab1ee43c9f384c15de4eb4"
 dependencies = [
  "hex",
  "indexmap",
@@ -1631,7 +1631,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-24d36f6a3#24d36f6a38c5b7d6bcb1fa58869dc70042dec36c"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v1-9ec92c1ab#9ec92c1ab5159f82fcab1ee43c9f384c15de4eb4"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1657,7 +1657,7 @@ checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 [[package]]
 name = "scrypto-abi"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-24d36f6a3#24d36f6a38c5b7d6bcb1fa58869dc70042dec36c"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v1-9ec92c1ab#9ec92c1ab5159f82fcab1ee43c9f384c15de4eb4"
 dependencies = [
  "sbor",
  "serde",
@@ -2186,7 +2186,7 @@ dependencies = [
 [[package]]
 name = "transaction"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-24d36f6a3#24d36f6a38c5b7d6bcb1fa58869dc70042dec36c"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v1-9ec92c1ab#9ec92c1ab5159f82fcab1ee43c9f384c15de4eb4"
 dependencies = [
  "clap",
  "ed25519-dalek",
@@ -2241,7 +2241,7 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 [[package]]
 name = "utils"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-24d36f6a3#24d36f6a38c5b7d6bcb1fa58869dc70042dec36c"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v1-9ec92c1ab#9ec92c1ab5159f82fcab1ee43c9f384c15de4eb4"
 dependencies = [
  "sbor",
  "serde",

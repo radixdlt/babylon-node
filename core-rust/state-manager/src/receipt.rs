@@ -10,6 +10,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::{hash, scrypto_encode, Hash, Level, SubstateId};
 use radix_engine_interface::scrypto;
+use sbor::*;
 
 use crate::AccumulatorHash;
 

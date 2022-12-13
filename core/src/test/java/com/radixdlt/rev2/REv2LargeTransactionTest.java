@@ -73,6 +73,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
+import com.radixdlt.harness.predicates.NodePredicate;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -84,6 +85,7 @@ import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
@@ -101,7 +103,7 @@ public final class REv2LargeTransactionTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(1, 0)
+        .numNodes(1, 1)
         .messageSelector(firstSelector())
         .messageMutator(MessageMutator.dropTimeouts())
         .functionalNodeModule(
@@ -109,12 +111,13 @@ public final class REv2LargeTransactionTest {
                 false,
                 SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
                 ConsensusConfig.of(1000),
-                LedgerConfig.stateComputerNoSync(
+                LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
-                        REV2ProposerConfig.mempool(10, 1, MempoolRelayConfig.of())))));
+                        REV2ProposerConfig.mempool(10, 1, MempoolRelayConfig.of())),
+                    SyncRelayConfig.of(200, 10, 1000))));
   }
 
   private static RawNotarizedTransaction createLargeValidTransaction() {
@@ -124,22 +127,37 @@ public final class REv2LargeTransactionTest {
     return REv2TestTransactions.constructRawTransaction(intentBytes, TEST_KEY, List.of(TEST_KEY));
   }
 
+  // Note - this test doesn't use the actual networking layer - see PeerChannelInitializer for
+  // further constraints
   @Test
-  public void large_transaction_should_be_committable() throws Exception {
+  public void large_transaction_should_be_mempool_syncable_committable_and_ledger_syncable()
+      throws Exception {
     try (var test = createTest()) {
       // Arrange: Start single node network
+      var validatorIndex = 0;
+      var fullNodeIndex = 1;
       var largeTransaction = createLargeValidTransaction();
 
-      // Act: Submit transaction to mempool and run consensus
+      // Act: Submit transaction to fullnode mempool
       test.startAllNodes();
       var mempoolInserter =
           test.getInstance(
-              0,
+              fullNodeIndex,
               Key.get(
                   new TypeLiteral<
                       MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
       mempoolInserter.addTransaction(largeTransaction);
-      test.runUntilState(allCommittedTransaction(largeTransaction), onlyConsensusEvents());
+      test.runForCount(10, onlyMempoolSyncEvents());
+
+      // Now wait for mempool sync to the validator and commit
+      test.runUntilState(
+          nodeAt(validatorIndex, NodePredicate.committedUserTransaction(largeTransaction)),
+          onlyConsensusEvents());
+
+      // Act: Sync
+      test.runUntilState(
+          nodeAt(fullNodeIndex, NodePredicate.committedUserTransaction(largeTransaction)),
+          onlyLedgerSyncEvents());
 
       // Assert: Check transaction and post submission state
       NodesReader.getCommittedUserTransaction(test.getNodeInjectors(), largeTransaction);

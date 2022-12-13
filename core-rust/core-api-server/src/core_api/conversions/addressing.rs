@@ -5,7 +5,8 @@ use crate::core_api::*;
 use models::{EntityType, SubstateKeyType, SubstateType};
 use radix_engine::types::{
     ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, NonFungibleIdType,
-    NonFungibleStoreOffset, PackageOffset, ResourceManagerOffset, SubstateOffset, VaultOffset,
+    NonFungibleStoreOffset, PackageOffset, ResourceManagerOffset, SubstateOffset, SystemAddress,
+    VaultOffset,
 };
 use radix_engine::{
     model::GlobalAddressSubstate,
@@ -24,12 +25,13 @@ pub fn to_api_global_entity_assignment(
 ) -> Result<models::GlobalEntityAssignment, MappingError> {
     let target_re_node_id = global_substate.node_deref();
 
-    let target_entity_id_bytes = re_node_id_to_entity_id_bytes(&target_re_node_id)?;
+    let target_entity = MappedEntityId::try_from(target_re_node_id)?;
+
     let global_entity_id_bytes = re_node_id_to_entity_id_bytes(&global_substate_id.0)?;
 
     Ok(models::GlobalEntityAssignment {
-        target_entity_type: get_entity_type_from_global_address(global_address),
-        target_entity_id_hex: to_hex(target_entity_id_bytes),
+        target_entity_type: target_entity.entity_type,
+        target_entity_id_hex: to_hex(target_entity.entity_id_bytes),
         global_entity_id_hex: to_hex(global_entity_id_bytes),
         global_address_hex: to_hex(global_address_to_vec(global_address)),
         global_address: encode_to_bech32m_string(bech32_encoder, global_address),
@@ -53,7 +55,8 @@ pub fn get_entity_type_from_global_address(global_address: &GlobalAddress) -> mo
         GlobalAddress::Component(_) => models::EntityType::Component,
         GlobalAddress::Package(_) => models::EntityType::Package,
         GlobalAddress::Resource(_) => models::EntityType::ResourceManager,
-        GlobalAddress::System(_) => models::EntityType::EpochManager,
+        GlobalAddress::System(SystemAddress::EpochManager(_)) => models::EntityType::EpochManager,
+        GlobalAddress::System(SystemAddress::Clock(_)) => models::EntityType::Clock,
     }
 }
 
