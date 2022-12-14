@@ -11,7 +11,6 @@ const MAX_API_EPOCH: u64 = 10000000000;
 const MAX_API_ROUND: u64 = 10000000000;
 const MAX_API_STATE_VERSION: u64 = 100000000000000;
 const MAX_API_SUBSTATE_VERSION: u64 = 100000000000000;
-const MAX_API_TIMESTAMP_MS: u64 = 100000000000000;
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_epoch(epoch: u64) -> Result<i64, MappingError> {
@@ -56,18 +55,6 @@ pub fn to_api_substate_version(substate_version: u32) -> Result<i64, MappingErro
     Ok(substate_version
         .try_into()
         .expect("Substate version too large somehow"))
-}
-
-#[tracing::instrument(skip_all)]
-pub fn to_api_timestamp_ms(timestamp_ms: u64) -> Result<i64, MappingError> {
-    if timestamp_ms > MAX_API_TIMESTAMP_MS {
-        return Err(MappingError::IntegerError {
-            message: "Timestamp ms is larger than max api timestamp ms".to_owned(),
-        });
-    }
-    Ok(timestamp_ms
-        .try_into()
-        .expect("Timestamp ms is too large somehow"))
 }
 
 pub fn to_api_decimal(value: &Decimal) -> String {

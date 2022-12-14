@@ -3,11 +3,10 @@ use crate::core_api::*;
 use radix_engine::{
     fee::{FeeSummary, RoyaltyReceiver},
     ledger::OutputValue,
-    transaction::TransactionOutcome,
     types::{hash, scrypto_encode, Bech32Encoder, Decimal, GlobalAddress, RENodeId, SubstateId},
 };
 
-use state_manager::{DeletedSubstateVersion, LedgerTransactionReceipt};
+use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
 
 pub fn to_api_receipt(
     bech32_encoder: &Bech32Encoder,
@@ -16,10 +15,10 @@ pub fn to_api_receipt(
     let fee_summary = receipt.fee_summary;
 
     let (status, output, error_message) = match receipt.outcome {
-        TransactionOutcome::Success(output) => {
+        LedgerTransactionOutcome::Success(output) => {
             (models::TransactionStatus::Succeeded, Some(output), None)
         }
-        TransactionOutcome::Failure(error) => (
+        LedgerTransactionOutcome::Failure(error) => (
             models::TransactionStatus::Failed,
             None,
             Some(format!("{:?}", error)),
