@@ -47,7 +47,7 @@ info:
   title: 'Babylon Core API'
   license:
     name: The Radix License, Version 1.0
-    url: https://www.radixfoundation.org/licenses/LICENSE-v1
+    url: https://www.radixfoundation.org/licenses/license-v1
   x-logo:
     url: https://docs.radixdlt.com/main/_images/radix-logo-banner.png
     href: https://docs.radixdlt.com
