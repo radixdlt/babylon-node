@@ -110,7 +110,7 @@ pub(crate) async fn handle_transaction_callpreview(
                         .into_iter()
                         .skip(1) // Skip the result of `lock_fee`
                         .map(|line_output| {
-                            scrypto_bytes_to_api_sbor_data(&bech32_encoder, &line_output)
+                            scrypto_bytes_to_api_sbor_data(&bech32_encoder, &line_output.as_vec())
                         })
                         .next()
                     {
