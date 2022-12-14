@@ -62,86 +62,87 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.utils;
 
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.invariants.Checkers.assertAllCommittedFailedTransaction;
-import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
-import static org.assertj.core.api.Assertions.assertThat;
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
+import com.radixdlt.sbor.codec.Codec;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.sbor.coding.DecoderApi;
+import com.radixdlt.sbor.coding.EncoderApi;
+import java.io.Serializable;
+import java.util.Objects;
 
-import com.radixdlt.consensus.bft.ExecutedVertex;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.REv2StateConfig;
-import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.UInt64;
-import java.util.List;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+/** A 32-bit unsigned integer wrapper */
+@SecurityCritical(SecurityKind.NUMERIC)
+public class UInt16 implements Comparable<UInt16>, Serializable {
 
-public class REv2SetEpochTest {
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        UInt16.class,
+        codecs ->
+            new Codec<UInt16>() {
+              @Override
+              public TypeId getTypeId() {
+                return TypeId.TYPE_U16;
+              }
 
-  private DeterministicTest createTest(ProposalGenerator proposalGenerator) {
-    return DeterministicTest.builder()
-        .numNodes(1, 0)
-        .messageSelector(firstSelector())
-        .messageMutator(MessageMutator.dropTimeouts())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                false,
-                FunctionalRadixNodeModule.SafetyRecoveryConfig.berkeleyStore(
-                    folder.getRoot().getAbsolutePath()),
-                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
-                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
-                        StateComputerConfig.REV2ProposerConfig.transactionGenerator(
-                            proposalGenerator)))));
+              @Override
+              public void encodeWithoutTypeId(EncoderApi encoder, UInt16 uint16) {
+                encoder.writeShort(uint16.underlyingValue);
+              }
+
+              @Override
+              public UInt16 decodeWithoutTypeId(DecoderApi decoder) {
+                return new UInt16(decoder.readShort());
+              }
+            });
   }
 
-  private static class ControlledProposerGenerator implements ProposalGenerator {
-    private RawNotarizedTransaction nextTransaction = null;
+  private final Short underlyingValue;
 
-    @Override
-    public List<RawNotarizedTransaction> getTransactionsForProposal(
-        Round round, List<ExecutedVertex> prepared) {
-      if (nextTransaction == null) {
-        return List.of();
-      } else {
-        var txns = List.of(nextTransaction);
-        this.nextTransaction = null;
-        return txns;
-      }
+  public static UInt16 fromNonNegativeShort(short i) {
+    if (i < 0) {
+      throw new IllegalArgumentException("Can't construct uint16 from a negative integer");
     }
+
+    return new UInt16(i);
   }
 
-  @Test
-  public void user_should_not_be_able_set_epoch() {
-    var proposalGenerator = new ControlledProposerGenerator();
+  public boolean gt(UInt16 other) {
+    return Integer.compareUnsigned(this.underlyingValue, other.underlyingValue) > 0;
+  }
 
-    try (var test = createTest(proposalGenerator)) {
-      var setEpochTransaction = REv2TestTransactions.constructFailingSetEpochTransaction(1000L);
+  public boolean lte(UInt16 other) {
+    return Integer.compareUnsigned(this.underlyingValue, other.underlyingValue) <= 0;
+  }
 
-      // Act: Submit transaction to mempool and run consensus
-      test.startAllNodes();
-      proposalGenerator.nextTransaction = setEpochTransaction;
-      test.runUntilState(ignored -> proposalGenerator.nextTransaction == null);
-      test.runForCount(100, onlyConsensusEvents());
+  private UInt16(Short underlyingValue) {
+    this.underlyingValue = Objects.requireNonNull(underlyingValue);
+  }
 
-      // Assert: Check transaction and post submission state
-      assertThat(proposalGenerator.nextTransaction).isNull();
-      // Verify that transaction was not committed
-      assertAllCommittedFailedTransaction(test.getNodeInjectors(), setEpochTransaction);
-    }
+  public String toHexString() {
+    return Integer.toUnsignedString(underlyingValue, 16);
+  }
+
+  @Override
+  public String toString() {
+    return Integer.toUnsignedString(underlyingValue);
+  }
+
+  @Override
+  public int compareTo(UInt16 other) {
+    return Integer.compareUnsigned(underlyingValue, other.underlyingValue);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(underlyingValue);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof UInt16 other && Objects.equals(this.underlyingValue, other.underlyingValue);
   }
 }

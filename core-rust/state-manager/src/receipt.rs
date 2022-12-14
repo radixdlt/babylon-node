@@ -1,8 +1,9 @@
 use std::collections::BTreeMap;
 
-use radix_engine::engine::{ResourceChange, RuntimeError};
+use radix_engine::engine::RuntimeError;
 use radix_engine::fee::FeeSummary;
 use radix_engine::ledger::OutputValue;
+use radix_engine::model::ResourceChange;
 use radix_engine::state_manager::StateDiff;
 use radix_engine::transaction::{
     CommitResult, EntityChanges, TransactionOutcome,

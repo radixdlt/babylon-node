@@ -151,7 +151,7 @@ fn attempt_parsing_as_notarized_transaction(
                 context
                     .state_manager
                     .user_transaction_validator
-                    .validate_and_create_executable(&parsed)
+                    .validate_and_create_executable(&parsed, bytes.len())
                     .map(|_| ())
                     .map_err(RejectionReason::ValidationError),
             );
@@ -161,7 +161,11 @@ fn attempt_parsing_as_notarized_transaction(
             }
         }
         ValidationMode::Full => {
-            let validation = Some(context.state_manager.check_for_rejection_uncached(&parsed));
+            let validation = Some(
+                context
+                    .state_manager
+                    .check_for_rejection_uncached(&parsed, bytes.len()),
+            );
             ParsedNotarizedTransaction {
                 transaction: parsed,
                 validation,

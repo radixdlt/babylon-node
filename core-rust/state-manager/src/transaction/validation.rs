@@ -1,5 +1,6 @@
 use crate::transaction::ledger_transaction::LedgerTransaction;
 use radix_engine::types::scrypto_decode;
+use radix_engine_interface::data::scrypto_encode;
 use transaction::errors::TransactionValidationError;
 use transaction::model::{Executable, NotarizedTransaction};
 use transaction::validation::ValidationConfig;
@@ -41,10 +42,11 @@ impl UserTransactionValidator {
     pub fn validate_and_create_executable<'a>(
         &self,
         transaction: &'a NotarizedTransaction,
+        payload_size: usize,
     ) -> Result<Executable<'a>, TransactionValidationError> {
         let validator = NotarizedTransactionValidator::new(self.validation_config);
 
-        validator.validate(transaction, &self.intent_hash_manager)
+        validator.validate(transaction, payload_size, &self.intent_hash_manager)
     }
 }
 
@@ -74,7 +76,13 @@ impl LedgerTransactionValidator {
         let validator = NotarizedTransactionValidator::new(self.validation_config);
         match prepared_transaction {
             PreparedLedgerTransaction::User(notarized_transaction) => {
-                validator.validate(notarized_transaction, &self.intent_hash_manager)
+                // TODO: Remove
+                let payload_size = scrypto_encode(notarized_transaction).unwrap().len();
+                validator.validate(
+                    notarized_transaction,
+                    payload_size,
+                    &self.intent_hash_manager,
+                )
             }
             PreparedLedgerTransaction::Validator(validator_transaction) => {
                 Ok(validator_transaction.get_executable())

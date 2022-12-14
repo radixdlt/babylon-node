@@ -5,16 +5,13 @@ use models::{
 };
 use radix_engine::{
     transaction::{PreviewError, TransactionOutcome, TransactionResult},
-    types::{
-        Bech32Decoder, Bech32Encoder, Decimal, ScryptoFunctionIdent, ScryptoMethodIdent,
-        ScryptoPackage, ScryptoReceiver, FAUCET_COMPONENT,
-    },
+    types::{Bech32Decoder, Bech32Encoder, Decimal, FAUCET_COMPONENT},
 };
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use radix_engine_interface::args;
 use state_manager::PreviewRequest;
 use transaction::args_from_bytes_vec;
-use transaction::model::{Instruction, PreviewFlags, TransactionManifest};
+use transaction::model::{BasicInstruction, PreviewFlags, TransactionManifest};
 
 #[tracing::instrument(level = "debug", skip_all, err(Debug))]
 pub(crate) async fn handle_transaction_callpreview(
@@ -46,12 +43,10 @@ pub(crate) async fn handle_transaction_callpreview(
                 extract_package_address(&bech32_decoder, package_address.as_str())
                     .map_err(|err| err.into_response_error("target.package_address"))?;
 
-            Instruction::CallFunction {
-                function_ident: ScryptoFunctionIdent {
-                    package: ScryptoPackage::Global(package_address),
-                    blueprint_name,
-                    function_name,
-                },
+            BasicInstruction::CallFunction {
+                blueprint_name,
+                function_name,
+                package_address,
                 args: args_from_bytes_vec!(args),
             }
         }
@@ -63,11 +58,9 @@ pub(crate) async fn handle_transaction_callpreview(
                 extract_component_address(&bech32_decoder, component_address.as_str())
                     .map_err(|err| err.into_response_error("target.component_address"))?;
 
-            Instruction::CallMethod {
-                method_ident: ScryptoMethodIdent {
-                    receiver: ScryptoReceiver::Global(component_address),
-                    method_name,
-                },
+            BasicInstruction::CallMethod {
+                component_address,
+                method_name,
                 args: args_from_bytes_vec!(args),
             }
         }
@@ -79,11 +72,9 @@ pub(crate) async fn handle_transaction_callpreview(
         .preview(PreviewRequest {
             manifest: TransactionManifest {
                 instructions: vec![
-                    Instruction::CallMethod {
-                        method_ident: ScryptoMethodIdent {
-                            receiver: ScryptoReceiver::Global(FAUCET_COMPONENT),
-                            method_name: "lock_fee".to_string(),
-                        },
+                    BasicInstruction::CallMethod {
+                        component_address: FAUCET_COMPONENT,
+                        method_name: "lock_fee".to_string(),
                         args: args!(Decimal::from(100u32)),
                     },
                     requested_call,

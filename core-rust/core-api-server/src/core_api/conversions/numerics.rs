@@ -78,6 +78,10 @@ pub fn to_api_u8_as_i32(input: u8) -> i32 {
     input.into()
 }
 
+pub fn to_api_u16_as_i32(input: u16) -> i32 {
+    input.into()
+}
+
 pub fn to_api_u32_as_i64(input: u32) -> i64 {
     input.into()
 }
@@ -143,13 +147,13 @@ pub fn extract_api_u32_as_i64(input: i64) -> Result<u32, ExtractionError> {
     Ok(input.try_into().expect("Number invalid somehow"))
 }
 
-pub fn extract_api_u8_as_i32(input: i32) -> Result<u8, ExtractionError> {
+pub fn extract_api_u16_as_i32(input: i32) -> Result<u16, ExtractionError> {
     if input < 0 {
         return Err(ExtractionError::InvalidInteger {
             message: "Is negative".to_owned(),
         });
     }
-    if input > (u8::MAX as i32) {
+    if input > (u16::MAX as i32) {
         return Err(ExtractionError::InvalidInteger {
             message: "Is larger than the max value allowed".to_owned(),
         });

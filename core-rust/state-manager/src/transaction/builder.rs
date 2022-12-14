@@ -63,8 +63,7 @@
  */
 
 use radix_engine::types::{
-    scrypto_encode, AccessRule, EpochManagerSetEpochInvocation, GlobalAddress, PublicKey, RENodeId,
-    Signature, SignatureWithPublicKey, EPOCH_MANAGER, FAUCET_COMPONENT, RADIX_TOKEN,
+    AccessRule, PublicKey, Signature, SignatureWithPublicKey, FAUCET_COMPONENT, RADIX_TOKEN,
 };
 use radix_engine_interface::args;
 use radix_engine_interface::core::NetworkDefinition;
@@ -75,39 +74,6 @@ use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
     TransactionManifest,
 };
-
-pub fn create_set_epoch_intent(
-    network_definition: &NetworkDefinition,
-    public_key: PublicKey,
-    epoch: u64,
-) -> TransactionIntent {
-    let manifest = ManifestBuilder::new(network_definition)
-        .lock_fee(FAUCET_COMPONENT, 100.into())
-        .call_native_method(
-            RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-            "set_epoch",
-            scrypto_encode(&EpochManagerSetEpochInvocation {
-                receiver: EPOCH_MANAGER,
-                epoch,
-            })
-            .unwrap(),
-        )
-        .build();
-    TransactionIntent {
-        header: TransactionHeader {
-            version: 1,
-            network_id: network_definition.id,
-            start_epoch_inclusive: 0,
-            end_epoch_exclusive: 100,
-            nonce: 5,
-            notary_public_key: public_key,
-            notary_as_signatory: false,
-            cost_unit_limit: 10_000_000,
-            tip_percentage: 5,
-        },
-        manifest,
-    }
-}
 
 pub fn create_new_account_intent_bytes(
     network_definition: &NetworkDefinition,

@@ -104,7 +104,7 @@ public class UInt64 implements Comparable<UInt64>, Serializable {
 
   public static UInt64 fromNonNegativeLong(long l) {
     if (l < 0) {
-      throw new IllegalArgumentException("Can't construct uint64 from a negative long");
+      throw new IllegalArgumentException("Can't construct uint64 from a negative long: " + l);
     }
 
     return new UInt64(l);

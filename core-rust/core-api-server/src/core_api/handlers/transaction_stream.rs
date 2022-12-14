@@ -252,7 +252,7 @@ pub fn to_api_intent(
             notary_public_key: Some(to_api_public_key(&header.notary_public_key)),
             notary_as_signatory: header.notary_as_signatory,
             cost_unit_limit: to_api_u32_as_i64(header.cost_unit_limit),
-            tip_percentage: to_api_u8_as_i32(header.tip_percentage),
+            tip_percentage: to_api_u16_as_i32(header.tip_percentage),
         }),
         manifest: Box::new(to_api_manifest(&intent.manifest, network)?),
     })

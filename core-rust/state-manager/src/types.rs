@@ -377,7 +377,7 @@ pub struct PreviewRequest {
     pub notary_public_key: Option<PublicKey>,
     pub notary_as_signatory: bool,
     pub cost_unit_limit: u32,
-    pub tip_percentage: u8,
+    pub tip_percentage: u16,
     pub nonce: u64,
     pub signer_public_keys: Vec<PublicKey>,
     pub flags: PreviewFlags,

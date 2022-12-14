@@ -8,11 +8,12 @@ use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto_encode;
 use radix_engine_interface::model::ClockSetCurrentTimeInvocation;
+use radix_engine_interface::modules::auth::AuthAddresses;
 use sbor::*;
 use std::collections::BTreeSet;
 use transaction::model::{
-    AuthModule, AuthZoneParams, Executable, ExecutionContext, FeePayment, Instruction,
-    TransactionManifest,
+    AuthZoneParams, Executable, ExecutionContext, FeePayment, Instruction, InstructionList,
+    SystemInstruction,
 };
 
 #[derive(Debug, Copy, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -33,24 +34,26 @@ pub enum ValidatorTransaction {
 impl ValidatorTransaction {
     pub fn prepare(&self) -> PreparedValidatorTransaction {
         // TODO: Figure out better way to do this or if we even do need it
-        let validator_role_nf_address = hash(scrypto_encode(self).unwrap());
+        let hash = hash(scrypto_encode(self).unwrap());
 
         let instruction = match self {
-            ValidatorTransaction::EpochUpdate { scrypto_epoch } => Instruction::CallNativeMethod {
-                method_ident: NativeMethodIdent {
-                    receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-                    method_name: "set_epoch".to_string(),
-                },
-                args: scrypto_encode(&EpochManagerSetEpochInvocation {
-                    receiver: EPOCH_MANAGER,
-                    epoch: *scrypto_epoch,
-                })
-                .unwrap(),
-            },
+            ValidatorTransaction::EpochUpdate { scrypto_epoch } => {
+                SystemInstruction::CallNativeMethod {
+                    method_ident: NativeMethodIdent {
+                        receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+                        method_name: "set_epoch".to_string(),
+                    },
+                    args: scrypto_encode(&EpochManagerSetEpochInvocation {
+                        receiver: EPOCH_MANAGER,
+                        epoch: *scrypto_epoch,
+                    })
+                    .unwrap(),
+                }
+            }
             ValidatorTransaction::RoundUpdate {
                 proposer_timestamp_ms: timestamp_ms,
                 ..
-            } => Instruction::CallNativeMethod {
+            } => SystemInstruction::CallNativeMethod {
                 method_ident: NativeMethodIdent {
                     receiver: RENodeId::Global(GlobalAddress::System(CLOCK)),
                     method_name: "set_current_time".to_string(),
@@ -64,11 +67,9 @@ impl ValidatorTransaction {
         };
 
         PreparedValidatorTransaction {
-            hash: validator_role_nf_address,
-            manifest: TransactionManifest {
-                instructions: vec![instruction],
-                blobs: vec![],
-            },
+            hash,
+            instructions: vec![Instruction::System(instruction)],
+            blobs: vec![],
         }
     }
 }
@@ -76,23 +77,25 @@ impl ValidatorTransaction {
 #[derive(Debug, Clone, TypeId, PartialEq, Eq)]
 pub struct PreparedValidatorTransaction {
     hash: Hash,
-    manifest: TransactionManifest,
+    instructions: Vec<Instruction>,
+    blobs: Vec<Vec<u8>>,
 }
 
 impl PreparedValidatorTransaction {
     pub fn get_executable(&self) -> Executable {
-        let transaction_hash = Hash([0u8; Hash::LENGTH]);
+        let transaction_hash = Hash([0u8; Hash::LENGTH]); // TODO: Is this okay?
 
         let auth_zone_params = AuthZoneParams {
-            initial_proofs: vec![AuthModule::validator_role_non_fungible_address()],
+            initial_proofs: vec![AuthAddresses::validator_role()],
             virtualizable_proofs_resource_addresses: BTreeSet::new(),
         };
 
         Executable::new(
-            &self.manifest.instructions,
-            &self.manifest.blobs,
+            InstructionList::Any(&self.instructions),
+            &self.blobs,
             ExecutionContext {
                 transaction_hash,
+                payload_size: 0,
                 auth_zone_params,
                 fee_payment: FeePayment::NoFee,
                 runtime_validations: vec![],

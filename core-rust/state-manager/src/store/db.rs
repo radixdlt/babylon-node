@@ -67,6 +67,7 @@ use crate::jni::java_structure::*;
 use crate::store::traits::*;
 use crate::store::{InMemoryStore, RocksDBStore};
 
+use radix_engine::engine::ScryptoInterpreter;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -88,6 +89,7 @@ use crate::{
     LedgerTransactionReceipt,
 };
 use radix_engine::types::{KeyValueStoreId, SubstateId};
+use radix_engine::wasm::DefaultWasmEngine;
 
 use tracing::debug;
 
@@ -130,7 +132,8 @@ impl StateManagerDatabase {
             debug!("Running genesis on the engine...");
             let mut db_txn = state_manager_db.create_db_transaction();
 
-            let genesis_receipt = bootstrap(&mut db_txn).expect("Genesis wasn't run");
+            let interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+            let genesis_receipt = bootstrap(&mut db_txn, &interpreter).expect("Genesis wasn't run");
 
             // TODO: Remove this when serialized genesis intent is implemented
             {

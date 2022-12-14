@@ -131,7 +131,7 @@ pub fn to_api_fee_summary(
 ) -> Result<models::FeeSummary, MappingError> {
     Ok(models::FeeSummary {
         cost_unit_price: to_api_decimal(&fee_summary.cost_unit_price),
-        tip_percentage: to_api_u8_as_i32(fee_summary.tip_percentage),
+        tip_percentage: to_api_u16_as_i32(fee_summary.tip_percentage),
         cost_unit_limit: to_api_u32_as_i64(fee_summary.cost_unit_limit),
         cost_units_consumed: to_api_u32_as_i64(fee_summary.cost_unit_consumed),
         xrd_total_execution_cost: to_api_decimal(&fee_summary.total_execution_cost_xrd),
