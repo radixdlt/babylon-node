@@ -201,22 +201,6 @@ public final class RadixNodeModule extends AbstractModule {
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
     var databaseConfig = new REv2DatabaseConfig.RocksDB(databasePath);
     var transactionsPerProposalCount = 10;
-    var stateConfig =
-        new REv2StateConfig(UInt64.fromNonNegativeLong(1800)); // approximately 5 minutes per epoch
-    install(
-        REv2StateManagerModule.create(
-            networkId,
-            transactionsPerProposalCount,
-            stateConfig,
-            databaseConfig,
-            Option.some(mempoolConfig)));
-
-    // Recovery
-    install(new BerkeleySafetyStoreModule(databasePath));
-    // Start at stateVersion 1 for now due to lack serialized genesis transaction
-    var initialAccumulatorState = new AccumulatorState(1, HashUtils.zero256());
-    install(new REv2LedgerRecoveryModule(initialAccumulatorState));
-    install(new REv2ConsensusRecoveryModule());
     String genesisTxn;
     final var genesisFileProp = properties.get("network.genesis_file");
     if (genesisFileProp != null && !genesisFileProp.isBlank()) {
@@ -241,9 +225,29 @@ public final class RadixNodeModule extends AbstractModule {
                   }
                 })
             .toList();
+
+    var validatorList = initialVset.stream().map(BFTNode::getKey).toList();
     var validatorSet =
         BFTValidatorSet.from(initialVset.stream().map(n -> BFTValidator.from(n, UInt256.ONE)));
     bind(BFTValidatorSet.class).toInstance(validatorSet);
+
+    var stateConfig =
+        new REv2StateConfig(
+            validatorList, UInt64.fromNonNegativeLong(1800)); // approximately 5 minutes per epoch
+    install(
+        REv2StateManagerModule.create(
+            networkId,
+            transactionsPerProposalCount,
+            stateConfig,
+            databaseConfig,
+            Option.some(mempoolConfig)));
+
+    // Recovery
+    install(new BerkeleySafetyStoreModule(databasePath));
+    // Start at stateVersion 1 for now due to lack serialized genesis transaction
+    var initialAccumulatorState = new AccumulatorState(1, HashUtils.zero256());
+    install(new REv2LedgerRecoveryModule(initialAccumulatorState));
+    install(new REv2ConsensusRecoveryModule());
 
     // System Info
     install(new SystemInfoModule());

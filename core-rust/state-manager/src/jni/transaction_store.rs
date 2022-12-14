@@ -65,13 +65,13 @@
 use crate::jni::state_manager::ActualStateManager;
 use crate::store::traits::*;
 
+use crate::LedgerTransactionOutcome;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::types::{scrypto_encode, ComponentAddress};
 use radix_engine_interface::scrypto;
 use sbor::{Decode, Encode, TypeId};
-use crate::LedgerTransactionOutcome;
 
 use super::mempool::JavaPayloadHash;
 use super::utils::jni_state_manager_sbor_read_call;

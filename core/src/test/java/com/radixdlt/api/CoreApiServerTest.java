@@ -67,15 +67,20 @@ package com.radixdlt.api;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.lang.Option;
 import com.radixdlt.rev2.NetworkDefinition;
+import com.radixdlt.rev2.ValidatorList;
 import com.radixdlt.statemanager.*;
 import com.radixdlt.utils.FreePortFinder;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.List;
+
 import org.junit.Test;
 
 /** Just a simple test to check that the server is up & running. */
@@ -90,7 +95,7 @@ public final class CoreApiServerTest {
         StateManager.createAndInitialize(
             new StateManagerConfig(
                 NetworkDefinition.INT_TEST_NET,
-                new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
+                new REv2StateConfig(ValidatorList.create(1), UInt64.fromNonNegativeLong(10)),
                 Option.none(),
                 REv2DatabaseConfig.none(),
                 LoggingConfig.getDefault()))) {

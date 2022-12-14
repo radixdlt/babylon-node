@@ -60,10 +60,12 @@ pub enum LedgerTransactionOutcome {
     Failure(RuntimeError),
 }
 
-impl Into<LedgerTransactionOutcome> for TransactionOutcome {
-    fn into(self) -> LedgerTransactionOutcome {
-        match self {
-            TransactionOutcome::Success(output) => LedgerTransactionOutcome::Success(output.into_iter().map(|o| o.as_vec()).collect()),
+impl From<TransactionOutcome> for LedgerTransactionOutcome {
+    fn from(outcome: TransactionOutcome) -> Self {
+        match outcome {
+            TransactionOutcome::Success(output) => {
+                LedgerTransactionOutcome::Success(output.into_iter().map(|o| o.as_vec()).collect())
+            }
             TransactionOutcome::Failure(error) => LedgerTransactionOutcome::Failure(error),
         }
     }

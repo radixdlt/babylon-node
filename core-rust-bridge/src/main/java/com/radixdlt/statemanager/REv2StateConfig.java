@@ -65,12 +65,14 @@
 package com.radixdlt.statemanager;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt64;
+import java.util.List;
 
 // TODO: This should be replaced by a genesis configuration at some point
-public record REv2StateConfig(UInt64 roundsPerEpoch) {
+public record REv2StateConfig(List<ECDSASecp256k1PublicKey> validatorSet, UInt64 roundsPerEpoch) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         REv2StateConfig.class,
@@ -78,6 +80,7 @@ public record REv2StateConfig(UInt64 roundsPerEpoch) {
             StructCodec.with(
                 REv2StateConfig::new,
                 codecs.of(new TypeToken<>() {}),
-                (s, encoder) -> encoder.encode(s.roundsPerEpoch)));
+                codecs.of(new TypeToken<>() {}),
+                (s, encoder) -> encoder.encode(s.validatorSet, s.roundsPerEpoch)));
   }
 }

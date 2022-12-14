@@ -95,7 +95,7 @@ public class REv2StateComputerTest {
         REv2StateManagerModule.create(
             Network.INTEGRATIONTESTNET.getId(),
             10,
-            new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
+            new REv2StateConfig(ValidatorList.create(1), UInt64.fromNonNegativeLong(10)),
             REv2DatabaseConfig.inMemory(),
             Option.none()),
         new AbstractModule() {
