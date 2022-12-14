@@ -425,10 +425,9 @@ paths:
 ####################
   "/v0/status/network-configuration":
     post:
-      summary: Get Network Configuration
+      summary: Get Network Configuration (V0)
       description: Returns the network configuration.
-      tags:
-        - Status
+      tags: # Not in the Status tag group to avoid duplication of endpoints
         - V0
       responses:
         '200':
