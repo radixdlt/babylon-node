@@ -78,6 +78,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.ValidatorList;
 import com.radixdlt.statecomputer.StatelessComputer;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
@@ -101,7 +102,8 @@ public class HalfValidTxnTest {
                   LedgerConfig.stateComputerNoSync(
                       StateComputerConfig.rev2(
                           Network.INTEGRATIONTESTNET.getId(),
-                          new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
+                          new REv2StateConfig(
+                              ValidatorList.create(4), UInt64.fromNonNegativeLong(10)),
                           REv2DatabaseConfig.none(),
                           REV2ProposerConfig.halfCorrectProposer()))))
           .addTestModules(

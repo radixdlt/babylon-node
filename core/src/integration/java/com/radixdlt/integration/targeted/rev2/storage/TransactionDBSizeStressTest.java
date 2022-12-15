@@ -78,6 +78,7 @@ import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2LargeTransactionGenerator;
+import com.radixdlt.rev2.ValidatorList;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.utils.UInt64;
@@ -109,7 +110,8 @@ public final class TransactionDBSizeStressTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
+                        new REv2StateConfig(
+                            ValidatorList.create(1), UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.transactionGenerator(
                             new REv2LargeTransactionGenerator(NetworkDefinition.INT_TEST_NET),

@@ -78,6 +78,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.REV2TransactionGenerator;
+import com.radixdlt.rev2.ValidatorList;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.utils.UInt64;
@@ -116,7 +117,8 @@ public final class MultiNodeRecoveryTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
+                        new REv2StateConfig(
+                            ValidatorList.create(NUM_VALIDATORS), UInt64.fromNonNegativeLong(10)),
                         databaseConfig,
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                             new REV2TransactionGenerator(), 1)))));

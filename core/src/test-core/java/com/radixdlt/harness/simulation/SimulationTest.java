@@ -254,10 +254,6 @@ public final class SimulationTest {
           initialStakesMap.keySet().stream()
               .map(BFTNode::create)
               .collect(ImmutableList.toImmutableList());
-      final var validators =
-          initialStakesMap.entrySet().stream()
-              .map(e -> BFTValidator.from(BFTNode.create(e.getKey()), e.getValue()))
-              .collect(ImmutableList.toImmutableList());
 
       this.bftNodes = bftNodes;
 

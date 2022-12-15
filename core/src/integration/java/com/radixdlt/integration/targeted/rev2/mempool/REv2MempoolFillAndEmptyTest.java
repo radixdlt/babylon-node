@@ -157,7 +157,8 @@ public final class REv2MempoolFillAndEmptyTest {
             LedgerConfig.stateComputerWithSyncRelay(
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),
-                    new REv2StateConfig(UInt64.fromNonNegativeLong(1000)),
+                    new REv2StateConfig(
+                        List.of(TEST_KEY.getPublicKey()), UInt64.fromNonNegativeLong(1000)),
                     REv2DatabaseConfig.inMemory(),
                     StateComputerConfig.REV2ProposerConfig.mempool(
                         10, 1000, MempoolRelayConfig.of())),

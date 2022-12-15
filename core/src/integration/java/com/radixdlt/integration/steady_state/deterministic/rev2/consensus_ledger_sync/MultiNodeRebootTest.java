@@ -79,6 +79,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.REV2TransactionGenerator;
+import com.radixdlt.rev2.ValidatorList;
 import com.radixdlt.rev2.modules.MockedVertexStoreModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
@@ -196,7 +197,8 @@ public final class MultiNodeRebootTest {
             LedgerConfig.stateComputerWithSyncRelay(
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),
-                    new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
+                    new REv2StateConfig(
+                        ValidatorList.create(numValidators), UInt64.fromNonNegativeLong(10)),
                     databaseConfig,
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                         new REV2TransactionGenerator(), 1)),
