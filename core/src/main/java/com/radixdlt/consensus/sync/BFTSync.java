@@ -306,7 +306,12 @@ public final class BFTSync implements BFTSyncer {
 
     final var qc = syncState.highQC().highestQC();
     this.sendBFTSyncRequest(
-        qc.getRound(), qc.getProposedHeader().getVertexId(), 1, authors, syncState.localSyncId);
+        "QCSync",
+        qc.getRound(),
+        qc.getProposedHeader().getVertexId(),
+        1,
+        authors,
+        syncState.localSyncId);
   }
 
   private void doCommittedSync(SyncState syncState) {
@@ -330,7 +335,8 @@ public final class BFTSync implements BFTSyncer {
             .filter(not(n -> n.equals(this.self)))
             .collect(ImmutableList.toImmutableList());
 
-    this.sendBFTSyncRequest(commitedRound, committedQCId, 3, authors, syncState.localSyncId);
+    this.sendBFTSyncRequest(
+        "CommittedSync", commitedRound, committedQCId, 3, authors, syncState.localSyncId);
   }
 
   public EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor() {
@@ -399,7 +405,12 @@ public final class BFTSync implements BFTSyncer {
   }
 
   private void sendBFTSyncRequest(
-      Round round, HashCode vertexId, int count, ImmutableList<BFTNode> authors, HashCode syncId) {
+      String reason,
+      Round round,
+      HashCode vertexId,
+      int count,
+      ImmutableList<BFTNode> authors,
+      HashCode syncId) {
     var request = new GetVerticesRequest(vertexId, count);
     var syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors, round));
 
@@ -409,7 +420,11 @@ public final class BFTSync implements BFTSyncer {
         this.timeoutDispatcher.dispatch(scheduledTimeout, bftSyncPatienceMillis);
         this.requestSender.dispatch(authors.get(0), request);
       } else {
-        log.warn("RATE_LIMIT: Request dropped");
+        log.warn(
+            String.format(
+                "RATE_LIMIT: Outbound BFT Sync request %s for round %s due to %s to %s was not sent"
+                    + " because we're over our %s/second rate limit on sync requests",
+                request, round, reason, authors.get(0), this.syncRequestRateLimiter.getRate()));
       }
       this.bftSyncing.put(request, syncRequestState);
     }
@@ -505,7 +520,12 @@ public final class BFTSync implements BFTSyncer {
               .collect(ImmutableList.toImmutableList());
 
       this.sendBFTSyncRequest(
-          syncState.highQC.highestQC().getRound(), parentId, 1, authors, syncState.localSyncId);
+          "VertexResponseMissingParent",
+          syncState.highQC.highestQC().getRound(),
+          parentId,
+          1,
+          authors,
+          syncState.localSyncId);
     }
   }
 
