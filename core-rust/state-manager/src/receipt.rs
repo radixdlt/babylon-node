@@ -87,12 +87,9 @@ impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
 
     fn try_from(engine_receipt: EngineTransactionReceipt) -> Result<Self, Self::Error> {
         match engine_receipt.result {
-            TransactionResult::Commit(commit_result) => Ok((
-                commit_result,
-                engine_receipt.execution.fee_summary,
-                engine_receipt.execution.application_logs,
-            )
-                .into()),
+            TransactionResult::Commit(commit_result) => {
+                Ok((commit_result, engine_receipt.execution.fee_summary).into())
+            }
             TransactionResult::Reject(error) => Err(format!(
                 "Can't create a ledger receipt for rejected txn: {:?}",
                 error
@@ -102,18 +99,12 @@ impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
 }
 
 /// For Genesis Transaction
-impl From<(CommitResult, FeeSummary, Vec<(Level, String)>)> for LedgerTransactionReceipt {
-    fn from(
-        (commit_result, fee_summary, application_logs): (
-            CommitResult,
-            FeeSummary,
-            Vec<(Level, String)>,
-        ),
-    ) -> Self {
+impl From<(CommitResult, FeeSummary)> for LedgerTransactionReceipt {
+    fn from((commit_result, fee_summary): (CommitResult, FeeSummary)) -> Self {
         LedgerTransactionReceipt {
             outcome: commit_result.outcome.into(),
             fee_summary,
-            application_logs,
+            application_logs: commit_result.application_logs,
             substate_changes: map_state_updates(commit_result.state_updates),
             entity_changes: commit_result.entity_changes,
             resource_changes: commit_result.resource_changes,

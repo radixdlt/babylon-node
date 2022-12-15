@@ -710,7 +710,11 @@ pub fn to_api_epoch_manager_substate(
     substate: &EpochManagerSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
-    let EpochManagerSubstate { epoch } = substate;
+    // TODO: convert validator_set
+    let EpochManagerSubstate {
+        epoch,
+        validator_set: _,
+    } = substate;
 
     Ok(models::Substate::EpochManagerSubstate {
         epoch: to_api_epoch(*epoch)?,

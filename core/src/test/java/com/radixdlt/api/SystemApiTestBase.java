@@ -86,7 +86,6 @@ import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.p2p.addressbook.AddressBook;
-import com.radixdlt.rev2.ValidatorList;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.sync.SyncRelayConfig;
@@ -123,7 +122,8 @@ public abstract class SystemApiTestBase {
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                         StateComputerConfig.rev2(
                             Network.INTEGRATIONTESTNET.getId(),
-                            new REv2StateConfig(List.of(TEST_KEY.getPublicKey()), UInt64.fromNonNegativeLong(10)),
+                            new REv2StateConfig(
+                                List.of(TEST_KEY.getPublicKey()), UInt64.fromNonNegativeLong(10)),
                             REv2DatabaseConfig.inMemory(),
                             StateComputerConfig.REV2ProposerConfig.mempool(
                                 10, 10, MempoolRelayConfig.of())),
