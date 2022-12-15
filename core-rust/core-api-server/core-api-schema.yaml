@@ -47,28 +47,111 @@ info:
   title: 'Babylon Core API'
   license:
     name: The Radix License, Version 1.0
-    url: https://www.radixfoundation.org/licenses/LICENSE-v1
+    url: https://www.radixfoundation.org/licenses/license-v1
+  x-logo:
+    url: https://docs.radixdlt.com/main/_images/radix-logo-banner.png
+    href: https://docs.radixdlt.com
+  description: |
+    This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node.
+    It is intended for use by node-runners on a private network, and is not intended to be exposed publicly.
+    Heavy load may impact the node's function.
+
+    If you require queries against historical ledger state, you may also wish to consider using the [Gateway API](https://betanet-gateway.redoc.ly/).
 servers:
   - url: 'localhost:3333/core'
+# See https://redocly.com/docs/api-reference-docs/specification-extensions/x-tag-groups/ for details
+x-tagGroups:
+  - name: Overview
+    tags:
+      - SubAPIs
+      - Concepts
+      - V0
+  - name: Endpoints
+    tags:
+      - Status
+      - Transaction
+      - Mempool
+      - State
+      - Stream
 tags:
+  - name: SubAPIs
+    x-displayName: Sub-APIs
+    x-traitTag: true # Don't display endpoints under this tag
+    description: |
+      The API is split into 5 sub apis:
+      - **Status** (`/status/*`) - For status and configuration details for the node / engine.
+      - **Transaction** (`/transaction/*` and `/v0/transaction/*`) - For transaction construction, preview, submission, and monitoring the status of an individual transaction.
+      - **Mempool** (`/mempool/*`) - For information on the contents of the node's mempool.
+      - **Current State** (`/state/*` and `/v0/state/*`) - For reading the state of entities. At present, we only support reading details from the top of the currently committed ledger.
+      - **Stream** (`/transaction/stream`) - For reading the committed transactions.
+  - name: Concepts
+    x-displayName: Concepts
+    x-traitTag: true # Don't display endpoints under this tag
+    description: |
+      Interacting with this API effectively may require knowledge about the Radix Babylon Transaction Model and the State Model.
+
+      We share some very high-level details below, but please see the [official documentation](http://docs.radixdlt.com) for more details on this.
+
+      ## Transactions
+
+      User transactions are formed of a core "intent", which is then signed by 0+ signatories, before being notarized. The output is called a notarized payload.
+      It is this notarized transaction payload which is submitted to the network.
+      
+      For most users, this construction process will generally happen in their Radix Wallet. If you wish to construct transactions programmatically or offline,
+      you will need to integrate the Radix Engine Toolkit into your application for construction and finalization.
+
+      Once submitted, a transaction payload can end up being either rejected or committed. Transactions get rejected if they fail to pass certain criteria at the given time.
+      A transaction payload can be marked as a:
+      - **Permanent Rejection** if it is never possible for it to be committed (eg it's statically invalid, or only valid up until epoch 100 and it's now epoch 101)
+      - **Temporary Rejection** if it still may be possible that the transaction payload could be committed
+
+      A given intent typically is only part of one submitted notarized payload, but it's possible for a notary to notarize and submit multiple payloads for the same intent.
+      The Radix Engine ensures that any intent can only be committed once.
+
+      A committed transaction is either committed with an outcome of "Success" or "Failure":
+      - **Committed Failure** will result in fees being paid up until the failure point, but all other changes will be discarded.
+      - **Committed Success** will result in all changes being committed.
+
+      Only committed transactions appear on ledger. The status of rejected transactions can be read at submission time or from the transaction status endpoint - by virtue of
+      a rejection cache on the node. This cache is limited in size, so rejected statuses may no longer be tracked after a period of time.
+
+      For a more robust handling of transaction rejections, consider running your own Gateway.
+
+      ## State Model
+
+      The Radix Engine State Model can be thought of as a forest of state sub-trees.
+      A state sub-tree consists of "entities". These entities have an ID, and 0 or more "substates" at keys underneath them. 
+      These substates are typed, and can own other entities, forming a tree of ownership.
+
+      Each state sub-tree has a root entity, and a single Bech32M Global Address, with a human-readable-prefix (and prefix byte) matching the root entity type.
+
+      As an example, entities include concepts like Components, Packages, Vaults, Resource Managers and Key-Value Stores.
+      Substates under a component include the Component Struct, Component Data, and Access Rules substates.
   - name: Status
     x-displayName: Status Endpoints
-    description: To query information about the Node / Ledger status.
+    description: |
+      For status and configuration details for the node / engine.
   - name: Transaction
-    x-displayName: Transaction Submission Endpoints
-    description: To submit transactions to the network.
+    x-displayName: Transaction Endpoints
+    description: |
+      For transaction construction, preview, submission, and monitoring the status of an individual transaction.
   - name: Mempool
     x-displayName: Mempool Endpoints
-    description: To query mempool status.
-  - name: Ledger State
-    x-displayName: Ledger State Endpoints
-    description: To query the current ledger state.
-  - name: History Stream
-    x-displayName: History Stream Endpoints
-    description: To query the history of the ledger.
-  - name: Key
-    x-displayName: Key Endpoints
-    description: To sign certain transactions with the node's own key.
+    description: |
+      For information on the contents of the node's mempool.
+  - name: State
+    x-displayName: State Endpoints
+    description: |
+      For reading the state of entities. At present, we only support reading details from the top of the currently committed ledger.
+  - name: Stream
+    x-displayName: Stream Endpoints
+    description: To query the transaction stream of the ledger.
+  - name: V0
+    x-displayName: V0 Gateway
+    x-traitTag: true # Don't display endpoints under this tag
+    description: |
+      Endpoints that start with `/v0` formed part of the V0 Gateway. They do not require a network to be specified on the request.
+      These endpoints will be merged into the rest of the Core API shortly after Betanet launch.
 paths:
   "/status/network-configuration":
     post:
@@ -172,8 +255,8 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
   "/transaction/parse":
     post:
-      summary: Parse a transaction payload
-      description: Returns the contents and hashes of a notarized transaction, signed transaction or transaction intent.
+      summary: Parse Transaction Payload
+      description: Extracts the contents and hashes of various types of transaction payloads, or sub-payloads.
       tags:
         - Transaction
       requestBody:
@@ -203,8 +286,9 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
   "/transaction/submit":
     post:
-      summary: Submit transaction to the network
-      description: Returns whether the transaction submission was accepted.
+      summary: Transaction Submit
+      description: |
+        Submits a notarized transaction to the network. Returns whether the transaction submission was already included in the node's mempool.
       tags:
         - Transaction
       requestBody:
@@ -234,8 +318,10 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
   "/transaction/call-preview":
     post:
-      summary: Preview a scrypto function or method call against the latest network state
-      description: Returns the result of the scrypto function or method call
+      summary: Scrypto Call Preview
+      description: |
+        Preview a scrypto function or method call against the latest network state.
+        Returns the result of the scrypto function or method call.
       tags:
         - Transaction
       requestBody:
@@ -272,8 +358,9 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
   "/transaction/preview":
     post:
-      summary: Preview a transaction against the latest network state
-      description: Returns the preview response
+      summary: Transaction Preview
+      description: |
+        Preview a transaction against the latest network state, and returns the preview receipt.
       tags:
         - Transaction
       requestBody:
@@ -303,9 +390,11 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
   "/transaction/stream":
     post:
-      summary: Get committed transactions
+      summary: Get Committed Transactions
+      description: |
+        Returns the list of committed transactions.
       tags:
-        - Transaction
+        - Stream
       requestBody:
         required: true
         content:
@@ -336,10 +425,10 @@ paths:
 ####################
   "/v0/status/network-configuration":
     post:
-      summary: Get Network Configuration
+      summary: Get Network Configuration (V0)
       description: Returns the network configuration.
-      tags:
-        - Status
+      tags: # Not in the Status tag group to avoid duplication of endpoints
+        - V0
       responses:
         '200':
           description: Network Configuration
@@ -355,9 +444,11 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
   "/v0/transaction/submit":
     post:
-      summary: Transaction Submit
-      tags:
-        - Transaction
+      summary: Transaction Submit (V0)
+      description: |
+        Submits a notarized transaction to the network. Returns whether the transaction submission was already included in the node's mempool.
+        This will be removed when V0 endpoints are merged into the main API.
+      tags: # Purposefully does not include the Transaction tag to avoid confusion with the other Transaction endpoint
         - V0
       requestBody:
         required: true
@@ -386,7 +477,12 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
   "/v0/transaction/status":
     post:
-      summary: Read Transaction Status
+      summary: Get Transaction Status
+      description: |
+        Shares the node's knowledge of any payloads associated with the given intent hash.
+        Generally there will be a single payload for a given intent, but it's theoretically possible there may be multiple.
+        This knowledge is summarised into a status for the intent. This summarised status in the response is likely sufficient
+        for most clients.
       tags:
         - Transaction
         - V0
@@ -417,7 +513,9 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
   "/v0/transaction/receipt":
     post:
-      summary: Read Committed Transaction
+      summary: Get Transaction Receipt
+      description: |
+        Gets the transaction receipt for a committed transaction.
       tags:
         - Transaction
         - V0
@@ -454,7 +552,9 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
   "/v0/state/epoch":
     post:
-      summary: Read current epoch data
+      summary: Get Epoch Details
+      description: |
+        Reads the epoch manager's substate/s from the top of the current ledger.
       tags:
         - State
         - V0
@@ -479,7 +579,9 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
   "/v0/state/clock":
     post:
-      summary: Read current clock data
+      summary: Get Clock Details
+      description: |
+        Reads the clock's substate/s from the top of the current ledger.
       tags:
         - State
         - V0
@@ -504,7 +606,10 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
   "/v0/state/component":
     post:
-      summary: Read component data
+      summary: Get Component Details
+      description: |
+        Reads the component's substate/s from the top of the current ledger.
+        Also recursively extracts vault balance totals from the component's entity subtree.
       tags:
         - State
         - V0
@@ -541,7 +646,9 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
   "/v0/state/resource":
     post:
-      summary: Read resource data
+      summary: Get Resource Details
+      description: |
+        Reads the resource manager's substate/s from the top of the current ledger.
       tags:
         - State
         - V0
@@ -578,7 +685,9 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
   "/v0/state/non-fungible":
     post:
-      summary: Read non-fungible data
+      summary: Get Non-Fungible Details
+      description: |
+        Reads the data associated with a single Non-Fungible Unit under a Non-Fungible Resource.
       tags:
         - State
         - V0
@@ -615,7 +724,9 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
   "/v0/state/package":
     post:
-      summary: Read package data
+      summary: Get Package Details
+      description: |
+        Reads the package's substate/s from the top of the current ledger.
       tags:
         - State
         - V0
