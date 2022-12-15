@@ -71,6 +71,7 @@ use jni::JNIEnv;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::types::{scrypto_encode, ComponentAddress};
 use radix_engine_interface::scrypto;
+use sbor::{Decode, Encode, TypeId};
 
 use super::mempool::JavaPayloadHash;
 use super::utils::jni_state_manager_sbor_read_call;

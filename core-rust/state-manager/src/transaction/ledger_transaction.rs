@@ -1,6 +1,6 @@
 use radix_engine::types::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::scrypto;
-use sbor::{DecodeError, EncodeError, TypeId};
+use sbor::{Decode, DecodeError, Encode, EncodeError, TypeId};
 
 use crate::transaction::validator_transaction::ValidatorTransaction;
 use crate::LedgerPayloadHash;

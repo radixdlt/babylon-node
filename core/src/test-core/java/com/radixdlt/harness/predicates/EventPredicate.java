@@ -65,14 +65,14 @@
 package com.radixdlt.harness.predicates;
 
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.RoundQuorumReached;
-import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
 import com.radixdlt.sync.messages.local.SyncRequestTimeout;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
@@ -91,7 +91,8 @@ public final class EventPredicate {
             || msg.message() instanceof BFTHighQCUpdate
             || msg.message() instanceof BFTInsertUpdate
             || msg.message() instanceof RoundQuorumReached
-            || msg.message() instanceof RoundUpdate;
+            || msg.message() instanceof RoundUpdate
+            || msg.message() instanceof RoundLeaderFailure;
   }
 
   public static Predicate<ControlledMessage> onlyBFTSyncEvents() {
@@ -107,5 +108,12 @@ public final class EventPredicate {
             || msg.message() instanceof LedgerStatusUpdate
             || msg.message() instanceof SyncLedgerUpdateTimeout
             || msg.message() instanceof SyncRequestTimeout;
+  }
+
+  public static Predicate<ControlledMessage> onlyMempoolSyncEvents() {
+    return msg ->
+        msg.message() instanceof MempoolRelayTrigger
+            || msg.message() instanceof MempoolAddSuccess
+            || msg.message() instanceof MempoolAdd;
   }
 }

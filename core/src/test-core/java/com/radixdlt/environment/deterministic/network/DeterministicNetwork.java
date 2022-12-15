@@ -73,6 +73,7 @@ import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
@@ -159,6 +160,21 @@ public final class DeterministicNetwork {
     this.currentTime = Math.max(this.currentTime, controlledMessage.arrivalTime());
 
     return new Timed<>(controlledMessage, this.currentTime, TimeUnit.MILLISECONDS);
+  }
+
+  public Optional<Timed<ControlledMessage>> nextMessageIfExists(
+      Predicate<ControlledMessage> predicate) {
+    List<ControlledMessage> allMessages = this.messageQueue.allMessages();
+    return allMessages.stream()
+        .filter(predicate)
+        .findFirst()
+        .map(
+            (message) -> {
+              this.messageQueue.remove(message);
+              this.currentTime = Math.max(this.currentTime, message.arrivalTime());
+
+              return new Timed<>(message, this.currentTime, TimeUnit.MILLISECONDS);
+            });
   }
 
   public List<ControlledMessage> allMessages() {
