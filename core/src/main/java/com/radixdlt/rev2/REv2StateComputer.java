@@ -66,6 +66,8 @@ package com.radixdlt.rev2;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.lang.Option;
@@ -78,10 +80,12 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
+import com.radixdlt.statecomputer.commit.PrepareGenesisRequest;
 import com.radixdlt.statecomputer.commit.PrepareRequest;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -141,6 +145,20 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
             .toList();
     return stateComputer.getTransactionsForProposal(
         transactionsPerProposalCount, transactionsNotToInclude);
+  }
+
+  public BFTValidatorSet prepareGenesis(RawLedgerTransaction transaction) {
+    var prepareGenesisRequest = new PrepareGenesisRequest(transaction);
+    var result = stateComputer.prepareGenesis(prepareGenesisRequest);
+    return result
+        .validatorList()
+        .map(
+            list -> {
+              var validators =
+                  list.stream().map(key -> BFTValidator.from(BFTNode.create(key), UInt256.ONE));
+              return BFTValidatorSet.from(validators);
+            })
+        .or((BFTValidatorSet) null);
   }
 
   @Override

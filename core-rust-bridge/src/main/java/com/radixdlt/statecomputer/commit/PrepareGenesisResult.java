@@ -62,102 +62,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor;
+package com.radixdlt.statecomputer.commit;
 
-import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.crypto.*;
-import com.radixdlt.exceptions.StateManagerRuntimeError;
-import com.radixdlt.identifiers.TID;
-import com.radixdlt.mempool.MempoolError;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.rev2.*;
-import com.radixdlt.sbor.codec.Codec;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.statecomputer.commit.*;
-import com.radixdlt.statemanager.*;
-import com.radixdlt.transaction.CommittedTransactionStatus;
-import com.radixdlt.transaction.ExecutedTransaction;
-import com.radixdlt.transactions.RawLedgerTransaction;
-import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.UInt16;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
+import java.util.List;
 
-public final class StateManagerSbor {
-  private static final ScryptoSbor sbor = createSborForStateManager();
-
-  private static ScryptoSbor createSborForStateManager() {
-    return new ScryptoSbor(
-        new CodecMap()
-            .register(StateManagerSbor::registerCodecsWithCodecMap)
-            .register(StateManagerSbor::registerCodecsForExistingTypes));
-  }
-
-  public static <T> byte[] encode(T value, Codec<T> codec) {
-    return sbor.encode_payload(value, codec);
-  }
-
-  public static <T> T decode(byte[] sborBytes, Codec<T> codec) {
-    return sbor.decode_payload(sborBytes, codec);
-  }
-
-  public static <T> Codec<T> resolveCodec(TypeToken<T> typeToken) {
-    return sbor.resolveCodec(typeToken);
-  }
-
-  public static void registerCodecsWithCodecMap(CodecMap codecMap) {
-    UInt16.registerCodec(codecMap);
-    UInt32.registerCodec(codecMap);
-    UInt64.registerCodec(codecMap);
-    RustMempoolConfig.registerCodec(codecMap);
-    NetworkDefinition.registerCodec(codecMap);
-    LoggingConfig.registerCodec(codecMap);
-    StateManagerLoggingConfig.registerCodec(codecMap);
-    StateManagerConfig.registerCodec(codecMap);
-    RawLedgerTransaction.registerCodec(codecMap);
-    RawNotarizedTransaction.registerCodec(codecMap);
-    TransactionStatus.registerCodec(codecMap);
-    Decimal.registerCodec(codecMap);
-    LogLevel.registerCodec(codecMap);
-    ComponentAddress.registerCodec(codecMap);
-    PackageAddress.registerCodec(codecMap);
-    ResourceAddress.registerCodec(codecMap);
-    TID.registerCodec(codecMap);
-    StateManagerRuntimeError.registerCodec(codecMap);
-    MempoolError.registerCodec(codecMap);
-    CommittedTransactionStatus.registerCodec(codecMap);
-    ExecutedTransaction.registerCodec(codecMap);
-    PublicKey.registerCodec(codecMap);
-    ECDSASecp256k1PublicKey.registerCodec(codecMap);
-    EdDSAEd25519PublicKey.registerCodec(codecMap);
-    Signature.registerCodec(codecMap);
-    ECDSASecp256k1Signature.registerCodec(codecMap);
-    EdDSAEd25519Signature.registerCodec(codecMap);
-    SignatureWithPublicKey.registerCodec(codecMap);
-    PrepareGenesisRequest.registerCodec(codecMap);
-    PrepareGenesisResult.registerCodec(codecMap);
-    PrepareRequest.registerCodec(codecMap);
-    PrepareResult.registerCodec(codecMap);
-    CommitRequest.registerCodec(codecMap);
-    REv2DatabaseConfig.registerCodec(codecMap);
-    TransactionHeader.registerCodec(codecMap);
-    CoreApiServerConfig.registerCodec(codecMap);
-    REv2StateConfig.registerCodec(codecMap);
-  }
-
-  public static void registerCodecsForExistingTypes(CodecMap codecMap) {
-    registerCodecForHashCode(codecMap);
-  }
-
-  public static void registerCodecForHashCode(CodecMap codecMap) {
+public record PrepareGenesisResult(Option<List<ECDSASecp256k1PublicKey>> validatorList) {
+  public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        HashCode.class,
+        PrepareGenesisResult.class,
         codecs ->
             StructCodec.with(
-                HashCode::fromBytes,
-                codecs.of(byte[].class),
-                (t, encoder) -> encoder.encode(t.asBytes())));
+                PrepareGenesisResult::new,
+                codecs.of(new TypeToken<>() {}),
+                (t, encoder) -> encoder.encode(t.validatorList)));
   }
 }
