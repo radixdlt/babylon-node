@@ -187,6 +187,9 @@ pub fn to_api_ledger_transaction(
             })?),
             validator_transaction: Box::new(to_api_validator_transaction(tx, network)?),
         },
+        LedgerTransaction::System(..) => {
+            todo!();
+        }
     })
 }
 

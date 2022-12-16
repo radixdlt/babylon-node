@@ -69,7 +69,6 @@ impl ValidatorTransaction {
         PreparedValidatorTransaction {
             hash,
             instructions: vec![Instruction::System(instruction)],
-            blobs: vec![],
         }
     }
 }
@@ -78,11 +77,10 @@ impl ValidatorTransaction {
 pub struct PreparedValidatorTransaction {
     hash: Hash,
     instructions: Vec<Instruction>,
-    blobs: Vec<Vec<u8>>,
 }
 
 impl PreparedValidatorTransaction {
-    pub fn get_executable(&self) -> Executable {
+    pub fn to_executable(self) -> Executable<'static> {
         let transaction_hash = Hash([0u8; Hash::LENGTH]); // TODO: Is this okay?
 
         let auth_zone_params = AuthZoneParams {
@@ -90,9 +88,8 @@ impl PreparedValidatorTransaction {
             virtualizable_proofs_resource_addresses: BTreeSet::new(),
         };
 
-        Executable::new(
-            InstructionList::Any(&self.instructions),
-            &self.blobs,
+        Executable::new_no_blobs(
+            InstructionList::AnyOwned(self.instructions),
             ExecutionContext {
                 transaction_hash,
                 payload_size: 0,

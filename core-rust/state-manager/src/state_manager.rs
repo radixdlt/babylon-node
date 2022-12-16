@@ -99,9 +99,7 @@ use transaction::model::{
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{TestIntentHashManager, ValidationConfig};
 
-use crate::transaction::{
-    LedgerTransaction, LedgerTransactionValidator, UserTransactionValidator, ValidatorTransaction,
-};
+use crate::transaction::{LedgerTransaction, LedgerTransactionValidator, UserTransactionValidator, ValidatorTransaction};
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct LoggingConfig {
@@ -546,23 +544,31 @@ where
                 LedgerTransactionValidator::parse_unvalidated_transaction_from_slice(&prepared)
                     .expect("Already prepared transactions should be decodeable");
 
-            if let LedgerTransaction::User(notarized_transaction) = &parsed_transaction {
-                already_committed_or_prepared_intent_hashes
-                    .insert(notarized_transaction.intent_hash());
-            }
+            let executable = match &parsed_transaction {
+                LedgerTransaction::User(notarized_transaction) => {
+                    already_committed_or_prepared_intent_hashes
+                        .insert(notarized_transaction.intent_hash());
+                    self
+                        .ledger_transaction_validator
+                        .validate_and_create_executable(&parsed_transaction)
 
-            let prepared_parsed_transaction = parsed_transaction.prepare();
-            let executable = &self
-                .ledger_transaction_validator
-                .validate_and_create_executable(&prepared_parsed_transaction)
-                .expect("Already prepared tranasctions should be valid");
+                }
+                LedgerTransaction::Validator(..) => {
+                    self
+                        .ledger_transaction_validator
+                        .validate_and_create_executable(&parsed_transaction)
+                }
+                LedgerTransaction::System(..) => {
+                    panic!("System Transactions should not be prepared");
+                }
+            }.expect("Already prepared tranasctions should be valid");
 
             let receipt = execute_and_commit_transaction(
                 &mut staged_store,
                 &self.scrypto_interpreter,
                 &self.fee_reserve_config,
                 &self.execution_config,
-                executable,
+                &executable,
             );
             match receipt.result {
                 TransactionResult::Commit(_) => {}
@@ -682,7 +688,7 @@ where
         staged_store: &mut StagedSubstateStore<S>,
     ) -> Result<LedgerTransaction, String> {
         let prepared_txn = validator_transaction.prepare();
-        let executable = prepared_txn.get_executable();
+        let executable = prepared_txn.to_executable();
 
         let receipt = execute_transaction(
             staged_store,
@@ -744,10 +750,7 @@ where
                 })
                 .collect::<Vec<_>>();
 
-        let prepared_parsed_transactions = parsed_transactions
-            .iter()
-            .map(|parsed| parsed.prepare())
-            .collect::<Vec<_>>();
+
 
         let current_top_of_ledger = self
             .store
@@ -764,12 +767,16 @@ where
         let mut current_state_version = current_top_of_ledger.state_version;
         let mut current_accumulator = current_top_of_ledger.accumulator_hash;
 
-        let receipts = prepared_parsed_transactions
+        let receipts = parsed_transactions
             .iter()
-            .map(|prepared| {
+            .map(|transaction| {
+                if let LedgerTransaction::System(..) = transaction {
+                    panic!("System transaction cannot be committed.");
+                }
+
                 let executable = self
                     .ledger_transaction_validator
-                    .validate_and_create_executable(prepared)
+                    .validate_and_create_executable(transaction)
                     .unwrap_or_else(|error| {
                         panic!(
                             "Committed transaction is not valid - likely byzantine quorum: {:?}",

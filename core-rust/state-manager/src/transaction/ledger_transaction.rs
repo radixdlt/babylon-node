@@ -4,9 +4,7 @@ use sbor::{Decode, DecodeError, Encode, EncodeError, TypeId};
 
 use crate::transaction::validator_transaction::ValidatorTransaction;
 use crate::LedgerPayloadHash;
-use transaction::model::NotarizedTransaction;
-
-use super::PreparedValidatorTransaction;
+use transaction::model::{NotarizedTransaction, SystemTransaction};
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -14,6 +12,7 @@ use super::PreparedValidatorTransaction;
 pub enum LedgerTransaction {
     User(NotarizedTransaction),
     Validator(ValidatorTransaction),
+    System(SystemTransaction),
 }
 
 impl LedgerTransaction {
@@ -32,25 +31,8 @@ impl LedgerTransaction {
     pub fn user(&self) -> Option<&NotarizedTransaction> {
         match self {
             LedgerTransaction::User(tx) => Some(tx),
-            LedgerTransaction::Validator(_) => None,
+            LedgerTransaction::Validator(..) => None,
+            LedgerTransaction::System(..) => None,
         }
     }
-
-    pub fn prepare(&self) -> PreparedLedgerTransaction {
-        match self {
-            LedgerTransaction::User(notarized_transaction) => {
-                PreparedLedgerTransaction::User(notarized_transaction)
-            }
-            LedgerTransaction::Validator(validator_transaction) => {
-                PreparedLedgerTransaction::Validator(validator_transaction.prepare())
-            }
-        }
-    }
-}
-
-#[allow(clippy::large_enum_variant)]
-#[derive(Debug, Clone, TypeId, PartialEq, Eq)]
-pub enum PreparedLedgerTransaction<'a> {
-    User(&'a NotarizedTransaction),
-    Validator(PreparedValidatorTransaction),
 }
