@@ -240,7 +240,7 @@ public final class RadixNodeApplication {
 
     Duration startTime = startTimer.elapsed();
     var metrics = injector.getInstance(Metrics.class);
-    metrics.misc().applicationStart().observe(startTime.toMillis());
+    metrics.misc().applicationStart().observe(startTime);
 
     Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown(injector)));
 

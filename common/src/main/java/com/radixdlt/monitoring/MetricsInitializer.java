@@ -65,7 +65,10 @@
 package com.radixdlt.monitoring;
 
 import com.google.common.base.Joiner;
-import io.prometheus.client.*;
+import io.prometheus.client.Collector;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.Counter;
+import io.prometheus.client.Gauge;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
@@ -174,8 +177,8 @@ public class MetricsInitializer {
     if (type == Gauge.class) {
       return Gauge.build(name, name).create();
     }
-    if (type == Summary.class) {
-      return Summary.build(name, name).create();
+    if (type == Timer.class) {
+      return new Timer(name);
     }
     if (type instanceof ParameterizedType generic) {
       Class<? extends Record> labelClass =
