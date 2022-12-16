@@ -144,7 +144,7 @@ public final class SimpleMempool
   }
 
   private void updateCounts() {
-    this.metrics.mempool().size().set(this.data.size());
+    this.metrics.v1Mempool().size().set(this.data.size());
   }
 
   @Override

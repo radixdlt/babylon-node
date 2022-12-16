@@ -128,7 +128,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
                 txn -> {
                   try {
                     mempool.addTransaction(txn);
-                    metrics.mempool().size().set(mempool.getCount());
+                    metrics.v1Mempool().size().set(mempool.getCount());
                   } catch (MempoolRejectedException e) {
                     log.error(e);
                   }
@@ -162,7 +162,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
                 // This is a workaround for the mocking to keep things lightweight
                 .map(RawLedgerTransaction::INCORRECTInterpretDirectlyAsRawNotarizedTransaction)
                 .toList());
-        metrics.mempool().size().set(mempool.getCount());
+        metrics.v1Mempool().size().set(mempool.getCount());
         var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
         ledgerUpdateDispatcher.dispatch(ledgerUpdate);
       }

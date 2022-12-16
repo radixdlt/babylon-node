@@ -186,12 +186,12 @@ public final class MempoolFiller {
       if (txns.size() == 1) {
         logger.info(
             "Mempool Filler mempool: {} Adding txn {} to mempool...",
-            metrics.mempool().size().get(),
+            metrics.v1Mempool().size().get(),
             txns.get(0).getPayloadHash());
       } else {
         logger.info(
             "Mempool Filler mempool: {} Adding {} txns to mempool...",
-            metrics.mempool().size().get(),
+            metrics.v1Mempool().size().get(),
             txns.size());
       }
 

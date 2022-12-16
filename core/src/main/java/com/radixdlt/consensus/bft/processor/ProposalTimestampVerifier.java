@@ -140,14 +140,14 @@ public final class ProposalTimestampVerifier implements BFTEventProcessor {
       metrics
           .bft()
           .rejectedConsensusEvents()
-          .label(new RejectedConsensusEvent(Type.PROPOSAL, TimestampIssue.TOO_OLD))
+          .label(new RejectedConsensusEvent(Type.PROPOSAL, TimestampIssue.TOO_FAR_PAST))
           .inc();
       isAcceptable = false;
     } else if (proposalTimestamp > upperBoundInclusive) {
       metrics
           .bft()
           .rejectedConsensusEvents()
-          .label(new RejectedConsensusEvent(Type.PROPOSAL, TimestampIssue.TOO_YOUNG))
+          .label(new RejectedConsensusEvent(Type.PROPOSAL, TimestampIssue.TOO_FAR_FUTURE))
           .inc();
       isAcceptable = false;
     } else if (proposalTimestamp < prevTimestamp) {

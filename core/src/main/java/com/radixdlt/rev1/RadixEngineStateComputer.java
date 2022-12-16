@@ -199,8 +199,8 @@ public final class RadixEngineStateComputer implements StateComputer {
       try {
         var processed = mempool.addTransaction(transaction);
 
-        metrics.mempool().addSuccesses().inc();
-        metrics.mempool().size().set(mempool.getCount());
+        metrics.v1Mempool().addSuccesses().inc();
+        metrics.v1Mempool().size().set(mempool.getCount());
 
         var success =
             MempoolAddSuccess.create(
@@ -211,7 +211,7 @@ public final class RadixEngineStateComputer implements StateComputer {
       } catch (MempoolDuplicateException e) {
         throw e;
       } catch (MempoolRejectedException e) {
-        metrics.mempool().addFailures().inc();
+        metrics.v1Mempool().addFailures().inc();
         throw e;
       }
     }
@@ -434,9 +434,9 @@ public final class RadixEngineStateComputer implements StateComputer {
         .forEach(
             t -> {
               if (t.isSystemOnly()) {
-                metrics.radixEngine().systemTransactions().inc();
+                metrics.v1RadixEngine().systemTransactions().inc();
               } else {
-                metrics.radixEngine().userTransactions().inc();
+                metrics.v1RadixEngine().userTransactions().inc();
               }
             });
     return result;
@@ -469,7 +469,7 @@ public final class RadixEngineStateComputer implements StateComputer {
       // TODO: refactor mempool to be less generic and make this more efficient
       // TODO: Move this into engine
       this.mempool.handleTransactionsCommitted(txCommitted);
-      metrics.mempool().size().set(mempool.getCount());
+      metrics.v1Mempool().size().set(mempool.getCount());
 
       var epochChangeOptional =
           txnsAndProof

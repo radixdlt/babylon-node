@@ -246,15 +246,15 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 
   private void addTime(long start) {
     final var elapsed = (System.nanoTime() - start + 500L) / 1000L;
-    this.metrics.bdb().safetyState().commitState().observe(elapsed);
+    this.metrics.berkeleyDb().safetyState().commitState().observe(elapsed);
   }
 
   private void addBytesRead(int bytesRead) {
-    this.metrics.bdb().safetyState().bytesRead().inc(bytesRead);
+    this.metrics.berkeleyDb().safetyState().bytesRead().inc(bytesRead);
   }
 
   private void addBytesWrite(int bytesWrite) {
-    this.metrics.bdb().safetyState().bytesWritten().inc(bytesWrite);
+    this.metrics.berkeleyDb().safetyState().bytesWritten().inc(bytesWrite);
   }
 
   private byte[] keyFor(SafetyState safetyState) {

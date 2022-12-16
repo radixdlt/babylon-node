@@ -83,7 +83,7 @@ public class ReV1DispatcherModule extends AbstractModule {
         .toProvider(
             Dispatchers.dispatcherProvider(
                 InvalidProposedTransaction.class,
-                (counters, event) -> counters.radixEngine().invalidProposedTransactions()))
+                (counters, event) -> counters.v1RadixEngine().invalidProposedTransactions()))
         .in(Scopes.SINGLETON);
   }
 }

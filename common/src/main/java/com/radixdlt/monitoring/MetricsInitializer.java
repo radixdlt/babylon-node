@@ -103,7 +103,7 @@ public class MetricsInitializer {
    * @return Initialized instance.
    */
   public Metrics initialize() {
-    return createCollectorHierarchy("node", Metrics.class);
+    return createCollectorHierarchy("rn", Metrics.class);
   }
 
   /**

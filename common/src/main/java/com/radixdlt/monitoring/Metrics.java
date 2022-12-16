@@ -73,30 +73,72 @@ import javax.annotation.Nullable;
 /**
  * An entry point to metrics tracked by the Java part of the Node application.
  *
+ * <p>We use the official <a href="https://github.com/prometheus/client_java">Prometheus client</a>,
+ * directly referencing its measurement primitives and our light wrappers (i.e. we don't hide
+ * Prometheus' presence from our business logic).
+ *
  * <p>The record hierarchy represents different sub-systems and services, and the leafs are:
  *
  * <ul>
- *   <li>{@link Counter}: a Prometheus-native up/down counter.
- *   <li>{@link Gauge}: a Prometheus-native indicator of an arbitrarily changing value.
+ *   <li>{@link Counter}: a Prometheus-native up/down counter. Its name should be a plural noun
+ *       describing the things being counted (e.g. "parsingErrors").
+ *   <li>{@link Gauge}: a Prometheus-native indicator of an arbitrarily changing value. Its name
+ *       should be a noun describing the value - may be singular (e.g. "versionNumber") or plural
+ *       (e.g. "activeClients").
  *   <li>{@link Summary}: a Prometheus-native [occurrence count + value sum] pair, by convention
- *       appropriate for representing a timer which tracks an average latency of an operation (note:
- *       we don't use Prometheus' "quantiles" support within the {@link Summary} yet).
+ *       appropriate for representing a timer which tracks an average latency of an operation. Its
+ *       name should be a verb describing the performed operation (e.g. "saveState"). Note: we don't
+ *       use Prometheus' "client-computed sliding-window quantiles" support available within the
+ *       {@link Summary} (and we probably would prefer histograms for such use-cases anyway).
  *   <li>{@link LabelledCounter}: our type-safe wrapper for a {@link Counter} with labels (i.e. to
  *       be used instead of Prometheus-native typo-prone {@link Counter#labels(String...)}.
  *   <li>{@link LabelledGauge}: our type-safe wrapper for a {@link Gauge} with labels (i.e. to be
  *       used instead of Prometheus-native typo-prone {@link Gauge#labels(String...)}.
  * </ul>
  *
- * Apart from that, this class also holds record definitions for the aforementioned type-safe labels
- * (see at the end).
+ * <p>The type-safe labels mentioned above are implemented using {@link Record}s - we {@link
+ * NameRenderer#labelNames(Class) render the record component's name as label name} (converting it
+ * {@link NameRenderer#render(String) to Prometheus' format} on the way), and we use the plain
+ * {@link Object#toString()} for the label's value.
+ *
+ * <p>For a complete example, suppose that we have a metric field definition:
+ *
+ * <pre>
+ *   public record Metrics(...) {
+ *
+ *     public record Crypto(
+ *        LabelledCounter<SignDetails> signErrors
+ *     ) {}
+ *
+ *     ...
+ *
+ *     public record SignDetails(String signedBy, SignType type) {}
+ *   }
+ * </pre>
+ *
+ * If we bump it like:
+ *
+ * <pre>
+ *   Metrics.crypto().signErrors().label(new SignDetails("Verifier 1", SignType.SHA_256)).inc(3);
+ * </pre>
+ *
+ * Then the exposition endpoint will return:
+ *
+ * <pre>
+ *   rn_crypto_sign_errors{signed_by="Verifier 1",type="SHA_256",} 3.0
+ * </pre>
+ *
+ * (the "rn_" is a prefix identifying our application, just for convenience)
+ *
+ * <p>The concrete record label definitions for our metrics are defined at the end of this class.
  */
 public record Metrics(
     Bft bft,
-    Bdb bdb,
+    BerkeleyDb berkeleyDb,
     Ledger ledger,
     LedgerSync sync,
-    V1Mempool mempool,
-    V1RadixEngine radixEngine,
+    V1Mempool v1Mempool,
+    V1RadixEngine v1RadixEngine,
     Messages messages,
     Networking networking,
     Crypto crypto,
@@ -132,7 +174,7 @@ public record Metrics(
         Gauge size, Counter forks, Counter rebuilds, Counter indirectParents) {}
   }
 
-  public record Bdb(V1Ledger ledger, AddressBook addressBook, SafetyState safetyState) {
+  public record BerkeleyDb(V1Ledger v1Ledger, AddressBook addressBook, SafetyState safetyState) {
 
     public record V1Ledger(
         Counter commits,
@@ -194,15 +236,15 @@ public record Metrics(
       Counter vertexStoreSaved) {}
 
   public record RejectedConsensusEvent(
-      Type type, Cause cause, @Nullable TimestampIssue timestampIssue) {
+      Type type, Invalidity invalidity, @Nullable TimestampIssue timestampIssue) {
 
-    public RejectedConsensusEvent(Type type, Cause cause) {
-      this(type, cause, null);
-      Preconditions.checkArgument(cause != Cause.TIMESTAMP);
+    public RejectedConsensusEvent(Type type, Invalidity invalidity) {
+      this(type, invalidity, null);
+      Preconditions.checkArgument(invalidity != Invalidity.TIMESTAMP);
     }
 
     public RejectedConsensusEvent(Type type, TimestampIssue timestampIssue) {
-      this(type, Cause.TIMESTAMP, timestampIssue);
+      this(type, Invalidity.TIMESTAMP, timestampIssue);
     }
 
     public enum Type {
@@ -210,17 +252,17 @@ public record Metrics(
       PROPOSAL
     }
 
-    public enum Cause {
-      AUTHORS,
-      SIGNATURES,
-      QCS,
-      TIMEOUT_SIGNATURES,
+    public enum Invalidity {
+      AUTHOR,
+      SIGNATURE,
+      ATTACHED_QC,
+      TIMEOUT_SIGNATURE,
       TIMESTAMP
     }
 
     public enum TimestampIssue {
-      TOO_OLD,
-      TOO_YOUNG,
+      TOO_FAR_PAST,
+      TOO_FAR_FUTURE,
       NOT_MONOTONIC
     }
   }

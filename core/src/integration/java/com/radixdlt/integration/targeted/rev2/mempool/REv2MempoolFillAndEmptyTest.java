@@ -223,6 +223,6 @@ public final class REv2MempoolFillAndEmptyTest {
       fillAndEmptyMempool();
     }
 
-    assertThat(metrics.radixEngine().invalidProposedTransactions().get()).isZero();
+    assertThat(metrics.v1RadixEngine().invalidProposedTransactions().get()).isZero();
   }
 }

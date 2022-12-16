@@ -78,7 +78,7 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.Cause;
+import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.Invalidity;
 import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.Type;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -130,7 +130,7 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
       metrics
           .bft()
           .rejectedConsensusEvents()
-          .label(new Metrics.RejectedConsensusEvent(Type.VOTE, Cause.AUTHORS))
+          .label(new Metrics.RejectedConsensusEvent(Type.VOTE, Invalidity.AUTHOR))
           .inc();
       log.warn("Ignoring a vote from {}: not a validator", vote.getAuthor());
       return;
@@ -144,7 +144,7 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
       metrics
           .bft()
           .rejectedConsensusEvents()
-          .label(new Metrics.RejectedConsensusEvent(Type.VOTE, Cause.SIGNATURES))
+          .label(new Metrics.RejectedConsensusEvent(Type.VOTE, Invalidity.SIGNATURE))
           .inc();
       return;
     }
@@ -162,7 +162,7 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
       metrics
           .bft()
           .rejectedConsensusEvents()
-          .label(new Metrics.RejectedConsensusEvent(Type.VOTE, Cause.TIMEOUT_SIGNATURES))
+          .label(new Metrics.RejectedConsensusEvent(Type.VOTE, Invalidity.TIMEOUT_SIGNATURE))
           .inc();
       return;
     }
@@ -172,7 +172,7 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
       metrics
           .bft()
           .rejectedConsensusEvents()
-          .label(new Metrics.RejectedConsensusEvent(Type.VOTE, Cause.QCS))
+          .label(new Metrics.RejectedConsensusEvent(Type.VOTE, Invalidity.ATTACHED_QC))
           .inc();
       return;
     }
@@ -186,7 +186,9 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
       metrics
           .bft()
           .rejectedConsensusEvents()
-          .label(new Metrics.RejectedConsensusEvent(Type.PROPOSAL, Cause.AUTHORS))
+          .label(
+              new Metrics.RejectedConsensusEvent(
+                  Type.PROPOSAL, Metrics.RejectedConsensusEvent.Invalidity.AUTHOR))
           .inc();
       log.warn("Ignoring a proposal from {}: not a validator", proposal.getAuthor());
       return;
@@ -197,7 +199,9 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
       metrics
           .bft()
           .rejectedConsensusEvents()
-          .label(new Metrics.RejectedConsensusEvent(Type.PROPOSAL, Cause.SIGNATURES))
+          .label(
+              new Metrics.RejectedConsensusEvent(
+                  Type.PROPOSAL, Metrics.RejectedConsensusEvent.Invalidity.SIGNATURE))
           .inc();
       log.warn("Ignoring a proposal {} with invalid signature", proposal);
       return;
@@ -208,7 +212,9 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
       metrics
           .bft()
           .rejectedConsensusEvents()
-          .label(new Metrics.RejectedConsensusEvent(Type.PROPOSAL, Cause.QCS))
+          .label(
+              new Metrics.RejectedConsensusEvent(
+                  Type.PROPOSAL, Metrics.RejectedConsensusEvent.Invalidity.ATTACHED_QC))
           .inc();
       return;
     }

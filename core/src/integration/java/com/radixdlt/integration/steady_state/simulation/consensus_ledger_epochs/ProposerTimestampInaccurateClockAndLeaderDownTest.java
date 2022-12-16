@@ -171,7 +171,7 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
             counters
                     .bft()
                     .rejectedConsensusEvents()
-                    .label(new RejectedConsensusEvent(Type.PROPOSAL, TimestampIssue.TOO_OLD))
+                    .label(new RejectedConsensusEvent(Type.PROPOSAL, TimestampIssue.TOO_FAR_PAST))
                     .get()
                 >= 1);
       } else if (node.equals(downNode)) {
@@ -185,7 +185,7 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
             counters
                     .bft()
                     .rejectedConsensusEvents()
-                    .label(new RejectedConsensusEvent(Type.PROPOSAL, TimestampIssue.TOO_YOUNG))
+                    .label(new RejectedConsensusEvent(Type.PROPOSAL, TimestampIssue.TOO_FAR_FUTURE))
                     .get()
                 >= 1);
         // And some timed out rounds
