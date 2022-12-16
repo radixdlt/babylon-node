@@ -70,16 +70,11 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.RemoteEventProcessorOnRunner;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.environment.*;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseHandler;
@@ -88,16 +83,8 @@ import com.radixdlt.sync.RemoteSyncService;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.sync.epochs.EpochsLocalSyncService;
 import com.radixdlt.sync.epochs.LocalSyncServiceFactory;
-import com.radixdlt.sync.messages.local.LocalSyncRequest;
-import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
-import com.radixdlt.sync.messages.local.SyncCheckTrigger;
-import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
-import com.radixdlt.sync.messages.local.SyncRequestTimeout;
-import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
-import com.radixdlt.sync.messages.remote.StatusRequest;
-import com.radixdlt.sync.messages.remote.StatusResponse;
-import com.radixdlt.sync.messages.remote.SyncRequest;
-import com.radixdlt.sync.messages.remote.SyncResponse;
+import com.radixdlt.sync.messages.local.*;
+import com.radixdlt.sync.messages.remote.*;
 import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
 import java.util.Comparator;
 
@@ -213,7 +200,7 @@ public class EpochsSyncModule extends AbstractModule {
       ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher,
       ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher,
       SyncRelayConfig syncRelayConfig,
-      SystemCounters systemCounters,
+      Metrics metrics,
       PeersView peersView,
       Comparator<AccumulatorState> accComparator,
       RemoteSyncResponseSignaturesVerifier signaturesVerifier,
@@ -228,7 +215,7 @@ public class EpochsSyncModule extends AbstractModule {
             syncRequestTimeoutDispatcher,
             syncLedgerUpdateTimeoutDispatcher,
             syncRelayConfig,
-            systemCounters,
+            metrics,
             peersView,
             accComparator,
             remoteSyncResponseValidatorSetVerifier,

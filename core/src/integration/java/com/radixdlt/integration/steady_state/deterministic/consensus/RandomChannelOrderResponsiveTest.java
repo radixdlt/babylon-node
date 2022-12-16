@@ -64,7 +64,7 @@
 
 package com.radixdlt.integration.steady_state.deterministic.consensus;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
@@ -78,8 +78,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.monitoring.Metrics;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.IntStream;
@@ -111,8 +110,8 @@ public class RandomChannelOrderResponsiveTest {
 
     List<Long> proposalsMade =
         IntStream.range(0, numValidatorNodes)
-            .mapToObj(i -> test.getInstance(i, SystemCounters.class))
-            .map(counters -> counters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT))
+            .mapToObj(i -> test.getInstance(i, Metrics.class))
+            .map(counters -> (long) counters.bft().pacemaker().proposalsSent().get())
             .collect(ImmutableList.toImmutableList());
 
     final long numRounds = roundsToRun / numValidatorNodes;

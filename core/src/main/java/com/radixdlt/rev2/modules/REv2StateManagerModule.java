@@ -64,7 +64,10 @@
 
 package com.radixdlt.rev2.modules;
 
-import com.google.inject.*;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.environment.EventDispatcher;
@@ -77,7 +80,7 @@ import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.*;
@@ -236,11 +239,9 @@ public final class REv2StateManagerModule extends AbstractModule {
 
             @Provides
             PersistentVertexStore vertexStore(
-                RustStateComputer stateComputer,
-                SystemCounters systemCounters,
-                Serialization serialization) {
+                RustStateComputer stateComputer, Metrics metrics, Serialization serialization) {
               return s -> {
-                systemCounters.increment(SystemCounters.CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
+                metrics.misc().vertexStoreSaved().inc();
                 var vertexStoreBytes =
                     serialization.toDson(s.toSerialized(), DsonOutput.Output.ALL);
                 stateComputer.saveVertexStore(vertexStoreBytes);

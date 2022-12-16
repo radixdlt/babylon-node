@@ -71,8 +71,7 @@ import com.radixdlt.addressing.Addressing;
 import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerManager;
 import com.radixdlt.p2p.transport.PeerChannel;
@@ -96,21 +95,21 @@ class MessageDispatcher {
   private static final Logger log = LogManager.getLogger();
 
   private final long messageTtlMs;
-  private final SystemCounters counters;
+  private final Metrics metrics;
   private final Serialization serialization;
   private final TimeSupplier timeSource;
   private final PeerManager peerManager;
   private final Addressing addressing;
 
   MessageDispatcher(
-      SystemCounters counters,
+      Metrics metrics,
       MessageCentralConfiguration config,
       Serialization serialization,
       TimeSupplier timeSource,
       PeerManager peerManager,
       Addressing addressing) {
     this.messageTtlMs = Objects.requireNonNull(config).messagingTimeToLive(30_000L);
-    this.counters = Objects.requireNonNull(counters);
+    this.metrics = Objects.requireNonNull(metrics);
     this.serialization = Objects.requireNonNull(serialization);
     this.timeSource = Objects.requireNonNull(timeSource);
     this.peerManager = Objects.requireNonNull(peerManager);
@@ -128,7 +127,7 @@ class MessageDispatcher {
               message.getClass().getSimpleName(),
               addressing.encodeNodeAddress(receiver.getPublicKey()));
       log.warn(msg);
-      this.counters.increment(CounterType.MESSAGES_OUTBOUND_ABORTED);
+      this.metrics.messages().outbound().aborted().inc();
       return CompletableFuture.completedFuture(MESSAGE_EXPIRED.result());
     }
 
@@ -142,7 +141,7 @@ class MessageDispatcher {
   }
 
   private Result<Unit, Cause> send(PeerChannel channel, byte[] bytes) {
-    this.counters.add(CounterType.NETWORKING_BYTES_SENT, bytes.length);
+    this.metrics.networking().bytesSent().inc(bytes.length);
     return channel.send(bytes);
   }
 
@@ -158,9 +157,9 @@ class MessageDispatcher {
   }
 
   private Result<Unit, Cause> updateStatistics(Result<Unit, Cause> result) {
-    this.counters.increment(CounterType.MESSAGES_OUTBOUND_PROCESSED);
+    this.metrics.messages().outbound().processed().inc();
     if (result.isSuccess()) {
-      this.counters.increment(CounterType.MESSAGES_OUTBOUND_SENT);
+      this.metrics.messages().outbound().sent().inc();
     }
     return result;
   }

@@ -76,8 +76,8 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.modules.CryptoModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
@@ -102,7 +102,7 @@ public class REv2StateComputerTest {
           @Override
           protected void configure() {
             bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
-            bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+            bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
           }
         });
   }

@@ -70,13 +70,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
+import com.google.inject.*;
 import com.google.inject.Module;
-import com.google.inject.Provides;
-import com.google.inject.TypeLiteral;
 import com.google.inject.util.Modules;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashSigner;
@@ -91,7 +86,7 @@ import com.radixdlt.harness.simulation.NodeNetworkMessagesModule;
 import com.radixdlt.keys.LocalSigner;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.modules.ModuleRunner;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.forks.InMemoryForksEpochStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -192,7 +187,7 @@ public class SimulationNodes {
 
     SimulationNetwork getUnderlyingNetwork();
 
-    Map<BFTNode, SystemCounters> getSystemCounters();
+    Map<BFTNode, Metrics> getMetrics();
 
     void addOrOverrideNode(ECKeyPair key, Module extraModule);
 
@@ -338,11 +333,10 @@ public class SimulationNodes {
     }
 
     @Override
-    public Map<BFTNode, SystemCounters> getSystemCounters() {
+    public Map<BFTNode, Metrics> getMetrics() {
       return nodes.entrySet().stream()
           .collect(
-              Collectors.toMap(
-                  Map.Entry::getKey, e -> e.getValue().getInstance(SystemCounters.class)));
+              Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getInstance(Metrics.class)));
     }
 
     @Override

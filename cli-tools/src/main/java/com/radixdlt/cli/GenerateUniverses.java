@@ -64,15 +64,10 @@
 
 package com.radixdlt.cli;
 
-import static com.radixdlt.substate.TxAction.*;
+import static com.radixdlt.substate.TxAction.StakeTokens;
 
 import com.google.common.collect.ImmutableList;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Key;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
+import com.google.inject.*;
 import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.application.tokens.Amount;
@@ -82,19 +77,14 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.modules.CryptoModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev1.MaxValidators;
 import com.radixdlt.rev1.checkpoint.Genesis;
 import com.radixdlt.rev1.checkpoint.GenesisProvider;
 import com.radixdlt.rev1.checkpoint.TokenIssuance;
-import com.radixdlt.rev1.forks.CurrentForkView;
-import com.radixdlt.rev1.forks.ForkBuilder;
-import com.radixdlt.rev1.forks.ForkConfig;
-import com.radixdlt.rev1.forks.Forks;
-import com.radixdlt.rev1.forks.MainnetForksModule;
-import com.radixdlt.rev1.forks.NewestForkConfig;
+import com.radixdlt.rev1.forks.*;
 import com.radixdlt.substate.TxAction;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
@@ -108,11 +98,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
+import org.apache.commons.cli.*;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
@@ -214,7 +200,7 @@ public final class GenerateUniverses {
                         .annotatedWith(Genesis.class)
                         .toInstance(List.of());
                     bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-                    bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+                    bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
                     bindConstant().annotatedWith(Genesis.class).to(timestamp);
                     bind(new TypeLiteral<Set<StakeTokens>>() {})
                         .annotatedWith(Genesis.class)

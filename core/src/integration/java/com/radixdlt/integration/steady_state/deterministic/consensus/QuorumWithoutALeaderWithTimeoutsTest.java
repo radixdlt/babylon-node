@@ -77,8 +77,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.monitoring.Metrics;
 import java.util.Random;
 import org.junit.Test;
 
@@ -108,12 +107,11 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
     test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
     for (int nodeIndex = 0; nodeIndex < numValidatorNodes; ++nodeIndex) {
-      final SystemCounters counters = test.getInstance(nodeIndex, SystemCounters.class);
-      final long numberOfIndirectParents =
-          counters.get(CounterType.BFT_VERTEX_STORE_INDIRECT_PARENTS);
-      final long totalNumberOfTimeouts = counters.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT);
-      final long totalNumberOfTimeoutQuorums = counters.get(CounterType.BFT_TIMEOUT_QUORUMS);
-      final long totalNumberOfVoteQuorums = counters.get(CounterType.BFT_VOTE_QUORUMS);
+      final Metrics metrics = test.getInstance(nodeIndex, Metrics.class);
+      long numberOfIndirectParents = (long) metrics.bft().vertexStore().indirectParents().get();
+      long totalNumberOfTimeouts = (long) metrics.bft().pacemaker().timeoutsSent().get();
+      long totalNumberOfTimeoutQuorums = (long) metrics.bft().timeoutQuorums().get();
+      long totalNumberOfVoteQuorums = (long) metrics.bft().voteQuorums().get();
       assertThat(totalNumberOfTimeoutQuorums).isEqualTo(0); // no TCs
       assertThat(numberOfIndirectParents).isEqualTo(0); // no indirect parents
       assertThat(totalNumberOfTimeouts).isEqualTo(numRounds - 1); // a timeout for each round

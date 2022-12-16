@@ -245,6 +245,8 @@ public final class RadixNodeModule extends AbstractModule {
         BFTValidatorSet.from(initialVset.stream().map(n -> BFTValidator.from(n, UInt256.ONE)));
     bind(BFTValidatorSet.class).toInstance(validatorSet);
 
+    install(new MetricsModule());
+
     // System Info
     install(new SystemInfoModule());
 

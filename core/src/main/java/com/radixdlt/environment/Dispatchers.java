@@ -69,11 +69,9 @@ import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 
 /** Helper class to set up environment with dispatched events */
 // TODO: get rid of field injection https://radixdlt.atlassian.net/browse/NT-3
@@ -85,17 +83,16 @@ public final class Dispatchers {
   private static class DispatcherProvider<T> implements Provider<EventDispatcher<T>> {
     @Inject private Provider<Environment> environmentProvider;
 
-    @Inject private SystemCounters systemCounters;
+    @Inject private Metrics metrics;
 
     @Inject private Set<EventProcessorOnDispatch<?>> onDispatchProcessors;
 
     private final Class<T> c;
-    private final Function<T, SystemCounters.CounterType> counterTypeMapper;
+    private final MetricUpdater<T> metricUpdater;
 
-    DispatcherProvider(
-        Class<T> c, @Nullable Function<T, SystemCounters.CounterType> counterTypeMapper) {
+    DispatcherProvider(Class<T> c, MetricUpdater<T> metricUpdater) {
       this.c = c;
-      this.counterTypeMapper = counterTypeMapper;
+      this.metricUpdater = metricUpdater;
     }
 
     @Override
@@ -108,9 +105,7 @@ public final class Dispatchers {
       return e -> {
         dispatcher.dispatch(e);
         processors.forEach(p -> p.process(e));
-        if (counterTypeMapper != null) {
-          systemCounters.increment(counterTypeMapper.apply(e));
-        }
+        metricUpdater.update(metrics, e);
       };
     }
   }
@@ -146,22 +141,16 @@ public final class Dispatchers {
       implements Provider<RemoteEventDispatcher<T>> {
     @Inject private Provider<Environment> environmentProvider;
 
-    @Inject private SystemCounters systemCounters;
+    @Inject private Metrics metrics;
 
     @Inject @Self private BFTNode self;
 
     @Inject private Set<EventProcessorOnDispatch<?>> onDispatchProcessors;
 
-    private final SystemCounters.CounterType counterType;
     private final Class<T> c;
 
     RemoteDispatcherProvider(Class<T> c) {
-      this(c, null);
-    }
-
-    RemoteDispatcherProvider(Class<T> c, @Nullable SystemCounters.CounterType counterType) {
       this.c = c;
-      this.counterType = counterType;
     }
 
     @Override
@@ -179,20 +168,17 @@ public final class Dispatchers {
           remoteDispatcher.dispatch(node, e);
         }
         onDispatch.forEach(p -> p.process(e));
-        if (counterType != null) {
-          systemCounters.increment(counterType);
-        }
       };
     }
   }
 
   public static <T> Provider<EventDispatcher<T>> dispatcherProvider(Class<T> c) {
-    return new DispatcherProvider<>(c, null);
+    return new DispatcherProvider<>(c, (counter, event) -> {});
   }
 
   public static <T> Provider<EventDispatcher<T>> dispatcherProvider(
-      Class<T> c, Function<T, SystemCounters.CounterType> counterTypeMapper) {
-    return new DispatcherProvider<>(c, counterTypeMapper);
+      Class<T> c, MetricUpdater<T> metricUpdater) {
+    return new DispatcherProvider<>(c, metricUpdater);
   }
 
   public static <T> Provider<ScheduledEventDispatcher<T>> scheduledDispatcherProvider(Class<T> c) {
@@ -208,8 +194,21 @@ public final class Dispatchers {
     return new RemoteDispatcherProvider<>(c);
   }
 
-  public static <T> Provider<RemoteEventDispatcher<T>> remoteDispatcherProvider(
-      Class<T> c, SystemCounters.CounterType counterType) {
-    return new RemoteDispatcherProvider<>(c, counterType);
+  /**
+   * A part of {@link #dispatcherProvider(Class, MetricUpdater)}'s logic to be used for metrics'
+   * update.
+   *
+   * @param <T> Event type.
+   */
+  @FunctionalInterface
+  public interface MetricUpdater<T> {
+
+    /**
+     * Updates the metrics according to the event.
+     *
+     * @param metrics Metrics.
+     * @param event Event.
+     */
+    void update(Metrics metrics, T event);
   }
 }

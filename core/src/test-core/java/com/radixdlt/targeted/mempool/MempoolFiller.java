@@ -77,7 +77,7 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.keys.LocalSigner;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.RadixEngineMempool;
@@ -100,7 +100,7 @@ public final class MempoolFiller {
 
   private final RadixEngineMempool radixEngineMempool;
   private final ScheduledEventDispatcher<ScheduledMempoolFill> mempoolFillDispatcher;
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
   private final PeersView peersView;
   private final Random random;
   private final HashSigner hashSigner;
@@ -121,7 +121,7 @@ public final class MempoolFiller {
       ScheduledEventDispatcher<ScheduledMempoolFill> mempoolFillDispatcher,
       PeersView peersView,
       Random random,
-      SystemCounters systemCounters) {
+      Metrics metrics) {
     this.account = account;
     this.hashSigner = hashSigner;
     this.radixEngine = radixEngine;
@@ -131,7 +131,7 @@ public final class MempoolFiller {
     this.mempoolFillDispatcher = mempoolFillDispatcher;
     this.peersView = peersView;
     this.random = random;
-    this.systemCounters = systemCounters;
+    this.metrics = metrics;
   }
 
   public EventProcessor<MempoolFillerUpdate> mempoolFillerUpdateEventProcessor() {
@@ -186,12 +186,12 @@ public final class MempoolFiller {
       if (txns.size() == 1) {
         logger.info(
             "Mempool Filler mempool: {} Adding txn {} to mempool...",
-            systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE),
+            metrics.v1Mempool().size().get(),
             txns.get(0).getPayloadHash());
       } else {
         logger.info(
             "Mempool Filler mempool: {} Adding {} txns to mempool...",
-            systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE),
+            metrics.v1Mempool().size().get(),
             txns.size());
       }
 

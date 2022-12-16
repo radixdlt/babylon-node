@@ -67,34 +67,27 @@ package com.radixdlt.consensus.bft.processor;
 import static com.radixdlt.consensus.bft.processor.ProposalTimestampVerifier.MAX_ACCEPTABLE_PROPOSAL_TIMESTAMP_RUSH_MS;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.RoundLeaderFailure;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
 import org.junit.Before;
 import org.junit.Test;
 
 public class ProposalTimestampVerifierTest {
   private BFTEventProcessor forwardTo;
-  private SystemCounters systemCounters;
+  private Metrics metrics;
   private EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher;
 
   @Before
   public void setup() {
     this.forwardTo = mock(BFTEventProcessor.class);
-    this.systemCounters = mock(SystemCounters.class);
+    this.metrics = new MetricsInitializer().initialize();
     this.roundLeaderFailureDispatcher = rmock(EventDispatcher.class);
   }
 
@@ -104,7 +97,7 @@ public class ProposalTimestampVerifierTest {
 
     final var sut =
         new ProposalTimestampVerifier(
-            forwardTo, () -> currentSystemTime, systemCounters, roundLeaderFailureDispatcher);
+            forwardTo, () -> currentSystemTime, metrics, roundLeaderFailureDispatcher);
 
     sut.processProposal(createProposalWithTimestamps(currentSystemTime - 1, currentSystemTime));
     verify(forwardTo, times(1)).processProposal(any());
@@ -117,7 +110,7 @@ public class ProposalTimestampVerifierTest {
 
     final var sut =
         new ProposalTimestampVerifier(
-            forwardTo, () -> currentSystemTime, systemCounters, roundLeaderFailureDispatcher);
+            forwardTo, () -> currentSystemTime, metrics, roundLeaderFailureDispatcher);
 
     sut.processProposal(createProposalWithTimestamps(currentSystemTime, currentSystemTime));
     verify(forwardTo, times(1)).processProposal(any());
@@ -130,7 +123,7 @@ public class ProposalTimestampVerifierTest {
 
     final var sut =
         new ProposalTimestampVerifier(
-            forwardTo, () -> currentSystemTime, systemCounters, roundLeaderFailureDispatcher);
+            forwardTo, () -> currentSystemTime, metrics, roundLeaderFailureDispatcher);
 
     sut.processProposal(createProposalWithTimestamps(currentSystemTime, currentSystemTime - 1));
     verify(forwardTo, never()).processProposal(any());
@@ -143,7 +136,7 @@ public class ProposalTimestampVerifierTest {
 
     final var sut =
         new ProposalTimestampVerifier(
-            forwardTo, () -> currentSystemTime, systemCounters, roundLeaderFailureDispatcher);
+            forwardTo, () -> currentSystemTime, metrics, roundLeaderFailureDispatcher);
 
     sut.processProposal(
         createProposalWithTimestamps(
