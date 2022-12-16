@@ -62,16 +62,88 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system.routes;
+package com.radixdlt.monitoring;
 
-import com.radixdlt.api.system.SystemGetJsonHandler;
-import com.radixdlt.api.system.generated.models.VersionResponse;
-import com.radixdlt.monitoring.ApplicationVersion;
+import com.google.common.annotations.VisibleForTesting;
+import java.io.IOException;
+import java.util.*;
 
-public class VersionHandler extends SystemGetJsonHandler<VersionResponse> {
+/**
+ * Application version.
+ *
+ * @param branch Branch name.
+ * @param commit Commit hash.
+ * @param display Display version.
+ * @param string A complete human-friendly version string, to be exposed via API and metrics.
+ */
+public record ApplicationVersion(String branch, String commit, String display, String string) {
 
-  @Override
-  public VersionResponse handleRequest() {
-    return new VersionResponse().version(ApplicationVersion.INSTANCE.string());
+  /** An instance loaded from a well-known resource properties file. */
+  public static final ApplicationVersion INSTANCE = loadFromResource("/version.properties");
+
+  /**
+   * Loads version information from the given resource properties file.
+   *
+   * <p>Silently falls back to default "unknown" version indicators in case of any problems.
+   *
+   * @param resourceName Resource name.
+   * @return Version information.
+   */
+  private static ApplicationVersion loadFromResource(String resourceName) {
+    var branch = "unknown-branch";
+    var commit = "unknown-commit";
+    var display = "unknown-version";
+    var string = "unknown";
+    try (var is = ApplicationVersion.class.getResourceAsStream(resourceName)) {
+      if (is != null) {
+        var p = new Properties();
+        p.load(is);
+        branch = p.getProperty("VERSION_BRANCH", branch);
+        commit = p.getProperty("VERSION_COMMIT", commit);
+        display = p.getProperty("VERSION_DISPLAY", display);
+        Map<String, String> map = new HashMap<>();
+        for (var key : p.stringPropertyNames()) {
+          var mapKey = key.split("_", 2)[1].toLowerCase(Locale.US);
+          var defaultValue = "unknown-" + mapKey;
+          map.put(mapKey, p.getProperty(key, defaultValue));
+        }
+        string = calculateVersionString(map);
+      }
+    } catch (IOException e) {
+      // Ignore exception
+    }
+    return new ApplicationVersion(branch, commit, display, string);
+  }
+
+  @VisibleForTesting
+  static String calculateVersionString(Map<String, String> details) {
+    if (isCleanTag(details)) {
+      return lastTag(details);
+    } else {
+      var version =
+          branchName(details) == null
+              ? "detached-head-" + gitHash(details)
+              : (lastTag(details) + "-" + branchName(details)).replace('/', '~')
+                  + "-"
+                  + gitHash(details);
+
+      return version;
+    }
+  }
+
+  private static boolean isCleanTag(Map<String, String> details) {
+    return Objects.equals(details.get("tag"), details.get("last_tag"));
+  }
+
+  private static String lastTag(Map<String, String> details) {
+    return details.get("last_tag");
+  }
+
+  private static String gitHash(Map<String, String> details) {
+    return details.get("build");
+  }
+
+  private static String branchName(Map<String, String> details) {
+    return details.get("branch");
   }
 }

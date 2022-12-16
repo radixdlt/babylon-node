@@ -62,16 +62,51 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system.routes;
+package com.radixdlt.monitoring;
 
-import com.radixdlt.api.system.SystemGetJsonHandler;
-import com.radixdlt.api.system.generated.models.VersionResponse;
-import com.radixdlt.monitoring.ApplicationVersion;
+import static org.junit.Assert.assertEquals;
 
-public class VersionHandler extends SystemGetJsonHandler<VersionResponse> {
+import java.util.Map;
+import org.junit.Test;
 
-  @Override
-  public VersionResponse handleRequest() {
-    return new VersionResponse().version(ApplicationVersion.INSTANCE.string());
+public class ApplicationVersionTest {
+  @Test
+  public void testCalculateVersionForCleanRepo() {
+    var details =
+        Map.of(
+            "tag", "1.0-beta.35.1",
+            "last_tag", "1.0-beta.35.1");
+
+    var version = ApplicationVersion.calculateVersionString(details);
+
+    assertEquals("1.0-beta.35.1", version);
+  }
+
+  @Test
+  public void testCalculateVersionForDirtyRepo() {
+    var details =
+        Map.of(
+            "tag", "",
+            "last_tag", "1.0-beta.35.1",
+            "build", "ed0717c",
+            "branch", "feature/rpnv1-1306-refactor-json-rpc-implementation");
+
+    var version = ApplicationVersion.calculateVersionString(details);
+
+    assertEquals(
+        "1.0-beta.35.1-feature~rpnv1-1306-refactor-json-rpc-implementation-ed0717c", version);
+  }
+
+  @Test
+  public void testCalculateVersionForDetachedHead() {
+    var details =
+        Map.of(
+            "tag", "",
+            "last_tag", "1.0-beta.35.1",
+            "build", "ed0717c");
+
+    var version = ApplicationVersion.calculateVersionString(details);
+
+    assertEquals("detached-head-ed0717c", version);
   }
 }

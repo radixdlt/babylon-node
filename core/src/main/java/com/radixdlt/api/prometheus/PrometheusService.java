@@ -64,11 +64,7 @@
 
 package com.radixdlt.api.prometheus;
 
-import static com.radixdlt.RadixNodeApplication.SYSTEM_VERSION_KEY;
-import static com.radixdlt.RadixNodeApplication.VERSION_STRING_KEY;
-
 import com.google.inject.Inject;
-import com.radixdlt.RadixNodeApplication;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -140,10 +136,8 @@ public class PrometheusService {
 
   private String prepareNodeInfo() {
     var builder = new StringBuilder("nodeinfo{");
-    addBranchAndCommit(builder);
     addValidatorAddress(builder);
     appendField(builder, "health", healthInfoService.nodeStatus().name());
-    appendField(builder, "key", self.getKey().toHex());
     return builder.append("}").toString();
   }
 
@@ -159,12 +153,6 @@ public class PrometheusService {
             .orElse(false);
 
     appendField(builder, "is_in_validator_set", inSet);
-  }
-
-  private void addBranchAndCommit(StringBuilder builder) {
-    var branchAndCommit =
-        RadixNodeApplication.systemVersionInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
-    appendField(builder, "branch_and_commit", branchAndCommit);
   }
 
   private void appendField(StringBuilder builder, String name, Object value) {

@@ -62,52 +62,73 @@
  * permissions under this License.
  */
 
-package com.radixdlt;
+package com.radixdlt.monitoring;
 
-import static com.radixdlt.RadixNodeApplication.calculateVersionString;
-import static org.junit.Assert.*;
-
+import com.google.common.collect.Maps;
+import com.google.common.collect.Streams;
+import io.prometheus.client.Collector;
+import io.prometheus.client.Info;
+import java.util.List;
 import java.util.Map;
-import org.junit.Test;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class RadixNodeApplicationTest {
-  @Test
-  public void testCalculateVersionForCleanRepo() {
-    var details =
-        Map.<String, Object>of(
-            "tag", "1.0-beta.35.1",
-            "last_tag", "1.0-beta.35.1");
+/**
+ * A Prometheus {@link Info} wrapper with type-safe set of info items.
+ *
+ * @param <I> A type of record representing a complete set of info items.
+ */
+public class TypedInfo<I extends Record> extends Collector implements Collector.Describable {
 
-    var version = calculateVersionString(details);
+  /** A wrapped {@link Info}. */
+  private final Info wrapped;
 
-    assertEquals("1.0-beta.35.1", version);
+  /** A current value. */
+  private final AtomicReference<I> infoRecord;
+
+  /**
+   * A direct constructor.
+   *
+   * @param name A metric name; will also be used as a description. Please note that the wrapped
+   *     {@link Info} primitive will automatically append the "_info" suffix.
+   */
+  public TypedInfo(String name) {
+    this.wrapped = Info.build(name, name).create();
+    this.infoRecord = new AtomicReference<>();
   }
 
-  @Test
-  public void testCalculateVersionForDirtyRepo() {
-    var details =
-        Map.<String, Object>of(
-            "tag", "",
-            "last_tag", "1.0-beta.35.1",
-            "build", "ed0717c",
-            "branch", "feature/rpnv1-1306-refactor-json-rpc-implementation");
-
-    var version = calculateVersionString(details);
-
-    assertEquals(
-        "1.0-beta.35.1-feature~rpnv1-1306-refactor-json-rpc-implementation-ed0717c", version);
+  /**
+   * Sets the info items.
+   *
+   * @param infoRecord A record containing info items.
+   */
+  public void set(I infoRecord) {
+    this.infoRecord.set(infoRecord);
+    this.wrapped.info(
+        Streams.zip(
+                Stream.of(NameRenderer.labelNames(infoRecord.getClass())),
+                Stream.of(NameRenderer.labelValues(infoRecord)),
+                Maps::immutableEntry)
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
   }
 
-  @Test
-  public void testCalculateVersionForDetachedHead() {
-    var details =
-        Map.<String, Object>of(
-            "tag", "",
-            "last_tag", "1.0-beta.35.1",
-            "build", "ed0717c");
+  /**
+   * Gets the current info items.
+   *
+   * @return Current info items.
+   */
+  public I get() {
+    return this.infoRecord.get();
+  }
 
-    var version = calculateVersionString(details);
+  @Override
+  public List<MetricFamilySamples> collect() {
+    return this.wrapped.collect();
+  }
 
-    assertEquals("detached-head-ed0717c", version);
+  @Override
+  public List<MetricFamilySamples> describe() {
+    return this.wrapped.describe();
   }
 }
