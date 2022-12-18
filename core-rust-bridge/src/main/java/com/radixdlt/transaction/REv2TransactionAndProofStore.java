@@ -97,6 +97,12 @@ public final class REv2TransactionAndProofStore {
             new TypeToken<>() {},
             new TypeToken<>() {},
             REv2TransactionAndProofStore::getLastProof);
+    this.getEpochProofFunc =
+        NativeCalls.Func1.with(
+            stateManager,
+            new TypeToken<>() {},
+            new TypeToken<>() {},
+            REv2TransactionAndProofStore::getEpochProof);
   }
 
   public Option<ExecutedTransaction> getTransactionAtStateVersion(long stateVersion) {
@@ -109,6 +115,10 @@ public final class REv2TransactionAndProofStore {
 
   public Optional<byte[]> getLastProof() {
     return this.getLastProofFunc.call(Unit.unit()).toOptional();
+  }
+
+  public Optional<byte[]> getEpochProof(long epoch) {
+    return this.getEpochProofFunc.call(UInt64.fromNonNegativeLong(epoch)).toOptional();
   }
 
   private final NativeCalls.Func1<StateManager, UInt64, Option<ExecutedTransaction>>
@@ -126,4 +136,8 @@ public final class REv2TransactionAndProofStore {
   private final NativeCalls.Func1<StateManager, Unit, Option<byte[]>> getLastProofFunc;
 
   private static native byte[] getLastProof(StateManager stateManager, byte[] payload);
+
+  private final NativeCalls.Func1<StateManager, UInt64, Option<byte[]>> getEpochProofFunc;
+
+  private static native byte[] getEpochProof(StateManager stateManager, byte[] payload);
 }

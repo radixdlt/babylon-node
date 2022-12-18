@@ -139,7 +139,9 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
     if (lastStoredProof.isEndOfEpoch()) {
       return lastStoredProof;
     }
-    return transactionsAndProofReader.getEpochProof(lastStoredProof.getEpoch()).orElseThrow();
+    // TODO: Use lastStoredProof.getEpoch() once epochs with validators implemented
+    var lastEpoch = 1L;
+    return transactionsAndProofReader.getEpochProof(lastEpoch).orElseThrow();
   }
 
   private static VertexStoreState genesisEpochProofToGenesisVertexStore(
