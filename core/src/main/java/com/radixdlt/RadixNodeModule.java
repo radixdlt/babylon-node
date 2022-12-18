@@ -100,9 +100,9 @@ import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.IOUtils;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt64;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.FileInputStream;
@@ -201,6 +201,7 @@ public final class RadixNodeModule extends AbstractModule {
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
     var databaseConfig = new REv2DatabaseConfig.RocksDB(databasePath);
     var transactionsPerProposalCount = 10;
+
     String genesisTxn;
     final var genesisFileProp = properties.get("network.genesis_file");
     if (genesisFileProp != null && !genesisFileProp.isBlank()) {
@@ -227,9 +228,7 @@ public final class RadixNodeModule extends AbstractModule {
             .toList();
 
     var validatorList = initialVset.stream().map(BFTNode::getKey).toList();
-    var validatorSet =
-        BFTValidatorSet.from(initialVset.stream().map(n -> BFTValidator.from(n, UInt256.ONE)));
-    bind(BFTValidatorSet.class).toInstance(validatorSet);
+    var genesis = TransactionBuilder.createGenesisLedgerTransaction(validatorList);
 
     var stateConfig =
         new REv2StateConfig(
@@ -246,7 +245,7 @@ public final class RadixNodeModule extends AbstractModule {
     install(new BerkeleySafetyStoreModule(databasePath));
     // Start at stateVersion 1 for now due to lack serialized genesis transaction
     var initialAccumulatorState = new AccumulatorState(1, HashUtils.zero256());
-    install(new REv2LedgerRecoveryModule(initialAccumulatorState));
+    install(new REv2LedgerRecoveryModule(initialAccumulatorState, genesis));
     install(new REv2ConsensusRecoveryModule());
 
     // System Info

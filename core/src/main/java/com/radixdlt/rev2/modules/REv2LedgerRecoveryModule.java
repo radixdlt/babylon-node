@@ -73,30 +73,44 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.recovery.VertexStoreRecovery;
+import com.radixdlt.rev2.REv2StateComputer;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transactions.RawLedgerTransaction;
+import java.util.List;
 import java.util.Optional;
 
 public final class REv2LedgerRecoveryModule extends AbstractModule {
   private final AccumulatorState initialAccumulatorState;
+  private final RawLedgerTransaction genesis;
 
-  public REv2LedgerRecoveryModule(AccumulatorState initialAccumulatorState) {
+  public REv2LedgerRecoveryModule(
+      AccumulatorState initialAccumulatorState, RawLedgerTransaction genesis) {
     this.initialAccumulatorState = initialAccumulatorState;
+    this.genesis = genesis;
   }
 
   @Provides
   @LastProof
   private LedgerProof lastProof(
-      TransactionsAndProofReader transactionsAndProofReader, BFTValidatorSet validatorSet) {
+      REv2StateComputer stateComputer, TransactionsAndProofReader transactionsAndProofReader) {
     final var timestamp = 0L; /* TODO: use Olympia end-state timestamp */
     return transactionsAndProofReader
         .getLastProof()
         .orElseGet(
-            () -> LedgerProof.genesis(initialAccumulatorState, validatorSet, timestamp, timestamp));
+            () -> {
+              var validatorSet = stateComputer.prepareGenesis(genesis);
+              var proof =
+                  LedgerProof.genesis(initialAccumulatorState, validatorSet, timestamp, timestamp);
+              stateComputer.commit(
+                  CommittedTransactionsWithProof.create(List.of(genesis), proof), null);
+              return proof;
+            });
   }
 
   @Provides

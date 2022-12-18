@@ -99,6 +99,7 @@ import com.radixdlt.statecomputer.RandomTransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.transaction.TransactionBuilder;
 import java.util.Optional;
 
 /** Manages the functional components of a node */
@@ -391,7 +392,9 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                     }
                   });
             } else {
-              install(new REv2LedgerRecoveryModule(initialAccumulatorState));
+              var validatorSet = rev2Config.stateConfig().validatorSet();
+              var genesis = TransactionBuilder.createGenesisLedgerTransaction(validatorSet);
+              install(new REv2LedgerRecoveryModule(initialAccumulatorState, genesis));
               install(new REv2ConsensusRecoveryModule());
             }
 

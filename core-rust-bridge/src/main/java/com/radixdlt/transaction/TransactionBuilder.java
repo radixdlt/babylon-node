@@ -75,12 +75,18 @@ import com.radixdlt.lang.Tuple;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionHeader;
 import com.radixdlt.sbor.NativeCalls;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.List;
 
 public final class TransactionBuilder {
   static {
     // This is idempotent with the other calls
     System.loadLibrary("corerust");
+  }
+
+  public static RawLedgerTransaction createGenesisLedgerTransaction(
+      List<ECDSASecp256k1PublicKey> validatorList) {
+    return RawLedgerTransaction.create(createGenesisFunc.call(tuple(validatorList)));
   }
 
   public static byte[] compileManifest(
@@ -117,6 +123,15 @@ public final class TransactionBuilder {
               new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::compileManifest);
 
   private static native byte[] compileManifest(byte[] payload);
+
+  private static final NativeCalls.StaticFunc1<Tuple.Tuple1<List<ECDSASecp256k1PublicKey>>, byte[]>
+      createGenesisFunc =
+          NativeCalls.StaticFunc1.with(
+              new TypeToken<>() {},
+              new TypeToken<>() {},
+              TransactionBuilder::createGenesisLedgerTransaction);
+
+  private static native byte[] createGenesisLedgerTransaction(byte[] requestPayload);
 
   private static final NativeCalls.StaticFunc1<Tuple.Tuple2<NetworkDefinition, PublicKey>, byte[]>
       newAccountIntentFunc =

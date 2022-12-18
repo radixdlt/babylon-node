@@ -99,7 +99,9 @@ use transaction::model::{
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{TestIntentHashManager, ValidationConfig};
 
-use crate::transaction::{LedgerTransaction, LedgerTransactionValidator, UserTransactionValidator, ValidatorTransaction};
+use crate::transaction::{
+    LedgerTransaction, LedgerTransactionValidator, UserTransactionValidator, ValidatorTransaction,
+};
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct LoggingConfig {
@@ -548,20 +550,17 @@ where
                 LedgerTransaction::User(notarized_transaction) => {
                     already_committed_or_prepared_intent_hashes
                         .insert(notarized_transaction.intent_hash());
-                    self
-                        .ledger_transaction_validator
-                        .validate_and_create_executable(&parsed_transaction)
-
-                }
-                LedgerTransaction::Validator(..) => {
-                    self
-                        .ledger_transaction_validator
+                    self.ledger_transaction_validator
                         .validate_and_create_executable(&parsed_transaction)
                 }
+                LedgerTransaction::Validator(..) => self
+                    .ledger_transaction_validator
+                    .validate_and_create_executable(&parsed_transaction),
                 LedgerTransaction::System(..) => {
                     panic!("System Transactions should not be prepared");
                 }
-            }.expect("Already prepared tranasctions should be valid");
+            }
+            .expect("Already prepared tranasctions should be valid");
 
             let receipt = execute_and_commit_transaction(
                 &mut staged_store,
@@ -749,8 +748,6 @@ where
                     // TODO - will want to validate when non-user transactions (eg round/epoch change intents) occur
                 })
                 .collect::<Vec<_>>();
-
-
 
         let current_top_of_ledger = self
             .store
