@@ -86,7 +86,7 @@ public final class TransactionBuilder {
 
   public static RawLedgerTransaction createGenesisLedgerTransaction(
       List<ECDSASecp256k1PublicKey> validatorList) {
-    return RawLedgerTransaction.create(createGenesisFunc.call(tuple(validatorList)));
+    return RawLedgerTransaction.create(createGenesisFunc.call(validatorList));
   }
 
   public static byte[] compileManifest(
@@ -124,7 +124,7 @@ public final class TransactionBuilder {
 
   private static native byte[] compileManifest(byte[] payload);
 
-  private static final NativeCalls.StaticFunc1<Tuple.Tuple1<List<ECDSASecp256k1PublicKey>>, byte[]>
+  private static final NativeCalls.StaticFunc1<List<ECDSASecp256k1PublicKey>, byte[]>
       createGenesisFunc =
           NativeCalls.StaticFunc1.with(
               new TypeToken<>() {},

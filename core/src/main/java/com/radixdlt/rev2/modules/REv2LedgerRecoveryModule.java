@@ -68,18 +68,19 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.*;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.REv2StateComputer;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
+import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.List;
@@ -96,17 +97,21 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
   }
 
   @Provides
-  @LastProof
+  @Singleton
+  @LastStoredProof
   private LedgerProof lastProof(
-      REv2StateComputer stateComputer, TransactionsAndProofReader transactionsAndProofReader) {
+      REv2StateComputer stateComputer,
+      TransactionsAndProofReader transactionsAndProofReader,
+      LedgerAccumulator ledgerAccumulator) {
     final var timestamp = 0L; /* TODO: use Olympia end-state timestamp */
     return transactionsAndProofReader
         .getLastProof()
         .orElseGet(
             () -> {
               var validatorSet = stateComputer.prepareGenesis(genesis);
-              var proof =
-                  LedgerProof.genesis(initialAccumulatorState, validatorSet, timestamp, timestamp);
+              var accumulatorState =
+                  ledgerAccumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
+              var proof = LedgerProof.genesis(accumulatorState, validatorSet, timestamp, timestamp);
               stateComputer.commit(
                   CommittedTransactionsWithProof.create(List.of(genesis), proof), null);
               return proof;
@@ -114,10 +119,27 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
   }
 
   @Provides
+  @Singleton
+  @LastProof
+  LedgerProof lastProof(
+      VertexStoreState vertexStoreState, @LastStoredProof LedgerProof lastStoredProof) {
+    if (lastStoredProof.isEndOfEpoch()) {
+      return vertexStoreState.getRootHeader();
+    } else {
+      return lastStoredProof;
+    }
+  }
+
+  @Provides
+  @Singleton
   @LastEpochProof
-  public LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
-    /* TODO: use Olympia end-state timestamp */
-    return LedgerProof.genesis(initialAccumulatorState, validatorSet, 0L, 0L);
+  LedgerProof lastEpochProof(
+      TransactionsAndProofReader transactionsAndProofReader,
+      @LastStoredProof LedgerProof lastStoredProof) {
+    if (lastStoredProof.isEndOfEpoch()) {
+      return lastStoredProof;
+    }
+    return transactionsAndProofReader.getEpochProof(lastStoredProof.getEpoch()).orElseThrow();
   }
 
   private static VertexStoreState genesisEpochProofToGenesisVertexStore(

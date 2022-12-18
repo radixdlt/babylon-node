@@ -199,6 +199,7 @@ public final class DeterministicTest implements AutoCloseable {
       modules.add(module);
 
       if (module.supportsREv2()) {
+        /*
         modules.add(
             new AbstractModule() {
               @Override
@@ -206,6 +207,7 @@ public final class DeterministicTest implements AutoCloseable {
                 bind(BFTValidatorSet.class).toInstance(initialValidatorSet);
               }
             });
+         */
       } else {
         MockedConsensusRecoveryModule.Builder mockedConsensusRecoveryModuleBuilder =
             new MockedConsensusRecoveryModule.Builder(module.supportsEpochs());

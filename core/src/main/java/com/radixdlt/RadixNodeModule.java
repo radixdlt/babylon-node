@@ -243,8 +243,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Recovery
     install(new BerkeleySafetyStoreModule(databasePath));
-    // Start at stateVersion 1 for now due to lack serialized genesis transaction
-    var initialAccumulatorState = new AccumulatorState(1, HashUtils.zero256());
+    var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
     install(new REv2LedgerRecoveryModule(initialAccumulatorState, genesis));
     install(new REv2ConsensusRecoveryModule());
 

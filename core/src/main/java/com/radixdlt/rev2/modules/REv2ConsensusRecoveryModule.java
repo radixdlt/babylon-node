@@ -68,8 +68,10 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.store.LastEpochProof;
 
 public final class REv2ConsensusRecoveryModule extends AbstractModule {
   @Provides
@@ -90,5 +92,12 @@ public final class REv2ConsensusRecoveryModule extends AbstractModule {
       BFTValidatorSet validatorSet, VertexStoreState vertexStoreState) {
     var proposerElection = new WeightedRotatingLeaders(validatorSet);
     return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
+  }
+
+  @Provides
+  private BFTValidatorSet initialValidatorSet(@LastEpochProof LedgerProof lastEpochProof) {
+    return lastEpochProof
+        .getNextValidatorSet()
+        .orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
   }
 }

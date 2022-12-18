@@ -69,7 +69,8 @@ use crate::store::traits::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult, PreviewRequest};
 use crate::{
     CommittedTransactionIdentifiers, HasIntentHash, HasUserPayloadHash, IntentHash,
-    LedgerTransactionReceipt, MempoolAddError, PendingTransaction,
+    LedgerTransactionReceipt, MempoolAddError, PendingTransaction, PrepareGenesisRequest,
+    PrepareGenesisResult,
 };
 use prometheus::core::Collector;
 use prometheus::{IntCounter, IntCounterVec, IntGauge, Registry};
@@ -515,6 +516,34 @@ where
             .collect()
     }
 
+    pub fn prepare_genesis(&mut self, genesis: PrepareGenesisRequest) -> PrepareGenesisResult {
+        let parsed_transaction =
+            LedgerTransactionValidator::parse_unvalidated_transaction_from_slice(&genesis.genesis)
+                .expect("Already prepared transactions should be decodeable");
+        let executable = self
+            .ledger_transaction_validator
+            .validate_and_create_executable(&parsed_transaction)
+            .expect("Failed to validate genesis");
+        let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
+        let staged_node = staged_store_manager.new_child_node(0);
+        let mut staged_store = staged_store_manager.get_output_store(staged_node);
+        let receipt = execute_and_commit_transaction(
+            &mut staged_store,
+            &self.scrypto_interpreter,
+            &self.fee_reserve_config,
+            &self.execution_config,
+            &executable,
+        );
+        match receipt.result {
+            TransactionResult::Commit(commit) => PrepareGenesisResult {
+                validator_list: commit.next_validator_set,
+            },
+            TransactionResult::Reject(reject_result) => {
+                panic!("Genesis rejected. Result: {:?}", reject_result)
+            }
+        }
+    }
+
     pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
         // This intent hash check, and current epoch should eventually live in the executor
         let mut already_committed_or_prepared_intent_hashes: HashSet<IntentHash> = HashSet::new();
@@ -766,9 +795,13 @@ where
 
         let receipts = parsed_transactions
             .iter()
-            .map(|transaction| {
+            .enumerate()
+            .map(|(i, transaction)| {
                 if let LedgerTransaction::System(..) = transaction {
-                    panic!("System transaction cannot be committed.");
+                    // TODO: Cleanup and use real system transaction logic
+                    if commit_request.state_version != 1 && i != 0 {
+                        panic!("Non Genesis system transaction cannot be committed.");
+                    }
                 }
 
                 let executable = self

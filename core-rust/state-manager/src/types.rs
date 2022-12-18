@@ -66,6 +66,7 @@ use crate::transaction::LedgerTransaction;
 use radix_engine::types::{
     scrypto, scrypto_encode, sha256_twice, Decode, Encode, Hash, PublicKey, TypeId,
 };
+use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use std::fmt;
 use transaction::model::{
     NotarizedTransaction, PreviewFlags, SignedTransactionIntent, TransactionIntent,
@@ -404,4 +405,15 @@ pub struct PrepareRequest {
 pub struct PrepareResult {
     pub committed: Vec<Vec<u8>>,
     pub rejected: Vec<(Vec<u8>, String)>,
+}
+
+#[derive(Debug, Decode, Encode, TypeId)]
+pub struct PrepareGenesisRequest {
+    pub genesis: Vec<u8>,
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct PrepareGenesisResult {
+    pub validator_list: Option<Vec<EcdsaSecp256k1PublicKey>>,
 }
