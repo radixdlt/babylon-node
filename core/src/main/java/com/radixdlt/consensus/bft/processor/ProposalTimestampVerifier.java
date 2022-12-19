@@ -66,15 +66,13 @@ package com.radixdlt.consensus.bft.processor;
 
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.RoundLeaderFailure;
-import com.radixdlt.consensus.bft.RoundLeaderFailureReason;
-import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent;
+import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.TimestampIssue;
+import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.Type;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -98,17 +96,17 @@ public final class ProposalTimestampVerifier implements BFTEventProcessor {
 
   private final BFTEventProcessor forwardTo;
   private final TimeSupplier timeSupplier;
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
   private final EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher;
 
   public ProposalTimestampVerifier(
       BFTEventProcessor forwardTo,
       TimeSupplier timeSupplier,
-      SystemCounters systemCounters,
+      Metrics metrics,
       EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher) {
     this.forwardTo = Objects.requireNonNull(forwardTo);
     this.timeSupplier = Objects.requireNonNull(timeSupplier);
-    this.systemCounters = Objects.requireNonNull(systemCounters);
+    this.metrics = Objects.requireNonNull(metrics);
     this.roundLeaderFailureDispatcher = Objects.requireNonNull(roundLeaderFailureDispatcher);
   }
 
@@ -139,13 +137,25 @@ public final class ProposalTimestampVerifier implements BFTEventProcessor {
 
     final boolean isAcceptable;
     if (proposalTimestamp < lowerBoundInclusive) {
-      systemCounters.increment(CounterType.BFT_INVALID_PROPOSAL_TIMESTAMP_WAS_TOO_BEHIND);
+      metrics
+          .bft()
+          .rejectedConsensusEvents()
+          .label(new RejectedConsensusEvent(Type.PROPOSAL, TimestampIssue.TOO_FAR_PAST))
+          .inc();
       isAcceptable = false;
     } else if (proposalTimestamp > upperBoundInclusive) {
-      systemCounters.increment(CounterType.BFT_INVALID_PROPOSAL_TIMESTAMP_WAS_TOO_AHEAD);
+      metrics
+          .bft()
+          .rejectedConsensusEvents()
+          .label(new RejectedConsensusEvent(Type.PROPOSAL, TimestampIssue.TOO_FAR_FUTURE))
+          .inc();
       isAcceptable = false;
     } else if (proposalTimestamp < prevTimestamp) {
-      systemCounters.increment(CounterType.BFT_INVALID_PROPOSAL_TIMESTAMP_WAS_LOWER_THAN_PREVIOUS);
+      metrics
+          .bft()
+          .rejectedConsensusEvents()
+          .label(new RejectedConsensusEvent(Type.PROPOSAL, TimestampIssue.NOT_MONOTONIC))
+          .inc();
       log.info(
           "Rejecting a proposal from {} at round {}. Its timestamp ({}) is lower than previous"
               + " ({})!",
@@ -183,7 +193,6 @@ public final class ProposalTimestampVerifier implements BFTEventProcessor {
     if (isAcceptable) {
       forwardTo.processProposal(proposal);
     } else {
-      systemCounters.increment(CounterType.BFT_INVALID_PROPOSAL_TIMESTAMPS);
       roundLeaderFailureDispatcher.dispatch(
           new RoundLeaderFailure(
               proposal.getRound(), RoundLeaderFailureReason.PROPOSED_TIMESTAMP_UNACCEPTABLE));

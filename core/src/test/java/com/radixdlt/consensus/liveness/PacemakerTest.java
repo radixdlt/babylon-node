@@ -66,23 +66,19 @@ package com.radixdlt.consensus.liveness;
 
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.VertexStoreAdapter;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Optional;
@@ -137,7 +133,7 @@ public class PacemakerTest {
             hasher,
             timeSupplier,
             initialRoundUpdate,
-            new SystemCountersImpl());
+            new MetricsInitializer().initialize());
   }
 
   @Test

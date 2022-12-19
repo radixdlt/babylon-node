@@ -78,14 +78,11 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.InMemorySystemInfo;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
 
 /** Module which manages system info */
 public class SystemInfoModule extends AbstractModule {
   @Override
   protected void configure() {
-    bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
     bind(InMemorySystemInfo.class).in(Scopes.SINGLETON);
     var eventBinder =
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)

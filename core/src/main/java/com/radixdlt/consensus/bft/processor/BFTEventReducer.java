@@ -67,24 +67,17 @@ package com.radixdlt.consensus.bft.processor;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.NoVote;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.RoundLeaderFailure;
-import com.radixdlt.consensus.bft.RoundQuorumReached;
-import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.bft.VertexStoreAdapter;
-import com.radixdlt.consensus.bft.VoteProcessingResult.*;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.VoteProcessingResult.QuorumReached;
+import com.radixdlt.consensus.bft.VoteProcessingResult.VoteAccepted;
+import com.radixdlt.consensus.bft.VoteProcessingResult.VoteRejected;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
@@ -105,7 +98,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
   private final EventDispatcher<NoVote> noVoteDispatcher;
   private final RemoteEventDispatcher<Vote> voteDispatcher;
   private final Hasher hasher;
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
   private final SafetyRules safetyRules;
   private final BFTValidatorSet validatorSet;
   private final PendingVotes pendingVotes;
@@ -129,7 +122,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
       EventDispatcher<NoVote> noVoteDispatcher,
       RemoteEventDispatcher<Vote> voteDispatcher,
       Hasher hasher,
-      SystemCounters systemCounters,
+      Metrics metrics,
       SafetyRules safetyRules,
       BFTValidatorSet validatorSet,
       PendingVotes pendingVotes,
@@ -142,7 +135,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
     this.noVoteDispatcher = Objects.requireNonNull(noVoteDispatcher);
     this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
     this.hasher = Objects.requireNonNull(hasher);
-    this.systemCounters = Objects.requireNonNull(systemCounters);
+    this.metrics = Objects.requireNonNull(metrics);
     this.safetyRules = Objects.requireNonNull(safetyRules);
     this.validatorSet = Objects.requireNonNull(validatorSet);
     this.pendingVotes = Objects.requireNonNull(pendingVotes);
@@ -249,7 +242,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
       }
     }
 
-    systemCounters.increment(SystemCounters.CounterType.BFT_SUCCESSFULLY_PROCESSED_VOTES);
+    metrics.bft().successfullyProcessedVotes().inc();
   }
 
   @Override
@@ -260,7 +253,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
     final var proposedVertex = proposal.getVertex().withId(hasher);
     this.vertexStore.insertVertex(proposedVertex);
 
-    systemCounters.increment(SystemCounters.CounterType.BFT_SUCCESSFULLY_PROCESSED_PROPOSALS);
+    metrics.bft().successfullyProcessedProposals().inc();
   }
 
   @Override

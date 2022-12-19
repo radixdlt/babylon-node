@@ -65,51 +65,21 @@
 package com.radixdlt.modules;
 
 import com.google.common.util.concurrent.RateLimiter;
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
+import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.*;
-import com.radixdlt.consensus.bft.BFTBuilder;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.NoVote;
-import com.radixdlt.consensus.bft.RoundLeaderFailure;
-import com.radixdlt.consensus.bft.RoundQuorumReached;
-import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.bft.VertexStoreAdapter;
-import com.radixdlt.consensus.bft.VertexStoreJavaImpl;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
-import com.radixdlt.consensus.liveness.ExponentialPacemakerTimeoutCalculator;
-import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
-import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.PacemakerReducer;
-import com.radixdlt.consensus.liveness.PacemakerState;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.consensus.liveness.*;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.VertexRequestTimeout;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
+import com.radixdlt.consensus.sync.*;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.TimeSupplier;
@@ -156,7 +126,7 @@ public final class ConsensusModule extends AbstractModule {
       Hasher hasher,
       HashVerifier verifier,
       TimeSupplier timeSupplier,
-      SystemCounters systemCounters,
+      Metrics metrics,
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteEventDispatcher,
       EventDispatcher<DoubleVote> doubleVoteEventDispatcher,
@@ -184,7 +154,7 @@ public final class ConsensusModule extends AbstractModule {
         .bftSyncer(bftSync)
         .validatorSet(config.getValidatorSet())
         .timeSupplier(timeSupplier)
-        .systemCounters(systemCounters)
+        .metrics(metrics)
         .build();
   }
 
@@ -205,7 +175,7 @@ public final class ConsensusModule extends AbstractModule {
       EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher,
       TimeSupplier timeSupplier,
       RoundUpdate initialRoundUpdate,
-      SystemCounters systemCounters) {
+      Metrics metrics) {
     BFTValidatorSet validatorSet = configuration.getValidatorSet();
     return new Pacemaker(
         self,
@@ -222,7 +192,7 @@ public final class ConsensusModule extends AbstractModule {
         hasher,
         timeSupplier,
         initialRoundUpdate,
-        systemCounters);
+        metrics);
   }
 
   @Provides
@@ -240,7 +210,7 @@ public final class ConsensusModule extends AbstractModule {
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
       Hasher hasher,
       SafetyRules safetyRules,
-      SystemCounters counters) {
+      Metrics metrics) {
     return new BFTSync(
         self,
         syncRequestRateLimiter,
@@ -255,7 +225,7 @@ public final class ConsensusModule extends AbstractModule {
         ledgerLastProof,
         random,
         bftSyncPatienceMillis,
-        counters);
+        metrics);
   }
 
   @Provides

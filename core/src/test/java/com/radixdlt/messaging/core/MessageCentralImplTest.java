@@ -74,7 +74,7 @@ import com.radixdlt.addressing.Addressing;
 import com.radixdlt.messaging.consensus.ConsensusEventMessage;
 import com.radixdlt.messaging.ledgersync.SyncRequestMessage;
 import com.radixdlt.messaging.ledgersync.SyncResponseMessage;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerManager;
@@ -162,7 +162,7 @@ public class MessageCentralImplTest {
 
   private MessageCentralImpl getMessageCentral(PeerManager peerManager, Capabilities capabilities) {
     var timeSupplierMock = mock(TimeSupplier.class);
-    var systemCountersMock = mock(SystemCounters.class);
+    var metricsMock = new MetricsInitializer().initialize();
     var peerControlMock = mock(Provider.class);
 
     var messageCentralConfig = mock(MessageCentralConfiguration.class);
@@ -179,7 +179,7 @@ public class MessageCentralImplTest {
             peerManager,
             timeSupplierMock,
             outboundEventQueueFactory,
-            systemCountersMock,
+            metricsMock,
             peerControlMock,
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
             capabilities);

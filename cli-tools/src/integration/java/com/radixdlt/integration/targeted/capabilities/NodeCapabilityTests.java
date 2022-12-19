@@ -66,14 +66,15 @@ package com.radixdlt.integration.targeted.capabilities;
 
 import static com.radixdlt.shell.RadixShell.nodeBuilder;
 import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.messaging.ledgersync.StatusRequestMessage;
 import com.radixdlt.messaging.ledgersync.StatusResponseMessage;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.shell.RadixShell;
+import io.prometheus.client.Counter;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -136,12 +137,10 @@ public class NodeCapabilityTests {
       // Node 1 will not automatically send a status request message to Node2. So send one.
       node1.sendMsg(node2.self().getNodeId(), new StatusRequestMessage());
 
-      var node2Counters = node2.getInstance(SystemCounters.class);
+      var node2Counters = node2.getInstance(Metrics.class);
 
       // verify the discarded count is 1.
-      var result =
-          waitForCounterValueEquals(
-              node2Counters, SystemCounters.CounterType.MESSAGES_INBOUND_DISCARDED, 1, 2);
+      var result = waitForCounterValueEquals(node2Counters.messages().inbound().discarded(), 1, 2);
 
       assertTrue(result.message, result.testOk);
 
@@ -206,7 +205,6 @@ public class NodeCapabilityTests {
       node1 = startNode(n1Port, true);
       node2 = startNode(n2Port, true);
 
-      var counters = node1.getInstance(SystemCountersImpl.class);
       connectNodes(node1, node2);
 
       // Verify that Node1 has ledger-sync as a remote peer capability for node2
@@ -275,13 +273,11 @@ public class NodeCapabilityTests {
       var result = waitForMessagesReceived(expectedResultMap, messagesReceived, 2);
       assertTrue(result.message, result.testOk);
 
-      var node3Counters = node2.getInstance(SystemCounters.class);
+      var node3Counters = node2.getInstance(Metrics.class);
 
       // Ensure Node3 doesn't have a discarded message (i.e. Node's 1 and 2 shouldn't send a status
       // request message to node 3)
-      result =
-          waitForCounterValueEquals(
-              node3Counters, SystemCounters.CounterType.MESSAGES_INBOUND_DISCARDED, 0, 1);
+      result = waitForCounterValueEquals(node3Counters.messages().inbound().discarded(), 0, 1);
       assertTrue(result.message, result.testOk);
 
     } catch (Exception ex) {
@@ -364,11 +360,7 @@ public class NodeCapabilityTests {
   // Check a specified counter value. The value is checked every 100ms until either the value
   // matches, or the maxWaitTimeSecs expires
   private Result waitForCounterValueEquals(
-      SystemCounters counters,
-      SystemCounters.CounterType counterType,
-      long expectedValue,
-      int maxWaitTimeSecs)
-      throws InterruptedException {
+      Counter counter, long expectedValue, int maxWaitTimeSecs) {
     var result = new Result();
     result.testOk = false;
 
@@ -376,15 +368,14 @@ public class NodeCapabilityTests {
       await()
           .atMost(Duration.ofSeconds(maxWaitTimeSecs))
           .pollInterval(Duration.ofMillis(100))
-          .until(() -> counters.get(counterType) == expectedValue);
+          .until(() -> counter.get() == expectedValue);
       result.testOk = true;
-      result.message =
-          String.format("%s equals expected value: %s", counterType.name(), expectedValue);
+      result.message = String.format("%s equals expected value: %s", counter, expectedValue);
     } catch (ConditionTimeoutException e) {
       result.message =
           String.format(
               "%s (%d) does NOT equal expected value: %d within the specified time %d seconds",
-              counterType.name(), counters.get(counterType), expectedValue, maxWaitTimeSecs);
+              counter, counter.get(), expectedValue, maxWaitTimeSecs);
     }
 
     return result;

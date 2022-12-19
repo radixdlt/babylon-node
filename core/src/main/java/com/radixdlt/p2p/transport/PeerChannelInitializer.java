@@ -67,8 +67,7 @@ package com.radixdlt.p2p.transport;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeerEvent;
 import com.radixdlt.p2p.RadixNodeUri;
@@ -107,7 +106,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
   private final Addressing addressing;
   private final int networkId;
   private final String newestForkName;
-  private final SystemCounters counters;
+  private final Metrics metrics;
   private final Serialization serialization;
   private final SecureRandom secureRandom;
   private final ECKeyOps ecKeyOps;
@@ -120,7 +119,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
       Addressing addressing,
       int networkId,
       String newestForkName,
-      SystemCounters counters,
+      Metrics metrics,
       Serialization serialization,
       SecureRandom secureRandom,
       ECKeyOps ecKeyOps,
@@ -131,7 +130,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
     this.addressing = Objects.requireNonNull(addressing);
     this.networkId = networkId;
     this.newestForkName = newestForkName;
-    this.counters = Objects.requireNonNull(counters);
+    this.metrics = Objects.requireNonNull(metrics);
     this.serialization = Objects.requireNonNull(serialization);
     this.secureRandom = Objects.requireNonNull(secureRandom);
     this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
@@ -142,7 +141,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 
   @Override
   protected void initChannel(SocketChannel socketChannel) {
-    counters.increment(CounterType.NETWORKING_P2P_CHANNELS_INITIALIZED);
+    metrics.networking().channelsInitialized().inc();
 
     final var socketChannelConfig = socketChannel.config();
     socketChannelConfig.setReceiveBufferSize(MAX_PACKET_LENGTH);
@@ -221,7 +220,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
             addressing,
             networkId,
             newestForkName,
-            counters,
+            metrics,
             serialization,
             secureRandom,
             ecKeyOps,

@@ -64,7 +64,7 @@
 
 package com.radixdlt.integration.steady_state.deterministic.consensus_ledger_epochs;
 
-import static com.radixdlt.environment.deterministic.network.MessageSelector.*;
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.consensus.bft.Round;
@@ -75,8 +75,7 @@ import com.radixdlt.environment.deterministic.network.ChannelId;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.monitoring.Metrics;
 import java.util.LinkedList;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -107,18 +106,18 @@ public class MovingWindowValidatorsTest {
     bftTest.runUntilMessage(
         DeterministicTest.hasReachedEpochRound(EpochRound.of(maxEpoch, epochMaxRound)));
 
-    LinkedList<SystemCounters> testCounters = systemCounters(bftTest);
+    LinkedList<Metrics> testCounters = metrics(bftTest);
     assertThat(testCounters)
-        .extracting(sc -> sc.get(CounterType.BFT_VERTEX_STORE_INDIRECT_PARENTS))
+        .extracting(sc -> (long) sc.bft().vertexStore().indirectParents().get())
         .containsOnly(0L);
     assertThat(testCounters)
-        .extracting(sc -> sc.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT))
+        .extracting(sc -> (long) sc.bft().pacemaker().timeoutsSent().get())
         .containsOnly(0L);
 
     long maxCount = maxProcessedFor(numNodes, windowSize, maxEpoch, epochMaxRound.number());
 
     assertThat(testCounters)
-        .extracting(sc -> sc.get(CounterType.BFT_COMMITTED_VERTICES))
+        .extracting(sc -> (long) sc.bft().committedVertices().get())
         .allMatch(between(maxCount - maxEpoch, maxCount));
   }
 
@@ -174,9 +173,9 @@ public class MovingWindowValidatorsTest {
     return epochMaxRound * epochs * numValidators / numNodes;
   }
 
-  private static LinkedList<SystemCounters> systemCounters(DeterministicTest bftTest) {
+  private static LinkedList<Metrics> metrics(DeterministicTest bftTest) {
     return IntStream.range(0, bftTest.numNodes())
-        .mapToObj(i -> bftTest.getInstance(i, SystemCounters.class))
+        .mapToObj(i -> bftTest.getInstance(i, Metrics.class))
         .collect(Collectors.toCollection(LinkedList::new));
   }
 

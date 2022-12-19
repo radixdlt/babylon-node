@@ -62,61 +62,56 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.simulation.monitors.consensus;
+package com.radixdlt.monitoring;
 
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.harness.simulation.TestInvariant;
-import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.utils.Pair;
-import io.reactivex.rxjava3.core.Observable;
+import io.prometheus.client.Collector;
+import io.prometheus.client.Gauge;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Checks that at all times ledger sync lag is no more than a specified maximum number of state
- * versions (compared to the highest state version in the network) for any node.
+ * A Prometheus {@link Gauge} wrapper defining a typed set of labels.
+ *
+ * @param <L> A type of record representing a complete set of labels.
  */
-public final class MaxLedgerSyncLagInvariant implements TestInvariant {
+public class LabelledGauge<L extends Record> extends Collector implements Collector.Describable {
 
-  private final long maxLag;
+  /** A wrapped {@link Gauge}. */
+  private final Gauge wrapped;
 
-  public MaxLedgerSyncLagInvariant(long maxLag) {
-    this.maxLag = maxLag;
+  /** A map of children created for each label set. */
+  private final Map<L, Gauge.Child> labelledChildren;
+
+  /**
+   * A direct constructor.
+   *
+   * @param name A metric name; will also be used as a description.
+   * @param labelClass A class of a {@link Record} representing a complete set of labels.
+   */
+  public LabelledGauge(String name, Class<L> labelClass) {
+    this.wrapped = Gauge.build(name, name).labelNames(NameRenderer.labelNames(labelClass)).create();
+    this.labelledChildren = new ConcurrentHashMap<>();
   }
 
-  private TestInvariantError tooMuchlagError(
-      long maxStateVersion, BFTNode node, long nodeStateVersion) {
-    return new TestInvariantError(
-        String.format(
-            "Node %s ledger sync lag (%s) at version %s exceeded maximum" + " of %s state versions",
-            node, maxStateVersion - nodeStateVersion, nodeStateVersion, maxLag));
+  /**
+   * Returns a child for the given label set.
+   *
+   * @param labelRecord A record containing a label set.
+   * @return Child to be used.
+   */
+  public Gauge.Child label(L labelRecord) {
+    return this.labelledChildren.computeIfAbsent(
+        labelRecord, value -> this.wrapped.labels(NameRenderer.labelValues(value)));
   }
 
   @Override
-  public Observable<TestInvariantError> check(RunningNetwork network) {
-    return network
-        .ledgerUpdates()
-        .flatMap(
-            unused -> {
-              final long maxStateVersion =
-                  network.getMetrics().values().stream()
-                      .mapToLong(sc -> (long) sc.ledger().stateVersion().get())
-                      .max()
-                      .orElse(0L);
+  public List<MetricFamilySamples> collect() {
+    return this.wrapped.collect();
+  }
 
-              final var maybeTooMuchLag =
-                  network.getMetrics().entrySet().stream()
-                      .map(
-                          e ->
-                              Pair.of(
-                                  e.getKey(), (long) e.getValue().ledger().stateVersion().get()))
-                      .filter(e -> e.getSecond() + maxLag < maxStateVersion)
-                      .findAny();
-
-              return maybeTooMuchLag
-                  .map(
-                      e ->
-                          Observable.just(
-                              tooMuchlagError(maxStateVersion, e.getFirst(), e.getSecond())))
-                  .orElse(Observable.empty());
-            });
+  @Override
+  public List<MetricFamilySamples> describe() {
+    return this.wrapped.describe();
   }
 }

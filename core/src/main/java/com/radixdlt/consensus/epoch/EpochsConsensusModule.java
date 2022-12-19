@@ -71,56 +71,15 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.BFTFactory;
-import com.radixdlt.consensus.DoubleVote;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTBuilder;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.NoVote;
-import com.radixdlt.consensus.bft.RoundQuorumReached;
-import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.VertexStoreAdapter;
-import com.radixdlt.consensus.bft.VertexStoreJavaImpl;
-import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
-import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
-import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.PacemakerFactory;
-import com.radixdlt.consensus.liveness.PacemakerState;
-import com.radixdlt.consensus.liveness.PacemakerStateFactory;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.sync.VertexRequestTimeout;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
+import com.radixdlt.consensus.*;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.liveness.*;
+import com.radixdlt.consensus.sync.*;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.RemoteEventProcessorOnRunner;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.environment.StartProcessorOnRunner;
+import com.radixdlt.environment.*;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.TimeSupplier;
@@ -296,7 +255,7 @@ public class EpochsConsensusModule extends AbstractModule {
   @Provides
   private PacemakerFactory pacemakerFactory(
       @Self BFTNode self,
-      SystemCounters counters,
+      Metrics metrics,
       ProposalGenerator proposalGenerator,
       Hasher hasher,
       EventDispatcher<EpochLocalTimeoutOccurrence> timeoutEventDispatcher,
@@ -325,7 +284,7 @@ public class EpochsConsensusModule extends AbstractModule {
             hasher,
             timeSupplier,
             initialRoundUpdate,
-            counters);
+            metrics);
   }
 
   @Provides
@@ -333,7 +292,7 @@ public class EpochsConsensusModule extends AbstractModule {
       Hasher hasher,
       HashVerifier verifier,
       TimeSupplier timeSupplier,
-      SystemCounters systemCounters,
+      Metrics metrics,
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteEventDispatcher,
       EventDispatcher<DoubleVote> doubleVoteEventDispatcher,
@@ -372,7 +331,7 @@ public class EpochsConsensusModule extends AbstractModule {
             .bftSyncer(bftSyncer)
             .validatorSet(validatorSet)
             .timeSupplier(timeSupplier)
-            .systemCounters(systemCounters)
+            .metrics(metrics)
             .build();
   }
 
@@ -380,10 +339,10 @@ public class EpochsConsensusModule extends AbstractModule {
   private BFTSyncRequestProcessorFactory vertexStoreSyncVerticesRequestProcessorFactory(
       RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher,
       RemoteEventDispatcher<GetVerticesResponse> responseDispatcher,
-      SystemCounters systemCounters) {
+      Metrics metrics) {
     return vertexStore ->
         new VertexStoreBFTSyncRequestProcessor(
-            vertexStore, errorResponseDispatcher, responseDispatcher, systemCounters);
+            vertexStore, errorResponseDispatcher, responseDispatcher, metrics);
   }
 
   @Provides
@@ -395,7 +354,7 @@ public class EpochsConsensusModule extends AbstractModule {
       ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
       Random random,
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
-      SystemCounters counters,
+      Metrics metrics,
       Hasher hasher) {
     return (safetyRules, vertexStore, pacemakerState, configuration) ->
         new BFTSync(
@@ -412,7 +371,7 @@ public class EpochsConsensusModule extends AbstractModule {
             configuration.getVertexStoreState().getRootHeader(),
             random,
             bftSyncPatienceMillis,
-            counters);
+            metrics);
   }
 
   @Provides

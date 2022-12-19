@@ -72,7 +72,7 @@ import com.google.inject.Provides;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
@@ -94,20 +94,20 @@ public class MockedCryptoModule extends AbstractModule {
   }
 
   @Provides
-  private HashVerifier hashVerifier(SystemCounters counters) {
+  private HashVerifier hashVerifier(Metrics metrics) {
     return (pubKey, hash, sig) -> {
       byte[] concat = new byte[64];
       System.arraycopy(hash.asBytes(), 0, concat, 0, hash.asBytes().length);
       System.arraycopy(pubKey.getBytes(), 0, concat, 32, 32);
       var hashCode = hashFunction.hashBytes(concat).asBytes();
-      counters.increment(SystemCounters.CounterType.SIGNATURES_VERIFIED);
+      metrics.crypto().signaturesVerified().inc();
       var hashCodeBI = new BigInteger(1, hashCode);
       return sig.getR().equals(hashCodeBI);
     };
   }
 
   @Provides
-  private Hasher hasher(Serialization serialization, SystemCounters counters) {
+  private Hasher hasher(Serialization serialization) {
     AtomicBoolean running = new AtomicBoolean(false);
     Hasher hasher =
         new Hasher() {

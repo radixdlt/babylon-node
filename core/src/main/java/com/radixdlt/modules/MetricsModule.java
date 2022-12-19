@@ -62,61 +62,26 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.simulation.monitors.consensus;
+package com.radixdlt.modules;
 
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.harness.simulation.TestInvariant;
-import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.utils.Pair;
-import io.reactivex.rxjava3.core.Observable;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
+import io.prometheus.client.CollectorRegistry;
 
-/**
- * Checks that at all times ledger sync lag is no more than a specified maximum number of state
- * versions (compared to the highest state version in the network) for any node.
- */
-public final class MaxLedgerSyncLagInvariant implements TestInvariant {
+public class MetricsModule extends AbstractModule {
 
-  private final long maxLag;
-
-  public MaxLedgerSyncLagInvariant(long maxLag) {
-    this.maxLag = maxLag;
+  @Provides
+  @Singleton
+  public CollectorRegistry prometheusRegistry() {
+    return new CollectorRegistry();
   }
 
-  private TestInvariantError tooMuchlagError(
-      long maxStateVersion, BFTNode node, long nodeStateVersion) {
-    return new TestInvariantError(
-        String.format(
-            "Node %s ledger sync lag (%s) at version %s exceeded maximum" + " of %s state versions",
-            node, maxStateVersion - nodeStateVersion, nodeStateVersion, maxLag));
-  }
-
-  @Override
-  public Observable<TestInvariantError> check(RunningNetwork network) {
-    return network
-        .ledgerUpdates()
-        .flatMap(
-            unused -> {
-              final long maxStateVersion =
-                  network.getMetrics().values().stream()
-                      .mapToLong(sc -> (long) sc.ledger().stateVersion().get())
-                      .max()
-                      .orElse(0L);
-
-              final var maybeTooMuchLag =
-                  network.getMetrics().entrySet().stream()
-                      .map(
-                          e ->
-                              Pair.of(
-                                  e.getKey(), (long) e.getValue().ledger().stateVersion().get()))
-                      .filter(e -> e.getSecond() + maxLag < maxStateVersion)
-                      .findAny();
-
-              return maybeTooMuchLag
-                  .map(
-                      e ->
-                          Observable.just(
-                              tooMuchlagError(maxStateVersion, e.getFirst(), e.getSecond())))
-                  .orElse(Observable.empty());
-            });
+  @Provides
+  @Singleton
+  public Metrics metrics(CollectorRegistry prometheusRegistry) {
+    return new MetricsInitializer(prometheusRegistry).initialize();
   }
 }

@@ -71,29 +71,18 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.ExecutedVertex;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.VertexStoreState;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.TimeSupplier;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 /** Synchronizes execution */
 public final class StateComputerLedger implements Ledger, ProposalGenerator {
@@ -153,7 +142,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
   private final Comparator<LedgerProof> headerComparator;
   private final StateComputer stateComputer;
-  private final SystemCounters counters;
+  private final Metrics metrics;
   private final LedgerAccumulator accumulator;
   private final LedgerAccumulatorVerifier verifier;
   private final Object lock = new Object();
@@ -169,11 +158,11 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       StateComputer stateComputer,
       LedgerAccumulator accumulator,
       LedgerAccumulatorVerifier verifier,
-      SystemCounters counters) {
+      Metrics metrics) {
     this.timeSupplier = Objects.requireNonNull(timeSupplier);
     this.headerComparator = Objects.requireNonNull(headerComparator);
     this.stateComputer = Objects.requireNonNull(stateComputer);
-    this.counters = Objects.requireNonNull(counters);
+    this.metrics = Objects.requireNonNull(metrics);
     this.accumulator = Objects.requireNonNull(accumulator);
     this.verifier = Objects.requireNonNull(verifier);
     this.currentLedgerHeader = initialLedgerState;
@@ -325,9 +314,9 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
       var transactions = verifiedExtension.get();
       if (vertexStoreState == null) {
-        this.counters.add(CounterType.LEDGER_SYNC_TRANSACTIONS_PROCESSED, transactions.size());
+        this.metrics.ledger().syncTransactionsProcessed().inc(transactions.size());
       } else {
-        this.counters.add(CounterType.LEDGER_BFT_TRANSACTIONS_PROCESSED, transactions.size());
+        this.metrics.ledger().bftTransactionsProcessed().inc(transactions.size());
       }
 
       var extensionToCommit =
@@ -339,8 +328,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
       // TODO: move all of the following to post-persist event handling
       this.currentLedgerHeader = nextHeader;
-      this.counters.set(
-          CounterType.LEDGER_STATE_VERSION, this.currentLedgerHeader.getStateVersion());
+      this.metrics.ledger().stateVersion().set(this.currentLedgerHeader.getStateVersion());
     }
   }
 }

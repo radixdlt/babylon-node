@@ -62,61 +62,81 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.simulation.monitors.consensus;
+package com.radixdlt.monitoring;
 
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.harness.simulation.TestInvariant;
-import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.utils.Pair;
-import io.reactivex.rxjava3.core.Observable;
+import com.google.common.base.CaseFormat;
+import com.google.common.base.Converter;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.RecordComponent;
+import java.util.stream.Stream;
 
-/**
- * Checks that at all times ledger sync lag is no more than a specified maximum number of state
- * versions (compared to the highest state version in the network) for any node.
- */
-public final class MaxLedgerSyncLagInvariant implements TestInvariant {
+/** A static utility for converting strings into a format accepted by metrics infra. */
+public abstract class NameRenderer {
 
-  private final long maxLag;
+  /** An impl delegate for {@link #render(String)}. */
+  private static final Converter<String, String> JAVA_TO_PROMETHEUS =
+      CaseFormat.LOWER_CAMEL.converterTo(CaseFormat.LOWER_UNDERSCORE);
 
-  public MaxLedgerSyncLagInvariant(long maxLag) {
-    this.maxLag = maxLag;
+  /** Hiding constructor. */
+  private NameRenderer() {}
+
+  /**
+   * Renders a Java identifier in a format accepted by Prometheus.
+   *
+   * @param javaIdentifier A Java identifier.
+   * @return A valid Prometheus name.
+   */
+  public static String render(String javaIdentifier) {
+    return JAVA_TO_PROMETHEUS.convert(javaIdentifier);
   }
 
-  private TestInvariantError tooMuchlagError(
-      long maxStateVersion, BFTNode node, long nodeStateVersion) {
-    return new TestInvariantError(
-        String.format(
-            "Node %s ledger sync lag (%s) at version %s exceeded maximum" + " of %s state versions",
-            node, maxStateVersion - nodeStateVersion, nodeStateVersion, maxLag));
+  /**
+   * Renders label names.
+   *
+   * <p>These will be {@link #render(String) rendered} names of the given record's components.
+   *
+   * @param labelRecordClass A class of a {@link Record} representing a complete set of labels.
+   * @return Label names.
+   */
+  public static String[] labelNames(Class<? extends Record> labelRecordClass) {
+    return Stream.of(labelRecordClass.getRecordComponents())
+        .map(RecordComponent::getName)
+        .map(NameRenderer::render)
+        .toArray(String[]::new);
   }
 
-  @Override
-  public Observable<TestInvariantError> check(RunningNetwork network) {
-    return network
-        .ledgerUpdates()
-        .flatMap(
-            unused -> {
-              final long maxStateVersion =
-                  network.getMetrics().values().stream()
-                      .mapToLong(sc -> (long) sc.ledger().stateVersion().get())
-                      .max()
-                      .orElse(0L);
+  /**
+   * Renders label values.
+   *
+   * <p>These can be arbitrary strings, so simply an {@link Object#toString()} is used for each
+   * value within the given record. However, {@literal null}s are not supported, and instead they
+   * are represented by empty strings (consistently with how Prometheus Query Language treats
+   * missing label values as empty strings).
+   *
+   * @param labelRecord A record containing a label set.
+   * @return Label values.
+   * @param <R> The record's type.
+   */
+  public static <R extends Record> String[] labelValues(R labelRecord) {
+    return Stream.of(labelRecord.getClass().getRecordComponents())
+        .map(component -> access(labelRecord, component))
+        .map(label -> label == null ? "" : label.toString())
+        .toArray(String[]::new);
+  }
 
-              final var maybeTooMuchLag =
-                  network.getMetrics().entrySet().stream()
-                      .map(
-                          e ->
-                              Pair.of(
-                                  e.getKey(), (long) e.getValue().ledger().stateVersion().get()))
-                      .filter(e -> e.getSecond() + maxLag < maxStateVersion)
-                      .findAny();
-
-              return maybeTooMuchLag
-                  .map(
-                      e ->
-                          Observable.just(
-                              tooMuchlagError(maxStateVersion, e.getFirst(), e.getSecond())))
-                  .orElse(Observable.empty());
-            });
+  /**
+   * Accesses the specific record's component.
+   *
+   * @param labelRecord A record.
+   * @param component A component.
+   * @return The component's value.
+   */
+  private static Object access(Record labelRecord, RecordComponent component) {
+    try {
+      return component.getAccessor().invoke(labelRecord);
+    } catch (IllegalAccessException | InvocationTargetException e) {
+      throw new IllegalStateException(
+          "cannot access %s.%s()".formatted(labelRecord, component.getName()), e);
+    }
   }
 }

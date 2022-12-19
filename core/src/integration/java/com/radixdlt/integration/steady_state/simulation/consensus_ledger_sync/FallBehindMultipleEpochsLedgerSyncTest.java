@@ -80,7 +80,6 @@ import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.time.Duration;
 import java.util.concurrent.Executors;
@@ -135,20 +134,20 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
 
     final var results = runningTest.awaitCompletion();
 
-    final var nodeCounters = runningTest.getNetwork().getSystemCounters().get(nodeUnderTest);
+    final var nodeCounters = runningTest.getNetwork().getMetrics().get(nodeUnderTest);
 
     assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
 
     // node must be synced up to some state after the first epoch
     // and must not fall behind too much
     var diff =
-        nodeCounters.get(CounterType.SYNC_TARGET_STATE_VERSION)
-            - nodeCounters.get(CounterType.SYNC_CURRENT_STATE_VERSION);
+        nodeCounters.sync().targetStateVersion().get()
+            - nodeCounters.sync().currentStateVersion().get();
     assertThat(diff).isLessThan(200);
-    assertTrue(nodeCounters.get(CounterType.SYNC_VALID_RESPONSES_RECEIVED) > 200);
-    assertTrue(nodeCounters.get(CounterType.LEDGER_STATE_VERSION) > 200);
+    assertTrue(nodeCounters.sync().validResponsesReceived().get() > 200);
+    assertTrue(nodeCounters.ledger().stateVersion().get() > 200);
     // just to be sure that node wasn't a validator
-    assertEquals(0, nodeCounters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT));
-    assertEquals(0, nodeCounters.get(CounterType.BFT_COMMITTED_VERTICES));
+    assertEquals(0, (long) nodeCounters.bft().pacemaker().proposalsSent().get());
+    assertEquals(0, (long) nodeCounters.bft().committedVertices().get());
   }
 }
