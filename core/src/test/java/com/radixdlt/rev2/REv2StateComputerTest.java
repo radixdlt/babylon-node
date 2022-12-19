@@ -71,10 +71,12 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.lang.Option;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.ledger.*;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
@@ -83,9 +85,11 @@ import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.Test;
 
 public class REv2StateComputerTest {
@@ -101,10 +105,20 @@ public class REv2StateComputerTest {
         new AbstractModule() {
           @Override
           protected void configure() {
+            bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
             bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
             bind(SystemCounters.class).toInstance(new SystemCountersImpl());
           }
         });
+  }
+
+  private CommittedTransactionsWithProof buildGenesis(LedgerAccumulator accumulator) {
+    var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
+    var genesis = TransactionBuilder.createGenesisLedgerTransaction(List.of());
+    var accumulatorState =
+        accumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
+    var proof = LedgerProof.genesis(accumulatorState, BFTValidatorSet.from(Stream.of()), 0, 0);
+    return CommittedTransactionsWithProof.create(List.of(genesis), proof);
   }
 
   @Test
@@ -112,6 +126,8 @@ public class REv2StateComputerTest {
     // Arrange
     var injector = createInjector();
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
+    var accumulator = injector.getInstance(LedgerAccumulator.class);
+    stateComputer.commit(buildGenesis(accumulator), null);
     var validTransaction = REv2TestTransactions.constructValidRawTransaction(0, 0);
 
     // Act
@@ -127,6 +143,8 @@ public class REv2StateComputerTest {
     // Arrange
     var injector = createInjector();
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
+    var accumulator = injector.getInstance(LedgerAccumulator.class);
+    stateComputer.commit(buildGenesis(accumulator), null);
     var invalidTransaction = RawNotarizedTransaction.create(new byte[1]);
 
     // Act
@@ -134,7 +152,6 @@ public class REv2StateComputerTest {
         stateComputer.prepare(List.of(), List.of(invalidTransaction), mock(RoundDetails.class));
 
     // Assert
-    assertThat(result.getSuccessfullyExecutedTransactions().isEmpty());
     assertThat(result.getFailedTransactions()).hasSize(1);
   }
 }

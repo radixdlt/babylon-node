@@ -94,6 +94,7 @@ enum RocksDBTable {
     Transactions,
     StateVersions,
     Proofs,
+    EpochProofs,
     Substates,
     VertexStore,
     TransactionIntentLookup,
@@ -108,10 +109,11 @@ impl RocksDBTable {
             Transactions => 0u8,
             StateVersions => 1u8,
             Proofs => 2u8,
-            Substates => 3u8,
-            VertexStore => 4u8,
-            TransactionIntentLookup => 5u8,
-            UserPayloadHashLookup => 6u8,
+            EpochProofs => 3u8,
+            Substates => 4u8,
+            VertexStore => 5u8,
+            TransactionIntentLookup => 6u8,
+            UserPayloadHashLookup => 7u8,
         }
     }
 }
@@ -241,13 +243,19 @@ impl<'db> WriteableProofStore for RocksDBCommitTransaction<'db> {
     fn insert_tids_and_proof(
         &mut self,
         state_version: u64,
+        epoch_boundary: Option<u64>,
         ids: Vec<LedgerPayloadHash>,
         proof_bytes: Vec<u8>,
     ) {
         self.insert_tids_without_proof(state_version, ids);
 
         let proof_version_key = db_key!(Proofs, &state_version.to_be_bytes());
-        self.db_txn.put(proof_version_key, proof_bytes).unwrap();
+        self.db_txn.put(proof_version_key, &proof_bytes).unwrap();
+
+        if let Some(epoch_boundary) = epoch_boundary {
+            let epoch_proof_key = db_key!(EpochProofs, &epoch_boundary.to_be_bytes());
+            self.db_txn.put(epoch_proof_key, &proof_bytes).unwrap();
+        }
     }
 
     fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<LedgerPayloadHash>) {
@@ -404,6 +412,11 @@ impl QueryableProofStore for RocksDBStore {
             ));
         }
         Some((tids, proof))
+    }
+
+    fn get_epoch_proof(&self, epoch: u64) -> Option<Vec<u8>> {
+        let epoch_proof_key = db_key!(EpochProofs, &epoch.to_be_bytes());
+        self.db.get(epoch_proof_key).unwrap()
     }
 
     fn get_last_proof(&self) -> Option<Vec<u8>> {

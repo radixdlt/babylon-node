@@ -70,8 +70,6 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
@@ -89,7 +87,6 @@ import com.radixdlt.rev1.modules.REv1PersistenceModule;
 import com.radixdlt.rev1.modules.RadixEngineStoreModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.utils.UInt256;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -129,16 +126,7 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
     install(new InMemoryBFTKeyModule(self));
     install(new CryptoModule());
     install(radixNodeModule);
-    if (radixNodeModule.supportsREv2()) {
-      // FIXME: a hack for tests that use rev2 (api); fix once ledger/consensus recovery are
-      // hooked up
-      bind(BFTValidatorSet.class)
-          .toInstance(
-              BFTValidatorSet.from(
-                  List.of(BFTValidator.from(BFTNode.create(self.getPublicKey()), UInt256.ONE))));
-    }
     if (radixNodeModule.supportsREv1()) {
-
       install(new REv1PersistenceModule());
       install(new RadixEngineStoreModule());
     }

@@ -780,7 +780,8 @@ where
 
         let current_top_of_ledger = self
             .store
-            .get_top_of_ledger_transaction_identifiers_unwrap(); // Genesis must have happened to be here
+            .get_top_of_ledger_transaction_identifiers()
+            .unwrap_or(CommittedTransactionIdentifiers::pre_genesis());
         if current_top_of_ledger.state_version != commit_request_start_state_version {
             panic!(
                 "Mismatched state versions - the commit request claims {} but the database thinks we're at {}",
@@ -792,6 +793,12 @@ where
         let mut db_transaction = self.store.create_db_transaction();
         let mut current_state_version = current_top_of_ledger.state_version;
         let mut current_accumulator = current_top_of_ledger.accumulator_hash;
+        // TODO: Use actual result and verify proof validator set matches transaction receipt validator set
+        let epoch_boundary = if commit_request.state_version == 1u64 {
+            Some(1u64)
+        } else {
+            None
+        };
 
         let receipts = parsed_transactions
             .iter()
@@ -829,6 +836,7 @@ where
                             commit_request.state_version, error
                         )
                     });
+
                 ledger_receipt
             })
             .collect::<Vec<_>>();
@@ -859,6 +867,7 @@ where
         db_transaction.insert_committed_transactions(to_store);
         db_transaction.insert_tids_and_proof(
             commit_request.state_version,
+            epoch_boundary,
             payload_hashes,
             commit_request.proof,
         );

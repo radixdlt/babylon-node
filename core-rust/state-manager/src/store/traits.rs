@@ -138,6 +138,7 @@ pub mod proofs {
         fn insert_tids_and_proof(
             &mut self,
             state_version: u64,
+            epoch_boundary: Option<u64>,
             payload_hashes: Vec<LedgerPayloadHash>,
             proof_bytes: Vec<u8>,
         );
@@ -148,6 +149,7 @@ pub mod proofs {
     pub trait QueryableProofStore {
         fn max_state_version(&self) -> u64;
         fn get_next_proof(&self, state_version: u64) -> Option<(Vec<LedgerPayloadHash>, Vec<u8>)>;
+        fn get_epoch_proof(&self, epoch: u64) -> Option<Vec<u8>>;
         fn get_last_proof(&self) -> Option<Vec<u8>>;
     }
 }
