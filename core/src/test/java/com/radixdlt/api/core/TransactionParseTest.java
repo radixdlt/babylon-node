@@ -62,52 +62,36 @@
  * permissions under this License.
  */
 
-apply plugin: 'java-library'
+package com.radixdlt.api.core;
 
-tasks.withType(GenerateModuleMetadata) {
-    enabled = false
-}
+import static org.assertj.core.api.Assertions.assertThat;
 
-dependencyManagement {
-    imports {
-        // the Maven BOM which contains a coherent set of module versions
-        // for Vaadin dependencies
-        mavenBom ('software.amazon.awssdk:bom:2.16.3')
+import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.TransactionParseRequest;
+import com.radixdlt.rev2.REv2TestTransactions;
+import com.radixdlt.utils.Bytes;
+import org.junit.Test;
+
+public class TransactionParseTest extends DeterministicCoreApiTestBase {
+  @Test
+  public void test_parse_rejected_transaction() throws Exception {
+    try (var test = buildRunningServerTest()) {
+
+      var rawTransaction =
+          REv2TestTransactions.validButRejectTransaction(0, 0).constructRawTransaction();
+
+      // Submit transaction
+      var response =
+          getTransactionApi()
+              .transactionParsePost(
+                  new TransactionParseRequest()
+                      .network(networkLogicalName)
+                      .validationMode(TransactionParseRequest.ValidationModeEnum.FULL)
+                      .payloadHex(Bytes.toHexString(rawTransaction.getPayload())));
+
+      var parsed = response.getParsed().getParsedNotarizedTransaction();
+      assertThat(parsed.getValidationError().getReason())
+          .isEqualTo("FromExecution(SuccessButFeeLoanNotRepaid)");
     }
-}
-
-dependencies {
-    api 'org.apache.logging.log4j:log4j-api'
-    api 'org.apache.logging.log4j:log4j-core'
-    api 'org.reflections:reflections'
-    api 'org.bouncycastle:bcprov-jdk15on'
-    api 'org.bouncycastle:bcpkix-jdk15on'
-    api 'org.json:json'
-    api 'com.fasterxml.jackson.core:jackson-databind'
-    api 'com.fasterxml.jackson.core:jackson-core'
-    api 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor'
-    api 'com.fasterxml.jackson.datatype:jackson-datatype-json-org'
-    api 'com.fasterxml.jackson.datatype:jackson-datatype-guava'
-    api 'com.google.guava:guava'
-    api 'com.google.inject:guice'
-    api 'io.prometheus:simpleclient'
-    api 'io.prometheus:simpleclient_common'
-    api 'io.prometheus:simpleclient_hotspot'
-    implementation('software.amazon.awssdk:secretsmanager:2.16.3')
-            {
-                exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
-            }
-    testImplementation 'junit:junit'
-    testImplementation 'org.mockito:mockito-core'
-    testImplementation 'nl.jqno.equalsverifier:equalsverifier'
-    testImplementation 'org.assertj:assertj-core'
-    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl'
-}
-
-jacocoTestReport {
-    dependsOn test
-    reports {
-        xml.enabled true
-        csv.enabled false
-    }
+  }
 }

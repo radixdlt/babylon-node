@@ -65,6 +65,7 @@
 package com.radixdlt;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Stopwatch;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
@@ -77,7 +78,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.modules.ModuleRunner;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.store.BerkeleyAddressBookStore;
 import com.radixdlt.utils.IOUtils;
@@ -87,11 +88,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.security.Security;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
+import java.time.Duration;
+import java.util.*;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -198,7 +196,7 @@ public final class RadixNodeApplication {
   }
 
   public static void start(RuntimeProperties properties) {
-    long start = System.currentTimeMillis();
+    Stopwatch startTimer = Stopwatch.createStarted();
     var injector = Guice.createInjector(new RadixNodeModule(properties));
 
     final Map<String, ModuleRunner> moduleRunners =
@@ -239,13 +237,14 @@ public final class RadixNodeApplication {
     consensusRunner.start();
 
     final BFTNode self = injector.getInstance(Key.get(BFTNode.class, Self.class));
-    long finish = System.currentTimeMillis();
-    var systemCounters = injector.getInstance(SystemCounters.class);
-    systemCounters.set(SystemCounters.CounterType.STARTUP_TIME_MS, finish - start);
+
+    Duration startTime = startTimer.elapsed();
+    var metrics = injector.getInstance(Metrics.class);
+    metrics.misc().applicationStart().observe(startTime.toMillis());
 
     Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown(injector)));
 
-    log.info("Node '{}' started successfully in {} seconds", self, (finish - start) / 1000);
+    log.info("Node '{}' started successfully in {} seconds", self, startTime.toSeconds());
   }
 
   private static void shutdown(Injector injector) {

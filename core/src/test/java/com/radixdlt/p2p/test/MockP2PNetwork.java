@@ -73,7 +73,7 @@ import com.google.inject.Key;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeerEvent;
@@ -118,7 +118,7 @@ final class MockP2PNetwork {
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
             1,
             "fork1",
-            clientPeer.injector.getInstance(SystemCounters.class),
+            clientPeer.injector.getInstance(Metrics.class),
             clientPeer.injector.getInstance(Serialization.class),
             new SecureRandom(),
             ECKeyOps.fromKeyPair(clientPeer.keyPair),
@@ -144,7 +144,7 @@ final class MockP2PNetwork {
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
             1,
             "fork1",
-            serverPeer.injector.getInstance(SystemCounters.class),
+            serverPeer.injector.getInstance(Metrics.class),
             serverPeer.injector.getInstance(Serialization.class),
             new SecureRandom(),
             ECKeyOps.fromKeyPair(serverPeer.keyPair),

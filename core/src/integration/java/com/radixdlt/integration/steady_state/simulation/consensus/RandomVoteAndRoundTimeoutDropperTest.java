@@ -72,7 +72,6 @@ import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -105,9 +104,8 @@ public class RandomVoteAndRoundTimeoutDropperTest {
     final var checkResults = runningTest.awaitCompletion();
 
     LongSummaryStatistics statistics =
-        runningTest.getNetwork().getSystemCounters().values().stream()
-            .map(s -> s.get(CounterType.BFT_VERTEX_STORE_FORKS))
-            .mapToLong(l -> l)
+        runningTest.getNetwork().getMetrics().values().stream()
+            .mapToLong(s -> (long) s.bft().vertexStore().forks().get())
             .summaryStatistics();
     System.out.println(statistics);
 

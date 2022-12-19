@@ -65,33 +65,18 @@
 package com.radixdlt.consensus;
 
 import static com.radixdlt.utils.TypedMocks.rmock;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.RoundLeaderFailure;
-import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.bft.VertexStoreAdapter;
-import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
-import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.liveness.*;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt256;
@@ -117,7 +102,7 @@ public final class PacemakerGenerateProposalTest {
   private Hasher hasher;
   private TimeSupplier timeSupplier;
   private RoundUpdate initialRoundUpdate;
-  private SystemCounters systemCounters;
+  private Metrics metrics;
 
   private Pacemaker sut;
 
@@ -126,7 +111,7 @@ public final class PacemakerGenerateProposalTest {
     this.self = BFTNode.random();
     this.validator1 = BFTNode.random();
     this.validator2 = BFTNode.random();
-    this.systemCounters = new SystemCountersImpl();
+    this.metrics = new MetricsInitializer().initialize();
     this.validatorSet =
         BFTValidatorSet.from(
             Stream.of(
@@ -163,7 +148,7 @@ public final class PacemakerGenerateProposalTest {
             hasher,
             timeSupplier,
             initialRoundUpdate,
-            systemCounters);
+            metrics);
   }
 
   @Test

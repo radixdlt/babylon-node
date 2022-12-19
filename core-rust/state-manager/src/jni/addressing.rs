@@ -78,9 +78,7 @@ extern "system" fn Java_com_radixdlt_identifiers_Bech32mCoder_encodeBech32m(
     jni_static_sbor_call(env, request_payload, do_encode_bech32m)
 }
 
-fn do_encode_bech32m(args: (String, Vec<u8>)) -> Result<String, String> {
-    let (hrp, full_data) = args;
-
+fn do_encode_bech32m((hrp, full_data): (String, Vec<u8>)) -> Result<String, String> {
     let base32_data = full_data.to_base32();
 
     let address = bech32::encode(&hrp, base32_data, bech32::Variant::Bech32m)

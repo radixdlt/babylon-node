@@ -62,52 +62,26 @@
  * permissions under this License.
  */
 
-apply plugin: 'java-library'
+package com.radixdlt.modules;
 
-tasks.withType(GenerateModuleMetadata) {
-    enabled = false
-}
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
+import io.prometheus.client.CollectorRegistry;
 
-dependencyManagement {
-    imports {
-        // the Maven BOM which contains a coherent set of module versions
-        // for Vaadin dependencies
-        mavenBom ('software.amazon.awssdk:bom:2.16.3')
-    }
-}
+public class MetricsModule extends AbstractModule {
 
-dependencies {
-    api 'org.apache.logging.log4j:log4j-api'
-    api 'org.apache.logging.log4j:log4j-core'
-    api 'org.reflections:reflections'
-    api 'org.bouncycastle:bcprov-jdk15on'
-    api 'org.bouncycastle:bcpkix-jdk15on'
-    api 'org.json:json'
-    api 'com.fasterxml.jackson.core:jackson-databind'
-    api 'com.fasterxml.jackson.core:jackson-core'
-    api 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor'
-    api 'com.fasterxml.jackson.datatype:jackson-datatype-json-org'
-    api 'com.fasterxml.jackson.datatype:jackson-datatype-guava'
-    api 'com.google.guava:guava'
-    api 'com.google.inject:guice'
-    api 'io.prometheus:simpleclient'
-    api 'io.prometheus:simpleclient_common'
-    api 'io.prometheus:simpleclient_hotspot'
-    implementation('software.amazon.awssdk:secretsmanager:2.16.3')
-            {
-                exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
-            }
-    testImplementation 'junit:junit'
-    testImplementation 'org.mockito:mockito-core'
-    testImplementation 'nl.jqno.equalsverifier:equalsverifier'
-    testImplementation 'org.assertj:assertj-core'
-    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl'
-}
+  @Provides
+  @Singleton
+  public CollectorRegistry prometheusRegistry() {
+    return new CollectorRegistry();
+  }
 
-jacocoTestReport {
-    dependsOn test
-    reports {
-        xml.enabled true
-        csv.enabled false
-    }
+  @Provides
+  @Singleton
+  public Metrics metrics(CollectorRegistry prometheusRegistry) {
+    return new MetricsInitializer(prometheusRegistry).initialize();
+  }
 }

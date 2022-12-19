@@ -92,9 +92,9 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_compileManif
     jni_static_sbor_call(env, request_payload, do_compile_manifest)
 }
 
-fn do_compile_manifest(args: (NetworkDefinition, String, Vec<Vec<u8>>)) -> Result<Vec<u8>, String> {
-    let (network, manifest_str, blobs) = args;
-
+fn do_compile_manifest(
+    (network, manifest_str, blobs): (NetworkDefinition, String, Vec<Vec<u8>>),
+) -> Result<Vec<u8>, String> {
     create_manifest(&network, &manifest_str, blobs)
         .map_err(|err| format!("{:?}", err))
         .map(|manifest| scrypto_encode(&manifest).unwrap())
@@ -109,9 +109,9 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_newAccountIn
     jni_static_sbor_call(env, request_payload, do_create_new_account_intent)
 }
 
-fn do_create_new_account_intent(args: (NetworkDefinition, PublicKey)) -> Vec<u8> {
-    let (network_definition, public_key) = args;
-
+fn do_create_new_account_intent(
+    (network_definition, public_key): (NetworkDefinition, PublicKey),
+) -> Vec<u8> {
     create_new_account_intent_bytes(&network_definition, public_key)
 }
 
@@ -124,9 +124,9 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_setEpochInte
     jni_static_sbor_call(env, request_payload, do_set_epoch)
 }
 
-fn do_set_epoch(args: (NetworkDefinition, PublicKey, u64)) -> Vec<u8> {
-    let (network_definition, public_key, epoch) = args;
-
+fn do_set_epoch(
+    (network_definition, public_key, epoch): (NetworkDefinition, PublicKey, u64),
+) -> Vec<u8> {
     create_set_epoch_intent(&network_definition, public_key, epoch)
         .to_bytes()
         .unwrap()
@@ -174,15 +174,13 @@ impl From<TransactionHeaderJava> for TransactionHeader {
 }
 
 fn do_create_intent_bytes(
-    args: (
+    (network_definition, header, manifest, blobs): (
         NetworkDefinition,
         TransactionHeaderJava,
         String,
         Vec<Vec<u8>>,
     ),
 ) -> Result<Vec<u8>, String> {
-    let (network_definition, header, manifest, blobs) = args;
-
     create_intent_bytes(&network_definition, header.into(), manifest, blobs)
         .map_err(|err| format!("{:?}", err))
 }
@@ -197,10 +195,8 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createSigned
 }
 
 fn do_create_signed_intent_bytes(
-    args: (Vec<u8>, Vec<SignatureWithPublicKey>),
+    (intent_bytes, signatures): (Vec<u8>, Vec<SignatureWithPublicKey>),
 ) -> StateManagerResult<Vec<u8>> {
-    let (intent_bytes, signatures) = args;
-
     // It's passed through to us as bytes - and need to decode these bytes
     let intent = TransactionIntent::from_java(&intent_bytes)?;
 
@@ -216,9 +212,9 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createNotari
     jni_static_sbor_call_flatten_result(env, request_payload, do_create_notarized_bytes)
 }
 
-fn do_create_notarized_bytes(args: (Vec<u8>, Signature)) -> StateManagerResult<Vec<u8>> {
-    let (signed_intent_bytes, signature) = args;
-
+fn do_create_notarized_bytes(
+    (signed_intent_bytes, signature): (Vec<u8>, Signature),
+) -> StateManagerResult<Vec<u8>> {
     // It's passed through to us as bytes - and need to decode these bytes
     let signed_intent = SignedTransactionIntent::from_java(&signed_intent_bytes)?;
 

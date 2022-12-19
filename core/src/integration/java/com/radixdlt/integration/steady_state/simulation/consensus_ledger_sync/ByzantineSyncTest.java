@@ -77,7 +77,6 @@ import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.sync.SometimesByzantineCommittedReader;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.sync.TransactionsAndProofReader;
@@ -137,9 +136,8 @@ public class ByzantineSyncTest {
     assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
 
     LongSummaryStatistics statistics =
-        runningTest.getNetwork().getSystemCounters().values().stream()
-            .map(s -> s.get(CounterType.SYNC_VALID_RESPONSES_RECEIVED))
-            .mapToLong(l -> l)
+        runningTest.getNetwork().getMetrics().values().stream()
+            .mapToLong(s -> (long) s.sync().validResponsesReceived().get())
             .summaryStatistics();
 
     logger.info("{}", statistics);
@@ -159,9 +157,8 @@ public class ByzantineSyncTest {
     final var checkResults = runningTest.awaitCompletion();
 
     LongSummaryStatistics statistics =
-        runningTest.getNetwork().getSystemCounters().values().stream()
-            .map(s -> s.get(CounterType.SYNC_VALID_RESPONSES_RECEIVED))
-            .mapToLong(l -> l)
+        runningTest.getNetwork().getMetrics().values().stream()
+            .mapToLong(s -> (long) s.sync().validResponsesReceived().get())
             .summaryStatistics();
 
     logger.info("{}", statistics);

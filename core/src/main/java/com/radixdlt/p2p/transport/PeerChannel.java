@@ -77,7 +77,7 @@ import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.messaging.core.InboundMessage;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeerEvent;
@@ -132,7 +132,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   private final RateLimiter droppedMessagesRateLimiter = RateLimiter.create(1.0);
   private final PublishProcessor<InboundMessage> inboundMessageSink = PublishProcessor.create();
   private final Flowable<InboundMessage> inboundMessages;
-  private final SystemCounters counters;
+  private final Metrics metrics;
   private final Addressing addressing;
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
   private final Optional<RadixNodeUri> uri;
@@ -155,7 +155,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
       Addressing addressing,
       int networkId,
       String newestForkName,
-      SystemCounters counters,
+      Metrics metrics,
       Serialization serialization,
       SecureRandom secureRandom,
       ECKeyOps ecKeyOps,
@@ -164,7 +164,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
       SocketChannel nettyChannel,
       Optional<InetSocketAddress> remoteAddress,
       Capabilities capabilities) {
-    this.counters = requireNonNull(counters);
+    this.metrics = requireNonNull(metrics);
     this.addressing = requireNonNull(addressing);
     this.peerEventDispatcher = requireNonNull(peerEventDispatcher);
     this.uri = requireNonNull(uri);
@@ -191,7 +191,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   }
 
   private void onInboundMessageBufferOverflow() {
-    this.counters.increment(SystemCounters.CounterType.NETWORKING_TCP_DROPPED_MESSAGES);
+    this.metrics.networking().messagesDropped().inc();
     final var logLevel = droppedMessagesRateLimiter.tryAcquire() ? Level.WARN : Level.TRACE;
     if (log.isEnabled(logLevel)) {
       log.log(logLevel, "TCP msg buffer overflow, dropping msg on {}", this);
