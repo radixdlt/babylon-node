@@ -23,13 +23,13 @@ parking_lot = { version = "0.12" }
 #
 # Ensure this version is also identically updated in ../state-manager/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v1-9ec92c1ab", features = ["serde", "indexmap"] }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v1-9ec92c1ab" }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v1-9ec92c1ab" }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v1-9ec92c1ab" }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v1-9ec92c1ab", features = ["serde"] }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v1-9ec92c1ab" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v1-9ec92c1ab" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v1-633d7f789", features = ["serde", "indexmap"] }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v1-633d7f789" }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v1-633d7f789" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v1-633d7f789" }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v1-633d7f789", features = ["serde"] }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v1-633d7f789" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v1-633d7f789" }
 
 jni = "0.19.0"
 
