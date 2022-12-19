@@ -82,7 +82,7 @@ extern "system" fn Java_com_radixdlt_recovery_VertexStoreRecovery_getVertexStore
 
 #[tracing::instrument(skip_all)]
 fn do_get_vertex_store(state_manager: &ActualStateManager, _args: ()) -> Option<Vec<u8>> {
-    state_manager.store.get_vertex_store()
+    state_manager.staged_store.root.get_vertex_store()
 }
 
 pub fn export_extern_functions() {}

@@ -22,7 +22,8 @@ pub(crate) fn handle_network_status_internal(
 
     Ok(models::NetworkStatusResponse {
         post_genesis_state_identifier: state_manager
-            .store
+            .staged_store
+            .root
             .get_transaction_identifiers(1)
             .map(|identifiers| -> Result<_, MappingError> {
                 Ok(Box::new(to_api_committed_state_identifier(identifiers)?))
@@ -30,7 +31,8 @@ pub(crate) fn handle_network_status_internal(
             .transpose()?,
         current_state_identifier: Box::new(
             state_manager
-                .store
+                .staged_store
+                .root
                 .get_top_of_ledger_transaction_identifiers()
                 .map(|identifiers| -> Result<_, MappingError> {
                     to_api_committed_state_identifier(identifiers)

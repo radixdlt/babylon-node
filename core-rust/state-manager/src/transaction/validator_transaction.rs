@@ -60,7 +60,7 @@ impl ValidatorTransaction {
                 },
                 args: scrypto_encode(&ClockSetCurrentTimeInvocation {
                     receiver: CLOCK,
-                    current_time_ms: *timestamp_ms,
+                    current_time_ms: *timestamp_ms as i64,
                 })
                 .unwrap(),
             },

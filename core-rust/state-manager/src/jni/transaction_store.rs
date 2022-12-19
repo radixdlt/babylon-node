@@ -112,10 +112,14 @@ fn do_get_transaction_at_state_version(
     state_manager: &ActualStateManager,
     state_version: u64,
 ) -> Option<ExecutedTransaction> {
-    let payload_hash = state_manager.store.get_payload_hash(state_version)?;
+    let payload_hash = state_manager
+        .staged_store
+        .root
+        .get_payload_hash(state_version)?;
 
     let (stored_transaction, ledger_receipt, _) = state_manager
-        .store
+        .staged_store
+        .root
         .get_committed_transaction(&payload_hash)?;
 
     let ledger_receipt_bytes = scrypto_encode(&ledger_receipt).unwrap();
@@ -148,7 +152,10 @@ fn do_get_next_proof(
     state_manager: &ActualStateManager,
     state_version: u64,
 ) -> Option<(Vec<JavaPayloadHash>, Vec<u8>)> {
-    let (payload_hashes, proof) = state_manager.store.get_next_proof(state_version)?;
+    let (payload_hashes, proof) = state_manager
+        .staged_store
+        .root
+        .get_next_proof(state_version)?;
 
     let payload_hashes = payload_hashes.into_iter().map(|hash| hash.into()).collect();
 
@@ -167,7 +174,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 
 #[tracing::instrument(skip_all)]
 fn do_get_last_proof(state_manager: &ActualStateManager, _args: ()) -> Option<Vec<u8>> {
-    state_manager.store.get_last_proof()
+    state_manager.staged_store.root.get_last_proof()
 }
 
 pub fn export_extern_functions() {}
