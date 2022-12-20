@@ -62,21 +62,20 @@
  * permissions under this License.
  */
 
-extern crate core;
+package com.radixdlt.monitoring;
 
-pub mod jni;
-pub mod mempool;
-mod metrics;
-pub mod query;
-mod receipt;
-mod result;
-mod state_manager;
-pub mod store;
-pub mod transaction;
-mod types;
+import static java.lang.annotation.ElementType.RECORD_COMPONENT;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-pub use crate::mempool::MempoolAddError;
-pub use crate::metrics::*;
-pub use crate::receipt::*;
-pub use crate::state_manager::*;
-pub use crate::types::*;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+/**
+ * An annotation to be used on a measurement primitive that should not be exposed via metrics API.
+ *
+ * <p>Such metric may exist for legacy reasons (e.g. it is used in test asserts), but it should not
+ * be exposed (e.g. it duplicates a metric exposed from the Rust part).
+ */
+@Target(RECORD_COMPONENT)
+@Retention(RUNTIME)
+public @interface NotExposed {}

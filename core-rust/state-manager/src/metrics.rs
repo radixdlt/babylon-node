@@ -62,21 +62,78 @@
  * permissions under this License.
  */
 
-extern crate core;
+use prometheus::core::Collector;
+use prometheus::{Gauge, IntCounter, IntCounterVec, IntGauge, Opts, Registry};
 
-pub mod jni;
-pub mod mempool;
-mod metrics;
-pub mod query;
-mod receipt;
-mod result;
-mod state_manager;
-pub mod store;
-pub mod transaction;
-mod types;
+pub struct Metrics {
+    pub ledger_state_version: IntGauge,
+    pub ledger_transactions_committed: IntCounter,
+    pub ledger_last_update_epoch_second: Gauge,
+    pub mempool_current_transactions: IntGauge,
+    pub mempool_submission_added: IntCounterVec,
+    pub mempool_submission_rejected: IntCounterVec,
+}
 
-pub use crate::mempool::MempoolAddError;
-pub use crate::metrics::*;
-pub use crate::receipt::*;
-pub use crate::state_manager::*;
-pub use crate::types::*;
+impl Metrics {
+    pub fn register_with(&self, registry: &Registry) {
+        let metrics: Vec<Box<dyn Collector>> = vec![
+            Box::new(self.ledger_state_version.clone()),
+            Box::new(self.ledger_transactions_committed.clone()),
+            Box::new(self.ledger_last_update_epoch_second.clone()),
+            Box::new(self.mempool_current_transactions.clone()),
+            Box::new(self.mempool_submission_added.clone()),
+            Box::new(self.mempool_submission_rejected.clone()),
+        ];
+
+        for metric in metrics.into_iter() {
+            registry.register(metric).unwrap();
+        }
+    }
+
+    fn opts(name: &str, help: &str) -> Opts {
+        Opts::new(format!("rn_{}", name), help)
+    }
+}
+
+impl Default for Metrics {
+    fn default() -> Self {
+        Self {
+            ledger_transactions_committed: IntCounter::with_opts(Metrics::opts(
+                "ledger_transactions_committed_total",
+                "Count of transactions committed to the ledger.",
+            ))
+            .unwrap(),
+            ledger_last_update_epoch_second: Gauge::with_opts(Metrics::opts(
+                "ledger_last_update_epoch_second",
+                "Last timestamp at which the ledger was updated.",
+            ))
+            .unwrap(),
+            ledger_state_version: IntGauge::with_opts(Metrics::opts(
+                "ledger_state_version",
+                "Version of the ledger state.",
+            ))
+            .unwrap(),
+            mempool_current_transactions: IntGauge::with_opts(Metrics::opts(
+                "mempool_current_transactions",
+                "Number of transactions in progress in the mempool.",
+            ))
+            .unwrap(),
+            mempool_submission_added: IntCounterVec::new(
+                Metrics::opts(
+                    "mempool_submission_added_total",
+                    "Count of submissions added to the mempool.",
+                ),
+                &["source"],
+            )
+            .unwrap(),
+            mempool_submission_rejected: IntCounterVec::new(
+                Metrics::opts(
+                    "mempool_submission_rejected_total",
+                    "Count of the submissions rejected by the mempool.",
+                ),
+                &["source", "rejection_reason"],
+            )
+            .unwrap(),
+        }
+    }
+}
