@@ -69,21 +69,13 @@ import static com.radixdlt.utils.SerializerTestDataGenerator.randomVote;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.serialization.DefaultSerialization;
-import com.sleepycat.je.Cursor;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.Environment;
-import com.sleepycat.je.OperationStatus;
+import com.sleepycat.je.*;
 import java.util.Optional;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -101,7 +93,7 @@ public class BerkeleySafetyStateStoreTest {
 
     final var store =
         new BerkeleySafetyStateStore(
-            dbEnv, DefaultSerialization.getInstance(), new SystemCountersImpl());
+            dbEnv, DefaultSerialization.getInstance(), new MetricsInitializer().initialize());
 
     final var safetyState = new SafetyState(randomRound(), Optional.of(randomVote()));
 

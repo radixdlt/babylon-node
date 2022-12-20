@@ -75,7 +75,7 @@ import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.messaging.core.InboundMessage;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.PeerEvent.PeerConnected;
 import com.radixdlt.p2p.addressbook.AddressBook;
@@ -110,7 +110,7 @@ public class PeerManagerStaticTest {
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
             () -> addressBook,
             () -> mock(PendingOutboundChannelsManager.class),
-            mock(SystemCounters.class));
+            new MetricsInitializer().initialize());
 
     var peer1 = makeNodeUri("10.0.0.2", 30000);
     // second address for same peer

@@ -64,7 +64,6 @@
 
 package com.radixdlt.rev1.store;
 
-import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.utils.Pair;
 import java.io.IOException;
 import java.util.function.BiConsumer;
@@ -82,12 +81,11 @@ public interface AppendLog {
    * Open compressed R/W append log.
    *
    * @param path log file path
-   * @param counters system counters to use
    * @return append log
    * @throws IOException
    */
-  static AppendLog openCompressed(String path, SystemCounters counters) throws IOException {
-    return CompressedAppendLog.open(openSimple(path), counters);
+  static AppendLog openCompressed(String path) throws IOException {
+    return CompressedAppendLog.open(openSimple(path));
   }
 
   /**

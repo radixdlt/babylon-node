@@ -67,12 +67,7 @@ package com.radixdlt.consensus.epoch;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.BFTFactory;
-import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
 import com.radixdlt.consensus.bft.processor.EmptyBFTEventProcessor;
@@ -92,16 +87,9 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
@@ -122,7 +110,7 @@ public final class EpochManager {
   private final HashSigner signer;
   private final HashVerifier hashVerifier;
   private final PacemakerTimeoutCalculator timeoutCalculator;
-  private final SystemCounters counters;
+  private final Metrics metrics;
   private final Map<Long, List<ConsensusEvent>> queuedEvents;
   private final BFTFactory bftFactory;
   private final PacemakerStateFactory pacemakerStateFactory;
@@ -154,7 +142,7 @@ public final class EpochManager {
       BFTSyncFactory bftSyncFactory,
       BFTSyncRequestProcessorFactory bftSyncRequestProcessorFactory,
       BFTFactory bftFactory,
-      SystemCounters counters,
+      Metrics metrics,
       Hasher hasher,
       HashSigner signer,
       HashVerifier hashVerifier,
@@ -173,7 +161,7 @@ public final class EpochManager {
     this.hashVerifier = requireNonNull(hashVerifier);
     this.timeoutCalculator = requireNonNull(timeoutCalculator);
     this.bftFactory = bftFactory;
-    this.counters = requireNonNull(counters);
+    this.metrics = requireNonNull(metrics);
     this.pacemakerStateFactory = requireNonNull(pacemakerStateFactory);
     this.persistentSafetyStateStore = requireNonNull(persistentSafetyStateStore);
     this.queuedEvents = new HashMap<>();
@@ -322,7 +310,7 @@ public final class EpochManager {
   }
 
   private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
-    this.counters.increment(CounterType.BFT_EVENTS_RECEIVED);
+    this.metrics.bft().eventsReceived().inc();
 
     switch (consensusEvent) {
       case Proposal proposal -> bftEventProcessor.processProposal(proposal);
@@ -344,7 +332,7 @@ public final class EpochManager {
       queuedEvents
           .computeIfAbsent(consensusEvent.getEpoch(), e -> new ArrayList<>())
           .add(consensusEvent);
-      counters.increment(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS);
+      metrics.misc().epochManagerEnqueuedConsensusEvents().inc();
       return;
     }
 

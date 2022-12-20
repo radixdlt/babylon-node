@@ -71,7 +71,7 @@ import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import java.math.BigInteger;
 import java.util.function.Function;
 
@@ -83,15 +83,14 @@ public final class MockedKeyModule extends AbstractModule {
   }
 
   @Provides
-  private HashSigner hashSigner(
-      @Self BFTNode node, SystemCounters counters, HashFunction hashFunction) {
+  private HashSigner hashSigner(@Self BFTNode node, Metrics metrics, HashFunction hashFunction) {
     return h -> {
       var concat = new byte[64];
       System.arraycopy(h, 0, concat, 0, 32);
       System.arraycopy(node.getKey().getBytes(), 0, concat, 32, 32);
 
       var hashCode = hashFunction.hashBytes(concat).asBytes();
-      counters.increment(SystemCounters.CounterType.SIGNATURES_SIGNED);
+      metrics.crypto().signaturesSigned().inc();
 
       return ECDSASecp256k1Signature.create(
           new BigInteger(1, hashCode), new BigInteger(1, hashCode), 0);

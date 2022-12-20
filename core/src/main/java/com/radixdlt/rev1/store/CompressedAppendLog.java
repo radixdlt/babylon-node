@@ -64,10 +64,6 @@
 
 package com.radixdlt.rev1.store;
 
-import static com.radixdlt.monitoring.SystemCounters.CounterType.PERSISTENCE_TRANSACTION_LOG_WRITE_BYTES;
-import static com.radixdlt.monitoring.SystemCounters.CounterType.PERSISTENCE_TRANSACTION_LOG_WRITE_COMPRESSED;
-
-import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.Pair;
 import java.io.IOException;
@@ -75,15 +71,13 @@ import java.util.function.BiConsumer;
 
 public class CompressedAppendLog implements AppendLog {
   private final AppendLog delegate;
-  private final SystemCounters counters;
 
-  private CompressedAppendLog(final AppendLog delegate, final SystemCounters counters) {
+  private CompressedAppendLog(final AppendLog delegate) {
     this.delegate = delegate;
-    this.counters = counters;
   }
 
-  static CompressedAppendLog open(AppendLog delegate, SystemCounters counters) {
-    return new CompressedAppendLog(delegate, counters);
+  static CompressedAppendLog open(AppendLog delegate) {
+    return new CompressedAppendLog(delegate);
   }
 
   @Override
@@ -99,10 +93,6 @@ public class CompressedAppendLog implements AppendLog {
   @Override
   public long write(final byte[] data, long expectedOffset) throws IOException {
     byte[] compressedData = Compress.compress(data);
-
-    counters.add(PERSISTENCE_TRANSACTION_LOG_WRITE_BYTES, data.length);
-    counters.add(PERSISTENCE_TRANSACTION_LOG_WRITE_COMPRESSED, compressedData.length);
-
     return delegate.write(compressedData, expectedOffset);
   }
 

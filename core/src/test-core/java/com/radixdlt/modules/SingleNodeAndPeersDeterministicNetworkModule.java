@@ -66,7 +66,6 @@ package com.radixdlt.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -79,8 +78,8 @@ import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.rev1.modules.REv1PersistenceModule;
@@ -117,7 +116,7 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
   @Override
   protected void configure() {
     // System
-    bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+    bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
     bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 
     var addressing = Addressing.ofNetwork(Network.INTEGRATIONTESTNET);

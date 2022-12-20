@@ -73,29 +73,15 @@ import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
 import com.radixdlt.monitoring.InMemorySystemInfo;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.prometheus.StateManagerPrometheus;
 import java.util.AbstractCollection;
-import java.util.List;
 
 public class PrometheusService {
 
-  private static final List<CounterType> EXPORT_LIST = List.of(CounterType.values());
-
-  private static final String COUNTER = "counter";
-  private static final String COUNTER_PREFIX = "info_counters_";
-  private static final String COMPLETED_PROPOSALS =
-      COUNTER_PREFIX + "radix_engine_cur_epoch_completed_proposals";
-  private static final String MISSED_PROPOSALS =
-      COUNTER_PREFIX + "radix_engine_cur_epoch_missed_proposals";
-
   private final JavaPrometheus javaPrometheus;
   private final StateManagerPrometheus stateManagerPrometheus;
-  private final SystemCounters systemCounters;
   private final HealthInfoService healthInfoService;
   private final InMemorySystemInfo inMemorySystemInfo;
   private final BFTNode self;
@@ -103,14 +89,12 @@ public class PrometheusService {
 
   @Inject
   public PrometheusService(
-      SystemCounters systemCounters,
       PeersView peersView,
       HealthInfoService healthInfoService,
       InMemorySystemInfo inMemorySystemInfo,
       @Self BFTNode self,
       StateManagerPrometheus stateManagerPrometheus,
       JavaPrometheus javaPrometheus) {
-    this.systemCounters = systemCounters;
     this.peersView = peersView;
     this.healthInfoService = healthInfoService;
     this.inMemorySystemInfo = inMemorySystemInfo;
@@ -123,7 +107,6 @@ public class PrometheusService {
     var builder = new StringBuilder();
     builder.append(this.stateManagerPrometheus.prometheusMetrics());
     builder.append(this.javaPrometheus.prometheusMetrics());
-    exportCounters(builder);
     exportSystemInfo(builder);
     return builder.append('\n').toString();
   }
@@ -188,27 +171,6 @@ public class PrometheusService {
     builder.append(name).append("=\"").append(value).append("\",");
   }
 
-  private void exportCounters(StringBuilder builder) {
-    EXPORT_LIST.forEach(counterType -> generateCounterEntry(counterType, builder));
-
-    inMemorySystemInfo
-        .getValidatorBFTData()
-        .ifPresent(proposals -> addProposalsCounters(builder, proposals));
-  }
-
-  private void addProposalsCounters(StringBuilder builder, ValidatorBFTDataEvent proposals) {
-    appendCounter(builder, COMPLETED_PROPOSALS, proposals.completedProposals());
-    appendCounter(builder, MISSED_PROPOSALS, proposals.missedProposals());
-  }
-
-  private void generateCounterEntry(CounterType counterType, StringBuilder builder) {
-    var name = COUNTER_PREFIX + counterType.jsonPath().replace('.', '_');
-
-    long value = systemCounters.get(counterType);
-
-    appendCounter(builder, name, value);
-  }
-
   private static void appendCounter(StringBuilder builder, String name, Number value) {
     appendCounterExtended(builder, name, name, name, value.doubleValue());
   }
@@ -222,7 +184,7 @@ public class PrometheusService {
         .append("# TYPE ")
         .append(type)
         .append(' ')
-        .append(COUNTER)
+        .append("counter")
         .append('\n')
         .append(name)
         .append(' ')

@@ -247,6 +247,8 @@ public final class RadixNodeModule extends AbstractModule {
     install(new REv2LedgerRecoveryModule(initialAccumulatorState, genesis));
     install(new REv2ConsensusRecoveryModule());
 
+    install(new MetricsModule());
+
     // System Info
     install(new SystemInfoModule());
 

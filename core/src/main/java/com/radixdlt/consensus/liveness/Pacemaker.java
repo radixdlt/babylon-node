@@ -68,15 +68,12 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.VertexStoreAdapter;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.List;
@@ -110,7 +107,7 @@ public final class Pacemaker {
   private final EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher;
   private final EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher;
   private final TimeSupplier timeSupplier;
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
 
   private RoundUpdate latestRoundUpdate;
   private RoundStatus roundStatus = RoundStatus.UNDISTURBED;
@@ -135,7 +132,7 @@ public final class Pacemaker {
       Hasher hasher,
       TimeSupplier timeSupplier,
       RoundUpdate initialRoundUpdate,
-      SystemCounters systemCounters) {
+      Metrics metrics) {
     this.self = Objects.requireNonNull(self);
     this.validatorSet = Objects.requireNonNull(validatorSet);
     this.vertexStore = Objects.requireNonNull(vertexStore);
@@ -150,7 +147,7 @@ public final class Pacemaker {
     this.hasher = Objects.requireNonNull(hasher);
     this.timeSupplier = Objects.requireNonNull(timeSupplier);
     this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
-    this.systemCounters = Objects.requireNonNull(systemCounters);
+    this.metrics = Objects.requireNonNull(metrics);
   }
 
   public void start() {
@@ -165,13 +162,12 @@ public final class Pacemaker {
     final var previousRound = this.latestRoundUpdate.getCurrentRound();
     if (roundUpdate.getCurrentRound().lte(previousRound)) {
       // This shouldn't really happen but ignore any outdated updates
-      systemCounters.increment(CounterType.BFT_PRECONDITION_VIOLATIONS);
+      metrics.bft().preconditionViolations().inc();
       return;
     }
 
     this.latestRoundUpdate = roundUpdate;
-    this.systemCounters.set(
-        CounterType.BFT_PACEMAKER_ROUND, roundUpdate.getCurrentRound().number());
+    this.metrics.bft().pacemaker().round().set(roundUpdate.getCurrentRound().number());
 
     this.startRound();
   }
@@ -220,7 +216,7 @@ public final class Pacemaker {
           proposal -> {
             log.trace("Broadcasting proposal: {}", proposal);
             this.proposalDispatcher.dispatch(this.validatorSet.nodes(), proposal);
-            this.systemCounters.increment(CounterType.BFT_PACEMAKER_PROPOSALS_SENT);
+            this.metrics.bft().pacemaker().proposalsSent().inc();
           });
     }
   }
@@ -254,7 +250,7 @@ public final class Pacemaker {
                 + "This may (but doesn't have to) indicate system clock malfunction. "
                 + "Consider further investigation if this log message appears on a regular basis.");
       }
-      systemCounters.increment(CounterType.BFT_PACEMAKER_PROPOSALS_WITH_SUBSTITUTE_TIMESTAMP);
+      this.metrics.bft().pacemaker().proposalsWithSubstituteTimestamp().inc();
       return previousProposerTimestamp;
     }
   }
@@ -272,7 +268,7 @@ public final class Pacemaker {
         vertexStore.getPathFromRoot(highestQC.getProposedHeader().getVertexId());
     final var nextTransactions =
         proposalGenerator.getTransactionsForProposal(round, alreadyExecutedVertices);
-    systemCounters.add(CounterType.BFT_PACEMAKER_PROPOSED_TRANSACTIONS, nextTransactions.size());
+    this.metrics.bft().pacemaker().proposedTransactions().inc(nextTransactions.size());
     return nextTransactions;
   }
 
@@ -403,9 +399,9 @@ public final class Pacemaker {
 
   private void updateTimeoutCounters(ScheduledLocalTimeout scheduledTimeout) {
     if (scheduledTimeout.count() == 0) {
-      systemCounters.increment(CounterType.BFT_PACEMAKER_TIMED_OUT_ROUNDS);
+      metrics.bft().pacemaker().timedOutRounds().inc();
     }
-    systemCounters.increment(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT);
+    metrics.bft().pacemaker().timeoutsSent().inc();
   }
 
   private void rescheduleTimeout(ScheduledLocalTimeout scheduledTimeout) {

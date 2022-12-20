@@ -68,10 +68,7 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.api.core.generated.api.MempoolApi;
-import com.radixdlt.api.core.generated.api.StateApi;
-import com.radixdlt.api.core.generated.api.StatusApi;
-import com.radixdlt.api.core.generated.api.TransactionApi;
+import com.radixdlt.api.core.generated.api.*;
 import com.radixdlt.api.core.generated.client.ApiClient;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -157,6 +154,10 @@ public abstract class DeterministicCoreApiTestBase {
 
   protected TransactionApi getTransactionApi() throws Exception {
     return new TransactionApi(buildApiClient());
+  }
+
+  protected StreamApi getStreamApi() throws Exception {
+    return new StreamApi(buildApiClient());
   }
 
   protected StateApi getStateApi() throws Exception {

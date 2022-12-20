@@ -64,102 +64,55 @@
 
 package com.radixdlt.monitoring;
 
-import com.google.common.collect.Maps;
-import java.time.Instant;
-import java.util.EnumMap;
+import io.prometheus.client.Collector;
+import io.prometheus.client.Counter;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.ConcurrentHashMap;
 
-/** Event counting utility class. */
-public final class SystemCountersImpl implements SystemCounters {
-  private static final List<CounterType> COUNTER_LIST = List.of(CounterType.values());
+/**
+ * A Prometheus {@link Counter} wrapper defining a typed set of labels.
+ *
+ * @param <L> A type of record representing a complete set of labels.
+ */
+public class LabelledCounter<L extends Record> extends Collector implements Collector.Describable {
 
-  private final EnumMap<CounterType, AtomicLong> counters = new EnumMap<>(CounterType.class);
-  private final String since;
+  /** A wrapped {@link Counter}. */
+  private final Counter wrapped;
 
-  public SystemCountersImpl() {
-    this(System.currentTimeMillis());
+  /** A map of children created for each label set. */
+  private final Map<L, Counter.Child> labelledChildren;
+
+  /**
+   * A direct constructor.
+   *
+   * @param name A metric name; will also be used as a description.
+   * @param labelClass A class of a {@link Record} representing a complete set of labels.
+   */
+  public LabelledCounter(String name, Class<L> labelClass) {
+    this.wrapped =
+        Counter.build(name, name).labelNames(NameRenderer.labelNames(labelClass)).create();
+    this.labelledChildren = new ConcurrentHashMap<>();
   }
 
-  public SystemCountersImpl(long startTime) {
-    COUNTER_LIST.stream()
-        .filter(counterType -> counterType != CounterType.TIME_DURATION)
-        .forEach(counterType -> counters.put(counterType, new AtomicLong(0)));
-
-    // This one is special, kinda "self ticking"
-    counters.put(
-        CounterType.TIME_DURATION,
-        new AtomicLong() {
-          @Override
-          public long longValue() {
-            return System.currentTimeMillis() - startTime;
-          }
-        });
-
-    since = Instant.ofEpochMilli(startTime).toString();
-  }
-
-  @Override
-  public long increment(CounterType counterType) {
-    return counters.get(counterType).incrementAndGet();
-  }
-
-  @Override
-  public long add(CounterType counterType, long amount) {
-    return counters.get(counterType).addAndGet(amount);
+  /**
+   * Returns a child for the given label set.
+   *
+   * @param labelRecord A record containing a label set.
+   * @return Child to be used.
+   */
+  public Counter.Child label(L labelRecord) {
+    return this.labelledChildren.computeIfAbsent(
+        labelRecord, value -> this.wrapped.labels(NameRenderer.labelValues(value)));
   }
 
   @Override
-  public long set(CounterType counterType, long value) {
-    return counters.get(counterType).getAndSet(value);
+  public List<MetricFamilySamples> collect() {
+    return this.wrapped.collect();
   }
 
   @Override
-  public long get(CounterType counterType) {
-    return counters.get(counterType).longValue();
-  }
-
-  @Override
-  public void setAll(Map<CounterType, Long> newValues) {
-    // Note that this only prevents read tearing
-    // Lost updates are still possible
-    synchronized (counters) {
-      for (Map.Entry<CounterType, Long> e : newValues.entrySet()) {
-        counters.get(e.getKey()).set(e.getValue());
-      }
-    }
-  }
-
-  @Override
-  public Map<String, Object> toMap() {
-    var output = Maps.<String, Object>newTreeMap();
-
-    synchronized (counters) {
-      COUNTER_LIST.forEach(counter -> addValue(output, makePath(counter.jsonPath()), get(counter)));
-    }
-
-    addValue(output, makePath("time.since"), since);
-
-    return output;
-  }
-
-  @SuppressWarnings("unchecked")
-  private void addValue(Map<String, Object> values, String[] path, Object value) {
-    for (int i = 0; i < path.length - 1; ++i) {
-      // Needs exhaustive testing to ensure correctness.
-      // Will fail if there is a counter called foo.bar and a counter called foo.bar.baz.
-      values = (Map<String, Object>) values.computeIfAbsent(path[i], k -> Maps.newTreeMap());
-    }
-    values.put(path[path.length - 1], value);
-  }
-
-  private String[] makePath(String jsonPath) {
-    return jsonPath.split("\\.");
-  }
-
-  @Override
-  public String toString() {
-    return String.format("SystemCountersImpl[%s]", toMap());
+  public List<MetricFamilySamples> describe() {
+    return this.wrapped.describe();
   }
 }

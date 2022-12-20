@@ -67,8 +67,6 @@ package com.radixdlt.harness.simulation.monitors.consensus;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 
@@ -99,17 +97,17 @@ public final class MaxLedgerSyncLagInvariant implements TestInvariant {
         .flatMap(
             unused -> {
               final long maxStateVersion =
-                  network.getSystemCounters().values().stream()
-                      .map(sc -> sc.get(SystemCounters.CounterType.LEDGER_STATE_VERSION))
-                      .max(Long::compareTo)
+                  network.getMetrics().values().stream()
+                      .mapToLong(sc -> (long) sc.ledger().stateVersion().get())
+                      .max()
                       .orElse(0L);
 
               final var maybeTooMuchLag =
-                  network.getSystemCounters().entrySet().stream()
+                  network.getMetrics().entrySet().stream()
                       .map(
                           e ->
                               Pair.of(
-                                  e.getKey(), e.getValue().get(CounterType.LEDGER_STATE_VERSION)))
+                                  e.getKey(), (long) e.getValue().ledger().stateVersion().get()))
                       .filter(e -> e.getSecond() + maxLag < maxStateVersion)
                       .findAny();
 

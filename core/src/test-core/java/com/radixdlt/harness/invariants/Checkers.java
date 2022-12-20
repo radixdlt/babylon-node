@@ -64,11 +64,11 @@
 
 package com.radixdlt.harness.invariants;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.Injector;
 import com.radixdlt.harness.predicates.NodePredicate;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
@@ -205,9 +205,8 @@ public final class Checkers {
 
   public static void assertNoInvalidSyncResponses(List<Injector> nodeInjectors) {
     for (var injector : nodeInjectors) {
-      var systemCounters = injector.getInstance(SystemCounters.class);
-      assertThat(systemCounters.get(SystemCounters.CounterType.SYNC_INVALID_RESPONSES_RECEIVED))
-          .isEqualTo(0);
+      var metrics = injector.getInstance(Metrics.class);
+      assertThat(metrics.sync().invalidResponsesReceived().get()).isEqualTo(0);
     }
   }
 }
