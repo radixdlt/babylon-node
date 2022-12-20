@@ -65,18 +65,12 @@
 package com.radixdlt.api.system.health;
 
 import static com.radixdlt.api.system.health.HealthInfoService.ValueHolder.Type.ABSOLUTE;
-import static com.radixdlt.api.system.health.NodeStatus.BOOTING;
-import static com.radixdlt.api.system.health.NodeStatus.OUT_OF_SYNC;
-import static com.radixdlt.api.system.health.NodeStatus.STALLED;
-import static com.radixdlt.api.system.health.NodeStatus.SYNCING;
-import static com.radixdlt.api.system.health.NodeStatus.UP;
-import static com.radixdlt.monitoring.SystemCounters.CounterType;
+import static com.radixdlt.api.system.health.NodeStatus.*;
 
 import com.google.inject.Inject;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.monitoring.SystemCounters;
-import java.util.EnumMap;
+import com.radixdlt.monitoring.Metrics;
 
 public class HealthInfoService {
   private static final long THRESHOLD = 3; // Maximum difference between ledger and target
@@ -84,40 +78,36 @@ public class HealthInfoService {
   private static final long STATUS_AVERAGING_FACTOR =
       3L; // averaging time in multiples of collecting interval
 
-  public static final CounterType LEDGER_KEY = CounterType.LEDGER_STATE_VERSION;
-  public static final CounterType TARGET_KEY = CounterType.SYNC_TARGET_STATE_VERSION;
-
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
   private final ScheduledEventDispatcher<ScheduledStatsCollecting> scheduledStatsCollecting;
-  private final EnumMap<CounterType, ValueHolder> statistics = new EnumMap<>(CounterType.class);
+  private final ValueHolder ledgerStateVersion;
+  private final ValueHolder syncTargetStateVersion;
 
   @Inject
   public HealthInfoService(
-      SystemCounters systemCounters,
+      Metrics metrics,
       ScheduledEventDispatcher<ScheduledStatsCollecting> scheduledStatsCollecting) {
     this.scheduledStatsCollecting = scheduledStatsCollecting;
-    this.systemCounters = systemCounters;
-
-    statistics.put(LEDGER_KEY, new ValueHolder(STATUS_AVERAGING_FACTOR, ABSOLUTE));
-    statistics.put(TARGET_KEY, new ValueHolder(STATUS_AVERAGING_FACTOR, ABSOLUTE));
-
+    this.metrics = metrics;
+    this.ledgerStateVersion = new ValueHolder(STATUS_AVERAGING_FACTOR, ABSOLUTE);
+    this.syncTargetStateVersion = new ValueHolder(STATUS_AVERAGING_FACTOR, ABSOLUTE);
     scheduledStatsCollecting.dispatch(
         ScheduledStatsCollecting.create(), DEFAULT_COLLECTING_INTERVAL);
   }
 
   public NodeStatus nodeStatus() {
-    if (statistics.get(LEDGER_KEY).lastValue() == 0) {
+    if (this.ledgerStateVersion.lastValue() == 0) {
       // Initial status, consensus not started yet
       return BOOTING;
     }
 
-    if (statistics.get(LEDGER_KEY).isGrowing()) {
+    if (this.ledgerStateVersion.isGrowing()) {
       // Ledger state version is increasing, so we're completely synced up or catching up
       return ledgerIsCloseToTarget() ? UP : SYNCING;
     }
 
     // Ledger is not growing, either node stall or whole network is down or not reachable
-    return statistics.get(TARGET_KEY).isGrowing() ? STALLED : OUT_OF_SYNC;
+    return this.syncTargetStateVersion.isGrowing() ? STALLED : OUT_OF_SYNC;
   }
 
   public EventProcessor<ScheduledStatsCollecting> updateStats() {
@@ -129,16 +119,12 @@ public class HealthInfoService {
   }
 
   private void collectStats() {
-    statistics.forEach((key, value) -> statistics.compute(key, this::updateCounter));
-  }
-
-  private ValueHolder updateCounter(CounterType counterType, ValueHolder holder) {
-    return counterType != null ? holder.update(systemCounters.get(counterType)) : null;
+    ledgerStateVersion.update((long) metrics.ledger().stateVersion().get());
+    syncTargetStateVersion.update((long) metrics.sync().targetStateVersion().get());
   }
 
   private boolean ledgerIsCloseToTarget() {
-    return (statistics.get(TARGET_KEY).lastValue() - statistics.get(LEDGER_KEY).lastValue())
-        < THRESHOLD;
+    return (syncTargetStateVersion.lastValue() - ledgerStateVersion.lastValue()) < THRESHOLD;
   }
 
   static class ValueHolder {

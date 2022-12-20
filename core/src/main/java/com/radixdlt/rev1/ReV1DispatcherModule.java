@@ -69,7 +69,6 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.Dispatchers;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 
 /** REV1-related events pulled out of DispatcherModule */
 public class ReV1DispatcherModule extends AbstractModule {
@@ -84,7 +83,7 @@ public class ReV1DispatcherModule extends AbstractModule {
         .toProvider(
             Dispatchers.dispatcherProvider(
                 InvalidProposedTransaction.class,
-                v -> CounterType.RADIX_ENGINE_INVALID_PROPOSED_TRANSACTIONS))
+                (counters, event) -> counters.v1RadixEngine().invalidProposedTransactions()))
         .in(Scopes.SINGLETON);
   }
 }

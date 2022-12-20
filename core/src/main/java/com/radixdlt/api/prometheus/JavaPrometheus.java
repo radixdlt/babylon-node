@@ -62,104 +62,39 @@
  * permissions under this License.
  */
 
-package com.radixdlt.monitoring;
+package com.radixdlt.api.prometheus;
 
-import com.google.common.collect.Maps;
-import java.time.Instant;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
+import com.google.inject.Inject;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.exporter.common.TextFormat;
+import io.prometheus.client.hotspot.DefaultExports;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.UncheckedIOException;
 
-/** Event counting utility class. */
-public final class SystemCountersImpl implements SystemCounters {
-  private static final List<CounterType> COUNTER_LIST = List.of(CounterType.values());
+/** Prometheus registry instance associated with the Java part of the node. */
+public class JavaPrometheus {
 
-  private final EnumMap<CounterType, AtomicLong> counters = new EnumMap<>(CounterType.class);
-  private final String since;
+  /** Prometheus registry. */
+  private final CollectorRegistry registry;
 
-  public SystemCountersImpl() {
-    this(System.currentTimeMillis());
+  @Inject
+  public JavaPrometheus(CollectorRegistry registry) {
+    this.registry = registry;
+    DefaultExports.register(registry);
   }
 
-  public SystemCountersImpl(long startTime) {
-    COUNTER_LIST.stream()
-        .filter(counterType -> counterType != CounterType.TIME_DURATION)
-        .forEach(counterType -> counters.put(counterType, new AtomicLong(0)));
-
-    // This one is special, kinda "self ticking"
-    counters.put(
-        CounterType.TIME_DURATION,
-        new AtomicLong() {
-          @Override
-          public long longValue() {
-            return System.currentTimeMillis() - startTime;
-          }
-        });
-
-    since = Instant.ofEpochMilli(startTime).toString();
-  }
-
-  @Override
-  public long increment(CounterType counterType) {
-    return counters.get(counterType).incrementAndGet();
-  }
-
-  @Override
-  public long add(CounterType counterType, long amount) {
-    return counters.get(counterType).addAndGet(amount);
-  }
-
-  @Override
-  public long set(CounterType counterType, long value) {
-    return counters.get(counterType).getAndSet(value);
-  }
-
-  @Override
-  public long get(CounterType counterType) {
-    return counters.get(counterType).longValue();
-  }
-
-  @Override
-  public void setAll(Map<CounterType, Long> newValues) {
-    // Note that this only prevents read tearing
-    // Lost updates are still possible
-    synchronized (counters) {
-      for (Map.Entry<CounterType, Long> e : newValues.entrySet()) {
-        counters.get(e.getKey()).set(e.getValue());
-      }
+  /**
+   * Returns metrics registered by Prometheus' measurement primitives.
+   *
+   * @return Metrics rendered in a "Prometheus 0.0.4" exposition format.
+   */
+  public String prometheusMetrics() {
+    try (var writer = new StringWriter()) {
+      TextFormat.write004(writer, this.registry.metricFamilySamples());
+      return writer.toString();
+    } catch (IOException ioe) {
+      throw new UncheckedIOException(ioe);
     }
-  }
-
-  @Override
-  public Map<String, Object> toMap() {
-    var output = Maps.<String, Object>newTreeMap();
-
-    synchronized (counters) {
-      COUNTER_LIST.forEach(counter -> addValue(output, makePath(counter.jsonPath()), get(counter)));
-    }
-
-    addValue(output, makePath("time.since"), since);
-
-    return output;
-  }
-
-  @SuppressWarnings("unchecked")
-  private void addValue(Map<String, Object> values, String[] path, Object value) {
-    for (int i = 0; i < path.length - 1; ++i) {
-      // Needs exhaustive testing to ensure correctness.
-      // Will fail if there is a counter called foo.bar and a counter called foo.bar.baz.
-      values = (Map<String, Object>) values.computeIfAbsent(path[i], k -> Maps.newTreeMap());
-    }
-    values.put(path[path.length - 1], value);
-  }
-
-  private String[] makePath(String jsonPath) {
-    return jsonPath.split("\\.");
-  }
-
-  @Override
-  public String toString() {
-    return String.format("SystemCountersImpl[%s]", toMap());
   }
 }

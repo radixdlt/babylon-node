@@ -68,27 +68,16 @@ import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.PendingVotes;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.NoVote;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.RoundQuorumReached;
-import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.bft.VertexStoreAdapter;
-import com.radixdlt.consensus.bft.VoteProcessingResult;
+import com.radixdlt.consensus.*;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -97,7 +86,7 @@ public class BFTEventReducerTest {
 
   private BFTNode self = mock(BFTNode.class);
   private Hasher hasher = mock(Hasher.class);
-  private SystemCounters systemCounters = mock(SystemCounters.class);
+  private Metrics metrics = new MetricsInitializer().initialize();
   private RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
   private PendingVotes pendingVotes = mock(PendingVotes.class);
   private BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
@@ -121,7 +110,7 @@ public class BFTEventReducerTest {
             this.noVoteEventDispatcher,
             this.voteDispatcher,
             this.hasher,
-            this.systemCounters,
+            this.metrics,
             this.safetyRules,
             this.validatorSet,
             this.pendingVotes,

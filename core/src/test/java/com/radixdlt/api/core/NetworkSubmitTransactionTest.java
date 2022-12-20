@@ -80,9 +80,9 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
   public void test_core_api_can_submit_and_commit_transaction() throws Exception {
     try (var test = buildRunningServerTest()) {
 
-      var transactionWithHash = REv2TestTransactions.constructValidTransactionWithIntentHash(0, 0);
-      var transaction = transactionWithHash.transaction();
-      var intentHash = transactionWithHash.intentHash();
+      var transaction = REv2TestTransactions.constructValidTransaction(0, 0);
+      var rawTransaction = transaction.constructRawTransaction();
+      var intentHash = transaction.hashedIntent().asBytes();
 
       // Submit transaction
       var response =
@@ -90,9 +90,9 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
               .transactionSubmitPost(
                   new TransactionSubmitRequest()
                       .network(networkLogicalName)
-                      .notarizedTransactionHex(Bytes.toHexString(transaction.getPayload())));
+                      .notarizedTransactionHex(Bytes.toHexString(rawTransaction.getPayload())));
 
-      assertThat(response.getDuplicate()).isEqualTo(false);
+      assertThat(response.getDuplicate()).isFalse();
 
       // Check that it's in mempool
       var statusResponse1 =
@@ -104,7 +104,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
           .isEqualTo(V0TransactionStatusResponse.IntentStatusEnum.INMEMPOOL);
 
       // Now we run consensus
-      test.runUntilState(allCommittedTransaction(transaction), 1000);
+      test.runUntilState(allCommittedTransaction(rawTransaction), 1000);
 
       // Check the status response again
       var statusResponse2 =
@@ -114,6 +114,27 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
 
       assertThat(statusResponse2.getIntentStatus())
           .isEqualTo(V0TransactionStatusResponse.IntentStatusEnum.COMMITTEDSUCCESS);
+    }
+  }
+
+  @Test
+  public void test_valid_but_rejected_transaction_should_be_rejected() throws Exception {
+    try (var test = buildRunningServerTest()) {
+      var rawTransaction =
+          REv2TestTransactions.validButRejectTransaction(0, 0).constructRawTransaction();
+
+      // Submit transaction
+      assertThatThrownBy(
+              () ->
+                  getTransactionApi()
+                      .transactionSubmitPost(
+                          new TransactionSubmitRequest()
+                              .network(networkLogicalName)
+                              .notarizedTransactionHex(
+                                  Bytes.toHexString(rawTransaction.getPayload()))))
+          .hasMessage(
+              "transactionSubmitPost call failed with: 400 - {\"code\":400,\"message\":\"Rejected:"
+                  + " SuccessButFeeLoanNotRepaid\"}");
     }
   }
 }

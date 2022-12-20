@@ -67,12 +67,7 @@ package com.radixdlt.sync;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.LedgerHeader;
@@ -86,7 +81,7 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusResponse;
@@ -130,7 +125,7 @@ public class RemoteSyncServiceTest {
             syncResponseDispatcher,
             statusUpdateDispatcher,
             new SyncRelayConfig(5000L, 10, 5000L, 10, 50),
-            mock(SystemCounters.class),
+            new MetricsInitializer().initialize(),
             Comparator.comparingLong(AccumulatorState::getStateVersion),
             initialHeader);
   }

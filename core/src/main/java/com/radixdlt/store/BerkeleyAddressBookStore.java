@@ -66,22 +66,13 @@ package com.radixdlt.store;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.addressbook.AddressBookEntry;
 import com.radixdlt.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseConfig;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.DatabaseException;
-import com.sleepycat.je.DatabaseNotFoundException;
-import com.sleepycat.je.LockMode;
-import com.sleepycat.je.OperationStatus;
-import com.sleepycat.je.Transaction;
-import com.sleepycat.je.TransactionConfig;
+import com.sleepycat.je.*;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
@@ -94,15 +85,15 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
 
   private final Serialization serialization;
   private final DatabaseEnvironment dbEnv;
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
   private Database entriesDb;
 
   @Inject
   public BerkeleyAddressBookStore(
-      Serialization serialization, DatabaseEnvironment dbEnv, SystemCounters systemCounters) {
+      Serialization serialization, DatabaseEnvironment dbEnv, Metrics metrics) {
     this.serialization = Objects.requireNonNull(serialization);
     this.dbEnv = Objects.requireNonNull(dbEnv);
-    this.systemCounters = Objects.requireNonNull(systemCounters);
+    this.metrics = Objects.requireNonNull(metrics);
 
     this.open();
   }
@@ -177,7 +168,7 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
       final var key = new DatabaseEntry(nodeId.getPublicKey().getBytes());
 
       if (entriesDb.delete(null, key) == OperationStatus.SUCCESS) {
-        systemCounters.increment(CounterType.COUNT_BDB_ADDRESS_BOOK_DELETES);
+        metrics.berkeleyDb().addressBook().entriesDeleted().inc();
         return true;
       }
       return false;
@@ -212,15 +203,14 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
 
   private void addTime(long start) {
     final var elapsed = (System.nanoTime() - start + 500L) / 1000L;
-    this.systemCounters.add(CounterType.ELAPSED_BDB_ADDRESS_BOOK, elapsed);
-    this.systemCounters.increment(CounterType.COUNT_BDB_ADDRESS_BOOK_TOTAL);
+    this.metrics.berkeleyDb().addressBook().interact().observe(elapsed);
   }
 
   private void addBytesRead(int bytesRead) {
-    this.systemCounters.add(CounterType.COUNT_BDB_ADDRESS_BOOK_BYTES_READ, bytesRead);
+    this.metrics.berkeleyDb().addressBook().bytesRead().inc(bytesRead);
   }
 
   private void addBytesWrite(int bytesWrite) {
-    this.systemCounters.add(CounterType.COUNT_BDB_ADDRESS_BOOK_BYTES_WRITE, bytesWrite);
+    this.metrics.berkeleyDb().addressBook().bytesWritten().inc(bytesWrite);
   }
 }

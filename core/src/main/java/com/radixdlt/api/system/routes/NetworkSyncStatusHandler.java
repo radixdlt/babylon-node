@@ -66,17 +66,18 @@ package com.radixdlt.api.system.routes;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.system.SystemGetJsonHandler;
-import com.radixdlt.api.system.generated.models.*;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.api.system.generated.models.NetworkSyncStatusResponse;
+import com.radixdlt.api.system.generated.models.SyncStatus;
+import com.radixdlt.monitoring.Metrics;
 import java.util.Objects;
 
 public final class NetworkSyncStatusHandler
     extends SystemGetJsonHandler<NetworkSyncStatusResponse> {
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
 
   @Inject
-  NetworkSyncStatusHandler(SystemCounters systemCounters) {
-    this.systemCounters = Objects.requireNonNull(systemCounters);
+  NetworkSyncStatusHandler(Metrics metrics) {
+    this.metrics = Objects.requireNonNull(metrics);
   }
 
   @Override
@@ -86,8 +87,7 @@ public final class NetworkSyncStatusHandler
 
   private SyncStatus getSyncStatus() {
     return new SyncStatus()
-        .currentStateVersion(systemCounters.get(SystemCounters.CounterType.LEDGER_STATE_VERSION))
-        .targetStateVersion(
-            systemCounters.get(SystemCounters.CounterType.SYNC_TARGET_STATE_VERSION));
+        .currentStateVersion((long) metrics.ledger().stateVersion().get())
+        .targetStateVersion((long) metrics.sync().targetStateVersion().get());
   }
 }

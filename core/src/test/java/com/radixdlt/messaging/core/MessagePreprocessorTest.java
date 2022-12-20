@@ -92,7 +92,8 @@ import com.radixdlt.messaging.ledgersync.StatusResponseMessage;
 import com.radixdlt.messaging.ledgersync.SyncRequestMessage;
 import com.radixdlt.messaging.ledgersync.SyncResponseMessage;
 import com.radixdlt.messaging.mempool.MempoolAddMessage;
-import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerControl;
@@ -144,12 +145,12 @@ public class MessagePreprocessorTest {
 
   private static final Serialization SERIALIZATION = DefaultSerialization.getInstance();
 
-  private final SystemCountersImpl counters = new SystemCountersImpl();
+  private final Metrics metrics = new MetricsInitializer().initialize();
   private final MessageCentralConfiguration config = mock(MessageCentralConfiguration.class);
   private final PeerControl peerControl = mock(PeerControl.class);
   private final MessagePreprocessor messagePreprocessor =
       new MessagePreprocessor(
-          counters,
+          metrics,
           config,
           System::currentTimeMillis,
           SERIALIZATION,

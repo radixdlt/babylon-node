@@ -64,10 +64,12 @@
 
 package com.radixdlt.api.prometheus;
 
-import com.google.inject.*;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.Singleton;
 import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.api.common.HandlerRoute;
-import com.radixdlt.api.system.routes.*;
 import io.undertow.server.HttpHandler;
 import java.util.Map;
 

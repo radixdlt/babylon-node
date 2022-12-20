@@ -62,52 +62,81 @@
  * permissions under this License.
  */
 
-apply plugin: 'java-library'
+package com.radixdlt.monitoring;
 
-tasks.withType(GenerateModuleMetadata) {
-    enabled = false
-}
+import com.google.common.base.CaseFormat;
+import com.google.common.base.Converter;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.RecordComponent;
+import java.util.stream.Stream;
 
-dependencyManagement {
-    imports {
-        // the Maven BOM which contains a coherent set of module versions
-        // for Vaadin dependencies
-        mavenBom ('software.amazon.awssdk:bom:2.16.3')
+/** A static utility for converting strings into a format accepted by metrics infra. */
+public abstract class NameRenderer {
+
+  /** An impl delegate for {@link #render(String)}. */
+  private static final Converter<String, String> JAVA_TO_PROMETHEUS =
+      CaseFormat.LOWER_CAMEL.converterTo(CaseFormat.LOWER_UNDERSCORE);
+
+  /** Hiding constructor. */
+  private NameRenderer() {}
+
+  /**
+   * Renders a Java identifier in a format accepted by Prometheus.
+   *
+   * @param javaIdentifier A Java identifier.
+   * @return A valid Prometheus name.
+   */
+  public static String render(String javaIdentifier) {
+    return JAVA_TO_PROMETHEUS.convert(javaIdentifier);
+  }
+
+  /**
+   * Renders label names.
+   *
+   * <p>These will be {@link #render(String) rendered} names of the given record's components.
+   *
+   * @param labelRecordClass A class of a {@link Record} representing a complete set of labels.
+   * @return Label names.
+   */
+  public static String[] labelNames(Class<? extends Record> labelRecordClass) {
+    return Stream.of(labelRecordClass.getRecordComponents())
+        .map(RecordComponent::getName)
+        .map(NameRenderer::render)
+        .toArray(String[]::new);
+  }
+
+  /**
+   * Renders label values.
+   *
+   * <p>These can be arbitrary strings, so simply an {@link Object#toString()} is used for each
+   * value within the given record. However, {@literal null}s are not supported, and instead they
+   * are represented by empty strings (consistently with how Prometheus Query Language treats
+   * missing label values as empty strings).
+   *
+   * @param labelRecord A record containing a label set.
+   * @return Label values.
+   * @param <R> The record's type.
+   */
+  public static <R extends Record> String[] labelValues(R labelRecord) {
+    return Stream.of(labelRecord.getClass().getRecordComponents())
+        .map(component -> access(labelRecord, component))
+        .map(label -> label == null ? "" : label.toString())
+        .toArray(String[]::new);
+  }
+
+  /**
+   * Accesses the specific record's component.
+   *
+   * @param labelRecord A record.
+   * @param component A component.
+   * @return The component's value.
+   */
+  private static Object access(Record labelRecord, RecordComponent component) {
+    try {
+      return component.getAccessor().invoke(labelRecord);
+    } catch (IllegalAccessException | InvocationTargetException e) {
+      throw new IllegalStateException(
+          "cannot access %s.%s()".formatted(labelRecord, component.getName()), e);
     }
-}
-
-dependencies {
-    api 'org.apache.logging.log4j:log4j-api'
-    api 'org.apache.logging.log4j:log4j-core'
-    api 'org.reflections:reflections'
-    api 'org.bouncycastle:bcprov-jdk15on'
-    api 'org.bouncycastle:bcpkix-jdk15on'
-    api 'org.json:json'
-    api 'com.fasterxml.jackson.core:jackson-databind'
-    api 'com.fasterxml.jackson.core:jackson-core'
-    api 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor'
-    api 'com.fasterxml.jackson.datatype:jackson-datatype-json-org'
-    api 'com.fasterxml.jackson.datatype:jackson-datatype-guava'
-    api 'com.google.guava:guava'
-    api 'com.google.inject:guice'
-    api 'io.prometheus:simpleclient'
-    api 'io.prometheus:simpleclient_common'
-    api 'io.prometheus:simpleclient_hotspot'
-    implementation('software.amazon.awssdk:secretsmanager:2.16.3')
-            {
-                exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
-            }
-    testImplementation 'junit:junit'
-    testImplementation 'org.mockito:mockito-core'
-    testImplementation 'nl.jqno.equalsverifier:equalsverifier'
-    testImplementation 'org.assertj:assertj-core'
-    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl'
-}
-
-jacocoTestReport {
-    dependsOn test
-    reports {
-        xml.enabled true
-        csv.enabled false
-    }
+  }
 }

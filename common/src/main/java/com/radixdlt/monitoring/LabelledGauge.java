@@ -62,52 +62,56 @@
  * permissions under this License.
  */
 
-apply plugin: 'java-library'
+package com.radixdlt.monitoring;
 
-tasks.withType(GenerateModuleMetadata) {
-    enabled = false
-}
+import io.prometheus.client.Collector;
+import io.prometheus.client.Gauge;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-dependencyManagement {
-    imports {
-        // the Maven BOM which contains a coherent set of module versions
-        // for Vaadin dependencies
-        mavenBom ('software.amazon.awssdk:bom:2.16.3')
-    }
-}
+/**
+ * A Prometheus {@link Gauge} wrapper defining a typed set of labels.
+ *
+ * @param <L> A type of record representing a complete set of labels.
+ */
+public class LabelledGauge<L extends Record> extends Collector implements Collector.Describable {
 
-dependencies {
-    api 'org.apache.logging.log4j:log4j-api'
-    api 'org.apache.logging.log4j:log4j-core'
-    api 'org.reflections:reflections'
-    api 'org.bouncycastle:bcprov-jdk15on'
-    api 'org.bouncycastle:bcpkix-jdk15on'
-    api 'org.json:json'
-    api 'com.fasterxml.jackson.core:jackson-databind'
-    api 'com.fasterxml.jackson.core:jackson-core'
-    api 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor'
-    api 'com.fasterxml.jackson.datatype:jackson-datatype-json-org'
-    api 'com.fasterxml.jackson.datatype:jackson-datatype-guava'
-    api 'com.google.guava:guava'
-    api 'com.google.inject:guice'
-    api 'io.prometheus:simpleclient'
-    api 'io.prometheus:simpleclient_common'
-    api 'io.prometheus:simpleclient_hotspot'
-    implementation('software.amazon.awssdk:secretsmanager:2.16.3')
-            {
-                exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
-            }
-    testImplementation 'junit:junit'
-    testImplementation 'org.mockito:mockito-core'
-    testImplementation 'nl.jqno.equalsverifier:equalsverifier'
-    testImplementation 'org.assertj:assertj-core'
-    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl'
-}
+  /** A wrapped {@link Gauge}. */
+  private final Gauge wrapped;
 
-jacocoTestReport {
-    dependsOn test
-    reports {
-        xml.enabled true
-        csv.enabled false
-    }
+  /** A map of children created for each label set. */
+  private final Map<L, Gauge.Child> labelledChildren;
+
+  /**
+   * A direct constructor.
+   *
+   * @param name A metric name; will also be used as a description.
+   * @param labelClass A class of a {@link Record} representing a complete set of labels.
+   */
+  public LabelledGauge(String name, Class<L> labelClass) {
+    this.wrapped = Gauge.build(name, name).labelNames(NameRenderer.labelNames(labelClass)).create();
+    this.labelledChildren = new ConcurrentHashMap<>();
+  }
+
+  /**
+   * Returns a child for the given label set.
+   *
+   * @param labelRecord A record containing a label set.
+   * @return Child to be used.
+   */
+  public Gauge.Child label(L labelRecord) {
+    return this.labelledChildren.computeIfAbsent(
+        labelRecord, value -> this.wrapped.labels(NameRenderer.labelValues(value)));
+  }
+
+  @Override
+  public List<MetricFamilySamples> collect() {
+    return this.wrapped.collect();
+  }
+
+  @Override
+  public List<MetricFamilySamples> describe() {
+    return this.wrapped.describe();
+  }
 }

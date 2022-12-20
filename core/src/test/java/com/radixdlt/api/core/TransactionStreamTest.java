@@ -62,52 +62,62 @@
  * permissions under this License.
  */
 
-apply plugin: 'java-library'
+package com.radixdlt.api.core;
 
-tasks.withType(GenerateModuleMetadata) {
-    enabled = false
-}
+import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransaction;
+import static org.assertj.core.api.Assertions.assertThat;
 
-dependencyManagement {
-    imports {
-        // the Maven BOM which contains a coherent set of module versions
-        // for Vaadin dependencies
-        mavenBom ('software.amazon.awssdk:bom:2.16.3')
+import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.rev2.REv2TestTransactions;
+import com.radixdlt.utils.Bytes;
+import java.util.List;
+import org.junit.Test;
+
+public class TransactionStreamTest extends DeterministicCoreApiTestBase {
+  @Test
+  public void test_core_api_can_submit_and_commit_transaction() throws Exception {
+    try (var test = buildRunningServerTest()) {
+
+      List<CommittedTransaction> alreadyPresentTransactions =
+          getTransactionApi()
+              .transactionStreamPost(
+                  new CommittedTransactionsRequest()
+                      .network(networkLogicalName)
+                      .limit(200)
+                      .fromStateVersion(1L))
+              .getTransactions();
+
+      var rawTransaction =
+          REv2TestTransactions.constructValidTransaction(0, 0).constructRawTransaction();
+
+      // Submit transaction
+      var response =
+          getTransactionApi()
+              .transactionSubmitPost(
+                  new TransactionSubmitRequest()
+                      .network(networkLogicalName)
+                      .notarizedTransactionHex(Bytes.toHexString(rawTransaction.getPayload())));
+
+      assertThat(response.getDuplicate()).isFalse();
+
+      test.runUntilState(allCommittedTransaction(rawTransaction), 100);
+
+      var newTransactions =
+          getTransactionApi()
+              .transactionStreamPost(
+                  new CommittedTransactionsRequest()
+                      .network(networkLogicalName)
+                      .limit(1000)
+                      .fromStateVersion(1L))
+              .getTransactions();
+
+      assertThat(
+              newTransactions
+                  .get(newTransactions.size() - 1)
+                  .getLedgerTransaction()
+                  .getUserLedgerTransaction())
+          .isInstanceOf(UserLedgerTransaction.class);
     }
-}
-
-dependencies {
-    api 'org.apache.logging.log4j:log4j-api'
-    api 'org.apache.logging.log4j:log4j-core'
-    api 'org.reflections:reflections'
-    api 'org.bouncycastle:bcprov-jdk15on'
-    api 'org.bouncycastle:bcpkix-jdk15on'
-    api 'org.json:json'
-    api 'com.fasterxml.jackson.core:jackson-databind'
-    api 'com.fasterxml.jackson.core:jackson-core'
-    api 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor'
-    api 'com.fasterxml.jackson.datatype:jackson-datatype-json-org'
-    api 'com.fasterxml.jackson.datatype:jackson-datatype-guava'
-    api 'com.google.guava:guava'
-    api 'com.google.inject:guice'
-    api 'io.prometheus:simpleclient'
-    api 'io.prometheus:simpleclient_common'
-    api 'io.prometheus:simpleclient_hotspot'
-    implementation('software.amazon.awssdk:secretsmanager:2.16.3')
-            {
-                exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
-            }
-    testImplementation 'junit:junit'
-    testImplementation 'org.mockito:mockito-core'
-    testImplementation 'nl.jqno.equalsverifier:equalsverifier'
-    testImplementation 'org.assertj:assertj-core'
-    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl'
-}
-
-jacocoTestReport {
-    dependsOn test
-    reports {
-        xml.enabled true
-        csv.enabled false
-    }
+  }
 }

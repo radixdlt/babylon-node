@@ -72,21 +72,22 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
 import org.junit.Before;
 import org.junit.Test;
 
 public final class BFTEventStatefulVerifierTest {
-  private SystemCounters systemCounters;
+  private Metrics metrics;
   private BFTEventProcessor forwardTo;
   private BFTEventStatefulVerifier bftEventStatefulVerifier;
 
   @Before
   public void setUp() {
-    this.systemCounters = mock(SystemCounters.class);
+    this.metrics = new MetricsInitializer().initialize();
     this.forwardTo = mock(BFTEventProcessor.class);
     this.bftEventStatefulVerifier =
-        new BFTEventStatefulVerifier(this.forwardTo, this.systemCounters, mock(RoundUpdate.class));
+        new BFTEventStatefulVerifier(this.forwardTo, this.metrics, mock(RoundUpdate.class));
   }
 
   @Test

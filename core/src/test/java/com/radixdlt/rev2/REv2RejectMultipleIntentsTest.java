@@ -126,7 +126,7 @@ public final class REv2RejectMultipleIntentsTest {
   private static RawNotarizedTransaction createValidTransactionWithSigs(
       byte[] intentBytes, int sigsCount) {
     var keys = IntStream.rangeClosed(1, sigsCount).mapToObj(PrivateKeys::ofNumeric).toList();
-    return REv2TestTransactions.constructTransaction(intentBytes, NOTARY, keys);
+    return REv2TestTransactions.constructRawTransaction(intentBytes, NOTARY, keys);
   }
 
   private static class ControlledProposerGenerator implements ProposalGenerator {

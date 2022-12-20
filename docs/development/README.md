@@ -6,11 +6,14 @@
 
 Main dependencies:
 - Java 17.0.4+ SDK installed and configured. It's very important to have at least 17.0.4, else you will hit Java Compiler bugs.
-- Latest [Rust/Cargo 1.60.0+ installed](https://www.rust-lang.org/tools/install)
+- Latest [stable rust installed](https://www.rust-lang.org/tools/install) - if you hit any rust compilation issues, try `rustup update` and try again.
 
 If you wish to launch a local network through Docker:
 - Docker version 20.10+
 - `docker-compose` version 1.25+
+
+Please note that many installations require a shell restart to work effectively (due to `$PATH` etc).
+`cargo` may even require a full system reboot to allow a successful initial build.
 
 ### Getting the code
 
