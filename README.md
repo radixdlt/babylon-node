@@ -1,4 +1,4 @@
-# Radix Babylon Node - Java
+# Radix Babylon Node
 
 This is the repository for the upcoming Babylon release of the Radix Node.
 
@@ -11,7 +11,7 @@ Here we have:
 - [core](core): The core node, consensus and networking modules - written in Java
 - [core-rust-bridge](core-rust-bridge): A bridge between the Java core and the Rust `core-rust` - written in Java.
   This will likely be merged into core at some point.
-- [core-rust](core-rust): Includes the Core API, and the "State Manager" which wraps the Babylon engine.
+- [core-rust](core-rust): Includes the Core API, and the "State Manager" which wraps the Babylon engine - this is written in Rust.
   We pull in the Babylon engine from the [radixdlt-scrypto](https://github.com/radixdlt/radixdlt-scrypto) repository.
 - [cli-tools](cli-tools): Various basic command line helpers to assist with spinning up nodes and networks.
 - [common](common): Common Java utilities used by various modules. This will likely be merged into core
