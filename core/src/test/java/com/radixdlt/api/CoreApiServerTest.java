@@ -69,7 +69,6 @@ import static org.junit.Assert.assertThrows;
 
 import com.radixdlt.lang.Option;
 import com.radixdlt.rev2.NetworkDefinition;
-import com.radixdlt.rev2.ValidatorList;
 import com.radixdlt.statemanager.*;
 import com.radixdlt.utils.FreePortFinder;
 import com.radixdlt.utils.UInt32;
@@ -91,7 +90,7 @@ public final class CoreApiServerTest {
         StateManager.createAndInitialize(
             new StateManagerConfig(
                 NetworkDefinition.INT_TEST_NET,
-                new REv2StateConfig(ValidatorList.create(1), UInt64.fromNonNegativeLong(10)),
+                new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
                 Option.none(),
                 REv2DatabaseConfig.none(),
                 LoggingConfig.getDefault()))) {

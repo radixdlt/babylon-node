@@ -71,6 +71,7 @@ import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.HalfCorrectREv2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -88,21 +89,23 @@ public sealed interface StateComputerConfig {
 
   static StateComputerConfig rev2(
       int networkId,
+      RawLedgerTransaction genesis,
       REv2StateConfig stateConfig,
       REv2DatabaseConfig databaseConfig,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging) {
     return new REv2StateComputerConfig(
-        networkId, stateConfig, databaseConfig, proposerConfig, debugLogging);
+        networkId, genesis, stateConfig, databaseConfig, proposerConfig, debugLogging);
   }
 
   static StateComputerConfig rev2(
       int networkId,
+      RawLedgerTransaction genesis,
       REv2StateConfig stateConfig,
       REv2DatabaseConfig databaseConfig,
       REV2ProposerConfig proposerConfig) {
     return new REv2StateComputerConfig(
-        networkId, stateConfig, databaseConfig, proposerConfig, false);
+        networkId, genesis, stateConfig, databaseConfig, proposerConfig, false);
   }
 
   sealed interface MockedMempoolConfig {
@@ -124,6 +127,7 @@ public sealed interface StateComputerConfig {
 
   record REv2StateComputerConfig(
       int networkId,
+      RawLedgerTransaction genesis,
       REv2StateConfig stateConfig,
       REv2DatabaseConfig databaseConfig,
       REV2ProposerConfig proposerConfig,

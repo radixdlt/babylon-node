@@ -75,7 +75,6 @@ use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use parking_lot::RwLock;
 use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::scrypto;
 
 const POINTER_JNI_FIELD_NAME: &str = "rustStateManagerPointer";
@@ -120,14 +119,13 @@ extern "system" fn Java_com_radixdlt_prometheus_StateManagerPrometheus_prometheu
     jni_state_manager_sbor_read_call(env, j_state_manager, args, do_prometheus_metrics)
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct StateConfig {
-    pub validator_set: Vec<EcdsaSecp256k1PublicKey>,
     pub rounds_per_epoch: u64,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct StateManagerConfig {
     pub network_definition: NetworkDefinition,

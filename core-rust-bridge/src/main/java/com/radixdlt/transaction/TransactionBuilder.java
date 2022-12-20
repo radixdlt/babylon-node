@@ -76,6 +76,8 @@ import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionHeader;
 import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.utils.KeyComparator;
+import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
 
 public final class TransactionBuilder {
@@ -84,9 +86,22 @@ public final class TransactionBuilder {
     System.loadLibrary("corerust");
   }
 
-  public static RawLedgerTransaction createGenesisLedgerTransaction(
-      List<ECDSASecp256k1PublicKey> validatorList) {
+  public static RawLedgerTransaction createGenesis(List<ECDSASecp256k1PublicKey> validatorList) {
     return RawLedgerTransaction.create(createGenesisFunc.call(validatorList));
+  }
+
+  public static RawLedgerTransaction createGenesis(ECDSASecp256k1PublicKey validator) {
+    return RawLedgerTransaction.create(createGenesisFunc.call(List.of(validator)));
+  }
+
+  public static RawLedgerTransaction createGenesisWithNumValidators(long numValidators) {
+    var validators =
+        PrivateKeys.numeric(1)
+            .limit(numValidators)
+            .map(ECKeyPair::getPublicKey)
+            .sorted(KeyComparator.instance())
+            .toList();
+    return RawLedgerTransaction.create(createGenesisFunc.call(validators));
   }
 
   public static byte[] compileManifest(

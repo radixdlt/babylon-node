@@ -106,6 +106,7 @@ import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
@@ -149,8 +150,8 @@ public final class REv2MempoolFillAndEmptyTest {
             LedgerConfig.stateComputerWithSyncRelay(
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),
-                    new REv2StateConfig(
-                        List.of(TEST_KEY.getPublicKey()), UInt64.fromNonNegativeLong(1000)),
+                    TransactionBuilder.createGenesis(TEST_KEY.getPublicKey()),
+                    new REv2StateConfig(UInt64.fromNonNegativeLong(1000)),
                     REv2DatabaseConfig.inMemory(),
                     StateComputerConfig.REV2ProposerConfig.mempool(
                         10, 1000, MempoolRelayConfig.of())),

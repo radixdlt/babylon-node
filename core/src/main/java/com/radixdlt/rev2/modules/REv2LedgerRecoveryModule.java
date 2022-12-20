@@ -108,6 +108,7 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
         .getLastProof()
         .orElseGet(
             () -> {
+              /* TODO: Move this into StateManager init() when Proof generation is supported by state_manager */
               var validatorSet = stateComputer.prepareGenesis(genesis);
               var accumulatorState =
                   ledgerAccumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
