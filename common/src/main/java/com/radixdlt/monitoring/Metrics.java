@@ -96,6 +96,9 @@ import javax.annotation.Nullable;
  *       always used instead of the raw Prometheus-native {@link Info}.
  * </ul>
  *
+ * <p>Any leaf may be annotated as {@link NotExposed}, if we wish to keep it around, but exclude it
+ * from the exposition endpoint - please see the annotation's javadoc for motivation.
+ *
  * <p>The type-safe labels mentioned above are implemented using {@link Record}s - we {@link
  * NameRenderer#labelNames(Class) render the record component's name as label name} (converting it
  * {@link NameRenderer#render(String) to Prometheus' format} on the way), and we use the plain
@@ -198,7 +201,9 @@ public record Metrics(
   }
 
   public record Ledger(
-      Gauge stateVersion, Counter syncTransactionsProcessed, Counter bftTransactionsProcessed) {}
+      @NotExposed Gauge stateVersion,
+      Counter syncTransactionsProcessed,
+      Counter bftTransactionsProcessed) {}
 
   public record LedgerSync(
       Counter invalidResponsesReceived,
