@@ -22,7 +22,7 @@ pub enum ValidatorTransaction {
         scrypto_epoch: u64,
     },
     RoundUpdate {
-        proposer_timestamp_ms: u64,
+        proposer_timestamp_ms: i64,
         // We include epoch because our current database implementation needs
         // to ensure all ledger payloads are unique.
         // Currently scrypto epoch != consensus epoch, but this will change

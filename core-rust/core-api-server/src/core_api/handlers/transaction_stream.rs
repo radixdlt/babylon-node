@@ -306,7 +306,7 @@ pub fn to_api_validator_transaction(
             consensus_epoch,
             round_in_epoch,
         } => models::ValidatorTransaction::TimeUpdateValidatorTransaction {
-            proposer_timestamp_ms: to_api_timestamp_ms(*proposer_timestamp_ms)?,
+            proposer_timestamp_ms: *proposer_timestamp_ms,
             consensus_epoch: to_api_epoch(*consensus_epoch)?,
             round_in_epoch: to_api_round(*round_in_epoch)?,
         },
