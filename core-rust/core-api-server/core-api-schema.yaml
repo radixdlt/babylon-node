@@ -3072,16 +3072,19 @@ components:
       enum:
         - User
         - Validator
+        - System
     LedgerTransaction:
       oneOf:
         - $ref: '#/components/schemas/UserLedgerTransaction'
         - $ref: '#/components/schemas/ValidatorLedgerTransaction'
+        - $ref: '#/components/schemas/SystemLedgerTransaction'
       discriminator:
         propertyName: type
         mapping:
           # NOTE: These need to match LedgerTransactionType
           User: '#/components/schemas/UserLedgerTransaction'
           Validator: '#/components/schemas/ValidatorLedgerTransaction'
+          System: '#/components/schemas/SystemLedgerTransaction'
     LedgerTransactionBase:
       type: object
       required:
@@ -3111,6 +3114,15 @@ components:
           properties:
             validator_transaction:
               $ref: "#/components/schemas/ValidatorTransaction"
+    SystemLedgerTransaction:
+      allOf:
+        - $ref: "#/components/schemas/LedgerTransactionBase"
+        - type: object
+          required:
+            - system_transaction
+          properties:
+            system_transaction:
+              $ref: "#/components/schemas/SystemTransaction"
     ValidatorTransactionType:
       type: string
       description: The type of the validator transaction
@@ -3178,6 +3190,14 @@ components:
               minimum: 0
               maximum: 10000000000
               description: An integer between `0` and `10^10`, marking the consensus round in the epoch
+    SystemTransaction:
+      type: object
+      required:
+        - payload_hex
+      properties:
+        payload_hex:
+          type: string
+          description: The hex-encoded system transaction payload
 ############################################################################################################
 # V0
 ###################################
