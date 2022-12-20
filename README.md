@@ -8,13 +8,13 @@ It includes a variant implementation of the [HotStuff](https://arxiv.org/abs/180
 
 Here we have:
 
-- [core](core/README.md): The core node, consensus and networking modules - written in Java
-- [core-rust-bridge]: A bridge between the Java core and the Rust `core-rust` - written in Java.
+- [core](core): The core node, consensus and networking modules - written in Java
+- [core-rust-bridge](core-rust-bridge): A bridge between the Java core and the Rust `core-rust` - written in Java.
   This will likely be merged into core at some point.
-- [core-rust]: Includes the Core API, and the "State Manager" which wraps the babylon engine.
+- [core-rust](core-rust): Includes the Core API, and the "State Manager" which wraps the babylon engine.
   We pull in the babylon engine from the [radixdlt-scrypto](https://github.com/radixdlt/radixdlt-scrypto) repository.
-- [cli-tools]: Various basic command line helpers to assist with spinning up nodes and networks.
-- [common](common/README.md): Common Java utilities used by various modules. This will likely be merged into core
+- [cli-tools](cli-tools): Various basic command line helpers to assist with spinning up nodes and networks.
+- [common](common): Common Java utilities used by various modules. This will likely be merged into core
   once the Olympia Engine has been removed.
 - [shell](shell): Examples for how to run Radix shell, which can enable spinning up temporary interactive
    nodes. The Radix Shell code itself is in [cli-tools](cli-tools).
@@ -23,7 +23,7 @@ Here we have:
 Until the Babylon engine is feature-compatible with Olympia, we are keeping around the Olympia engine for
 some of our tests.
 
-- [engine](engine/README.md): The Olympia Radix execution layer which provides a UTXO-based state machine
+- [olympia-engine](olympia-engine): The Olympia Radix execution layer which provides a UTXO-based state machine
 
 ## Contribute
 
