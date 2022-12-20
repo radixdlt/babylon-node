@@ -66,10 +66,7 @@ package com.radixdlt.monitoring;
 
 import com.google.common.base.Joiner;
 import io.prometheus.client.*;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
@@ -125,7 +122,7 @@ public class MetricsInitializer {
                 component ->
                     createComponentValue(
                         NAME_JOINER.join(namePrefix, NameRenderer.render(component.getName())),
-                        component.getGenericType()))
+                        component))
             .toArray();
     try {
       return (R) constructor.newInstance(rowValues);
@@ -140,20 +137,24 @@ public class MetricsInitializer {
    *
    * <ul>
    *   <li>a sub-record (i.e. recursing into {@link #createCollectorHierarchy(String, Class)});
-   *   <li>or a leaf collector, to be registered with Prometheus under the given name.
+   *   <li>or a leaf collector. It will be registered with Prometheus under the given name, unless
+   *       the record component is explicitly annotated as {@link NotExposed}.
    * </ul>
    *
-   * @param name A name.
-   * @param componentType A component's type.
-   * @return Instantiated component.
+   * @param name A full target name.
+   * @param component A record component.
+   * @return Instantiated component's value.
    */
   @SuppressWarnings("unchecked")
-  private Object createComponentValue(String name, Type componentType) {
+  private Object createComponentValue(String name, RecordComponent component) {
+    Type componentType = component.getGenericType();
     if (componentType instanceof Class<?> rowClass && rowClass.isRecord()) {
       return createCollectorHierarchy(name, (Class<? extends Record>) rowClass);
     }
     Collector collector = instantiateCollector(name, componentType);
-    registry.register(collector);
+    if (!component.isAnnotationPresent(NotExposed.class)) {
+      registry.register(collector);
+    }
     return collector;
   }
 

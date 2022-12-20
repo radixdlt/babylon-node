@@ -62,17 +62,11 @@
  * permissions under this License.
  */
 
-use crate::mempool::simple_mempool::SimpleMempool;
-use crate::mempool::transaction_rejection_cache::{RejectionCache, RejectionReason};
-use crate::query::*;
-use crate::store::traits::*;
-use crate::types::{CommitRequest, PrepareRequest, PrepareResult, PreviewRequest};
-use crate::{
-    CommittedTransactionIdentifiers, HasIntentHash, HasUserPayloadHash, IntentHash,
-    LedgerTransactionReceipt, MempoolAddError, PendingTransaction,
-};
-use prometheus::core::Collector;
-use prometheus::{IntCounter, IntCounterVec, IntGauge, Registry};
+use std::collections::{HashMap, HashSet};
+use std::convert::TryInto;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+use prometheus::Registry;
 use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::state_manager::{StagedSubstateStore, StagedSubstateStoreManager};
 use radix_engine::transaction::{
@@ -87,11 +81,7 @@ use radix_engine::types::{
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
 use radix_engine_interface::core::NetworkDefinition;
-use std::collections::{HashMap, HashSet};
-use std::convert::TryInto;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tracing::info;
-
 use transaction::errors::TransactionValidationError;
 use transaction::model::{
     NotarizedTransaction, PreviewFlags, PreviewIntent, TransactionHeader, TransactionIntent,
@@ -99,8 +89,17 @@ use transaction::model::{
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{TestIntentHashManager, ValidationConfig};
 
+use crate::mempool::simple_mempool::SimpleMempool;
+use crate::mempool::transaction_rejection_cache::{RejectionCache, RejectionReason};
+use crate::query::*;
+use crate::store::traits::*;
 use crate::transaction::{
     LedgerTransaction, LedgerTransactionValidator, UserTransactionValidator, ValidatorTransaction,
+};
+use crate::types::{CommitRequest, PrepareRequest, PrepareResult, PreviewRequest};
+use crate::{
+    CommittedTransactionIdentifiers, HasIntentHash, HasUserPayloadHash, IntentHash,
+    LedgerTransactionReceipt, MempoolAddError, Metrics, PendingTransaction,
 };
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
@@ -115,77 +114,6 @@ pub struct StateManagerLoggingConfig {
     pub log_on_transaction_rejection: bool,
 }
 
-pub struct Counters {
-    pub ledger_state_version: IntGauge,
-    pub ledger_transactions_committed: IntCounter,
-    pub ledger_last_update_timestamp_ms: IntGauge,
-    pub mempool_current_transactions_total: IntGauge,
-    pub mempool_submission_added_count: IntCounterVec,
-    pub mempool_submission_rejected_count: IntCounterVec,
-}
-
-impl Counters {
-    pub fn register_with(&self, registry: &Registry) {
-        let metrics: Vec<Box<dyn Collector>> = vec![
-            Box::new(self.ledger_state_version.clone()),
-            Box::new(self.ledger_transactions_committed.clone()),
-            Box::new(self.ledger_last_update_timestamp_ms.clone()),
-            Box::new(self.mempool_current_transactions_total.clone()),
-            Box::new(self.mempool_submission_added_count.clone()),
-            Box::new(self.mempool_submission_rejected_count.clone()),
-        ];
-
-        for metric in metrics.into_iter() {
-            registry.register(metric).unwrap();
-        }
-    }
-}
-
-impl Default for Counters {
-    fn default() -> Self {
-        use prometheus::opts;
-
-        Self {
-            ledger_transactions_committed: IntCounter::with_opts(opts!(
-                "ledger_transactions_committed",
-                "Number of transactions committed to the ledger."
-            ))
-            .unwrap(),
-            ledger_last_update_timestamp_ms: IntGauge::with_opts(opts!(
-                "ledger_last_update_timestamp_ms",
-                "Last time the ledger was updated."
-            ))
-            .unwrap(),
-            ledger_state_version: IntGauge::with_opts(opts!(
-                "ledger_state_version",
-                "Version of the ledger state."
-            ))
-            .unwrap(),
-            mempool_current_transactions_total: IntGauge::with_opts(opts!(
-                "mempool_current_transactions_total",
-                "Number of the transactions in progress in the mempool."
-            ))
-            .unwrap(),
-            mempool_submission_added_count: IntCounterVec::new(
-                opts!(
-                    "mempool_submission_added_count",
-                    "Number of submissions added to the mempool."
-                ),
-                &["Source"],
-            )
-            .unwrap(),
-            mempool_submission_rejected_count: IntCounterVec::new(
-                opts!(
-                    "mempool_submission_rejected_count",
-                    "Number of the submissions rejected by the mempool."
-                ),
-                &["Source", "RejectionReason"],
-            )
-            .unwrap(),
-        }
-    }
-}
-
 pub struct StateManager<S> {
     pub mempool: SimpleMempool,
     pub network: NetworkDefinition,
@@ -194,7 +122,7 @@ pub struct StateManager<S> {
     pub ledger_transaction_validator: LedgerTransactionValidator,
     pub rejection_cache: RejectionCache,
     rounds_per_epoch: u64,
-    pub counters: Counters,
+    pub metrics: Metrics,
     pub prometheus_registry: Registry,
     execution_config: ExecutionConfig,
     scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
@@ -221,9 +149,9 @@ impl<S> StateManager<S> {
             intent_hash_manager: TestIntentHashManager::new(),
         };
 
-        let counters = Counters::default();
+        let metrics = Metrics::default();
         let prometheus_registry = Registry::new();
-        counters.register_with(&prometheus_registry);
+        metrics.register_with(&prometheus_registry);
 
         StateManager {
             network,
@@ -246,7 +174,7 @@ impl<S> StateManager<S> {
             intent_hash_manager: TestIntentHashManager::new(),
             logging_config: logging_config.state_manager_config,
             rejection_cache: RejectionCache::new(10000, 10000, Duration::from_secs(10)),
-            counters,
+            metrics,
             prometheus_registry,
         }
     }
@@ -347,8 +275,8 @@ where
                 .mempool
                 .add_transaction(unvalidated_transaction.into())
                 .map(|_| {
-                    self.counters
-                        .mempool_current_transactions_total
+                    self.metrics
+                        .mempool_current_transactions
                         .set(self.mempool.get_count() as i64)
                 }),
             Err(reason) => Err(MempoolAddError::Rejected(reason)),
@@ -361,8 +289,8 @@ where
     ) -> Result<(), MempoolAddError> {
         self.check_for_rejection_and_add_to_mempool(unvalidated_transaction)
             .map(|_| {
-                self.counters
-                    .mempool_submission_added_count
+                self.metrics
+                    .mempool_submission_added
                     .with_label_values(&["MempoolSync"])
                     .inc();
             })
@@ -380,8 +308,8 @@ where
                     MempoolAddError::Full { .. } => "MempoolFull",
                     MempoolAddError::Duplicate => "Duplicate",
                 };
-                self.counters
-                    .mempool_submission_rejected_count
+                self.metrics
+                    .mempool_submission_rejected
                     .with_label_values(&["MempoolSync", prometheus_rejection_dimension])
                     .inc();
 
@@ -395,8 +323,8 @@ where
     ) -> Result<(), MempoolAddError> {
         self.check_for_rejection_and_add_to_mempool(unvalidated_transaction)
             .map(|_| {
-                self.counters
-                    .mempool_submission_added_count
+                self.metrics
+                    .mempool_submission_added
                     .with_label_values(&["CoreApi"])
                     .inc();
             })
@@ -414,8 +342,8 @@ where
                     MempoolAddError::Full { .. } => "MempoolFull",
                     MempoolAddError::Duplicate => "Duplicate",
                 };
-                self.counters
-                    .mempool_submission_rejected_count
+                self.metrics
+                    .mempool_submission_rejected
                     .with_label_values(&["CoreApi", prometheus_rejection_dimension])
                     .inc();
 
@@ -448,8 +376,8 @@ where
             let payload_hash = transaction.user_payload_hash();
             // Let's also remove it from the mempool, if it's present
             if self.mempool.remove_transaction(&payload_hash).is_some() {
-                self.counters
-                    .mempool_current_transactions_total
+                self.metrics
+                    .mempool_current_transactions
                     .set(self.mempool.get_count() as i64);
             }
             self.rejection_cache.track_rejection(
@@ -503,8 +431,8 @@ where
         for txn_to_remove in txns_to_remove {
             mempool_txns.remove(&txn_to_remove);
             if self.mempool.remove_transaction(&txn_to_remove).is_some() {
-                self.counters
-                    .mempool_current_transactions_total
+                self.metrics
+                    .mempool_current_transactions
                     .set(self.mempool.get_count() as i64);
             }
         }
@@ -830,21 +758,21 @@ where
         }
 
         db_transaction.commit();
-        self.counters
+        self.metrics
             .ledger_state_version
             .set(current_state_version as i64);
-        self.counters
+        self.metrics
             .ledger_transactions_committed
             .inc_by(committed_transactions_count as u64);
-        self.counters.ledger_last_update_timestamp_ms.set(
+        self.metrics.ledger_last_update_epoch_second.set(
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
-                .as_millis() as i64,
+                .as_secs_f64(),
         );
         self.mempool.handle_committed_transactions(&intent_hashes);
-        self.counters
-            .mempool_current_transactions_total
+        self.metrics
+            .mempool_current_transactions
             .set(self.mempool.get_count() as i64);
 
         self.rejection_cache
