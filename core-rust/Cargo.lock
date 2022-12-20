@@ -1070,11 +1070,7 @@ dependencies = [
 [[package]]
 name = "native-sdk"
 version = "0.7.0"
-<<<<<<< HEAD
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-ab2d59#ab2d59d6295951f08765d1f75e6cfe642ec1bf52"
-=======
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-03cb55a0#03cb55a0b4bece16131402877d725ff2ff4a5760"
->>>>>>> update-scrypto
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-59acc5#59acc500dd7521c801d9d7103f9539ede6d3e0eb"
 dependencies = [
  "radix-engine-derive",
  "radix-engine-interface",
@@ -1392,11 +1388,7 @@ dependencies = [
 [[package]]
 name = "radix-engine"
 version = "0.7.0"
-<<<<<<< HEAD
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-ab2d59#ab2d59d6295951f08765d1f75e6cfe642ec1bf52"
-=======
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-03cb55a0#03cb55a0b4bece16131402877d725ff2ff4a5760"
->>>>>>> update-scrypto
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-59acc5#59acc500dd7521c801d9d7103f9539ede6d3e0eb"
 dependencies = [
  "bitflags",
  "colored",
@@ -1418,20 +1410,12 @@ dependencies = [
 [[package]]
 name = "radix-engine-constants"
 version = "0.7.0"
-<<<<<<< HEAD
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-ab2d59#ab2d59d6295951f08765d1f75e6cfe642ec1bf52"
-=======
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-03cb55a0#03cb55a0b4bece16131402877d725ff2ff4a5760"
->>>>>>> update-scrypto
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-59acc5#59acc500dd7521c801d9d7103f9539ede6d3e0eb"
 
 [[package]]
 name = "radix-engine-derive"
 version = "0.7.0"
-<<<<<<< HEAD
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-ab2d59#ab2d59d6295951f08765d1f75e6cfe642ec1bf52"
-=======
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-03cb55a0#03cb55a0b4bece16131402877d725ff2ff4a5760"
->>>>>>> update-scrypto
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-59acc5#59acc500dd7521c801d9d7103f9539ede6d3e0eb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1441,11 +1425,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-interface"
 version = "0.7.0"
-<<<<<<< HEAD
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-ab2d59#ab2d59d6295951f08765d1f75e6cfe642ec1bf52"
-=======
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-03cb55a0#03cb55a0b4bece16131402877d725ff2ff4a5760"
->>>>>>> update-scrypto
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-59acc5#59acc500dd7521c801d9d7103f9539ede6d3e0eb"
 dependencies = [
  "bech32",
  "hex",
@@ -1466,11 +1446,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-stores"
 version = "0.7.0"
-<<<<<<< HEAD
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-ab2d59#ab2d59d6295951f08765d1f75e6cfe642ec1bf52"
-=======
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-03cb55a0#03cb55a0b4bece16131402877d725ff2ff4a5760"
->>>>>>> update-scrypto
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-59acc5#59acc500dd7521c801d9d7103f9539ede6d3e0eb"
 dependencies = [
  "radix-engine",
  "radix-engine-interface",
@@ -1630,11 +1606,7 @@ dependencies = [
 [[package]]
 name = "sbor"
 version = "0.7.0"
-<<<<<<< HEAD
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-ab2d59#ab2d59d6295951f08765d1f75e6cfe642ec1bf52"
-=======
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-03cb55a0#03cb55a0b4bece16131402877d725ff2ff4a5760"
->>>>>>> update-scrypto
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-59acc5#59acc500dd7521c801d9d7103f9539ede6d3e0eb"
 dependencies = [
  "indexmap",
  "sbor-derive",
@@ -1644,11 +1616,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive"
 version = "0.7.0"
-<<<<<<< HEAD
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-ab2d59#ab2d59d6295951f08765d1f75e6cfe642ec1bf52"
-=======
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-03cb55a0#03cb55a0b4bece16131402877d725ff2ff4a5760"
->>>>>>> update-scrypto
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-59acc5#59acc500dd7521c801d9d7103f9539ede6d3e0eb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1679,11 +1647,7 @@ checksum = "9c8132065adcfd6e02db789d9285a0deb2f3fcb04002865ab67d5fb103533898"
 [[package]]
 name = "scrypto-abi"
 version = "0.7.0"
-<<<<<<< HEAD
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-ab2d59#ab2d59d6295951f08765d1f75e6cfe642ec1bf52"
-=======
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-03cb55a0#03cb55a0b4bece16131402877d725ff2ff4a5760"
->>>>>>> update-scrypto
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-59acc5#59acc500dd7521c801d9d7103f9539ede6d3e0eb"
 dependencies = [
  "sbor",
  "serde",
@@ -2222,11 +2186,7 @@ dependencies = [
 [[package]]
 name = "transaction"
 version = "0.7.0"
-<<<<<<< HEAD
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-ab2d59#ab2d59d6295951f08765d1f75e6cfe642ec1bf52"
-=======
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-03cb55a0#03cb55a0b4bece16131402877d725ff2ff4a5760"
->>>>>>> update-scrypto
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-59acc5#59acc500dd7521c801d9d7103f9539ede6d3e0eb"
 dependencies = [
  "ed25519-dalek",
  "hex",
@@ -2285,11 +2245,7 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 [[package]]
 name = "utils"
 version = "0.7.0"
-<<<<<<< HEAD
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-ab2d59#ab2d59d6295951f08765d1f75e6cfe642ec1bf52"
-=======
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-03cb55a0#03cb55a0b4bece16131402877d725ff2ff4a5760"
->>>>>>> update-scrypto
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-set-59acc5#59acc500dd7521c801d9d7103f9539ede6d3e0eb"
 dependencies = [
  "sbor",
  "serde",
