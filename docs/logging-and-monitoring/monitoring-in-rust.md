@@ -7,16 +7,17 @@ The goal of recording tracing information is twofold:
 
 ## Summary
 
-- use the `tracing` crate
-- annotate any function of your choosing with the `#[tracing::instrument]`
+- Use the `tracing` crate
+- Annotate any function of your choosing with the `#[tracing::instrument]`
   attribute (the most basic annotation is the
   `#[tracing::instrument(skip_all)]` )
-- don't worry about the performance overhead, yet
+- Don't worry about the performance overhead, yet
 
 ## Status
 As of 2022-09-29, the `tracing_subscriber::fmt` is active unconditionally,
 which prints every "error", "warning", "info", and "debug" to the `stderr`,
 similarly to the Java logger.
+
 Depending on the `JAEGER_AGENT_ENDPOINT` environment variable, and optional
 `opentelemetry_jaeger` subscriber can be activated, see below for more
 information.
@@ -93,8 +94,9 @@ docker containers, so:
 
 ### I've seen one of your cool-looking traces and I want it, too!
 
+An example of Jaeger tracing configured locally:
+
 ![Jaeger tracing](./jaeger_trace_screenshot.png)
-(At this point it works in a local environment.)
 
 There is a proof of concept subscriber which reports all tracing to [Jaeger](https://www.jaegertracing.io/) .
 
