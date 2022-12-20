@@ -114,7 +114,7 @@ public class REv2SyncTest {
 
   @Test
   public void single_transaction_sync_should_work() {
-    test_sync_n_txns(1);
+    test_sync_n_txns(2);
   }
 
   @Test

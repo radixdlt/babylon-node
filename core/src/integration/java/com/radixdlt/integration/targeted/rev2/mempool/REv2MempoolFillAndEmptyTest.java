@@ -73,8 +73,6 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.crypto.ECKeyPair;
@@ -111,7 +109,6 @@ import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -145,16 +142,6 @@ public final class REv2MempoolFillAndEmptyTest {
     return Guice.createInjector(
         new CryptoModule(),
         new TestMessagingModule.Builder().withDefaultRateLimit().build(),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            var validatorSet =
-                BFTValidatorSet.from(
-                    List.of(
-                        BFTValidator.from(BFTNode.create(TEST_KEY.getPublicKey()), UInt256.ONE)));
-            bind(BFTValidatorSet.class).toInstance(validatorSet);
-          }
-        },
         new FunctionalRadixNodeModule(
             false,
             SafetyRecoveryConfig.mocked(),

@@ -522,20 +522,7 @@ public final class SimulationTest {
                 return txnsAndProof.getTransactions().get(0);
               }
             });
-      } else if (this.functionalNodeModule.supportsREv2()) {
-        var initialVset = initialNodes.stream().map(e -> BFTNode.create(e.getPublicKey())).toList();
-        modules.add(
-            new AbstractModule() {
-              @Override
-              protected void configure() {
-                var validatorSet =
-                    BFTValidatorSet.from(
-                        initialVset.stream().map(n -> BFTValidator.from(n, UInt256.ONE)));
-                bind(BFTValidatorSet.class).toInstance(validatorSet);
-              }
-            });
-
-      } else {
+      } else if (!this.functionalNodeModule.supportsREv2()) {
         var initialVset = initialNodes.stream().map(e -> BFTNode.create(e.getPublicKey())).toList();
         MockedConsensusRecoveryModule.Builder mockedConsensusRecoveryModuleBuilder;
         if (this.epochToNodeIndexMapper != null) {
