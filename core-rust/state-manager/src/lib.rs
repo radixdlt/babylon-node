@@ -66,6 +66,7 @@ extern crate core;
 
 pub mod jni;
 pub mod mempool;
+mod metrics;
 pub mod query;
 mod receipt;
 mod result;
@@ -75,6 +76,7 @@ pub mod transaction;
 mod types;
 
 pub use crate::mempool::MempoolAddError;
+pub use crate::metrics::*;
 pub use crate::receipt::*;
 pub use crate::state_manager::*;
 pub use crate::types::*;

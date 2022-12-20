@@ -34,8 +34,8 @@ pub(crate) async fn handle_transaction_submit(
                 RejectionReason::IntentHashCommitted => "IntentHashCommitted",
             };
             state_manager
-                .counters
-                .mempool_submission_rejected_count
+                .metrics
+                .mempool_submission_rejected
                 .with_label_values(&["CoreApi", prometheus_rejection_dimension])
                 .inc();
             Err(client_error(format!("Rejected: {}", reason)))
