@@ -17,10 +17,9 @@ import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.client.ApiResponse;
 import com.radixdlt.api.core.generated.client.Pair;
 
+import com.radixdlt.api.core.generated.models.CommittedTransactionsRequest;
+import com.radixdlt.api.core.generated.models.CommittedTransactionsResponse;
 import com.radixdlt.api.core.generated.models.ErrorResponse;
-import com.radixdlt.api.core.generated.models.NetworkConfigurationResponse;
-import com.radixdlt.api.core.generated.models.NetworkStatusRequest;
-import com.radixdlt.api.core.generated.models.NetworkStatusResponse;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,7 +40,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class StatusApi {
+public class StreamApi {
   private final HttpClient memberVarHttpClient;
   private final ObjectMapper memberVarObjectMapper;
   private final String memberVarBaseUri;
@@ -50,11 +49,11 @@ public class StatusApi {
   private final Consumer<HttpResponse<InputStream>> memberVarResponseInterceptor;
   private final Consumer<HttpResponse<String>> memberVarAsyncResponseInterceptor;
 
-  public StatusApi() {
+  public StreamApi() {
     this(new ApiClient());
   }
 
-  public StatusApi(ApiClient apiClient) {
+  public StreamApi(ApiClient apiClient) {
     memberVarHttpClient = apiClient.getHttpClient();
     memberVarObjectMapper = apiClient.getObjectMapper();
     memberVarBaseUri = apiClient.getBaseUri();
@@ -78,24 +77,26 @@ public class StatusApi {
   }
 
   /**
-   * Get Network Configuration
-   * Returns the network configuration of the network the node is connected to.
-   * @return NetworkConfigurationResponse
+   * Get Committed Transactions
+   * Returns the list of committed transactions. 
+   * @param committedTransactionsRequest  (required)
+   * @return CommittedTransactionsResponse
    * @throws ApiException if fails to make API call
    */
-  public NetworkConfigurationResponse statusNetworkConfigurationPost() throws ApiException {
-    ApiResponse<NetworkConfigurationResponse> localVarResponse = statusNetworkConfigurationPostWithHttpInfo();
+  public CommittedTransactionsResponse transactionStreamPost(CommittedTransactionsRequest committedTransactionsRequest) throws ApiException {
+    ApiResponse<CommittedTransactionsResponse> localVarResponse = transactionStreamPostWithHttpInfo(committedTransactionsRequest);
     return localVarResponse.getData();
   }
 
   /**
-   * Get Network Configuration
-   * Returns the network configuration of the network the node is connected to.
-   * @return ApiResponse&lt;NetworkConfigurationResponse&gt;
+   * Get Committed Transactions
+   * Returns the list of committed transactions. 
+   * @param committedTransactionsRequest  (required)
+   * @return ApiResponse&lt;CommittedTransactionsResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<NetworkConfigurationResponse> statusNetworkConfigurationPostWithHttpInfo() throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = statusNetworkConfigurationPostRequestBuilder();
+  public ApiResponse<CommittedTransactionsResponse> transactionStreamPostWithHttpInfo(CommittedTransactionsRequest committedTransactionsRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = transactionStreamPostRequestBuilder(committedTransactionsRequest);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -105,12 +106,12 @@ public class StatusApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("statusNetworkConfigurationPost", localVarResponse);
+          throw getApiException("transactionStreamPost", localVarResponse);
         }
-        return new ApiResponse<NetworkConfigurationResponse>(
+        return new ApiResponse<CommittedTransactionsResponse>(
           localVarResponse.statusCode(),
           localVarResponse.headers().map(),
-          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<NetworkConfigurationResponse>() {}) // closes the InputStream
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<CommittedTransactionsResponse>() {}) // closes the InputStream
           
         );
       } finally {
@@ -124,83 +125,15 @@ public class StatusApi {
     }
   }
 
-  private HttpRequest.Builder statusNetworkConfigurationPostRequestBuilder() throws ApiException {
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/status/network-configuration";
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-  /**
-   * Get Network Status
-   * Returns the current state and status of the node&#39;s copy of the ledger.
-   * @param networkStatusRequest  (required)
-   * @return NetworkStatusResponse
-   * @throws ApiException if fails to make API call
-   */
-  public NetworkStatusResponse statusNetworkStatusPost(NetworkStatusRequest networkStatusRequest) throws ApiException {
-    ApiResponse<NetworkStatusResponse> localVarResponse = statusNetworkStatusPostWithHttpInfo(networkStatusRequest);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Get Network Status
-   * Returns the current state and status of the node&#39;s copy of the ledger.
-   * @param networkStatusRequest  (required)
-   * @return ApiResponse&lt;NetworkStatusResponse&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<NetworkStatusResponse> statusNetworkStatusPostWithHttpInfo(NetworkStatusRequest networkStatusRequest) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = statusNetworkStatusPostRequestBuilder(networkStatusRequest);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("statusNetworkStatusPost", localVarResponse);
-        }
-        return new ApiResponse<NetworkStatusResponse>(
-          localVarResponse.statusCode(),
-          localVarResponse.headers().map(),
-          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<NetworkStatusResponse>() {}) // closes the InputStream
-          
-        );
-      } finally {
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder statusNetworkStatusPostRequestBuilder(NetworkStatusRequest networkStatusRequest) throws ApiException {
-    // verify the required parameter 'networkStatusRequest' is set
-    if (networkStatusRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'networkStatusRequest' when calling statusNetworkStatusPost");
+  private HttpRequest.Builder transactionStreamPostRequestBuilder(CommittedTransactionsRequest committedTransactionsRequest) throws ApiException {
+    // verify the required parameter 'committedTransactionsRequest' is set
+    if (committedTransactionsRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'committedTransactionsRequest' when calling transactionStreamPost");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
-    String localVarPath = "/status/network-status";
+    String localVarPath = "/transaction/stream";
 
     localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
 
@@ -208,7 +141,7 @@ public class StatusApi {
     localVarRequestBuilder.header("Accept", "application/json");
 
     try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(networkStatusRequest);
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(committedTransactionsRequest);
       localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
     } catch (IOException e) {
       throw new ApiException(e);
