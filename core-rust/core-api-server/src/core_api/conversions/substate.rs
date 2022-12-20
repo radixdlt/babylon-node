@@ -19,6 +19,7 @@ use radix_engine::types::{
     RoyaltyConfig, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible,
     SoftResourceOrNonFungibleList, SubstateId, SubstateOffset, RADIX_TOKEN,
 };
+use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use utils::ContextualDisplay;
 
 use super::MappingError;
@@ -479,6 +480,15 @@ pub fn to_api_dynamic_resource_descriptor(
     })
 }
 
+pub fn to_api_ecdsa_secp256k1_public_key(
+    key: &EcdsaSecp256k1PublicKey,
+) -> models::EcdsaSecp256k1PublicKey {
+    models::EcdsaSecp256k1PublicKey {
+        key_type: models::PublicKeyType::EcdsaSecp256k1,
+        key_hex: to_hex(key.0),
+    }
+}
+
 pub fn to_api_non_fungible_id(non_fungible_id: &NonFungibleId) -> models::NonFungibleId {
     models::NonFungibleId {
         simple_rep: non_fungible_id.to_simple_string(),
@@ -713,11 +723,16 @@ pub fn to_api_epoch_manager_substate(
     // TODO: convert validator_set
     let EpochManagerSubstate {
         epoch,
-        validator_set: _,
+        validator_set,
     } = substate;
 
+    let validator_set = validator_set
+        .iter()
+        .map(to_api_ecdsa_secp256k1_public_key)
+        .collect();
     Ok(models::Substate::EpochManagerSubstate {
         epoch: to_api_epoch(*epoch)?,
+        validator_set,
     })
 }
 

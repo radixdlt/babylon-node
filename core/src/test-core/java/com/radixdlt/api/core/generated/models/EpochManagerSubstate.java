@@ -22,11 +22,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.EcdsaSecp256k1PublicKey;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstateAllOf;
 import com.radixdlt.api.core.generated.models.SubstateBase;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -35,7 +38,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   EpochManagerSubstate.JSON_PROPERTY_SUBSTATE_TYPE,
-  EpochManagerSubstate.JSON_PROPERTY_EPOCH
+  EpochManagerSubstate.JSON_PROPERTY_EPOCH,
+  EpochManagerSubstate.JSON_PROPERTY_VALIDATOR_SET
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class EpochManagerSubstate {
@@ -44,6 +48,9 @@ public class EpochManagerSubstate {
 
   public static final String JSON_PROPERTY_EPOCH = "epoch";
   private Long epoch;
+
+  public static final String JSON_PROPERTY_VALIDATOR_SET = "validator_set";
+  private List<EcdsaSecp256k1PublicKey> validatorSet = new ArrayList<>();
 
   public EpochManagerSubstate() { 
   }
@@ -102,6 +109,37 @@ public class EpochManagerSubstate {
   }
 
 
+  public EpochManagerSubstate validatorSet(List<EcdsaSecp256k1PublicKey> validatorSet) {
+    this.validatorSet = validatorSet;
+    return this;
+  }
+
+  public EpochManagerSubstate addValidatorSetItem(EcdsaSecp256k1PublicKey validatorSetItem) {
+    this.validatorSet.add(validatorSetItem);
+    return this;
+  }
+
+   /**
+   * Get validatorSet
+   * @return validatorSet
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<EcdsaSecp256k1PublicKey> getValidatorSet() {
+    return validatorSet;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValidatorSet(List<EcdsaSecp256k1PublicKey> validatorSet) {
+    this.validatorSet = validatorSet;
+  }
+
+
   /**
    * Return true if this EpochManagerSubstate object is equal to o.
    */
@@ -115,12 +153,13 @@ public class EpochManagerSubstate {
     }
     EpochManagerSubstate epochManagerSubstate = (EpochManagerSubstate) o;
     return Objects.equals(this.substateType, epochManagerSubstate.substateType) &&
-        Objects.equals(this.epoch, epochManagerSubstate.epoch);
+        Objects.equals(this.epoch, epochManagerSubstate.epoch) &&
+        Objects.equals(this.validatorSet, epochManagerSubstate.validatorSet);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(substateType, epoch);
+    return Objects.hash(substateType, epoch, validatorSet);
   }
 
   @Override
@@ -129,6 +168,7 @@ public class EpochManagerSubstate {
     sb.append("class EpochManagerSubstate {\n");
     sb.append("    substateType: ").append(toIndentedString(substateType)).append("\n");
     sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
+    sb.append("    validatorSet: ").append(toIndentedString(validatorSet)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -516,6 +516,7 @@ where
             .collect()
     }
 
+    // TODO: Update to prepare_system_transaction when we start to support forking
     pub fn prepare_genesis(&mut self, genesis: PrepareGenesisRequest) -> PrepareGenesisResult {
         let parsed_transaction =
             LedgerTransactionValidator::parse_unvalidated_transaction_from_slice(&genesis.genesis)
@@ -781,7 +782,7 @@ where
         let current_top_of_ledger = self
             .store
             .get_top_of_ledger_transaction_identifiers()
-            .unwrap_or(CommittedTransactionIdentifiers::pre_genesis());
+            .unwrap_or_else(CommittedTransactionIdentifiers::pre_genesis);
         if current_top_of_ledger.state_version != commit_request_start_state_version {
             panic!(
                 "Mismatched state versions - the commit request claims {} but the database thinks we're at {}",

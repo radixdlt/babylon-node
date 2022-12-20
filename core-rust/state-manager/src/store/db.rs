@@ -107,44 +107,6 @@ pub enum StateManagerDatabase {
 
 impl StateManagerDatabase {
     pub fn from_config(config: DatabaseConfig) -> Self {
-        /*
-        // Bootstrap genesis
-        if !matches!(state_manager_db, StateManagerDatabase::None)
-            && state_manager_db.max_state_version()
-        {
-            debug!("Running genesis on the engine...");
-            let mut db_txn = state_manager_db.create_db_transaction();
-
-            let interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-            let genesis_receipt = bootstrap(&mut db_txn, &interpreter).expect("Genesis wasn't run");
-
-            // TODO: Remove this when serialized genesis intent is implemented
-            {
-                let ledger_receipt: LedgerTransactionReceipt = genesis_receipt
-                    .try_into()
-                    .expect("Failed to convert genesis receipt to LedgerTransactionReceipt");
-
-                let mock_genesis =
-                    LedgerTransaction::Validator(ValidatorTransaction::EpochUpdate {
-                        scrypto_epoch: 0,
-                    }); // Mocked genesis transaction for the purposes of ledger state
-                let payload_hash = mock_genesis.get_hash();
-                let identifiers = CommittedTransactionIdentifiers {
-                    state_version: 1,
-                    accumulator_hash: AccumulatorHash::pre_genesis().accumulate(&payload_hash),
-                };
-                db_txn.insert_committed_transactions(vec![(
-                    mock_genesis,
-                    ledger_receipt,
-                    identifiers,
-                )]);
-                db_txn.insert_tids_without_proof(1, vec![payload_hash]);
-            }
-
-            db_txn.commit();
-        }
-         */
-
         match config {
             DatabaseConfig::InMemory => StateManagerDatabase::InMemory {
                 transactions_and_proofs: InMemoryStore::new(),

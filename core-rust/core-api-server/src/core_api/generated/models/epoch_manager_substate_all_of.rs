@@ -16,12 +16,15 @@ pub struct EpochManagerSubstateAllOf {
     /// An integer between `0` and `10^10`, marking the current epoch
     #[serde(rename = "epoch")]
     pub epoch: i64,
+    #[serde(rename = "validator_set")]
+    pub validator_set: Vec<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
 }
 
 impl EpochManagerSubstateAllOf {
-    pub fn new(epoch: i64) -> EpochManagerSubstateAllOf {
+    pub fn new(epoch: i64, validator_set: Vec<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>) -> EpochManagerSubstateAllOf {
         EpochManagerSubstateAllOf {
             epoch,
+            validator_set,
         }
     }
 }

@@ -35,6 +35,7 @@ import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstat
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyConfigSubstate;
 import com.radixdlt.api.core.generated.models.ComponentStateSubstate;
 import com.radixdlt.api.core.generated.models.DataStruct;
+import com.radixdlt.api.core.generated.models.EcdsaSecp256k1PublicKey;
 import com.radixdlt.api.core.generated.models.EntityReference;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
 import com.radixdlt.api.core.generated.models.GlobalAddressSubstate;

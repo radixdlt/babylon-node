@@ -2376,6 +2376,7 @@ components:
         - type: object
           required:
             - epoch
+            - validator_set
           properties:
             epoch:
               type: integer
@@ -2383,6 +2384,10 @@ components:
               minimum: 0
               maximum: 10000000000
               description: An integer between `0` and `10^10`, marking the current epoch
+            validator_set:
+              type: array
+              items:
+                $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
     ClockCurrentMinuteSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'

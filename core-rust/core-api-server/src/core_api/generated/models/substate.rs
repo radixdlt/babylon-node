@@ -54,6 +54,8 @@ pub enum Substate {
         /// An integer between `0` and `10^10`, marking the current epoch
         #[serde(rename = "epoch")]
         epoch: i64,
+        #[serde(rename = "validator_set")]
+        validator_set: Vec<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
     },
     #[serde(rename="GlobalAddress")]
     GlobalAddressSubstate {

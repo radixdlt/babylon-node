@@ -18,13 +18,16 @@ pub struct EpochManagerSubstate {
     /// An integer between `0` and `10^10`, marking the current epoch
     #[serde(rename = "epoch")]
     pub epoch: i64,
+    #[serde(rename = "validator_set")]
+    pub validator_set: Vec<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
 }
 
 impl EpochManagerSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, epoch: i64) -> EpochManagerSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, epoch: i64, validator_set: Vec<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>) -> EpochManagerSubstate {
         EpochManagerSubstate {
             substate_type,
             epoch,
+            validator_set,
         }
     }
 }
