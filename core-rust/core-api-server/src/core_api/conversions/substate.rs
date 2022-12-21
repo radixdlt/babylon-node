@@ -724,13 +724,19 @@ pub fn to_api_validator_set_substate(
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
     // TODO: convert validator_set
-    let ValidatorSetSubstate { validator_set } = substate;
+    let ValidatorSetSubstate {
+        validator_set,
+        epoch,
+    } = substate;
 
     let validator_set = validator_set
         .iter()
         .map(to_api_ecdsa_secp256k1_public_key)
         .collect();
-    Ok(models::Substate::ValidatorSetSubstate { validator_set })
+    Ok(models::Substate::ValidatorSetSubstate {
+        validator_set,
+        epoch: to_api_epoch(*epoch)?,
+    })
 }
 
 pub fn to_api_epoch_manager_substate(

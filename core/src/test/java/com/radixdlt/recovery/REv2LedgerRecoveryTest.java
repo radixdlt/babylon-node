@@ -132,7 +132,7 @@ public final class REv2LedgerRecoveryTest {
   }
 
   @Test
-  public void on_reboot_should_load_same_last_header() throws Exception {
+  public void on_reboot_should_load_same_last_header() {
     try (var test = createTest()) {
       // Arrange
       test.startAllNodes();

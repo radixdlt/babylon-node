@@ -235,7 +235,7 @@ impl From<JavaCommitRequest> for CommitRequest {
                 .into_iter()
                 .map(|t| t.payload)
                 .collect(),
-            state_version: commit_request.state_version,
+            proof_state_version: commit_request.state_version,
             proof: commit_request.proof,
             vertex_store: commit_request.vertex_store,
         }

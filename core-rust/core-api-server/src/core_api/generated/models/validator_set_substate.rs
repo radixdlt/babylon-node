@@ -17,13 +17,17 @@ pub struct ValidatorSetSubstate {
     pub substate_type: crate::core_api::generated::models::SubstateType,
     #[serde(rename = "validator_set")]
     pub validator_set: Vec<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
+    /// An integer between `0` and `10^10`, marking the epoch the validator set is a part of
+    #[serde(rename = "epoch")]
+    pub epoch: i64,
 }
 
 impl ValidatorSetSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, validator_set: Vec<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>) -> ValidatorSetSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, validator_set: Vec<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>, epoch: i64) -> ValidatorSetSubstate {
         ValidatorSetSubstate {
             substate_type,
             validator_set,
+            epoch,
         }
     }
 }

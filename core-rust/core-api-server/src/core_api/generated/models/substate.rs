@@ -128,6 +128,9 @@ pub enum Substate {
     ValidatorSetSubstate {
         #[serde(rename = "validator_set")]
         validator_set: Vec<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
+        /// An integer between `0` and `10^10`, marking the epoch the validator set is a part of
+        #[serde(rename = "epoch")]
+        epoch: i64,
     },
     #[serde(rename="Vault")]
     VaultSubstate {
