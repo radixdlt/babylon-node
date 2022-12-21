@@ -83,8 +83,6 @@ pub struct PreparedValidatorTransaction {
 
 impl PreparedValidatorTransaction {
     pub fn get_executable(&self) -> Executable {
-        let transaction_hash = Hash([0u8; Hash::LENGTH]); // TODO: Is this okay?
-
         let auth_zone_params = AuthZoneParams {
             initial_proofs: vec![AuthAddresses::validator_role()],
             virtualizable_proofs_resource_addresses: BTreeSet::new(),
@@ -94,7 +92,7 @@ impl PreparedValidatorTransaction {
             InstructionList::Any(&self.instructions),
             &self.blobs,
             ExecutionContext {
-                transaction_hash,
+                transaction_hash: self.hash,
                 payload_size: 0,
                 auth_zone_params,
                 fee_payment: FeePayment::NoFee,
