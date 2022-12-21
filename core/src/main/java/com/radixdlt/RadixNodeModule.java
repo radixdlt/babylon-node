@@ -228,7 +228,9 @@ public final class RadixNodeModule extends AbstractModule {
             .toList();
 
     var validatorList = initialVset.stream().map(BFTNode::getKey).toList();
-    var genesis = TransactionBuilder.createGenesis(validatorList, UInt64.fromNonNegativeLong(1800));
+    var genesis =
+        TransactionBuilder.createGenesis(
+            validatorList, UInt64.fromNonNegativeLong(1), UInt64.fromNonNegativeLong(1800));
 
     var stateConfig =
         new REv2StateConfig(UInt64.fromNonNegativeLong(1800)); // approximately 5 minutes per epoch

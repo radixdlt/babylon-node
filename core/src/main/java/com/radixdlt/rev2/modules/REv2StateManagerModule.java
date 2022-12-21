@@ -70,6 +70,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.NodeAutoCloseable;
@@ -201,10 +202,12 @@ public final class REv2StateManagerModule extends AbstractModule {
             REv2StateComputer rEv2StateComputer(
                 RustStateComputer stateComputer,
                 EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
+                Hasher hasher,
                 Serialization serialization) {
               return new REv2StateComputer(
                   stateComputer,
                   transactionsPerProposalCount,
+                  hasher,
                   ledgerUpdateEventDispatcher,
                   serialization);
             }

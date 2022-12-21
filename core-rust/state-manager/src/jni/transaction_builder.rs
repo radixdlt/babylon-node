@@ -112,9 +112,9 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createGenesi
 }
 
 fn do_create_genesis_ledger_transaction(
-    (validator_list, rounds_per_epoch): (Vec<EcdsaSecp256k1PublicKey>, u64),
+    (validator_list, initial_epoch, rounds_per_epoch): (Vec<EcdsaSecp256k1PublicKey>, u64, u64),
 ) -> Vec<u8> {
-    create_genesis_ledger_transaction_bytes(validator_list, rounds_per_epoch)
+    create_genesis_ledger_transaction_bytes(validator_list, initial_epoch, rounds_per_epoch)
 }
 
 #[no_mangle]

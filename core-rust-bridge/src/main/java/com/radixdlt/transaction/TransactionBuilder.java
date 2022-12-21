@@ -88,15 +88,16 @@ public final class TransactionBuilder {
   }
 
   public static RawLedgerTransaction createGenesis(
-      List<ECDSASecp256k1PublicKey> validatorList, UInt64 roundsPerEpoch) {
+      List<ECDSASecp256k1PublicKey> validatorList, UInt64 initialEpoch, UInt64 roundsPerEpoch) {
     return RawLedgerTransaction.create(
-        createGenesisFunc.call(tuple(validatorList, roundsPerEpoch)));
+        createGenesisFunc.call(tuple(validatorList, initialEpoch, roundsPerEpoch)));
   }
 
   public static RawLedgerTransaction createGenesis(
       ECDSASecp256k1PublicKey validator, UInt64 roundsPerEpoch) {
     return RawLedgerTransaction.create(
-        createGenesisFunc.call(tuple(List.of(validator), roundsPerEpoch)));
+        createGenesisFunc.call(
+            tuple(List.of(validator), UInt64.fromNonNegativeLong(1), roundsPerEpoch)));
   }
 
   public static RawLedgerTransaction createGenesisWithNumValidators(
@@ -107,7 +108,8 @@ public final class TransactionBuilder {
             .map(ECKeyPair::getPublicKey)
             .sorted(KeyComparator.instance())
             .toList();
-    return RawLedgerTransaction.create(createGenesisFunc.call(tuple(validators, roundsPerEpoch)));
+    return RawLedgerTransaction.create(
+        createGenesisFunc.call(tuple(validators, UInt64.fromNonNegativeLong(1), roundsPerEpoch)));
   }
 
   public static byte[] compileManifest(
@@ -146,7 +148,7 @@ public final class TransactionBuilder {
   private static native byte[] compileManifest(byte[] payload);
 
   private static final NativeCalls.StaticFunc1<
-          Tuple.Tuple2<List<ECDSASecp256k1PublicKey>, UInt64>, byte[]>
+          Tuple.Tuple3<List<ECDSASecp256k1PublicKey>, UInt64, UInt64>, byte[]>
       createGenesisFunc =
           NativeCalls.StaticFunc1.with(
               new TypeToken<>() {},

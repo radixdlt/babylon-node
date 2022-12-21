@@ -114,7 +114,9 @@ public class REv2StateComputerTest {
 
   private CommittedTransactionsWithProof buildGenesis(LedgerAccumulator accumulator) {
     var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    var genesis = TransactionBuilder.createGenesis(List.of(), UInt64.fromNonNegativeLong(10));
+    var genesis =
+        TransactionBuilder.createGenesis(
+            List.of(), UInt64.fromNonNegativeLong(1), UInt64.fromNonNegativeLong(10));
     var accumulatorState =
         accumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
     var proof = LedgerProof.genesis(accumulatorState, BFTValidatorSet.from(Stream.of()), 0, 0);

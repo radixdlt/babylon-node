@@ -65,10 +65,11 @@
 package com.radixdlt.rev2;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VertexStoreState;
+import com.radixdlt.consensus.*;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
@@ -88,6 +89,7 @@ import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -100,14 +102,17 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   private final int transactionsPerProposalCount;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher;
   private final Serialization serialization;
+  private final Hasher hasher;
 
   public REv2StateComputer(
       RustStateComputer stateComputer,
       int transactionsPerProposalCount,
+      Hasher hasher,
       EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
       Serialization serialization) {
     this.stateComputer = stateComputer;
     this.transactionsPerProposalCount = transactionsPerProposalCount;
+    this.hasher = hasher;
     this.ledgerUpdateEventDispatcher = ledgerUpdateEventDispatcher;
     this.serialization = serialization;
   }
@@ -226,7 +231,35 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
     stateComputer.commit(commitRequest);
 
-    var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
+    var epochChangeOptional =
+        txnsAndProof
+            .getProof()
+            .getNextValidatorSet()
+            .map(
+                validatorSet -> {
+                  var header = txnsAndProof.getProof();
+                  // TODO: Move vertex stuff somewhere else
+                  var genesisVertex = Vertex.createGenesis(header.getHeader()).withId(hasher);
+                  var nextLedgerHeader =
+                      LedgerHeader.create(
+                          header.getNextEpoch(),
+                          Round.genesis(),
+                          header.getAccumulatorState(),
+                          header.consensusParentRoundTimestamp(),
+                          header.proposerTimestamp());
+                  var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+                  final var initialState =
+                      VertexStoreState.create(
+                          HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
+                  var proposerElection = new WeightedRotatingLeaders(validatorSet);
+                  var bftConfiguration =
+                      new BFTConfiguration(proposerElection, validatorSet, initialState);
+                  return new EpochChange(header, bftConfiguration);
+                });
+    var outputBuilder = ImmutableClassToInstanceMap.builder();
+    epochChangeOptional.ifPresent(e -> outputBuilder.put(EpochChange.class, e));
+
+    var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build());
     ledgerUpdateEventDispatcher.dispatch(ledgerUpdate);
   }
 }
