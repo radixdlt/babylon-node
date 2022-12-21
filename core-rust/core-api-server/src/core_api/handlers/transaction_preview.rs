@@ -76,7 +76,7 @@ fn parse_preview_request(
         notary_as_signatory: request.notary_as_signatory.unwrap_or(false),
         cost_unit_limit: extract_api_u32_as_i64(request.cost_unit_limit)
             .map_err(|err| err.into_response_error("cost_unit_limit"))?,
-        tip_percentage: extract_api_u8_as_i32(request.tip_percentage)
+        tip_percentage: extract_api_u16_as_i32(request.tip_percentage)
             .map_err(|err| err.into_response_error("tip_percentage"))?,
         nonce: extract_api_u64_as_string(request.nonce)
             .map_err(|err| err.into_response_error("nonce"))?,

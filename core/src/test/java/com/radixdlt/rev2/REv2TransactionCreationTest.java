@@ -154,7 +154,6 @@ public class REv2TransactionCreationTest {
   }
 
   private static void logTransaction(String description, TransactionInfo transactionInfo) {
-
     log.info(description + ":");
     log.info("Intent Hash: " + Bytes.toHexString(transactionInfo.intentHash.asBytes()));
     log.info(

@@ -67,6 +67,7 @@ package com.radixdlt.rev2;
 import com.radixdlt.crypto.PublicKey;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt16;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 
@@ -79,7 +80,7 @@ public record TransactionHeader(
     PublicKey notaryPublicKey,
     boolean notaryAsSignatory,
     UInt32 costUnitLimit,
-    byte tipPercentage) {
+    UInt16 tipPercentage) {
 
   public static final UInt32 MAX_COST_UNIT_LIMIT = UInt32.fromNonNegativeInt(100_000_000);
 
@@ -97,7 +98,7 @@ public record TransactionHeader(
                 codecs.of(PublicKey.class),
                 codecs.of(boolean.class),
                 codecs.of(UInt32.class),
-                codecs.of(byte.class),
+                codecs.of(UInt16.class),
                 (t, encoder) ->
                     encoder.encode(
                         t.version,
@@ -131,7 +132,7 @@ public record TransactionHeader(
         notary,
         notaryIsSignatory,
         MAX_COST_UNIT_LIMIT, // Max Cost Units
-        (byte) 0 // Tip percentage
+        UInt16.fromNonNegativeShort((short) 0) // Tip percentage
         );
   }
 
@@ -157,7 +158,7 @@ public record TransactionHeader(
         notary,
         notaryIsSignatory,
         costUnitLimitToUse,
-        (byte) 0 // Tip percentage
+        UInt16.fromNonNegativeShort((short) 0) // Tip percentage
         );
   }
 }
