@@ -296,11 +296,6 @@ pub fn to_api_validator_transaction(
     _network: &NetworkDefinition,
 ) -> Result<models::ValidatorTransaction, MappingError> {
     Ok(match validator_transaction {
-        ValidatorTransaction::EpochUpdate { scrypto_epoch } => {
-            models::ValidatorTransaction::EpochUpdateValidatorTransaction {
-                scrypto_epoch: to_api_epoch(*scrypto_epoch)?,
-            }
-        }
         ValidatorTransaction::RoundUpdate {
             proposer_timestamp_ms,
             consensus_epoch,

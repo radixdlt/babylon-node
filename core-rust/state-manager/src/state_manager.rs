@@ -540,22 +540,6 @@ where
 
         let mut committed = Vec::new();
 
-        // Update the epoch
-        if prepare_request.round_number % self.rounds_per_epoch == 0 {
-            let new_epoch = (prepare_request.round_number / self.rounds_per_epoch) + 1;
-            let epoch_update_ledger_txn = Self::execute_and_commit_validator_transaction(
-                &self.scrypto_interpreter,
-                &self.fee_reserve_config,
-                &self.execution_config,
-                ValidatorTransaction::EpochUpdate {
-                    scrypto_epoch: new_epoch,
-                },
-                &mut staged_store,
-            )
-            .expect("Epoch update txn failed");
-            committed.push(scrypto_encode(&epoch_update_ledger_txn).unwrap());
-        }
-
         // Update the time
         let time_update_ledger_txn = Self::execute_and_commit_validator_transaction(
             &self.scrypto_interpreter,
@@ -564,7 +548,15 @@ where
             ValidatorTransaction::RoundUpdate {
                 proposer_timestamp_ms: prepare_request.proposer_timestamp_ms,
                 consensus_epoch: prepare_request.consensus_epoch,
-                round_in_epoch: prepare_request.round_number,
+                round_in_epoch: {
+                    // TODO: Temporary until real epoch change implemented
+                    let round = prepare_request.round_number % self.rounds_per_epoch;
+                    if round == 0 {
+                        self.rounds_per_epoch
+                    } else {
+                        round
+                    }
+                },
             },
             &mut staged_store,
         )
