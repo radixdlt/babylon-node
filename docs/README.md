@@ -1,13 +1,10 @@
 # Radix DLT Documentations
 
-The folder hosts documentation on the specs of design choice for Radix DLT.
+The folder hosts some documentation for developing on the Radix Node.
 
-For general documentation, please visit https://docs.radixdlt.com/.
+For general Babylon documentation, please visit https://docs-babylon.radixdlt.com/.
 
 ## Contents
 
-- [Development Environment Setup and Run Configurations](./development)
-- [API Specifications](./api-specs)
-- [Transaction Specifications](./transaction-specs)
-- [Logging Configuration](./logging)
-- [Logging in Rust](./how-to-logging-in-rust.md)
+- [Development](./development)
+- [Logging and Monitoring](./logging-and-monitoring)
