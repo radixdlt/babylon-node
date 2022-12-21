@@ -63,7 +63,6 @@
  */
 
 use std::collections::{HashMap, HashSet};
-use std::convert::TryInto;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use prometheus::Registry;
@@ -97,7 +96,11 @@ use crate::transaction::{
     LedgerTransaction, LedgerTransactionValidator, UserTransactionValidator, ValidatorTransaction,
 };
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult, PreviewRequest};
-use crate::{CommittedTransactionIdentifiers, HasIntentHash, HasUserPayloadHash, IntentHash, LedgerTransactionReceipt, MempoolAddError, Metrics, PendingTransaction, PrepareGenesisRequest, PrepareGenesisResult};
+use crate::{
+    CommittedTransactionIdentifiers, HasIntentHash, HasUserPayloadHash, IntentHash,
+    LedgerTransactionReceipt, MempoolAddError, Metrics, PendingTransaction, PrepareGenesisRequest,
+    PrepareGenesisResult,
+};
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct LoggingConfig {
@@ -718,12 +721,7 @@ where
         let mut db_transaction = self.store.create_db_transaction();
         let mut current_state_version = current_top_of_ledger.state_version;
         let mut current_accumulator = current_top_of_ledger.accumulator_hash;
-        // TODO: Use actual result and verify proof validator set matches transaction receipt validator set
-        let epoch_boundary = if commit_request.state_version == 1u64 {
-            Some(1u64)
-        } else {
-            None
-        };
+        let mut epoch_boundary = None;
 
         let receipts = parsed_transactions
             .iter()
@@ -754,13 +752,26 @@ where
                     &executable,
                 );
 
-                let ledger_receipt: LedgerTransactionReceipt =
-                    engine_receipt.try_into().unwrap_or_else(|error| {
+                let ledger_receipt: LedgerTransactionReceipt = match engine_receipt.result {
+                    TransactionResult::Commit(result) => {
+                        if result.next_validator_set.is_some() {
+                            let is_last = i == (parsed_transactions.len() - 1);
+                            if !is_last {
+                                panic!("Next Epoch occurs in the middle of transaction set at proof state_version {}", commit_request.state_version);
+                            }
+                            // TODO: Use actual result and verify proof validator set matches transaction receipt validator set
+                            epoch_boundary = Some(1u64);
+                        }
+
+                        (result, engine_receipt.execution.fee_summary).into()
+                    }
+                    TransactionResult::Reject(error) => {
                         panic!(
-                            "Failed to commit a txn at state version {}: {}",
+                            "Failed to commit a txn at state version {}: {:?}",
                             commit_request.state_version, error
                         )
-                    });
+                    }
+                };
 
                 ledger_receipt
             })
