@@ -106,7 +106,7 @@ public class SanityTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(4),
+                        TransactionBuilder.createGenesisWithNumValidators(4, UInt64.fromNonNegativeLong(10)),
                         new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.mempool(10, 100, MempoolRelayConfig.of())))))

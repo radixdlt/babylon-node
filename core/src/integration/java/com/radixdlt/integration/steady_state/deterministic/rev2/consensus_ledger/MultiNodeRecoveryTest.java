@@ -117,7 +117,7 @@ public final class MultiNodeRecoveryTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(NUM_VALIDATORS),
+                        TransactionBuilder.createGenesisWithNumValidators(NUM_VALIDATORS, UInt64.fromNonNegativeLong(10)),
                         new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
                         databaseConfig,
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(

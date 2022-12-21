@@ -197,7 +197,7 @@ public final class MultiNodeRebootTest {
             LedgerConfig.stateComputerWithSyncRelay(
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),
-                    TransactionBuilder.createGenesisWithNumValidators(numValidators),
+                    TransactionBuilder.createGenesisWithNumValidators(numValidators, UInt64.fromNonNegativeLong(10)),
                     new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
                     databaseConfig,
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(

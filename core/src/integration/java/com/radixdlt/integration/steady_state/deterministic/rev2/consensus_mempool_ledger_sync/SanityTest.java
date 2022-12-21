@@ -110,7 +110,7 @@ public final class SanityTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(10),
+                        TransactionBuilder.createGenesisWithNumValidators(10, UInt64.fromNonNegativeLong(1000)),
                         new REv2StateConfig(UInt64.fromNonNegativeLong(1000)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.mempool(10, 100, MempoolRelayConfig.of())),
