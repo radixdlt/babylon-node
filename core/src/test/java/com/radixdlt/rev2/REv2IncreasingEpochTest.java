@@ -65,9 +65,8 @@
 package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
-import static com.radixdlt.harness.predicates.NodesPredicate.anyAtOrOverStateEpoch;
 import static com.radixdlt.modules.FunctionalRadixNodeModule.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -114,7 +113,9 @@ public class REv2IncreasingEpochTest {
       var epoch0 = stateReader.getEpoch();
 
       // Act/Assert: Run until next epoch is reached
-      test.runUntilState(anyAtOrOverStateEpoch(epoch0 + 1), onlyConsensusEvents());
+      test.runUntilMessage(DeterministicTest.epochLedgerUpdate(epoch0 + 1));
+      assertThat(test.getNodeInjectors().get(0).getInstance(REv2StateReader.class).getEpoch())
+          .isGreaterThanOrEqualTo(epoch0 + 1);
     }
   }
 }
