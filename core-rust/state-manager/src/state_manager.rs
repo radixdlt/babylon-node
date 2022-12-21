@@ -97,7 +97,11 @@ use crate::transaction::{
     LedgerTransaction, LedgerTransactionValidator, UserTransactionValidator, ValidatorTransaction,
 };
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult, PreviewRequest};
-use crate::{CommittedTransactionIdentifiers, HasIntentHash, HasUserPayloadHash, IntentHash, LedgerTransactionReceipt, MempoolAddError, Metrics, PendingTransaction, PrepareGenesisRequest, PrepareGenesisResult};
+use crate::{
+    CommittedTransactionIdentifiers, HasIntentHash, HasUserPayloadHash, IntentHash,
+    LedgerTransactionReceipt, MempoolAddError, Metrics, PendingTransaction, PrepareGenesisRequest,
+    PrepareGenesisResult,
+};
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct LoggingConfig {

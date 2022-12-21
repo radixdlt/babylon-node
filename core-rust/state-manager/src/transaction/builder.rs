@@ -81,8 +81,9 @@ use transaction::model::{
 
 pub fn create_genesis_ledger_transaction_bytes(
     validator_list: Vec<EcdsaSecp256k1PublicKey>,
+    rounds_per_epoch: u64,
 ) -> Vec<u8> {
-    let genesis = create_genesis(validator_list);
+    let genesis = create_genesis(validator_list, rounds_per_epoch);
     scrypto_encode(&LedgerTransaction::System(genesis)).unwrap()
 }
 

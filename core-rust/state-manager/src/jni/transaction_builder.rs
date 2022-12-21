@@ -111,8 +111,10 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createGenesi
     jni_static_sbor_call(env, request_payload, do_create_genesis_ledger_transaction)
 }
 
-fn do_create_genesis_ledger_transaction(validator_list: Vec<EcdsaSecp256k1PublicKey>) -> Vec<u8> {
-    create_genesis_ledger_transaction_bytes(validator_list)
+fn do_create_genesis_ledger_transaction(
+    (validator_list, rounds_per_epoch): (Vec<EcdsaSecp256k1PublicKey>, u64),
+) -> Vec<u8> {
+    create_genesis_ledger_transaction_bytes(validator_list, rounds_per_epoch)
 }
 
 #[no_mangle]

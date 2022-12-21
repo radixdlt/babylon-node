@@ -78,6 +78,7 @@ import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt64;
 import java.util.List;
 
 public final class TransactionBuilder {
@@ -86,22 +87,27 @@ public final class TransactionBuilder {
     System.loadLibrary("corerust");
   }
 
-  public static RawLedgerTransaction createGenesis(List<ECDSASecp256k1PublicKey> validatorList) {
-    return RawLedgerTransaction.create(createGenesisFunc.call(validatorList));
+  public static RawLedgerTransaction createGenesis(
+      List<ECDSASecp256k1PublicKey> validatorList, UInt64 roundsPerEpoch) {
+    return RawLedgerTransaction.create(
+        createGenesisFunc.call(tuple(validatorList, roundsPerEpoch)));
   }
 
-  public static RawLedgerTransaction createGenesis(ECDSASecp256k1PublicKey validator) {
-    return RawLedgerTransaction.create(createGenesisFunc.call(List.of(validator)));
+  public static RawLedgerTransaction createGenesis(
+      ECDSASecp256k1PublicKey validator, UInt64 roundsPerEpoch) {
+    return RawLedgerTransaction.create(
+        createGenesisFunc.call(tuple(List.of(validator), roundsPerEpoch)));
   }
 
-  public static RawLedgerTransaction createGenesisWithNumValidators(long numValidators) {
+  public static RawLedgerTransaction createGenesisWithNumValidators(
+      long numValidators, UInt64 roundsPerEpoch) {
     var validators =
         PrivateKeys.numeric(1)
             .limit(numValidators)
             .map(ECKeyPair::getPublicKey)
             .sorted(KeyComparator.instance())
             .toList();
-    return RawLedgerTransaction.create(createGenesisFunc.call(validators));
+    return RawLedgerTransaction.create(createGenesisFunc.call(tuple(validators, roundsPerEpoch)));
   }
 
   public static byte[] compileManifest(
@@ -139,7 +145,8 @@ public final class TransactionBuilder {
 
   private static native byte[] compileManifest(byte[] payload);
 
-  private static final NativeCalls.StaticFunc1<List<ECDSASecp256k1PublicKey>, byte[]>
+  private static final NativeCalls.StaticFunc1<
+          Tuple.Tuple2<List<ECDSASecp256k1PublicKey>, UInt64>, byte[]>
       createGenesisFunc =
           NativeCalls.StaticFunc1.with(
               new TypeToken<>() {},
