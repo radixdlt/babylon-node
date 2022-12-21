@@ -606,9 +606,13 @@ where
             );
 
             match receipt.result {
-                TransactionResult::Commit(..) => {
+                TransactionResult::Commit(result) => {
                     already_committed_or_prepared_intent_hashes.insert(intent_hash);
                     committed.push(LedgerTransaction::User(parsed).create_payload().unwrap());
+
+                    if result.next_validator_set.is_some() {
+                        break;
+                    }
                 }
                 TransactionResult::Reject(reject_result) => {
                     rejected.push((proposed_payload, format!("{:?}", reject_result)));

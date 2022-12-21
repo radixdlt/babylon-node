@@ -108,7 +108,8 @@ public final class SimpleFuzzerTransactionsTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.LOCALSIMULATOR.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(10, UInt64.fromNonNegativeLong(10)),
+                        TransactionBuilder.createGenesisWithNumValidators(
+                            10, UInt64.fromNonNegativeLong(10)),
                         new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.transactionGenerator(transactionGenerator, 10)),

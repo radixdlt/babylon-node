@@ -6,7 +6,9 @@ use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto_encode;
-use radix_engine_interface::model::{ClockSetCurrentTimeInvocation, EpochManagerNextRoundInvocation};
+use radix_engine_interface::model::{
+    ClockSetCurrentTimeInvocation, EpochManagerNextRoundInvocation,
+};
 use radix_engine_interface::modules::auth::AuthAddresses;
 use sbor::*;
 use std::collections::BTreeSet;
@@ -47,7 +49,7 @@ impl ValidatorTransaction {
                         receiver: CLOCK,
                         current_time_ms: *timestamp_ms,
                     })
-                        .unwrap(),
+                    .unwrap(),
                 };
                 let update_round = SystemInstruction::CallNativeMethod {
                     method_ident: NativeMethodIdent {
@@ -58,17 +60,17 @@ impl ValidatorTransaction {
                         receiver: EPOCH_MANAGER,
                         round: *round_in_epoch,
                     })
-                        .unwrap(),
+                    .unwrap(),
                 };
 
-                vec![Instruction::System(update_time), Instruction::System(update_round)]
-            },
+                vec![
+                    Instruction::System(update_time),
+                    Instruction::System(update_round),
+                ]
+            }
         };
 
-        PreparedValidatorTransaction {
-            hash,
-            instructions,
-        }
+        PreparedValidatorTransaction { hash, instructions }
     }
 }
 
