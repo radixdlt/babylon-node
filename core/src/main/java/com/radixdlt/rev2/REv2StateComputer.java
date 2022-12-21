@@ -192,8 +192,19 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                     r -> RawLedgerTransaction.create(r.first()),
                     r -> (Exception) new InvalidREv2Transaction(r.last())));
 
+    var validatorSet =
+        result
+            .nextValidatorSet()
+            .map(
+                vSet -> {
+                  var validatorStream =
+                      vSet.stream().map(v -> BFTValidator.from(BFTNode.create(v), UInt256.ONE));
+                  return BFTValidatorSet.from(validatorStream);
+                })
+            .or((BFTValidatorSet) null);
+
     return new StateComputerLedger.StateComputerResult(
-        committableTransactions, rejectedTransactions);
+        committableTransactions, rejectedTransactions, validatorSet);
   }
 
   @Override

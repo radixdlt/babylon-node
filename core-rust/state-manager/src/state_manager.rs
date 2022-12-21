@@ -562,6 +562,7 @@ where
         .expect("Time update txn failed");
         committed.push(scrypto_encode(&time_update_ledger_txn).unwrap());
 
+        let mut next_validator_set = None;
         let mut rejected = Vec::new();
 
         for proposed_payload in prepare_request.proposed_payloads {
@@ -611,6 +612,7 @@ where
                     committed.push(LedgerTransaction::User(parsed).create_payload().unwrap());
 
                     if result.next_validator_set.is_some() {
+                        next_validator_set = result.next_validator_set;
                         break;
                     }
                 }
@@ -629,6 +631,7 @@ where
         PrepareResult {
             committed,
             rejected,
+            next_validator_set,
         }
     }
 

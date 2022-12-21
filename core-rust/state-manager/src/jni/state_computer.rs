@@ -271,10 +271,12 @@ impl From<JavaPrepareRequest> for PrepareRequest {
     }
 }
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct JavaPrepareResult {
     pub committed: Vec<Vec<u8>>,
     pub rejected: Vec<(Vec<u8>, String)>,
+    pub next_validator_set: Option<Vec<EcdsaSecp256k1PublicKey>>,
 }
 
 impl From<PrepareResult> for JavaPrepareResult {
@@ -282,6 +284,7 @@ impl From<PrepareResult> for JavaPrepareResult {
         JavaPrepareResult {
             committed: prepare_results.committed,
             rejected: prepare_results.rejected,
+            next_validator_set: prepare_results.next_validator_set,
         }
     }
 }

@@ -401,10 +401,12 @@ pub struct PrepareRequest {
     pub proposer_timestamp_ms: i64,
 }
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct PrepareResult {
     pub committed: Vec<Vec<u8>>,
     pub rejected: Vec<(Vec<u8>, String)>,
+    pub next_validator_set: Option<Vec<EcdsaSecp256k1PublicKey>>,
 }
 
 #[derive(Debug, Decode, Encode, TypeId)]
