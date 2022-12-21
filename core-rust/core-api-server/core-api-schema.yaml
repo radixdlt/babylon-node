@@ -2112,6 +2112,7 @@ components:
         - $ref: '#/components/schemas/PackageRoyaltyAccumulatorSubstate'
         - $ref: '#/components/schemas/ResourceManagerSubstate'
         - $ref: '#/components/schemas/EpochManagerSubstate'
+        - $ref: '#/components/schemas/ValidatorSetSubstate'
         - $ref: '#/components/schemas/ClockCurrentMinuteSubstate'
         - $ref: '#/components/schemas/KeyValueStoreEntrySubstate'
         - $ref: '#/components/schemas/VaultSubstate'
@@ -2132,6 +2133,7 @@ components:
           PackageRoyaltyAccumulator: '#/components/schemas/PackageRoyaltyAccumulatorSubstate'
           ResourceManager: '#/components/schemas/ResourceManagerSubstate'
           EpochManager: '#/components/schemas/EpochManagerSubstate'
+          ValidatorSet: '#/components/schemas/ValidatorSetSubstate'
           ClockCurrentMinute: '#/components/schemas/ClockCurrentMinuteSubstate'
           KeyValueStoreEntry: '#/components/schemas/KeyValueStoreEntrySubstate'
           Vault: '#/components/schemas/VaultSubstate'
@@ -2153,6 +2155,7 @@ components:
         - PackageRoyaltyAccumulator
         - ResourceManager
         - EpochManager
+        - ValidatorSet
         - ClockCurrentMinute
         - KeyValueStoreEntry
         - NonFungibleStoreEntry
@@ -2180,6 +2183,7 @@ components:
         - ResourceManager
         - ResourceManagerVaultAccessRulesChain
         - EpochManager
+        - ValidatorSet
         - ClockCurrentMinute
         - KeyValueStoreEntry
         - NonFungibleStoreEntry
@@ -2376,7 +2380,6 @@ components:
         - type: object
           required:
             - epoch
-            - validator_set
           properties:
             epoch:
               type: integer
@@ -2384,6 +2387,13 @@ components:
               minimum: 0
               maximum: 10000000000
               description: An integer between `0` and `10^10`, marking the current epoch
+    ValidatorSetSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - validator_set
+          properties:
             validator_set:
               type: array
               items:

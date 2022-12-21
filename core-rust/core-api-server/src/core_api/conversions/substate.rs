@@ -4,14 +4,7 @@ use super::*;
 use crate::core_api::models;
 use radix_engine_interface::data::{IndexedScryptoValue, SchemaPath, SchemaSubPath};
 
-use radix_engine::model::{
-    AccessRulesChainSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
-    ComponentRoyaltyConfigSubstate, ComponentStateSubstate, CurrentTimeRoundedToMinutesSubstate,
-    EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate,
-    NonFungible, NonFungibleSubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate,
-    PackageRoyaltyConfigSubstate, PersistedSubstate, Resource, ResourceManagerSubstate,
-    VaultSubstate,
-};
+use radix_engine::model::{AccessRulesChainSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate, CurrentTimeRoundedToMinutesSubstate, EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate, NonFungible, NonFungibleSubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate, PersistedSubstate, Resource, ResourceManagerSubstate, ValidatorSetSubstate, VaultSubstate};
 use radix_engine::types::{
     scrypto_encode, AccessRule, AccessRuleEntry, AccessRuleKey, AccessRuleNode, AccessRules,
     Bech32Encoder, Decimal, GlobalOffset, KeyValueStoreOffset, NativeFn, NonFungibleId,
@@ -67,6 +60,9 @@ pub fn to_api_substate(
         }
         PersistedSubstate::EpochManager(epoch_manager) => {
             to_api_epoch_manager_substate(epoch_manager)?
+        }
+        PersistedSubstate::ValidatorSet(validator_set) => {
+            to_api_validator_set_substate(validator_set)?
         }
         PersistedSubstate::CurrentTimeRoundedToMinutes(substate) => {
             to_api_clock_current_time_rounded_down_to_minutes_substate(substate)?
@@ -716,13 +712,12 @@ pub fn to_api_package_royalty_accumulator_substate(
     })
 }
 
-pub fn to_api_epoch_manager_substate(
-    substate: &EpochManagerSubstate,
+pub fn to_api_validator_set_substate(
+    substate: &ValidatorSetSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
     // TODO: convert validator_set
-    let EpochManagerSubstate {
-        epoch,
+    let ValidatorSetSubstate {
         validator_set,
     } = substate;
 
@@ -730,9 +725,22 @@ pub fn to_api_epoch_manager_substate(
         .iter()
         .map(to_api_ecdsa_secp256k1_public_key)
         .collect();
+    Ok(models::Substate::ValidatorSetSubstate {
+        validator_set,
+    })
+}
+
+pub fn to_api_epoch_manager_substate(
+    substate: &EpochManagerSubstate,
+) -> Result<models::Substate, MappingError> {
+    // Use compiler to unpack to ensure we map all fields
+    // TODO: convert validator_set
+    let EpochManagerSubstate {
+        epoch,
+    } = substate;
+
     Ok(models::Substate::EpochManagerSubstate {
         epoch: to_api_epoch(*epoch)?,
-        validator_set,
     })
 }
 

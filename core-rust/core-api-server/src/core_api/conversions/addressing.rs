@@ -334,6 +334,9 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                     EpochManagerOffset::EpochManager => {
                         (SubstateType::EpochManager, SubstateKeyType::EpochManager)
                     }
+                    EpochManagerOffset::ValidatorSet => {
+                        (SubstateType::EpochManager, SubstateKeyType::ValidatorSet)
+                    }
                 },
                 SubstateOffset::AccessRulesChain(offset) => match offset {
                     AccessRulesChainOffset::AccessRulesChain => (

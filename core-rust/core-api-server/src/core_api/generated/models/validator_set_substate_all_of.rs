@@ -12,16 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct EpochManagerSubstateAllOf {
-    /// An integer between `0` and `10^10`, marking the current epoch
-    #[serde(rename = "epoch")]
-    pub epoch: i64,
+pub struct ValidatorSetSubstateAllOf {
+    #[serde(rename = "validator_set")]
+    pub validator_set: Vec<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
 }
 
-impl EpochManagerSubstateAllOf {
-    pub fn new(epoch: i64) -> EpochManagerSubstateAllOf {
-        EpochManagerSubstateAllOf {
-            epoch,
+impl ValidatorSetSubstateAllOf {
+    pub fn new(validator_set: Vec<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>) -> ValidatorSetSubstateAllOf {
+        ValidatorSetSubstateAllOf {
+            validator_set,
         }
     }
 }

@@ -22,55 +22,61 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.EcdsaSecp256k1PublicKey;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * EpochManagerSubstateAllOf
+ * ValidatorSetSubstateAllOf
  */
 @JsonPropertyOrder({
-  EpochManagerSubstateAllOf.JSON_PROPERTY_EPOCH
+  ValidatorSetSubstateAllOf.JSON_PROPERTY_VALIDATOR_SET
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class EpochManagerSubstateAllOf {
-  public static final String JSON_PROPERTY_EPOCH = "epoch";
-  private Long epoch;
+public class ValidatorSetSubstateAllOf {
+  public static final String JSON_PROPERTY_VALIDATOR_SET = "validator_set";
+  private List<EcdsaSecp256k1PublicKey> validatorSet = new ArrayList<>();
 
-  public EpochManagerSubstateAllOf() { 
+  public ValidatorSetSubstateAllOf() { 
   }
 
-  public EpochManagerSubstateAllOf epoch(Long epoch) {
-    this.epoch = epoch;
+  public ValidatorSetSubstateAllOf validatorSet(List<EcdsaSecp256k1PublicKey> validatorSet) {
+    this.validatorSet = validatorSet;
+    return this;
+  }
+
+  public ValidatorSetSubstateAllOf addValidatorSetItem(EcdsaSecp256k1PublicKey validatorSetItem) {
+    this.validatorSet.add(validatorSetItem);
     return this;
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the current epoch
-   * minimum: 0
-   * maximum: 10000000000
-   * @return epoch
+   * Get validatorSet
+   * @return validatorSet
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the current epoch")
-  @JsonProperty(JSON_PROPERTY_EPOCH)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getEpoch() {
-    return epoch;
+  public List<EcdsaSecp256k1PublicKey> getValidatorSet() {
+    return validatorSet;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EPOCH)
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEpoch(Long epoch) {
-    this.epoch = epoch;
+  public void setValidatorSet(List<EcdsaSecp256k1PublicKey> validatorSet) {
+    this.validatorSet = validatorSet;
   }
 
 
   /**
-   * Return true if this EpochManagerSubstate_allOf object is equal to o.
+   * Return true if this ValidatorSetSubstate_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -80,20 +86,20 @@ public class EpochManagerSubstateAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EpochManagerSubstateAllOf epochManagerSubstateAllOf = (EpochManagerSubstateAllOf) o;
-    return Objects.equals(this.epoch, epochManagerSubstateAllOf.epoch);
+    ValidatorSetSubstateAllOf validatorSetSubstateAllOf = (ValidatorSetSubstateAllOf) o;
+    return Objects.equals(this.validatorSet, validatorSetSubstateAllOf.validatorSet);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(epoch);
+    return Objects.hash(validatorSet);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class EpochManagerSubstateAllOf {\n");
-    sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
+    sb.append("class ValidatorSetSubstateAllOf {\n");
+    sb.append("    validatorSet: ").append(toIndentedString(validatorSet)).append("\n");
     sb.append("}");
     return sb.toString();
   }
