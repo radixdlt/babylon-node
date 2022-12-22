@@ -66,7 +66,7 @@ use crate::jni::java_structure::JavaStructure;
 use crate::result::StateManagerResult;
 use crate::transaction::{
     create_intent_bytes, create_manifest, create_new_account_intent_bytes, create_notarized_bytes,
-    create_set_epoch_intent, create_signed_intent_bytes, LedgerTransaction,
+    create_signed_intent_bytes, LedgerTransaction,
 };
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
@@ -116,23 +116,6 @@ fn do_create_new_account_intent(
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_setEpochIntent(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, do_set_epoch)
-}
-
-fn do_set_epoch(
-    (network_definition, public_key, epoch): (NetworkDefinition, PublicKey, u64),
-) -> Vec<u8> {
-    create_set_epoch_intent(&network_definition, public_key, epoch)
-        .to_bytes()
-        .unwrap()
-}
-
-#[no_mangle]
 extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createIntent(
     env: JNIEnv,
     _class: JClass,
@@ -154,7 +137,7 @@ struct TransactionHeaderJava {
     pub notary_public_key: PublicKey,
     pub notary_as_signatory: bool,
     pub cost_unit_limit: u32,
-    pub tip_percentage: u8,
+    pub tip_percentage: u16,
 }
 
 impl From<TransactionHeaderJava> for TransactionHeader {

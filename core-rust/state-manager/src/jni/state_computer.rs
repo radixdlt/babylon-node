@@ -98,7 +98,7 @@ fn do_verify(state_manager: &ActualStateManager, args: JavaRawTransaction) -> Re
 
     let _static_validation = state_manager
         .user_transaction_validator
-        .validate_and_create_executable(&parsed)
+        .validate_and_create_executable(&parsed, transaction.payload.len())
         .map_err(|err| format!("{:?}", err))?;
 
     Ok(())
@@ -222,7 +222,7 @@ pub struct JavaPrepareRequest {
     pub proposed: Vec<JavaRawTransaction>,
     pub consensus_epoch: u64,
     pub round_number: u64,
-    pub proposer_timestamp_ms: u64,
+    pub proposer_timestamp_ms: i64,
 }
 
 impl From<JavaPrepareRequest> for PrepareRequest {

@@ -1,8 +1,9 @@
 use std::collections::BTreeMap;
 
-use radix_engine::engine::{ResourceChange, RuntimeError};
+use radix_engine::engine::RuntimeError;
 use radix_engine::fee::FeeSummary;
 use radix_engine::ledger::OutputValue;
+use radix_engine::model::ResourceChange;
 use radix_engine::state_manager::StateDiff;
 use radix_engine::transaction::{
     CommitResult, EntityChanges, TransactionOutcome,
@@ -54,8 +55,26 @@ pub struct DeletedSubstateVersion {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
+pub enum LedgerTransactionOutcome {
+    Success(Vec<Vec<u8>>),
+    Failure(RuntimeError),
+}
+
+impl From<TransactionOutcome> for LedgerTransactionOutcome {
+    fn from(outcome: TransactionOutcome) -> Self {
+        match outcome {
+            TransactionOutcome::Success(output) => {
+                LedgerTransactionOutcome::Success(output.into_iter().map(|o| o.as_vec()).collect())
+            }
+            TransactionOutcome::Failure(error) => LedgerTransactionOutcome::Failure(error),
+        }
+    }
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct LedgerTransactionReceipt {
-    pub outcome: TransactionOutcome,
+    pub outcome: LedgerTransactionOutcome,
     pub fee_summary: FeeSummary,
     pub application_logs: Vec<(Level, String)>,
     pub substate_changes: SubstateChanges,
@@ -92,7 +111,7 @@ impl From<(CommitResult, FeeSummary, Vec<(Level, String)>)> for LedgerTransactio
         ),
     ) -> Self {
         LedgerTransactionReceipt {
-            outcome: commit_result.outcome,
+            outcome: commit_result.outcome.into(),
             fee_summary,
             application_logs,
             substate_changes: map_state_updates(commit_result.state_updates),

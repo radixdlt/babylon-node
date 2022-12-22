@@ -62,67 +62,87 @@
  * permissions under this License.
  */
 
-package com.radixdlt.addressing;
+package com.radixdlt.utils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
+import com.radixdlt.sbor.codec.Codec;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.sbor.coding.DecoderApi;
+import com.radixdlt.sbor.coding.EncoderApi;
+import java.io.Serializable;
+import java.util.Objects;
 
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.exceptions.Bech32DecodeException;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.ScryptoConstants;
-import com.radixdlt.serialization.DeserializeException;
-import org.junit.Test;
+/** A 32-bit unsigned integer wrapper */
+@SecurityCritical(SecurityKind.NUMERIC)
+public class UInt16 implements Comparable<UInt16>, Serializable {
 
-public class AddressingTest {
-  @Test
-  public void test_system_faucet_address_encoded_correctly() {
-    assertThat(
-            Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
-                .encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS))
-        .isEqualTo("component_test1q29kvuz62mchk6kzwexh4exqerlxreps0h5656mf2a5slnkelj");
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        UInt16.class,
+        codecs ->
+            new Codec<UInt16>() {
+              @Override
+              public TypeId getTypeId() {
+                return TypeId.TYPE_U16;
+              }
+
+              @Override
+              public void encodeWithoutTypeId(EncoderApi encoder, UInt16 uint16) {
+                encoder.writeShort(uint16.underlyingValue);
+              }
+
+              @Override
+              public UInt16 decodeWithoutTypeId(DecoderApi decoder) {
+                return new UInt16(decoder.readShort());
+              }
+            });
   }
 
-  @Test
-  public void test_system_faucet_address_decoded_correctly() {
-    assertThat(
-            Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
-                .decodeNormalComponentAddress(
-                    "component_test1q29kvuz62mchk6kzwexh4exqerlxreps0h5656mf2a5slnkelj"))
-        .isEqualTo(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+  private final Short underlyingValue;
+
+  public static UInt16 fromNonNegativeShort(short i) {
+    if (i < 0) {
+      throw new IllegalArgumentException("Can't construct uint16 from a negative integer");
+    }
+
+    return new UInt16(i);
   }
 
-  @Test
-  public void can_encode_and_decode_a_node_address()
-      throws PublicKeyException, DeserializeException {
-    var pubKey =
-        ECDSASecp256k1PublicKey.fromHex(
-            "0236856ea9fa8c243e45fc94ec27c29cf3f17e3a9e19a410ee4a41f4858e379918");
-    var address = Addressing.ofNetwork(Network.INTEGRATIONTESTNET).encodeNodeAddress(pubKey);
-    var decoded = Addressing.ofNetwork(Network.INTEGRATIONTESTNET).decodeNodeAddress(address);
-
-    assertThat(decoded).isEqualTo(pubKey);
+  public boolean gt(UInt16 other) {
+    return Integer.compareUnsigned(this.underlyingValue, other.underlyingValue) > 0;
   }
 
-  @Test
-  public void node_address_for_enkinet_is_decoded_correctly()
-      throws PublicKeyException, DeserializeException {
-    var address = "node_tdx_21_1qfk895krd3l8t8z7z7p9sxpjdszpal24f6y2sjtqe7mdkhdele5az658ak2";
-    var expected =
-        ECDSASecp256k1PublicKey.fromHex(
-            "026c72d2c36c7e759c5e17825818326c041efd554e88a84960cfb6db5db9fe69d1");
-    var decoded = Addressing.ofNetwork(Network.ENKINET).decodeNodeAddress(address);
-
-    assertThat(decoded).isEqualTo(expected);
+  public boolean lte(UInt16 other) {
+    return Integer.compareUnsigned(this.underlyingValue, other.underlyingValue) <= 0;
   }
 
-  @Test
-  public void non_bech32m_addresses_are_not_permitted() {
-    var address = "tn211qg42kem99gpw3esdt7avcncugfl89aq4uzke8l4rakq05u99c0x86qt94jr";
-    assertThatThrownBy(() -> Addressing.decodeNodeAddressUnknownHrp(address))
-        .isInstanceOf(DeserializeException.class)
-        .hasRootCauseInstanceOf(Bech32DecodeException.class)
-        .hasRootCauseMessage("Address was bech32 encoded, not bech32m");
+  private UInt16(Short underlyingValue) {
+    this.underlyingValue = Objects.requireNonNull(underlyingValue);
+  }
+
+  public String toHexString() {
+    return Integer.toUnsignedString(underlyingValue, 16);
+  }
+
+  @Override
+  public String toString() {
+    return Integer.toUnsignedString(underlyingValue);
+  }
+
+  @Override
+  public int compareTo(UInt16 other) {
+    return Integer.compareUnsigned(underlyingValue, other.underlyingValue);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(underlyingValue);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof UInt16 other && Objects.equals(this.underlyingValue, other.underlyingValue);
   }
 }

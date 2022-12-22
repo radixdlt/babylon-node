@@ -191,6 +191,9 @@ public class MetricsInitializer {
       if (generic.getRawType() == LabelledGauge.class) {
         return new LabelledGauge<>(name, labelClass);
       }
+      if (generic.getRawType() == TypedInfo.class) {
+        return new TypedInfo<>(name);
+      }
     }
     throw new IllegalArgumentException(
         "unknown collector type %s used for metric %s".formatted(type.getTypeName(), name));

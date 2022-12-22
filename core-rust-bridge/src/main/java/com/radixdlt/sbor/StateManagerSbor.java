@@ -83,6 +83,7 @@ import com.radixdlt.transaction.CommittedTransactionStatus;
 import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.UInt16;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 
@@ -109,6 +110,7 @@ public final class StateManagerSbor {
   }
 
   public static void registerCodecsWithCodecMap(CodecMap codecMap) {
+    UInt16.registerCodec(codecMap);
     UInt32.registerCodec(codecMap);
     UInt64.registerCodec(codecMap);
     RustMempoolConfig.registerCodec(codecMap);

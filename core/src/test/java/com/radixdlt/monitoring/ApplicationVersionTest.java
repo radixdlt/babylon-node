@@ -62,23 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt;
+package com.radixdlt.monitoring;
 
-import static com.radixdlt.RadixNodeApplication.calculateVersionString;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.Map;
 import org.junit.Test;
 
-public class RadixNodeApplicationTest {
+public class ApplicationVersionTest {
   @Test
   public void testCalculateVersionForCleanRepo() {
     var details =
-        Map.<String, Object>of(
+        Map.of(
             "tag", "1.0-beta.35.1",
             "last_tag", "1.0-beta.35.1");
 
-    var version = calculateVersionString(details);
+    var version = ApplicationVersion.calculateVersionString(details);
 
     assertEquals("1.0-beta.35.1", version);
   }
@@ -86,13 +85,13 @@ public class RadixNodeApplicationTest {
   @Test
   public void testCalculateVersionForDirtyRepo() {
     var details =
-        Map.<String, Object>of(
+        Map.of(
             "tag", "",
             "last_tag", "1.0-beta.35.1",
             "build", "ed0717c",
             "branch", "feature/rpnv1-1306-refactor-json-rpc-implementation");
 
-    var version = calculateVersionString(details);
+    var version = ApplicationVersion.calculateVersionString(details);
 
     assertEquals(
         "1.0-beta.35.1-feature~rpnv1-1306-refactor-json-rpc-implementation-ed0717c", version);
@@ -101,12 +100,12 @@ public class RadixNodeApplicationTest {
   @Test
   public void testCalculateVersionForDetachedHead() {
     var details =
-        Map.<String, Object>of(
+        Map.of(
             "tag", "",
             "last_tag", "1.0-beta.35.1",
             "build", "ed0717c");
 
-    var version = calculateVersionString(details);
+    var version = ApplicationVersion.calculateVersionString(details);
 
     assertEquals("detached-head-ed0717c", version);
   }

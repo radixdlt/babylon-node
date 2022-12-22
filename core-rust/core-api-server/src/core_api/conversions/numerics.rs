@@ -11,8 +11,6 @@ const MAX_API_EPOCH: u64 = 10000000000;
 const MAX_API_ROUND: u64 = 10000000000;
 const MAX_API_STATE_VERSION: u64 = 100000000000000;
 const MAX_API_SUBSTATE_VERSION: u64 = 100000000000000;
-const MAX_API_TIMESTAMP_MS: i64 = 100000000000000;
-const MAX_API_TIMESTAMP_MS_U64: u64 = MAX_API_TIMESTAMP_MS as u64;
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_epoch(epoch: u64) -> Result<i64, MappingError> {
@@ -59,39 +57,15 @@ pub fn to_api_substate_version(substate_version: u32) -> Result<i64, MappingErro
         .expect("Substate version too large somehow"))
 }
 
-#[tracing::instrument(skip_all)]
-pub fn to_api_timestamp_ms(timestamp_ms: i64) -> Result<i64, MappingError> {
-    if timestamp_ms > MAX_API_TIMESTAMP_MS {
-        return Err(MappingError::IntegerError {
-            message: "Timestamp ms is larger than max api timestamp ms".to_owned(),
-        });
-    }
-    if timestamp_ms < 0 {
-        return Err(MappingError::IntegerError {
-            message: "Timestamp ms is smaller than 0 (ie before Unix Epoch - which isn't possible)"
-                .to_owned(),
-        });
-    }
-    Ok(timestamp_ms)
-}
-
-#[tracing::instrument(skip_all)]
-pub fn to_api_timestamp_ms_u64(timestamp_ms: u64) -> Result<i64, MappingError> {
-    if timestamp_ms > MAX_API_TIMESTAMP_MS_U64 {
-        return Err(MappingError::IntegerError {
-            message: "Timestamp ms is larger than max api timestamp ms".to_owned(),
-        });
-    }
-    Ok(timestamp_ms
-        .try_into()
-        .expect("Timestamp ms is too large somehow"))
-}
-
 pub fn to_api_decimal(value: &Decimal) -> String {
     value.to_string()
 }
 
 pub fn to_api_u8_as_i32(input: u8) -> i32 {
+    input.into()
+}
+
+pub fn to_api_u16_as_i32(input: u16) -> i32 {
     input.into()
 }
 
@@ -160,13 +134,13 @@ pub fn extract_api_u32_as_i64(input: i64) -> Result<u32, ExtractionError> {
     Ok(input.try_into().expect("Number invalid somehow"))
 }
 
-pub fn extract_api_u8_as_i32(input: i32) -> Result<u8, ExtractionError> {
+pub fn extract_api_u16_as_i32(input: i32) -> Result<u16, ExtractionError> {
     if input < 0 {
         return Err(ExtractionError::InvalidInteger {
             message: "Is negative".to_owned(),
         });
     }
-    if input > (u8::MAX as i32) {
+    if input > (u16::MAX as i32) {
         return Err(ExtractionError::InvalidInteger {
             message: "Is larger than the max value allowed".to_owned(),
         });

@@ -62,67 +62,34 @@
  * permissions under this License.
  */
 
-package com.radixdlt.addressing;
+package com.radixdlt.monitoring;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.google.inject.Inject;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.monitoring.Metrics.Config;
 
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.exceptions.Bech32DecodeException;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.ScryptoConstants;
-import com.radixdlt.serialization.DeserializeException;
-import org.junit.Test;
+/** An installer of extra metrics which do not follow the conventional Prometheus usage patterns. */
+public final class MetricInstaller {
 
-public class AddressingTest {
-  @Test
-  public void test_system_faucet_address_encoded_correctly() {
-    assertThat(
-            Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
-                .encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS))
-        .isEqualTo("component_test1q29kvuz62mchk6kzwexh4exqerlxreps0h5656mf2a5slnkelj");
+  /** An own node, for exposing the {@link Config#key()} information. */
+  private final BFTNode self;
+
+  @Inject
+  public MetricInstaller(@Self BFTNode self) {
+    this.self = self;
   }
 
-  @Test
-  public void test_system_faucet_address_decoded_correctly() {
-    assertThat(
-            Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
-                .decodeNormalComponentAddress(
-                    "component_test1q29kvuz62mchk6kzwexh4exqerlxreps0h5656mf2a5slnkelj"))
-        .isEqualTo(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
-  }
-
-  @Test
-  public void can_encode_and_decode_a_node_address()
-      throws PublicKeyException, DeserializeException {
-    var pubKey =
-        ECDSASecp256k1PublicKey.fromHex(
-            "0236856ea9fa8c243e45fc94ec27c29cf3f17e3a9e19a410ee4a41f4858e379918");
-    var address = Addressing.ofNetwork(Network.INTEGRATIONTESTNET).encodeNodeAddress(pubKey);
-    var decoded = Addressing.ofNetwork(Network.INTEGRATIONTESTNET).decodeNodeAddress(address);
-
-    assertThat(decoded).isEqualTo(pubKey);
-  }
-
-  @Test
-  public void node_address_for_enkinet_is_decoded_correctly()
-      throws PublicKeyException, DeserializeException {
-    var address = "node_tdx_21_1qfk895krd3l8t8z7z7p9sxpjdszpal24f6y2sjtqe7mdkhdele5az658ak2";
-    var expected =
-        ECDSASecp256k1PublicKey.fromHex(
-            "026c72d2c36c7e759c5e17825818326c041efd554e88a84960cfb6db5db9fe69d1");
-    var decoded = Addressing.ofNetwork(Network.ENKINET).decodeNodeAddress(address);
-
-    assertThat(decoded).isEqualTo(expected);
-  }
-
-  @Test
-  public void non_bech32m_addresses_are_not_permitted() {
-    var address = "tn211qg42kem99gpw3esdt7avcncugfl89aq4uzke8l4rakq05u99c0x86qt94jr";
-    assertThatThrownBy(() -> Addressing.decodeNodeAddressUnknownHrp(address))
-        .isInstanceOf(DeserializeException.class)
-        .hasRootCauseInstanceOf(Bech32DecodeException.class)
-        .hasRootCauseMessage("Address was bech32 encoded, not bech32m");
+  /**
+   * Sets up the metrics which - for different reasons (most often legacy) - do not use the regular
+   * Prometheus measurement primitives.
+   *
+   * <p>This includes e.g. static "info" metrics, and directly-read "reader gauges".
+   *
+   * @param metrics Hierarchy where some legacy metrics need to be set.
+   */
+  public void installAt(Metrics metrics) {
+    var config = new Config(ApplicationVersion.INSTANCE.string(), this.self.getKey().toHex());
+    metrics.misc().config().set(config);
   }
 }

@@ -78,9 +78,7 @@ use radix_engine::types::{
     scrypto_encode, ComponentAddress, Decimal, Decode, Encode, GlobalAddress, PublicKey, RENodeId,
     ResourceAddress, TypeId,
 };
-use radix_engine::wasm::{
-    DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
-};
+use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
 use radix_engine_interface::core::NetworkDefinition;
 use tracing::info;
@@ -170,10 +168,7 @@ impl<S> StateManager<S> {
             scrypto_interpreter: ScryptoInterpreter {
                 wasm_engine: DefaultWasmEngine::default(),
                 wasm_instrumenter: WasmInstrumenter::default(),
-                wasm_metering_config: WasmMeteringConfig::new(
-                    InstructionCostRules::tiered(1, 5, 10, 5000),
-                    512,
-                ),
+                wasm_metering_config: WasmMeteringConfig::default(),
             },
             fee_reserve_config: FeeReserveConfig::standard(),
             intent_hash_manager: TestIntentHashManager::new(),
@@ -239,10 +234,11 @@ where
     fn validate_and_test_execute_transaction(
         &self,
         transaction: &NotarizedTransaction,
+        payload_size: usize,
     ) -> Result<TransactionReceipt, TransactionValidationError> {
         let executable = self
             .user_transaction_validator
-            .validate_and_create_executable(transaction)?;
+            .validate_and_create_executable(transaction, payload_size)?;
 
         let receipt = execute_transaction(
             &self.store,
@@ -372,7 +368,9 @@ where
             return Err(rejection_reason.clone());
         }
 
-        let new_status = self.check_for_rejection_uncached(transaction);
+        // TODO: Remove and use some sort of cache to store size
+        let payload_size = scrypto_encode(transaction).unwrap().len();
+        let new_status = self.check_for_rejection_uncached(transaction, payload_size);
 
         if let Err(rejection_reason) = new_status {
             let payload_hash = transaction.user_payload_hash();
@@ -396,6 +394,7 @@ where
     pub fn check_for_rejection_uncached(
         &self,
         transaction: &NotarizedTransaction,
+        payload_size: usize,
     ) -> Result<(), RejectionReason> {
         if self
             .store
@@ -407,7 +406,7 @@ where
 
         // TODO: Only run transaction up to the loan
         let receipt = self
-            .validate_and_test_execute_transaction(transaction)
+            .validate_and_test_execute_transaction(transaction, payload_size)
             .map_err(RejectionReason::ValidationError)?;
 
         match receipt.result {
@@ -562,7 +561,7 @@ where
 
             let validate_result = self
                 .user_transaction_validator
-                .validate_and_create_executable(&parsed);
+                .validate_and_create_executable(&parsed, proposed_payload.len());
 
             let executable = match validate_result {
                 Ok(executable) => executable,

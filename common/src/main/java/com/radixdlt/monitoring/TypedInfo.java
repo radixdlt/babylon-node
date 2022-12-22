@@ -62,86 +62,73 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.monitoring;
 
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.invariants.Checkers.assertAllCommittedFailedTransaction;
-import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.radixdlt.consensus.bft.ExecutedVertex;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.REv2StateConfig;
-import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.UInt64;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Streams;
+import io.prometheus.client.Collector;
+import io.prometheus.client.Info;
 import java.util.List;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class REv2SetEpochTest {
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
+/**
+ * A Prometheus {@link Info} wrapper with type-safe set of info items.
+ *
+ * @param <I> A type of record representing a complete set of info items.
+ */
+public class TypedInfo<I extends Record> extends Collector implements Collector.Describable {
 
-  private DeterministicTest createTest(ProposalGenerator proposalGenerator) {
-    return DeterministicTest.builder()
-        .numNodes(1, 0)
-        .messageSelector(firstSelector())
-        .messageMutator(MessageMutator.dropTimeouts())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                false,
-                FunctionalRadixNodeModule.SafetyRecoveryConfig.berkeleyStore(
-                    folder.getRoot().getAbsolutePath()),
-                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
-                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
-                        StateComputerConfig.REV2ProposerConfig.transactionGenerator(
-                            proposalGenerator)))));
+  /** A wrapped {@link Info}. */
+  private final Info wrapped;
+
+  /** A current value. */
+  private final AtomicReference<I> infoRecord;
+
+  /**
+   * A direct constructor.
+   *
+   * @param name A metric name; will also be used as a description. Please note that the wrapped
+   *     {@link Info} primitive will automatically append the "_info" suffix.
+   */
+  public TypedInfo(String name) {
+    this.wrapped = Info.build(name, name).create();
+    this.infoRecord = new AtomicReference<>();
   }
 
-  private static class ControlledProposerGenerator implements ProposalGenerator {
-    private RawNotarizedTransaction nextTransaction = null;
-
-    @Override
-    public List<RawNotarizedTransaction> getTransactionsForProposal(
-        Round round, List<ExecutedVertex> prepared) {
-      if (nextTransaction == null) {
-        return List.of();
-      } else {
-        var txns = List.of(nextTransaction);
-        this.nextTransaction = null;
-        return txns;
-      }
-    }
+  /**
+   * Sets the info items.
+   *
+   * @param infoRecord A record containing info items.
+   */
+  public void set(I infoRecord) {
+    this.infoRecord.set(infoRecord);
+    this.wrapped.info(
+        Streams.zip(
+                Stream.of(NameRenderer.labelNames(infoRecord.getClass())),
+                Stream.of(NameRenderer.labelValues(infoRecord)),
+                Maps::immutableEntry)
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
   }
 
-  @Test
-  public void user_should_not_be_able_set_epoch() {
-    var proposalGenerator = new ControlledProposerGenerator();
+  /**
+   * Gets the current info items.
+   *
+   * @return Current info items.
+   */
+  public I get() {
+    return this.infoRecord.get();
+  }
 
-    try (var test = createTest(proposalGenerator)) {
-      var setEpochTransaction = REv2TestTransactions.constructFailingSetEpochTransaction(1000L);
+  @Override
+  public List<MetricFamilySamples> collect() {
+    return this.wrapped.collect();
+  }
 
-      // Act: Submit transaction to mempool and run consensus
-      test.startAllNodes();
-      proposalGenerator.nextTransaction = setEpochTransaction;
-      test.runUntilState(ignored -> proposalGenerator.nextTransaction == null);
-      test.runForCount(100, onlyConsensusEvents());
-
-      // Assert: Check transaction and post submission state
-      assertThat(proposalGenerator.nextTransaction).isNull();
-      // Verify that transaction was not committed
-      assertAllCommittedFailedTransaction(test.getNodeInjectors(), setEpochTransaction);
-    }
+  @Override
+  public List<MetricFamilySamples> describe() {
+    return this.wrapped.describe();
   }
 }

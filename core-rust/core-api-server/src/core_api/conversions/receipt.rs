@@ -3,11 +3,10 @@ use crate::core_api::*;
 use radix_engine::{
     fee::{FeeSummary, RoyaltyReceiver},
     ledger::OutputValue,
-    transaction::TransactionOutcome,
     types::{hash, scrypto_encode, Bech32Encoder, Decimal, GlobalAddress, RENodeId, SubstateId},
 };
 
-use state_manager::{DeletedSubstateVersion, LedgerTransactionReceipt};
+use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
 
 pub fn to_api_receipt(
     bech32_encoder: &Bech32Encoder,
@@ -16,10 +15,10 @@ pub fn to_api_receipt(
     let fee_summary = receipt.fee_summary;
 
     let (status, output, error_message) = match receipt.outcome {
-        TransactionOutcome::Success(output) => {
+        LedgerTransactionOutcome::Success(output) => {
             (models::TransactionStatus::Succeeded, Some(output), None)
         }
-        TransactionOutcome::Failure(error) => (
+        LedgerTransactionOutcome::Failure(error) => (
             models::TransactionStatus::Failed,
             None,
             Some(format!("{:?}", error)),
@@ -131,7 +130,7 @@ pub fn to_api_fee_summary(
 ) -> Result<models::FeeSummary, MappingError> {
     Ok(models::FeeSummary {
         cost_unit_price: to_api_decimal(&fee_summary.cost_unit_price),
-        tip_percentage: to_api_u8_as_i32(fee_summary.tip_percentage),
+        tip_percentage: to_api_u16_as_i32(fee_summary.tip_percentage),
         cost_unit_limit: to_api_u32_as_i64(fee_summary.cost_unit_limit),
         cost_units_consumed: to_api_u32_as_i64(fee_summary.cost_unit_consumed),
         xrd_total_execution_cost: to_api_decimal(&fee_summary.total_execution_cost_xrd),

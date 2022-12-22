@@ -377,7 +377,7 @@ pub struct PreviewRequest {
     pub notary_public_key: Option<PublicKey>,
     pub notary_as_signatory: bool,
     pub cost_unit_limit: u32,
-    pub tip_percentage: u8,
+    pub tip_percentage: u16,
     pub nonce: u64,
     pub signer_public_keys: Vec<PublicKey>,
     pub flags: PreviewFlags,
@@ -397,7 +397,7 @@ pub struct PrepareRequest {
     pub proposed_payloads: Vec<Vec<u8>>,
     pub consensus_epoch: u64,
     pub round_number: u64,
-    pub proposer_timestamp_ms: u64,
+    pub proposer_timestamp_ms: i64,
 }
 
 #[derive(Debug, Decode, Encode, TypeId)]

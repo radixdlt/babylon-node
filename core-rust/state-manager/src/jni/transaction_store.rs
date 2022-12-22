@@ -65,10 +65,10 @@
 use crate::jni::state_manager::ActualStateManager;
 use crate::store::traits::*;
 
+use crate::LedgerTransactionOutcome;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::transaction::TransactionOutcome;
 use radix_engine::types::{scrypto_encode, ComponentAddress};
 use radix_engine_interface::scrypto;
 use sbor::{Decode, Encode, TypeId};
@@ -122,8 +122,8 @@ fn do_get_transaction_at_state_version(
 
     Some(ExecutedTransaction {
         outcome: match ledger_receipt.outcome {
-            TransactionOutcome::Success(output) => TransactionOutcomeJava::Success(output),
-            TransactionOutcome::Failure(err) => {
+            LedgerTransactionOutcome::Success(output) => TransactionOutcomeJava::Success(output),
+            LedgerTransactionOutcome::Failure(err) => {
                 TransactionOutcomeJava::Failure(format!("{:?}", err))
             }
         },

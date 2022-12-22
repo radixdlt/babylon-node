@@ -62,67 +62,88 @@
  * permissions under this License.
  */
 
-package com.radixdlt.addressing;
+package com.radixdlt.monitoring;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.google.common.annotations.VisibleForTesting;
+import java.io.IOException;
+import java.util.*;
 
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.exceptions.Bech32DecodeException;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.ScryptoConstants;
-import com.radixdlt.serialization.DeserializeException;
-import org.junit.Test;
+/**
+ * Application version.
+ *
+ * @param branch Branch name.
+ * @param commit Commit hash.
+ * @param display Display version.
+ * @param string A complete human-friendly version string, to be exposed via API and metrics.
+ */
+public record ApplicationVersion(String branch, String commit, String display, String string) {
 
-public class AddressingTest {
-  @Test
-  public void test_system_faucet_address_encoded_correctly() {
-    assertThat(
-            Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
-                .encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS))
-        .isEqualTo("component_test1q29kvuz62mchk6kzwexh4exqerlxreps0h5656mf2a5slnkelj");
+  /** An instance loaded from a well-known resource properties file. */
+  public static final ApplicationVersion INSTANCE = loadFromResource("/version.properties");
+
+  /**
+   * Loads version information from the given resource properties file.
+   *
+   * <p>Silently falls back to default "unknown" version indicators in case of any problems.
+   *
+   * @param resourceName Resource name.
+   * @return Version information.
+   */
+  private static ApplicationVersion loadFromResource(String resourceName) {
+    var branch = "unknown-branch";
+    var commit = "unknown-commit";
+    var display = "unknown-version";
+    var string = "unknown";
+    try (var is = ApplicationVersion.class.getResourceAsStream(resourceName)) {
+      if (is != null) {
+        var p = new Properties();
+        p.load(is);
+        branch = p.getProperty("VERSION_BRANCH", branch);
+        commit = p.getProperty("VERSION_COMMIT", commit);
+        display = p.getProperty("VERSION_DISPLAY", display);
+        Map<String, String> map = new HashMap<>();
+        for (var key : p.stringPropertyNames()) {
+          var mapKey = key.split("_", 2)[1].toLowerCase(Locale.US);
+          var defaultValue = "unknown-" + mapKey;
+          map.put(mapKey, p.getProperty(key, defaultValue));
+        }
+        string = calculateVersionString(map);
+      }
+    } catch (IOException e) {
+      // Ignore exception
+    }
+    return new ApplicationVersion(branch, commit, display, string);
   }
 
-  @Test
-  public void test_system_faucet_address_decoded_correctly() {
-    assertThat(
-            Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
-                .decodeNormalComponentAddress(
-                    "component_test1q29kvuz62mchk6kzwexh4exqerlxreps0h5656mf2a5slnkelj"))
-        .isEqualTo(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+  @VisibleForTesting
+  static String calculateVersionString(Map<String, String> details) {
+    if (isCleanTag(details)) {
+      return lastTag(details);
+    } else {
+      var version =
+          branchName(details) == null
+              ? "detached-head-" + gitHash(details)
+              : (lastTag(details) + "-" + branchName(details)).replace('/', '~')
+                  + "-"
+                  + gitHash(details);
+
+      return version;
+    }
   }
 
-  @Test
-  public void can_encode_and_decode_a_node_address()
-      throws PublicKeyException, DeserializeException {
-    var pubKey =
-        ECDSASecp256k1PublicKey.fromHex(
-            "0236856ea9fa8c243e45fc94ec27c29cf3f17e3a9e19a410ee4a41f4858e379918");
-    var address = Addressing.ofNetwork(Network.INTEGRATIONTESTNET).encodeNodeAddress(pubKey);
-    var decoded = Addressing.ofNetwork(Network.INTEGRATIONTESTNET).decodeNodeAddress(address);
-
-    assertThat(decoded).isEqualTo(pubKey);
+  private static boolean isCleanTag(Map<String, String> details) {
+    return Objects.equals(details.get("tag"), details.get("last_tag"));
   }
 
-  @Test
-  public void node_address_for_enkinet_is_decoded_correctly()
-      throws PublicKeyException, DeserializeException {
-    var address = "node_tdx_21_1qfk895krd3l8t8z7z7p9sxpjdszpal24f6y2sjtqe7mdkhdele5az658ak2";
-    var expected =
-        ECDSASecp256k1PublicKey.fromHex(
-            "026c72d2c36c7e759c5e17825818326c041efd554e88a84960cfb6db5db9fe69d1");
-    var decoded = Addressing.ofNetwork(Network.ENKINET).decodeNodeAddress(address);
-
-    assertThat(decoded).isEqualTo(expected);
+  private static String lastTag(Map<String, String> details) {
+    return details.get("last_tag");
   }
 
-  @Test
-  public void non_bech32m_addresses_are_not_permitted() {
-    var address = "tn211qg42kem99gpw3esdt7avcncugfl89aq4uzke8l4rakq05u99c0x86qt94jr";
-    assertThatThrownBy(() -> Addressing.decodeNodeAddressUnknownHrp(address))
-        .isInstanceOf(DeserializeException.class)
-        .hasRootCauseInstanceOf(Bech32DecodeException.class)
-        .hasRootCauseMessage("Address was bech32 encoded, not bech32m");
+  private static String gitHash(Map<String, String> details) {
+    return details.get("build");
+  }
+
+  private static String branchName(Map<String, String> details) {
+    return details.get("branch");
   }
 }
