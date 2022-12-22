@@ -85,13 +85,32 @@ import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
+import java.util.Collection;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public final class REv2RejectedTransactionTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
+
+  @Parameterized.Parameters
+  public static Collection<Object[]> parameters() {
+    return List.of(
+        new Object[] {false, UInt64.fromNonNegativeLong(100000)},
+        new Object[] {true, UInt64.fromNonNegativeLong(100)});
+  }
+
+  private final boolean epochs;
+  private final UInt64 roundsPerEpoch;
+
+  public REv2RejectedTransactionTest(boolean epochs, UInt64 roundsPerEpoch) {
+    this.epochs = epochs;
+    this.roundsPerEpoch = roundsPerEpoch;
+  }
 
   private DeterministicTest createTest(ProposalGenerator proposalGenerator) {
     return DeterministicTest.builder()
@@ -100,14 +119,13 @@ public final class REv2RejectedTransactionTest {
         .messageMutator(MessageMutator.dropTimeouts())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
-                false,
+                epochs,
                 SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
-                            1, UInt64.fromNonNegativeLong(10000)),
+                        TransactionBuilder.createGenesisWithNumValidators(1, roundsPerEpoch),
                         new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.transactionGenerator(proposalGenerator)))));

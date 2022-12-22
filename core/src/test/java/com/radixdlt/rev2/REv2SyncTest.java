@@ -86,13 +86,33 @@ import com.radixdlt.sync.messages.local.SyncRequestTimeout;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
+import java.util.Collection;
+import java.util.List;
 import java.util.function.Predicate;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public class REv2SyncTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
+
+  @Parameterized.Parameters
+  public static Collection<Object[]> parameters() {
+    return List.of(
+        new Object[] {false, UInt64.fromNonNegativeLong(100000)},
+        new Object[] {true, UInt64.fromNonNegativeLong(100)});
+  }
+
+  private final boolean epochs;
+  private final UInt64 roundsPerEpoch;
+
+  public REv2SyncTest(boolean epochs, UInt64 roundsPerEpoch) {
+    this.epochs = epochs;
+    this.roundsPerEpoch = roundsPerEpoch;
+  }
 
   private DeterministicTest buildTest() {
     return DeterministicTest.builder()
@@ -100,14 +120,13 @@ public class REv2SyncTest {
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
-                false,
+                epochs,
                 SafetyRecoveryConfig.mocked(),
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
-                            1, UInt64.fromNonNegativeLong(10000)),
+                        TransactionBuilder.createGenesisWithNumValidators(1, roundsPerEpoch),
                         new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.transactionGenerator(new REV2TransactionGenerator(), 1)),

@@ -66,6 +66,7 @@ package com.radixdlt.harness.predicates;
 
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
@@ -92,7 +93,8 @@ public final class EventPredicate {
             || msg.message() instanceof BFTInsertUpdate
             || msg.message() instanceof RoundQuorumReached
             || msg.message() instanceof RoundUpdate
-            || msg.message() instanceof RoundLeaderFailure;
+            || msg.message() instanceof RoundLeaderFailure
+            || msg.message() instanceof EpochRoundUpdate;
   }
 
   public static Predicate<ControlledMessage> onlyBFTSyncEvents() {
