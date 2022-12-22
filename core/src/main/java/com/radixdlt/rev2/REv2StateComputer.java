@@ -216,6 +216,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
     var result = stateComputer.commit(commitRequest);
     if (result.isError()) {
+      log.warn("Could not commit: {}", result.unwrapError());
       return;
     }
 

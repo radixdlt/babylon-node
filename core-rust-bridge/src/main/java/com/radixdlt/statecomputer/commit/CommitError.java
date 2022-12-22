@@ -78,5 +78,5 @@ public interface CommitError {
                     CommitError.MissingEpochProof.class, CommitError.MissingEpochProof::new)));
   }
 
-  record MissingEpochProof() implements CommitError {}
+  public record MissingEpochProof() implements CommitError {}
 }

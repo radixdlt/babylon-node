@@ -127,6 +127,10 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
           // can't fit. Stop the processing and use the transactions up to latestUsableProof.
           break top_level_while;
         }
+        if (maybeNextProof.unwrap().getNextValidatorSet().isPresent()) {
+          // New epoch proofs should always be returned
+          break top_level_while;
+        }
         transactionsUpToNextProof.add(RawLedgerTransaction.create(executedTxn.transactionBytes()));
       }
 
