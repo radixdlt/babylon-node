@@ -62,16 +62,34 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system.routes;
+package com.radixdlt.monitoring;
 
-import com.radixdlt.api.system.SystemGetJsonHandler;
-import com.radixdlt.api.system.generated.models.VersionResponse;
-import com.radixdlt.monitoring.ApplicationVersion;
+import com.google.inject.Inject;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.monitoring.Metrics.Config;
 
-public class VersionHandler extends SystemGetJsonHandler<VersionResponse> {
+/** An installer of extra metrics which do not follow the conventional Prometheus usage patterns. */
+public final class MetricInstaller {
 
-  @Override
-  public VersionResponse handleRequest() {
-    return new VersionResponse().version(ApplicationVersion.INSTANCE.string());
+  /** An own node, for exposing the {@link Config#key()} information. */
+  private final BFTNode self;
+
+  @Inject
+  public MetricInstaller(@Self BFTNode self) {
+    this.self = self;
+  }
+
+  /**
+   * Sets up the metrics which - for different reasons (most often legacy) - do not use the regular
+   * Prometheus measurement primitives.
+   *
+   * <p>This includes e.g. static "info" metrics, and directly-read "reader gauges".
+   *
+   * @param metrics Hierarchy where some legacy metrics need to be set.
+   */
+  public void installAt(Metrics metrics) {
+    var config = new Config(ApplicationVersion.INSTANCE.string(), this.self.getKey().toHex());
+    metrics.misc().config().set(config);
   }
 }
