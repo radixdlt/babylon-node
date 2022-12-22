@@ -412,7 +412,14 @@ pub struct PrepareRequest {
 pub struct PrepareResult {
     pub committed: Vec<Vec<u8>>,
     pub rejected: Vec<(Vec<u8>, String)>,
-    pub next_validator_set: Option<Vec<EcdsaSecp256k1PublicKey>>,
+    pub next_epoch: Option<NextEpoch>,
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct NextEpoch {
+    pub validator_set: Vec<EcdsaSecp256k1PublicKey>,
+    pub epoch: u64,
 }
 
 #[derive(Debug, Decode, Encode, TypeId)]

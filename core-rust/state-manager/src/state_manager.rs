@@ -98,8 +98,8 @@ use crate::transaction::{
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult, PreviewRequest};
 use crate::{
     CommitError, CommittedTransactionIdentifiers, HasIntentHash, HasUserPayloadHash, IntentHash,
-    LedgerTransactionReceipt, MempoolAddError, Metrics, PendingTransaction, PrepareGenesisRequest,
-    PrepareGenesisResult,
+    LedgerTransactionReceipt, MempoolAddError, Metrics, NextEpoch, PendingTransaction,
+    PrepareGenesisRequest, PrepareGenesisResult,
 };
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
@@ -555,7 +555,7 @@ where
             &self.execution_config,
             &executable,
         );
-        let mut next_validator_set = match receipt.result {
+        let mut next_epoch = match receipt.result {
             TransactionResult::Commit(commit_result) => {
                 if let TransactionOutcome::Failure(error) = commit_result.outcome {
                     panic!("Validator txn failed: {:?}", error);
@@ -565,14 +565,17 @@ where
                 let validator_txn = LedgerTransaction::Validator(validator_transaction);
                 committed.push(scrypto_encode(&validator_txn).unwrap());
 
-                commit_result.next_epoch.map(|e| e.0)
+                commit_result.next_epoch.map(|e| NextEpoch {
+                    validator_set: e.0,
+                    epoch: e.1,
+                })
             }
             TransactionResult::Reject(reject_result) => {
                 panic!("Validator txn failed: {:?}", reject_result)
             }
         };
 
-        if next_validator_set.is_none() {
+        if next_epoch.is_none() {
             for proposed_payload in prepare_request.proposed_payloads {
                 let parsed =
                     match UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
@@ -619,8 +622,11 @@ where
                         already_committed_or_prepared_intent_hashes.insert(intent_hash);
                         committed.push(LedgerTransaction::User(parsed).create_payload().unwrap());
 
-                        if let Some((validator_set, _)) = result.next_epoch {
-                            next_validator_set = Some(validator_set);
+                        if let Some(e) = result.next_epoch {
+                            next_epoch = Some(NextEpoch {
+                                validator_set: e.0,
+                                epoch: e.1,
+                            });
                             break;
                         }
                     }
@@ -640,7 +646,7 @@ where
         PrepareResult {
             committed,
             rejected,
-            next_validator_set,
+            next_epoch,
         }
     }
 }

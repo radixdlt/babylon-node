@@ -74,7 +74,7 @@ use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 
 use crate::jni::utils::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
-use crate::{CommitError, PrepareGenesisRequest, PrepareGenesisResult};
+use crate::{CommitError, NextEpoch, PrepareGenesisRequest, PrepareGenesisResult};
 
 use super::state_manager::ActualStateManager;
 
@@ -280,7 +280,7 @@ impl From<JavaPrepareRequest> for PrepareRequest {
 pub struct JavaPrepareResult {
     pub committed: Vec<Vec<u8>>,
     pub rejected: Vec<(Vec<u8>, String)>,
-    pub next_validator_set: Option<Vec<EcdsaSecp256k1PublicKey>>,
+    pub next_epoch: Option<NextEpoch>,
 }
 
 impl From<PrepareResult> for JavaPrepareResult {
@@ -288,7 +288,7 @@ impl From<PrepareResult> for JavaPrepareResult {
         JavaPrepareResult {
             committed: prepare_results.committed,
             rejected: prepare_results.rejected,
-            next_validator_set: prepare_results.next_validator_set,
+            next_epoch: prepare_results.next_epoch,
         }
     }
 }
