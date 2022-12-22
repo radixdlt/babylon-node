@@ -160,7 +160,7 @@ public final class LedgerProof {
   }
 
   public Optional<BFTValidatorSet> getNextValidatorSet() {
-    return ledgerHeader.getNextValidatorSet();
+    return ledgerHeader.getNextEpoch().map(NextEpoch::getValidators).map(BFTValidatorSet::from);
   }
 
   public Optional<NextEpoch> getNextEpoch() {

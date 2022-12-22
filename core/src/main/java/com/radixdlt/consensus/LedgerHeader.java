@@ -219,10 +219,6 @@ public final class LedgerHeader {
     return round;
   }
 
-  public Optional<BFTValidatorSet> getNextValidatorSet() {
-    return Optional.ofNullable(nextEpoch).map(NextEpoch::getValidators).map(BFTValidatorSet::from);
-  }
-
   public Optional<NextEpoch> getNextEpoch() {
     return Optional.ofNullable(nextEpoch);
   }

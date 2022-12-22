@@ -68,7 +68,7 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
 import com.radixdlt.sbor.codec.EnumEntry;
 
-public interface CommitError {
+public sealed interface CommitError {
   static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         CommitError.class,
@@ -78,5 +78,5 @@ public interface CommitError {
                     CommitError.MissingEpochProof.class, CommitError.MissingEpochProof::new)));
   }
 
-  public record MissingEpochProof() implements CommitError {}
+  record MissingEpochProof() implements CommitError {}
 }

@@ -114,7 +114,9 @@ impl TryFrom<RENodeId> for MappedEntityId {
             RENodeId::Worktop => return Err(transient_renode_error("Worktop")),
             RENodeId::AuthZoneStack(_) => return Err(transient_renode_error("AuthZoneStack")),
             RENodeId::FeeReserve(_) => return Err(transient_renode_error("FeeReserve")),
-            RENodeId::TransactionRuntime(_) => return Err(transient_renode_error("TransactionRuntime")),
+            RENodeId::TransactionRuntime(_) => {
+                return Err(transient_renode_error("TransactionRuntime"))
+            }
             RENodeId::Logger => return Err(transient_renode_error("Logger")),
         };
         Ok(MappedEntityId {
