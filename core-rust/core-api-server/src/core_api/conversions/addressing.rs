@@ -114,7 +114,7 @@ impl TryFrom<RENodeId> for MappedEntityId {
             RENodeId::Worktop => return Err(transient_renode_error("Worktop")),
             RENodeId::AuthZoneStack(_) => return Err(transient_renode_error("AuthZoneStack")),
             RENodeId::FeeReserve(_) => return Err(transient_renode_error("FeeReserve")),
-            RENodeId::TransactionHash(_) => return Err(transient_renode_error("TransactionHash")),
+            RENodeId::TransactionRuntime(_) => return Err(transient_renode_error("TransactionRuntime")),
             RENodeId::Logger => return Err(transient_renode_error("Logger")),
         };
         Ok(MappedEntityId {
@@ -384,8 +384,8 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
         SubstateId(RENodeId::FeeReserve(_), _) => {
             return Err(transient_substate_error("FeeReserve", &substate_id))
         }
-        SubstateId(RENodeId::TransactionHash(..), _) => {
-            return Err(transient_substate_error("TransactionHash", &substate_id))
+        SubstateId(RENodeId::TransactionRuntime(..), _) => {
+            return Err(transient_substate_error("TransactionRuntime", &substate_id))
         }
         SubstateId(RENodeId::Logger, _) => {
             return Err(transient_substate_error("Logger", &substate_id))
