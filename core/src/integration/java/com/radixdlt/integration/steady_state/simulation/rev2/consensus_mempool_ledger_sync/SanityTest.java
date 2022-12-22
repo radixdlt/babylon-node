@@ -108,8 +108,8 @@ public class SanityTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
-                            4, UInt64.fromNonNegativeLong(10)),
-                        new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
+                            4, UInt64.fromNonNegativeLong(100000)),
+                        new REv2StateConfig(UInt64.fromNonNegativeLong(10000)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.mempool(10, 100, MempoolRelayConfig.of())),
                     SyncRelayConfig.of(5000, 10, 3000L))))
