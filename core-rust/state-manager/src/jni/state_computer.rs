@@ -74,7 +74,7 @@ use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 
 use crate::jni::utils::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
-use crate::{PrepareGenesisRequest, PrepareGenesisResult};
+use crate::{CommitError, PrepareGenesisRequest, PrepareGenesisResult};
 
 use super::state_manager::ActualStateManager;
 
@@ -179,9 +179,13 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
 }
 
 #[tracing::instrument(skip_all)]
-fn do_commit(state_manager: &mut ActualStateManager, args: JavaCommitRequest) {
+fn do_commit(
+    state_manager: &mut ActualStateManager,
+    args: JavaCommitRequest,
+) -> Result<(), CommitError> {
     let commit_request = args;
-    state_manager.commit(commit_request.into());
+
+    state_manager.commit(commit_request.into())
 }
 
 #[no_mangle]

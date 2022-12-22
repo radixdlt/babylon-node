@@ -180,11 +180,12 @@ public class RustStateComputer {
 
   private static native byte[] prepare(StateManager stateManager, byte[] payload);
 
-  public void commit(CommitRequest commitRequest) {
-    commitFunc.call(commitRequest);
+  public Result<Unit, CommitError> commit(CommitRequest commitRequest) {
+    return commitFunc.call(commitRequest);
   }
 
-  private final NativeCalls.Func1<StateManager, CommitRequest, Unit> commitFunc;
+  private final NativeCalls.Func1<StateManager, CommitRequest, Result<Unit, CommitError>>
+      commitFunc;
 
   private static native byte[] commit(StateManager stateManager, byte[] payload);
 

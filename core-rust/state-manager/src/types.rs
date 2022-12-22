@@ -384,6 +384,12 @@ pub struct PreviewRequest {
     pub flags: PreviewFlags,
 }
 
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum CommitError {
+    MissingEpochProof,
+}
+
 #[derive(Debug, Decode, Encode, TypeId)]
 pub struct CommitRequest {
     pub transaction_payloads: Vec<Vec<u8>>,

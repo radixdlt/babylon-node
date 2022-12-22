@@ -68,23 +68,15 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
 import com.radixdlt.sbor.codec.EnumEntry;
 
-public sealed interface TransactionPrepareResult {
+public interface CommitError {
   static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        TransactionPrepareResult.class,
+        CommitError.class,
         (codecs) ->
             EnumCodec.fromEntries(
                 EnumEntry.noFields(
-                    TransactionPrepareResult.CanCommit.class,
-                    TransactionPrepareResult.CanCommit::new),
-                EnumEntry.with(
-                    TransactionPrepareResult.Reject.class,
-                    TransactionPrepareResult.Reject::new,
-                    codecs.of(String.class),
-                    (t, encoder) -> encoder.encode(t.reason))));
+                    CommitError.MissingEpochProof.class, CommitError.MissingEpochProof::new)));
   }
 
-  record CanCommit() implements TransactionPrepareResult {}
-
-  record Reject(String reason) implements TransactionPrepareResult {}
+  record MissingEpochProof() implements CommitError {}
 }

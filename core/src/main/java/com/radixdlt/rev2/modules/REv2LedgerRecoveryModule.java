@@ -134,7 +134,8 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
               var stateVersion = UInt64.fromNonNegativeLong(proof.getStateVersion());
               var commitRequest =
                   new CommitRequest(List.of(genesis), stateVersion, proofBytes, Option.none());
-              stateComputer.commit(commitRequest);
+              var commitResult = stateComputer.commit(commitRequest);
+              commitResult.unwrap();
 
               return proof;
             });

@@ -97,7 +97,7 @@ use crate::transaction::{
 };
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult, PreviewRequest};
 use crate::{
-    CommittedTransactionIdentifiers, HasIntentHash, HasUserPayloadHash, IntentHash,
+    CommitError, CommittedTransactionIdentifiers, HasIntentHash, HasUserPayloadHash, IntentHash,
     LedgerTransactionReceipt, MempoolAddError, Metrics, PendingTransaction, PrepareGenesisRequest,
     PrepareGenesisResult,
 };
@@ -660,7 +660,7 @@ where
         db_transaction.commit();
     }
 
-    pub fn commit(&'db mut self, commit_request: CommitRequest) {
+    pub fn commit(&'db mut self, commit_request: CommitRequest) -> Result<(), CommitError> {
         let mut to_store = Vec::new();
         let mut payload_hashes = Vec::new();
         let mut intent_hashes = Vec::new();
@@ -699,60 +699,56 @@ where
         let mut current_state_version = current_top_of_ledger.state_version;
         let mut current_accumulator = current_top_of_ledger.accumulator_hash;
         let mut epoch_boundary = None;
+        let mut receipts = Vec::new();
 
-        let receipts = parsed_transactions
-            .iter()
-            .enumerate()
-            .map(|(i, transaction)| {
-                if let LedgerTransaction::System(..) = transaction {
-                    // TODO: Cleanup and use real system transaction logic
-                    if commit_request.proof_state_version != 1 && i != 0 {
-                        panic!("Non Genesis system transaction cannot be committed.");
-                    }
+        for (i, transaction) in parsed_transactions.iter().enumerate() {
+            if let LedgerTransaction::System(..) = transaction {
+                // TODO: Cleanup and use real system transaction logic
+                if commit_request.proof_state_version != 1 && i != 0 {
+                    panic!("Non Genesis system transaction cannot be committed.");
                 }
+            }
 
-                let executable = self
-                    .ledger_transaction_validator
-                    .validate_and_create_executable(transaction)
-                    .unwrap_or_else(|error| {
-                        panic!(
-                            "Committed transaction is not valid - likely byzantine quorum: {:?}",
-                            error
-                        );
-                    });
+            let executable = self
+                .ledger_transaction_validator
+                .validate_and_create_executable(transaction)
+                .unwrap_or_else(|error| {
+                    panic!(
+                        "Committed transaction is not valid - likely byzantine quorum: {:?}",
+                        error
+                    );
+                });
 
-                let engine_receipt = execute_and_commit_transaction(
-                    &mut db_transaction,
-                    &self.scrypto_interpreter,
-                    &self.fee_reserve_config,
-                    &self.execution_config,
-                    &executable,
-                );
+            let engine_receipt = execute_and_commit_transaction(
+                &mut db_transaction,
+                &self.scrypto_interpreter,
+                &self.fee_reserve_config,
+                &self.execution_config,
+                &executable,
+            );
 
-                let ledger_receipt: LedgerTransactionReceipt = match engine_receipt.result {
-                    TransactionResult::Commit(result) => {
-                        if let Some((_, next_epoch)) = result.next_epoch {
-                            let is_last = i == (parsed_transactions.len() - 1);
-                            if !is_last {
-                                panic!("Next Epoch occurs in the middle of transaction set at proof state_version {} transaction {}/{} {:?}", commit_request.proof_state_version, i + 1, parsed_transactions.len(), parsed_transactions);
-                            }
-                            // TODO: Use actual result and verify proof validator set matches transaction receipt validator set
-                            epoch_boundary = Some(next_epoch);
+            let ledger_receipt: LedgerTransactionReceipt = match engine_receipt.result {
+                TransactionResult::Commit(result) => {
+                    if let Some((_, next_epoch)) = result.next_epoch {
+                        let is_last = i == (parsed_transactions.len() - 1);
+                        if !is_last {
+                            return Err(CommitError::MissingEpochProof);
                         }
-
-                        (result, engine_receipt.execution.fee_summary).into()
+                        // TODO: Use actual result and verify proof validator set matches transaction receipt validator set
+                        epoch_boundary = Some(next_epoch);
                     }
-                    TransactionResult::Reject(error) => {
-                        panic!(
-                            "Failed to commit a txn at state version {}: {:?}",
-                            commit_request.proof_state_version, error
-                        )
-                    }
-                };
 
-                ledger_receipt
-            })
-            .collect::<Vec<_>>();
+                    (result, engine_receipt.execution.fee_summary).into()
+                }
+                TransactionResult::Reject(error) => {
+                    panic!(
+                        "Failed to commit a txn at state version {}: {:?}",
+                        commit_request.proof_state_version, error
+                    )
+                }
+            };
+            receipts.push(ledger_receipt);
+        }
 
         for (transaction, ledger_receipt) in
             parsed_transactions.into_iter().zip(receipts.into_iter())
@@ -808,6 +804,8 @@ where
 
         self.rejection_cache
             .track_committed_transactions(intent_hashes);
+
+        Ok(())
     }
 }
 

@@ -214,7 +214,10 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         new CommitRequest(
             txnsAndProof.getTransactions(), stateVersion, proofBytes, vertexStoreBytes);
 
-    stateComputer.commit(commitRequest);
+    var result = stateComputer.commit(commitRequest);
+    if (result.isError()) {
+      return;
+    }
 
     var epochChangeOptional =
         txnsAndProof
