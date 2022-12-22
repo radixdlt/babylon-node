@@ -140,4 +140,16 @@ public final class VoteData {
   public int hashCode() {
     return Objects.hash(proposed, parent, committed);
   }
+
+  @Override
+  public String toString() {
+    return "VoteData{"
+        + "proposed="
+        + proposed
+        + ", parent="
+        + parent
+        + ", committed="
+        + committed
+        + '}';
+  }
 }

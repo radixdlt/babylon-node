@@ -118,7 +118,7 @@ public final class MultiNodeRecoveryTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
-                            NUM_VALIDATORS, UInt64.fromNonNegativeLong(10)),
+                            NUM_VALIDATORS, UInt64.fromNonNegativeLong(10000)),
                         new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
                         databaseConfig,
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(

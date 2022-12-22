@@ -148,6 +148,7 @@ public final class EpochManager {
       HashVerifier hashVerifier,
       PacemakerTimeoutCalculator timeoutCalculator,
       PacemakerStateFactory pacemakerStateFactory,
+      SafetyState safetyState,
       PersistentSafetyStateStore persistentSafetyStateStore) {
     this.ledgerStatusUpdateDispatcher = requireNonNull(ledgerStatusUpdateDispatcher);
     this.lastEpochChange = requireNonNull(lastEpochChange);
@@ -166,10 +167,10 @@ public final class EpochManager {
     this.persistentSafetyStateStore = requireNonNull(persistentSafetyStateStore);
     this.queuedEvents = new HashMap<>();
 
-    this.updateEpochState();
+    this.updateEpochState(safetyState);
   }
 
-  private void updateEpochState() {
+  private void updateEpochState(SafetyState safetyState) {
     var config = this.lastEpochChange.getBFTConfiguration();
     var validatorSet = config.getValidatorSet();
 
@@ -205,7 +206,7 @@ public final class EpochManager {
     final var safetyRules =
         new SafetyRules(
             self,
-            SafetyState.initialState(),
+            safetyState,
             persistentSafetyStateStore,
             hasher,
             signer,
@@ -290,7 +291,7 @@ public final class EpochManager {
     }
 
     this.lastEpochChange = epochChange;
-    this.updateEpochState();
+    this.updateEpochState(SafetyState.initialState());
     this.bftEventProcessor.start();
 
     // Execute any queued up consensus events
