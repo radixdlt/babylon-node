@@ -150,7 +150,7 @@ public final class REv2MempoolFillAndEmptyTest {
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),
                     TransactionBuilder.createGenesis(
-                        TEST_KEY.getPublicKey(), UInt64.fromNonNegativeLong(1000)),
+                        TEST_KEY.getPublicKey(), UInt64.fromNonNegativeLong(100000)),
                     REv2DatabaseConfig.inMemory(),
                     StateComputerConfig.REV2ProposerConfig.mempool(
                         10, 1000, MempoolRelayConfig.of())),

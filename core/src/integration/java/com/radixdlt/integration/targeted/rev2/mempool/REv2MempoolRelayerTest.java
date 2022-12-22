@@ -106,7 +106,7 @@ public final class REv2MempoolRelayerTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
-                            1, UInt64.fromNonNegativeLong(10)),
+                            1, UInt64.fromNonNegativeLong(100000)),
                         REv2DatabaseConfig.inMemory(),
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             0, MEMPOOL_SIZE, new MempoolRelayConfig(0, 100))),
