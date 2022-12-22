@@ -81,7 +81,6 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
-import com.radixdlt.statecomputer.commit.PrepareGenesisRequest;
 import com.radixdlt.statecomputer.commit.PrepareRequest;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawLedgerTransaction;
@@ -150,20 +149,6 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
             .toList();
     return stateComputer.getTransactionsForProposal(
         transactionsPerProposalCount, transactionsNotToInclude);
-  }
-
-  public BFTValidatorSet prepareGenesis(RawLedgerTransaction transaction) {
-    var prepareGenesisRequest = new PrepareGenesisRequest(transaction);
-    var result = stateComputer.prepareGenesis(prepareGenesisRequest);
-    return result
-        .validatorList()
-        .map(
-            list -> {
-              var validators =
-                  list.stream().map(key -> BFTValidator.from(BFTNode.create(key), UInt256.ONE));
-              return BFTValidatorSet.from(validators);
-            })
-        .or((BFTValidatorSet) null);
   }
 
   @Override

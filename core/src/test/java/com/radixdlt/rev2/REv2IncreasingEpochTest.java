@@ -91,7 +91,7 @@ public class REv2IncreasingEpochTest {
         .messageMutator(MessageMutator.dropTimeouts())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
-                false,
+                true,
                 SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerNoSync(
@@ -113,9 +113,9 @@ public class REv2IncreasingEpochTest {
       var epoch0 = stateReader.getEpoch();
 
       // Act/Assert: Run until next epoch is reached
-      test.runUntilMessage(DeterministicTest.epochLedgerUpdate(epoch0 + 1));
+      test.runUntilMessage(DeterministicTest.epochLedgerUpdate(epoch0 + 2));
       assertThat(test.getNodeInjectors().get(0).getInstance(REv2StateReader.class).getEpoch())
-          .isGreaterThanOrEqualTo(epoch0 + 1);
+          .isGreaterThanOrEqualTo(epoch0 + 2);
     }
   }
 }
