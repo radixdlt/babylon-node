@@ -121,7 +121,6 @@ pub struct StateManager<S> {
     pub user_transaction_validator: UserTransactionValidator,
     pub ledger_transaction_validator: LedgerTransactionValidator,
     pub rejection_cache: RejectionCache,
-    rounds_per_epoch: u64,
     pub metrics: Metrics,
     pub prometheus_registry: Registry,
     execution_config: ExecutionConfig,
@@ -134,7 +133,6 @@ pub struct StateManager<S> {
 impl<S> StateManager<S> {
     pub fn new(
         network: NetworkDefinition,
-        rounds_per_epoch: u64,
         mempool: SimpleMempool,
         store: S,
         logging_config: LoggingConfig,
@@ -159,7 +157,6 @@ impl<S> StateManager<S> {
             store,
             user_transaction_validator,
             ledger_transaction_validator: committed_transaction_validator,
-            rounds_per_epoch,
             execution_config: ExecutionConfig {
                 max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                 trace: logging_config.engine_trace,

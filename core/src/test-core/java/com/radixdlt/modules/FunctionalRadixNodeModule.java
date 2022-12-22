@@ -401,7 +401,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                     REv2StateManagerModule.createForTesting(
                         rev2Config.networkId(),
                         0,
-                        rev2Config.stateConfig(),
                         rev2Config.databaseConfig(),
                         Option.none(),
                         rev2Config.debugLogging()));
@@ -414,7 +413,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                     REv2StateManagerModule.createForTesting(
                         rev2Config.networkId(),
                         mempool.transactionsPerProposal(),
-                        rev2Config.stateConfig(),
                         rev2Config.databaseConfig(),
                         Option.some(mempool.mempoolConfig()),
                         rev2Config.debugLogging()));

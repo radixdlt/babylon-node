@@ -98,7 +98,6 @@ import com.radixdlt.rev2.modules.REv2ConsensusRecoveryModule;
 import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.BooleanUtils;
@@ -230,17 +229,13 @@ public final class RadixNodeModule extends AbstractModule {
     var validatorList = initialVset.stream().map(BFTNode::getKey).toList();
     var genesis =
         TransactionBuilder.createGenesis(
-            validatorList, UInt64.fromNonNegativeLong(1), UInt64.fromNonNegativeLong(1800));
+            validatorList,
+            UInt64.fromNonNegativeLong(1),
+            UInt64.fromNonNegativeLong(1800)); // approximately 5 minutes per epoch
 
-    var stateConfig =
-        new REv2StateConfig(UInt64.fromNonNegativeLong(1800)); // approximately 5 minutes per epoch
     install(
         REv2StateManagerModule.create(
-            networkId,
-            transactionsPerProposalCount,
-            stateConfig,
-            databaseConfig,
-            Option.some(mempoolConfig)));
+            networkId, transactionsPerProposalCount, databaseConfig, Option.some(mempoolConfig)));
 
     // Recovery
     install(new BerkeleySafetyStoreModule(databasePath));

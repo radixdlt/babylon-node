@@ -131,7 +131,6 @@ public final class RustMempoolTest {
     final var config =
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
-            new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
             Option.some(new RustMempoolConfig(mempoolSize)),
             REv2DatabaseConfig.inMemory(),
             LoggingConfig.getDefault());
@@ -193,7 +192,6 @@ public final class RustMempoolTest {
     final var config =
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
-            new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
             Option.some(new RustMempoolConfig(mempoolSize)),
             REv2DatabaseConfig.inMemory(),
             LoggingConfig.getDefault());
@@ -292,7 +290,6 @@ public final class RustMempoolTest {
     final var config =
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
-            new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
             Option.some(new RustMempoolConfig(mempoolSize)),
             REv2DatabaseConfig.inMemory(),
             LoggingConfig.getDefault());

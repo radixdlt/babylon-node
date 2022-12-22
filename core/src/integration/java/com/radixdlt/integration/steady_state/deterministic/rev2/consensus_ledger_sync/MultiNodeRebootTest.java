@@ -81,7 +81,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.MockedVertexStoreModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
@@ -210,7 +209,6 @@ public final class MultiNodeRebootTest {
                     Network.INTEGRATIONTESTNET.getId(),
                     TransactionBuilder.createGenesisWithNumValidators(
                         numValidators, this.roundsPerEpoch),
-                    new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
                     databaseConfig,
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                         new REV2TransactionGenerator(), 1)),
