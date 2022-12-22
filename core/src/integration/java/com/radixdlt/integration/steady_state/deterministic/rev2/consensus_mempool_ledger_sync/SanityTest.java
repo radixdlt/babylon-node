@@ -87,14 +87,36 @@ import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
+import java.util.Collection;
+import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public final class SanityTest {
+  @Parameterized.Parameters
+  public static Collection<Object[]> parameters() {
+    return List.of(
+        new Object[][] {
+          {false, UInt64.fromNonNegativeLong(100000)},
+          {true, UInt64.fromNonNegativeLong(100)},
+        });
+  }
+
   @Rule public TemporaryFolder folder = new TemporaryFolder();
   private final TransactionGenerator<RawNotarizedTransaction> transactionGenerator =
       new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
+
+  private final boolean epochs;
+  private final UInt64 roundsPerEpoch;
+
+  public SanityTest(boolean epochs, UInt64 roundsPerEpoch) {
+    this.epochs = epochs;
+    this.roundsPerEpoch = roundsPerEpoch;
+  }
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
@@ -103,21 +125,20 @@ public final class SanityTest {
         .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
-                false,
+                epochs,
                 SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
-                            10, UInt64.fromNonNegativeLong(1000)),
+                        TransactionBuilder.createGenesisWithNumValidators(10, roundsPerEpoch),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.mempool(10, 100, MempoolRelayConfig.of())),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
   @Test
-  public void rev2_consensus_mempool_ledger_sync_cause_no_unexpected_errors() throws Exception {
+  public void normal_run_should_not_cause_unexpected_errors() throws Exception {
     try (var test = createTest()) {
       test.startAllNodes();
 
