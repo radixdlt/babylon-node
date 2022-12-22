@@ -68,6 +68,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
@@ -117,7 +118,7 @@ public class RadixEngineModule extends AbstractModule {
       return 0;
     }
     var lastProof = lastProofOptional.get();
-    return lastProof.isEndOfEpoch() ? lastProof.getNextEpoch() : lastProof.getEpoch();
+    return lastProof.getNextEpoch().map(NextEpoch::getEpoch).orElse(lastProof.getEpoch());
   }
 
   @Provides

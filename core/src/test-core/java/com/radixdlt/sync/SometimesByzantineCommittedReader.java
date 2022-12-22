@@ -68,6 +68,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
@@ -173,7 +174,12 @@ public final class SometimesByzantineCommittedReader implements TransactionsAndP
               accumulatorState,
               base.getProof().consensusParentRoundTimestamp(),
               base.getProof().proposerTimestamp(),
-              base.getProof().getNextValidatorSet().orElse(null));
+              base.getProof()
+                  .getNextValidatorSet()
+                  .map(
+                      vset ->
+                          NextEpoch.create(base.getProof().getEpoch() + 1, vset.getValidators()))
+                  .orElse(null));
       var signatures =
           overwriteSignatures != null ? overwriteSignatures : base.getProof().getSignatures();
       var headerAndProof =

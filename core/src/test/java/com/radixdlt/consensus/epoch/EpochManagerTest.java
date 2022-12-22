@@ -70,6 +70,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.*;
 import com.google.inject.Module;
@@ -314,7 +315,8 @@ public class EpochManagerTest {
                 HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty(), hasher));
     LedgerProof proof = mock(LedgerProof.class);
     when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);
-    when(proof.getNextEpoch()).thenReturn(header.getEpoch() + 2);
+    when(proof.getNextEpoch())
+        .thenReturn(Optional.of(NextEpoch.create(header.getEpoch() + 2, ImmutableSet.of())));
     var epochChange = new EpochChange(proof, bftConfiguration);
     var ledgerUpdate =
         new LedgerUpdate(

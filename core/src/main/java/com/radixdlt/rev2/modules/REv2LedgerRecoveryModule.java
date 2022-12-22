@@ -172,7 +172,7 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
     var genesisVertex = Vertex.createGenesis(lastEpochProof.getHeader()).withId(hasher);
     var nextLedgerHeader =
         LedgerHeader.create(
-            lastEpochProof.getNextEpoch(),
+            lastEpochProof.getNextEpoch().orElseThrow().getEpoch(),
             Round.genesis(),
             lastEpochProof.getAccumulatorState(),
             lastEpochProof.consensusParentRoundTimestamp(),

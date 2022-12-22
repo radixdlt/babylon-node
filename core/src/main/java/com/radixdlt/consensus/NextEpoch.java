@@ -62,37 +62,76 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1;
+package com.radixdlt.consensus;
 
-import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.engine.PostProcessor;
-import com.radixdlt.engine.PostProcessorException;
-import com.radixdlt.rev1.forks.FixedEpochForkConfig;
-import com.radixdlt.store.EngineStore;
-import java.util.List;
+import static java.util.Objects.requireNonNull;
 
-/**
- * Checks whether the engine should switch to the next fixed epoch fork. If so, adds nextForkName to
- * the result metadata.
- */
-public final class NextFixedEpochForkPostProcessor implements PostProcessor<LedgerAndBFTProof> {
-  private final FixedEpochForkConfig nextFork;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
+import java.util.Objects;
+import javax.annotation.concurrent.Immutable;
 
-  public NextFixedEpochForkPostProcessor(FixedEpochForkConfig nextFork) {
-    this.nextFork = nextFork;
+@Immutable
+@SerializerId2("consensus.next_epoch")
+public final class NextEpoch {
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
+  SerializerDummy serializer = SerializerDummy.DUMMY;
+
+  @JsonProperty("validators")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final ImmutableSet<BFTValidator> validators;
+
+  @JsonProperty("epoch")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final long epoch;
+
+  @JsonCreator
+  @VisibleForTesting
+  NextEpoch(
+      @JsonProperty(value = "epoch", required = true) long epoch,
+      @JsonProperty(value = "validators", required = true) ImmutableSet<BFTValidator> validators) {
+    this.epoch = epoch;
+    if (epoch < 0) {
+      throw new IllegalArgumentException("Epoch can't be < 0");
+    }
+    this.validators = requireNonNull(validators);
+  }
+
+  public static NextEpoch create(long epoch, ImmutableSet<BFTValidator> validators) {
+    return new NextEpoch(epoch, validators);
+  }
+
+  public ImmutableSet<BFTValidator> getValidators() {
+    return validators;
+  }
+
+  public long getEpoch() {
+    return epoch;
   }
 
   @Override
-  public LedgerAndBFTProof process(
-      LedgerAndBFTProof metadata,
-      EngineStore.EngineStoreInTransaction<LedgerAndBFTProof> engineStore,
-      List<REProcessedTxn> txns)
-      throws PostProcessorException {
-    if (metadata.getProof().getNextValidatorSet().isPresent()
-        && nextFork.epoch() == metadata.getProof().getNextEpoch().orElseThrow().getEpoch()) {
-      return metadata.withNextForkName(nextFork.name());
-    } else {
-      return metadata;
-    }
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    NextEpoch nextEpoch = (NextEpoch) o;
+    return epoch == nextEpoch.epoch && Objects.equals(validators, nextEpoch.validators);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(validators, epoch);
+  }
+
+  @Override
+  public String toString() {
+    return "NextEpoch{" + "validators=" + validators + ", epoch=" + epoch + '}';
   }
 }

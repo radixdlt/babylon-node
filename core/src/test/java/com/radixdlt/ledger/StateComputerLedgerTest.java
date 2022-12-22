@@ -70,6 +70,7 @@ import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.crypto.HashUtils;
@@ -94,7 +95,6 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -162,7 +162,9 @@ public class StateComputerLedgerTest {
             12345,
             12345,
             endOfEpoch
-                ? BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
+                ? NextEpoch.create(
+                    genesisEpoch + 1,
+                    ImmutableSet.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
                 : null);
     this.genesisVertex = Vertex.createGenesis(ledgerHeader).withId(hasher);
     this.genesisQC = QuorumCertificate.ofGenesis(genesisVertex, ledgerHeader);

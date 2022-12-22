@@ -379,7 +379,9 @@ public final class BerkeleyLedgerEntryStore
         .ifPresent(
             nextForkName ->
                 this.storeForkAtEpoch(
-                    dbTransaction, ledgerAndBFTProof.getProof().getNextEpoch(), nextForkName));
+                    dbTransaction,
+                    ledgerAndBFTProof.getProof().getNextEpoch().orElseThrow().getEpoch(),
+                    nextForkName));
   }
 
   private void storeForksVotingResults(
@@ -828,7 +830,7 @@ public final class BerkeleyLedgerEntryStore
 
   private static DatabaseEntry toHeaderKey(LedgerProof header) {
     if (header.isEndOfEpoch()) {
-      return toPKey(header.getStateVersion(), header.getNextEpoch());
+      return toPKey(header.getStateVersion(), header.getNextEpoch().orElseThrow().getEpoch());
     } else {
       return toPKey(header.getStateVersion());
     }

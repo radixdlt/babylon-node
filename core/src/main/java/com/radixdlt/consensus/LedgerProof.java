@@ -163,24 +163,16 @@ public final class LedgerProof {
     return ledgerHeader.getNextValidatorSet();
   }
 
+  public Optional<NextEpoch> getNextEpoch() {
+    return ledgerHeader.getNextEpoch();
+  }
+
   /**
    * Gets the epoch of the ledger proof. If this ledger proof represents the end of an epoch, it is
    * the old epoch, not the next epoch.
    */
   public long getEpoch() {
     return ledgerHeader.getEpoch();
-  }
-
-  /**
-   * This returns the new epoch, after an epoch change. This method should only be called on
-   * end-of-epoch Ledger Proofs.
-   */
-  public long getNextEpoch() {
-    if (!ledgerHeader.isEndOfEpoch()) {
-      throw new UnsupportedOperationException(
-          "This method should only be called on Ledger Proofs representing a change of epoch");
-    }
-    return ledgerHeader.getEpoch() + 1;
   }
 
   public Round getRound() {

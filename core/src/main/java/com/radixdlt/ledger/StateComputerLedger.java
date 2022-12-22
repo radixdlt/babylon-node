@@ -67,10 +67,7 @@ package com.radixdlt.ledger;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.VertexWithHash;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.environment.EventProcessor;
@@ -94,15 +91,15 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   public static class StateComputerResult {
     private final List<ExecutedTransaction> executedTransactions;
     private final Map<RawLedgerTransaction, Exception> failedTransactions;
-    private final BFTValidatorSet nextValidatorSet;
+    private final NextEpoch nextEpoch;
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
         Map<RawLedgerTransaction, Exception> failedTransactions,
-        BFTValidatorSet nextValidatorSet) {
+        NextEpoch nextEpoch) {
       this.executedTransactions = Objects.requireNonNull(executedTransactions);
       this.failedTransactions = Objects.requireNonNull(failedTransactions);
-      this.nextValidatorSet = nextValidatorSet;
+      this.nextEpoch = nextEpoch;
     }
 
     public StateComputerResult(
@@ -111,8 +108,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       this(executedTransactions, failedTransactions, null);
     }
 
-    public Optional<BFTValidatorSet> getNextValidatorSet() {
-      return Optional.ofNullable(nextValidatorSet);
+    public Optional<NextEpoch> getNextEpoch() {
+      return Optional.ofNullable(nextEpoch);
     }
 
     public List<ExecutedTransaction> getSuccessfullyExecutedTransactions() {
@@ -261,7 +258,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               accumulatorState,
               vertex.getQCToParent().getWeightedTimestampOfSignatures(),
               vertex.proposerTimestamp(),
-              result.getNextValidatorSet().orElse(null));
+              result.getNextEpoch().orElse(null));
 
       return Optional.of(
           new ExecutedVertex(

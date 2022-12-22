@@ -71,6 +71,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnDispatch;
@@ -135,10 +136,14 @@ public class MockedSyncServiceModule extends AbstractModule {
             sharedCommittedTransactions.put(firstVersion + i, update.getNewTransactions().get(i));
           }
 
-          if (update.getTail().isEndOfEpoch()) {
-            logger.info("Epoch Proof: " + (update.getTail().getNextEpoch()));
-            sharedEpochProofs.put(update.getTail().getNextEpoch(), update.getTail());
-          }
+          update
+              .getTail()
+              .getNextEpoch()
+              .ifPresent(
+                  nextEpoch -> {
+                    logger.info("Epoch Proof: " + nextEpoch.getEpoch());
+                    sharedEpochProofs.put(nextEpoch.getEpoch(), update.getTail());
+                  });
         });
   }
 
@@ -150,7 +155,7 @@ public class MockedSyncServiceModule extends AbstractModule {
       EventDispatcher<CommittedTransactionsWithProof> syncedTransactionRunDispatcher) {
     return new EventProcessor<>() {
       long currentVersion = genesis.getStateVersion();
-      long currentEpoch = genesis.getNextEpoch();
+      long currentEpoch = genesis.getNextEpoch().orElseThrow().getEpoch();
 
       private void syncTo(LedgerProof proof) {
         var transactions =
@@ -160,7 +165,7 @@ public class MockedSyncServiceModule extends AbstractModule {
         syncedTransactionRunDispatcher.dispatch(
             CommittedTransactionsWithProof.create(transactions, proof));
         currentVersion = proof.getStateVersion();
-        currentEpoch = proof.isEndOfEpoch() ? proof.getNextEpoch() : proof.getEpoch();
+        currentEpoch = proof.getNextEpoch().map(NextEpoch::getEpoch).orElse(proof.getEpoch());
       }
 
       @Override

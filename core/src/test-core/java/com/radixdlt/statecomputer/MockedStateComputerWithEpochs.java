@@ -66,6 +66,7 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.Hasher;
@@ -122,7 +123,9 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
               .map(tx -> new MockExecuted(tx.INCORRECTInterpretDirectlyAsRawLedgerTransaction()))
               .collect(Collectors.toList()),
           ImmutableMap.of(),
-          validatorSetMapping.apply(roundDetails.epoch() + 1));
+          NextEpoch.create(
+              roundDetails.epoch() + 1,
+              validatorSetMapping.apply(roundDetails.epoch() + 1).getValidators()));
     } else {
       return stateComputer.prepare(previous, proposedTransactions, roundDetails);
     }

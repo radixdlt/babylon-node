@@ -126,7 +126,7 @@ public class MockedConsensusRecoveryModule extends AbstractModule {
             .withId(hasher);
     LedgerHeader nextLedgerHeader =
         LedgerHeader.create(
-            proof.getNextEpoch(),
+            proof.getNextEpoch().orElseThrow().getEpoch(),
             Round.genesis(),
             proof.getAccumulatorState(),
             proof.consensusParentRoundTimestamp(),

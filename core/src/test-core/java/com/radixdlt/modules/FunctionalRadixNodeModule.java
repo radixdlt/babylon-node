@@ -375,7 +375,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                               .withId(hasher);
                       var nextLedgerHeader =
                           LedgerHeader.create(
-                              proof.getNextEpoch(),
+                              proof.getNextEpoch().orElseThrow().getEpoch(),
                               Round.genesis(),
                               proof.getAccumulatorState(),
                               proof.consensusParentRoundTimestamp(),

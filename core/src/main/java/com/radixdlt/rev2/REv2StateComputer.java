@@ -65,6 +65,7 @@
 package com.radixdlt.rev2;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -182,19 +183,21 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                     r -> RawLedgerTransaction.create(r.first()),
                     r -> (Exception) new InvalidREv2Transaction(r.last())));
 
-    var validatorSet =
+    var nextEpoch =
         result
             .nextValidatorSet()
             .map(
                 vSet -> {
-                  var validatorStream =
-                      vSet.stream().map(v -> BFTValidator.from(BFTNode.create(v), UInt256.ONE));
-                  return BFTValidatorSet.from(validatorStream);
+                  var validators =
+                      vSet.stream()
+                          .map(v -> BFTValidator.from(BFTNode.create(v), UInt256.ONE))
+                          .collect(ImmutableSet.toImmutableSet());
+                  return NextEpoch.create(roundDetails.epoch() + 1, validators);
                 })
-            .or((BFTValidatorSet) null);
+            .or((NextEpoch) null);
 
     return new StateComputerLedger.StateComputerResult(
-        committableTransactions, rejectedTransactions, validatorSet);
+        committableTransactions, rejectedTransactions, nextEpoch);
   }
 
   @Override
@@ -223,15 +226,15 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     var epochChangeOptional =
         txnsAndProof
             .getProof()
-            .getNextValidatorSet()
+            .getNextEpoch()
             .map(
-                validatorSet -> {
+                nextEpoch -> {
                   var header = txnsAndProof.getProof();
                   // TODO: Move vertex stuff somewhere else
                   var genesisVertex = Vertex.createGenesis(header.getHeader()).withId(hasher);
                   var nextLedgerHeader =
                       LedgerHeader.create(
-                          header.getNextEpoch(),
+                          nextEpoch.getEpoch(),
                           Round.genesis(),
                           header.getAccumulatorState(),
                           header.consensusParentRoundTimestamp(),
@@ -240,6 +243,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                   final var initialState =
                       VertexStoreState.create(
                           HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
+                  var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
                   var proposerElection = new WeightedRotatingLeaders(validatorSet);
                   var bftConfiguration =
                       new BFTConfiguration(proposerElection, validatorSet, initialState);

@@ -144,9 +144,10 @@ public final class REv1LedgerRecoveryModule extends AbstractModule {
   private static VertexStoreState genesisEpochProofToGenesisVertexStore(
       LedgerProof lastEpochProof, Hasher hasher) {
     var genesisVertex = Vertex.createGenesis(lastEpochProof.getHeader()).withId(hasher);
+    var nextEpoch = lastEpochProof.getNextEpoch().orElseThrow();
     var nextLedgerHeader =
         LedgerHeader.create(
-            lastEpochProof.getNextEpoch(),
+            nextEpoch.getEpoch(),
             Round.genesis(),
             lastEpochProof.getAccumulatorState(),
             lastEpochProof.consensusParentRoundTimestamp(),
@@ -161,9 +162,9 @@ public final class REv1LedgerRecoveryModule extends AbstractModule {
       @LastEpochProof LedgerProof lastEpochProof,
       Optional<VertexStoreState.SerializedVertexStoreState> serializedVertexStoreState,
       Hasher hasher) {
-    var currentEpoch = lastEpochProof.getNextEpoch();
+    var currentEpoch = lastEpochProof.getNextEpoch().orElseThrow();
     return serializedVertexStoreState
-        .filter(vertexStoreState -> vertexStoreState.isForEpoch(currentEpoch))
+        .filter(vertexStoreState -> vertexStoreState.isForEpoch(currentEpoch.getEpoch()))
         .map(state -> state.toVertexStoreState(hasher))
         .orElseGet(() -> genesisEpochProofToGenesisVertexStore(lastEpochProof, hasher));
   }

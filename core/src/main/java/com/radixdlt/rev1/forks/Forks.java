@@ -432,7 +432,7 @@ public final class Forks {
       return false;
     }
 
-    final var nextEpoch = ledgerAndBFTProof.getProof().getNextEpoch();
+    final var nextEpoch = ledgerAndBFTProof.getProof().getNextEpoch().orElseThrow().getEpoch();
     final var candidateForkId = CandidateForkVote.candidateForkId(candidateFork);
 
     final var maybeCurrentForkVotingResult =
@@ -461,7 +461,7 @@ public final class Forks {
       CandidateForkConfig candidateFork,
       LedgerProof ledgerProof,
       CloseableCursor<ForkVotingResult> forkVotingResultsCursor) {
-    final var nextEpoch = ledgerProof.getNextEpoch();
+    final var nextEpoch = ledgerProof.getNextEpoch().orElseThrow().getEpoch();
     if (!forkWithinAllowedEpochRange(nextEpoch, candidateFork)) {
       return false;
     }
