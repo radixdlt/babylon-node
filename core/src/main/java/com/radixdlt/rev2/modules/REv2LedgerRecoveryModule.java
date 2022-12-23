@@ -162,8 +162,7 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
     if (lastStoredProof.isEndOfEpoch()) {
       return lastStoredProof;
     }
-    // TODO: Use lastStoredProof.getEpoch() once epochs with validators implemented
-    var lastEpoch = 1L;
+    var lastEpoch = lastStoredProof.getEpoch();
     return transactionsAndProofReader.getEpochProof(lastEpoch).orElseThrow();
   }
 

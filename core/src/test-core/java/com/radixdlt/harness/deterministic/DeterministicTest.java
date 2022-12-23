@@ -200,17 +200,7 @@ public final class DeterministicTest implements AutoCloseable {
     private void addFunctionalNodeModule(FunctionalRadixNodeModule module) {
       modules.add(module);
 
-      if (module.supportsREv2()) {
-        /*
-        modules.add(
-            new AbstractModule() {
-              @Override
-              protected void configure() {
-                bind(BFTValidatorSet.class).toInstance(initialValidatorSet);
-              }
-            });
-         */
-      } else {
+      if (!module.supportsREv2()) {
         MockedConsensusRecoveryModule.Builder mockedConsensusRecoveryModuleBuilder =
             new MockedConsensusRecoveryModule.Builder(module.supportsEpochs());
         mockedConsensusRecoveryModuleBuilder.withNodes(initialValidatorNodes);

@@ -81,7 +81,9 @@ import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -90,18 +92,37 @@ import org.apache.logging.log4j.Logger;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * Randomly reboots nodes immediately (no dropped messages except local messages) and verifies that
  * ledger safety and liveness is not broken.
  */
+@RunWith(Parameterized.class)
 public final class MultiNodeRecoveryTest {
+  @Parameterized.Parameters
+  public static Collection<Object[]> parameters() {
+    return List.of(
+        new Object[][] {
+          {false, UInt64.fromNonNegativeLong(100000)},
+          {true, UInt64.fromNonNegativeLong(2)},
+          {true, UInt64.fromNonNegativeLong(100)},
+        });
+  }
+
   private static final Logger logger = LogManager.getLogger();
   private static final int NUM_VALIDATORS = 4;
 
   private final Random random = new Random(12345);
-
   @Rule public TemporaryFolder folder = new TemporaryFolder();
+  private final boolean epochs;
+  private final UInt64 roundsPerEpoch;
+
+  public MultiNodeRecoveryTest(boolean epochs, UInt64 roundsPerEpoch) {
+    this.epochs = epochs;
+    this.roundsPerEpoch = roundsPerEpoch;
+  }
 
   private DeterministicTest createTest(REv2DatabaseConfig databaseConfig) {
     return DeterministicTest.builder()
@@ -110,14 +131,14 @@ public final class MultiNodeRecoveryTest {
         .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
-                false,
+                this.epochs,
                 SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
-                            NUM_VALIDATORS, UInt64.fromNonNegativeLong(10000)),
+                            NUM_VALIDATORS, this.roundsPerEpoch),
                         databaseConfig,
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                             new REV2TransactionGenerator(), 1)))));
