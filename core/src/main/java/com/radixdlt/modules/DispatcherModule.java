@@ -67,7 +67,7 @@ package com.radixdlt.modules;
 import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.system.health.ScheduledStatsCollecting;
-import com.radixdlt.consensus.DoubleVote;
+import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.*;
@@ -113,8 +113,8 @@ public class DispatcherModule extends AbstractModule {
 
   @Override
   public void configure() {
-    bind(new TypeLiteral<EventDispatcher<DoubleVote>>() {})
-        .toProvider(Dispatchers.dispatcherProvider(DoubleVote.class))
+    bind(new TypeLiteral<EventDispatcher<ConsensusByzantineEvent>>() {})
+        .toProvider(Dispatchers.dispatcherProvider(ConsensusByzantineEvent.class))
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() {})
         .toProvider(Dispatchers.dispatcherProvider(MempoolAdd.class))
@@ -176,8 +176,8 @@ public class DispatcherModule extends AbstractModule {
         .toProvider(Dispatchers.remoteDispatcherProvider(MempoolAdd.class))
         .in(Scopes.SINGLETON);
 
-    final var doubleVoteKey = new TypeLiteral<EventProcessor<DoubleVote>>() {};
-    Multibinder.newSetBinder(binder(), doubleVoteKey, ProcessOnDispatch.class);
+    final var unexpecedEventKey = new TypeLiteral<EventProcessor<ConsensusByzantineEvent>>() {};
+    Multibinder.newSetBinder(binder(), unexpecedEventKey, ProcessOnDispatch.class);
 
     final var scheduledTimeoutKey = new TypeLiteral<EventProcessor<ScheduledLocalTimeout>>() {};
     Multibinder.newSetBinder(binder(), scheduledTimeoutKey, ProcessOnDispatch.class);

@@ -64,10 +64,7 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.DoubleVote;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.PendingVotes;
-import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.processor.*;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -89,7 +86,7 @@ public final class BFTBuilder {
   private VertexStoreAdapter vertexStore;
   private BFTSyncer bftSyncer;
   private EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher;
-  private EventDispatcher<DoubleVote> doubleVoteEventDispatcher;
+  private EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher;
   private EventDispatcher<NoVote> noVoteEventDispatcher;
   private EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher;
 
@@ -133,7 +130,7 @@ public final class BFTBuilder {
   }
 
   public BFTBuilder doubleVoteEventDispatcher(
-      EventDispatcher<DoubleVote> doubleVoteEventDispatcher) {
+      EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher) {
     this.doubleVoteEventDispatcher = doubleVoteEventDispatcher;
     return this;
   }

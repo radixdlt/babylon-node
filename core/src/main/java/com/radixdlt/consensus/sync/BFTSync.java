@@ -162,6 +162,8 @@ public final class BFTSync implements BFTSyncer {
   private final RemoteEventDispatcher<GetVerticesRequest> requestSender;
   private final EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher;
   private final ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher;
+
+  private final EventDispatcher<ConsensusByzantineEvent> unexpectedEventEventDispatcher;
   private final Random random;
   private final int bftSyncPatienceMillis;
   private final Metrics metrics;
@@ -184,6 +186,7 @@ public final class BFTSync implements BFTSyncer {
       RemoteEventDispatcher<GetVerticesRequest> requestSender,
       EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher,
       ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
+      EventDispatcher<ConsensusByzantineEvent> unexpectedEventEventDispatcher,
       LedgerProof currentLedgerHeader,
       Random random,
       int bftSyncPatienceMillis,
@@ -198,6 +201,7 @@ public final class BFTSync implements BFTSyncer {
     this.requestSender = requestSender;
     this.localSyncRequestEventDispatcher = Objects.requireNonNull(localSyncRequestEventDispatcher);
     this.timeoutDispatcher = Objects.requireNonNull(timeoutDispatcher);
+    this.unexpectedEventEventDispatcher = Objects.requireNonNull(unexpectedEventEventDispatcher);
     this.currentLedgerHeader = Objects.requireNonNull(currentLedgerHeader);
     this.random = random;
     this.bftSyncPatienceMillis = bftSyncPatienceMillis;
@@ -249,7 +253,8 @@ public final class BFTSync implements BFTSyncer {
     // TODO: Move this check into pre-check
     // Bad genesis qc, ignore...
     if (qc.getRound().isGenesis()) {
-      log.warn("SYNC_TO_QC: Bad Genesis: {}", highQC);
+      this.unexpectedEventEventDispatcher.dispatch(
+          new ConsensusByzantineEvent.ConflictingGenesis(qc, author));
       return SyncResult.INVALID;
     }
 
