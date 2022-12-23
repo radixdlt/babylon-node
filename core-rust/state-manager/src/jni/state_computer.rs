@@ -71,6 +71,7 @@ use radix_engine::types::{
     scrypto, ComponentAddress, Decimal, Decode, Encode, TypeId, RADIX_TOKEN,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use std::collections::HashSet;
 
 use crate::jni::utils::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
@@ -309,13 +310,13 @@ impl From<JavaPrepareGenesisRequest> for PrepareGenesisRequest {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct JavaPrepareGenesisResult {
-    pub validator_list: Option<Vec<EcdsaSecp256k1PublicKey>>,
+    pub validator_set: Option<HashSet<EcdsaSecp256k1PublicKey>>,
 }
 
 impl From<PrepareGenesisResult> for JavaPrepareGenesisResult {
     fn from(prepare_results: PrepareGenesisResult) -> Self {
         JavaPrepareGenesisResult {
-            validator_list: prepare_results.validator_list,
+            validator_set: prepare_results.validator_set,
         }
     }
 }

@@ -107,6 +107,7 @@ import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
@@ -226,10 +227,10 @@ public final class RadixNodeModule extends AbstractModule {
                 })
             .toList();
 
-    var validatorList = initialVset.stream().map(BFTNode::getKey).toList();
+    var validatorSet = initialVset.stream().map(BFTNode::getKey).collect(Collectors.toSet());
     var genesis =
         TransactionBuilder.createGenesis(
-            validatorList,
+            validatorSet,
             UInt64.fromNonNegativeLong(1),
             UInt64.fromNonNegativeLong(1800)); // approximately 5 minutes per epoch
 

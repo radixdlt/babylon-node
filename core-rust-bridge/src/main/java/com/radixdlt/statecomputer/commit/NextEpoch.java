@@ -69,9 +69,9 @@ import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt64;
-import java.util.List;
+import java.util.Set;
 
-public record NextEpoch(List<ECDSASecp256k1PublicKey> validators, UInt64 epoch) {
+public record NextEpoch(Set<ECDSASecp256k1PublicKey> validators, UInt64 epoch) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         NextEpoch.class,

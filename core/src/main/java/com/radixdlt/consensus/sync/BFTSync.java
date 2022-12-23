@@ -250,7 +250,7 @@ public final class BFTSync implements BFTSyncer {
       return SyncResult.SYNCED;
     }
 
-    // TODO: Move this check into pre-check
+    // TODO: Check for other conflicting QCs
     // Bad genesis qc, ignore...
     if (qc.getRound().isGenesis()) {
       this.unexpectedEventEventDispatcher.dispatch(

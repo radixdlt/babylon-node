@@ -117,7 +117,7 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
               var result = stateComputer.prepareGenesis(new PrepareGenesisRequest(genesis));
               var validatorSet =
                   result
-                      .validatorList()
+                      .validatorSet()
                       .map(
                           list -> {
                             var validators =

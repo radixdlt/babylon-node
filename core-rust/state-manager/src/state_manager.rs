@@ -461,7 +461,7 @@ where
         );
         match receipt.result {
             TransactionResult::Commit(commit) => PrepareGenesisResult {
-                validator_list: commit.next_epoch.map(|(validator_set, _)| validator_set),
+                validator_set: commit.next_epoch.map(|(validator_set, _)| validator_set),
             },
             TransactionResult::Reject(reject_result) => {
                 panic!("Genesis rejected. Result: {:?}", reject_result)

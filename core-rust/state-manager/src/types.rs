@@ -67,6 +67,7 @@ use radix_engine::types::{
     scrypto, scrypto_encode, sha256_twice, Decode, Encode, Hash, PublicKey, TypeId,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use std::collections::HashSet;
 use std::fmt;
 use transaction::model::{
     NotarizedTransaction, PreviewFlags, SignedTransactionIntent, TransactionIntent,
@@ -418,7 +419,7 @@ pub struct PrepareResult {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct NextEpoch {
-    pub validator_set: Vec<EcdsaSecp256k1PublicKey>,
+    pub validator_set: HashSet<EcdsaSecp256k1PublicKey>,
     pub epoch: u64,
 }
 
@@ -430,5 +431,5 @@ pub struct PrepareGenesisRequest {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct PrepareGenesisResult {
-    pub validator_list: Option<Vec<EcdsaSecp256k1PublicKey>>,
+    pub validator_set: Option<HashSet<EcdsaSecp256k1PublicKey>>,
 }
