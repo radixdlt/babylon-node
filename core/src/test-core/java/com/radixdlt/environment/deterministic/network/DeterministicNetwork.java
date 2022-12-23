@@ -76,6 +76,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -152,10 +153,16 @@ public final class DeterministicNetwork {
             .filter(predicate)
             .findFirst()
             .orElseThrow(
-                () ->
-                    new IllegalStateException(
-                        String.format(
-                            "Could not find message. Messages present: %s", allMessages)));
+                () -> {
+                  var msgCount =
+                      allMessages.stream()
+                          .collect(
+                              Collectors.groupingBy(
+                                  m -> Pair.of(m.channelId(), m.message().getClass()),
+                                  Collectors.counting()));
+                  return new IllegalStateException(
+                      String.format("Could not find message. Messages present: %s", msgCount));
+                });
     this.messageQueue.remove(controlledMessage);
     this.currentTime = Math.max(this.currentTime, controlledMessage.arrivalTime());
 

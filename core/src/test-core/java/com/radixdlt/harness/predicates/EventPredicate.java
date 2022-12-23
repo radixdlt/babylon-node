@@ -79,11 +79,18 @@ import com.radixdlt.sync.messages.local.SyncRequestTimeout;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
+import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 
 public final class EventPredicate {
   private EventPredicate() {
     throw new IllegalStateException("Cannot instanitate.");
+  }
+
+  public static Predicate<ControlledMessage> onlyNodes(IntPredicate nodePredicate) {
+    return msg ->
+        nodePredicate.test(msg.channelId().senderIndex())
+            && nodePredicate.test(msg.channelId().receiverIndex());
   }
 
   public static Predicate<ControlledMessage> onlyConsensusEvents() {
@@ -95,6 +102,11 @@ public final class EventPredicate {
             || msg.message() instanceof RoundUpdate
             || msg.message() instanceof RoundLeaderFailure
             || msg.message() instanceof EpochRoundUpdate;
+  }
+
+  public static Predicate<ControlledMessage> onlyConsensusEventsAndSelfLedgerUpdates() {
+    return onlyConsensusEvents()
+        .or(msg -> msg.channelId().isLocal() && msg.message() instanceof LedgerUpdate);
   }
 
   public static Predicate<ControlledMessage> onlyBFTSyncEvents() {

@@ -71,7 +71,9 @@ import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.IntPredicate;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 
 public final class NodesPredicate {
   private NodesPredicate() {
@@ -102,6 +104,15 @@ public final class NodesPredicate {
         n.stream()
             .filter(Objects::nonNull)
             .anyMatch(NodePredicate.atExactlyStateVersion(stateVersion));
+  }
+
+  public static Predicate<List<Injector>> someAtOrOverStateVersion(
+      IntPredicate nodePredicate, long stateVersion) {
+    return n ->
+        IntStream.range(0, n.size())
+            .filter(nodePredicate)
+            .mapToObj(n::get)
+            .allMatch(i -> NodePredicate.atOrOverStateVersion(stateVersion).test(i));
   }
 
   public static Predicate<List<Injector>> allAtOrOverStateVersion(long stateVersion) {

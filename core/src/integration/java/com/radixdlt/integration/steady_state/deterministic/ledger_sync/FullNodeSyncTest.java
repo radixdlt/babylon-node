@@ -65,87 +65,72 @@
 package com.radixdlt.integration.steady_state.deterministic.ledger_sync;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.byzantineBehaviorNotDetected;
-import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.ledgerTransactionSafety;
+import static com.radixdlt.harness.predicates.EventPredicate.*;
 import static com.radixdlt.harness.predicates.NodePredicate.atOrOverStateVersion;
-import static com.radixdlt.harness.predicates.NodesPredicate.nodeAt;
-import static org.junit.Assert.assertTrue;
+import static com.radixdlt.harness.predicates.NodesPredicate.*;
 
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.networks.Network;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.stream.IntStream;
-
-import com.radixdlt.transaction.TransactionBuilder;
 import org.junit.Test;
 
-
 public class FullNodeSyncTest {
-  private static DeterministicTest createTest(int numNodes, int numValidators, Round epochMaxRound) {
+  private static DeterministicTest createTest(
+      int numValidators, int numFullNodes, Round epochMaxRound) {
     final var syncConfig =
-            new SyncRelayConfig(
-                    500L,
-                    0 /* unused */,
-                    Long.MAX_VALUE /* unused */,
-                    numNodes, /* send ledger status update to all nodes */
-                    Integer.MAX_VALUE /* no rate limiting */);
+        new SyncRelayConfig(
+            500L,
+            0 /* unused */,
+            Long.MAX_VALUE /* unused */,
+            numValidators + numFullNodes, /* send ledger status update to all nodes */
+            Integer.MAX_VALUE /* no rate limiting */);
     return DeterministicTest.builder()
-            .numNodes(numNodes, 0)
-            .messageSelector(firstSelector())
-            .epochNodeIndexesMapping(epoch -> IntStream.range(0, numValidators))
-            .buildWithEpochsAndSync(epochMaxRound, syncConfig);
+        .numNodes(numValidators, numFullNodes)
+        .messageSelector(firstSelector())
+        .epochNodeIndexesMapping(epoch -> IntStream.range(0, numValidators))
+        .buildWithEpochsAndSync(epochMaxRound, syncConfig);
   }
 
-  /* maximum state lag is a single transaction */
-  private static final int FULL_NODE_MAX_BEHIND_STATE_VER = 1;
+  private static void run(DeterministicTest test, int numValidators, long targetStateVersion) {
+    test.startAllNodes();
+    test.runUntilState(
+        anyAtOrOverStateVersion(targetStateVersion), 100000, onlyNodes(i -> i < numValidators));
 
-  private static void run(DeterministicTest test, int numNodes, int numValidators, long targetStateVersion) {
-      test.startAllNodes();
-      test.runUntilState(nodeAt(numNodes - 1, atOrOverStateVersion(targetStateVersion)), 10000000);
+    // Sync one full node
+    test.runUntilState(
+        nodeAt(numValidators, atOrOverStateVersion(targetStateVersion)),
+        1000000,
+        onlyNodes(i -> i <= numValidators));
 
-      final var validatorsCounters =
-              IntStream.range(0, numValidators).mapToObj(i -> test.getInstance(i, Metrics.class));
+    // Only Full Node Sync
+    // TODO: Enable, this is not yet currently working due to SyncCheckTrigger explosion in
+    // DeterministicTest?
+    // test.runUntilState(someAtOrOverStateVersion(i -> i >= numValidators, targetStateVersion),
+    // 1000000, onlyNodes(i -> i >= numValidators));
 
-      final var validatorsMaxStateVersion =
-              validatorsCounters
-                      .mapToLong(sc -> (long) sc.ledger().stateVersion().get())
-                      .max().orElseThrow();
-
-      final var nonValidatorsStateVersions =
-              IntStream.range(numValidators, numNodes - numValidators)
-                      .mapToObj(i -> test.getInstance(i, Metrics.class))
-                      .map(sc -> (long) sc.ledger().stateVersion().get())
-                      .toList();
-
-      nonValidatorsStateVersions.forEach(
-              stateVersion ->
-                      assertTrue(stateVersion + FULL_NODE_MAX_BEHIND_STATE_VER >= validatorsMaxStateVersion));
+    test.runUntilState(
+        someAtOrOverStateVersion(i -> i >= numValidators, targetStateVersion), 1000000);
   }
 
   @Test
-  public void total_five_nodes_and_a_single_full_node() {
-    try (var test = createTest(5, 4, Round.of(100))) {
-      run(test, 5, 4, 1000L);
+  public void test_5_validators_and_1_full_node() {
+    try (var test = createTest(5, 1, Round.of(100))) {
+      run(test, 5, 100L);
     }
   }
 
   @Test
-  public void total_50_nodes_and_just_4_validators_two_rounds_per_epoch() {
-    try (var test = createTest(50, 4, Round.of(2))) {
-      run(test, 50, 40, 500L);
+  public void test_3_validators_and_2_full_nodes() {
+    try (var test = createTest(3, 2, Round.of(100))) {
+      run(test, 3, 101L);
     }
   }
 
   @Test
-  public void total_three_nodes_and_a_single_full_node_10k_rounds_per_epoch() {
-    try (var test = createTest(3, 2, Round.of(10000))) {
-      run(test, 3, 2, 1000L);
+  public void test_4_validators_and_50_full_nodes_and_two_rounds_per_epoch() {
+    try (var test = createTest(4, 50, Round.of(2))) {
+      run(test, 4, 100L);
     }
   }
 }
