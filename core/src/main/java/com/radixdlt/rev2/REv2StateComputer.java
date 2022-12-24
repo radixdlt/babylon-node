@@ -121,7 +121,8 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
               try {
                 stateComputer.getMempoolInserter().addTransaction(transaction);
 
-                // TODO: Implement this event in the RustMempool. This requires a JNI -> Java callback
+                // TODO: Implement this event in the RustMempool. This requires a JNI -> Java
+                // callback
                 // TODO: interface which hasn't been implemented yet.
                 var success =
                     MempoolAddSuccess.create(
