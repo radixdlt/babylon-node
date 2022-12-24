@@ -62,58 +62,101 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.rev1.consensus_ledger_epochs_radixengine;
+package com.radixdlt.integration.steady_state.deterministic.rev2;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.SimulationTest.Builder;
-import com.radixdlt.harness.simulation.application.NodeValidatorRegistrator;
-import com.radixdlt.harness.simulation.monitors.application.ApplicationMonitors;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
+import com.google.inject.*;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.invariants.Checkers;
+import com.radixdlt.harness.simulation.application.TransactionGenerator;
+import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.rev1.forks.ForksModule;
-import com.radixdlt.rev1.forks.MainnetForksModule;
-import com.radixdlt.rev1.forks.RERulesConfig;
-import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
-import java.util.concurrent.TimeUnit;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
+import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.NetworkDefinition;
+import com.radixdlt.rev2.REV2TransactionGenerator;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.UInt64;
+import java.util.Collection;
+import java.util.List;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-/** Slowly registers more and more validators to the network */
-public class IncreasingValidatorsTest {
-  private final Builder bftTestBuilder =
-      SimulationTest.builder()
-          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .numNodes(50) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware
-          // pacemaker
-          .addRadixEngineConfigModules(
-              new MainnetForksModule(),
-              new RadixEngineForksLatestOnlyModule(
-                  RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
-              new ForksModule())
-          .ledgerAndRadixEngineWithEpochMaxRound(ConsensusConfig.of(3000))
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
-              ConsensusMonitors.noTimeouts(),
-              ConsensusMonitors.directParents(),
-              LedgerMonitors.consensusToLedger(),
-              LedgerMonitors.ordered(),
-              RadixEngineMonitors.noInvalidProposedTransactions(),
-              ApplicationMonitors.registeredNodeToEpoch())
-          .addActor(NodeValidatorRegistrator.class);
+@RunWith(Parameterized.class)
+public final class SanityTest {
+  @Parameterized.Parameters
+  public static Collection<Object[]> parameters() {
+    return List.of(
+        new Object[][] {
+          {false, UInt64.fromNonNegativeLong(100000)},
+          {true, UInt64.fromNonNegativeLong(100)},
+        });
+  }
+
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+  private final TransactionGenerator<RawNotarizedTransaction> transactionGenerator =
+      new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
+
+  private final boolean epochs;
+  private final UInt64 roundsPerEpoch;
+
+  public SanityTest(boolean epochs, UInt64 roundsPerEpoch) {
+    this.epochs = epochs;
+    this.roundsPerEpoch = roundsPerEpoch;
+  }
+
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .numNodes(10, 10)
+        .messageSelector(firstSelector())
+        .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                epochs,
+                SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
+                ConsensusConfig.of(1000),
+                LedgerConfig.stateComputerWithSyncRelay(
+                    StateComputerConfig.rev2(
+                        Network.INTEGRATIONTESTNET.getId(),
+                        TransactionBuilder.createGenesisWithNumValidators(10, roundsPerEpoch),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        REV2ProposerConfig.mempool(10, 100, MempoolRelayConfig.of())),
+                    SyncRelayConfig.of(5000, 10, 3000L))));
+  }
 
   @Test
-  public void when_increasing_validators__then_they_should_be_getting_registered() {
-    SimulationTest simulationTest = bftTestBuilder.build();
+  public void normal_run_should_not_cause_unexpected_errors() throws Exception {
+    try (var test = createTest()) {
+      test.startAllNodes();
 
-    final var runningTest = simulationTest.run();
-    final var checkResults = runningTest.awaitCompletion();
+      // Run
+      for (int i = 0; i < 100; i++) {
+        test.runForCount(1000);
+        var mempoolInserter =
+            test.getInstance(
+                i % test.numNodes(),
+                Key.get(
+                    new TypeLiteral<
+                        MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
+        mempoolInserter.addTransaction(transactionGenerator.nextTransaction());
+      }
 
-    assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
+      // Post-run assertions
+      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 20);
+      Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
+    }
   }
 }
