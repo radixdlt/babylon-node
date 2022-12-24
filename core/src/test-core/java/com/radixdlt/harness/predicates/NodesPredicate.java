@@ -67,6 +67,7 @@ package com.radixdlt.harness.predicates;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
@@ -126,8 +127,9 @@ public final class NodesPredicate {
             .anyMatch(NodePredicate.atOrOverStateVersion(stateVersion));
   }
 
-  public static Predicate<List<Injector>> anyAtOrOverStateEpoch(long epoch) {
-    return n -> n.stream().filter(Objects::nonNull).anyMatch(NodePredicate.atOrOverEpoch(epoch));
+  public static Predicate<List<Injector>> anyCommittedProof(Predicate<LedgerProof> predicate) {
+    return n ->
+        n.stream().filter(Objects::nonNull).anyMatch(NodePredicate.proofCommitted(predicate));
   }
 
   public static Predicate<List<Injector>> allHaveExactMempoolCount(int count) {

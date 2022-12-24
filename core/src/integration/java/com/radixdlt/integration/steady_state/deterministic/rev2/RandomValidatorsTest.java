@@ -70,10 +70,10 @@ import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitor
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.invariants.Checkers;
-import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
@@ -83,7 +83,6 @@ import com.radixdlt.rev2.REv2TestTransactions;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
 import java.util.Random;
@@ -96,7 +95,7 @@ public final class RandomValidatorsTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(1, 100)
+        .numNodes(1, 50)
         .messageSelector(firstSelector())
         .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
         .functionalNodeModule(
@@ -109,10 +108,10 @@ public final class RandomValidatorsTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
-                            50, UInt64.fromNonNegativeLong(10)),
+                            25, UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         StateComputerConfig.REV2ProposerConfig.mempool(
-                            10, 100, MempoolRelayConfig.of())),
+                            10, 100, MempoolRelayConfig.of(5, 5))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
@@ -127,13 +126,11 @@ public final class RandomValidatorsTest {
       for (int i = 0; i < 100; i++) {
         test.runForCount(1000);
 
-        for (int j = 0; j < 100; j++) {
-          var mempoolInserter =
+        for (int j = 0; j < 50; j++) {
+          var mempoolDispatcher =
               test.getInstance(
-                  random.nextInt(0, 101),
-                  Key.get(
-                      new TypeLiteral<
-                          MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
+                  random.nextInt(0, 51),
+                  Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
           var txn =
               random.nextBoolean()
                   ? REv2TestTransactions.constructRegisterValidatorTransaction(
@@ -146,10 +143,7 @@ public final class RandomValidatorsTest {
                       0,
                       random.nextInt(1000000),
                       PrivateKeys.ofNumeric(j + 1));
-          try {
-            mempoolInserter.addTransaction(txn);
-          } catch (MempoolFullException ignored) {
-          }
+          mempoolDispatcher.dispatch(MempoolAdd.create(txn));
         }
       }
 
