@@ -67,18 +67,17 @@ package com.radixdlt.rev2;
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static com.radixdlt.harness.invariants.Checkers.*;
 import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
 import static com.radixdlt.harness.predicates.NodesPredicate.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
-import com.radixdlt.mempool.MempoolInserter;
-import com.radixdlt.mempool.MempoolReader;
-import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.mempool.*;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.*;
 import com.radixdlt.modules.StateComputerConfig;
@@ -135,26 +134,21 @@ public class REv2RejectedTransactionMempoolTest {
   }
 
   @Test
-  public void initially_rejected_transaction_should_not_linger_in_mempool() throws Exception {
+  public void initially_rejected_transaction_should_not_linger_in_mempool() {
     try (var test = createTest(1)) {
       // Arrange
       test.startAllNodes();
       var rawRejectableTransaction =
           REv2TestTransactions.validButRejectTransaction(0, 1).constructRawTransaction();
-      var mempoolInserter =
-          test.getInstance(
-              0,
-              Key.get(
-                  new TypeLiteral<
-                      MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
-      try {
-        mempoolInserter.addTransaction(rawRejectableTransaction);
-      } catch (MempoolRejectedException ignored) {
-      }
-      test.runForCount(100, onlyConsensusEvents());
+      var mempoolDispatcher =
+          test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+      mempoolDispatcher.dispatch(MempoolAdd.create(rawRejectableTransaction));
+      test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
       // Act: Submit valid transaction to mempool
-      mempoolInserter.addTransaction(REv2TestTransactions.constructValidRawTransaction(0, 0));
+      mempoolDispatcher.dispatch(
+          MempoolAdd.create(REv2TestTransactions.constructValidRawTransaction(0, 0)));
+      test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
       // Assert
       var mempoolReader =
@@ -167,21 +161,18 @@ public class REv2RejectedTransactionMempoolTest {
   }
 
   private static ExecutedTransaction executeTransaction(
-      DeterministicTest test, RawNotarizedTransaction transaction) throws Exception {
-    var mempoolInserter =
-        test.getInstance(
-            0,
-            Key.get(
-                new TypeLiteral<
-                    MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
-    mempoolInserter.addTransaction(transaction);
+      DeterministicTest test, RawNotarizedTransaction transaction) {
+    var mempoolDispatcher =
+        test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+    mempoolDispatcher.dispatch(MempoolAdd.create(transaction));
+    test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
     test.runUntilState(allCommittedTransaction(transaction), onlyConsensusEvents());
     return NodesReader.getCommittedUserTransaction(test.getNodeInjectors(), transaction);
   }
 
   @Test
-  public void later_rejected_transaction_should_not_linger_in_mempool() throws Exception {
+  public void later_rejected_transaction_should_not_linger_in_mempool() {
     try (var test = createTest(2)) {
       // Arrange: Two conflicting transactions in mempool
       test.startAllNodes();
@@ -189,20 +180,17 @@ public class REv2RejectedTransactionMempoolTest {
           REv2TestTransactions.constructNewAccountTransaction(NetworkDefinition.INT_TEST_NET, 0, 0);
       var executedTransaction = executeTransaction(test, accountTxn);
       var accountAddress = executedTransaction.newComponentAddresses().get(0);
-      var mempoolInserter =
-          test.getInstance(
-              0,
-              Key.get(
-                  new TypeLiteral<
-                      MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
+      var mempoolDispatcher =
+          test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
       var transferTxn1 =
           REv2TestTransactions.constructNewAccountFromAccountTransaction(
               NetworkDefinition.INT_TEST_NET, accountAddress, 0, 0);
-      mempoolInserter.addTransaction(transferTxn1);
+      mempoolDispatcher.dispatch(MempoolAdd.create(transferTxn1));
       var transferTxn2 =
           REv2TestTransactions.constructNewAccountFromAccountTransaction(
               NetworkDefinition.INT_TEST_NET, accountAddress, 0, 1);
-      mempoolInserter.addTransaction(transferTxn2);
+      mempoolDispatcher.dispatch(MempoolAdd.create(transferTxn2));
+      test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
       // Act
       var currentStateVersion = NodesReader.getHighestStateVersion(test.getNodeInjectors());

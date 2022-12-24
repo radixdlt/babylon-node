@@ -62,100 +62,51 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.rev2;
+package com.radixdlt.monitoring;
 
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
+import static org.junit.Assert.assertEquals;
 
-import com.google.inject.*;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.invariants.Checkers;
-import com.radixdlt.harness.simulation.application.TransactionGenerator;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.NetworkDefinition;
-import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.UInt64;
-import java.util.Collection;
-import java.util.List;
-import org.junit.Rule;
+import java.util.Map;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-@RunWith(Parameterized.class)
-public final class SanityTest {
-  @Parameterized.Parameters
-  public static Collection<Object[]> parameters() {
-    return List.of(
-        new Object[][] {
-          {false, UInt64.fromNonNegativeLong(100000)},
-          {true, UInt64.fromNonNegativeLong(100)},
-        });
-  }
+public class ApplicationVersionTest {
+  @Test
+  public void testCalculateVersionForCleanRepo() {
+    var details =
+        Map.of(
+            "tag", "1.0-beta.35.1",
+            "last_tag", "1.0-beta.35.1");
 
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-  private final TransactionGenerator<RawNotarizedTransaction> transactionGenerator =
-      new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
+    var version = ApplicationVersion.calculateVersionString(details);
 
-  private final boolean epochs;
-  private final UInt64 roundsPerEpoch;
-
-  public SanityTest(boolean epochs, UInt64 roundsPerEpoch) {
-    this.epochs = epochs;
-    this.roundsPerEpoch = roundsPerEpoch;
-  }
-
-  private DeterministicTest createTest() {
-    return DeterministicTest.builder()
-        .numNodes(10, 10)
-        .messageSelector(firstSelector())
-        .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                epochs,
-                SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
-                ConsensusConfig.of(1000),
-                LedgerConfig.stateComputerWithSyncRelay(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(10, roundsPerEpoch),
-                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
-                        REV2ProposerConfig.mempool(10, 100, MempoolRelayConfig.of())),
-                    SyncRelayConfig.of(5000, 10, 3000L))));
+    assertEquals("1.0-beta.35.1", version);
   }
 
   @Test
-  public void normal_run_should_not_cause_unexpected_errors() {
-    try (var test = createTest()) {
-      test.startAllNodes();
+  public void testCalculateVersionForDirtyRepo() {
+    var details =
+        Map.of(
+            "tag", "",
+            "last_tag", "1.0-beta.35.1",
+            "build", "ed0717c",
+            "branch", "feature/rpnv1-1306-refactor-json-rpc-implementation");
 
-      // Run
-      for (int i = 0; i < 100; i++) {
-        test.runForCount(1000);
+    var version = ApplicationVersion.calculateVersionString(details);
 
-        var mempoolDispatcher =
-            test.getInstance(
-                i % test.numNodes(), Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
-        mempoolDispatcher.dispatch(MempoolAdd.create(transactionGenerator.nextTransaction()));
-      }
+    assertEquals(
+        "1.0-beta.35.1-feature~rpnv1-1306-refactor-json-rpc-implementation-ed0717c", version);
+  }
 
-      // Post-run assertions
-      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 20);
-      Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
-    }
+  @Test
+  public void testCalculateVersionForDetachedHead() {
+    var details =
+        Map.of(
+            "tag", "",
+            "last_tag", "1.0-beta.35.1",
+            "build", "ed0717c");
+
+    var version = ApplicationVersion.calculateVersionString(details);
+
+    assertEquals("detached-head-ed0717c", version);
   }
 }

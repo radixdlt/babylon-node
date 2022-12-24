@@ -65,12 +65,14 @@
 package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
 import static com.radixdlt.harness.predicates.NodesPredicate.*;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
@@ -78,7 +80,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.Collection;
 import java.util.List;
@@ -124,19 +125,16 @@ public class REv2MempoolToCommittedTest {
   }
 
   @Test
-  public void transaction_in_full_node_mempool_gets_committed() throws Exception {
+  public void transaction_in_full_node_mempool_gets_committed() {
     try (var test = createTest()) {
       test.startAllNodes();
 
       // Arrange: Add node1 mempool
-      var mempoolInserter =
-          test.getInstance(
-              1,
-              Key.get(
-                  new TypeLiteral<
-                      MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
       var transaction = REv2TestTransactions.constructValidRawTransaction(0, 5);
-      mempoolInserter.addTransaction(transaction);
+      var mempoolDispatcher =
+          test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+      mempoolDispatcher.dispatch(MempoolAdd.create(transaction));
+      test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
       // Act/Assert
       test.runUntilState(anyCommittedTransaction(transaction), 20000);

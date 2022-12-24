@@ -93,6 +93,10 @@ public final class EventPredicate {
             && nodePredicate.test(msg.channelId().receiverIndex());
   }
 
+  public static Predicate<ControlledMessage> onlyLocalMempoolAddEvents() {
+    return msg -> msg.message() instanceof MempoolAdd && msg.channelId().isLocal();
+  }
+
   public static Predicate<ControlledMessage> onlyConsensusEvents() {
     return msg ->
         msg.message() instanceof ConsensusEvent
