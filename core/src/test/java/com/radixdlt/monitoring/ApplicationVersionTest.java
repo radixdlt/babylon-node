@@ -62,64 +62,51 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.monitoring;
 
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
-import static com.radixdlt.harness.predicates.NodesPredicate.*;
+import static org.junit.Assert.assertEquals;
 
-import com.google.inject.Key;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.REv2StateConfig;
-import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.utils.UInt64;
+import java.util.Map;
 import org.junit.Test;
 
-public class REv2MempoolToCommittedTest {
+public class ApplicationVersionTest {
+  @Test
+  public void testCalculateVersionForCleanRepo() {
+    var details =
+        Map.of(
+            "tag", "1.0-beta.35.1",
+            "last_tag", "1.0-beta.35.1");
 
-  private DeterministicTest createTest() {
-    return DeterministicTest.builder()
-        .numNodes(1, 1)
-        .messageSelector(firstSelector())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                false,
-                FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
-                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(1),
-                        new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
-                        REv2DatabaseConfig.inMemory(),
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            1, 1, new MempoolRelayConfig(0, 100))),
-                    SyncRelayConfig.of(5000, 10, 3000L))));
+    var version = ApplicationVersion.calculateVersionString(details);
+
+    assertEquals("1.0-beta.35.1", version);
   }
 
   @Test
-  public void transaction_in_full_node_mempool_gets_committed() {
-    try (var test = createTest()) {
-      test.startAllNodes();
+  public void testCalculateVersionForDirtyRepo() {
+    var details =
+        Map.of(
+            "tag", "",
+            "last_tag", "1.0-beta.35.1",
+            "build", "ed0717c",
+            "branch", "feature/rpnv1-1306-refactor-json-rpc-implementation");
 
-      // Arrange: Add node1 mempool
-      var transaction = REv2TestTransactions.constructValidRawTransaction(0, 5);
-      var mempoolDispatcher =
-          test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
-      mempoolDispatcher.dispatch(MempoolAdd.create(transaction));
-      test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
+    var version = ApplicationVersion.calculateVersionString(details);
 
-      // Act/Assert
-      test.runUntilState(anyCommittedTransaction(transaction), 20000);
-    }
+    assertEquals(
+        "1.0-beta.35.1-feature~rpnv1-1306-refactor-json-rpc-implementation-ed0717c", version);
+  }
+
+  @Test
+  public void testCalculateVersionForDetachedHead() {
+    var details =
+        Map.of(
+            "tag", "",
+            "last_tag", "1.0-beta.35.1",
+            "build", "ed0717c");
+
+    var version = ApplicationVersion.calculateVersionString(details);
+
+    assertEquals("detached-head-ed0717c", version);
   }
 }

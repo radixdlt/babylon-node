@@ -77,6 +77,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.*;
+import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
@@ -107,6 +108,7 @@ public class REv2StateComputerTest {
           protected void configure() {
             bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
             bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
+            bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() {}).toInstance(e -> {});
             bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
           }
         });

@@ -85,6 +85,10 @@ public final class EventPredicate {
     throw new IllegalStateException("Cannot instanitate.");
   }
 
+  public static Predicate<ControlledMessage> onlyLocalMempoolAddEvents() {
+    return msg -> msg.message() instanceof MempoolAdd && msg.channelId().isLocal();
+  }
+
   public static Predicate<ControlledMessage> onlyConsensusEvents() {
     return msg ->
         msg.message() instanceof ConsensusEvent

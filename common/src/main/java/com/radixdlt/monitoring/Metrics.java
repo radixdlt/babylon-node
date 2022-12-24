@@ -65,9 +65,7 @@
 package com.radixdlt.monitoring;
 
 import com.google.common.base.Preconditions;
-import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
-import io.prometheus.client.Summary;
+import io.prometheus.client.*;
 import javax.annotation.Nullable;
 
 /**
@@ -94,6 +92,8 @@ import javax.annotation.Nullable;
  *       be used instead of Prometheus-native typo-prone {@link Counter#labels(String...)}.
  *   <li>{@link LabelledGauge}: our type-safe wrapper for a {@link Gauge} with labels (i.e. to be
  *       used instead of Prometheus-native typo-prone {@link Gauge#labels(String...)}.
+ *   <li>{@link TypedInfo}: our type-safe wrapper for a special information-only metric, to be
+ *       always used instead of the raw Prometheus-native {@link Info}.
  * </ul>
  *
  * <p>Any leaf may be annotated as {@link NotExposed}, if we wish to keep it around, but exclude it
@@ -236,6 +236,7 @@ public record Metrics(
   public record Crypto(Counter bytesHashed, Counter signaturesSigned, Counter signaturesVerified) {}
 
   public record Misc(
+      TypedInfo<Config> config,
       Summary applicationStart,
       Counter epochManagerEnqueuedConsensusEvents,
       Counter vertexStoreSaved) {}
@@ -279,4 +280,6 @@ public record Metrics(
       OUTBOUND;
     }
   }
+
+  public record Config(String branchAndCommit, String key) {}
 }

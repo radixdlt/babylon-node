@@ -62,64 +62,34 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.monitoring;
 
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
-import static com.radixdlt.harness.predicates.NodesPredicate.*;
+import com.google.inject.Inject;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.monitoring.Metrics.Config;
 
-import com.google.inject.Key;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.REv2StateConfig;
-import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.utils.UInt64;
-import org.junit.Test;
+/** An installer of extra metrics which do not follow the conventional Prometheus usage patterns. */
+public final class MetricInstaller {
 
-public class REv2MempoolToCommittedTest {
+  /** An own node, for exposing the {@link Config#key()} information. */
+  private final BFTNode self;
 
-  private DeterministicTest createTest() {
-    return DeterministicTest.builder()
-        .numNodes(1, 1)
-        .messageSelector(firstSelector())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                false,
-                FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
-                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(1),
-                        new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
-                        REv2DatabaseConfig.inMemory(),
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            1, 1, new MempoolRelayConfig(0, 100))),
-                    SyncRelayConfig.of(5000, 10, 3000L))));
+  @Inject
+  public MetricInstaller(@Self BFTNode self) {
+    this.self = self;
   }
 
-  @Test
-  public void transaction_in_full_node_mempool_gets_committed() {
-    try (var test = createTest()) {
-      test.startAllNodes();
-
-      // Arrange: Add node1 mempool
-      var transaction = REv2TestTransactions.constructValidRawTransaction(0, 5);
-      var mempoolDispatcher =
-          test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
-      mempoolDispatcher.dispatch(MempoolAdd.create(transaction));
-      test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
-
-      // Act/Assert
-      test.runUntilState(anyCommittedTransaction(transaction), 20000);
-    }
+  /**
+   * Sets up the metrics which - for different reasons (most often legacy) - do not use the regular
+   * Prometheus measurement primitives.
+   *
+   * <p>This includes e.g. static "info" metrics, and directly-read "reader gauges".
+   *
+   * @param metrics Hierarchy where some legacy metrics need to be set.
+   */
+  public void installAt(Metrics metrics) {
+    var config = new Config(ApplicationVersion.INSTANCE.string(), this.self.getKey().toHex());
+    metrics.misc().config().set(config);
   }
 }

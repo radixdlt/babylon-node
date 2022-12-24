@@ -77,9 +77,7 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.mempool.MempoolInserter;
-import com.radixdlt.mempool.MempoolReader;
-import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.recovery.VertexStoreRecovery;
@@ -201,11 +199,13 @@ public final class REv2StateManagerModule extends AbstractModule {
             REv2StateComputer rEv2StateComputer(
                 RustStateComputer stateComputer,
                 EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
+                EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
                 Serialization serialization) {
               return new REv2StateComputer(
                   stateComputer,
                   transactionsPerProposalCount,
                   ledgerUpdateEventDispatcher,
+                  mempoolAddSuccessEventDispatcher,
                   serialization);
             }
 
