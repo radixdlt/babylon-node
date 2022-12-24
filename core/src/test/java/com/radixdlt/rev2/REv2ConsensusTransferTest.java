@@ -66,15 +66,17 @@ package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
 import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransaction;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.*;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
-import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
@@ -126,21 +128,19 @@ public final class REv2ConsensusTransferTest {
   }
 
   @Test
-  public void new_account_creates_transfer_of_xrd_to_account() throws Exception {
+  public void new_account_creates_transfer_of_xrd_to_account() {
     try (var test = createTest()) {
       // Arrange: Start single node network
       test.startAllNodes();
       var newAccountTransaction = createNewAccountTransaction();
 
       // Act: Submit transaction to mempool and run consensus
-      var mempoolInserter =
-          test.getInstance(
-              0,
-              Key.get(
-                  new TypeLiteral<
-                      MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
-      mempoolInserter.addTransaction(newAccountTransaction);
-      test.runUntilState(allCommittedTransaction(newAccountTransaction), onlyConsensusEvents());
+      var mempoolDispatcher =
+          test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+      mempoolDispatcher.dispatch(MempoolAdd.create(newAccountTransaction));
+      test.runUntilState(
+          allCommittedTransaction(newAccountTransaction),
+          onlyConsensusEvents().or(onlyLocalMempoolAddEvents()));
 
       // Assert: Check transaction and post submission state
       var executedTransaction =
