@@ -75,6 +75,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
@@ -102,6 +103,7 @@ public class REv2StateComputerTest {
           @Override
           protected void configure() {
             bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
+            bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() {}).toInstance(e -> {});
             bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
           }
         });
