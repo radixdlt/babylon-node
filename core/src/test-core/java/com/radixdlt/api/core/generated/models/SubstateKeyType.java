@@ -55,7 +55,9 @@ public enum SubstateKeyType {
   
   EPOCHMANAGER("EpochManager"),
   
-  VALIDATORSET("ValidatorSet"),
+  CURRENTVALIDATORSET("CurrentValidatorSet"),
+  
+  PREPARINGVALIDATORSET("PreparingValidatorSet"),
   
   CLOCKCURRENTMINUTE("ClockCurrentMinute"),
   

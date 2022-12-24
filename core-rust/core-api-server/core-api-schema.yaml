@@ -2183,7 +2183,8 @@ components:
         - ResourceManager
         - ResourceManagerVaultAccessRulesChain
         - EpochManager
-        - ValidatorSet
+        - CurrentValidatorSet
+        - PreparingValidatorSet
         - ClockCurrentMinute
         - KeyValueStoreEntry
         - NonFungibleStoreEntry

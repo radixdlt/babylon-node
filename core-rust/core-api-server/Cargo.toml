@@ -23,13 +23,13 @@ parking_lot = { version = "0.12" }
 #
 # Ensure this version is also identically updated in ../state-manager/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "round-updates-a76c23", features = ["serde", "indexmap"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "round-updates-a76c23" }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "round-updates-a76c23", features = ["serde"]  }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "round-updates-a76c23" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "round-updates-a76c23" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "round-updates-a76c23" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "round-updates-a76c23" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "validator-registration-061ee8", features = ["serde", "indexmap"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "validator-registration-061ee8" }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "validator-registration-061ee8", features = ["serde"]  }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "validator-registration-061ee8" }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "validator-registration-061ee8" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "validator-registration-061ee8" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "validator-registration-061ee8" }
 
 jni = "0.19.0"
 
