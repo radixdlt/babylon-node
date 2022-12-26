@@ -123,7 +123,8 @@ public final class SanityTest {
     return DeterministicTest.builder()
         .numNodes(10, 10)
         .messageSelector(firstSelector())
-        .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
+        .addMonitors(
+            byzantineBehaviorNotDetected(), consensusLiveness(3000), ledgerTransactionSafety())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 epochs,

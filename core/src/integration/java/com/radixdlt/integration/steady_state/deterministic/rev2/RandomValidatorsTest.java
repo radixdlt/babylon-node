@@ -65,8 +65,7 @@
 package com.radixdlt.integration.steady_state.deterministic.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.byzantineBehaviorNotDetected;
-import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.ledgerTransactionSafety;
+import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
@@ -97,7 +96,8 @@ public final class RandomValidatorsTest {
     return DeterministicTest.builder()
         .numNodes(1, 50)
         .messageSelector(firstSelector())
-        .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
+        .addMonitors(
+            byzantineBehaviorNotDetected(), consensusLiveness(3000), ledgerTransactionSafety())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 true,

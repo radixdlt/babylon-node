@@ -66,9 +66,16 @@ package com.radixdlt.harness.deterministic.invariants;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.epoch.EpochRound;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.harness.invariants.Checkers;
 import java.util.function.Function;
 
@@ -87,7 +94,7 @@ public final class DeterministicMonitors {
     return new AbstractModule() {
       @ProvidesIntoSet
       private MessageMonitor byzantineDetection(Function<BFTNode, String> nodeToString) {
-        return m -> {
+        return (m, t) -> {
           if (m.message() instanceof ConsensusByzantineEvent event) {
             var nodeName = nodeToString.apply(event.getAuthor());
             throw new ByzantineBehaviorDetected(nodeName, event);
@@ -97,11 +104,78 @@ public final class DeterministicMonitors {
     };
   }
 
+  public static class ConsensusLivenessException extends RuntimeException {
+    private ConsensusLivenessException(
+        long duration, EpochRound lastSeen, long timeSeen, long currentTime) {
+      super(
+          String.format(
+              "Liveness Increasing QC invariant of %s ms broken. LastSeen: %s %s CurrentTime: %s",
+              duration, lastSeen, timeSeen, currentTime));
+    }
+  }
+
+  private static class LivenessMessageMonitor implements MessageMonitor {
+    private EpochRound highestEpochRoundSeen = EpochRound.of(1, Round.genesis());
+    private long timeOfHighestEpochRoundSeen = 0;
+    private final long duration;
+
+    private LivenessMessageMonitor(long duration) {
+      this.duration = duration;
+    }
+
+    @Override
+    public void next(ControlledMessage message, long currentTime) {
+      if (timeOfHighestEpochRoundSeen != 0) {
+        if (currentTime - timeOfHighestEpochRoundSeen > duration) {
+          throw new ConsensusLivenessException(
+              duration, this.highestEpochRoundSeen, this.timeOfHighestEpochRoundSeen, currentTime);
+        }
+      }
+
+      final QuorumCertificate highQC;
+      switch (message.message()) {
+        case BFTHighQCUpdate update -> highQC = update.getHighQC().highestQC();
+        case BFTCommittedUpdate committed -> highQC =
+            committed.vertexStoreState().getHighQC().highestQC();
+        default -> {
+          return;
+        }
+      }
+
+      var header = highQC.getProposedHeader();
+      var epochRound = EpochRound.of(header.getLedgerHeader().getEpoch(), header.getRound());
+      if (epochRound.compareTo(this.highestEpochRoundSeen) > 0) {
+        this.highestEpochRoundSeen = epochRound;
+        this.timeOfHighestEpochRoundSeen = message.arrivalTime();
+      }
+    }
+  }
+
+  public static Module consensusLiveness(long duration) {
+    return new AbstractModule() {
+      @ProvidesIntoSet
+      @Singleton
+      private MessageMonitor byzantineDetection() {
+        return new LivenessMessageMonitor(duration);
+      }
+    };
+  }
+
   public static Module ledgerTransactionSafety() {
     return new AbstractModule() {
       @ProvidesIntoSet
       private StateMonitor ledgerTransactionSafety() {
-        return Checkers::assertLedgerTransactionsSafety;
+        return (nodes, time, msgs) -> {
+          // Execute state monitor checks after some arbitrary number of messages
+          // so we don't kill our CPUs
+          // TODO: Better would be to only execute on ledger transaction events
+          var numMessagesBeforeStateCheck = 89 * nodes.size();
+          if (msgs % numMessagesBeforeStateCheck != 0) {
+            return;
+          }
+
+          Checkers.assertLedgerTransactionsSafety(nodes);
+        };
       }
     };
   }

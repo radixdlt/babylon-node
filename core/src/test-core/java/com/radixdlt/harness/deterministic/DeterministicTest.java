@@ -352,16 +352,8 @@ public final class DeterministicTest implements AutoCloseable {
   }
 
   private void handleMessage(Timed<ControlledMessage> nextMessage) {
+    this.stateMonitor.next(nodes.getNodeInjectors(), nextMessage.time(), this.numMessagesProcessed);
     this.nodes.handleMessage(nextMessage);
-
-    // Execute state monitor checks after some arbitrary number of messages
-    // so we don't kill our CPUs
-    // TODO: Clean this up
-    var numMessagesBeforeStateCheck = 89 * this.nodes.numNodes();
-    if (this.numMessagesProcessed % numMessagesBeforeStateCheck == 0) {
-      this.stateMonitor.next(nodes.getNodeInjectors());
-    }
-
     this.numMessagesProcessed++;
   }
 

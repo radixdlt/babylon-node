@@ -78,10 +78,9 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Check that the network is making progress by ensuring that new QCs and epochs are progressively
- * increasing. Note: this currently accepts timeout (empty) QCs as valid and hence can, in some
- * cases, incorrectly report liveness, even though the network doesn't process any transactions.
- * There are currently some tests however (consensus, mocked ledger) that don't generate any
- * transactions, so we can't just add a naive txn presence check here.
+ * increasing. Note: this currently accepts timeout (empty) QCs as valid since it is only testing
+ * for consensus liveness, NOT ledger liveness, which means that this may pass even though the
+ * network doesn't process any transactions.
  */
 public class LivenessInvariant implements TestInvariant {
   private final NodeEvents nodeEvents;

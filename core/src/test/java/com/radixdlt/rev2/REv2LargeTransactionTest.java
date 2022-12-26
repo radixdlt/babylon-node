@@ -132,8 +132,7 @@ public final class REv2LargeTransactionTest {
   // Note - this test doesn't use the actual networking layer - see PeerChannelInitializer for
   // further constraints
   @Test
-  public void large_transaction_should_be_mempool_syncable_committable_and_ledger_syncable()
-      throws Exception {
+  public void large_transaction_should_be_mempool_syncable_committable_and_ledger_syncable() {
     try (var test = createTest()) {
       // Arrange: Start single node network
       var validatorIndex = 0;
@@ -143,7 +142,8 @@ public final class REv2LargeTransactionTest {
       // Act: Submit transaction to fullnode mempool
       test.startAllNodes();
       var mempoolDispatcher =
-          test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+          test.getInstance(
+              fullNodeIndex, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
       mempoolDispatcher.dispatch(MempoolAdd.create(largeTransaction));
       test.runForCount(10, onlyMempoolSyncEvents());
 

@@ -64,14 +64,13 @@
 
 package com.radixdlt.integration.steady_state.deterministic.rev2;
 
+import static com.radixdlt.environment.deterministic.network.MessageMutators.*;
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
+
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import static com.radixdlt.environment.deterministic.network.MessageMutators.*;
-import com.radixdlt.environment.deterministic.network.MessageQueue;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.mempool.MempoolAdd;
@@ -86,15 +85,10 @@ import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
+import java.util.Random;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import java.util.Random;
-
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.byzantineBehaviorNotDetected;
-import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.ledgerTransactionSafety;
 
 public final class RandomVoteDropperTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
@@ -104,7 +98,8 @@ public final class RandomVoteDropperTest {
         .numNodes(1, 50)
         .messageSelector(firstSelector())
         .messageMutator(voteDropper(0.2))
-        .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
+        .addMonitors(
+            byzantineBehaviorNotDetected(), consensusLiveness(3000), ledgerTransactionSafety())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 true,
