@@ -222,6 +222,8 @@ public final class DeterministicNetwork {
     if (!this.messageMutator.mutate(controlledMessage, this.messageQueue)) {
       // If nothing processes this message, we just add it to the queue
       this.messageQueue.add(controlledMessage);
+    } else {
+      log.debug("Dropping message {}", controlledMessage);
     }
   }
 }
