@@ -87,9 +87,6 @@ import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.modules.StateComputerConfig.*;
-import com.radixdlt.rev1.ReV1DispatcherModule;
-import com.radixdlt.rev1.mempool.ReV1MempoolRelayerModule;
-import com.radixdlt.rev1.modules.*;
 import com.radixdlt.rev2.modules.*;
 import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerModule;
@@ -188,13 +185,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
       return false;
     }
 
-    default boolean isREV1() {
-      if (this instanceof StateComputerLedgerConfig c) {
-        return c.config instanceof REv1StateComputerConfig;
-      }
-      return false;
-    }
-
     default boolean isREV2() {
       if (this instanceof StateComputerLedgerConfig c) {
         return c.config instanceof REv2StateComputerConfig;
@@ -257,10 +247,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
   public boolean supportsEpochs() {
     return epochs;
-  }
-
-  public boolean supportsREv1() {
-    return this.ledgerConfig.isREV1();
   }
 
   public boolean supportsREv2() {
@@ -335,15 +321,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 install(new MockedMempoolStateComputerModule(relayed.mempoolSize()));
               }
             }
-          }
-          case REv1StateComputerConfig config -> {
-            install(new MempoolReceiverModule());
-            install(new ReV1MempoolRelayerModule(10000));
-            install(new RadixEngineStateComputerModule(config.mempoolSize()));
-            install(new RadixEngineModule());
-            install(new ReV1DispatcherModule());
-            install(new REv1LedgerRecoveryModule());
-            install(new REv1ConsensusRecoveryModule());
           }
           case REv2StateComputerConfig rev2Config -> {
             var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());

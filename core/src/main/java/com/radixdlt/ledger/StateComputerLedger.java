@@ -74,7 +74,6 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -90,12 +89,12 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
   public static class StateComputerResult {
     private final List<ExecutedTransaction> executedTransactions;
-    private final Map<RawLedgerTransaction, Exception> failedTransactions;
+    private final Map<RawNotarizedTransaction, Exception> failedTransactions;
     private final NextEpoch nextEpoch;
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
-        Map<RawLedgerTransaction, Exception> failedTransactions,
+        Map<RawNotarizedTransaction, Exception> failedTransactions,
         NextEpoch nextEpoch) {
       this.executedTransactions = Objects.requireNonNull(executedTransactions);
       this.failedTransactions = Objects.requireNonNull(failedTransactions);
@@ -104,7 +103,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
-        Map<RawLedgerTransaction, Exception> failedTransactions) {
+        Map<RawNotarizedTransaction, Exception> failedTransactions) {
       this(executedTransactions, failedTransactions, null);
     }
 
@@ -116,7 +115,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       return executedTransactions;
     }
 
-    public Map<RawLedgerTransaction, Exception> getFailedTransactions() {
+    public Map<RawNotarizedTransaction, Exception> getFailedTransactions() {
       return failedTransactions;
     }
   }

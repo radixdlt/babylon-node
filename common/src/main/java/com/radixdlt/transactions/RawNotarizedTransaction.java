@@ -141,4 +141,12 @@ public final class RawNotarizedTransaction {
   public RawLedgerTransaction INCORRECTInterpretDirectlyAsRawLedgerTransaction() {
     return RawLedgerTransaction.create(getPayload());
   }
+
+  /*
+   * This function is simply incorrect, and just used for some Rev1 Compatibility and some test mocks
+   * TODO - this should ideally be removed
+   */
+  public RawNotarizedTransaction INCORRECTInterpretDirectlyAsRawNotarizedTransaction() {
+    return RawNotarizedTransaction.create(getPayload());
+  }
 }

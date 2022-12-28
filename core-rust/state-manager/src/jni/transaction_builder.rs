@@ -256,9 +256,7 @@ fn do_transaction_bytes_to_notarized_transaction_bytes(
 ) -> StateManagerResult<Option<Vec<u8>>> {
     let transaction: LedgerTransaction = scrypto_decode(&args)?;
     Ok(match transaction {
-        LedgerTransaction::User(notarized_transaction) => {
-            Some(scrypto_encode(&notarized_transaction.to_bytes())?)
-        }
+        LedgerTransaction::User(notarized_transaction) => Some(notarized_transaction.to_bytes()?),
         LedgerTransaction::Validator(..) => None,
         LedgerTransaction::System(..) => None,
     })

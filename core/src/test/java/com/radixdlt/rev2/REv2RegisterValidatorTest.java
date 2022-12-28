@@ -62,29 +62,92 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1;
+package com.radixdlt.rev2;
 
-import com.radixdlt.consensus.VertexWithHash;
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
+import static com.radixdlt.harness.predicates.NodesPredicate.anyCommittedProof;
+
+import com.google.inject.*;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.networks.Network;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt64;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-public record RoundDetails(
-    long epoch,
-    long roundNumber,
-    long previousQcRoundNumber,
-    BFTNode roundProposer,
-    boolean roundWasTimeout,
-    long consensusParentRoundTimestampMs,
-    long proposerTimestampMs) {
+public final class REv2RegisterValidatorTest {
 
-  public static RoundDetails fromVertex(VertexWithHash vertexWithHash) {
-    final var vertex = vertexWithHash.vertex();
-    return new RoundDetails(
-        vertex.getParentHeader().getLedgerHeader().getEpoch(),
-        vertex.getRound().number(),
-        vertex.getParentHeader().getRound().number(),
-        vertex.getProposer(),
-        vertex.isTimeout(),
-        vertex.getQCToParent().getWeightedTimestampOfSignatures(),
-        vertex.proposerTimestamp());
+  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(2);
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .numNodes(1, 0)
+        .messageSelector(firstSelector())
+        .messageMutator(MessageMutator.dropTimeouts())
+        .addMonitors(
+            byzantineBehaviorNotDetected(), consensusLiveness(3000), ledgerTransactionSafety())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                true,
+                SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
+                ConsensusConfig.of(1000),
+                LedgerConfig.stateComputerNoSync(
+                    StateComputerConfig.rev2(
+                        Network.INTEGRATIONTESTNET.getId(),
+                        TransactionBuilder.createGenesisWithNumValidators(
+                            1, UInt64.fromNonNegativeLong(10)),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        StateComputerConfig.REV2ProposerConfig.mempool(
+                            10, 1, MempoolRelayConfig.of())))));
+  }
+
+  @Test
+  public void registered_validator_gets_added_to_next_epoch() {
+    try (var test = createTest()) {
+      // Arrange: Start single node network
+      test.startAllNodes();
+      var registerValidatorTransaction =
+          REv2TestTransactions.constructRegisterValidatorTransaction(
+              NetworkDefinition.INT_TEST_NET, 0L, 1, TEST_KEY);
+
+      // Act: Submit transaction to mempool and run consensus
+      var mempoolDispatcher =
+          test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+      mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTransaction));
+
+      // Assert: Validator becomes part of validator set
+      test.runUntilState(
+          anyCommittedProof(
+              p ->
+                  p.getNextEpoch()
+                      .map(
+                          e ->
+                              e.getValidators()
+                                  .contains(
+                                      BFTValidator.from(
+                                          BFTNode.create(TEST_KEY.getPublicKey()), UInt256.ONE)))
+                      .orElse(false)),
+          onlyConsensusEvents().or(onlyLocalMempoolAddEvents()));
+    }
   }
 }

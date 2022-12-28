@@ -106,7 +106,7 @@ public final class MultiNodeRecoveryTest {
     return List.of(
         new Object[][] {
           {false, UInt64.fromNonNegativeLong(100000)},
-          {true, UInt64.fromNonNegativeLong(2)},
+          {true, UInt64.fromNonNegativeLong(10)},
           {true, UInt64.fromNonNegativeLong(100)},
         });
   }

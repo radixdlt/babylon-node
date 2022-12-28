@@ -62,34 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1.forks;
+package com.radixdlt.statecomputer;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.OptionalBinder;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public final class ForksModule extends AbstractModule {
-  @Override
-  protected void configure() {
-    OptionalBinder.newOptionalBinder(
-        binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() {});
-  }
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  @Provides
-  @Singleton
-  private Forks forks(
-      Set<ForkBuilder> forkBuilders, Optional<UnaryOperator<Set<ForkBuilder>>> transformer) {
-    final var transformed = transformer.map(o -> o.apply(forkBuilders)).orElse(forkBuilders);
-
-    final var forkConfigs =
-        transformed.stream().map(ForkBuilder::build).collect(Collectors.toSet());
-
-    return Forks.create(forkConfigs);
-  }
-}
+/** Identifies the highest round per epoch when an epoch change must occur. */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface EpochMaxRound {}

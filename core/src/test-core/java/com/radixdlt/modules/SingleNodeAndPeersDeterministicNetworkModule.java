@@ -82,9 +82,6 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.PeersView;
-import com.radixdlt.rev1.modules.REv1PersistenceModule;
-import com.radixdlt.rev1.modules.RadixEngineStoreModule;
-import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.List;
 import java.util.stream.Stream;
@@ -93,19 +90,6 @@ import java.util.stream.Stream;
 public final class SingleNodeAndPeersDeterministicNetworkModule extends AbstractModule {
   private final ECKeyPair self;
   private final FunctionalRadixNodeModule radixNodeModule;
-
-  public static SingleNodeAndPeersDeterministicNetworkModule rev1(
-      ECKeyPair self, int maxMempoolSize, String databasePath) {
-    return new SingleNodeAndPeersDeterministicNetworkModule(
-        self,
-        new FunctionalRadixNodeModule(
-            true,
-            FunctionalRadixNodeModule.SafetyRecoveryConfig.berkeleyStore(databasePath),
-            FunctionalRadixNodeModule.ConsensusConfig.of(),
-            FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
-                StateComputerConfig.rev1(maxMempoolSize),
-                new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE))));
-  }
 
   public SingleNodeAndPeersDeterministicNetworkModule(
       ECKeyPair self, FunctionalRadixNodeModule radixNodeModule) {
@@ -125,10 +109,6 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
     install(new InMemoryBFTKeyModule(self));
     install(new CryptoModule());
     install(radixNodeModule);
-    if (radixNodeModule.supportsREv1()) {
-      install(new REv1PersistenceModule());
-      install(new RadixEngineStoreModule());
-    }
   }
 
   @Provides
