@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use prometheus::Registry;
@@ -218,6 +218,13 @@ where
             preview_intent,
         )
     }
+}
+
+#[derive(Debug)]
+enum AlreadyPreparedTransaction {
+    Proposed,
+    Prepared,
+    Committed,
 }
 
 impl<S> StateManager<S>
@@ -471,7 +478,10 @@ where
 
     pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
         // This intent hash check, and current epoch should eventually live in the executor
-        let mut already_committed_or_prepared_intent_hashes: HashSet<IntentHash> = HashSet::new();
+        let mut already_committed_or_prepared_intent_hashes: HashMap<
+            IntentHash,
+            AlreadyPreparedTransaction,
+        > = HashMap::new();
 
         let already_committed_proposed_payload_hashes = prepare_request
             .proposed_payloads
@@ -485,7 +495,7 @@ where
                 .and_then(|intent_hash| {
                     self.store
                         .get_payload_hash(&intent_hash)
-                        .map(|_| intent_hash)
+                        .map(|_| (intent_hash, AlreadyPreparedTransaction::Committed))
                 })
             });
         already_committed_or_prepared_intent_hashes
@@ -502,8 +512,10 @@ where
 
             let executable = match &parsed_transaction {
                 LedgerTransaction::User(notarized_transaction) => {
-                    already_committed_or_prepared_intent_hashes
-                        .insert(notarized_transaction.intent_hash());
+                    already_committed_or_prepared_intent_hashes.insert(
+                        notarized_transaction.intent_hash(),
+                        AlreadyPreparedTransaction::Prepared,
+                    );
                     self.ledger_transaction_validator
                         .validate_and_create_executable(&parsed_transaction)
                 }
@@ -589,10 +601,13 @@ where
                     };
 
                 let intent_hash = parsed.intent_hash();
-                if already_committed_or_prepared_intent_hashes.contains(&intent_hash) {
+                if let Some(state) = already_committed_or_prepared_intent_hashes.get(&intent_hash) {
                     rejected.push((
                         proposed_payload,
-                        format!("Duplicate intent hash: {:?}", &intent_hash),
+                        format!(
+                            "Duplicate intent hash: {:?}, state: {:?}",
+                            &intent_hash, state
+                        ),
                     ));
                     continue;
                 }
@@ -619,7 +634,8 @@ where
 
                 match receipt.result {
                     TransactionResult::Commit(result) => {
-                        already_committed_or_prepared_intent_hashes.insert(intent_hash);
+                        already_committed_or_prepared_intent_hashes
+                            .insert(intent_hash, AlreadyPreparedTransaction::Proposed);
                         committed.push(LedgerTransaction::User(parsed).create_payload().unwrap());
 
                         if let Some(e) = result.next_epoch {
