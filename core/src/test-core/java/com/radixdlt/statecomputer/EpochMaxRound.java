@@ -62,29 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1;
+package com.radixdlt.statecomputer;
 
-import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.consensus.bft.BFTNode;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public record RoundDetails(
-    long epoch,
-    long roundNumber,
-    long previousQcRoundNumber,
-    BFTNode roundProposer,
-    boolean roundWasTimeout,
-    long consensusParentRoundTimestampMs,
-    long proposerTimestampMs) {
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  public static RoundDetails fromVertex(VertexWithHash vertexWithHash) {
-    final var vertex = vertexWithHash.vertex();
-    return new RoundDetails(
-        vertex.getParentHeader().getLedgerHeader().getEpoch(),
-        vertex.getRound().number(),
-        vertex.getParentHeader().getRound().number(),
-        vertex.getProposer(),
-        vertex.isTimeout(),
-        vertex.getQCToParent().getWeightedTimestampOfSignatures(),
-        vertex.proposerTimestamp());
-  }
-}
+/** Identifies the highest round per epoch when an epoch change must occur. */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface EpochMaxRound {}

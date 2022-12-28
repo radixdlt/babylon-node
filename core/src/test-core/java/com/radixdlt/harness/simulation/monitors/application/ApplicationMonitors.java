@@ -71,7 +71,6 @@ import com.radixdlt.harness.simulation.Monitor;
 import com.radixdlt.harness.simulation.MonitorKey;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.application.LocalMempoolPeriodicSubmitter;
-import com.radixdlt.harness.simulation.application.NodeValidatorRegistrator;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.utils.Pair;
 
@@ -79,17 +78,6 @@ import com.radixdlt.utils.Pair;
 public final class ApplicationMonitors {
   private ApplicationMonitors() {
     throw new IllegalStateException("Cannot instantiate.");
-  }
-
-  public static Module registeredNodeToEpoch() {
-    return new AbstractModule() {
-      @ProvidesIntoMap
-      @MonitorKey(Monitor.VALIDATOR_REGISTERED)
-      TestInvariant registeredValidator(NodeValidatorRegistrator validatorRegistrator) {
-        return new RegisteredValidatorChecker(
-            validatorRegistrator.validatorRegistrationSubmissions());
-      }
-    };
   }
 
   public static Module mempoolCommitted() {

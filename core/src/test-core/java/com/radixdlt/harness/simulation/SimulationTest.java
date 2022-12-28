@@ -84,7 +84,6 @@ import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.monitors.SimulationNodeEventsModule;
 import com.radixdlt.harness.simulation.network.SimulationNetwork;
 import com.radixdlt.harness.simulation.network.SimulationNodes;
-import com.radixdlt.ledger.*;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.mempool.MempoolRelayConfig;
@@ -100,8 +99,7 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev1.EpochMaxRound;
-import com.radixdlt.rev1.forks.InMemoryForksEpochStoreModule;
+import com.radixdlt.statecomputer.EpochMaxRound;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.DurationParser;
@@ -446,7 +444,6 @@ public final class SimulationTest {
       modules.add(new RxEnvironmentModule());
       if (this.functionalNodeModule.supportsSync() && !this.functionalNodeModule.supportsREv2()) {
         modules.add(new InMemoryCommittedReaderModule());
-        modules.add(new InMemoryForksEpochStoreModule());
       }
 
       return new SimulationTest(

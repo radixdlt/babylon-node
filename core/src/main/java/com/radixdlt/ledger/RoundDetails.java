@@ -62,45 +62,29 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1.modules;
+package com.radixdlt.ledger;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.bft.VertexStoreState;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.consensus.VertexWithHash;
+import com.radixdlt.consensus.bft.BFTNode;
 
-/** Manages consensus recovery on startup */
-public class REv1ConsensusRecoveryModule extends AbstractModule {
-  @Provides
-  private RoundUpdate initialRoundUpdate(
-      VertexStoreState vertexStoreState, BFTConfiguration configuration) {
-    var highQC = vertexStoreState.getHighQC();
-    var round = highQC.highestQC().getRound().next();
-    var proposerElection = configuration.getProposerElection();
-    var leader = proposerElection.getProposer(round);
-    var nextLeader = proposerElection.getProposer(round.next());
+public record RoundDetails(
+    long epoch,
+    long roundNumber,
+    long previousQcRoundNumber,
+    BFTNode roundProposer,
+    boolean roundWasTimeout,
+    long consensusParentRoundTimestampMs,
+    long proposerTimestampMs) {
 
-    return RoundUpdate.create(round, highQC, leader, nextLeader);
-  }
-
-  @Provides
-  @Singleton
-  private BFTConfiguration initialConfig(
-      BFTValidatorSet validatorSet, VertexStoreState vertexStoreState) {
-    var proposerElection = new WeightedRotatingLeaders(validatorSet);
-    return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
-  }
-
-  @Provides
-  private BFTValidatorSet initialValidatorSet(@LastEpochProof LedgerProof lastEpochProof) {
-    return lastEpochProof
-        .getNextValidatorSet()
-        .orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
+  public static RoundDetails fromVertex(VertexWithHash vertexWithHash) {
+    final var vertex = vertexWithHash.vertex();
+    return new RoundDetails(
+        vertex.getParentHeader().getLedgerHeader().getEpoch(),
+        vertex.getRound().number(),
+        vertex.getParentHeader().getRound().number(),
+        vertex.getProposer(),
+        vertex.isTimeout(),
+        vertex.getQCToParent().getWeightedTimestampOfSignatures(),
+        vertex.proposerTimestamp());
   }
 }

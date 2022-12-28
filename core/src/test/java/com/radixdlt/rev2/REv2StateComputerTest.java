@@ -70,6 +70,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
@@ -78,12 +79,12 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.*;
+import com.radixdlt.ledger.RoundDetails;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.transaction.TransactionBuilder;
@@ -106,6 +107,8 @@ public class REv2StateComputerTest {
             bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
             bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
             bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() {}).toInstance(e -> {});
+            bind(new TypeLiteral<EventDispatcher<ConsensusByzantineEvent>>() {})
+                .toInstance(e -> {});
             bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
           }
         });

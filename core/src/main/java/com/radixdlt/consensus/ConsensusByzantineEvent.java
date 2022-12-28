@@ -66,6 +66,7 @@ package com.radixdlt.consensus;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.transactions.RawLedgerTransaction;
 
 public sealed interface ConsensusByzantineEvent {
   BFTNode getAuthor();
@@ -80,6 +81,14 @@ public sealed interface ConsensusByzantineEvent {
 
   /** A Double vote which has detected. This is proof that there is byzantine node. */
   record DoubleVote(BFTNode author, PreviousVote previousVote, Vote vote, HashCode voteHash)
+      implements ConsensusByzantineEvent {
+    @Override
+    public BFTNode getAuthor() {
+      return author;
+    }
+  }
+
+  record InvalidProposedTransaction(BFTNode author, RawLedgerTransaction ledgerTransaction)
       implements ConsensusByzantineEvent {
     @Override
     public BFTNode getAuthor() {
