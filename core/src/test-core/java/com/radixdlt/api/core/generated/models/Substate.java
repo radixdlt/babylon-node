@@ -55,7 +55,9 @@ import com.radixdlt.api.core.generated.models.ResourceManagerSubstate;
 import com.radixdlt.api.core.generated.models.ResourceType;
 import com.radixdlt.api.core.generated.models.RoyaltyConfig;
 import com.radixdlt.api.core.generated.models.SubstateType;
+import com.radixdlt.api.core.generated.models.Validator;
 import com.radixdlt.api.core.generated.models.ValidatorSetSubstate;
+import com.radixdlt.api.core.generated.models.ValidatorSubstate;
 import com.radixdlt.api.core.generated.models.VaultSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -307,6 +309,17 @@ public class Substate extends AbstractOpenApiSchema {
                 log.log(Level.FINER, "Input data does not match 'Substate'", e);
             }
 
+            // deserialize ValidatorSubstate
+            try {
+                deserialized = tree.traverse(jp.getCodec()).readValueAs(ValidatorSubstate.class);
+                Substate ret = new Substate();
+                ret.setActualInstance(deserialized);
+                return ret;
+            } catch (Exception e) {
+                // deserialization failed, continue, log to help debugging
+                log.log(Level.FINER, "Input data does not match 'Substate'", e);
+            }
+
             // deserialize VaultSubstate
             try {
                 deserialized = tree.traverse(jp.getCodec()).readValueAs(VaultSubstate.class);
@@ -417,6 +430,11 @@ public class Substate extends AbstractOpenApiSchema {
         setActualInstance(o);
     }
 
+    public Substate(ValidatorSubstate o) {
+        super("anyOf", Boolean.FALSE);
+        setActualInstance(o);
+    }
+
     public Substate(VaultSubstate o) {
         super("anyOf", Boolean.FALSE);
         setActualInstance(o);
@@ -439,6 +457,7 @@ public class Substate extends AbstractOpenApiSchema {
         schemas.put("PackageRoyaltyConfigSubstate", PackageRoyaltyConfigSubstate.class);
         schemas.put("ResourceManagerSubstate", ResourceManagerSubstate.class);
         schemas.put("ValidatorSetSubstate", ValidatorSetSubstate.class);
+        schemas.put("ValidatorSubstate", ValidatorSubstate.class);
         schemas.put("VaultSubstate", VaultSubstate.class);
         JSON.registerDescendants(Substate.class, Collections.unmodifiableMap(schemas));
         // Initialize and register the discriminator mappings.
@@ -473,8 +492,10 @@ public class Substate extends AbstractOpenApiSchema {
         mappings.put("PackageRoyaltyConfigSubstate", PackageRoyaltyConfigSubstate.class);
         mappings.put("ResourceManager", ResourceManagerSubstate.class);
         mappings.put("ResourceManagerSubstate", ResourceManagerSubstate.class);
+        mappings.put("Validator", ValidatorSubstate.class);
         mappings.put("ValidatorSet", ValidatorSetSubstate.class);
         mappings.put("ValidatorSetSubstate", ValidatorSetSubstate.class);
+        mappings.put("ValidatorSubstate", ValidatorSubstate.class);
         mappings.put("Vault", VaultSubstate.class);
         mappings.put("VaultSubstate", VaultSubstate.class);
         mappings.put("Substate", Substate.class);
@@ -489,7 +510,7 @@ public class Substate extends AbstractOpenApiSchema {
     /**
      * Set the instance that matches the anyOf child schema, check
      * the instance parameter is valid against the anyOf child schemas:
-     * AccessRulesChainSubstate, ClockCurrentMinuteSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate, EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate, NonFungibleStoreEntrySubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate, ResourceManagerSubstate, ValidatorSetSubstate, VaultSubstate
+     * AccessRulesChainSubstate, ClockCurrentMinuteSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate, EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate, NonFungibleStoreEntrySubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate, ResourceManagerSubstate, ValidatorSetSubstate, ValidatorSubstate, VaultSubstate
      *
      * It could be an instance of the 'anyOf' schemas.
      * The anyOf child schemas may themselves be a composed schema (allOf, anyOf, anyOf).
@@ -576,19 +597,24 @@ public class Substate extends AbstractOpenApiSchema {
             return;
         }
 
+        if (JSON.isInstanceOf(ValidatorSubstate.class, instance, new HashSet<Class<?>>())) {
+            super.setActualInstance(instance);
+            return;
+        }
+
         if (JSON.isInstanceOf(VaultSubstate.class, instance, new HashSet<Class<?>>())) {
             super.setActualInstance(instance);
             return;
         }
 
-        throw new RuntimeException("Invalid instance type. Must be AccessRulesChainSubstate, ClockCurrentMinuteSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate, EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate, NonFungibleStoreEntrySubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate, ResourceManagerSubstate, ValidatorSetSubstate, VaultSubstate");
+        throw new RuntimeException("Invalid instance type. Must be AccessRulesChainSubstate, ClockCurrentMinuteSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate, EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate, NonFungibleStoreEntrySubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate, ResourceManagerSubstate, ValidatorSetSubstate, ValidatorSubstate, VaultSubstate");
     }
 
     /**
      * Get the actual instance, which can be the following:
-     * AccessRulesChainSubstate, ClockCurrentMinuteSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate, EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate, NonFungibleStoreEntrySubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate, ResourceManagerSubstate, ValidatorSetSubstate, VaultSubstate
+     * AccessRulesChainSubstate, ClockCurrentMinuteSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate, EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate, NonFungibleStoreEntrySubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate, ResourceManagerSubstate, ValidatorSetSubstate, ValidatorSubstate, VaultSubstate
      *
-     * @return The actual instance (AccessRulesChainSubstate, ClockCurrentMinuteSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate, EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate, NonFungibleStoreEntrySubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate, ResourceManagerSubstate, ValidatorSetSubstate, VaultSubstate)
+     * @return The actual instance (AccessRulesChainSubstate, ClockCurrentMinuteSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate, EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate, NonFungibleStoreEntrySubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate, ResourceManagerSubstate, ValidatorSetSubstate, ValidatorSubstate, VaultSubstate)
      */
     @Override
     public Object getActualInstance() {
@@ -769,6 +795,17 @@ public class Substate extends AbstractOpenApiSchema {
      */
     public ValidatorSetSubstate getValidatorSetSubstate() throws ClassCastException {
         return (ValidatorSetSubstate)super.getActualInstance();
+    }
+
+    /**
+     * Get the actual instance of `ValidatorSubstate`. If the actual instance is not `ValidatorSubstate`,
+     * the ClassCastException will be thrown.
+     *
+     * @return The actual instance of `ValidatorSubstate`
+     * @throws ClassCastException if the instance is not `ValidatorSubstate`
+     */
+    public ValidatorSubstate getValidatorSubstate() throws ClassCastException {
+        return (ValidatorSubstate)super.getActualInstance();
     }
 
     /**

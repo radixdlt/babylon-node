@@ -70,7 +70,7 @@ use radix_engine_interface::args;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::data::scrypto_encode;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 use crate::transaction::LedgerTransaction;
 use transaction::builder::ManifestBuilder;
@@ -81,7 +81,7 @@ use transaction::model::{
 };
 
 pub fn create_genesis_ledger_transaction_bytes(
-    validator_set: HashSet<EcdsaSecp256k1PublicKey>,
+    validator_set: BTreeSet<EcdsaSecp256k1PublicKey>,
     initial_epoch: u64,
     rounds_per_epoch: u64,
 ) -> Vec<u8> {

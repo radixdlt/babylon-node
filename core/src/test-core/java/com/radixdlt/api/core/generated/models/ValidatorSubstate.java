@@ -22,40 +22,42 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.EcdsaSecp256k1PublicKey;
 import com.radixdlt.api.core.generated.models.SubstateBase;
 import com.radixdlt.api.core.generated.models.SubstateType;
-import com.radixdlt.api.core.generated.models.Validator;
-import com.radixdlt.api.core.generated.models.ValidatorSetSubstateAllOf;
+import com.radixdlt.api.core.generated.models.ValidatorSubstateAllOf;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * ValidatorSetSubstate
+ * ValidatorSubstate
  */
 @JsonPropertyOrder({
-  ValidatorSetSubstate.JSON_PROPERTY_SUBSTATE_TYPE,
-  ValidatorSetSubstate.JSON_PROPERTY_VALIDATOR_SET,
-  ValidatorSetSubstate.JSON_PROPERTY_EPOCH
+  ValidatorSubstate.JSON_PROPERTY_SUBSTATE_TYPE,
+  ValidatorSubstate.JSON_PROPERTY_MANAGER,
+  ValidatorSubstate.JSON_PROPERTY_ADDRESS,
+  ValidatorSubstate.JSON_PROPERTY_KEY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class ValidatorSetSubstate {
+public class ValidatorSubstate {
   public static final String JSON_PROPERTY_SUBSTATE_TYPE = "substate_type";
   private SubstateType substateType;
 
-  public static final String JSON_PROPERTY_VALIDATOR_SET = "validator_set";
-  private List<Validator> validatorSet = new ArrayList<>();
+  public static final String JSON_PROPERTY_MANAGER = "manager";
+  private String manager;
 
-  public static final String JSON_PROPERTY_EPOCH = "epoch";
-  private Long epoch;
+  public static final String JSON_PROPERTY_ADDRESS = "address";
+  private String address;
 
-  public ValidatorSetSubstate() { 
+  public static final String JSON_PROPERTY_KEY = "key";
+  private EcdsaSecp256k1PublicKey key;
+
+  public ValidatorSubstate() { 
   }
 
-  public ValidatorSetSubstate substateType(SubstateType substateType) {
+  public ValidatorSubstate substateType(SubstateType substateType) {
     this.substateType = substateType;
     return this;
   }
@@ -81,67 +83,86 @@ public class ValidatorSetSubstate {
   }
 
 
-  public ValidatorSetSubstate validatorSet(List<Validator> validatorSet) {
-    this.validatorSet = validatorSet;
-    return this;
-  }
-
-  public ValidatorSetSubstate addValidatorSetItem(Validator validatorSetItem) {
-    this.validatorSet.add(validatorSetItem);
+  public ValidatorSubstate manager(String manager) {
+    this.manager = manager;
     return this;
   }
 
    /**
-   * Get validatorSet
-   * @return validatorSet
+   * The Bech32m-encoded human readable version of the system address
+   * @return manager
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the system address")
+  @JsonProperty(JSON_PROPERTY_MANAGER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getManager() {
+    return manager;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_MANAGER)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setManager(String manager) {
+    this.manager = manager;
+  }
+
+
+  public ValidatorSubstate address(String address) {
+    this.address = address;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable version of the system address
+   * @return address
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the system address")
+  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getAddress() {
+    return address;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAddress(String address) {
+    this.address = address;
+  }
+
+
+  public ValidatorSubstate key(EcdsaSecp256k1PublicKey key) {
+    this.key = key;
+    return this;
+  }
+
+   /**
+   * Get key
+   * @return key
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<Validator> getValidatorSet() {
-    return validatorSet;
+  public EcdsaSecp256k1PublicKey getKey() {
+    return key;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
+  @JsonProperty(JSON_PROPERTY_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidatorSet(List<Validator> validatorSet) {
-    this.validatorSet = validatorSet;
-  }
-
-
-  public ValidatorSetSubstate epoch(Long epoch) {
-    this.epoch = epoch;
-    return this;
-  }
-
-   /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the epoch the validator set is a part of
-   * minimum: 0
-   * maximum: 10000000000
-   * @return epoch
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the epoch the validator set is a part of")
-  @JsonProperty(JSON_PROPERTY_EPOCH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Long getEpoch() {
-    return epoch;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_EPOCH)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEpoch(Long epoch) {
-    this.epoch = epoch;
+  public void setKey(EcdsaSecp256k1PublicKey key) {
+    this.key = key;
   }
 
 
   /**
-   * Return true if this ValidatorSetSubstate object is equal to o.
+   * Return true if this ValidatorSubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -151,24 +172,26 @@ public class ValidatorSetSubstate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ValidatorSetSubstate validatorSetSubstate = (ValidatorSetSubstate) o;
-    return Objects.equals(this.substateType, validatorSetSubstate.substateType) &&
-        Objects.equals(this.validatorSet, validatorSetSubstate.validatorSet) &&
-        Objects.equals(this.epoch, validatorSetSubstate.epoch);
+    ValidatorSubstate validatorSubstate = (ValidatorSubstate) o;
+    return Objects.equals(this.substateType, validatorSubstate.substateType) &&
+        Objects.equals(this.manager, validatorSubstate.manager) &&
+        Objects.equals(this.address, validatorSubstate.address) &&
+        Objects.equals(this.key, validatorSubstate.key);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(substateType, validatorSet, epoch);
+    return Objects.hash(substateType, manager, address, key);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ValidatorSetSubstate {\n");
+    sb.append("class ValidatorSubstate {\n");
     sb.append("    substateType: ").append(toIndentedString(substateType)).append("\n");
-    sb.append("    validatorSet: ").append(toIndentedString(validatorSet)).append("\n");
-    sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
+    sb.append("    manager: ").append(toIndentedString(manager)).append("\n");
+    sb.append("    address: ").append(toIndentedString(address)).append("\n");
+    sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("}");
     return sb.toString();
   }

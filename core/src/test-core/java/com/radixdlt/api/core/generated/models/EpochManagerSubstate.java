@@ -35,6 +35,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   EpochManagerSubstate.JSON_PROPERTY_SUBSTATE_TYPE,
+  EpochManagerSubstate.JSON_PROPERTY_ADDRESS,
   EpochManagerSubstate.JSON_PROPERTY_EPOCH,
   EpochManagerSubstate.JSON_PROPERTY_ROUND,
   EpochManagerSubstate.JSON_PROPERTY_ROUNDS_PER_EPOCH
@@ -43,6 +44,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class EpochManagerSubstate {
   public static final String JSON_PROPERTY_SUBSTATE_TYPE = "substate_type";
   private SubstateType substateType;
+
+  public static final String JSON_PROPERTY_ADDRESS = "address";
+  private String address;
 
   public static final String JSON_PROPERTY_EPOCH = "epoch";
   private Long epoch;
@@ -79,6 +83,32 @@ public class EpochManagerSubstate {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setSubstateType(SubstateType substateType) {
     this.substateType = substateType;
+  }
+
+
+  public EpochManagerSubstate address(String address) {
+    this.address = address;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable version of the system address
+   * @return address
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the system address")
+  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getAddress() {
+    return address;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAddress(String address) {
+    this.address = address;
   }
 
 
@@ -179,6 +209,7 @@ public class EpochManagerSubstate {
     }
     EpochManagerSubstate epochManagerSubstate = (EpochManagerSubstate) o;
     return Objects.equals(this.substateType, epochManagerSubstate.substateType) &&
+        Objects.equals(this.address, epochManagerSubstate.address) &&
         Objects.equals(this.epoch, epochManagerSubstate.epoch) &&
         Objects.equals(this.round, epochManagerSubstate.round) &&
         Objects.equals(this.roundsPerEpoch, epochManagerSubstate.roundsPerEpoch);
@@ -186,7 +217,7 @@ public class EpochManagerSubstate {
 
   @Override
   public int hashCode() {
-    return Objects.hash(substateType, epoch, round, roundsPerEpoch);
+    return Objects.hash(substateType, address, epoch, round, roundsPerEpoch);
   }
 
   @Override
@@ -194,6 +225,7 @@ public class EpochManagerSubstate {
     StringBuilder sb = new StringBuilder();
     sb.append("class EpochManagerSubstate {\n");
     sb.append("    substateType: ").append(toIndentedString(substateType)).append("\n");
+    sb.append("    address: ").append(toIndentedString(address)).append("\n");
     sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
     sb.append("    round: ").append(toIndentedString(round)).append("\n");
     sb.append("    roundsPerEpoch: ").append(toIndentedString(roundsPerEpoch)).append("\n");

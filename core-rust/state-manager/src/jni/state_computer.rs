@@ -70,8 +70,8 @@ use jni::JNIEnv;
 use radix_engine::types::{
     scrypto, ComponentAddress, Decimal, Decode, Encode, TypeId, RADIX_TOKEN,
 };
-use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
+use radix_engine::model::Validator;
 
 use crate::jni::utils::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
@@ -310,7 +310,7 @@ impl From<JavaPrepareGenesisRequest> for PrepareGenesisRequest {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct JavaPrepareGenesisResult {
-    pub validator_set: Option<HashSet<EcdsaSecp256k1PublicKey>>,
+    pub validator_set: Option<BTreeSet<Validator>>,
 }
 
 impl From<PrepareGenesisResult> for JavaPrepareGenesisResult {

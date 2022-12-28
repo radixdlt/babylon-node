@@ -94,6 +94,11 @@ fn to_api_address_type(hrp_set: &HrpSet, entity_type: EntityType) -> models::Add
             models::EntityType::EpochManager,
             extract_length(SystemAddress::EpochManager),
         ),
+        EntityType::Validator => (
+            models::address_type::Subtype::Validator,
+            models::EntityType::Validator,
+            extract_length(SystemAddress::Validator),
+        ),
         EntityType::Clock => (
             models::address_type::Subtype::Clock,
             models::EntityType::Clock,

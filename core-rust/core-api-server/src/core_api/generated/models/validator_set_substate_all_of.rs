@@ -14,14 +14,14 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ValidatorSetSubstateAllOf {
     #[serde(rename = "validator_set")]
-    pub validator_set: Vec<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
+    pub validator_set: Vec<crate::core_api::generated::models::Validator>,
     /// An integer between `0` and `10^10`, marking the epoch the validator set is a part of
     #[serde(rename = "epoch")]
     pub epoch: i64,
 }
 
 impl ValidatorSetSubstateAllOf {
-    pub fn new(validator_set: Vec<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>, epoch: i64) -> ValidatorSetSubstateAllOf {
+    pub fn new(validator_set: Vec<crate::core_api::generated::models::Validator>, epoch: i64) -> ValidatorSetSubstateAllOf {
         ValidatorSetSubstateAllOf {
             validator_set,
             epoch,
