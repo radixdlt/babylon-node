@@ -83,11 +83,10 @@ import javax.annotation.Nullable;
  *   <li>{@link Gauge}: a Prometheus-native indicator of an arbitrarily changing value. Its name
  *       should be a noun describing the value - may be singular (e.g. "versionNumber") or plural
  *       (e.g. "activeClients").
- *   <li>{@link Summary}: a Prometheus-native [occurrence count + value sum] pair, by convention
- *       appropriate for representing a timer which tracks an average latency of an operation. Its
- *       name should be a verb describing the performed operation (e.g. "saveState"). Note: we don't
- *       use Prometheus' "client-computed sliding-window quantiles" support available within the
- *       {@link Summary} (and we probably would prefer histograms for such use-cases anyway).
+ *   <li>{@link Timer}: our duration-specific wrapper for a {@link Summary} without quantiles. It
+ *       effectively represents a pair of [occurrence count, cumulative elapsed seconds],
+ *       appropriate for tracking an average latency of an operation. Its name should be a verb
+ *       describing the performed operation (e.g. "saveState").
  *   <li>{@link LabelledCounter}: our type-safe wrapper for a {@link Counter} with labels (i.e. to
  *       be used instead of Prometheus-native typo-prone {@link Counter#labels(String...)}.
  *   <li>{@link LabelledGauge}: our type-safe wrapper for a {@link Gauge} with labels (i.e. to be
@@ -181,13 +180,13 @@ public record Metrics(
 
     public record V1Ledger(
         Counter commits,
-        Summary transactionCreate,
-        Summary read,
-        Summary store,
-        Summary lastCommittedRead,
-        Summary lastVertexRead,
-        Summary save,
-        Summary interact,
+        Timer transactionCreate,
+        Timer read,
+        Timer store,
+        Timer lastCommittedRead,
+        Timer lastVertexRead,
+        Timer save,
+        Timer interact,
         Counter bytesRead,
         Counter bytesWritten,
         Counter proofsAdded,
@@ -195,9 +194,9 @@ public record Metrics(
         Counter headerBytesWritten) {}
 
     public record AddressBook(
-        Summary interact, Counter bytesRead, Counter bytesWritten, Counter entriesDeleted) {}
+        Timer interact, Counter bytesRead, Counter bytesWritten, Counter entriesDeleted) {}
 
-    public record SafetyState(Summary commitState, Counter bytesRead, Counter bytesWritten) {}
+    public record SafetyState(Timer commitState, Counter bytesRead, Counter bytesWritten) {}
   }
 
   public record Ledger(
@@ -220,8 +219,7 @@ public record Metrics(
 
   public record Messages(Inbound inbound, Outbound outbound) {
 
-    public record Inbound(
-        Summary queueWait, Summary process, Counter received, Counter discarded) {}
+    public record Inbound(Timer queueWait, Timer process, Counter received, Counter discarded) {}
 
     public record Outbound(Counter aborted, Gauge queued, Counter processed, Counter sent) {}
   }
@@ -237,7 +235,7 @@ public record Metrics(
 
   public record Misc(
       TypedInfo<Config> config,
-      Summary applicationStart,
+      Timer applicationStart,
       Counter epochManagerEnqueuedConsensusEvents,
       Counter vertexStoreSaved) {}
 
