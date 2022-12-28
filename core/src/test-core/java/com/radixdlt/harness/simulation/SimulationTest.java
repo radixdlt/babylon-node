@@ -73,8 +73,6 @@ import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
@@ -103,17 +101,9 @@ import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.EpochMaxRound;
-import com.radixdlt.rev1.checkpoint.Genesis;
-import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
-import com.radixdlt.rev1.forks.ForksEpochStore;
 import com.radixdlt.rev1.forks.InMemoryForksEpochStoreModule;
-import com.radixdlt.rev1.forks.NoOpForksEpochStore;
-import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
-import com.radixdlt.store.InMemoryRadixEngineStoreModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.sync.TransactionsAndProofReader;
-import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.PrivateKeys;
@@ -300,19 +290,6 @@ public final class SimulationTest {
       return this;
     }
 
-    public Builder fullFunctionNodes(
-        ConsensusConfig consensusConfig, SyncRelayConfig syncRelayConfig, int mempoolSize) {
-      this.functionalNodeModule =
-          new FunctionalRadixNodeModule(
-              true,
-              SafetyRecoveryConfig.mocked(),
-              consensusConfig,
-              LedgerConfig.stateComputerWithSyncRelay(
-                  StateComputerConfig.rev1(mempoolSize), syncRelayConfig));
-
-      return this;
-    }
-
     public Builder ledgerAndEpochsAndSync(
         ConsensusConfig consensusConfig,
         Round epochMaxRound,
@@ -348,52 +325,6 @@ public final class SimulationTest {
                   StateComputerConfig.mocked(
                       new StateComputerConfig.MockedMempoolConfig.LocalOnly(10))));
       this.modules.add(MempoolRelayConfig.of(10).asModule());
-      return this;
-    }
-
-    public Builder ledgerAndRadixEngineWithEpochMaxRound(ConsensusConfig consensusConfig) {
-      this.functionalNodeModule =
-          new FunctionalRadixNodeModule(
-              true,
-              SafetyRecoveryConfig.mocked(),
-              consensusConfig,
-              LedgerConfig.stateComputerMockedSync(StateComputerConfig.rev1(100)));
-      this.modules.add(
-          new AbstractModule() {
-            @Override
-            protected void configure() {
-              bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(List.of());
-              install(MempoolRelayConfig.of(10).asModule());
-            }
-
-            @Provides
-            TransactionsAndProofReader committedReader() {
-              return new TransactionsAndProofReader() {
-                @Override
-                public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
-                  return null;
-                }
-
-                @Override
-                public Optional<LedgerProof> getEpochProof(long epoch) {
-                  return Optional.empty();
-                }
-
-                @Override
-                public Optional<LedgerProof> getLastProof() {
-                  return Optional.empty();
-                }
-              };
-            }
-          });
-      this.modules.add(new InMemoryForksEpochStoreModule());
-
-      return this;
-    }
-
-    public Builder addRadixEngineConfigModules(Module... modules) {
-      this.modules.add(modules);
-      this.testModules.add(modules);
       return this;
     }
 
@@ -480,49 +411,7 @@ public final class SimulationTest {
       modules.add(this.functionalNodeModule);
 
       // Persistence
-      if (this.functionalNodeModule.supportsREv1()) {
-        modules.add(new InMemoryRadixEngineStoreModule());
-        modules.add(
-            new MockedGenesisModule(
-                initialNodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
-                Amount.ofTokens(1000000),
-                Amount.ofTokens(10000)));
-        modules.add(
-            new AbstractModule() {
-              @Override
-              protected void configure() {
-                bind(new TypeLiteral<Optional<VertexStoreState.SerializedVertexStoreState>>() {})
-                    .toInstance(Optional.empty());
-              }
-            });
-
-        // FIXME: A bit of a hack
-        testModules.add(
-            new AbstractModule() {
-              public void configure() {
-                install(new RadixEngineModule());
-                install(new InMemoryRadixEngineStoreModule());
-                install(new MockedCryptoModule());
-                install(
-                    new MockedGenesisModule(
-                        initialNodes.stream()
-                            .map(ECKeyPair::getPublicKey)
-                            .collect(Collectors.toSet()),
-                        Amount.ofTokens(1000000),
-                        Amount.ofTokens(10000)));
-                bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-                bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
-                bind(TransactionsAndProofReader.class).toInstance(new NoOpCommittedReader());
-                bind(ForksEpochStore.class).toInstance(new NoOpForksEpochStore());
-              }
-
-              @Genesis
-              @Provides
-              RawLedgerTransaction genesis(@Genesis CommittedTransactionsWithProof txnsAndProof) {
-                return txnsAndProof.getTransactions().get(0);
-              }
-            });
-      } else if (!this.functionalNodeModule.supportsREv2()) {
+      if (!this.functionalNodeModule.supportsREv2()) {
         var initialVset = initialNodes.stream().map(e -> BFTNode.create(e.getPublicKey())).toList();
         MockedConsensusRecoveryModule.Builder mockedConsensusRecoveryModuleBuilder;
         if (this.epochToNodeIndexMapper != null) {
