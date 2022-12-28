@@ -135,12 +135,12 @@ public final class RandomVoteDropperTest {
                   Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
           var txn =
               random.nextBoolean()
-                  ? REv2TestTransactions.constructRegisterValidatorTransaction(
+                  ? REv2TestTransactions.constructCreateValidatorTransaction(
                       NetworkDefinition.INT_TEST_NET,
                       0,
                       random.nextInt(1000000),
                       PrivateKeys.ofNumeric(j + 1))
-                  : REv2TestTransactions.constructUnregisterValidatorTransaction(
+                  : REv2TestTransactions.constructCreateValidatorTransaction(
                       NetworkDefinition.INT_TEST_NET,
                       0,
                       random.nextInt(1000000),

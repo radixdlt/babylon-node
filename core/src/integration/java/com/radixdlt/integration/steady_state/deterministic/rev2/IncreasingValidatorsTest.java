@@ -131,7 +131,7 @@ public final class IncreasingValidatorsTest {
             test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
 
         var txn =
-            REv2TestTransactions.constructRegisterValidatorTransaction(
+            REv2TestTransactions.constructCreateValidatorTransaction(
                 NetworkDefinition.INT_TEST_NET, 0, i, PrivateKeys.ofNumeric(i + 2));
         mempoolDispatcher.dispatch(MempoolAdd.create(txn));
         test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
