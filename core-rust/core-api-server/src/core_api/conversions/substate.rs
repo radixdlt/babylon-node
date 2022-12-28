@@ -290,17 +290,10 @@ pub fn to_api_local_method_reference(key: &AccessRuleKey) -> models::LocalMethod
             }
         }
         AccessRuleKey::Native(native_fn) => {
-            models::LocalMethodReference::LocalNativeFunctionReference {
+            models::LocalMethodReference::LocalNativeMethodReference {
                 name: format!("{:?}", native_fn),
             }
-        } // TODO: Cleanup
-          /*
-          AccessRuleKey::Native(NativeFn::Method(method)) => {
-              models::LocalMethodReference::LocalNativeMethodReference {
-                  name: format!("{:?}", method),
-              }
-          }
-           */
+        }
     }
 }
 
