@@ -163,6 +163,9 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                         .stream()
                         .map(RawNotarizedTransaction::create))
             .toList();
+
+    log.warn("TxnsNotToInclude {}", transactionsNotToInclude);
+
     return stateComputer.getTransactionsForProposal(
         transactionsPerProposalCount, transactionsNotToInclude);
   }
@@ -195,16 +198,14 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         result.rejected().stream()
             .collect(
                 Collectors.toMap(
-                    r -> RawLedgerTransaction.create(r.first()),
+                    r -> RawNotarizedTransaction.create(r.first()),
                     r -> (Exception) new InvalidREv2Transaction(r.last())));
 
     rejectedTransactions
-        .keySet()
-        .forEach(
-            rejected ->
+        .forEach((rejected, exception) ->
                 consensusByzantineEventEventDispatcher.dispatch(
                     new ConsensusByzantineEvent.InvalidProposedTransaction(
-                        roundDetails.roundProposer(), rejected)));
+                        roundDetails, rejected, exception)));
 
     var nextEpoch =
         result

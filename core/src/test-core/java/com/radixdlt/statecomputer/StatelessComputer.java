@@ -131,7 +131,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
-    var invalidTransactions = new HashMap<RawLedgerTransaction, Exception>();
+    var invalidTransactions = new HashMap<RawNotarizedTransaction, Exception>();
 
     for (var transaction : proposedTransactions) {
       var success = verifier.verify(transaction);
@@ -141,7 +141,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
                 transaction.INCORRECTInterpretDirectlyAsRawLedgerTransaction()));
       } else {
         invalidTransactions.put(
-            transaction.INCORRECTInterpretDirectlyAsRawLedgerTransaction(),
+            transaction.INCORRECTInterpretDirectlyAsRawNotarizedTransaction(),
             new StatelessTransactionException());
       }
     }
