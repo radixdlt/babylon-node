@@ -178,6 +178,9 @@ public class MetricsInitializer {
     if (type == Summary.class) {
       return Summary.build(name, name).create();
     }
+    if (type == GetterGauge.class) {
+      return new GetterGauge(name);
+    }
     if (type instanceof ParameterizedType generic) {
       Class<? extends Record> labelClass =
           (Class<? extends Record>) generic.getActualTypeArguments()[0];

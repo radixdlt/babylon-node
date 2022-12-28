@@ -66,8 +66,11 @@ package com.radixdlt.monitoring;
 
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.monitoring.Metrics.Config;
+import com.radixdlt.p2p.PeersView;
+import java.util.Collection;
 
 /** An installer of extra metrics which do not follow the conventional Prometheus usage patterns. */
 public final class MetricInstaller {
@@ -75,21 +78,60 @@ public final class MetricInstaller {
   /** An own node, for exposing the {@link Config#key()} information. */
   private final BFTNode self;
 
+  /** A source of "system" getters to be exposed as gauges. */
+  private final InMemorySystemInfo inMemorySystemInfo;
+
+  /** A source of "peers" getters to be exposed as gauges. */
+  private final PeersView peersView;
+
   @Inject
-  public MetricInstaller(@Self BFTNode self) {
+  public MetricInstaller(
+      final @Self BFTNode self,
+      final InMemorySystemInfo inMemorySystemInfo,
+      final PeersView peersView) {
     this.self = self;
+    this.inMemorySystemInfo = inMemorySystemInfo;
+    this.peersView = peersView;
   }
 
   /**
    * Sets up the metrics which - for different reasons (most often legacy) - do not use the regular
    * Prometheus measurement primitives.
    *
-   * <p>This includes e.g. static "info" metrics, and directly-read "reader gauges".
+   * <p>This includes e.g. static "info" metrics, and directly-read "getter gauges".
    *
    * @param metrics Hierarchy where some legacy metrics need to be set.
    */
   public void installAt(Metrics metrics) {
-    var config = new Config(ApplicationVersion.INSTANCE.string(), this.self.getKey().toHex());
+    final var config = new Config(ApplicationVersion.INSTANCE.string(), this.self.getKey().toHex());
     metrics.misc().config().set(config);
+    metrics.peers().peerCount().initialize(() -> this.peersView.peers().count());
+    metrics.peers().validatorCount().initialize(this::countValidators);
+    metrics.peers().inValidatorSet().initialize(() -> this.isInValidatorSet() ? 1 : 0);
+    metrics
+        .epochManager()
+        .currentEpoch()
+        .initialize(() -> this.inMemorySystemInfo.getCurrentRound().getEpoch());
+    metrics
+        .epochManager()
+        .currentRound()
+        .initialize(() -> this.inMemorySystemInfo.getCurrentRound().getRound().number());
+  }
+
+  private boolean isInValidatorSet() {
+    return this.inMemorySystemInfo
+        .getEpochProof()
+        .getNextValidatorSet()
+        .map(set -> set.containsNode(this.self))
+        .orElse(false);
+  }
+
+  private int countValidators() {
+    return this.inMemorySystemInfo
+        .getEpochProof()
+        .getNextValidatorSet()
+        .map(BFTValidatorSet::getValidators)
+        .map(Collection::size)
+        .orElse(0);
   }
 }

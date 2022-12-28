@@ -145,6 +145,8 @@ public record Metrics(
     Messages messages,
     Networking networking,
     Crypto crypto,
+    EpochManager epochManager,
+    Peers peers,
     Misc misc) {
 
   public record Bft(
@@ -235,11 +237,14 @@ public record Metrics(
 
   public record Crypto(Counter bytesHashed, Counter signaturesSigned, Counter signaturesVerified) {}
 
+  public record EpochManager(
+      GetterGauge currentEpoch, GetterGauge currentRound, Counter enqueuedConsensusEvents) {}
+
+  public record Peers(
+      GetterGauge peerCount, GetterGauge validatorCount, GetterGauge inValidatorSet) {}
+
   public record Misc(
-      TypedInfo<Config> config,
-      Summary applicationStart,
-      Counter epochManagerEnqueuedConsensusEvents,
-      Counter vertexStoreSaved) {}
+      TypedInfo<Config> config, Summary applicationStart, Counter vertexStoreSaved) {}
 
   public record RejectedConsensusEvent(
       Type type, Invalidity invalidity, @Nullable TimestampIssue timestampIssue) {
