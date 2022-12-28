@@ -63,12 +63,12 @@
  */
 
 use crate::transaction::LedgerTransaction;
+use radix_engine::model::Validator;
 use radix_engine::types::{
     scrypto, scrypto_encode, sha256_twice, Decode, Encode, Hash, PublicKey, TypeId,
 };
 use std::collections::BTreeSet;
 use std::fmt;
-use radix_engine::model::Validator;
 use transaction::model::{
     NotarizedTransaction, PreviewFlags, SignedTransactionIntent, TransactionIntent,
     TransactionManifest,

@@ -1,7 +1,10 @@
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto_encode;
-use radix_engine_interface::model::{ClockInvocation, ClockSetCurrentTimeInvocation, EpochManagerInvocation, EpochManagerNextRoundInvocation, NativeInvocation};
+use radix_engine_interface::model::{
+    ClockInvocation, ClockSetCurrentTimeInvocation, EpochManagerInvocation,
+    EpochManagerNextRoundInvocation, NativeInvocation,
+};
 use radix_engine_interface::modules::auth::AuthAddresses;
 use sbor::*;
 use std::collections::BTreeSet;
@@ -32,15 +35,19 @@ impl ValidatorTransaction {
                 round_in_epoch,
                 ..
             } => {
-                let update_time = NativeInvocation::Clock(ClockInvocation::SetCurrentTime(ClockSetCurrentTimeInvocation {
-                    receiver: CLOCK,
-                    current_time_ms: *timestamp_ms,
-                }));
+                let update_time = NativeInvocation::Clock(ClockInvocation::SetCurrentTime(
+                    ClockSetCurrentTimeInvocation {
+                        receiver: CLOCK,
+                        current_time_ms: *timestamp_ms,
+                    },
+                ));
 
-                let update_round = NativeInvocation::EpochManager(EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
-                    receiver: EPOCH_MANAGER,
-                    round: *round_in_epoch,
-                }));
+                let update_round = NativeInvocation::EpochManager(
+                    EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
+                        receiver: EPOCH_MANAGER,
+                        round: *round_in_epoch,
+                    }),
+                );
 
                 vec![
                     Instruction::System(update_time),

@@ -65,19 +65,20 @@
 package com.radixdlt.statecomputer.commit;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Option;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.rev2.SystemAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import java.util.Set;
 
-public record PrepareGenesisResult(Option<Set<Validator>> validatorSet) {
+public record Validator(SystemAddress address, ECDSASecp256k1PublicKey key) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        PrepareGenesisResult.class,
+        Validator.class,
         codecs ->
             StructCodec.with(
-                PrepareGenesisResult::new,
+                Validator::new,
                 codecs.of(new TypeToken<>() {}),
-                (t, encoder) -> encoder.encode(t.validatorSet)));
+                codecs.of(new TypeToken<>() {}),
+                (t, encoder) -> encoder.encode(t.address, t.key)));
   }
 }

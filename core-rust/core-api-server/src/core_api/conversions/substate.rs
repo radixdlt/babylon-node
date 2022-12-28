@@ -4,13 +4,20 @@ use super::*;
 use crate::core_api::models;
 use radix_engine_interface::data::{IndexedScryptoValue, SchemaPath, SchemaSubPath};
 
-use radix_engine::model::{AccessRulesChainSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate, CurrentTimeRoundedToMinutesSubstate, EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate, NonFungible, NonFungibleSubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate, PersistedSubstate, Resource, ResourceManagerSubstate, Validator, ValidatorSetSubstate, ValidatorSubstate, VaultSubstate};
+use radix_engine::model::{
+    AccessRulesChainSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
+    ComponentRoyaltyConfigSubstate, ComponentStateSubstate, CurrentTimeRoundedToMinutesSubstate,
+    EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate,
+    NonFungible, NonFungibleSubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate,
+    PackageRoyaltyConfigSubstate, PersistedSubstate, Resource, ResourceManagerSubstate, Validator,
+    ValidatorSetSubstate, ValidatorSubstate, VaultSubstate,
+};
 use radix_engine::types::{
     scrypto_encode, AccessRule, AccessRuleEntry, AccessRuleKey, AccessRuleNode, AccessRules,
-    Bech32Encoder, Decimal, GlobalOffset, KeyValueStoreOffset, NonFungibleId,
-    NonFungibleIdType, NonFungibleStoreOffset, ProofRule, RENodeId, ResourceAddress, ResourceType,
-    RoyaltyConfig, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible,
-    SoftResourceOrNonFungibleList, SubstateId, SubstateOffset, RADIX_TOKEN,
+    Bech32Encoder, Decimal, GlobalOffset, KeyValueStoreOffset, NonFungibleId, NonFungibleIdType,
+    NonFungibleStoreOffset, ProofRule, RENodeId, ResourceAddress, ResourceType, RoyaltyConfig,
+    SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
+    SubstateId, SubstateOffset, RADIX_TOKEN,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use utils::ContextualDisplay;
@@ -286,15 +293,14 @@ pub fn to_api_local_method_reference(key: &AccessRuleKey) -> models::LocalMethod
             models::LocalMethodReference::LocalNativeFunctionReference {
                 name: format!("{:?}", native_fn),
             }
-        }
-        // TODO: Cleanup
-        /*
-        AccessRuleKey::Native(NativeFn::Method(method)) => {
-            models::LocalMethodReference::LocalNativeMethodReference {
-                name: format!("{:?}", method),
-            }
-        }
-         */
+        } // TODO: Cleanup
+          /*
+          AccessRuleKey::Native(NativeFn::Method(method)) => {
+              models::LocalMethodReference::LocalNativeMethodReference {
+                  name: format!("{:?}", method),
+              }
+          }
+           */
     }
 }
 
@@ -767,7 +773,6 @@ pub fn to_api_validator_substate(
         key: Box::new(to_api_ecdsa_secp256k1_public_key(key)),
     })
 }
-
 
 pub fn to_api_epoch_manager_substate(
     bech32_encoder: &Bech32Encoder,

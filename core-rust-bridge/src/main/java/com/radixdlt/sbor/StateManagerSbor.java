@@ -124,6 +124,7 @@ public final class StateManagerSbor {
     ComponentAddress.registerCodec(codecMap);
     PackageAddress.registerCodec(codecMap);
     ResourceAddress.registerCodec(codecMap);
+    SystemAddress.registerCodec(codecMap);
     TID.registerCodec(codecMap);
     StateManagerRuntimeError.registerCodec(codecMap);
     MempoolError.registerCodec(codecMap);
@@ -141,6 +142,7 @@ public final class StateManagerSbor {
     PrepareRequest.registerCodec(codecMap);
     PrepareResult.registerCodec(codecMap);
     NextEpoch.registerCodec(codecMap);
+    Validator.registerCodec(codecMap);
     CommitRequest.registerCodec(codecMap);
     CommitError.registerCodec(codecMap);
     REv2DatabaseConfig.registerCodec(codecMap);

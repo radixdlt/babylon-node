@@ -62,22 +62,51 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.commit;
+package com.radixdlt.rev2;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import java.util.Set;
+import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
+import com.radixdlt.sbor.codec.constants.TypeId;
+import java.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
-public record PrepareGenesisResult(Option<Set<Validator>> validatorSet) {
+public record SystemAddress(byte[] value) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        PrepareGenesisResult.class,
+        SystemAddress.class,
         codecs ->
-            StructCodec.with(
-                PrepareGenesisResult::new,
-                codecs.of(new TypeToken<>() {}),
-                (t, encoder) -> encoder.encode(t.validatorSet)));
+            new CustomTypeKnownLengthCodec<>(
+                TypeId.TYPE_CUSTOM_SYSTEM_ADDRESS,
+                BYTE_LENGTH,
+                SystemAddress::value,
+                SystemAddress::new));
+  }
+
+  private static final int BYTE_LENGTH = 27;
+
+  public static SystemAddress create(byte[] addressBytes) {
+    if (addressBytes.length != BYTE_LENGTH) {
+      throw new IllegalArgumentException("Invalid system address length");
+    }
+    return new SystemAddress(addressBytes);
+  }
+
+  public String toHexString() {
+    return Hex.toHexString(value);
+  }
+
+  @Override
+  public String toString() {
+    return toHexString();
+  }
+
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(value);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof SystemAddress other && Arrays.equals(this.value, other.value);
   }
 }
