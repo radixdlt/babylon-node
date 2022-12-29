@@ -157,8 +157,7 @@ public final class DeterministicNetwork {
                       allMessages.stream()
                           .collect(
                               Collectors.groupingBy(
-                                  m -> Pair.of(m.channelId(), m.message().getClass()),
-                                  Collectors.counting()));
+                                  m -> m.message().getClass(), Collectors.counting()));
                   return new IllegalStateException(
                       String.format("Could not find message. Messages present: %s", msgCount));
                 });
@@ -211,7 +210,7 @@ public final class DeterministicNetwork {
   }
 
   void handleMessage(ControlledMessage controlledMessage) {
-    log.debug("Sent message {}", controlledMessage);
+    log.debug("Dispatch message at {}: {}", this.currentTime, controlledMessage);
     messageMonitor.next(controlledMessage, this.currentTime);
 
     if (!this.messageMutator.mutate(controlledMessage, this.messageQueue)) {
