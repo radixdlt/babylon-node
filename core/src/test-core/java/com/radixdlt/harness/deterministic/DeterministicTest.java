@@ -102,7 +102,6 @@ import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
@@ -126,7 +125,6 @@ public final class DeterministicTest implements AutoCloseable {
 
   private DeterministicTest(
       ImmutableList<BFTNode> nodes,
-      BFTValidatorSet initialValidatorSet,
       MessageSelector messageSelector,
       MessageMutator messageMutator,
       MessageMonitor messageMonitor,
@@ -134,9 +132,7 @@ public final class DeterministicTest implements AutoCloseable {
       Module baseModule,
       Module overrideModule) {
     this.network = new DeterministicNetwork(nodes, messageSelector, messageMutator, messageMonitor);
-    this.nodes =
-        new DeterministicNodes(
-            nodes, initialValidatorSet, this.network, baseModule, overrideModule);
+    this.nodes = new DeterministicNodes(nodes, this.network, baseModule, overrideModule);
     this.stateMonitor = stateMonitor;
   }
 
@@ -291,7 +287,6 @@ public final class DeterministicTest implements AutoCloseable {
             @Override
             public void configure() {
               bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
-              bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
               bind(Random.class).toInstance(new Random(123456));
             }
           });
@@ -309,7 +304,6 @@ public final class DeterministicTest implements AutoCloseable {
 
       return new DeterministicTest(
           this.nodes,
-          this.initialValidatorSet,
           this.messageSelector,
           this.messageMutator,
           messageMonitor,
