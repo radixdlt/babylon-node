@@ -109,7 +109,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
   public void test_pacemaker_round_update_race_condition() {
     final DeterministicTest test =
         DeterministicTest.builder()
-            .numNodes(numValidatorNodes, 0)
+            .numNodes(numValidatorNodes, 0, true)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(messUpMessagesForNodeUnderTest())
             .overrideWithIncorrectModule(
