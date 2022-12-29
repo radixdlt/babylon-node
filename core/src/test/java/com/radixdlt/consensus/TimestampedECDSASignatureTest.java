@@ -98,6 +98,6 @@ public class TimestampedECDSASignatureTest extends SerializeObject<TimestampedEC
 
   @Test(expected = IllegalArgumentException.class)
   public void deserializationWithInvalidTimestampThrowsException() {
-    TimestampedECDSASignature.from(0, mock(ECDSASecp256k1Signature.class));
+    TimestampedECDSASignature.from(-1, mock(ECDSASecp256k1Signature.class));
   }
 }
