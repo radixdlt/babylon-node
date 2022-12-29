@@ -139,7 +139,7 @@ public final class Vote implements ConsensusEvent {
       ECDSASecp256k1Signature signature,
       HighQC highQC,
       Optional<ECDSASecp256k1Signature> timeoutSignature) {
-    if (timestamp <= 0) {
+    if (timestamp < 0) {
       throw new IllegalArgumentException("Timestamp before epoch:" + timestamp);
     }
 

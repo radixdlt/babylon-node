@@ -110,7 +110,7 @@ public final class TimestampedECDSASignature {
   }
 
   private TimestampedECDSASignature(long timestamp, ECDSASecp256k1Signature signature) {
-    if (timestamp <= 0) { // we don't expect timestamps before epoch or at the start of the epoch
+    if (timestamp < 0) { // we don't expect timestamps before epoch the start of the epoch
       throw new IllegalArgumentException("Timestamp before epoch: " + timestamp);
     }
 
