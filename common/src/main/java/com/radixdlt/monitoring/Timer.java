@@ -62,42 +62,49 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.monitoring;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+import io.prometheus.client.Collector;
+import io.prometheus.client.Gauge;
+import io.prometheus.client.Summary;
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import com.radixdlt.crypto.ECDSASecp256k1Signature;
-import com.radixdlt.serialization.SerializeObject;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+/** A Prometheus {@link Summary} wrapper specializing its use-case for measuring time. */
+public class Timer extends Collector implements Collector.Describable {
 
-public class TimestampedECDSASignatureTest extends SerializeObject<TimestampedECDSASignature> {
-  public TimestampedECDSASignatureTest() {
-    super(TimestampedECDSASignature.class, TimestampedECDSASignatureTest::create);
+  /** A conversion factor for high-precision duration representation in (fractional) seconds. */
+  private static final double NANOS_IN_SECOND = TimeUnit.SECONDS.toNanos(1);
+
+  /** A wrapped {@link Gauge}. */
+  private final Summary wrapped;
+
+  /**
+   * A direct constructor.
+   *
+   * @param name A unit-agnostic metric name; a conventional time unit will be suffixed to it.
+   */
+  public Timer(String name) {
+    this.wrapped = Summary.build(name.concat("_seconds"), name).unit("seconds").create();
   }
 
-  @Test
-  public void equalsContract() {
-    EqualsVerifier.forClass(TimestampedECDSASignature.class).verify();
+  /**
+   * Records an occurrence of an event which took the given time.
+   *
+   * @param duration Event's duration.
+   */
+  public void observe(Duration duration) {
+    this.wrapped.observe(duration.toNanos() / Timer.NANOS_IN_SECOND);
   }
 
-  @Test
-  public void sensibleToString() {
-    assertThat(create().toString()).contains(TimestampedECDSASignature.class.getSimpleName());
+  @Override
+  public List<MetricFamilySamples> collect() {
+    return this.wrapped.collect();
   }
 
-  private static TimestampedECDSASignature create() {
-    return TimestampedECDSASignature.from(1L, ECDSASecp256k1Signature.zeroSignature());
-  }
-
-  @Test(expected = NullPointerException.class)
-  public void deserializationWithNullThrowsException() {
-    TimestampedECDSASignature.from(1, null);
-  }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void deserializationWithInvalidTimestampThrowsException() {
-    TimestampedECDSASignature.from(-1, mock(ECDSASecp256k1Signature.class));
+  @Override
+  public List<MetricFamilySamples> describe() {
+    return this.wrapped.describe();
   }
 }
