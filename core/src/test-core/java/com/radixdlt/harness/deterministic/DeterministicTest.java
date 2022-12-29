@@ -98,7 +98,6 @@ import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.EpochMaxRound;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -163,7 +162,6 @@ public final class DeterministicTest implements AutoCloseable {
           PrivateKeys.numeric(1)
               .limit(numFullNodes + numInitialValidators)
               .map(ECKeyPair::getPublicKey)
-              .sorted(KeyComparator.instance())
               .map(BFTNode::create)
               .collect(ImmutableList.toImmutableList());
       this.initialValidatorNodes =
