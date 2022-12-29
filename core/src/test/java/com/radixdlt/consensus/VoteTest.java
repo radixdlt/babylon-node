@@ -189,7 +189,7 @@ public class VoteTest {
         mock(ECDSASecp256k1Signature.class));
   }
 
-  @Test(expected = PublicKeyException.class)
+  @Test(expected = IllegalStateException.class)
   public void deserializationWithInvalidAuthorThrowsException4() throws PublicKeyException {
     var author = Bytes.toHexString(new byte[0]);
     new Vote(

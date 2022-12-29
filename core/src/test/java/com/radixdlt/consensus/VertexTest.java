@@ -141,7 +141,7 @@ public class VertexTest {
     Vertex.create(mock(QuorumCertificate.class), 1, list, proposer, true, 0);
   }
 
-  @Test(expected = PublicKeyException.class)
+  @Test(expected = IllegalStateException.class)
   public void deserializationWithInvalidPublicKeyThrowsException() throws PublicKeyException {
     var proposer = Bytes.toHexString(new byte[] {0x00});
     Vertex.create(mock(QuorumCertificate.class), 1, List.of(), proposer, false, 0);
