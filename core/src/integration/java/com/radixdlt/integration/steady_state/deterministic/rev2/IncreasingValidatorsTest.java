@@ -93,7 +93,7 @@ import org.junit.rules.TemporaryFolder;
 
 public final class IncreasingValidatorsTest {
 
-  private static final int NUM_VALIDATORS = 50;
+  private static final int NUM_VALIDATORS = 20;
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 

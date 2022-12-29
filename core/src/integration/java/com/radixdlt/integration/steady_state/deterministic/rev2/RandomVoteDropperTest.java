@@ -68,24 +68,18 @@ import static com.radixdlt.environment.deterministic.network.MessageMutators.*;
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 
-import com.google.inject.Key;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.invariants.Checkers;
-import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.harness.predicates.NodePredicate;
+import com.radixdlt.harness.predicates.NodesPredicate;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.NetworkDefinition;
-import com.radixdlt.rev2.REv2TestTransactions;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
-import java.util.Random;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -95,7 +89,7 @@ public final class RandomVoteDropperTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(1, 50)
+        .numNodes(1, 20)
         .messageSelector(firstSelector())
         .messageMutator(voteDropper(0.2))
         .addMonitors(
@@ -110,7 +104,7 @@ public final class RandomVoteDropperTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
-                            25, UInt64.fromNonNegativeLong(10)),
+                            10, UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             10, 100, MempoolRelayConfig.of(5, 5))),
@@ -122,32 +116,8 @@ public final class RandomVoteDropperTest {
     try (var test = createTest()) {
       test.startAllNodes();
 
-      var random = new Random(12345);
-
       // Run
-      for (int i = 0; i < 100; i++) {
-        test.runForCount(1000);
-
-        for (int j = 0; j < 50; j++) {
-          var mempoolDispatcher =
-              test.getInstance(
-                  random.nextInt(0, 51),
-                  Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
-          var txn =
-              random.nextBoolean()
-                  ? REv2TestTransactions.constructRegisterValidatorTransaction(
-                      NetworkDefinition.INT_TEST_NET,
-                      0,
-                      random.nextInt(1000000),
-                      PrivateKeys.ofNumeric(j + 1))
-                  : REv2TestTransactions.constructUnregisterValidatorTransaction(
-                      NetworkDefinition.INT_TEST_NET,
-                      0,
-                      random.nextInt(1000000),
-                      PrivateKeys.ofNumeric(j + 1));
-          mempoolDispatcher.dispatch(MempoolAdd.create(txn));
-        }
-      }
+      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverStateVersion(100)), 100000);
 
       // Post-run assertions
       Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 20);
