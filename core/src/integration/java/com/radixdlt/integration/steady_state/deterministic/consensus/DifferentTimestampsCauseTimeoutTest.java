@@ -102,7 +102,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 
     DeterministicManualExecutor executor =
         DeterministicTest.builder()
-            .numNodes(numValidatorNodes, 0)
+            .numNodes(numValidatorNodes, 0, true)
             .messageMutator(mutateProposalsBy(0))
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
@@ -146,7 +146,7 @@ public class DifferentTimestampsCauseTimeoutTest {
                     bind(HashSigner.class).toInstance(h -> ECDSASecp256k1Signature.zeroSignature());
                   }
                 })
-            .numNodes(numValidatorNodes, 0)
+            .numNodes(numValidatorNodes, 0, true)
             .messageMutator(mutateProposalsBy(1))
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
