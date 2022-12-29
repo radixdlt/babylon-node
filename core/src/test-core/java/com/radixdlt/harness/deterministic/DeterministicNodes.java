@@ -233,7 +233,7 @@ public final class DeterministicNodes implements AutoCloseable {
 
     ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
     try {
-      log.debug("Received message at {}: {}", timedNextMsg.time(), nextMsg);
+      log.debug("Receive message at {}: {}", timedNextMsg.time(), nextMsg);
       nodeInstances
           .get(receiverIndex)
           .getInstance(DeterministicProcessor.class)
