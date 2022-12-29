@@ -210,7 +210,7 @@ public final class DeterministicNetwork {
   }
 
   void handleMessage(ControlledMessage controlledMessage) {
-    log.debug("Dispatch message at {}: {}", this.currentTime, controlledMessage);
+    log.debug("{}: Dispatch message {}", this.currentTime, controlledMessage);
     messageMonitor.next(controlledMessage, this.currentTime);
 
     if (!this.messageMutator.mutate(controlledMessage, this.messageQueue)) {

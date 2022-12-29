@@ -280,7 +280,9 @@ public final class Vertex {
 
   @Override
   public String toString() {
-    return String.format("Vertex{round=%s, qc=%s, txns=%s}", round, qcToParent, getTransactions());
+    return String.format(
+        "Vertex{round=%s, qc=%s, timestamp=%s txns=%s}",
+        round, qcToParent, proposerTimestamp, getTransactions());
   }
 
   @Override
