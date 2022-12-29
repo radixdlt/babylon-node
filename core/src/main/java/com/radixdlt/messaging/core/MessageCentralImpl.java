@@ -79,9 +79,9 @@ import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.time.Time;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -156,7 +156,8 @@ public final class MessageCentralImpl implements MessageCentral {
   }
 
   private Optional<MessageFromPeer<Message>> processInboundMessage(InboundMessage inboundMessage) {
-    final var messageQueuedTime = Time.currentTimestamp() - inboundMessage.receiveTime();
+    final var messageQueuedTime =
+        Duration.ofMillis(Time.currentTimestamp() - inboundMessage.receiveTime());
     this.metrics.messages().inbound().queueWait().observe(messageQueuedTime);
     final var processingStopwatch = Stopwatch.createStarted();
     try {
@@ -187,8 +188,7 @@ public final class MessageCentralImpl implements MessageCentral {
 
   private <T> void logPreprocessedMessageAndUpdateCounters(
       MessageFromPeer<T> message, Stopwatch processingStopwatch) {
-    final var messageProcessingTime = processingStopwatch.elapsed(TimeUnit.MILLISECONDS);
-    this.metrics.messages().inbound().process().observe(messageProcessingTime);
+    this.metrics.messages().inbound().process().observe(processingStopwatch.elapsed());
     if (log.isTraceEnabled()) {
       log.trace("Received from {}: {}", message.source(), message.message());
     }
