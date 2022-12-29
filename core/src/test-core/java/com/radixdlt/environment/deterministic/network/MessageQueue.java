@@ -65,23 +65,15 @@
 package com.radixdlt.environment.deterministic.network;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import java.io.PrintStream;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /** Queue for messages by round. */
 public final class MessageQueue {
 
-  private final HashMap<Long, LinkedList<ControlledMessage>> messagesByTime = Maps.newHashMap();
+  private final TreeMap<Long, LinkedList<ControlledMessage>> messagesByTime = new TreeMap<>();
   private long minimumMessageTime = Long.MAX_VALUE; // Cached minimum time
 
   MessageQueue() {

@@ -68,10 +68,11 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 
 import com.google.inject.*;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
-import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
@@ -116,20 +117,18 @@ public final class SanityTest {
   }
 
   @Test
-  public void rev2_consensus_mempool_ledger_sync_cause_no_unexpected_errors() throws Exception {
+  public void rev2_consensus_mempool_ledger_sync_cause_no_unexpected_errors() {
     try (var test = createTest()) {
       test.startAllNodes();
 
       // Run
       for (int i = 0; i < 100; i++) {
         test.runForCount(1000);
-        var mempoolInserter =
+
+        var mempoolDispatcher =
             test.getInstance(
-                i % test.numNodes(),
-                Key.get(
-                    new TypeLiteral<
-                        MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
-        mempoolInserter.addTransaction(transactionGenerator.nextTransaction());
+                i % test.numNodes(), Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+        mempoolDispatcher.dispatch(MempoolAdd.create(transactionGenerator.nextTransaction()));
       }
 
       // Post-run assertions

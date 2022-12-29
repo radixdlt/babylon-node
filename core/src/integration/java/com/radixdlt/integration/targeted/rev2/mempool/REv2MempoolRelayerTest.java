@@ -69,9 +69,10 @@ import static com.radixdlt.harness.predicates.NodesPredicate.*;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
-import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
@@ -89,7 +90,7 @@ import com.radixdlt.utils.UInt64;
 import org.junit.Test;
 
 public final class REv2MempoolRelayerTest {
-  private final int MEMPOOL_SIZE = 1000;
+  private final int MEMPOOL_SIZE = 100;
   private final TransactionGenerator<RawNotarizedTransaction> transactionGenerator =
       new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
 
@@ -113,19 +114,15 @@ public final class REv2MempoolRelayerTest {
   }
 
   @Test
-  public void relayer_fills_mempool_of_all_nodes() throws Exception {
+  public void relayer_fills_mempool_of_all_nodes() {
     try (var test = createTest()) {
       test.startAllNodes();
 
       // Arrange: Fill node1 mempool
-      var mempoolInserter =
-          test.getInstance(
-              1,
-              Key.get(
-                  new TypeLiteral<
-                      MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
+      var mempoolDispatcher =
+          test.getInstance(1, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
       for (int i = 0; i < MEMPOOL_SIZE; i++) {
-        mempoolInserter.addTransaction(transactionGenerator.nextTransaction());
+        mempoolDispatcher.dispatch(MempoolAdd.create(transactionGenerator.nextTransaction()));
       }
 
       // Run all nodes except validator node0
