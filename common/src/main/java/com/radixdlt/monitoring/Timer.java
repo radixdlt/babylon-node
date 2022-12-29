@@ -62,78 +62,49 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.monitoring;
 
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.utils.Bytes;
-import java.util.Objects;
+import io.prometheus.client.Collector;
+import io.prometheus.client.Gauge;
+import io.prometheus.client.Summary;
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-/**
- * A node in a BFT network which can run BFT validation
- *
- * <p>TODO: turn this into an interface so that an ECPublicKey is not required TODO: Serialization
- * of BFT messages are currently what prevent this from happening
- */
-public final class BFTNode {
-  private final ECDSASecp256k1PublicKey key;
-  private final String simpleName;
+/** A Prometheus {@link Summary} wrapper specializing its use-case for measuring time. */
+public class Timer extends Collector implements Collector.Describable {
 
-  private BFTNode(ECDSASecp256k1PublicKey key, String simpleName) {
-    this.key = Objects.requireNonNull(key);
-    this.simpleName = Objects.requireNonNull(simpleName);
+  /** A conversion factor for high-precision duration representation in (fractional) seconds. */
+  private static final double NANOS_IN_SECOND = TimeUnit.SECONDS.toNanos(1);
+
+  /** A wrapped {@link Gauge}. */
+  private final Summary wrapped;
+
+  /**
+   * A direct constructor.
+   *
+   * @param name A unit-agnostic metric name; a conventional time unit will be suffixed to it.
+   */
+  public Timer(String name) {
+    this.wrapped = Summary.build(name.concat("_seconds"), name).unit("seconds").create();
   }
 
-  public static BFTNode create(ECDSASecp256k1PublicKey key) {
-    var shortenedAddress = key.toHex().substring(0, 10);
-    return new BFTNode(key, shortenedAddress);
-  }
-
-  public static BFTNode fromSerializedString(String str) {
-    try {
-      return BFTNode.fromBytes(Bytes.fromHexString(str));
-    } catch (PublicKeyException e) {
-      throw new IllegalStateException("Error decoding public key", e);
-    }
-  }
-
-  public String toSerializedString() {
-    return Bytes.toHexString(this.toBytes());
-  }
-
-  public static BFTNode fromBytes(byte[] key) throws PublicKeyException {
-    return create(ECDSASecp256k1PublicKey.fromBytes(key));
-  }
-
-  public byte[] toBytes() {
-    return key.getCompressedBytes();
-  }
-
-  public static BFTNode random() {
-    return create(ECKeyPair.generateNew().getPublicKey());
-  }
-
-  public ECDSASecp256k1PublicKey getKey() {
-    return key;
+  /**
+   * Records an occurrence of an event which took the given time.
+   *
+   * @param duration Event's duration.
+   */
+  public void observe(Duration duration) {
+    this.wrapped.observe(duration.toNanos() / Timer.NANOS_IN_SECOND);
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(key);
+  public List<MetricFamilySamples> collect() {
+    return this.wrapped.collect();
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof BFTNode bftNodeId)) {
-      return false;
-    }
-
-    return Objects.equals(bftNodeId.key, this.key);
-  }
-
-  @Override
-  public String toString() {
-    return simpleName;
+  public List<MetricFamilySamples> describe() {
+    return this.wrapped.describe();
   }
 }

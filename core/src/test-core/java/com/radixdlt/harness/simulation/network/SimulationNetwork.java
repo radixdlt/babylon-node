@@ -161,8 +161,7 @@ public class SimulationNetwork {
     @Override
     public String toString() {
       return String.format(
-          "%s %s -> %s %d %d",
-          content, sender.getSimpleName(), receiver.getSimpleName(), delay, delayAfterPrevious);
+          "%s %s -> %s %d %d", content, sender, receiver, delay, delayAfterPrevious);
     }
   }
 
