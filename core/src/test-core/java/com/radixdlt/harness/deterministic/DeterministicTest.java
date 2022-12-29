@@ -375,7 +375,7 @@ public final class DeterministicTest implements AutoCloseable {
     return new DeterministicManualExecutor() {
       @Override
       public void start() {
-        nodes.startAllNodes();
+        nodes.startAllNodes(network.currentTime());
       }
 
       @Override
@@ -393,7 +393,7 @@ public final class DeterministicTest implements AutoCloseable {
   }
 
   public void startAllNodes() {
-    this.nodes.startAllNodes();
+    this.nodes.startAllNodes(this.network.currentTime());
   }
 
   public void shutdownNode(int nodeIndex) {
@@ -405,7 +405,7 @@ public final class DeterministicTest implements AutoCloseable {
   }
 
   public void startNode(int nodeIndex) {
-    this.nodes.startNode(nodeIndex);
+    this.nodes.startNode(nodeIndex, this.network.currentTime());
   }
 
   public void restartNode(int nodeIndex) {
