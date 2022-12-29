@@ -75,6 +75,7 @@ import com.radixdlt.serialization.Serialization;
 import com.sleepycat.je.*;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.Duration;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -202,7 +203,7 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
   }
 
   private void addTime(long start) {
-    final var elapsed = (System.nanoTime() - start + 500L) / 1000L;
+    final var elapsed = Duration.ofNanos(System.nanoTime() - start);
     this.metrics.berkeleyDb().addressBook().interact().observe(elapsed);
   }
 

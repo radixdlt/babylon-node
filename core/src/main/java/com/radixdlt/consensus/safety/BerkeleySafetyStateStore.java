@@ -75,6 +75,7 @@ import com.radixdlt.store.BerkeleyStoreException;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.*;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -245,7 +246,7 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
   }
 
   private void addTime(long start) {
-    final var elapsed = (System.nanoTime() - start + 500L) / 1000L;
+    final var elapsed = Duration.ofNanos(System.nanoTime() - start);
     this.metrics.berkeleyDb().safetyState().commitState().observe(elapsed);
   }
 

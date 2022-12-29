@@ -96,6 +96,7 @@ import com.radixdlt.identifiers.TID;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Timer;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.forks.CandidateForkVote;
 import com.radixdlt.rev1.forks.ForkConfig;
@@ -118,11 +119,11 @@ import com.radixdlt.utils.Shorts;
 import com.radixdlt.utils.UInt256;
 import com.sleepycat.je.*;
 import io.prometheus.client.Counter;
-import io.prometheus.client.Summary;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -789,7 +790,7 @@ public final class BerkeleyLedgerEntryStore
     throw new BerkeleyStoreException(message, cause);
   }
 
-  private void withTime(Runnable runnable, Summary timer) {
+  private void withTime(Runnable runnable, Timer timer) {
     withTime(
         () -> {
           runnable.run();
@@ -798,7 +799,7 @@ public final class BerkeleyLedgerEntryStore
         timer);
   }
 
-  private <T> T withTime(Supplier<T> supplier, Summary timer) {
+  private <T> T withTime(Supplier<T> supplier, Timer timer) {
     final var start = System.nanoTime();
     try {
       return supplier.get();
@@ -1329,8 +1330,8 @@ public final class BerkeleyLedgerEntryStore
     return entry(TID.getBytes());
   }
 
-  private void addTime(long start, Summary detailTimer) {
-    final var elapsed = (System.nanoTime() - start + 500L) / 1000L;
+  private void addTime(long start, Timer detailTimer) {
+    final var elapsed = Duration.ofNanos(System.nanoTime() - start);
     metrics.berkeleyDb().v1Ledger().interact().observe(elapsed);
     detailTimer.observe(elapsed);
   }
