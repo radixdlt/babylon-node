@@ -102,7 +102,6 @@ import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
 import java.util.Objects;
@@ -146,8 +145,6 @@ public final class DeterministicTest implements AutoCloseable {
         ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
     private ImmutableList<BFTNode> initialValidatorNodes =
         ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
-    private BFTValidatorSet initialValidatorSet;
-
     private MessageSelector messageSelector = MessageSelector.firstSelector();
     private MessageMutator messageMutator = MessageMutator.nothing();
     private Function<Long, IntStream> epochToNodeIndexesMapping;
@@ -176,9 +173,6 @@ public final class DeterministicTest implements AutoCloseable {
       this.nodes = keys.map(BFTNode::create).collect(ImmutableList.toImmutableList());
       this.initialValidatorNodes =
           this.nodes.stream().limit(numInitialValidators).collect(ImmutableList.toImmutableList());
-      this.initialValidatorSet =
-          BFTValidatorSet.from(
-              initialValidatorNodes.stream().map(n -> BFTValidator.from(n, UInt256.ONE)));
       return this;
     }
 
