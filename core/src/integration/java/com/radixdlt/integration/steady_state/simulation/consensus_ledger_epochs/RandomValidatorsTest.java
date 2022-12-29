@@ -132,7 +132,7 @@ public class RandomValidatorsTest {
     SimulationTest bftTest =
         bftTestBuilder
             .ledgerAndEpochs(
-                ConsensusConfig.of(5000), Round.of(100), goodRandomEpochToNodesMapper())
+                ConsensusConfig.of(5000), Round.of(100), goodRandomEpochToNodesMapper(), numNodes)
             .build();
 
     final var checkResults = bftTest.run().awaitCompletion();
@@ -144,7 +144,8 @@ public class RandomValidatorsTest {
   public void given_nondeterministic_randomized_validator_sets__then_should_fail() {
     SimulationTest bftTest =
         bftTestBuilder
-            .ledgerAndEpochs(ConsensusConfig.of(5000), Round.of(100), badRandomEpochToNodesMapper())
+            .ledgerAndEpochs(
+                ConsensusConfig.of(5000), Round.of(100), badRandomEpochToNodesMapper(), numNodes)
             .build();
 
     final var checkResults = bftTest.run().awaitCompletion();

@@ -99,8 +99,8 @@ public class MovingWindowValidatorsTest {
             .numNodes(numNodes, 0)
             .messageMutator(mutator())
             .messageSelector(firstSelector())
-            .epochNodeIndexesMapping(windowedEpochToNodesMapper(windowSize, numNodes))
-            .buildWithEpochs(epochMaxRound);
+            .buildWithEpochs(
+                epochMaxRound, numNodes, windowedEpochToNodesMapper(windowSize, numNodes));
 
     bftTest.startAllNodes();
     bftTest.runUntilMessage(

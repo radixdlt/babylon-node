@@ -117,7 +117,7 @@ public class ByzantineSyncTest {
                         LedgerUpdate.class, reader.ledgerUpdateEventProcessor());
                   }
                 })
-            .ledgerAndSync(ConsensusConfig.of(3000), SyncRelayConfig.of(200L, 10, 1000L));
+            .ledgerAndSync(ConsensusConfig.of(3000), SyncRelayConfig.of(200L, 10, 1000L), 5);
   }
 
   @Test

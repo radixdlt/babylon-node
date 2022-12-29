@@ -66,6 +66,7 @@ package com.radixdlt.integration.steady_state.simulation.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.harness.simulation.Monitor;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
@@ -90,7 +91,8 @@ public class FPlusOneOutOfBoundsTest {
                   false,
                   SafetyRecoveryConfig.mocked(),
                   ConsensusConfig.of(TIMEOUT_MS),
-                  LedgerConfig.mocked()))
+                  LedgerConfig.mocked(
+                      new MockedConsensusRecoveryModule.Builder().withNumValidators(3))))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(LIVENESS_MS, TimeUnit.MILLISECONDS));

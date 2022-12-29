@@ -69,7 +69,6 @@ import com.google.inject.*;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.*;
@@ -143,12 +142,8 @@ public final class DeterministicTest implements AutoCloseable {
   public static class Builder {
     private ImmutableList<BFTNode> nodes =
         ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
-    private ImmutableList<BFTNode> initialValidatorNodes =
-        ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
     private MessageSelector messageSelector = MessageSelector.firstSelector();
     private MessageMutator messageMutator = MessageMutator.nothing();
-    private Function<Long, IntStream> epochToNodeIndexesMapping;
-    private EpochNodeWeightMapping epochNodeWeightMapping;
     private Module overrideModule = null;
     private final ImmutableList.Builder<Module> modules = ImmutableList.builder();
     private final ImmutableList.Builder<Module> testModules = ImmutableList.builder();
@@ -171,8 +166,6 @@ public final class DeterministicTest implements AutoCloseable {
       }
 
       this.nodes = keys.map(BFTNode::create).collect(ImmutableList.toImmutableList());
-      this.initialValidatorNodes =
-          this.nodes.stream().limit(numInitialValidators).collect(ImmutableList.toImmutableList());
       return this;
     }
 
@@ -195,37 +188,11 @@ public final class DeterministicTest implements AutoCloseable {
 
     private void addFunctionalNodeModule(FunctionalRadixNodeModule module) {
       modules.add(module);
-
-      if (!module.supportsREv2()) {
-        MockedConsensusRecoveryModule.Builder mockedConsensusRecoveryModuleBuilder =
-            new MockedConsensusRecoveryModule.Builder(module.supportsEpochs());
-        mockedConsensusRecoveryModuleBuilder.withNodes(initialValidatorNodes);
-
-        if (this.epochNodeWeightMapping != null) {
-          mockedConsensusRecoveryModuleBuilder.withEpochNodeWeightMapping(
-              this.epochNodeWeightMapping);
-        } else if (this.epochToNodeIndexesMapping != null) {
-          mockedConsensusRecoveryModuleBuilder.withEpochNodeIndexesMapping(
-              this.epochToNodeIndexesMapping);
-        }
-        modules.add(mockedConsensusRecoveryModuleBuilder.build());
-      }
     }
 
     public DeterministicTest functionalNodeModule(FunctionalRadixNodeModule module) {
       addFunctionalNodeModule(module);
       return build();
-    }
-
-    public Builder epochNodeIndexesMapping(Function<Long, IntStream> epochToNodeIndexesMapping) {
-      Objects.requireNonNull(epochToNodeIndexesMapping);
-      this.epochToNodeIndexesMapping = epochToNodeIndexesMapping;
-      return this;
-    }
-
-    public Builder epochNodeWeightMapping(EpochNodeWeightMapping epochNodeWeightMapping) {
-      this.epochNodeWeightMapping = Objects.requireNonNull(epochNodeWeightMapping);
-      return this;
     }
 
     public Builder messageSelector(MessageSelector messageSelector) {
@@ -250,8 +217,21 @@ public final class DeterministicTest implements AutoCloseable {
       return this;
     }
 
-    public DeterministicTest buildWithEpochs(Round epochMaxRound) {
+    public DeterministicTest buildWithEpochs(
+        Round epochMaxRound,
+        int numValidators,
+        Function<Long, IntStream> epochToNodeIndexesMapping) {
       Objects.requireNonNull(epochMaxRound);
+      var validators =
+          PrivateKeys.numeric(1)
+              .limit(numValidators)
+              .map(k -> BFTNode.create(k.getPublicKey()))
+              .toList();
+      var consensusBuilder =
+          new MockedConsensusRecoveryModule.Builder(true)
+              .withEpochNodeIndexesMapping(epochToNodeIndexesMapping)
+              .withNodes(validators);
+
       this.addFunctionalNodeModule(
           new FunctionalRadixNodeModule(
               true,
@@ -259,14 +239,49 @@ public final class DeterministicTest implements AutoCloseable {
               ConsensusConfig.of(),
               LedgerConfig.stateComputerMockedSync(
                   StateComputerConfig.mocked(
-                      new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
+                      consensusBuilder, new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
+      addEpochedConsensusProcessorModule(epochMaxRound);
+      return build();
+    }
+
+    public DeterministicTest buildWithEpochs(Round epochMaxRound, int numValidators) {
+      Objects.requireNonNull(epochMaxRound);
+      var validators =
+          PrivateKeys.numeric(1)
+              .limit(numValidators)
+              .map(k -> BFTNode.create(k.getPublicKey()))
+              .toList();
+      var consensusBuilder = new MockedConsensusRecoveryModule.Builder(true).withNodes(validators);
+
+      this.addFunctionalNodeModule(
+          new FunctionalRadixNodeModule(
+              true,
+              SafetyRecoveryConfig.mocked(),
+              ConsensusConfig.of(),
+              LedgerConfig.stateComputerMockedSync(
+                  StateComputerConfig.mocked(
+                      consensusBuilder, new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
       addEpochedConsensusProcessorModule(epochMaxRound);
       return build();
     }
 
     public DeterministicTest buildWithEpochsAndSync(
-        Round epochMaxRound, SyncRelayConfig syncRelayConfig) {
+        Round epochMaxRound,
+        SyncRelayConfig syncRelayConfig,
+        int numValidators,
+        Function<Long, IntStream> epochToNodeIndexesMapping) {
       Objects.requireNonNull(epochMaxRound);
+
+      var validators =
+          PrivateKeys.numeric(1)
+              .limit(numValidators)
+              .map(k -> BFTNode.create(k.getPublicKey()))
+              .toList();
+      var consensusBuilder =
+          new MockedConsensusRecoveryModule.Builder(true)
+              .withEpochNodeIndexesMapping(epochToNodeIndexesMapping)
+              .withNodes(validators);
+
       this.addFunctionalNodeModule(
           new FunctionalRadixNodeModule(
               true,
@@ -274,7 +289,7 @@ public final class DeterministicTest implements AutoCloseable {
               ConsensusConfig.of(),
               LedgerConfig.stateComputerWithSyncRelay(
                   StateComputerConfig.mocked(
-                      new StateComputerConfig.MockedMempoolConfig.NoMempool()),
+                      consensusBuilder, new StateComputerConfig.MockedMempoolConfig.NoMempool()),
                   syncRelayConfig)));
       modules.add(new InMemoryCommittedReaderModule());
       addEpochedConsensusProcessorModule(epochMaxRound);

@@ -100,7 +100,8 @@ public class OneNodeNeverSendEpochResponseTest {
               NetworkLatencies.fixed(),
               NetworkDroppers.oneNodePerEpochLedgerStatusUpdateDropped())
           .numNodes(numNodes)
-          .ledgerAndEpochs(ConsensusConfig.of(1000), Round.of(4), randomEpochToNodesMapper())
+          .ledgerAndEpochs(
+              ConsensusConfig.of(1000), Round.of(4), randomEpochToNodesMapper(), numNodes)
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(5, TimeUnit.SECONDS),

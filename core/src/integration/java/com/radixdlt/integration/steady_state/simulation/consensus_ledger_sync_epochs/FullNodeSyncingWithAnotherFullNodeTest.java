@@ -131,6 +131,7 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
                 ConsensusConfig.of(3000),
                 Round.of(100),
                 (unused) -> VALIDATORS_INDICES.stream().mapToInt(i -> i),
+                4,
                 new SyncRelayConfig(1000L, 10, 500L, 10, Long.MAX_VALUE))
             .addTestModules(
                 ConsensusMonitors.safety(),

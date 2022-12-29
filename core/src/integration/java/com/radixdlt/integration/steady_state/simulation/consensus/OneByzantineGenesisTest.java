@@ -87,12 +87,6 @@ public class OneByzantineGenesisTest {
   SimulationTest.Builder bftTestBuilder =
       SimulationTest.builder()
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .functionalNodeModule(
-              new FunctionalRadixNodeModule(
-                  false,
-                  SafetyRecoveryConfig.mocked(),
-                  ConsensusConfig.of(1000),
-                  LedgerConfig.mocked()))
           .addTestModules(ConsensusMonitors.safety());
 
   @Test
@@ -100,6 +94,13 @@ public class OneByzantineGenesisTest {
     SimulationTest bftTest =
         bftTestBuilder
             .numNodes(3)
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    false,
+                    SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(1000),
+                    LedgerConfig.mocked(
+                        new MockedConsensusRecoveryModule.Builder().withNumValidators(3))))
             .addOverrideModuleToInitialNodes(
                 nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
                 nodes ->
@@ -118,7 +119,17 @@ public class OneByzantineGenesisTest {
   @Test
   public void given_3_correct_bfts__then_none_committed_invariant_should_fail() {
     SimulationTest bftTest =
-        bftTestBuilder.numNodes(3).addTestModules(ConsensusMonitors.noneCommitted()).build();
+        bftTestBuilder
+            .numNodes(3)
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    false,
+                    SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(1000),
+                    LedgerConfig.mocked(
+                        new MockedConsensusRecoveryModule.Builder().withNumValidators(3))))
+            .addTestModules(ConsensusMonitors.noneCommitted())
+            .build();
 
     final var checkResults = bftTest.run().awaitCompletion();
     assertThat(checkResults)
@@ -130,6 +141,13 @@ public class OneByzantineGenesisTest {
   public void given_3_correct_bfts_and_1_byzantine__then_should_make_progress() {
     SimulationTest bftTest =
         bftTestBuilder
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    false,
+                    SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(1000),
+                    LedgerConfig.mocked(
+                        new MockedConsensusRecoveryModule.Builder().withNumValidators(4))))
             .numNodes(4)
             .addOverrideModuleToInitialNodes(
                 nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),

@@ -90,7 +90,7 @@ public class OneOutOfBoundsTest {
           .networkModules(
               NetworkOrdering.inOrder(),
               NetworkLatencies.oneOutOfBounds(latency, outOfBoundsLatency))
-          .functionalNodeModule(FunctionalRadixNodeModule.justLedger())
+          .functionalNodeModule(FunctionalRadixNodeModule.justLedgerWithNumValidators(4))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(4, TimeUnit.SECONDS),

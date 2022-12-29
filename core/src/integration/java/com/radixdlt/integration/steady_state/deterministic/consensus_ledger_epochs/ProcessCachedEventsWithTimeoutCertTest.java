@@ -95,7 +95,7 @@ public class ProcessCachedEventsWithTimeoutCertTest {
                 dropProposalToNodes(Round.of(1), ImmutableList.of(TEST_NODE)),
                 dropProposalToNodes(Round.of(2), ImmutableList.of(2, 3, TEST_NODE)),
                 dropVotesForNode(TEST_NODE))
-            .buildWithEpochs(Round.of(100));
+            .buildWithEpochs(Round.of(100), 5);
 
     test.startAllNodes();
     test.runUntilMessage(nodeVotesForRound(Round.of(3), TEST_NODE));

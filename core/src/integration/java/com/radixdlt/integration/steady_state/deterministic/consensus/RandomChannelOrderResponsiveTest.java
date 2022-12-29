@@ -68,6 +68,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.MockedConsensusRecoveryModule;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -79,6 +81,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.IntStream;
@@ -92,6 +95,12 @@ public class RandomChannelOrderResponsiveTest {
 
     final Random random = new Random(12345);
 
+    var validators =
+        PrivateKeys.numeric(1)
+            .limit(numValidatorNodes)
+            .map(k -> BFTNode.create(k.getPublicKey()))
+            .toList();
+
     DeterministicTest test =
         DeterministicTest.builder()
             .numNodes(numValidatorNodes, 0)
@@ -103,7 +112,9 @@ public class RandomChannelOrderResponsiveTest {
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
+                        StateComputerConfig.mocked(
+                            new MockedConsensusRecoveryModule.Builder().withNodes(validators),
+                            MockedMempoolConfig.noMempool()))));
 
     test.startAllNodes();
     test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(roundsToRun)));

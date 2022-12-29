@@ -104,7 +104,7 @@ public class SyncToTimeoutQcTest {
             .numNodes(NUM_NODES, 0)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(dropProposalsToNodes(ImmutableSet.of(2, 3)).andThen(dropVotesToNode(0)))
-            .buildWithEpochs(Round.of(10));
+            .buildWithEpochs(Round.of(10), NUM_NODES);
 
     test.startAllNodes();
     test.runUntilMessage(DeterministicTest.roundUpdateOnNode(Round.of(2), 0));

@@ -96,6 +96,7 @@ import com.radixdlt.statecomputer.RandomTransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.utils.PrivateKeys;
 import java.util.Optional;
 
 /** Manages the functional components of a node */
@@ -160,8 +161,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   }
 
   public sealed interface LedgerConfig {
-    static LedgerConfig mocked() {
-      return new MockedLedgerConfig();
+    static LedgerConfig mocked(MockedConsensusRecoveryModule.Builder builder) {
+      return new MockedLedgerConfig(builder);
     }
 
     static LedgerConfig stateComputerNoSync(StateComputerConfig stateComputerConfig) {
@@ -193,7 +194,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     }
   }
 
-  public static final class MockedLedgerConfig implements LedgerConfig {}
+  public record MockedLedgerConfig(MockedConsensusRecoveryModule.Builder builder)
+      implements LedgerConfig {}
 
   public record StateComputerLedgerConfig(StateComputerConfig config, SyncConfig syncConfig)
       implements LedgerConfig {}
@@ -236,13 +238,21 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         LedgerConfig.stateComputerWithSyncRelay(stateComputerConfig, syncRelayConfig));
   }
 
-  public static FunctionalRadixNodeModule justLedger() {
+  public static FunctionalRadixNodeModule justLedgerWithNumValidators(int numValidators) {
+    var validators =
+        PrivateKeys.numeric(1)
+            .limit(numValidators)
+            .map(k -> BFTNode.create(k.getPublicKey()))
+            .toList();
+
     return new FunctionalRadixNodeModule(
         false,
         SafetyRecoveryConfig.mocked(),
         ConsensusConfig.of(),
         LedgerConfig.stateComputerNoSync(
-            StateComputerConfig.mocked(new MockedMempoolConfig.NoMempool())));
+            StateComputerConfig.mocked(
+                new MockedConsensusRecoveryModule.Builder().withNodes(validators),
+                new MockedMempoolConfig.NoMempool())));
   }
 
   public boolean supportsEpochs() {
@@ -277,9 +287,11 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
     // Ledger
     switch (this.ledgerConfig) {
-      case MockedLedgerConfig ignored -> {
+      case MockedLedgerConfig config -> {
         install(new MockedLedgerRecoveryModule());
         install(new MockedLedgerModule());
+
+        install(config.builder.build());
       }
       case StateComputerLedgerConfig stateComputerLedgerConfig -> {
         install(new LedgerModule());
@@ -301,6 +313,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         // State Computer
         switch (stateComputerLedgerConfig.config) {
           case MockedStateComputerConfig c -> {
+            install(c.builder().build());
             install(new MockedLedgerRecoveryModule());
             switch (c.mempoolType()) {
               case MockedMempoolConfig.NoMempool ignored -> {

@@ -120,7 +120,10 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
                 ConsensusMonitors.proposerTimestampChecker(),
                 LedgerMonitors.ordered())
             .ledgerAndEpochs(
-                ConsensusConfig.of(1000), Round.of(10), e -> IntStream.range(0, NUM_VALIDATORS));
+                ConsensusConfig.of(1000),
+                Round.of(10),
+                e -> IntStream.range(0, NUM_VALIDATORS),
+                NUM_VALIDATORS);
 
     // One node has an inaccurate clock: 10s rushing
     // A little "hack" with AtomicReference to get the lucky node's key out of the closure

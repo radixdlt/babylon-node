@@ -66,15 +66,7 @@ package com.radixdlt.integration.steady_state.deterministic.consensus;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
-import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimestampedECDSASignature;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.RoundUpdate;
@@ -110,7 +102,10 @@ public class DifferentTimestampsCauseTimeoutTest {
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))))
+                        StateComputerConfig.mocked(
+                            new MockedConsensusRecoveryModule.Builder()
+                                .withNumValidators(numValidatorNodes),
+                            MockedMempoolConfig.noMempool()))))
             .createExecutor();
 
     executor.start();
@@ -154,7 +149,10 @@ public class DifferentTimestampsCauseTimeoutTest {
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))))
+                        StateComputerConfig.mocked(
+                            new MockedConsensusRecoveryModule.Builder()
+                                .withNumValidators(numValidatorNodes),
+                            MockedMempoolConfig.noMempool()))))
             .createExecutor();
 
     executor.start();

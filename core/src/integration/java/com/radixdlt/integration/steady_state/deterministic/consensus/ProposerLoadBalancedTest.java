@@ -68,6 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
+import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
@@ -98,14 +99,17 @@ public class ProposerLoadBalancedTest {
             .numNodes(numValidatorNodes, 0)
             .messageSelector(MessageSelector.firstSelector())
             .messageMutator(mutator())
-            .epochNodeWeightMapping(mapping)
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
                     false,
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
+                        StateComputerConfig.mocked(
+                            new MockedConsensusRecoveryModule.Builder()
+                                .withNumValidators(numValidatorNodes)
+                                .withEpochNodeWeightMapping(mapping),
+                            MockedMempoolConfig.noMempool()))));
     test.startAllNodes();
     test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 

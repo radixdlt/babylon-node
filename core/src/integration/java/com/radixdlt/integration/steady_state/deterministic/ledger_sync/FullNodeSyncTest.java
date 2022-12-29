@@ -88,8 +88,8 @@ public class FullNodeSyncTest {
     return DeterministicTest.builder()
         .numNodes(numValidators, numFullNodes)
         .messageSelector(firstSelector())
-        .epochNodeIndexesMapping(epoch -> IntStream.range(0, numValidators))
-        .buildWithEpochsAndSync(epochMaxRound, syncConfig);
+        .buildWithEpochsAndSync(
+            epochMaxRound, syncConfig, numValidators, epoch -> IntStream.range(0, numValidators));
   }
 
   private static void run(DeterministicTest test, int numValidators, long targetStateVersion) {

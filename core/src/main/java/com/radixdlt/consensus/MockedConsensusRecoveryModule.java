@@ -75,6 +75,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
 import java.util.Objects;
@@ -191,6 +192,15 @@ public class MockedConsensusRecoveryModule extends AbstractModule {
           mapper
               .nodesAndWeightFor(epoch)
               .map(niw -> BFTValidator.from(nodes.get(niw.index()), niw.weight())));
+    }
+
+    public Builder withNumValidators(int numValidators) {
+      var validators =
+          PrivateKeys.numeric(1)
+              .limit(numValidators)
+              .map(k -> BFTNode.create(k.getPublicKey()))
+              .toList();
+      return this.withNodes(validators);
     }
 
     public Builder withNodes(List<BFTNode> nodes) {

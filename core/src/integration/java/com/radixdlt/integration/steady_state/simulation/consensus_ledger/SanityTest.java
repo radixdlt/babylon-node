@@ -85,7 +85,7 @@ public class SanityTest {
       SimulationTest.builder()
           .numNodes(4)
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .functionalNodeModule(FunctionalRadixNodeModule.justLedger())
+          .functionalNodeModule(FunctionalRadixNodeModule.justLedgerWithNumValidators(4))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(1, TimeUnit.SECONDS),

@@ -96,7 +96,7 @@ public class StaticValidatorsTest {
     SimulationTest bftTest =
         bftTestBuilder
             .ledgerAndEpochs(
-                ConsensusConfig.of(1000), Round.of(epochRounds), e -> IntStream.range(0, 4))
+                ConsensusConfig.of(1000), Round.of(epochRounds), e -> IntStream.range(0, 4), 4)
             .addTestModules(ConsensusMonitors.epochMaxRound(Round.of(epochRoundsCheck)))
             .build();
 

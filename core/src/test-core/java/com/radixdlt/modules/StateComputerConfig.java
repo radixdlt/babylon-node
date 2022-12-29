@@ -64,6 +64,7 @@
 
 package com.radixdlt.modules;
 
+import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolRelayConfig;
@@ -78,8 +79,9 @@ import java.util.stream.Stream;
 
 /** Configuration options for the state computer */
 public sealed interface StateComputerConfig {
-  static StateComputerConfig mocked(MockedMempoolConfig mempoolType) {
-    return new MockedStateComputerConfig(mempoolType);
+  static StateComputerConfig mocked(
+      MockedConsensusRecoveryModule.Builder builder, MockedMempoolConfig mempoolType) {
+    return new MockedStateComputerConfig(builder, mempoolType);
   }
 
   static StateComputerConfig rev2(
@@ -112,7 +114,8 @@ public sealed interface StateComputerConfig {
     record Relayed(int mempoolSize) implements MockedMempoolConfig {}
   }
 
-  record MockedStateComputerConfig(MockedMempoolConfig mempoolType)
+  record MockedStateComputerConfig(
+      MockedConsensusRecoveryModule.Builder builder, MockedMempoolConfig mempoolType)
       implements StateComputerConfig {}
 
   record REv2StateComputerConfig(

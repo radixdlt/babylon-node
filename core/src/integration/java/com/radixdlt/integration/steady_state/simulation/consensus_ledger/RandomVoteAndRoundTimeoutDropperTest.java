@@ -91,7 +91,7 @@ public class RandomVoteAndRoundTimeoutDropperTest {
               NetworkOrdering.inOrder(),
               NetworkLatencies.fixed(),
               NetworkDroppers.randomVotesAndRoundTimeoutsDropped(0.4))
-          .functionalNodeModule(FunctionalRadixNodeModule.justLedger())
+          .functionalNodeModule(FunctionalRadixNodeModule.justLedgerWithNumValidators(4))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(20, TimeUnit.SECONDS),

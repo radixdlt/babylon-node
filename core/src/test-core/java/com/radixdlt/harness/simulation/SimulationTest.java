@@ -149,9 +149,7 @@ public final class SimulationTest {
 
   public static class Builder {
     private ImmutableList<ECKeyPair> initialNodes = ImmutableList.of(ECKeyPair.generateNew());
-    private FunctionalRadixNodeModule functionalNodeModule =
-        new FunctionalRadixNodeModule(
-            false, SafetyRecoveryConfig.mocked(), ConsensusConfig.of(), LedgerConfig.mocked());
+    private FunctionalRadixNodeModule functionalNodeModule = null;
 
     private Module initialNodesModule;
     private final ImmutableList.Builder<Module> testModules = ImmutableList.builder();
@@ -163,7 +161,6 @@ public final class SimulationTest {
         addressBookNodes;
 
     private List<BFTNode> bftNodes;
-    private Function<Long, IntStream> epochToNodeIndexMapper;
 
     private Builder() {}
 
@@ -246,10 +243,34 @@ public final class SimulationTest {
       return numNodes(numNodes, ImmutableList.of(UInt256.ONE));
     }
 
+    public Builder consensus(int numValidators) {
+
+      this.functionalNodeModule =
+          new FunctionalRadixNodeModule(
+              false,
+              SafetyRecoveryConfig.mocked(),
+              ConsensusConfig.of(),
+              LedgerConfig.mocked(
+                  new MockedConsensusRecoveryModule.Builder().withNumValidators(numValidators)));
+
+      return this;
+    }
+
     public Builder ledgerAndEpochs(
         ConsensusConfig consensusConfig,
         Round epochMaxRound,
-        Function<Long, IntStream> epochToNodeIndexMapper) {
+        Function<Long, IntStream> epochToNodeIndexMapper,
+        int numValidators) {
+      var validators =
+          PrivateKeys.numeric(1)
+              .limit(numValidators)
+              .map(k -> BFTNode.create(k.getPublicKey()))
+              .toList();
+      var consensusBuilder =
+          new MockedConsensusRecoveryModule.Builder(true)
+              .withNodes(validators)
+              .withEpochNodeIndexesMapping(epochToNodeIndexMapper);
+
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               true,
@@ -257,8 +278,7 @@ public final class SimulationTest {
               consensusConfig,
               LedgerConfig.stateComputerMockedSync(
                   StateComputerConfig.mocked(
-                      new StateComputerConfig.MockedMempoolConfig.NoMempool())));
-      this.epochToNodeIndexMapper = epochToNodeIndexMapper;
+                      consensusBuilder, new StateComputerConfig.MockedMempoolConfig.NoMempool())));
       this.modules.add(
           new AbstractModule() {
             @Override
@@ -275,7 +295,15 @@ public final class SimulationTest {
       return this;
     }
 
-    public Builder ledgerAndSync(ConsensusConfig consensusConfig, SyncRelayConfig syncRelayConfig) {
+    public Builder ledgerAndSync(
+        ConsensusConfig consensusConfig, SyncRelayConfig syncRelayConfig, int numValidators) {
+      var validators =
+          PrivateKeys.numeric(1)
+              .limit(numValidators)
+              .map(k -> BFTNode.create(k.getPublicKey()))
+              .toList();
+      var consensusBuilder = new MockedConsensusRecoveryModule.Builder(false).withNodes(validators);
+
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               false,
@@ -283,7 +311,7 @@ public final class SimulationTest {
               consensusConfig,
               LedgerConfig.stateComputerWithSyncRelay(
                   StateComputerConfig.mocked(
-                      new StateComputerConfig.MockedMempoolConfig.NoMempool()),
+                      consensusBuilder, new StateComputerConfig.MockedMempoolConfig.NoMempool()),
                   syncRelayConfig));
       return this;
     }
@@ -292,7 +320,19 @@ public final class SimulationTest {
         ConsensusConfig consensusConfig,
         Round epochMaxRound,
         Function<Long, IntStream> epochToNodeIndexMapper,
+        int numValidators,
         SyncRelayConfig syncRelayConfig) {
+
+      var validators =
+          PrivateKeys.numeric(1)
+              .limit(numValidators)
+              .map(k -> BFTNode.create(k.getPublicKey()))
+              .toList();
+      var consensusBuilder =
+          new MockedConsensusRecoveryModule.Builder(true)
+              .withNodes(validators)
+              .withEpochNodeIndexesMapping(epochToNodeIndexMapper);
+
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               true,
@@ -300,9 +340,8 @@ public final class SimulationTest {
               consensusConfig,
               LedgerConfig.stateComputerWithSyncRelay(
                   StateComputerConfig.mocked(
-                      new StateComputerConfig.MockedMempoolConfig.NoMempool()),
+                      consensusBuilder, new StateComputerConfig.MockedMempoolConfig.NoMempool()),
                   syncRelayConfig));
-      this.epochToNodeIndexMapper = epochToNodeIndexMapper;
       modules.add(
           new AbstractModule() {
             @Override
@@ -313,7 +352,14 @@ public final class SimulationTest {
       return this;
     }
 
-    public Builder ledgerAndMempool(ConsensusConfig consensusConfig) {
+    public Builder ledgerAndMempool(ConsensusConfig consensusConfig, int numValidators) {
+      var validators =
+          PrivateKeys.numeric(1)
+              .limit(numValidators)
+              .map(k -> BFTNode.create(k.getPublicKey()))
+              .toList();
+      var consensusBuilder = new MockedConsensusRecoveryModule.Builder(false).withNodes(validators);
+
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               false,
@@ -321,13 +367,9 @@ public final class SimulationTest {
               consensusConfig,
               LedgerConfig.stateComputerNoSync(
                   StateComputerConfig.mocked(
+                      consensusBuilder,
                       new StateComputerConfig.MockedMempoolConfig.LocalOnly(10))));
       this.modules.add(MempoolRelayConfig.of(10).asModule());
-      return this;
-    }
-
-    public Builder addNodeModule(Module module) {
-      this.modules.add(module);
       return this;
     }
 
@@ -407,21 +449,6 @@ public final class SimulationTest {
       modules.add(new TestMessagingModule.Builder().withDefaultRateLimit().build());
       // Functional
       modules.add(this.functionalNodeModule);
-
-      // Persistence
-      if (!this.functionalNodeModule.supportsREv2()) {
-        var initialVset = initialNodes.stream().map(e -> BFTNode.create(e.getPublicKey())).toList();
-        MockedConsensusRecoveryModule.Builder mockedConsensusRecoveryModuleBuilder;
-        if (this.epochToNodeIndexMapper != null) {
-          mockedConsensusRecoveryModuleBuilder = new MockedConsensusRecoveryModule.Builder(true);
-          mockedConsensusRecoveryModuleBuilder.withEpochNodeIndexesMapping(
-              this.epochToNodeIndexMapper);
-        } else {
-          mockedConsensusRecoveryModuleBuilder = new MockedConsensusRecoveryModule.Builder();
-        }
-        mockedConsensusRecoveryModuleBuilder.withNodes(initialVset);
-        modules.add(mockedConsensusRecoveryModuleBuilder.build());
-      }
 
       // Testing
       modules.add(new SimulationNodeEventsModule());

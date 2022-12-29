@@ -66,13 +66,7 @@ package com.radixdlt.integration.steady_state.simulation.consensus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimeoutCertificate;
-import com.radixdlt.consensus.TimestampedECDSASignature;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.*;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkMessageModifiers;
@@ -164,7 +158,8 @@ public final class InvalidQcIsIgnoredTest {
                     false,
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(1000),
-                    LedgerConfig.mocked()))
+                    LedgerConfig.mocked(
+                        new MockedConsensusRecoveryModule.Builder().withNumValidators(3))))
             .addTestModules(ConsensusMonitors.noneCommitted())
             .numNodes(3)
             .build();

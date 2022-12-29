@@ -95,6 +95,7 @@ public class RandomValidatorsTest {
               ConsensusConfig.of(5000),
               Round.of(3),
               goodRandomEpochToNodesMapper(),
+              numNodes,
               syncRelayConfig) // TODO: investigate why this fails with Round.of(10)
           .numNodes(numNodes)
           .addTestModules(

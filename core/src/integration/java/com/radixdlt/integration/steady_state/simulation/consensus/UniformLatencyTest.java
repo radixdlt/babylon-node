@@ -94,6 +94,7 @@ public class UniformLatencyTest {
         SimulationTest.builder()
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
             .numNodes(4)
+            .consensus(4)
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(LIVENESS_MS, TimeUnit.MILLISECONDS),
