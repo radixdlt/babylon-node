@@ -71,6 +71,7 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
@@ -79,22 +80,31 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2TestTransactions;
+import com.radixdlt.rev2.SystemAddress;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
+import java.util.HashMap;
 import java.util.Random;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class RandomValidatorsTest {
+  private static final int NUM_VALIDATORS = 30;
+  private static final RawLedgerTransaction GENESIS =
+      TransactionBuilder.createGenesisWithNumValidators(
+          NUM_VALIDATORS / 2, UInt64.fromNonNegativeLong(10));
+
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(1, 50)
+        .numNodes(1, NUM_VALIDATORS)
         .messageSelector(firstSelector())
         .addMonitors(
             byzantineBehaviorNotDetected(), consensusLiveness(3000), ledgerTransactionSafety())
@@ -107,8 +117,7 @@ public final class RandomValidatorsTest {
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
-                            25, UInt64.fromNonNegativeLong(10)),
+                        GENESIS,
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             10, 100, MempoolRelayConfig.of(5, 5))),
@@ -122,6 +131,17 @@ public final class RandomValidatorsTest {
 
       var random = new Random(12345);
 
+      var creating_validators = new HashMap<Integer, RawNotarizedTransaction>();
+      var validators = new HashMap<Integer, SystemAddress>();
+      var genesis = NodesReader.getCommittedLedgerTransaction(test.getNodeInjectors(), GENESIS);
+      var systemAddresses =
+          genesis.newSystemAddresses().stream()
+              .filter(systemAddress -> systemAddress.value()[0] == 5)
+              .toList();
+      for (int i = 0; i < NUM_VALIDATORS / 2; i++) {
+        validators.put(i, systemAddresses.get(i));
+      }
+
       // Run
       for (int i = 0; i < 100; i++) {
         test.runForCount(1000);
@@ -129,21 +149,51 @@ public final class RandomValidatorsTest {
         for (int j = 0; j < 50; j++) {
           var mempoolDispatcher =
               test.getInstance(
-                  random.nextInt(0, 51),
+                  random.nextInt(0, NUM_VALIDATORS + 1),
                   Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
-          var txn =
-              random.nextBoolean()
-                  ? REv2TestTransactions.constructCreateValidatorTransaction(
+
+          var randomValidator = random.nextInt(0, NUM_VALIDATORS + 1);
+          var systemAddress = validators.get(randomValidator);
+          if (systemAddress == null) {
+            var inflightTransaction = creating_validators.get(randomValidator);
+            if (inflightTransaction == null) {
+              var txn =
+                  REv2TestTransactions.constructCreateValidatorTransaction(
                       NetworkDefinition.INT_TEST_NET,
                       0,
                       random.nextInt(1000000),
-                      PrivateKeys.ofNumeric(j + 1))
-                  : REv2TestTransactions.constructCreateValidatorTransaction(
-                      NetworkDefinition.INT_TEST_NET,
-                      0,
-                      random.nextInt(1000000),
-                      PrivateKeys.ofNumeric(j + 1));
-          mempoolDispatcher.dispatch(MempoolAdd.create(txn));
+                      PrivateKeys.ofNumeric(randomValidator + 1));
+              creating_validators.put(randomValidator, txn);
+              mempoolDispatcher.dispatch(MempoolAdd.create(txn));
+            } else {
+              var maybeExecuted =
+                  NodesReader.tryGetCommittedUserTransaction(
+                      test.getNodeInjectors().get(randomValidator), inflightTransaction);
+              maybeExecuted.ifPresent(
+                  executedTransaction -> {
+                    validators.put(
+                        randomValidator, executedTransaction.newSystemAddresses().get(0));
+                    creating_validators.remove(randomValidator);
+                  });
+            }
+          } else {
+            var txn =
+                random.nextBoolean()
+                    ? REv2TestTransactions.constructRegisterValidatorTransaction(
+                        NetworkDefinition.INT_TEST_NET,
+                        0,
+                        random.nextInt(1000000),
+                        systemAddress,
+                        PrivateKeys.ofNumeric(randomValidator + 1))
+                    : REv2TestTransactions.constructUnregisterValidatorTransaction(
+                        NetworkDefinition.INT_TEST_NET,
+                        0,
+                        random.nextInt(1000000),
+                        systemAddress,
+                        PrivateKeys.ofNumeric(randomValidator + 1));
+
+            mempoolDispatcher.dispatch(MempoolAdd.create(txn));
+          }
         }
       }
 

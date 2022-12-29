@@ -187,17 +187,18 @@ public final class REv2TestTransactions {
   }
 
   public static String constructUnregisterValidatorManifest(
-      NetworkDefinition networkDefinition, ECDSASecp256k1PublicKey key) {
+      NetworkDefinition networkDefinition, SystemAddress validatorAddress) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var faucetAddress =
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+    final var systemAddress = addressing.encodeSystemAddress(validatorAddress);
 
     return String.format(
         """
                             CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
-                            UNREGISTER_VALIDATOR EcdsaSecp256k1PublicKey("%s");
+                            UNREGISTER_VALIDATOR SystemAddress("%s");
                             """,
-        faucetAddress, key.toHex());
+        faucetAddress, systemAddress);
   }
 
   public static RawNotarizedTransaction constructNewAccountFromAccountTransaction(
@@ -267,8 +268,12 @@ public final class REv2TestTransactions {
   }
 
   public static RawNotarizedTransaction constructUnregisterValidatorTransaction(
-      NetworkDefinition networkDefinition, long fromEpoch, long nonce, ECKeyPair keyPair) {
-    var manifest = constructUnregisterValidatorManifest(networkDefinition, keyPair.getPublicKey());
+      NetworkDefinition networkDefinition,
+      long fromEpoch,
+      long nonce,
+      SystemAddress validatorAddress,
+      ECKeyPair keyPair) {
+    var manifest = constructUnregisterValidatorManifest(networkDefinition, validatorAddress);
     var signatories = List.of(keyPair);
     return constructRawTransaction(
         networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
