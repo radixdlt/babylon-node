@@ -67,6 +67,7 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.utils.Bytes;
 import java.util.Objects;
 
 /**
@@ -89,8 +90,24 @@ public final class BFTNode {
     return new BFTNode(key, shortenedAddress);
   }
 
-  public static BFTNode fromPublicKeyBytes(byte[] key) throws PublicKeyException {
+  public static BFTNode fromSerializedString(String str) {
+    try {
+      return BFTNode.fromBytes(Bytes.fromHexString(str));
+    } catch (PublicKeyException e) {
+      throw new IllegalStateException("Error decoding public key", e);
+    }
+  }
+
+  public String toSerializedString() {
+    return Bytes.toHexString(this.toBytes());
+  }
+
+  public static BFTNode fromBytes(byte[] key) throws PublicKeyException {
     return create(ECDSASecp256k1PublicKey.fromBytes(key));
+  }
+
+  public byte[] toBytes() {
+    return key.getCompressedBytes();
   }
 
   public static BFTNode random() {
@@ -108,16 +125,11 @@ public final class BFTNode {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof BFTNode)) {
+    if (!(o instanceof BFTNode bftNodeId)) {
       return false;
     }
 
-    BFTNode bftNodeId = (BFTNode) o;
     return Objects.equals(bftNodeId.key, this.key);
-  }
-
-  public String getSimpleName() {
-    return simpleName;
   }
 
   @Override

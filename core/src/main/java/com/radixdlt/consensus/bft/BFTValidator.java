@@ -68,13 +68,11 @@ import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
@@ -97,9 +95,9 @@ public final class BFTValidator {
 
   @JsonCreator
   private BFTValidator(
-      @JsonProperty(value = "node", required = true) String nodeKey,
+      @JsonProperty(value = "node", required = true) String node,
       @JsonProperty(value = "power", required = true) UInt256 power) {
-    this(toBFTNode(requireNonNull(nodeKey)), power);
+    this(BFTNode.fromSerializedString(node), power);
   }
 
   private BFTValidator(BFTNode node, UInt256 power) {
@@ -121,20 +119,8 @@ public final class BFTValidator {
 
   @JsonProperty("node")
   @DsonOutput(Output.ALL)
-  private String getSerializerNodeKey() {
-    return encodePublicKey(this.node);
-  }
-
-  private static String encodePublicKey(BFTNode key) {
-    return Bytes.toHexString(key.getKey().getBytes());
-  }
-
-  private static BFTNode toBFTNode(String str) {
-    try {
-      return BFTNode.fromPublicKeyBytes(Bytes.fromHexString(str));
-    } catch (PublicKeyException e) {
-      throw new IllegalStateException("Error decoding public key", e);
-    }
+  private String getSerializerNode() {
+    return node.toSerializedString();
   }
 
   @Override
@@ -155,7 +141,6 @@ public final class BFTValidator {
 
   @Override
   public String toString() {
-    return String.format(
-        "%s{node=%s power=%s}", getClass().getSimpleName(), this.node.getSimpleName(), this.power);
+    return String.format("%s{node=%s power=%s}", getClass().getSimpleName(), this.node, this.power);
   }
 }
