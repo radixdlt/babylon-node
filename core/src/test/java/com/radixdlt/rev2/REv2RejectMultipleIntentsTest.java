@@ -102,7 +102,7 @@ public final class REv2RejectMultipleIntentsTest {
 
   private DeterministicTest createTest(ProposalGenerator proposalGenerator) {
     return DeterministicTest.builder()
-        .numNodes(1, 0)
+        .numPhysicalNodes(1)
         .messageSelector(firstSelector())
         .messageMutator(MessageMutator.dropTimeouts())
         .functionalNodeModule(

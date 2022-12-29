@@ -89,7 +89,7 @@ public class OneProposalDropperResponsiveTest {
       int numValidatorNodes, Function<Round, Integer> nodeToDropFunction) {
     var test =
         DeterministicTest.builder()
-            .numNodes(numValidatorNodes, 0)
+            .numPhysicalNodes(numValidatorNodes)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(
                 MessageMutator.dropTimeouts()

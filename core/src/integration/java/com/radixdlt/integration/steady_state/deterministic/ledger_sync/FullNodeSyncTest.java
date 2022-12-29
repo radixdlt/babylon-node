@@ -86,7 +86,7 @@ public class FullNodeSyncTest {
             numValidators + numFullNodes, /* send ledger status update to all nodes */
             Integer.MAX_VALUE /* no rate limiting */);
     return DeterministicTest.builder()
-        .numNodes(numValidators, numFullNodes)
+        .numPhysicalNodes(numValidators + numFullNodes)
         .messageSelector(firstSelector())
         .buildWithEpochsAndSync(
             epochMaxRound, syncConfig, numValidators, epoch -> IntStream.range(0, numValidators));

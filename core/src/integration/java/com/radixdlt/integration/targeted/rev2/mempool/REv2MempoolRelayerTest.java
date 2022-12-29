@@ -96,7 +96,7 @@ public final class REv2MempoolRelayerTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(1, 20)
+        .numPhysicalNodes(20)
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(

@@ -152,15 +152,12 @@ public final class DeterministicTest implements AutoCloseable {
       // Nothing to do here
     }
 
-    public Builder numNodes(int numInitialValidators, int numFullNodes) {
-      return numNodes(numInitialValidators, numFullNodes, false);
+    public Builder numPhysicalNodes(int numPhysicalNodes) {
+      return numPhysicalNodes(numPhysicalNodes, false);
     }
 
-    public Builder numNodes(int numInitialValidators, int numFullNodes, boolean ordered) {
-      var keys =
-          PrivateKeys.numeric(1)
-              .limit(numFullNodes + numInitialValidators)
-              .map(ECKeyPair::getPublicKey);
+    public Builder numPhysicalNodes(int numPhysicalNodes, boolean ordered) {
+      var keys = PrivateKeys.numeric(1).limit(numPhysicalNodes).map(ECKeyPair::getPublicKey);
       if (ordered) {
         keys = keys.sorted(KeyComparator.instance());
       }

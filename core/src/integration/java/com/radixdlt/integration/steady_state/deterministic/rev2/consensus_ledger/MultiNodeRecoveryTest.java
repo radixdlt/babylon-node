@@ -126,7 +126,7 @@ public final class MultiNodeRecoveryTest {
 
   private DeterministicTest createTest(REv2DatabaseConfig databaseConfig) {
     return DeterministicTest.builder()
-        .numNodes(NUM_VALIDATORS, 0)
+        .numPhysicalNodes(NUM_VALIDATORS)
         .messageSelector(randomSelector(random))
         .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
         .functionalNodeModule(

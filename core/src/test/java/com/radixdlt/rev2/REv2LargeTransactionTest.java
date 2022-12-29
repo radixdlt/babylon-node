@@ -104,7 +104,7 @@ public final class REv2LargeTransactionTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(1, 1)
+        .numPhysicalNodes(2)
         .messageSelector(firstSelector())
         .messageMutator(MessageMutator.dropTimeouts())
         .functionalNodeModule(

@@ -103,7 +103,7 @@ public class RandomChannelOrderResponsiveTest {
 
     DeterministicTest test =
         DeterministicTest.builder()
-            .numNodes(numValidatorNodes, 0)
+            .numPhysicalNodes(numValidatorNodes)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(MessageMutator.dropTimeouts())
             .functionalNodeModule(

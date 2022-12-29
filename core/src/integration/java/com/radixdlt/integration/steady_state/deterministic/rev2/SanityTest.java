@@ -121,7 +121,7 @@ public final class SanityTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(10, 10)
+        .numPhysicalNodes(20)
         .messageSelector(firstSelector())
         .addMonitors(
             byzantineBehaviorNotDetected(), consensusLiveness(3000), ledgerTransactionSafety())

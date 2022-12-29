@@ -96,7 +96,7 @@ public class ProposerLoadBalancedTest {
 
     DeterministicTest test =
         DeterministicTest.builder()
-            .numNodes(numValidatorNodes, 0)
+            .numPhysicalNodes(numValidatorNodes)
             .messageSelector(MessageSelector.firstSelector())
             .messageMutator(mutator())
             .functionalNodeModule(

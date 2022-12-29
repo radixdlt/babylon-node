@@ -101,7 +101,7 @@ public class SyncToTimeoutQcTest {
   public void sync_to_timeout_qc_test() {
     final DeterministicTest test =
         DeterministicTest.builder()
-            .numNodes(NUM_NODES, 0)
+            .numPhysicalNodes(NUM_NODES)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(dropProposalsToNodes(ImmutableSet.of(2, 3)).andThen(dropVotesToNode(0)))
             .buildWithEpochs(Round.of(10), NUM_NODES);

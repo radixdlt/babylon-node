@@ -94,7 +94,7 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
   private void run(int numValidatorNodes, long numRounds) {
     final DeterministicTest test =
         DeterministicTest.builder()
-            .numNodes(numValidatorNodes, 0)
+            .numPhysicalNodes(numValidatorNodes)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(dropAllNonTimeoutVotes())
             .functionalNodeModule(
