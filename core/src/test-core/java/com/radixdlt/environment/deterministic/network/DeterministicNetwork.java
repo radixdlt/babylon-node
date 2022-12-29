@@ -158,8 +158,7 @@ public final class DeterministicNetwork {
                       allMessages.stream()
                           .collect(
                               Collectors.groupingBy(
-                                  m -> Pair.of(m.channelId(), m.message().getClass()),
-                                  Collectors.counting()));
+                                  m -> m.message().getClass(), Collectors.counting()));
                   return new IllegalStateException(
                       String.format("Could not find message. Messages present: %s", msgCount));
                 });
