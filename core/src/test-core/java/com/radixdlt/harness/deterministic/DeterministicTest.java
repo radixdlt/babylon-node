@@ -76,9 +76,7 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
-import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -96,7 +94,6 @@ import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.PrivateKeys;
@@ -226,7 +223,6 @@ public final class DeterministicTest implements AutoCloseable {
                       epochMaxRound,
                       EpochNodeWeightMapping.constant(epochToNodeIndexesMapping),
                       new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
-      addEpochedConsensusProcessorModule();
       return build();
     }
 
@@ -242,7 +238,6 @@ public final class DeterministicTest implements AutoCloseable {
                       epochMaxRound,
                       EpochNodeWeightMapping.constant(numValidators),
                       new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
-      addEpochedConsensusProcessorModule();
       return build();
     }
 
@@ -263,8 +258,7 @@ public final class DeterministicTest implements AutoCloseable {
                       EpochNodeWeightMapping.constant(epochToNodeIndexesMapping),
                       new StateComputerConfig.MockedMempoolConfig.NoMempool()),
                   syncRelayConfig)));
-      modules.add(new InMemoryCommittedReaderModule());
-      addEpochedConsensusProcessorModule();
+
       return build();
     }
 
@@ -297,17 +291,6 @@ public final class DeterministicTest implements AutoCloseable {
           stateMonitor,
           Modules.combine(modules.build()),
           overrideModule);
-    }
-
-    private void addEpochedConsensusProcessorModule() {
-      modules.add(
-          new AbstractModule() {
-            @Override
-            public void configure() {
-              bind(new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() {})
-                  .toInstance(t -> {});
-            }
-          });
     }
   }
 

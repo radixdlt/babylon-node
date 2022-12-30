@@ -94,6 +94,7 @@ import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
 import com.radixdlt.statecomputer.REv2StatelessComputerModule;
 import com.radixdlt.statecomputer.RandomTransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.Optional;
@@ -305,6 +306,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         switch (stateComputerLedgerConfig.config) {
           case MockedStateComputerConfig c -> {
             install(new MockedLedgerRecoveryModule());
+            install(new InMemoryCommittedReaderModule());
+
             switch (c.mempoolConfig()) {
               case MockedMempoolConfig.NoMempool ignored -> {
                 bind(ProposalGenerator.class).to(RandomTransactionGenerator.class);

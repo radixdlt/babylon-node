@@ -99,7 +99,6 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
@@ -420,9 +419,6 @@ public final class SimulationTest {
 
       // Runners
       modules.add(new RxEnvironmentModule());
-      if (this.functionalNodeModule.supportsSync() && !this.functionalNodeModule.supportsREv2()) {
-        modules.add(new InMemoryCommittedReaderModule());
-      }
 
       return new SimulationTest(
           initialNodes,

@@ -69,10 +69,12 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.statecomputer.EpochMaxRound;
 import com.radixdlt.store.LastEpochProof;
@@ -106,7 +108,7 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
   @Override
   protected void configure() {
     bind(Round.class).annotatedWith(EpochMaxRound.class).toInstance(epochMaxRound);
-
+    bind(new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() {}).toInstance(t -> {});
     bind(new TypeLiteral<Function<Long, BFTValidatorSet>>() {})
         .toInstance(
             epoch ->
