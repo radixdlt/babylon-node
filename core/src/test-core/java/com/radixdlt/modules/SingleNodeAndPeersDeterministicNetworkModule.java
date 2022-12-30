@@ -72,6 +72,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
+import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -130,6 +131,6 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
   @Provides
   @Singleton
   Environment environment(@Self BFTNode self, DeterministicNetwork network) {
-    return network.createSender(self);
+    return new ControlledSender(network, self, 0);
   }
 }

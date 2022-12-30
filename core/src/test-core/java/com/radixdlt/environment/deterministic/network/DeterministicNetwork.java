@@ -64,15 +64,12 @@
 
 package com.radixdlt.environment.deterministic.network;
 
-import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.Streams;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.harness.deterministic.invariants.MessageMonitor;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -92,7 +89,7 @@ public final class DeterministicNetwork {
   private final MessageMutator messageMutator;
   private final MessageMonitor messageMonitor;
 
-  private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
+  private final Map<BFTNode, Integer> addressBook;
 
   private long currentTime = 0L;
 
@@ -115,20 +112,10 @@ public final class DeterministicNetwork {
       MessageMonitor messageMonitor) {
     this.messageSelector = Objects.requireNonNull(messageSelector);
     this.messageMutator = Objects.requireNonNull(messageMutator);
-    this.nodeLookup =
+    this.addressBook =
         Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of(node, (int) index))
-            .collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
+            .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
     this.messageMonitor = Objects.requireNonNull(messageMonitor);
-
-    log.debug("Nodes {}", this.nodeLookup);
-  }
-
-  public ControlledSender createSender(BFTNode node) {
-    return new ControlledSender(this, node, this.lookup(node));
-  }
-
-  public ControlledSender createSender(int nodeIndex) {
-    return new ControlledSender(this, this.lookup(nodeIndex), nodeIndex);
   }
 
   // TODO: use better method than Timed to store time
@@ -195,11 +182,7 @@ public final class DeterministicNetwork {
   }
 
   public int lookup(BFTNode node) {
-    return this.nodeLookup.get(node);
-  }
-
-  public BFTNode lookup(int nodeIndex) {
-    return this.nodeLookup.inverse().get(nodeIndex);
+    return this.addressBook.get(node);
   }
 
   long delayForChannel(ChannelId channelId) {
