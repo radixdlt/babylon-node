@@ -107,7 +107,7 @@ public final class OutOfOrderTest {
   public OutOfOrderTest(int numNodes) {
     this.bftTestBuilder =
         SimulationTest.builder()
-            .numNodes(numNodes)
+            .numPhysicalNodes(numNodes)
             .networkModules(
                 NetworkOrdering.outOfOrder(),
                 NetworkLatencies.random(minLatency, maxLatency),
@@ -117,7 +117,7 @@ public final class OutOfOrderTest {
                     false,
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(5000),
-                    LedgerConfig.mocked()))
+                    LedgerConfig.mocked(numNodes)))
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS),

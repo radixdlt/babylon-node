@@ -116,7 +116,7 @@ public class REv2RejectedTransactionMempoolTest {
 
   private DeterministicTest createTest(int mempoolSize) {
     return DeterministicTest.builder()
-        .numNodes(1, 0)
+        .numPhysicalNodes(1)
         .messageSelector(firstSelector())
         .messageMutator(MessageMutator.dropTimeouts())
         .functionalNodeModule(

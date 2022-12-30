@@ -95,7 +95,7 @@ public class SanityTest {
 
   private SimulationTest createTest() {
     return SimulationTest.builder()
-        .numNodes(4)
+        .numPhysicalNodes(4)
         .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(

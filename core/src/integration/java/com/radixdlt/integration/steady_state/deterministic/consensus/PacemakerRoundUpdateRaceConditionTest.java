@@ -109,7 +109,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
   public void test_pacemaker_round_update_race_condition() {
     final DeterministicTest test =
         DeterministicTest.builder()
-            .numNodes(numValidatorNodes, 0, true)
+            .numPhysicalNodes(numValidatorNodes, true)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(messUpMessagesForNodeUnderTest())
             .overrideWithIncorrectModule(
@@ -153,7 +153,8 @@ public class PacemakerRoundUpdateRaceConditionTest {
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(pacemakerTimeout),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
+                        StateComputerConfig.mockedNoEpochs(
+                            numValidatorNodes, MockedMempoolConfig.noMempool()))));
 
     test.startAllNodes();
     test.runUntilMessage(nodeUnderTestReachesRound(Round.of(3)));

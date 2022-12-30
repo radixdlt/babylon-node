@@ -70,13 +70,16 @@ import static org.junit.Assert.assertEquals;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
@@ -88,7 +91,7 @@ public final class ProposerTimestampSanityTest {
     final var builder =
         SimulationTest.builder()
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-            .numNodes(4)
+            .numPhysicalNodes(4)
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
@@ -98,7 +101,16 @@ public final class ProposerTimestampSanityTest {
                     .noTimeouts(), // There should be no timeouts if just a single node is delayed
                 ConsensusMonitors.directParents(),
                 LedgerMonitors.ordered())
-            .ledgerAndEpochs(ConsensusConfig.of(1000), Round.of(10), e -> IntStream.range(0, 4));
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    true,
+                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(1000),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
+                        StateComputerConfig.mockedWithEpochs(
+                            Round.of(10),
+                            EpochNodeWeightMapping.constant(e -> IntStream.range(0, 4)),
+                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
 
     /* One node delayed */
     modifyNthNodeTimeSupplier(0, () -> System.currentTimeMillis() - 4000, builder);
@@ -112,7 +124,7 @@ public final class ProposerTimestampSanityTest {
     final var builder =
         SimulationTest.builder()
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-            .numNodes(4)
+            .numPhysicalNodes(4)
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
@@ -121,7 +133,16 @@ public final class ProposerTimestampSanityTest {
                 LedgerMonitors.consensusToLedger(),
                 ConsensusMonitors.proposerTimestampChecker(),
                 LedgerMonitors.ordered())
-            .ledgerAndEpochs(ConsensusConfig.of(1000), Round.of(10), e -> IntStream.range(0, 4));
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    true,
+                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(1000),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
+                        StateComputerConfig.mockedWithEpochs(
+                            Round.of(10),
+                            EpochNodeWeightMapping.constant(e -> IntStream.range(0, 4)),
+                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
 
     /* One node rushing within acceptable bounds */
     modifyNthNodeTimeSupplier(0, () -> System.currentTimeMillis() + 500, builder);
@@ -138,13 +159,22 @@ public final class ProposerTimestampSanityTest {
     final var builder =
         SimulationTest.builder()
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-            .numNodes(4)
+            .numPhysicalNodes(4)
             .addTestModules(
                 ConsensusMonitors.safety(),
                 LedgerMonitors.consensusToLedger(),
                 ConsensusMonitors.proposerTimestampChecker(),
                 LedgerMonitors.ordered())
-            .ledgerAndEpochs(ConsensusConfig.of(1000), Round.of(10), e -> IntStream.range(0, 4));
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    true,
+                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(1000),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
+                        StateComputerConfig.mockedWithEpochs(
+                            Round.of(10),
+                            EpochNodeWeightMapping.constant(e -> IntStream.range(0, 4)),
+                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
 
     /* One node rushing */
     modifyNthNodeTimeSupplier(0, () -> System.currentTimeMillis() - 4000, builder);
@@ -168,7 +198,7 @@ public final class ProposerTimestampSanityTest {
       int n, TimeSupplier timeSupplier, SimulationTest.Builder builder) {
     builder.addOverrideModuleToInitialNodes(
         nodes -> ImmutableList.of(nodes.get(n).getPublicKey()),
-        nodes ->
+        () ->
             new AbstractModule() {
               @Provides
               public TimeSupplier timeSupplier() {

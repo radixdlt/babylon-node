@@ -107,7 +107,7 @@ public class REv2MempoolToCommittedTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(1, 1)
+        .numPhysicalNodes(2)
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(

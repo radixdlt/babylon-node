@@ -103,7 +103,7 @@ public final class REv2RegisterValidatorTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(1, 0)
+        .numPhysicalNodes(1)
         .messageSelector(firstSelector())
         .messageMutator(MessageMutator.dropTimeouts())
         .addMonitors(

@@ -101,12 +101,6 @@ public class RandomLatencyTest {
               NetworkOrdering.inOrder(),
               NetworkLatencies.random(minLatency, maxLatency),
               NetworkDroppers.bftSyncMessagesDropped())
-          .functionalNodeModule(
-              new FunctionalRadixNodeModule(
-                  false,
-                  SafetyRecoveryConfig.mocked(),
-                  ConsensusConfig.of(synchronousTimeout),
-                  LedgerConfig.mocked())) // Since no syncing needed 6*MTT required
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(synchronousTimeout, TimeUnit.MILLISECONDS),
@@ -116,7 +110,16 @@ public class RandomLatencyTest {
   @Test
   public void
       given_3_correct_nodes_in_random_network_and_no_sync__then_all_synchronous_checks_should_pass() {
-    SimulationTest test = bftTestBuilder.numNodes(3).build();
+    SimulationTest test =
+        bftTestBuilder
+            .numPhysicalNodes(3)
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    false,
+                    SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(synchronousTimeout),
+                    LedgerConfig.mocked(3))) // Since no syncing needed 6*MTT required
+            .build();
 
     final var runningTest = test.run();
     final var checkResults = runningTest.awaitCompletion();
@@ -128,7 +131,16 @@ public class RandomLatencyTest {
   @Test
   public void
       given_4_correct_bfts_in_random_network_and_no_sync__then_all_synchronous_checks_should_pass() {
-    SimulationTest test = bftTestBuilder.numNodes(4).build();
+    SimulationTest test =
+        bftTestBuilder
+            .numPhysicalNodes(4)
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    false,
+                    SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(synchronousTimeout),
+                    LedgerConfig.mocked(4))) // Since no syncing needed 6*MTT required
+            .build();
 
     final var runningTest = test.run();
     final var checkResults = runningTest.awaitCompletion();

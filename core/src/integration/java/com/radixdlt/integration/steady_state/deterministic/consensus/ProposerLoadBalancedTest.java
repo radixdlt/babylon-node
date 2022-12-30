@@ -95,17 +95,17 @@ public class ProposerLoadBalancedTest {
 
     DeterministicTest test =
         DeterministicTest.builder()
-            .numNodes(numValidatorNodes, 0)
+            .numPhysicalNodes(numValidatorNodes)
             .messageSelector(MessageSelector.firstSelector())
             .messageMutator(mutator())
-            .epochNodeWeightMapping(mapping)
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
                     false,
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
+                        StateComputerConfig.mockedWithEpochs(
+                            Round.of(10000000), mapping, MockedMempoolConfig.noMempool()))));
     test.startAllNodes();
     test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 

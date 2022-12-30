@@ -104,7 +104,7 @@ public final class RandomValidatorsTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(1, NUM_VALIDATORS)
+        .numPhysicalNodes(NUM_VALIDATORS)
         .messageSelector(firstSelector())
         .addMonitors(
             byzantineBehaviorNotDetected(), consensusLiveness(3000), ledgerTransactionSafety())
@@ -146,54 +146,51 @@ public final class RandomValidatorsTest {
       for (int i = 0; i < 100; i++) {
         test.runForCount(1000);
 
-        for (int j = 0; j < 50; j++) {
-          var mempoolDispatcher =
-              test.getInstance(
-                  random.nextInt(0, NUM_VALIDATORS + 1),
-                  Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+        var mempoolDispatcher =
+            test.getInstance(
+                random.nextInt(0, NUM_VALIDATORS),
+                Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
 
-          var randomValidator = random.nextInt(0, NUM_VALIDATORS + 1);
-          var systemAddress = validators.get(randomValidator);
-          if (systemAddress == null) {
-            var inflightTransaction = creating_validators.get(randomValidator);
-            if (inflightTransaction == null) {
-              var txn =
-                  REv2TestTransactions.constructCreateValidatorTransaction(
+        var randomValidator = random.nextInt(0, NUM_VALIDATORS);
+        var systemAddress = validators.get(randomValidator);
+        if (systemAddress == null) {
+          var inflightTransaction = creating_validators.get(randomValidator);
+          if (inflightTransaction == null) {
+            var txn =
+                REv2TestTransactions.constructCreateValidatorTransaction(
+                    NetworkDefinition.INT_TEST_NET,
+                    0,
+                    random.nextInt(1000000),
+                    PrivateKeys.ofNumeric(randomValidator + 1));
+            creating_validators.put(randomValidator, txn);
+            mempoolDispatcher.dispatch(MempoolAdd.create(txn));
+          } else {
+            var maybeExecuted =
+                NodesReader.tryGetCommittedUserTransaction(
+                    test.getNodeInjectors().get(randomValidator), inflightTransaction);
+            maybeExecuted.ifPresent(
+                executedTransaction -> {
+                  validators.put(randomValidator, executedTransaction.newSystemAddresses().get(0));
+                  creating_validators.remove(randomValidator);
+                });
+          }
+        } else {
+          var txn =
+              random.nextBoolean()
+                  ? REv2TestTransactions.constructRegisterValidatorTransaction(
                       NetworkDefinition.INT_TEST_NET,
                       0,
                       random.nextInt(1000000),
+                      systemAddress,
+                      PrivateKeys.ofNumeric(randomValidator + 1))
+                  : REv2TestTransactions.constructUnregisterValidatorTransaction(
+                      NetworkDefinition.INT_TEST_NET,
+                      0,
+                      random.nextInt(1000000),
+                      systemAddress,
                       PrivateKeys.ofNumeric(randomValidator + 1));
-              creating_validators.put(randomValidator, txn);
-              mempoolDispatcher.dispatch(MempoolAdd.create(txn));
-            } else {
-              var maybeExecuted =
-                  NodesReader.tryGetCommittedUserTransaction(
-                      test.getNodeInjectors().get(randomValidator), inflightTransaction);
-              maybeExecuted.ifPresent(
-                  executedTransaction -> {
-                    validators.put(
-                        randomValidator, executedTransaction.newSystemAddresses().get(0));
-                    creating_validators.remove(randomValidator);
-                  });
-            }
-          } else {
-            var txn =
-                random.nextBoolean()
-                    ? REv2TestTransactions.constructRegisterValidatorTransaction(
-                        NetworkDefinition.INT_TEST_NET,
-                        0,
-                        random.nextInt(1000000),
-                        systemAddress,
-                        PrivateKeys.ofNumeric(randomValidator + 1))
-                    : REv2TestTransactions.constructUnregisterValidatorTransaction(
-                        NetworkDefinition.INT_TEST_NET,
-                        0,
-                        random.nextInt(1000000),
-                        systemAddress,
-                        PrivateKeys.ofNumeric(randomValidator + 1));
 
-            mempoolDispatcher.dispatch(MempoolAdd.create(txn));
-          }
+          mempoolDispatcher.dispatch(MempoolAdd.create(txn));
         }
       }
 

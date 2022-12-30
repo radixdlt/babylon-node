@@ -90,7 +90,7 @@ public class OneSlowNodeTest {
   private final int synchronousTimeout = maxLatency * trips;
   private final Builder bftTestBuilder =
       SimulationTest.builder()
-          .numNodes(4)
+          .numPhysicalNodes(4)
           .networkModules(
               NetworkOrdering.inOrder(),
               NetworkLatencies.oneSlowProposalSender(minLatency, maxLatency))
@@ -99,7 +99,7 @@ public class OneSlowNodeTest {
                   false,
                   SafetyRecoveryConfig.mocked(),
                   ConsensusConfig.of(synchronousTimeout),
-                  LedgerConfig.mocked()))
+                  LedgerConfig.mocked(4)))
           .addTestModules(ConsensusMonitors.safety(), ConsensusMonitors.directParents());
 
   /**

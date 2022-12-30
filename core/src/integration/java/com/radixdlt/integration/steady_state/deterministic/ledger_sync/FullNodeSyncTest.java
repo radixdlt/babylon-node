@@ -69,8 +69,11 @@ import static com.radixdlt.harness.predicates.EventPredicate.*;
 import static com.radixdlt.harness.predicates.NodePredicate.atOrOverStateVersion;
 import static com.radixdlt.harness.predicates.NodesPredicate.*;
 
+import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.stream.IntStream;
 import org.junit.Test;
@@ -86,10 +89,19 @@ public class FullNodeSyncTest {
             numValidators + numFullNodes, /* send ledger status update to all nodes */
             Integer.MAX_VALUE /* no rate limiting */);
     return DeterministicTest.builder()
-        .numNodes(numValidators, numFullNodes)
+        .numPhysicalNodes(numValidators + numFullNodes)
         .messageSelector(firstSelector())
-        .epochNodeIndexesMapping(epoch -> IntStream.range(0, numValidators))
-        .buildWithEpochsAndSync(epochMaxRound, syncConfig);
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                true,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                FunctionalRadixNodeModule.ConsensusConfig.of(),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
+                    StateComputerConfig.mockedWithEpochs(
+                        epochMaxRound,
+                        EpochNodeWeightMapping.constant(epoch -> IntStream.range(0, numValidators)),
+                        new StateComputerConfig.MockedMempoolConfig.NoMempool()),
+                    syncConfig)));
   }
 
   private static void run(DeterministicTest test, int numValidators, long targetStateVersion) {

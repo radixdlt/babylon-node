@@ -69,17 +69,13 @@ import com.google.inject.*;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.EpochNodeWeightMapping;
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
-import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -89,27 +85,17 @@ import com.radixdlt.harness.deterministic.invariants.StateMonitor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
-import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.statecomputer.EpochMaxRound;
-import com.radixdlt.store.InMemoryCommittedReaderModule;
-import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -144,14 +130,8 @@ public final class DeterministicTest implements AutoCloseable {
   public static class Builder {
     private ImmutableList<BFTNode> nodes =
         ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
-    private ImmutableList<BFTNode> initialValidatorNodes =
-        ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
-    private BFTValidatorSet initialValidatorSet;
-
     private MessageSelector messageSelector = MessageSelector.firstSelector();
     private MessageMutator messageMutator = MessageMutator.nothing();
-    private Function<Long, IntStream> epochToNodeIndexesMapping;
-    private EpochNodeWeightMapping epochNodeWeightMapping;
     private Module overrideModule = null;
     private final ImmutableList.Builder<Module> modules = ImmutableList.builder();
     private final ImmutableList.Builder<Module> testModules = ImmutableList.builder();
@@ -160,25 +140,17 @@ public final class DeterministicTest implements AutoCloseable {
       // Nothing to do here
     }
 
-    public Builder numNodes(int numInitialValidators, int numFullNodes) {
-      return numNodes(numInitialValidators, numFullNodes, false);
+    public Builder numPhysicalNodes(int numPhysicalNodes) {
+      return numPhysicalNodes(numPhysicalNodes, false);
     }
 
-    public Builder numNodes(int numInitialValidators, int numFullNodes, boolean ordered) {
-      var keys =
-          PrivateKeys.numeric(1)
-              .limit(numFullNodes + numInitialValidators)
-              .map(ECKeyPair::getPublicKey);
+    public Builder numPhysicalNodes(int numPhysicalNodes, boolean ordered) {
+      var keys = PrivateKeys.numeric(1).limit(numPhysicalNodes).map(ECKeyPair::getPublicKey);
       if (ordered) {
         keys = keys.sorted(KeyComparator.instance());
       }
 
       this.nodes = keys.map(BFTNode::create).collect(ImmutableList.toImmutableList());
-      this.initialValidatorNodes =
-          this.nodes.stream().limit(numInitialValidators).collect(ImmutableList.toImmutableList());
-      this.initialValidatorSet =
-          BFTValidatorSet.from(
-              initialValidatorNodes.stream().map(n -> BFTValidator.from(n, UInt256.ONE)));
       return this;
     }
 
@@ -199,39 +171,9 @@ public final class DeterministicTest implements AutoCloseable {
       return this;
     }
 
-    private void addFunctionalNodeModule(FunctionalRadixNodeModule module) {
-      modules.add(module);
-
-      if (!module.supportsREv2()) {
-        MockedConsensusRecoveryModule.Builder mockedConsensusRecoveryModuleBuilder =
-            new MockedConsensusRecoveryModule.Builder(module.supportsEpochs());
-        mockedConsensusRecoveryModuleBuilder.withNodes(initialValidatorNodes);
-
-        if (this.epochNodeWeightMapping != null) {
-          mockedConsensusRecoveryModuleBuilder.withEpochNodeWeightMapping(
-              this.epochNodeWeightMapping);
-        } else if (this.epochToNodeIndexesMapping != null) {
-          mockedConsensusRecoveryModuleBuilder.withEpochNodeIndexesMapping(
-              this.epochToNodeIndexesMapping);
-        }
-        modules.add(mockedConsensusRecoveryModuleBuilder.build());
-      }
-    }
-
     public DeterministicTest functionalNodeModule(FunctionalRadixNodeModule module) {
-      addFunctionalNodeModule(module);
+      modules.add(module);
       return build();
-    }
-
-    public Builder epochNodeIndexesMapping(Function<Long, IntStream> epochToNodeIndexesMapping) {
-      Objects.requireNonNull(epochToNodeIndexesMapping);
-      this.epochToNodeIndexesMapping = epochToNodeIndexesMapping;
-      return this;
-    }
-
-    public Builder epochNodeWeightMapping(EpochNodeWeightMapping epochNodeWeightMapping) {
-      this.epochNodeWeightMapping = Objects.requireNonNull(epochNodeWeightMapping);
-      return this;
     }
 
     public Builder messageSelector(MessageSelector messageSelector) {
@@ -254,37 +196,6 @@ public final class DeterministicTest implements AutoCloseable {
         this.testModules.add(module);
       }
       return this;
-    }
-
-    public DeterministicTest buildWithEpochs(Round epochMaxRound) {
-      Objects.requireNonNull(epochMaxRound);
-      this.addFunctionalNodeModule(
-          new FunctionalRadixNodeModule(
-              true,
-              SafetyRecoveryConfig.mocked(),
-              ConsensusConfig.of(),
-              LedgerConfig.stateComputerMockedSync(
-                  StateComputerConfig.mocked(
-                      new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
-      addEpochedConsensusProcessorModule(epochMaxRound);
-      return build();
-    }
-
-    public DeterministicTest buildWithEpochsAndSync(
-        Round epochMaxRound, SyncRelayConfig syncRelayConfig) {
-      Objects.requireNonNull(epochMaxRound);
-      this.addFunctionalNodeModule(
-          new FunctionalRadixNodeModule(
-              true,
-              SafetyRecoveryConfig.mocked(),
-              ConsensusConfig.of(),
-              LedgerConfig.stateComputerWithSyncRelay(
-                  StateComputerConfig.mocked(
-                      new StateComputerConfig.MockedMempoolConfig.NoMempool()),
-                  syncRelayConfig)));
-      modules.add(new InMemoryCommittedReaderModule());
-      addEpochedConsensusProcessorModule(epochMaxRound);
-      return build();
     }
 
     private DeterministicTest build() {
@@ -316,18 +227,6 @@ public final class DeterministicTest implements AutoCloseable {
           stateMonitor,
           Modules.combine(modules.build()),
           overrideModule);
-    }
-
-    private void addEpochedConsensusProcessorModule(Round epochMaxRound) {
-      modules.add(
-          new AbstractModule() {
-            @Override
-            public void configure() {
-              bind(Round.class).annotatedWith(EpochMaxRound.class).toInstance(epochMaxRound);
-              bind(new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() {})
-                  .toInstance(t -> {});
-            }
-          });
     }
   }
 

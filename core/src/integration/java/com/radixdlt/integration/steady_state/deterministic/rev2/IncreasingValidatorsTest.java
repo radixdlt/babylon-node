@@ -103,7 +103,7 @@ public final class IncreasingValidatorsTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(1, NUM_VALIDATORS)
+        .numPhysicalNodes(NUM_VALIDATORS)
         .messageSelector(firstSelector())
         .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
         .functionalNodeModule(

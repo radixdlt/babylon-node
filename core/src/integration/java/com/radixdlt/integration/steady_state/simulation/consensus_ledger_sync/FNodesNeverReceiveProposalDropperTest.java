@@ -102,12 +102,12 @@ public class FNodesNeverReceiveProposalDropperTest {
   public FNodesNeverReceiveProposalDropperTest(int numNodes) {
     this.bftTestBuilder =
         SimulationTest.builder()
-            .numNodes(numNodes)
+            .numPhysicalNodes(numNodes)
             .networkModules(
                 NetworkOrdering.inOrder(),
                 NetworkLatencies.fixed(10),
                 NetworkDroppers.fNodesAllReceivedProposalsDropped())
-            .ledgerAndSync(ConsensusConfig.of(3000), SyncRelayConfig.of(200L, 10, 200L))
+            .ledgerAndSync(ConsensusConfig.of(3000), SyncRelayConfig.of(200L, 10, 200L), numNodes)
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS),

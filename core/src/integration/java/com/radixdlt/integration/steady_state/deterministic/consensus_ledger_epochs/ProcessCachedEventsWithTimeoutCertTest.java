@@ -67,6 +67,7 @@ package com.radixdlt.integration.steady_state.deterministic.consensus_ledger_epo
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.Round;
@@ -74,6 +75,8 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.Metrics;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.Random;
@@ -89,13 +92,22 @@ public class ProcessCachedEventsWithTimeoutCertTest {
   public void process_cached_sync_event_with_tc_test() {
     final var test =
         DeterministicTest.builder()
-            .numNodes(5, 0)
+            .numPhysicalNodes(5)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutators(
                 dropProposalToNodes(Round.of(1), ImmutableList.of(TEST_NODE)),
                 dropProposalToNodes(Round.of(2), ImmutableList.of(2, 3, TEST_NODE)),
                 dropVotesForNode(TEST_NODE))
-            .buildWithEpochs(Round.of(100));
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    true,
+                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                    FunctionalRadixNodeModule.ConsensusConfig.of(),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
+                        StateComputerConfig.mockedWithEpochs(
+                            Round.of(100),
+                            EpochNodeWeightMapping.constant(5),
+                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
 
     test.startAllNodes();
     test.runUntilMessage(nodeVotesForRound(Round.of(3), TEST_NODE));

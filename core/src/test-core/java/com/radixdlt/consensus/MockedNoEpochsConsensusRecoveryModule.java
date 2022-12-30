@@ -62,69 +62,68 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.consensus_ledger_sync_epochs;
+package com.radixdlt.consensus;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt256;
+import java.util.Optional;
 
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.harness.simulation.NetworkDroppers;
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.SimulationTest.Builder;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.sync.SyncRelayConfig;
-import java.time.Duration;
-import java.util.LongSummaryStatistics;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Test;
+public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule {
+  private final int numValidators;
 
-/**
- * Get the system into a configuration where one node needs to catch up to BFT but is slowed down by
- * Ledger sync.
- */
-public class OneNodeFallingBehindTest {
+  public MockedNoEpochsConsensusRecoveryModule(int numValidators) {
+    this.numValidators = numValidators;
+  }
 
-  private final SyncRelayConfig syncRelayConfig = SyncRelayConfig.of(200L, 10, 200L);
+  @Provides
+  private RoundUpdate initialRoundUpdate(
+      BFTConfiguration configuration, ProposerElection proposerElection) {
+    HighQC highQC = configuration.getVertexStoreState().getHighQC();
+    Round round = highQC.highestQC().getRound().next();
+    final BFTNode leader = proposerElection.getProposer(round);
+    final BFTNode nextLeader = proposerElection.getProposer(round.next());
 
-  private final Builder bftTestBuilder =
-      SimulationTest.builder()
-          .numPhysicalNodes(10)
-          .networkModules(
-              NetworkOrdering.inOrder(),
-              NetworkLatencies.fixed(),
-              NetworkDroppers.dropAllMessagesForOneNode(10000, 10000))
-          .ledgerAndEpochsAndSync(
-              ConsensusConfig.of(3000),
-              Round.of(100),
-              epoch -> IntStream.range(0, 10),
-              syncRelayConfig)
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(30, TimeUnit.SECONDS),
-              ConsensusMonitors.vertexRequestRate(
-                  100), // Conservative check, TODO: too conservative
-              LedgerMonitors.consensusToLedger(),
-              LedgerMonitors.ordered());
+    return RoundUpdate.create(round, highQC, leader, nextLeader);
+  }
 
-  @Test
-  public void sanity_test() {
-    SimulationTest test = bftTestBuilder.build();
-    final var runningTest = test.run(Duration.ofSeconds(60));
-    final var checkResults = runningTest.awaitCompletion();
+  @Provides
+  private BFTValidatorSet validatorSet() {
+    var validators =
+        PrivateKeys.numeric(1)
+            .limit(numValidators)
+            .map(k -> BFTNode.create(k.getPublicKey()))
+            .map(n -> BFTValidator.from(n, UInt256.ONE));
+    return BFTValidatorSet.from(validators);
+  }
 
-    LongSummaryStatistics statistics =
-        runningTest.getNetwork().getMetrics().values().stream()
-            .mapToLong(s -> (long) s.bft().sync().requestsSent().get())
-            .summaryStatistics();
-
-    System.out.println(statistics);
-
-    assertThat(checkResults)
-        .allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
+  @Provides
+  private BFTConfiguration configuration(
+      @LastEpochProof LedgerProof proof, BFTValidatorSet validatorSet, Hasher hasher) {
+    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+    VertexWithHash genesisVertex =
+        Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0, 0))
+            .withId(hasher);
+    LedgerHeader nextLedgerHeader =
+        LedgerHeader.create(
+            proof.getNextEpoch().orElseThrow().getEpoch(),
+            Round.genesis(),
+            proof.getAccumulatorState(),
+            proof.consensusParentRoundTimestamp(),
+            proof.proposerTimestamp());
+    var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+    var proposerElection = new WeightedRotatingLeaders(validatorSet);
+    return new BFTConfiguration(
+        proposerElection,
+        validatorSet,
+        VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher));
   }
 }
