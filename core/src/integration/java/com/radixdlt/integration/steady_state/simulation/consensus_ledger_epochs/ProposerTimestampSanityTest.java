@@ -168,7 +168,7 @@ public final class ProposerTimestampSanityTest {
       int n, TimeSupplier timeSupplier, SimulationTest.Builder builder) {
     builder.addOverrideModuleToInitialNodes(
         nodes -> ImmutableList.of(nodes.get(n).getPublicKey()),
-        nodes ->
+        () ->
             new AbstractModule() {
               @Provides
               public TimeSupplier timeSupplier() {

@@ -102,9 +102,9 @@ public class OneByzantineGenesisTest {
                     LedgerConfig.mocked(3)))
             .addOverrideModuleToInitialNodes(
                 nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
-                nodes ->
+                () ->
                     new MockedEpochsConsensusRecoveryModule.Builder()
-                        .withNodes(nodes)
+                        .withNumValidators(3)
                         .build(HashUtils.random256()))
             .addTestModules(ConsensusMonitors.noneCommitted())
             .build();
@@ -147,7 +147,8 @@ public class OneByzantineGenesisTest {
             .numPhysicalNodes(4)
             .addOverrideModuleToInitialNodes(
                 nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
-                nodes -> new MockedEpochsConsensusRecoveryModule.Builder().withNodes(nodes).build())
+                () ->
+                    new MockedEpochsConsensusRecoveryModule.Builder().withNumValidators(4).build())
             .addTestModules(ConsensusMonitors.liveness(5, TimeUnit.SECONDS))
             .build();
 

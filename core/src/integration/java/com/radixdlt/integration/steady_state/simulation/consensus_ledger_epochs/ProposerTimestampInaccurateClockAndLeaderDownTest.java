@@ -135,7 +135,7 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
           rushingNode.set(nodeWithInaccurateClock);
           return ImmutableList.of(nodeWithInaccurateClock.getKey());
         },
-        nodes ->
+        () ->
             new AbstractModule() {
               @Provides
               public TimeSupplier timeSupplier() {

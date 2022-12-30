@@ -113,6 +113,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -166,9 +167,9 @@ public final class SimulationTest {
 
     public Builder addOverrideModuleToInitialNodes(
         Function<ImmutableList<ECKeyPair>, ImmutableList<ECDSASecp256k1PublicKey>> nodesSelector,
-        Function<List<BFTNode>, Module> overrideModule) {
+        Supplier<Module> overrideModule) {
       final var nodes = nodesSelector.apply(this.initialNodes);
-      nodes.forEach(node -> overrideModules.put(node, overrideModule.apply(this.bftNodes)));
+      nodes.forEach(node -> overrideModules.put(node, overrideModule.get()));
       return this;
     }
 
@@ -176,7 +177,7 @@ public final class SimulationTest {
       addOverrideModuleToInitialNodes(
           nodes ->
               nodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()),
-          nodes -> overrideModule);
+          () -> overrideModule);
       return this;
     }
 
@@ -259,14 +260,9 @@ public final class SimulationTest {
         Round epochMaxRound,
         Function<Long, IntStream> epochToNodeIndexMapper,
         int numValidators) {
-      var validators =
-          PrivateKeys.numeric(1)
-              .limit(numValidators)
-              .map(k -> BFTNode.create(k.getPublicKey()))
-              .toList();
       var consensusBuilder =
           new MockedEpochsConsensusRecoveryModule.Builder()
-              .withNodes(validators)
+              .withNumValidators(numValidators)
               .withEpochNodeIndexesMapping(epochToNodeIndexMapper);
 
       this.functionalNodeModule =
@@ -314,14 +310,9 @@ public final class SimulationTest {
         int numValidators,
         SyncRelayConfig syncRelayConfig) {
 
-      var validators =
-          PrivateKeys.numeric(1)
-              .limit(numValidators)
-              .map(k -> BFTNode.create(k.getPublicKey()))
-              .toList();
       var consensusBuilder =
           new MockedEpochsConsensusRecoveryModule.Builder()
-              .withNodes(validators)
+              .withNumValidators(numValidators)
               .withEpochNodeIndexesMapping(epochToNodeIndexMapper);
 
       this.functionalNodeModule =

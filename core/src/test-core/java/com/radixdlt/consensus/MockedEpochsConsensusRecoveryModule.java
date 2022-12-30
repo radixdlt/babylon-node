@@ -183,16 +183,11 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
     }
 
     public Builder withNumValidators(int numValidators) {
-      var validators =
+      this.nodes =
           PrivateKeys.numeric(1)
               .limit(numValidators)
               .map(k -> BFTNode.create(k.getPublicKey()))
               .toList();
-      return this.withNodes(validators);
-    }
-
-    public Builder withNodes(List<BFTNode> nodes) {
-      this.nodes = nodes;
       return this;
     }
 
