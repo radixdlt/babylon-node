@@ -86,6 +86,7 @@ import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -100,7 +101,7 @@ public final class DeterministicNodes implements AutoCloseable {
 
   // Nodes
   private final List<Injector> nodeInstances;
-  private final Map<BFTNode, Integer> addressBook;
+  private final ControlledAddressBook addressBook;
   private final Map<Integer, ECDSASecp256k1PublicKey> nodeInstanceConfigs;
   private final Module baseModule;
   private final Module overrideModule;
@@ -116,7 +117,7 @@ public final class DeterministicNodes implements AutoCloseable {
     this.baseModule = baseModule;
     this.overrideModule = overrideModule;
     this.network = network;
-    this.addressBook = new HashMap<>();
+    this.addressBook = new ControlledAddressBook();
     this.nodeInstanceConfigs =
         Streams.mapWithIndex(
                 nodeInstanceConfigs.stream(), (node, index) -> Pair.of((int) index, node))
@@ -133,7 +134,7 @@ public final class DeterministicNodes implements AutoCloseable {
     for (int nodeIndex = 0; nodeIndex < this.nodeInstances.size(); nodeIndex++) {
       var injector = createBFTInstance(nodeIndex, baseModule, overrideModule, 0);
       var node = injector.getInstance(Key.get(BFTNode.class, Self.class));
-      this.addressBook.put(node, nodeIndex);
+      this.addressBook.addressBook.put(node, nodeIndex);
       var closeables = injector.getInstance(Key.get(new TypeLiteral<Set<NodeAutoCloseable>>() {}));
       for (var c : closeables) {
         c.close();
@@ -159,6 +160,30 @@ public final class DeterministicNodes implements AutoCloseable {
     }
   }
 
+  private static class ControlledAddressBook implements Function<BFTNode, Integer> {
+
+    private final Map<BFTNode, Integer> addressBook;
+
+    public ControlledAddressBook() {
+      this.addressBook = new HashMap<>();
+    }
+
+    @Override
+    public Integer apply(BFTNode bftNode) {
+      var index = this.addressBook.get(bftNode);
+      if (index == null && bftNode.getValidatorAddress() == null) {
+        index =
+            this.addressBook.entrySet().stream()
+                .filter(e -> e.getKey().getKey().equals(bftNode.getKey()))
+                .findFirst()
+                .map(Map.Entry::getValue)
+                .orElse(null);
+      }
+
+      return index;
+    }
+  }
+
   private Injector createBFTInstance(
       int nodeIndex, Module baseModule, Module overrideModule, long time) {
     var self = this.nodeInstanceConfigs.get(nodeIndex);
@@ -171,7 +196,7 @@ public final class DeterministicNodes implements AutoCloseable {
                 bind(ECDSASecp256k1PublicKey.class).annotatedWith(Self.class).toInstance(self);
                 install(
                     new TestP2PModule.Builder()
-                        .withAllNodes(addressBook.keySet().stream().toList())
+                        .withAllNodes(addressBook.addressBook.keySet().stream().toList())
                         .build());
                 bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
                 bind(ControlledTimeSupplier.class).toInstance(new ControlledTimeSupplier(time));
@@ -181,7 +206,7 @@ public final class DeterministicNodes implements AutoCloseable {
               @Provides
               @Singleton
               Environment sender(@Self BFTNode self) {
-                return new ControlledSender(addressBook::get, network, self, nodeIndex);
+                return new ControlledSender(addressBook, network, self, nodeIndex);
               }
             },
             baseModule);

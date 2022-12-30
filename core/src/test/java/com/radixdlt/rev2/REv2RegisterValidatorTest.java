@@ -158,7 +158,8 @@ public final class REv2RegisterValidatorTest {
                               e.getValidators()
                                   .contains(
                                       BFTValidator.from(
-                                          BFTNode.create(TEST_KEY.getPublicKey()), UInt256.ONE)))
+                                          BFTNode.create(validatorAddress, TEST_KEY.getPublicKey()),
+                                          UInt256.ONE)))
                       .orElse(false)),
           onlyConsensusEvents().or(onlyLocalMempoolAddEvents()));
     }
