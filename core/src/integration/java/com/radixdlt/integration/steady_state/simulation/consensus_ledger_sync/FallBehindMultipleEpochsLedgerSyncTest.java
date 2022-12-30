@@ -100,7 +100,7 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
   public FallBehindMultipleEpochsLedgerSyncTest() {
     this.testBuilder =
         SimulationTest.builder()
-            .numNodes(3)
+            .numPhysicalNodes(3)
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed(10))
             .ledgerAndEpochsAndSync(
                 ConsensusConfig.of(3000),

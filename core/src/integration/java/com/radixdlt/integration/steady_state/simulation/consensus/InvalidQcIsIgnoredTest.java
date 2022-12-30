@@ -158,10 +158,9 @@ public final class InvalidQcIsIgnoredTest {
                     false,
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(1000),
-                    LedgerConfig.mocked(
-                        new MockedEpochsConsensusRecoveryModule.Builder().withNumValidators(3))))
+                    LedgerConfig.mocked(3)))
             .addTestModules(ConsensusMonitors.noneCommitted())
-            .numNodes(3)
+            .numPhysicalNodes(3)
             .build();
 
     final var checkResults = simulationTest.run().awaitCompletion();

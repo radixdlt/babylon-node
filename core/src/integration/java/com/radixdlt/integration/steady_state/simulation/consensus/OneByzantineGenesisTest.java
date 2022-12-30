@@ -93,14 +93,13 @@ public class OneByzantineGenesisTest {
   public void given_2_correct_bfts_and_1_byzantine__then_should_never_make_progress() {
     SimulationTest bftTest =
         bftTestBuilder
-            .numNodes(3)
+            .numPhysicalNodes(3)
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
                     false,
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(1000),
-                    LedgerConfig.mocked(
-                        new MockedEpochsConsensusRecoveryModule.Builder().withNumValidators(3))))
+                    LedgerConfig.mocked(3)))
             .addOverrideModuleToInitialNodes(
                 nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
                 nodes ->
@@ -120,14 +119,13 @@ public class OneByzantineGenesisTest {
   public void given_3_correct_bfts__then_none_committed_invariant_should_fail() {
     SimulationTest bftTest =
         bftTestBuilder
-            .numNodes(3)
+            .numPhysicalNodes(3)
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
                     false,
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(1000),
-                    LedgerConfig.mocked(
-                        new MockedEpochsConsensusRecoveryModule.Builder().withNumValidators(3))))
+                    LedgerConfig.mocked(3)))
             .addTestModules(ConsensusMonitors.noneCommitted())
             .build();
 
@@ -146,9 +144,8 @@ public class OneByzantineGenesisTest {
                     false,
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(1000),
-                    LedgerConfig.mocked(
-                        new MockedEpochsConsensusRecoveryModule.Builder().withNumValidators(4))))
-            .numNodes(4)
+                    LedgerConfig.mocked(4)))
+            .numPhysicalNodes(4)
             .addOverrideModuleToInitialNodes(
                 nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
                 nodes -> new MockedEpochsConsensusRecoveryModule.Builder().withNodes(nodes).build())

@@ -90,8 +90,7 @@ public final class PacemakerTest {
                 false,
                 SafetyRecoveryConfig.mocked(),
                 ConsensusConfig.of(),
-                LedgerConfig.mocked(
-                    new MockedEpochsConsensusRecoveryModule.Builder().withNumValidators(1))));
+                LedgerConfig.mocked(1)));
   }
 
   @Test

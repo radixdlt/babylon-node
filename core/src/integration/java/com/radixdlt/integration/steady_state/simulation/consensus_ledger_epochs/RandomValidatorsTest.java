@@ -91,7 +91,7 @@ public class RandomValidatorsTest {
   private final Builder bftTestBuilder =
       SimulationTest.builder()
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .numNodes(numNodes)
+          .numPhysicalNodes(numNodes)
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS),

@@ -100,7 +100,7 @@ public class OneOutOfBoundsTest {
   /** Tests a configuration of 1 out of 4 nodes out of synchrony bounds */
   @Test
   public void given_1_out_of_4_nodes_out_of_synchrony_bounds() {
-    SimulationTest test = bftTestBuilder.numNodes(4).build();
+    SimulationTest test = bftTestBuilder.numPhysicalNodes(4).build();
 
     final var runningTest = test.run();
     final var checkResults = runningTest.awaitCompletion();

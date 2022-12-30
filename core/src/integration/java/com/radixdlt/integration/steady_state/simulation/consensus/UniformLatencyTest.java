@@ -93,7 +93,7 @@ public class UniformLatencyTest {
     SimulationTest bftTest =
         SimulationTest.builder()
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-            .numNodes(4)
+            .numPhysicalNodes(4)
             .consensus(4)
             .addTestModules(
                 ConsensusMonitors.safety(),

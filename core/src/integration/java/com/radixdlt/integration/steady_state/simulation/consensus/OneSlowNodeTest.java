@@ -66,7 +66,6 @@ package com.radixdlt.integration.steady_state.simulation.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
@@ -91,7 +90,7 @@ public class OneSlowNodeTest {
   private final int synchronousTimeout = maxLatency * trips;
   private final Builder bftTestBuilder =
       SimulationTest.builder()
-          .numNodes(4)
+          .numPhysicalNodes(4)
           .networkModules(
               NetworkOrdering.inOrder(),
               NetworkLatencies.oneSlowProposalSender(minLatency, maxLatency))
@@ -100,8 +99,7 @@ public class OneSlowNodeTest {
                   false,
                   SafetyRecoveryConfig.mocked(),
                   ConsensusConfig.of(synchronousTimeout),
-                  LedgerConfig.mocked(
-                      new MockedEpochsConsensusRecoveryModule.Builder().withNumValidators(4))))
+                  LedgerConfig.mocked(4)))
           .addTestModules(ConsensusMonitors.safety(), ConsensusMonitors.directParents());
 
   /**

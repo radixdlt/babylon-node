@@ -86,7 +86,7 @@ import org.junit.Test;
 public class RandomVoteAndRoundTimeoutDropperTest {
   private final Builder bftTestBuilder =
       SimulationTest.builder()
-          .numNodes(4)
+          .numPhysicalNodes(4)
           .networkModules(
               NetworkOrdering.inOrder(),
               NetworkLatencies.fixed(),

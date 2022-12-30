@@ -66,7 +66,6 @@ package com.radixdlt.integration.steady_state.simulation.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.harness.simulation.NetworkDroppers;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
@@ -113,15 +112,13 @@ public class RandomLatencyTest {
       given_3_correct_nodes_in_random_network_and_no_sync__then_all_synchronous_checks_should_pass() {
     SimulationTest test =
         bftTestBuilder
-            .numNodes(3)
+            .numPhysicalNodes(3)
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
                     false,
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(synchronousTimeout),
-                    LedgerConfig.mocked(
-                        new MockedEpochsConsensusRecoveryModule.Builder()
-                            .withNumValidators(3)))) // Since no syncing needed 6*MTT required
+                    LedgerConfig.mocked(3))) // Since no syncing needed 6*MTT required
             .build();
 
     final var runningTest = test.run();
@@ -136,15 +133,13 @@ public class RandomLatencyTest {
       given_4_correct_bfts_in_random_network_and_no_sync__then_all_synchronous_checks_should_pass() {
     SimulationTest test =
         bftTestBuilder
-            .numNodes(4)
+            .numPhysicalNodes(4)
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
                     false,
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(synchronousTimeout),
-                    LedgerConfig.mocked(
-                        new MockedEpochsConsensusRecoveryModule.Builder()
-                            .withNumValidators(4)))) // Since no syncing needed 6*MTT required
+                    LedgerConfig.mocked(4))) // Since no syncing needed 6*MTT required
             .build();
 
     final var runningTest = test.run();

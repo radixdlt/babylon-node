@@ -66,7 +66,6 @@ package com.radixdlt.integration.steady_state.simulation.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.harness.simulation.Monitor;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
@@ -91,8 +90,7 @@ public class FPlusOneOutOfBoundsTest {
                   false,
                   SafetyRecoveryConfig.mocked(),
                   ConsensusConfig.of(TIMEOUT_MS),
-                  LedgerConfig.mocked(
-                      new MockedEpochsConsensusRecoveryModule.Builder().withNumValidators(3))))
+                  LedgerConfig.mocked(3)))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(LIVENESS_MS, TimeUnit.MILLISECONDS));
@@ -102,7 +100,7 @@ public class FPlusOneOutOfBoundsTest {
   public void given_0_out_of_3_nodes_out_of_synchrony_bounds() {
     SimulationTest test =
         bftTestBuilder
-            .numNodes(3)
+            .numPhysicalNodes(3)
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed(LATENCY_MS))
             .build();
 
@@ -117,7 +115,7 @@ public class FPlusOneOutOfBoundsTest {
   public void given_1_out_of_3_nodes_out_of_synchrony_bounds() {
     SimulationTest test =
         bftTestBuilder
-            .numNodes(3)
+            .numPhysicalNodes(3)
             .networkModules(
                 NetworkOrdering.inOrder(), NetworkLatencies.oneOutOfBounds(LATENCY_MS, LIVENESS_MS))
             .build();

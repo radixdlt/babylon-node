@@ -66,9 +66,7 @@ package com.radixdlt.integration.steady_state.deterministic.consensus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -80,7 +78,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.utils.PrivateKeys;
 import java.util.Random;
 import org.junit.Test;
 
@@ -88,12 +85,6 @@ public class OneProposalTimeoutResponsiveTest {
   private final Random random = new Random(123456);
 
   private void run(int numValidatorNodes, long numRounds, long dropPeriod) {
-    var validators =
-        PrivateKeys.numeric(1)
-            .limit(numValidatorNodes)
-            .map(k -> BFTNode.create(k.getPublicKey()))
-            .toList();
-
     var test =
         DeterministicTest.builder()
             .numPhysicalNodes(numValidatorNodes)
@@ -105,9 +96,8 @@ public class OneProposalTimeoutResponsiveTest {
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(
-                            new MockedEpochsConsensusRecoveryModule.Builder().withNodes(validators),
-                            MockedMempoolConfig.noMempool()))));
+                        StateComputerConfig.mockedNoEpochs(
+                            numValidatorNodes, MockedMempoolConfig.noMempool()))));
 
     test.startAllNodes();
     test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(numRounds)));

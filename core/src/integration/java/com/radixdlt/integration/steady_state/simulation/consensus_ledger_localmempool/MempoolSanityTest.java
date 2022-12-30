@@ -89,7 +89,7 @@ import org.junit.Test;
 public class MempoolSanityTest {
   private final Builder bftTestBuilder =
       SimulationTest.builder()
-          .numNodes(4)
+          .numPhysicalNodes(4)
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
           .ledgerAndMempool(ConsensusConfig.of(3000), 4)
           .addMempoolSubmissionsSteadyState(IncrementalBytes.class);

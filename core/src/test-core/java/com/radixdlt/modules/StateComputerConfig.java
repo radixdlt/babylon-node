@@ -79,9 +79,13 @@ import java.util.stream.Stream;
 
 /** Configuration options for the state computer */
 public sealed interface StateComputerConfig {
-  static StateComputerConfig mocked(
+  static StateComputerConfig mockedWithEpochs(
       MockedEpochsConsensusRecoveryModule.Builder builder, MockedMempoolConfig mempoolType) {
     return new MockedStateComputerConfigWithEpochs(builder, mempoolType);
+  }
+
+  static StateComputerConfig mockedNoEpochs(int numValidators, MockedMempoolConfig mempoolType) {
+    return new MockedStateComputerConfigNoEpochs(numValidators, mempoolType);
   }
 
   static StateComputerConfig rev2(

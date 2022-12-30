@@ -88,7 +88,7 @@ public final class ProposerTimestampSanityTest {
     final var builder =
         SimulationTest.builder()
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-            .numNodes(4)
+            .numPhysicalNodes(4)
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
@@ -112,7 +112,7 @@ public final class ProposerTimestampSanityTest {
     final var builder =
         SimulationTest.builder()
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-            .numNodes(4)
+            .numPhysicalNodes(4)
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
@@ -138,7 +138,7 @@ public final class ProposerTimestampSanityTest {
     final var builder =
         SimulationTest.builder()
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-            .numNodes(4)
+            .numPhysicalNodes(4)
             .addTestModules(
                 ConsensusMonitors.safety(),
                 LedgerMonitors.consensusToLedger(),

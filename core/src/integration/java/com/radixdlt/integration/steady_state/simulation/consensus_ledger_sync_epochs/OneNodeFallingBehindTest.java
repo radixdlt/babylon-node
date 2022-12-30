@@ -93,7 +93,7 @@ public class OneNodeFallingBehindTest {
 
   private final Builder bftTestBuilder =
       SimulationTest.builder()
-          .numNodes(10)
+          .numPhysicalNodes(10)
           .networkModules(
               NetworkOrdering.inOrder(),
               NetworkLatencies.fixed(),

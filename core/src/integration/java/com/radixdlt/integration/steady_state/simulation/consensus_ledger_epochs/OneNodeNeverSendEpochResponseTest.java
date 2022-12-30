@@ -99,7 +99,7 @@ public class OneNodeNeverSendEpochResponseTest {
               NetworkOrdering.inOrder(),
               NetworkLatencies.fixed(),
               NetworkDroppers.oneNodePerEpochLedgerStatusUpdateDropped())
-          .numNodes(numNodes)
+          .numPhysicalNodes(numNodes)
           .ledgerAndEpochs(
               ConsensusConfig.of(1000), Round.of(4), randomEpochToNodesMapper(), numNodes)
           .addTestModules(

@@ -102,7 +102,7 @@ public class FNodesNeverReceiveProposalDropperTest {
   public FNodesNeverReceiveProposalDropperTest(int numNodes) {
     this.bftTestBuilder =
         SimulationTest.builder()
-            .numNodes(numNodes)
+            .numPhysicalNodes(numNodes)
             .networkModules(
                 NetworkOrdering.inOrder(),
                 NetworkLatencies.fixed(10),

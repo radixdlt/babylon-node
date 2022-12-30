@@ -112,7 +112,7 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
     final var builder =
         SimulationTest.builder()
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-            .numNodes(NUM_VALIDATORS)
+            .numPhysicalNodes(NUM_VALIDATORS)
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS),

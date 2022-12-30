@@ -66,7 +66,6 @@ package com.radixdlt.integration.steady_state.deterministic.consensus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -103,10 +102,8 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(
-                            new MockedEpochsConsensusRecoveryModule.Builder()
-                                .withNumValidators(numValidatorNodes),
-                            MockedMempoolConfig.noMempool()))));
+                        StateComputerConfig.mockedNoEpochs(
+                            numValidatorNodes, MockedMempoolConfig.noMempool()))));
     test.startAllNodes();
     test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 

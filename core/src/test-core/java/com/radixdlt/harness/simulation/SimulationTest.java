@@ -209,7 +209,7 @@ public final class SimulationTest {
      * @param initialStakes iterator of nodes initial stakes; if initialStakes.length < numNodes the
      *     last element is repeated for the remaining nodes
      */
-    public Builder numNodes(int numNodes, Iterable<UInt256> initialStakes) {
+    public Builder numPhysicalNodes(int numNodes, Iterable<UInt256> initialStakes) {
       this.initialNodes =
           PrivateKeys.numeric(1).limit(numNodes).collect(ImmutableList.toImmutableList());
 
@@ -239,20 +239,17 @@ public final class SimulationTest {
       return this;
     }
 
-    public Builder numNodes(int numNodes) {
-      return numNodes(numNodes, ImmutableList.of(UInt256.ONE));
+    public Builder numPhysicalNodes(int numNodes) {
+      return numPhysicalNodes(numNodes, ImmutableList.of(UInt256.ONE));
     }
 
     public Builder consensus(int numValidators) {
-
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               false,
               SafetyRecoveryConfig.mocked(),
               ConsensusConfig.of(),
-              LedgerConfig.mocked(
-                  new MockedEpochsConsensusRecoveryModule.Builder()
-                      .withNumValidators(numValidators)));
+              LedgerConfig.mocked(numValidators));
 
       return this;
     }
@@ -278,7 +275,7 @@ public final class SimulationTest {
               SafetyRecoveryConfig.mocked(),
               consensusConfig,
               LedgerConfig.stateComputerMockedSync(
-                  StateComputerConfig.mocked(
+                  StateComputerConfig.mockedWithEpochs(
                       consensusBuilder, new StateComputerConfig.MockedMempoolConfig.NoMempool())));
       this.modules.add(
           new AbstractModule() {
@@ -298,22 +295,14 @@ public final class SimulationTest {
 
     public Builder ledgerAndSync(
         ConsensusConfig consensusConfig, SyncRelayConfig syncRelayConfig, int numValidators) {
-      var validators =
-          PrivateKeys.numeric(1)
-              .limit(numValidators)
-              .map(k -> BFTNode.create(k.getPublicKey()))
-              .toList();
-      var consensusBuilder =
-          new MockedEpochsConsensusRecoveryModule.Builder(false).withNodes(validators);
-
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               false,
               SafetyRecoveryConfig.mocked(),
               consensusConfig,
               LedgerConfig.stateComputerWithSyncRelay(
-                  StateComputerConfig.mocked(
-                      consensusBuilder, new StateComputerConfig.MockedMempoolConfig.NoMempool()),
+                  StateComputerConfig.mockedNoEpochs(
+                      numValidators, new StateComputerConfig.MockedMempoolConfig.NoMempool()),
                   syncRelayConfig));
       return this;
     }
@@ -341,7 +330,7 @@ public final class SimulationTest {
               SafetyRecoveryConfig.mocked(),
               consensusConfig,
               LedgerConfig.stateComputerWithSyncRelay(
-                  StateComputerConfig.mocked(
+                  StateComputerConfig.mockedWithEpochs(
                       consensusBuilder, new StateComputerConfig.MockedMempoolConfig.NoMempool()),
                   syncRelayConfig));
       modules.add(
@@ -355,23 +344,14 @@ public final class SimulationTest {
     }
 
     public Builder ledgerAndMempool(ConsensusConfig consensusConfig, int numValidators) {
-      var validators =
-          PrivateKeys.numeric(1)
-              .limit(numValidators)
-              .map(k -> BFTNode.create(k.getPublicKey()))
-              .toList();
-      var consensusBuilder =
-          new MockedEpochsConsensusRecoveryModule.Builder(false).withNodes(validators);
-
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               false,
               SafetyRecoveryConfig.mocked(),
               consensusConfig,
               LedgerConfig.stateComputerNoSync(
-                  StateComputerConfig.mocked(
-                      consensusBuilder,
-                      new StateComputerConfig.MockedMempoolConfig.LocalOnly(10))));
+                  StateComputerConfig.mockedNoEpochs(
+                      numValidators, new StateComputerConfig.MockedMempoolConfig.LocalOnly(10))));
       this.modules.add(MempoolRelayConfig.of(10).asModule());
       return this;
     }

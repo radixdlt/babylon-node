@@ -230,7 +230,7 @@ public final class DeterministicTest implements AutoCloseable {
               SafetyRecoveryConfig.mocked(),
               ConsensusConfig.of(),
               LedgerConfig.stateComputerMockedSync(
-                  StateComputerConfig.mocked(
+                  StateComputerConfig.mockedWithEpochs(
                       consensusBuilder, new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
       addEpochedConsensusProcessorModule(epochMaxRound);
       return build();
@@ -246,7 +246,7 @@ public final class DeterministicTest implements AutoCloseable {
               SafetyRecoveryConfig.mocked(),
               ConsensusConfig.of(),
               LedgerConfig.stateComputerMockedSync(
-                  StateComputerConfig.mocked(
+                  StateComputerConfig.mockedWithEpochs(
                       consensusBuilder, new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
       addEpochedConsensusProcessorModule(epochMaxRound);
       return build();
@@ -270,7 +270,7 @@ public final class DeterministicTest implements AutoCloseable {
               SafetyRecoveryConfig.mocked(),
               ConsensusConfig.of(),
               LedgerConfig.stateComputerWithSyncRelay(
-                  StateComputerConfig.mocked(
+                  StateComputerConfig.mockedWithEpochs(
                       consensusBuilder, new StateComputerConfig.MockedMempoolConfig.NoMempool()),
                   syncRelayConfig)));
       modules.add(new InMemoryCommittedReaderModule());

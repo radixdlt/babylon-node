@@ -94,7 +94,7 @@ public class ByzantineSyncTest {
   public ByzantineSyncTest() {
     this.bftTestBuilder =
         SimulationTest.builder()
-            .numNodes(5)
+            .numPhysicalNodes(5)
             .networkModules(
                 NetworkOrdering.inOrder(),
                 NetworkLatencies.fixed(10),

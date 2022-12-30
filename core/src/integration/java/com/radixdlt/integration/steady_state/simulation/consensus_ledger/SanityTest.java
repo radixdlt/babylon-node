@@ -83,7 +83,7 @@ import org.junit.Test;
 public class SanityTest {
   private final Builder bftTestBuilder =
       SimulationTest.builder()
-          .numNodes(4)
+          .numPhysicalNodes(4)
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
           .functionalNodeModule(FunctionalRadixNodeModule.justLedgerWithNumValidators(4))
           .addTestModules(

@@ -105,7 +105,7 @@ public class ProposerLoadBalancedTest {
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(
+                        StateComputerConfig.mockedWithEpochs(
                             new MockedEpochsConsensusRecoveryModule.Builder()
                                 .withNumValidators(numValidatorNodes)
                                 .withEpochNodeWeightMapping(mapping),
