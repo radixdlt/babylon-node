@@ -103,7 +103,7 @@ public class MovingWindowValidatorsTest {
         bftTestBuilder
             .numPhysicalNodes(4)
             .ledgerAndEpochs(
-                ConsensusConfig.of(5000), Round.of(100), windowedEpochToNodesMapper(1, 4), 4)
+                ConsensusConfig.of(5000), Round.of(100), windowedEpochToNodesMapper(1, 4))
             .addTestModules(
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
                 ConsensusMonitors.epochMaxRound(Round.of(100)))
@@ -119,7 +119,7 @@ public class MovingWindowValidatorsTest {
         bftTestBuilder
             .numPhysicalNodes(4)
             .ledgerAndEpochs(
-                ConsensusConfig.of(1000), Round.of(100), windowedEpochToNodesMapper(3, 4), 4)
+                ConsensusConfig.of(1000), Round.of(100), windowedEpochToNodesMapper(3, 4))
             .addTestModules(
                 ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
                 ConsensusMonitors.epochMaxRound(Round.of(100)))
@@ -135,7 +135,7 @@ public class MovingWindowValidatorsTest {
         bftTestBuilder
             .numPhysicalNodes(100)
             .ledgerAndEpochs(
-                ConsensusConfig.of(5000), Round.of(100), windowedEpochToNodesMapper(25, 50), 100)
+                ConsensusConfig.of(5000), Round.of(100), windowedEpochToNodesMapper(25, 50))
             .addTestModules(
                 ConsensusMonitors.liveness(
                     5, TimeUnit.SECONDS), // High timeout to make Travis happy
@@ -153,7 +153,7 @@ public class MovingWindowValidatorsTest {
         bftTestBuilder
             .numPhysicalNodes(100)
             .ledgerAndEpochs(
-                ConsensusConfig.of(5000), Round.of(1), windowedEpochToNodesMapper(25, 50), 100)
+                ConsensusConfig.of(5000), Round.of(1), windowedEpochToNodesMapper(25, 50))
             .addTestModules(
                 ConsensusMonitors.epochMaxRound(Round.of(1)),
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS) // High timeout to make Travis happy

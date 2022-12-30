@@ -67,6 +67,7 @@ package com.radixdlt.integration.steady_state.simulation.consensus;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.harness.simulation.Monitor;
@@ -103,9 +104,8 @@ public class OneByzantineGenesisTest {
             .addOverrideModuleToInitialNodes(
                 nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
                 () ->
-                    new MockedEpochsConsensusRecoveryModule.Builder()
-                        .withNumValidators(3)
-                        .build(HashUtils.random256()))
+                    new MockedEpochsConsensusRecoveryModule(
+                        EpochNodeWeightMapping.constant(3, 1), HashUtils.random256()))
             .addTestModules(ConsensusMonitors.noneCommitted())
             .build();
 
@@ -147,8 +147,7 @@ public class OneByzantineGenesisTest {
             .numPhysicalNodes(4)
             .addOverrideModuleToInitialNodes(
                 nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
-                () ->
-                    new MockedEpochsConsensusRecoveryModule.Builder().withNumValidators(4).build())
+                () -> new MockedEpochsConsensusRecoveryModule(EpochNodeWeightMapping.constant(4)))
             .addTestModules(ConsensusMonitors.liveness(5, TimeUnit.SECONDS))
             .build();
 

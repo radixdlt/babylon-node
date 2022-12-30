@@ -66,6 +66,7 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.utils.UInt256;
 import java.util.Arrays;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -85,6 +86,17 @@ public interface EpochNodeWeightMapping {
    */
   static EpochNodeWeightMapping constant(int numNodes, long weight) {
     return repeatingSequence(numNodes, UInt256.from(weight));
+  }
+
+  static EpochNodeWeightMapping constant(int numNodes) {
+    return repeatingSequence(numNodes, UInt256.ONE);
+  }
+
+  static EpochNodeWeightMapping constant(Function<Long, IntStream> epochToNodeIndexesMapping) {
+    return epoch ->
+        epochToNodeIndexesMapping
+            .apply(epoch)
+            .mapToObj(i -> NodeIndexAndWeight.from(i, UInt256.ONE));
   }
 
   /**

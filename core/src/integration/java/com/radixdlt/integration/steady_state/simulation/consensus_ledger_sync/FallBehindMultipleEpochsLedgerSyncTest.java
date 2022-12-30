@@ -106,7 +106,6 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
                 ConsensusConfig.of(3000),
                 Round.of(10),
                 (unused) -> IntStream.of(0, 1),
-                3,
                 SyncRelayConfig.of(200L, 10, 2000L))
             .addTestModules(
                 ConsensusMonitors.safety(),

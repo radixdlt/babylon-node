@@ -69,7 +69,7 @@ import com.google.inject.*;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
+import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
@@ -215,15 +215,8 @@ public final class DeterministicTest implements AutoCloseable {
     }
 
     public DeterministicTest buildWithEpochs(
-        Round epochMaxRound,
-        int numValidators,
-        Function<Long, IntStream> epochToNodeIndexesMapping) {
+        Round epochMaxRound, Function<Long, IntStream> epochToNodeIndexesMapping) {
       Objects.requireNonNull(epochMaxRound);
-      var consensusBuilder =
-          new MockedEpochsConsensusRecoveryModule.Builder()
-              .withEpochNodeIndexesMapping(epochToNodeIndexesMapping)
-              .withNumValidators(numValidators);
-
       this.addFunctionalNodeModule(
           new FunctionalRadixNodeModule(
               true,
@@ -231,15 +224,14 @@ public final class DeterministicTest implements AutoCloseable {
               ConsensusConfig.of(),
               LedgerConfig.stateComputerMockedSync(
                   StateComputerConfig.mockedWithEpochs(
-                      consensusBuilder, new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
+                      EpochNodeWeightMapping.constant(epochToNodeIndexesMapping),
+                      new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
       addEpochedConsensusProcessorModule(epochMaxRound);
       return build();
     }
 
     public DeterministicTest buildWithEpochs(Round epochMaxRound, int numValidators) {
       Objects.requireNonNull(epochMaxRound);
-      var consensusBuilder =
-          new MockedEpochsConsensusRecoveryModule.Builder().withNumValidators(numValidators);
       this.addFunctionalNodeModule(
           new FunctionalRadixNodeModule(
               true,
@@ -247,7 +239,8 @@ public final class DeterministicTest implements AutoCloseable {
               ConsensusConfig.of(),
               LedgerConfig.stateComputerMockedSync(
                   StateComputerConfig.mockedWithEpochs(
-                      consensusBuilder, new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
+                      EpochNodeWeightMapping.constant(numValidators),
+                      new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
       addEpochedConsensusProcessorModule(epochMaxRound);
       return build();
     }
@@ -255,14 +248,8 @@ public final class DeterministicTest implements AutoCloseable {
     public DeterministicTest buildWithEpochsAndSync(
         Round epochMaxRound,
         SyncRelayConfig syncRelayConfig,
-        int numValidators,
         Function<Long, IntStream> epochToNodeIndexesMapping) {
       Objects.requireNonNull(epochMaxRound);
-
-      var consensusBuilder =
-          new MockedEpochsConsensusRecoveryModule.Builder()
-              .withEpochNodeIndexesMapping(epochToNodeIndexesMapping)
-              .withNumValidators(numValidators);
 
       this.addFunctionalNodeModule(
           new FunctionalRadixNodeModule(
@@ -271,7 +258,8 @@ public final class DeterministicTest implements AutoCloseable {
               ConsensusConfig.of(),
               LedgerConfig.stateComputerWithSyncRelay(
                   StateComputerConfig.mockedWithEpochs(
-                      consensusBuilder, new StateComputerConfig.MockedMempoolConfig.NoMempool()),
+                      EpochNodeWeightMapping.constant(epochToNodeIndexesMapping),
+                      new StateComputerConfig.MockedMempoolConfig.NoMempool()),
                   syncRelayConfig)));
       modules.add(new InMemoryCommittedReaderModule());
       addEpochedConsensusProcessorModule(epochMaxRound);

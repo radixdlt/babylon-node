@@ -73,7 +73,7 @@ import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
+import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
@@ -258,12 +258,7 @@ public final class SimulationTest {
     public Builder ledgerAndEpochs(
         ConsensusConfig consensusConfig,
         Round epochMaxRound,
-        Function<Long, IntStream> epochToNodeIndexMapper,
-        int numValidators) {
-      var consensusBuilder =
-          new MockedEpochsConsensusRecoveryModule.Builder()
-              .withNumValidators(numValidators)
-              .withEpochNodeIndexesMapping(epochToNodeIndexMapper);
+        Function<Long, IntStream> epochToNodeIndexMapper) {
 
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
@@ -272,7 +267,8 @@ public final class SimulationTest {
               consensusConfig,
               LedgerConfig.stateComputerMockedSync(
                   StateComputerConfig.mockedWithEpochs(
-                      consensusBuilder, new StateComputerConfig.MockedMempoolConfig.NoMempool())));
+                      EpochNodeWeightMapping.constant(epochToNodeIndexMapper),
+                      new StateComputerConfig.MockedMempoolConfig.NoMempool())));
       this.modules.add(
           new AbstractModule() {
             @Override
@@ -307,14 +303,7 @@ public final class SimulationTest {
         ConsensusConfig consensusConfig,
         Round epochMaxRound,
         Function<Long, IntStream> epochToNodeIndexMapper,
-        int numValidators,
         SyncRelayConfig syncRelayConfig) {
-
-      var consensusBuilder =
-          new MockedEpochsConsensusRecoveryModule.Builder()
-              .withNumValidators(numValidators)
-              .withEpochNodeIndexesMapping(epochToNodeIndexMapper);
-
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               true,
@@ -322,7 +311,8 @@ public final class SimulationTest {
               consensusConfig,
               LedgerConfig.stateComputerWithSyncRelay(
                   StateComputerConfig.mockedWithEpochs(
-                      consensusBuilder, new StateComputerConfig.MockedMempoolConfig.NoMempool()),
+                      EpochNodeWeightMapping.constant(epochToNodeIndexMapper),
+                      new StateComputerConfig.MockedMempoolConfig.NoMempool()),
                   syncRelayConfig));
       modules.add(
           new AbstractModule() {

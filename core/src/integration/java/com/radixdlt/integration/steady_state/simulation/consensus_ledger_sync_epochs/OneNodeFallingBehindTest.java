@@ -102,7 +102,6 @@ public class OneNodeFallingBehindTest {
               ConsensusConfig.of(3000),
               Round.of(100),
               epoch -> IntStream.range(0, 10),
-              10,
               syncRelayConfig)
           .addTestModules(
               ConsensusMonitors.safety(),

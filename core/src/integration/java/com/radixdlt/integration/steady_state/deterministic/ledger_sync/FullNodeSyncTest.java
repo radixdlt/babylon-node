@@ -89,7 +89,7 @@ public class FullNodeSyncTest {
         .numPhysicalNodes(numValidators + numFullNodes)
         .messageSelector(firstSelector())
         .buildWithEpochsAndSync(
-            epochMaxRound, syncConfig, numValidators, epoch -> IntStream.range(0, numValidators));
+            epochMaxRound, syncConfig, epoch -> IntStream.range(0, numValidators));
   }
 
   private static void run(DeterministicTest test, int numValidators, long targetStateVersion) {

@@ -330,7 +330,9 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 install(new MockedNoEpochsConsensusRecoveryModule(noEpochs.numValidators()));
               }
               case MockedStateComputerConfigWithEpochs withEpochs -> {
-                install(withEpochs.builder().build());
+                install(
+                    new MockedEpochsConsensusRecoveryModule(
+                        withEpochs.mapping(), withEpochs.preGenesisAccumulatorHash()));
               }
             }
           }

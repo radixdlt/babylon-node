@@ -98,7 +98,7 @@ public final class ProposerTimestampSanityTest {
                     .noTimeouts(), // There should be no timeouts if just a single node is delayed
                 ConsensusMonitors.directParents(),
                 LedgerMonitors.ordered())
-            .ledgerAndEpochs(ConsensusConfig.of(1000), Round.of(10), e -> IntStream.range(0, 4), 4);
+            .ledgerAndEpochs(ConsensusConfig.of(1000), Round.of(10), e -> IntStream.range(0, 4));
 
     /* One node delayed */
     modifyNthNodeTimeSupplier(0, () -> System.currentTimeMillis() - 4000, builder);
@@ -121,7 +121,7 @@ public final class ProposerTimestampSanityTest {
                 LedgerMonitors.consensusToLedger(),
                 ConsensusMonitors.proposerTimestampChecker(),
                 LedgerMonitors.ordered())
-            .ledgerAndEpochs(ConsensusConfig.of(1000), Round.of(10), e -> IntStream.range(0, 4), 4);
+            .ledgerAndEpochs(ConsensusConfig.of(1000), Round.of(10), e -> IntStream.range(0, 4));
 
     /* One node rushing within acceptable bounds */
     modifyNthNodeTimeSupplier(0, () -> System.currentTimeMillis() + 500, builder);
@@ -144,7 +144,7 @@ public final class ProposerTimestampSanityTest {
                 LedgerMonitors.consensusToLedger(),
                 ConsensusMonitors.proposerTimestampChecker(),
                 LedgerMonitors.ordered())
-            .ledgerAndEpochs(ConsensusConfig.of(1000), Round.of(10), e -> IntStream.range(0, 4), 4);
+            .ledgerAndEpochs(ConsensusConfig.of(1000), Round.of(10), e -> IntStream.range(0, 4));
 
     /* One node rushing */
     modifyNthNodeTimeSupplier(0, () -> System.currentTimeMillis() - 4000, builder);
