@@ -78,6 +78,7 @@ import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
+import com.radixdlt.keys.BFTNodeModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.AccumulatorState;
@@ -174,6 +175,7 @@ public final class RadixNodeModule extends AbstractModule {
     install(new DispatcherModule());
 
     // Consensus
+    install(new BFTNodeModule());
     install(new PersistedBFTKeyModule());
     install(new CryptoModule());
     install(new ConsensusModule());

@@ -68,13 +68,11 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.utils.properties.RuntimeProperties;
-import java.util.function.Function;
 
 /** Configures the key to be used for signing things as a BFT validator. */
 public final class PersistedBFTKeyModule extends AbstractModule {
@@ -93,26 +91,13 @@ public final class PersistedBFTKeyModule extends AbstractModule {
 
   @Provides
   @Self
-  ECDSASecp256k1PublicKey key(@Self BFTNode bftNode) {
-    return bftNode.getKey();
+  ECDSASecp256k1PublicKey key(PersistedBFTKeyManager bftKeyManager) {
+    return bftKeyManager.getPublicKey();
   }
 
   @Provides
   ECKeyOps ecKeyOps(PersistedBFTKeyManager keyManager) {
-    return ECKeyOps.fromKeyPair(keyManager.getKeyPair());
-  }
-
-  @Provides
-  @Self
-  BFTNode bftNode(PersistedBFTKeyManager bftKeyManager) {
-    return bftKeyManager.self();
-  }
-
-  @Provides
-  @Self
-  String name(
-      Function<ECDSASecp256k1PublicKey, String> nodeToString, @Self ECDSASecp256k1PublicKey key) {
-    return nodeToString.apply(key);
+    return keyManager.getKeyOps();
   }
 
   @Provides

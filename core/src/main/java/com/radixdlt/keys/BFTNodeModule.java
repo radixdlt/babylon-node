@@ -62,74 +62,26 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.keys;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.keys.BFTNodeModule;
-import com.radixdlt.keys.InMemoryBFTKeyModule;
-import com.radixdlt.logger.EventLoggerConfig;
-import com.radixdlt.logger.EventLoggerModule;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.PeersView;
-import com.radixdlt.utils.TimeSupplier;
-import java.util.List;
-import java.util.stream.Stream;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import java.util.function.Function;
 
-/** Module which injects a full one node network */
-public final class SingleNodeAndPeersDeterministicNetworkModule extends AbstractModule {
-  private final ECKeyPair self;
-  private final FunctionalRadixNodeModule radixNodeModule;
-
-  public SingleNodeAndPeersDeterministicNetworkModule(
-      ECKeyPair self, FunctionalRadixNodeModule radixNodeModule) {
-    this.self = self;
-    this.radixNodeModule = radixNodeModule;
-  }
-
-  @Override
-  protected void configure() {
-    // System
-    bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
-    bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-
-    var addressing = Addressing.ofNetwork(Network.INTEGRATIONTESTNET);
-    bind(Addressing.class).toInstance(addressing);
-    install(new EventLoggerModule(EventLoggerConfig.addressed(addressing)));
-    install(new BFTNodeModule());
-    install(new InMemoryBFTKeyModule(self));
-    install(new CryptoModule());
-    install(radixNodeModule);
+public final class BFTNodeModule extends AbstractModule {
+  @Provides
+  @Self
+  BFTNode bftNode(@Self ECDSASecp256k1PublicKey key) {
+    return BFTNode.create(key);
   }
 
   @Provides
-  public List<BFTNode> nodes(@Self BFTNode self) {
-    return List.of(self);
-  }
-
-  @Provides
-  @Singleton
-  public DeterministicNetwork network(@Self BFTNode self, PeersView peersView) {
-    return new DeterministicNetwork(
-        Stream.concat(Stream.of(self), peersView.peers().map(PeersView.PeerInfo::bftNode)).toList(),
-        MessageSelector.firstSelector(),
-        MessageMutator.nothing());
-  }
-
-  @Provides
-  @Singleton
-  Environment environment(@Self BFTNode self, DeterministicNetwork network) {
-    return network.createSender(self);
+  @Self
+  String name(
+      Function<ECDSASecp256k1PublicKey, String> nodeToString, @Self ECDSASecp256k1PublicKey key) {
+    return nodeToString.apply(key);
   }
 }
