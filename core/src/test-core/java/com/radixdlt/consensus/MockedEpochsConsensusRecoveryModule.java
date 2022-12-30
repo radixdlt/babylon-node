@@ -74,6 +74,7 @@ import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.statecomputer.EpochMaxRound;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.Optional;
@@ -83,21 +84,29 @@ import java.util.function.Function;
 public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
 
   private final HashCode preGenesisAccumulatorHash;
+  private final Round epochMaxRound;
   private final EpochNodeWeightMapping epochNodeWeightMapping;
 
   public MockedEpochsConsensusRecoveryModule(
-      EpochNodeWeightMapping epochNodeWeightMapping, HashCode preGenesisAccumulatorHash) {
+      Round epochMaxRound,
+      EpochNodeWeightMapping epochNodeWeightMapping,
+      HashCode preGenesisAccumulatorHash) {
+    this.epochMaxRound = epochMaxRound;
     this.epochNodeWeightMapping = epochNodeWeightMapping;
     this.preGenesisAccumulatorHash = preGenesisAccumulatorHash;
   }
 
-  public MockedEpochsConsensusRecoveryModule(EpochNodeWeightMapping epochNodeWeightMapping) {
+  public MockedEpochsConsensusRecoveryModule(
+      Round epochMaxRound, EpochNodeWeightMapping epochNodeWeightMapping) {
+    this.epochMaxRound = epochMaxRound;
     this.epochNodeWeightMapping = epochNodeWeightMapping;
     this.preGenesisAccumulatorHash = HashUtils.zero256();
   }
 
   @Override
   protected void configure() {
+    bind(Round.class).annotatedWith(EpochMaxRound.class).toInstance(epochMaxRound);
+
     bind(new TypeLiteral<Function<Long, BFTValidatorSet>>() {})
         .toInstance(
             epoch ->

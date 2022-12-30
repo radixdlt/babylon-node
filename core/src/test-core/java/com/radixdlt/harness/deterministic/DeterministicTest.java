@@ -96,7 +96,6 @@ import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.statecomputer.EpochMaxRound;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.KeyComparator;
@@ -224,9 +223,10 @@ public final class DeterministicTest implements AutoCloseable {
               ConsensusConfig.of(),
               LedgerConfig.stateComputerMockedSync(
                   StateComputerConfig.mockedWithEpochs(
+                      epochMaxRound,
                       EpochNodeWeightMapping.constant(epochToNodeIndexesMapping),
                       new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
-      addEpochedConsensusProcessorModule(epochMaxRound);
+      addEpochedConsensusProcessorModule();
       return build();
     }
 
@@ -239,9 +239,10 @@ public final class DeterministicTest implements AutoCloseable {
               ConsensusConfig.of(),
               LedgerConfig.stateComputerMockedSync(
                   StateComputerConfig.mockedWithEpochs(
+                      epochMaxRound,
                       EpochNodeWeightMapping.constant(numValidators),
                       new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
-      addEpochedConsensusProcessorModule(epochMaxRound);
+      addEpochedConsensusProcessorModule();
       return build();
     }
 
@@ -258,11 +259,12 @@ public final class DeterministicTest implements AutoCloseable {
               ConsensusConfig.of(),
               LedgerConfig.stateComputerWithSyncRelay(
                   StateComputerConfig.mockedWithEpochs(
+                      epochMaxRound,
                       EpochNodeWeightMapping.constant(epochToNodeIndexesMapping),
                       new StateComputerConfig.MockedMempoolConfig.NoMempool()),
                   syncRelayConfig)));
       modules.add(new InMemoryCommittedReaderModule());
-      addEpochedConsensusProcessorModule(epochMaxRound);
+      addEpochedConsensusProcessorModule();
       return build();
     }
 
@@ -297,12 +299,11 @@ public final class DeterministicTest implements AutoCloseable {
           overrideModule);
     }
 
-    private void addEpochedConsensusProcessorModule(Round epochMaxRound) {
+    private void addEpochedConsensusProcessorModule() {
       modules.add(
           new AbstractModule() {
             @Override
             public void configure() {
-              bind(Round.class).annotatedWith(EpochMaxRound.class).toInstance(epochMaxRound);
               bind(new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() {})
                   .toInstance(t -> {});
             }

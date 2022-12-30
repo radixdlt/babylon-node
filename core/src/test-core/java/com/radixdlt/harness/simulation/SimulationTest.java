@@ -99,7 +99,6 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.statecomputer.EpochMaxRound;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.DurationParser;
@@ -267,15 +266,9 @@ public final class SimulationTest {
               consensusConfig,
               LedgerConfig.stateComputerMockedSync(
                   StateComputerConfig.mockedWithEpochs(
+                      epochMaxRound,
                       EpochNodeWeightMapping.constant(epochToNodeIndexMapper),
                       new StateComputerConfig.MockedMempoolConfig.NoMempool())));
-      this.modules.add(
-          new AbstractModule() {
-            @Override
-            protected void configure() {
-              bind(Round.class).annotatedWith(EpochMaxRound.class).toInstance(epochMaxRound);
-            }
-          });
 
       return this;
     }
@@ -311,16 +304,10 @@ public final class SimulationTest {
               consensusConfig,
               LedgerConfig.stateComputerWithSyncRelay(
                   StateComputerConfig.mockedWithEpochs(
+                      epochMaxRound,
                       EpochNodeWeightMapping.constant(epochToNodeIndexMapper),
                       new StateComputerConfig.MockedMempoolConfig.NoMempool()),
                   syncRelayConfig));
-      modules.add(
-          new AbstractModule() {
-            @Override
-            protected void configure() {
-              bind(Round.class).annotatedWith(EpochMaxRound.class).toInstance(epochMaxRound);
-            }
-          });
       return this;
     }
 

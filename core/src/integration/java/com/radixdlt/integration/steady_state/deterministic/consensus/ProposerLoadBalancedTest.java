@@ -105,7 +105,7 @@ public class ProposerLoadBalancedTest {
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
                         StateComputerConfig.mockedWithEpochs(
-                            mapping, MockedMempoolConfig.noMempool()))));
+                            Round.of(10000000), mapping, MockedMempoolConfig.noMempool()))));
     test.startAllNodes();
     test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
