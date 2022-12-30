@@ -117,7 +117,7 @@ public final class DeterministicTest implements AutoCloseable {
       StateMonitor stateMonitor,
       Module baseModule,
       Module overrideModule) {
-    this.network = new DeterministicNetwork(nodes, messageSelector, messageMutator, messageMonitor);
+    this.network = new DeterministicNetwork(messageSelector, messageMutator, messageMonitor);
     this.nodes = new DeterministicNodes(nodes, this.network, baseModule, overrideModule);
     this.stateMonitor = stateMonitor;
   }
