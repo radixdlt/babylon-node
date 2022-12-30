@@ -67,6 +67,7 @@ package com.radixdlt.integration.steady_state.deterministic.consensus_ledger_epo
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.consensus.epoch.Epoched;
@@ -75,6 +76,8 @@ import com.radixdlt.environment.deterministic.network.ChannelId;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.Metrics;
 import java.util.LinkedList;
 import java.util.function.Function;
@@ -99,7 +102,17 @@ public class MovingWindowValidatorsTest {
             .numPhysicalNodes(numNodes)
             .messageMutator(mutator())
             .messageSelector(firstSelector())
-            .buildWithEpochs(epochMaxRound, windowedEpochToNodesMapper(windowSize, numNodes));
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    true,
+                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                    FunctionalRadixNodeModule.ConsensusConfig.of(),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
+                        StateComputerConfig.mockedWithEpochs(
+                            epochMaxRound,
+                            EpochNodeWeightMapping.constant(
+                                windowedEpochToNodesMapper(windowSize, numNodes)),
+                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
 
     bftTest.startAllNodes();
     bftTest.runUntilMessage(

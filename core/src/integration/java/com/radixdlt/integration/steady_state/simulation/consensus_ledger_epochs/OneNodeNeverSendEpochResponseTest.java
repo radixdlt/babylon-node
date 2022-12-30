@@ -66,6 +66,7 @@ package com.radixdlt.integration.steady_state.simulation.consensus_ledger_epochs
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.simulation.NetworkDroppers;
 import com.radixdlt.harness.simulation.NetworkLatencies;
@@ -74,7 +75,9 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.StateComputerConfig;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Random;
@@ -100,7 +103,16 @@ public class OneNodeNeverSendEpochResponseTest {
               NetworkLatencies.fixed(),
               NetworkDroppers.oneNodePerEpochLedgerStatusUpdateDropped())
           .numPhysicalNodes(numNodes)
-          .ledgerAndEpochs(ConsensusConfig.of(1000), Round.of(4), randomEpochToNodesMapper())
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(
+                  true,
+                  FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                  ConsensusConfig.of(1000),
+                  FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
+                      StateComputerConfig.mockedWithEpochs(
+                          Round.of(4),
+                          EpochNodeWeightMapping.constant(randomEpochToNodesMapper()),
+                          new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(5, TimeUnit.SECONDS),

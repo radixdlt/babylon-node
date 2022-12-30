@@ -72,6 +72,8 @@ import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.*;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -85,7 +87,12 @@ public class RandomVoteAndRoundTimeoutDropperTest {
   private final Builder bftTestBuilder =
       SimulationTest.builder()
           .numPhysicalNodes(4)
-          .consensus(4)
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(
+                  false,
+                  SafetyRecoveryConfig.mocked(),
+                  ConsensusConfig.of(),
+                  LedgerConfig.mocked(4)))
           .networkModules(
               NetworkOrdering.inOrder(),
               NetworkLatencies.fixed(),

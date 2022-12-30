@@ -242,36 +242,6 @@ public final class SimulationTest {
       return numPhysicalNodes(numNodes, ImmutableList.of(UInt256.ONE));
     }
 
-    public Builder consensus(int numValidators) {
-      this.functionalNodeModule =
-          new FunctionalRadixNodeModule(
-              false,
-              SafetyRecoveryConfig.mocked(),
-              ConsensusConfig.of(),
-              LedgerConfig.mocked(numValidators));
-
-      return this;
-    }
-
-    public Builder ledgerAndEpochs(
-        ConsensusConfig consensusConfig,
-        Round epochMaxRound,
-        Function<Long, IntStream> epochToNodeIndexMapper) {
-
-      this.functionalNodeModule =
-          new FunctionalRadixNodeModule(
-              true,
-              SafetyRecoveryConfig.mocked(),
-              consensusConfig,
-              LedgerConfig.stateComputerMockedSync(
-                  StateComputerConfig.mockedWithEpochs(
-                      epochMaxRound,
-                      EpochNodeWeightMapping.constant(epochToNodeIndexMapper),
-                      new StateComputerConfig.MockedMempoolConfig.NoMempool())));
-
-      return this;
-    }
-
     public Builder functionalNodeModule(FunctionalRadixNodeModule functionalNodeModule) {
       this.functionalNodeModule = functionalNodeModule;
       return this;

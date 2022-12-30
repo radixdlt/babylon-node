@@ -70,6 +70,8 @@ import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.*;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
@@ -94,7 +96,12 @@ public class UniformLatencyTest {
         SimulationTest.builder()
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
             .numPhysicalNodes(4)
-            .consensus(4)
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    false,
+                    SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(),
+                    LedgerConfig.mocked(4)))
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(LIVENESS_MS, TimeUnit.MILLISECONDS),

@@ -69,7 +69,6 @@ import com.google.inject.*;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
@@ -86,24 +85,17 @@ import com.radixdlt.harness.deterministic.invariants.StateMonitor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
-import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.PrivateKeys;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -179,12 +171,8 @@ public final class DeterministicTest implements AutoCloseable {
       return this;
     }
 
-    private void addFunctionalNodeModule(FunctionalRadixNodeModule module) {
-      modules.add(module);
-    }
-
     public DeterministicTest functionalNodeModule(FunctionalRadixNodeModule module) {
-      addFunctionalNodeModule(module);
+      modules.add(module);
       return build();
     }
 
@@ -208,58 +196,6 @@ public final class DeterministicTest implements AutoCloseable {
         this.testModules.add(module);
       }
       return this;
-    }
-
-    public DeterministicTest buildWithEpochs(
-        Round epochMaxRound, Function<Long, IntStream> epochToNodeIndexesMapping) {
-      Objects.requireNonNull(epochMaxRound);
-      this.addFunctionalNodeModule(
-          new FunctionalRadixNodeModule(
-              true,
-              SafetyRecoveryConfig.mocked(),
-              ConsensusConfig.of(),
-              LedgerConfig.stateComputerMockedSync(
-                  StateComputerConfig.mockedWithEpochs(
-                      epochMaxRound,
-                      EpochNodeWeightMapping.constant(epochToNodeIndexesMapping),
-                      new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
-      return build();
-    }
-
-    public DeterministicTest buildWithEpochs(Round epochMaxRound, int numValidators) {
-      Objects.requireNonNull(epochMaxRound);
-      this.addFunctionalNodeModule(
-          new FunctionalRadixNodeModule(
-              true,
-              SafetyRecoveryConfig.mocked(),
-              ConsensusConfig.of(),
-              LedgerConfig.stateComputerMockedSync(
-                  StateComputerConfig.mockedWithEpochs(
-                      epochMaxRound,
-                      EpochNodeWeightMapping.constant(numValidators),
-                      new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
-      return build();
-    }
-
-    public DeterministicTest buildWithEpochsAndSync(
-        Round epochMaxRound,
-        SyncRelayConfig syncRelayConfig,
-        Function<Long, IntStream> epochToNodeIndexesMapping) {
-      Objects.requireNonNull(epochMaxRound);
-
-      this.addFunctionalNodeModule(
-          new FunctionalRadixNodeModule(
-              true,
-              SafetyRecoveryConfig.mocked(),
-              ConsensusConfig.of(),
-              LedgerConfig.stateComputerWithSyncRelay(
-                  StateComputerConfig.mockedWithEpochs(
-                      epochMaxRound,
-                      EpochNodeWeightMapping.constant(epochToNodeIndexesMapping),
-                      new StateComputerConfig.MockedMempoolConfig.NoMempool()),
-                  syncRelayConfig)));
-
-      return build();
     }
 
     private DeterministicTest build() {

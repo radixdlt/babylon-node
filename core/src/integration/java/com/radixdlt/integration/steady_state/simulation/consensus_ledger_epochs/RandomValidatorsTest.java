@@ -66,6 +66,7 @@ package com.radixdlt.integration.steady_state.simulation.consensus_ledger_epochs
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
@@ -73,7 +74,9 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.StateComputerConfig;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.Random;
@@ -131,8 +134,16 @@ public class RandomValidatorsTest {
       given_deterministic_randomized_validator_sets__then_should_pass_bft_and_epoch_invariants() {
     SimulationTest bftTest =
         bftTestBuilder
-            .ledgerAndEpochs(
-                ConsensusConfig.of(5000), Round.of(100), goodRandomEpochToNodesMapper())
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    true,
+                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(5000),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
+                        StateComputerConfig.mockedWithEpochs(
+                            Round.of(100),
+                            EpochNodeWeightMapping.constant(goodRandomEpochToNodesMapper()),
+                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
             .build();
 
     final var checkResults = bftTest.run().awaitCompletion();
@@ -144,7 +155,16 @@ public class RandomValidatorsTest {
   public void given_nondeterministic_randomized_validator_sets__then_should_fail() {
     SimulationTest bftTest =
         bftTestBuilder
-            .ledgerAndEpochs(ConsensusConfig.of(5000), Round.of(100), badRandomEpochToNodesMapper())
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    true,
+                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(5000),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
+                        StateComputerConfig.mockedWithEpochs(
+                            Round.of(100),
+                            EpochNodeWeightMapping.constant(badRandomEpochToNodesMapper()),
+                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
             .build();
 
     final var checkResults = bftTest.run().awaitCompletion();

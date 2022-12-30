@@ -73,6 +73,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -82,7 +83,9 @@ import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent;
 import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.TimestampIssue;
@@ -119,8 +122,17 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
                 LedgerMonitors.consensusToLedger(),
                 ConsensusMonitors.proposerTimestampChecker(),
                 LedgerMonitors.ordered())
-            .ledgerAndEpochs(
-                ConsensusConfig.of(1000), Round.of(10), e -> IntStream.range(0, NUM_VALIDATORS));
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    true,
+                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(1000),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
+                        StateComputerConfig.mockedWithEpochs(
+                            Round.of(10),
+                            EpochNodeWeightMapping.constant(
+                                e -> IntStream.range(0, NUM_VALIDATORS)),
+                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
 
     // One node has an inaccurate clock: 10s rushing
     // A little "hack" with AtomicReference to get the lucky node's key out of the closure
