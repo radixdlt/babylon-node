@@ -66,16 +66,38 @@ package com.radixdlt.keys;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.store.LastStoredProof;
+import com.radixdlt.sync.TransactionsAndProofReader;
 import java.util.function.Function;
 
-public final class BFTNodeModule extends AbstractModule {
+public final class BFTNodeFromGenesisModule extends AbstractModule {
   @Provides
+  @Singleton
   @Self
-  BFTNode bftNode(@Self ECDSASecp256k1PublicKey key) {
-    return BFTNode.create(key);
+  private BFTNode self(
+      @Self ECDSASecp256k1PublicKey key,
+      @LastStoredProof LedgerProof ignored,
+      TransactionsAndProofReader transactionsAndProofReader) {
+    var genesisProof = transactionsAndProofReader.getEpochProof(1).orElseThrow();
+    var genesisValidatorSet = genesisProof.getNextValidatorSet().orElseThrow();
+    var potentialBFTNodes =
+        genesisValidatorSet.getValidators().stream()
+            .map(BFTValidator::getNode)
+            .filter(node -> node.getKey().equals(key))
+            .toList();
+
+    if (potentialBFTNodes.size() > 1) {
+      throw new IllegalStateException(
+          "Multiple nodes with the same key found in genesis. Cannot instantiate.");
+    }
+
+    return potentialBFTNodes.stream().findFirst().orElse(BFTNode.create(key));
   }
 
   @Provides
