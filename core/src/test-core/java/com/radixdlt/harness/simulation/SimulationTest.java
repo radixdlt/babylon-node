@@ -265,7 +265,7 @@ public final class SimulationTest {
               .map(k -> BFTNode.create(k.getPublicKey()))
               .toList();
       var consensusBuilder =
-          new MockedEpochsConsensusRecoveryModule.Builder(true)
+          new MockedEpochsConsensusRecoveryModule.Builder()
               .withNodes(validators)
               .withEpochNodeIndexesMapping(epochToNodeIndexMapper);
 
@@ -320,7 +320,7 @@ public final class SimulationTest {
               .map(k -> BFTNode.create(k.getPublicKey()))
               .toList();
       var consensusBuilder =
-          new MockedEpochsConsensusRecoveryModule.Builder(true)
+          new MockedEpochsConsensusRecoveryModule.Builder()
               .withNodes(validators)
               .withEpochNodeIndexesMapping(epochToNodeIndexMapper);
 

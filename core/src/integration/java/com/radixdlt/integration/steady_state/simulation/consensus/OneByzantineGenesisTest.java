@@ -104,9 +104,8 @@ public class OneByzantineGenesisTest {
                 nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
                 nodes ->
                     new MockedEpochsConsensusRecoveryModule.Builder()
-                        .withPreGenesisAccumulatorHash(HashUtils.random256())
                         .withNodes(nodes)
-                        .build())
+                        .build(HashUtils.random256()))
             .addTestModules(ConsensusMonitors.noneCommitted())
             .build();
 

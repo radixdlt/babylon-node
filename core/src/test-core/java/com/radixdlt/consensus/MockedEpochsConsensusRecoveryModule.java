@@ -90,22 +90,18 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
 
   // private final Builder builder;
 
-  private final boolean withEpoch;
   private final Function<Long, BFTValidatorSet> validatorSetMapping;
   private final HashCode preGenesisAccumulatorHash;
 
-  private MockedEpochsConsensusRecoveryModule(Builder builder) {
-    this.withEpoch = builder.withEpoch;
+  private MockedEpochsConsensusRecoveryModule(Builder builder, HashCode preGenesisAccumulatorHash) {
     this.validatorSetMapping = builder.validatorSetMapping()::apply;
-    this.preGenesisAccumulatorHash = builder.preGenesisAccumulatorHash;
+    this.preGenesisAccumulatorHash = preGenesisAccumulatorHash;
   }
 
   @Override
   protected void configure() {
-    if (this.withEpoch) {
-      bind(new TypeLiteral<Function<Long, BFTValidatorSet>>() {})
-          .toInstance(this.validatorSetMapping);
-    }
+    bind(new TypeLiteral<Function<Long, BFTValidatorSet>>() {})
+        .toInstance(this.validatorSetMapping);
   }
 
   @Provides
@@ -147,24 +143,10 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
   }
 
   public static class Builder {
-    private HashCode preGenesisAccumulatorHash;
     private List<BFTNode> nodes;
-    private boolean withEpoch;
     private EpochNodeWeightMapping epochNodeWeightMapping;
 
-    public Builder() {
-      this(false);
-    }
-
-    public Builder(boolean withEpoch) {
-      this.withEpoch = withEpoch;
-      this.preGenesisAccumulatorHash = HashUtils.zero256();
-    }
-
-    public Builder withPreGenesisAccumulatorHash(HashCode preGenesisAccumulatorHash) {
-      this.preGenesisAccumulatorHash = preGenesisAccumulatorHash;
-      return this;
-    }
+    public Builder() {}
 
     public Builder withEpochNodeIndexesMapping(
         Function<Long, IntStream> epochToNodeIndexesMapping) {
@@ -215,7 +197,11 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
     }
 
     public MockedEpochsConsensusRecoveryModule build() {
-      return new MockedEpochsConsensusRecoveryModule(this);
+      return new MockedEpochsConsensusRecoveryModule(this, HashUtils.zero256());
+    }
+
+    public MockedEpochsConsensusRecoveryModule build(HashCode preGenesisAccumulatorHash) {
+      return new MockedEpochsConsensusRecoveryModule(this, preGenesisAccumulatorHash);
     }
   }
 }

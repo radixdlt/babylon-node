@@ -64,8 +64,10 @@
 
 package com.radixdlt.modules;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.mempool.RustMempoolConfig;
@@ -81,7 +83,14 @@ import java.util.stream.Stream;
 public sealed interface StateComputerConfig {
   static StateComputerConfig mockedWithEpochs(
       MockedEpochsConsensusRecoveryModule.Builder builder, MockedMempoolConfig mempoolType) {
-    return new MockedStateComputerConfigWithEpochs(builder, mempoolType);
+    return new MockedStateComputerConfigWithEpochs(builder, HashUtils.zero256(), mempoolType);
+  }
+
+  static StateComputerConfig mockedWithEpochs(
+      MockedEpochsConsensusRecoveryModule.Builder builder,
+      HashCode preGenesisAccumulatorHash,
+      MockedMempoolConfig mempoolType) {
+    return new MockedStateComputerConfigWithEpochs(builder, preGenesisAccumulatorHash, mempoolType);
   }
 
   static StateComputerConfig mockedNoEpochs(int numValidators, MockedMempoolConfig mempoolType) {
@@ -123,7 +132,9 @@ public sealed interface StateComputerConfig {
   }
 
   record MockedStateComputerConfigWithEpochs(
-      MockedEpochsConsensusRecoveryModule.Builder builder, MockedMempoolConfig mempoolType)
+      MockedEpochsConsensusRecoveryModule.Builder builder,
+      HashCode preGenesisAccumulatorHash,
+      MockedMempoolConfig mempoolType)
       implements MockedStateComputerConfig {
     @Override
     public MockedMempoolConfig mempoolConfig() {

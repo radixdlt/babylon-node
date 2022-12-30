@@ -220,7 +220,7 @@ public final class DeterministicTest implements AutoCloseable {
         Function<Long, IntStream> epochToNodeIndexesMapping) {
       Objects.requireNonNull(epochMaxRound);
       var consensusBuilder =
-          new MockedEpochsConsensusRecoveryModule.Builder(true)
+          new MockedEpochsConsensusRecoveryModule.Builder()
               .withEpochNodeIndexesMapping(epochToNodeIndexesMapping)
               .withNumValidators(numValidators);
 
@@ -239,7 +239,7 @@ public final class DeterministicTest implements AutoCloseable {
     public DeterministicTest buildWithEpochs(Round epochMaxRound, int numValidators) {
       Objects.requireNonNull(epochMaxRound);
       var consensusBuilder =
-          new MockedEpochsConsensusRecoveryModule.Builder(true).withNumValidators(numValidators);
+          new MockedEpochsConsensusRecoveryModule.Builder().withNumValidators(numValidators);
       this.addFunctionalNodeModule(
           new FunctionalRadixNodeModule(
               true,
@@ -260,7 +260,7 @@ public final class DeterministicTest implements AutoCloseable {
       Objects.requireNonNull(epochMaxRound);
 
       var consensusBuilder =
-          new MockedEpochsConsensusRecoveryModule.Builder(true)
+          new MockedEpochsConsensusRecoveryModule.Builder()
               .withEpochNodeIndexesMapping(epochToNodeIndexesMapping)
               .withNumValidators(numValidators);
 
