@@ -68,7 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
+import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
@@ -106,7 +106,7 @@ public class ProposerLoadBalancedTest {
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
                         StateComputerConfig.mocked(
-                            new MockedConsensusRecoveryModule.Builder()
+                            new MockedEpochsConsensusRecoveryModule.Builder()
                                 .withNumValidators(numValidatorNodes)
                                 .withEpochNodeWeightMapping(mapping),
                             MockedMempoolConfig.noMempool()))));

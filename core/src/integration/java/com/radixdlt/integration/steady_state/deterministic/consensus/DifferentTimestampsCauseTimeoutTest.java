@@ -103,7 +103,7 @@ public class DifferentTimestampsCauseTimeoutTest {
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
                         StateComputerConfig.mocked(
-                            new MockedConsensusRecoveryModule.Builder()
+                            new MockedEpochsConsensusRecoveryModule.Builder()
                                 .withNumValidators(numValidatorNodes),
                             MockedMempoolConfig.noMempool()))))
             .createExecutor();
@@ -150,7 +150,7 @@ public class DifferentTimestampsCauseTimeoutTest {
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
                         StateComputerConfig.mocked(
-                            new MockedConsensusRecoveryModule.Builder()
+                            new MockedEpochsConsensusRecoveryModule.Builder()
                                 .withNumValidators(numValidatorNodes),
                             MockedMempoolConfig.noMempool()))))
             .createExecutor();

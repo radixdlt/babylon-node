@@ -66,7 +66,7 @@ package com.radixdlt.integration.steady_state.simulation.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
+import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
@@ -97,7 +97,7 @@ public class OneOutOfBoundsTest {
                   SafetyRecoveryConfig.mocked(),
                   ConsensusConfig.of(synchronousTimeout),
                   LedgerConfig.mocked(
-                      new MockedConsensusRecoveryModule.Builder().withNumValidators(4))))
+                      new MockedEpochsConsensusRecoveryModule.Builder().withNumValidators(4))))
           .addTestModules(
               ConsensusMonitors.safety(),
               // FIXME: Should be 2 * synchronousTimeout, and can be set back to that once message

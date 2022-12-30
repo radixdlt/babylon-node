@@ -73,7 +73,7 @@ import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
+import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
@@ -251,7 +251,8 @@ public final class SimulationTest {
               SafetyRecoveryConfig.mocked(),
               ConsensusConfig.of(),
               LedgerConfig.mocked(
-                  new MockedConsensusRecoveryModule.Builder().withNumValidators(numValidators)));
+                  new MockedEpochsConsensusRecoveryModule.Builder()
+                      .withNumValidators(numValidators)));
 
       return this;
     }
@@ -267,7 +268,7 @@ public final class SimulationTest {
               .map(k -> BFTNode.create(k.getPublicKey()))
               .toList();
       var consensusBuilder =
-          new MockedConsensusRecoveryModule.Builder(true)
+          new MockedEpochsConsensusRecoveryModule.Builder(true)
               .withNodes(validators)
               .withEpochNodeIndexesMapping(epochToNodeIndexMapper);
 
@@ -302,7 +303,8 @@ public final class SimulationTest {
               .limit(numValidators)
               .map(k -> BFTNode.create(k.getPublicKey()))
               .toList();
-      var consensusBuilder = new MockedConsensusRecoveryModule.Builder(false).withNodes(validators);
+      var consensusBuilder =
+          new MockedEpochsConsensusRecoveryModule.Builder(false).withNodes(validators);
 
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
@@ -329,7 +331,7 @@ public final class SimulationTest {
               .map(k -> BFTNode.create(k.getPublicKey()))
               .toList();
       var consensusBuilder =
-          new MockedConsensusRecoveryModule.Builder(true)
+          new MockedEpochsConsensusRecoveryModule.Builder(true)
               .withNodes(validators)
               .withEpochNodeIndexesMapping(epochToNodeIndexMapper);
 
@@ -358,7 +360,8 @@ public final class SimulationTest {
               .limit(numValidators)
               .map(k -> BFTNode.create(k.getPublicKey()))
               .toList();
-      var consensusBuilder = new MockedConsensusRecoveryModule.Builder(false).withNodes(validators);
+      var consensusBuilder =
+          new MockedEpochsConsensusRecoveryModule.Builder(false).withNodes(validators);
 
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(

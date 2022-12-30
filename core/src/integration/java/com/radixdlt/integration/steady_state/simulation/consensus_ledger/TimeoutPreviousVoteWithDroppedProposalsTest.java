@@ -69,7 +69,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
+import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.harness.simulation.NetworkDroppers;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
@@ -112,7 +112,7 @@ public class TimeoutPreviousVoteWithDroppedProposalsTest {
                   ConsensusConfig.of(1000L),
                   LedgerConfig.stateComputerNoSync(
                       StateComputerConfig.mocked(
-                          new MockedConsensusRecoveryModule.Builder().withNumValidators(3),
+                          new MockedEpochsConsensusRecoveryModule.Builder().withNumValidators(3),
                           new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
           .addTestModules(
               ConsensusMonitors.safety(),

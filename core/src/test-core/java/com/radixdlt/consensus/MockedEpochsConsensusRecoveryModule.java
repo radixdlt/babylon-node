@@ -86,19 +86,25 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /** Starting configuration for simulation/deterministic steady state tests. */
-public class MockedConsensusRecoveryModule extends AbstractModule {
+public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
 
-  private final Builder builder;
+  // private final Builder builder;
 
-  private MockedConsensusRecoveryModule(Builder builder) {
-    this.builder = builder;
+  private final boolean withEpoch;
+  private final Function<Long, BFTValidatorSet> validatorSetMapping;
+  private final HashCode preGenesisAccumulatorHash;
+
+  private MockedEpochsConsensusRecoveryModule(Builder builder) {
+    this.withEpoch = builder.withEpoch;
+    this.validatorSetMapping = builder.validatorSetMapping()::apply;
+    this.preGenesisAccumulatorHash = builder.preGenesisAccumulatorHash;
   }
 
   @Override
   protected void configure() {
-    if (this.builder.withEpoch) {
+    if (this.withEpoch) {
       bind(new TypeLiteral<Function<Long, BFTValidatorSet>>() {})
-          .toInstance(this.builder.validatorSetMapping()::apply);
+          .toInstance(this.validatorSetMapping);
     }
   }
 
@@ -115,13 +121,13 @@ public class MockedConsensusRecoveryModule extends AbstractModule {
 
   @Provides
   private BFTValidatorSet validatorSet() {
-    return this.builder.validatorSetMapping().apply(1);
+    return this.validatorSetMapping.apply(1L);
   }
 
   @Provides
   private BFTConfiguration configuration(
       @LastEpochProof LedgerProof proof, BFTValidatorSet validatorSet, Hasher hasher) {
-    var accumulatorState = new AccumulatorState(0, this.builder.preGenesisAccumulatorHash);
+    var accumulatorState = new AccumulatorState(0, this.preGenesisAccumulatorHash);
     VertexWithHash genesisVertex =
         Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0, 0))
             .withId(hasher);
@@ -208,8 +214,8 @@ public class MockedConsensusRecoveryModule extends AbstractModule {
       return this;
     }
 
-    public MockedConsensusRecoveryModule build() {
-      return new MockedConsensusRecoveryModule(this);
+    public MockedEpochsConsensusRecoveryModule build() {
+      return new MockedEpochsConsensusRecoveryModule(this);
     }
   }
 }

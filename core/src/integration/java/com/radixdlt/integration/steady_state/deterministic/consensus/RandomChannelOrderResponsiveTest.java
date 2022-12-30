@@ -68,7 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
+import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -113,7 +113,7 @@ public class RandomChannelOrderResponsiveTest {
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
                         StateComputerConfig.mocked(
-                            new MockedConsensusRecoveryModule.Builder().withNodes(validators),
+                            new MockedEpochsConsensusRecoveryModule.Builder().withNodes(validators),
                             MockedMempoolConfig.noMempool()))));
 
     test.startAllNodes();

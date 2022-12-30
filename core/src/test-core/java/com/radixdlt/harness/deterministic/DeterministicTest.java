@@ -69,7 +69,7 @@ import com.google.inject.*;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
+import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
@@ -219,15 +219,10 @@ public final class DeterministicTest implements AutoCloseable {
         int numValidators,
         Function<Long, IntStream> epochToNodeIndexesMapping) {
       Objects.requireNonNull(epochMaxRound);
-      var validators =
-          PrivateKeys.numeric(1)
-              .limit(numValidators)
-              .map(k -> BFTNode.create(k.getPublicKey()))
-              .toList();
       var consensusBuilder =
-          new MockedConsensusRecoveryModule.Builder(true)
+          new MockedEpochsConsensusRecoveryModule.Builder(true)
               .withEpochNodeIndexesMapping(epochToNodeIndexesMapping)
-              .withNodes(validators);
+              .withNumValidators(numValidators);
 
       this.addFunctionalNodeModule(
           new FunctionalRadixNodeModule(
@@ -243,13 +238,8 @@ public final class DeterministicTest implements AutoCloseable {
 
     public DeterministicTest buildWithEpochs(Round epochMaxRound, int numValidators) {
       Objects.requireNonNull(epochMaxRound);
-      var validators =
-          PrivateKeys.numeric(1)
-              .limit(numValidators)
-              .map(k -> BFTNode.create(k.getPublicKey()))
-              .toList();
-      var consensusBuilder = new MockedConsensusRecoveryModule.Builder(true).withNodes(validators);
-
+      var consensusBuilder =
+          new MockedEpochsConsensusRecoveryModule.Builder(true).withNumValidators(numValidators);
       this.addFunctionalNodeModule(
           new FunctionalRadixNodeModule(
               true,
@@ -269,15 +259,10 @@ public final class DeterministicTest implements AutoCloseable {
         Function<Long, IntStream> epochToNodeIndexesMapping) {
       Objects.requireNonNull(epochMaxRound);
 
-      var validators =
-          PrivateKeys.numeric(1)
-              .limit(numValidators)
-              .map(k -> BFTNode.create(k.getPublicKey()))
-              .toList();
       var consensusBuilder =
-          new MockedConsensusRecoveryModule.Builder(true)
+          new MockedEpochsConsensusRecoveryModule.Builder(true)
               .withEpochNodeIndexesMapping(epochToNodeIndexesMapping)
-              .withNodes(validators);
+              .withNumValidators(numValidators);
 
       this.addFunctionalNodeModule(
           new FunctionalRadixNodeModule(

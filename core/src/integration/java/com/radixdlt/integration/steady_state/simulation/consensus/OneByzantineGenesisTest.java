@@ -67,7 +67,7 @@ package com.radixdlt.integration.steady_state.simulation.consensus;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
+import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.harness.simulation.Monitor;
 import com.radixdlt.harness.simulation.NetworkLatencies;
@@ -100,11 +100,11 @@ public class OneByzantineGenesisTest {
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(1000),
                     LedgerConfig.mocked(
-                        new MockedConsensusRecoveryModule.Builder().withNumValidators(3))))
+                        new MockedEpochsConsensusRecoveryModule.Builder().withNumValidators(3))))
             .addOverrideModuleToInitialNodes(
                 nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
                 nodes ->
-                    new MockedConsensusRecoveryModule.Builder()
+                    new MockedEpochsConsensusRecoveryModule.Builder()
                         .withPreGenesisAccumulatorHash(HashUtils.random256())
                         .withNodes(nodes)
                         .build())
@@ -127,7 +127,7 @@ public class OneByzantineGenesisTest {
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(1000),
                     LedgerConfig.mocked(
-                        new MockedConsensusRecoveryModule.Builder().withNumValidators(3))))
+                        new MockedEpochsConsensusRecoveryModule.Builder().withNumValidators(3))))
             .addTestModules(ConsensusMonitors.noneCommitted())
             .build();
 
@@ -147,11 +147,11 @@ public class OneByzantineGenesisTest {
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(1000),
                     LedgerConfig.mocked(
-                        new MockedConsensusRecoveryModule.Builder().withNumValidators(4))))
+                        new MockedEpochsConsensusRecoveryModule.Builder().withNumValidators(4))))
             .numNodes(4)
             .addOverrideModuleToInitialNodes(
                 nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
-                nodes -> new MockedConsensusRecoveryModule.Builder().withNodes(nodes).build())
+                nodes -> new MockedEpochsConsensusRecoveryModule.Builder().withNodes(nodes).build())
             .addTestModules(ConsensusMonitors.liveness(5, TimeUnit.SECONDS))
             .build();
 

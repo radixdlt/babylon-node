@@ -64,7 +64,7 @@
 
 package com.radixdlt.modules;
 
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
+import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolRelayConfig;
@@ -80,8 +80,8 @@ import java.util.stream.Stream;
 /** Configuration options for the state computer */
 public sealed interface StateComputerConfig {
   static StateComputerConfig mocked(
-      MockedConsensusRecoveryModule.Builder builder, MockedMempoolConfig mempoolType) {
-    return new MockedStateComputerConfig(builder, mempoolType);
+      MockedEpochsConsensusRecoveryModule.Builder builder, MockedMempoolConfig mempoolType) {
+    return new MockedStateComputerConfigWithEpochs(builder, mempoolType);
   }
 
   static StateComputerConfig rev2(
@@ -114,9 +114,26 @@ public sealed interface StateComputerConfig {
     record Relayed(int mempoolSize) implements MockedMempoolConfig {}
   }
 
-  record MockedStateComputerConfig(
-      MockedConsensusRecoveryModule.Builder builder, MockedMempoolConfig mempoolType)
-      implements StateComputerConfig {}
+  sealed interface MockedStateComputerConfig extends StateComputerConfig {
+    MockedMempoolConfig mempoolConfig();
+  }
+
+  record MockedStateComputerConfigWithEpochs(
+      MockedEpochsConsensusRecoveryModule.Builder builder, MockedMempoolConfig mempoolType)
+      implements MockedStateComputerConfig {
+    @Override
+    public MockedMempoolConfig mempoolConfig() {
+      return mempoolType;
+    }
+  }
+
+  record MockedStateComputerConfigNoEpochs(int numValidators, MockedMempoolConfig mempoolType)
+      implements MockedStateComputerConfig {
+    @Override
+    public MockedMempoolConfig mempoolConfig() {
+      return mempoolType;
+    }
+  }
 
   record REv2StateComputerConfig(
       int networkId,

@@ -68,7 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
+import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -126,7 +126,8 @@ public class FProposalsPerRoundDropperTest {
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(5000),
                     LedgerConfig.mocked(
-                        new MockedConsensusRecoveryModule.Builder().withNumValidators(numNodes))))
+                        new MockedEpochsConsensusRecoveryModule.Builder()
+                            .withNumValidators(numNodes))))
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.vertexRequestRate(75), // Conservative check

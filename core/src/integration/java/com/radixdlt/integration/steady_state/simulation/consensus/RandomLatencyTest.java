@@ -66,7 +66,7 @@ package com.radixdlt.integration.steady_state.simulation.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
+import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.harness.simulation.NetworkDroppers;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
@@ -120,7 +120,7 @@ public class RandomLatencyTest {
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(synchronousTimeout),
                     LedgerConfig.mocked(
-                        new MockedConsensusRecoveryModule.Builder()
+                        new MockedEpochsConsensusRecoveryModule.Builder()
                             .withNumValidators(3)))) // Since no syncing needed 6*MTT required
             .build();
 
@@ -143,7 +143,7 @@ public class RandomLatencyTest {
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(synchronousTimeout),
                     LedgerConfig.mocked(
-                        new MockedConsensusRecoveryModule.Builder()
+                        new MockedEpochsConsensusRecoveryModule.Builder()
                             .withNumValidators(4)))) // Since no syncing needed 6*MTT required
             .build();
 

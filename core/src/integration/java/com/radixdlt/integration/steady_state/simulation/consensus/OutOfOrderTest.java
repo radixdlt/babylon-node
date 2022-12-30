@@ -66,7 +66,7 @@ package com.radixdlt.integration.steady_state.simulation.consensus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
+import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.harness.simulation.NetworkDroppers;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
@@ -119,7 +119,8 @@ public final class OutOfOrderTest {
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(5000),
                     LedgerConfig.mocked(
-                        new MockedConsensusRecoveryModule.Builder().withNumValidators(numNodes))))
+                        new MockedEpochsConsensusRecoveryModule.Builder()
+                            .withNumValidators(numNodes))))
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS),

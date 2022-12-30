@@ -161,7 +161,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   }
 
   public sealed interface LedgerConfig {
-    static LedgerConfig mocked(MockedConsensusRecoveryModule.Builder builder) {
+    static LedgerConfig mocked(MockedEpochsConsensusRecoveryModule.Builder builder) {
       return new MockedLedgerConfig(builder);
     }
 
@@ -194,7 +194,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     }
   }
 
-  public record MockedLedgerConfig(MockedConsensusRecoveryModule.Builder builder)
+  public record MockedLedgerConfig(MockedEpochsConsensusRecoveryModule.Builder builder)
       implements LedgerConfig {}
 
   public record StateComputerLedgerConfig(StateComputerConfig config, SyncConfig syncConfig)
@@ -251,7 +251,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         ConsensusConfig.of(),
         LedgerConfig.stateComputerNoSync(
             StateComputerConfig.mocked(
-                new MockedConsensusRecoveryModule.Builder().withNodes(validators),
+                new MockedEpochsConsensusRecoveryModule.Builder().withNodes(validators),
                 new MockedMempoolConfig.NoMempool())));
   }
 
@@ -313,9 +313,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         // State Computer
         switch (stateComputerLedgerConfig.config) {
           case MockedStateComputerConfig c -> {
-            install(c.builder().build());
             install(new MockedLedgerRecoveryModule());
-            switch (c.mempoolType()) {
+            switch (c.mempoolConfig()) {
               case MockedMempoolConfig.NoMempool ignored -> {
                 bind(ProposalGenerator.class).to(RandomTransactionGenerator.class);
                 if (!this.epochs) {
@@ -332,6 +331,15 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 install(new MempoolReceiverModule());
                 install(new MempoolRelayerModule(10000));
                 install(new MockedMempoolStateComputerModule(relayed.mempoolSize()));
+              }
+            }
+
+            switch (c) {
+              case MockedStateComputerConfigNoEpochs noEpochs -> {
+                install(new MockedNoEpochsConsensusRecoveryModule(noEpochs.numValidators()));
+              }
+              case MockedStateComputerConfigWithEpochs withEpochs -> {
+                install(withEpochs.builder().build());
               }
             }
           }

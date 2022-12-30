@@ -65,7 +65,7 @@
 package com.radixdlt.integration.steady_state.deterministic.consensus;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
+import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -108,7 +108,7 @@ public class FProposalDropperResponsiveTest {
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mocked(
-                            new MockedConsensusRecoveryModule.Builder()
+                            new MockedEpochsConsensusRecoveryModule.Builder()
                                 .withNumValidators(numValidatorNodes),
                             MockedMempoolConfig.noMempool()))));
 

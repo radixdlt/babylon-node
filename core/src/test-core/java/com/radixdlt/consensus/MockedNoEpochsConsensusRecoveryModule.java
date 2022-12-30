@@ -62,71 +62,68 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.consensus;
+package com.radixdlt.consensus;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt256;
+import java.util.Optional;
 
-import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
-import com.radixdlt.harness.simulation.Monitor;
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.SimulationTest.Builder;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
-import java.util.concurrent.TimeUnit;
-import org.junit.Test;
+public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule {
+  private final int numValidators;
 
-public class FPlusOneOutOfBoundsTest {
-  private static final int LATENCY_MS = 50;
-  private static final int TIMEOUT_MS = 50 * 10;
-  private static final int LIVENESS_MS = 50 * 20;
-  private final Builder bftTestBuilder =
-      SimulationTest.builder()
-          .functionalNodeModule(
-              new FunctionalRadixNodeModule(
-                  false,
-                  SafetyRecoveryConfig.mocked(),
-                  ConsensusConfig.of(TIMEOUT_MS),
-                  LedgerConfig.mocked(
-                      new MockedEpochsConsensusRecoveryModule.Builder().withNumValidators(3))))
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(LIVENESS_MS, TimeUnit.MILLISECONDS));
-
-  /** Tests a configuration of 0 out of 3 nodes out of synchrony bounds */
-  @Test
-  public void given_0_out_of_3_nodes_out_of_synchrony_bounds() {
-    SimulationTest test =
-        bftTestBuilder
-            .numNodes(3)
-            .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed(LATENCY_MS))
-            .build();
-
-    final var runningTest = test.run();
-    final var checkResults = runningTest.awaitCompletion();
-
-    assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());
+  public MockedNoEpochsConsensusRecoveryModule(int numValidators) {
+    this.numValidators = numValidators;
   }
 
-  /** Tests a configuration of 1 out of 3 nodes out of synchrony bounds */
-  @Test
-  public void given_1_out_of_3_nodes_out_of_synchrony_bounds() {
-    SimulationTest test =
-        bftTestBuilder
-            .numNodes(3)
-            .networkModules(
-                NetworkOrdering.inOrder(), NetworkLatencies.oneOutOfBounds(LATENCY_MS, LIVENESS_MS))
-            .build();
+  @Provides
+  private RoundUpdate initialRoundUpdate(
+      BFTConfiguration configuration, ProposerElection proposerElection) {
+    HighQC highQC = configuration.getVertexStoreState().getHighQC();
+    Round round = highQC.highestQC().getRound().next();
+    final BFTNode leader = proposerElection.getProposer(round);
+    final BFTNode nextLeader = proposerElection.getProposer(round.next());
 
-    final var runningTest = test.run();
-    final var checkResults = runningTest.awaitCompletion();
+    return RoundUpdate.create(round, highQC, leader, nextLeader);
+  }
 
-    assertThat(checkResults)
-        .hasEntrySatisfying(Monitor.CONSENSUS_LIVENESS, error -> assertThat(error).isPresent())
-        .hasEntrySatisfying(Monitor.CONSENSUS_SAFETY, error -> assertThat(error).isNotPresent());
+  @Provides
+  private BFTValidatorSet validatorSet() {
+    var validators =
+        PrivateKeys.numeric(1)
+            .limit(numValidators)
+            .map(k -> BFTNode.create(k.getPublicKey()))
+            .map(n -> BFTValidator.from(n, UInt256.ONE));
+    return BFTValidatorSet.from(validators);
+  }
+
+  @Provides
+  private BFTConfiguration configuration(
+      @LastEpochProof LedgerProof proof, BFTValidatorSet validatorSet, Hasher hasher) {
+    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+    VertexWithHash genesisVertex =
+        Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0, 0))
+            .withId(hasher);
+    LedgerHeader nextLedgerHeader =
+        LedgerHeader.create(
+            proof.getNextEpoch().orElseThrow().getEpoch(),
+            Round.genesis(),
+            proof.getAccumulatorState(),
+            proof.consensusParentRoundTimestamp(),
+            proof.proposerTimestamp());
+    var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+    var proposerElection = new WeightedRotatingLeaders(validatorSet);
+    return new BFTConfiguration(
+        proposerElection,
+        validatorSet,
+        VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher));
   }
 }

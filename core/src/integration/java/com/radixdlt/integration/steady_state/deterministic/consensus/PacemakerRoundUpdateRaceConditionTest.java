@@ -70,7 +70,7 @@ import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
+import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -155,7 +155,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
                     ConsensusConfig.of(pacemakerTimeout),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                         StateComputerConfig.mocked(
-                            new MockedConsensusRecoveryModule.Builder()
+                            new MockedEpochsConsensusRecoveryModule.Builder()
                                 .withNumValidators(numValidatorNodes),
                             MockedMempoolConfig.noMempool()))));
 
