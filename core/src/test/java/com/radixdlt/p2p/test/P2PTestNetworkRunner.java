@@ -77,6 +77,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
+import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -211,7 +212,9 @@ public final class P2PTestNetworkRunner {
                         .substring(0, 10));
             bind(ECKeyOps.class).toInstance(ECKeyOps.fromKeyPair(nodeKey));
             bind(Environment.class)
-                .toInstance(network.createSender(BFTNode.create(nodeKey.getPublicKey())));
+                .toInstance(
+                    new ControlledSender(
+                        network, BFTNode.create(nodeKey.getPublicKey()), selfNodeIndex));
             bind(RuntimeProperties.class).toInstance(properties);
             bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
             bind(DeterministicProcessor.class);

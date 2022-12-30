@@ -78,7 +78,7 @@ public final class ControlledSender implements Environment {
   private final int senderIndex;
   private final ChannelId localChannel;
 
-  ControlledSender(DeterministicNetwork network, BFTNode self, int senderIndex) {
+  public ControlledSender(DeterministicNetwork network, BFTNode self, int senderIndex) {
     this.network = network;
     this.self = self;
     this.senderIndex = senderIndex;
