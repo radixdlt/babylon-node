@@ -74,6 +74,8 @@ import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochRound;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
+import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.harness.invariants.Checkers;
 
@@ -82,10 +84,34 @@ public final class DeterministicMonitors {
     throw new IllegalStateException("Cannot instantiate");
   }
 
+  public static class TimeoutOccurred extends IllegalStateException {
+    TimeoutOccurred(String nodeName, String round) {
+      super("Timeout on leader " + nodeName + ": " + round);
+    }
+  }
+
   public static class ByzantineBehaviorDetected extends IllegalStateException {
     ByzantineBehaviorDetected(String nodeName, ConsensusByzantineEvent event) {
       super("Byzantine Behavior detected on " + nodeName + ": " + event);
     }
+  }
+
+  public static Module noTimeouts() {
+    return new AbstractModule() {
+      @ProvidesIntoSet
+      private MessageMonitor byzantineDetection() {
+        return (m, t) -> {
+          if (m.message() instanceof LocalTimeoutOccurrence event) {
+            throw new TimeoutOccurred(event.getLeader().toString(), event.getRound().toString());
+          }
+
+          if (m.message() instanceof EpochLocalTimeoutOccurrence event) {
+            throw new TimeoutOccurred(
+                event.getLeader().toString(), event.getEpochRound().toString());
+          }
+        };
+      }
+    };
   }
 
   public static Module byzantineBehaviorNotDetected() {

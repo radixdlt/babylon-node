@@ -124,7 +124,10 @@ public final class SanityTest {
         .numPhysicalNodes(20)
         .messageSelector(firstSelector())
         .addMonitors(
-            byzantineBehaviorNotDetected(), consensusLiveness(3000), ledgerTransactionSafety())
+            byzantineBehaviorNotDetected(),
+            consensusLiveness(3000),
+            noTimeouts(),
+            ledgerTransactionSafety())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 epochs,
@@ -140,7 +143,7 @@ public final class SanityTest {
   }
 
   @Test
-  public void normal_run_should_not_cause_unexpected_errors() {
+  public void normal_run_with_transactions_should_not_cause_unexpected_errors() {
     try (var test = createTest()) {
       test.startAllNodes();
 
