@@ -112,6 +112,10 @@ public final class MessageQueue {
     return true;
   }
 
+  void removeAll() {
+    messagesByTime.clear();
+  }
+
   void remove(Predicate<ControlledMessage> filter) {
     messagesByTime.values().forEach(l -> l.removeIf(filter));
     messagesByTime.values().removeIf(List::isEmpty);

@@ -83,10 +83,7 @@ import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.schedulers.Timed;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -114,14 +111,27 @@ public final class DeterministicNodes implements AutoCloseable {
     this.baseModule = baseModule;
     this.overrideModule = overrideModule;
     this.network = network;
-    this.addressBook =
-        Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of((int) index, node))
-            .collect(Collectors.toMap(Pair::getSecond, Pair::getFirst));
+    this.addressBook = new HashMap<>();
     this.nodeIdentifiers =
         Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of((int) index, node))
             .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
     this.nodeInstances =
         Stream.generate(() -> (Injector) null).limit(nodes.size()).collect(Collectors.toList());
+
+    this.bootNodesTemporarilyAndBuildAddressBook(network);
+  }
+
+  private void bootNodesTemporarilyAndBuildAddressBook(DeterministicNetwork network) {
+    for (int nodeIndex = 0; nodeIndex < this.nodeInstances.size(); nodeIndex++) {
+      var injector = createBFTInstance(nodeIndex, baseModule, overrideModule, 0);
+      var node = injector.getInstance(Key.get(BFTNode.class, Self.class));
+      this.addressBook.put(node, nodeIndex);
+      var closeables = injector.getInstance(Key.get(new TypeLiteral<Set<NodeAutoCloseable>>() {}));
+      for (var c : closeables) {
+        c.close();
+      }
+    }
+    network.dropAllMessages();
   }
 
   private static class ControlledTimeSupplier implements TimeSupplier {

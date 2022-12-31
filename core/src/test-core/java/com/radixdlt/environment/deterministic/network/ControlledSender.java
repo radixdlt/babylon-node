@@ -71,9 +71,13 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** A sender within a deterministic network. */
 public final class ControlledSender implements Environment {
+  private static final Logger log = LogManager.getLogger();
+
   private final DeterministicNetwork network;
   private final BFTNode self;
   private final int senderIndex;
@@ -135,7 +139,12 @@ public final class ControlledSender implements Environment {
   @Override
   public <T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass) {
     return (node, e) -> {
-      ChannelId channelId = ChannelId.of(this.senderIndex, this.addressBook.apply(node));
+      var receiverIndex = this.addressBook.apply(node);
+      if (receiverIndex == null) {
+        log.warn("Could not resolve node {} to physical nodeIndex. Dropping msg: {}", node, e);
+        return;
+      }
+      ChannelId channelId = ChannelId.of(this.senderIndex, receiverIndex);
       handleMessage(new ControlledMessage(self, channelId, e, null, arrivalTime(channelId)));
     };
   }
