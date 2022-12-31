@@ -121,16 +121,15 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
 
   @Provides
   @Singleton
-  public DeterministicNetwork network(@Self BFTNode self, PeersView peersView) {
-    return new DeterministicNetwork(
-        Stream.concat(Stream.of(self), peersView.peers().map(PeersView.PeerInfo::bftNode)).toList(),
-        MessageSelector.firstSelector(),
-        MessageMutator.nothing());
+  public DeterministicNetwork network() {
+    return new DeterministicNetwork(MessageSelector.firstSelector(), MessageMutator.nothing());
   }
 
   @Provides
   @Singleton
-  Environment environment(@Self BFTNode self, DeterministicNetwork network) {
-    return new ControlledSender(network, self, 0);
+  Environment environment(@Self BFTNode self, DeterministicNetwork network, PeersView peersView) {
+    var addressBook =
+        Stream.concat(Stream.of(self), peersView.peers().map(PeersView.PeerInfo::bftNode)).toList();
+    return new ControlledSender(addressBook::indexOf, network, self, 0);
   }
 }

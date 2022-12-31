@@ -70,6 +70,7 @@ import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import java.util.function.Function;
 
 /** A sender within a deterministic network. */
 public final class ControlledSender implements Environment {
@@ -77,8 +78,14 @@ public final class ControlledSender implements Environment {
   private final BFTNode self;
   private final int senderIndex;
   private final ChannelId localChannel;
+  private final Function<BFTNode, Integer> addressBook;
 
-  public ControlledSender(DeterministicNetwork network, BFTNode self, int senderIndex) {
+  public ControlledSender(
+      Function<BFTNode, Integer> addressBook,
+      DeterministicNetwork network,
+      BFTNode self,
+      int senderIndex) {
+    this.addressBook = addressBook;
     this.network = network;
     this.self = self;
     this.senderIndex = senderIndex;
@@ -128,7 +135,7 @@ public final class ControlledSender implements Environment {
   @Override
   public <T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass) {
     return (node, e) -> {
-      ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
+      ChannelId channelId = ChannelId.of(this.senderIndex, this.addressBook.apply(node));
       handleMessage(new ControlledMessage(self, channelId, e, null, arrivalTime(channelId)));
     };
   }

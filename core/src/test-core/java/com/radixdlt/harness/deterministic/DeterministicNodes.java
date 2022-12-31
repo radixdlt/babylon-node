@@ -101,6 +101,7 @@ public final class DeterministicNodes implements AutoCloseable {
 
   // Nodes
   private final List<Injector> nodeInstances;
+  private final Map<BFTNode, Integer> addressBook;
   private final Map<Integer, BFTNode> nodeIdentifiers;
   private final Module baseModule;
   private final Module overrideModule;
@@ -113,6 +114,9 @@ public final class DeterministicNodes implements AutoCloseable {
     this.baseModule = baseModule;
     this.overrideModule = overrideModule;
     this.network = network;
+    this.addressBook =
+        Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of((int) index, node))
+            .collect(Collectors.toMap(Pair::getSecond, Pair::getFirst));
     this.nodeIdentifiers =
         Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of((int) index, node))
             .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
@@ -147,7 +151,8 @@ public final class DeterministicNodes implements AutoCloseable {
               public void configure() {
                 install(new EventLoggerModule(new EventLoggerConfig(k -> "Node" + nodeIndex)));
                 bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
-                bind(Environment.class).toInstance(new ControlledSender(network, self, nodeIndex));
+                bind(Environment.class)
+                    .toInstance(new ControlledSender(addressBook::get, network, self, nodeIndex));
                 bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
                 bind(ControlledTimeSupplier.class).toInstance(new ControlledTimeSupplier(time));
                 bind(TimeSupplier.class).to(ControlledTimeSupplier.class);
