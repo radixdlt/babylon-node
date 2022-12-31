@@ -62,88 +62,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.ledger_sync;
+package com.radixdlt.ledger;
 
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.predicates.EventPredicate.*;
-import static com.radixdlt.harness.predicates.NodePredicate.atOrOverStateVersion;
-import static com.radixdlt.harness.predicates.NodesPredicate.*;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import java.util.function.Function;
 
-import com.radixdlt.consensus.EpochNodeWeightMapping;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.*;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.sync.SyncRelayConfig;
-import java.util.stream.IntStream;
-import org.junit.Test;
-
-public class FullNodeSyncTest {
-  private static DeterministicTest createTest(
-      int numValidators, int numFullNodes, Round epochMaxRound) {
-    final var syncConfig =
-        new SyncRelayConfig(
-            500L,
-            0 /* unused */,
-            Long.MAX_VALUE /* unused */,
-            numValidators + numFullNodes, /* send ledger status update to all nodes */
-            Integer.MAX_VALUE /* no rate limiting */);
-    return DeterministicTest.builder()
-        .numPhysicalNodes(numValidators + numFullNodes)
-        .messageSelector(firstSelector())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                true,
-                SafetyRecoveryConfig.mocked(),
-                ConsensusConfig.of(),
-                LedgerConfig.stateComputerWithSyncRelay(
-                    StateComputerConfig.mockedWithEpochs(
-                        epochMaxRound,
-                        EpochNodeWeightMapping.constant(epoch -> IntStream.range(0, numValidators)),
-                        new StateComputerConfig.MockedMempoolConfig.NoMempool()),
-                    syncConfig)));
+public final class MockedBFTNodeModule extends AbstractModule {
+  @Provides
+  @Singleton
+  @Self
+  private BFTNode self(@Self ECDSASecp256k1PublicKey key) {
+    return BFTNode.create(key);
   }
 
-  private static void run(DeterministicTest test, int numValidators, long targetStateVersion) {
-    test.startAllNodes();
-    test.runUntilState(
-        anyAtOrOverStateVersion(targetStateVersion), 100000, onlyNodes(i -> i < numValidators));
-
-    // Sync one full node
-    test.runUntilState(
-        nodeAt(numValidators, atOrOverStateVersion(targetStateVersion)),
-        1000000,
-        onlyNodes(i -> i <= numValidators));
-
-    // Only Full Node Sync
-    // TODO: Enable, this is not yet currently working due to SyncCheckTrigger explosion in
-    // DeterministicTest?
-    // test.runUntilState(someAtOrOverStateVersion(i -> i >= numValidators, targetStateVersion),
-    // 1000000, onlyNodes(i -> i >= numValidators));
-
-    test.runUntilState(
-        someAtOrOverStateVersion(i -> i >= numValidators, targetStateVersion), 1000000);
-  }
-
-  @Test
-  public void test_5_validators_and_1_full_node() {
-    try (var test = createTest(5, 1, Round.of(100))) {
-      run(test, 5, 100L);
-    }
-  }
-
-  @Test
-  public void test_3_validators_and_2_full_nodes() {
-    try (var test = createTest(3, 2, Round.of(100))) {
-      run(test, 3, 101L);
-    }
-  }
-
-  @Test
-  public void test_4_validators_and_50_full_nodes_and_two_rounds_per_epoch() {
-    try (var test = createTest(4, 50, Round.of(2))) {
-      run(test, 4, 100L);
-    }
+  @Provides
+  @Self
+  String name(
+      Function<ECDSASecp256k1PublicKey, String> nodeToString, @Self ECDSASecp256k1PublicKey key) {
+    return nodeToString.apply(key);
   }
 }

@@ -129,12 +129,6 @@ public class SimulationNodes {
             new AbstractModule() {
               @Provides
               @Self
-              private BFTNode self() {
-                return BFTNode.create(self.getPublicKey());
-              }
-
-              @Provides
-              @Self
               private ECDSASecp256k1PublicKey key() {
                 return self.getPublicKey();
               }

@@ -72,7 +72,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.store.LastStoredProof;
+import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import java.util.function.Function;
 
@@ -82,7 +82,7 @@ public final class BFTNodeFromGenesisModule extends AbstractModule {
   @Self
   private BFTNode self(
       @Self ECDSASecp256k1PublicKey key,
-      @LastStoredProof LedgerProof ignored,
+      @LastProof LedgerProof ignored,
       TransactionsAndProofReader transactionsAndProofReader) {
     var genesisProof = transactionsAndProofReader.getEpochProof(1).orElseThrow();
     var genesisValidatorSet = genesisProof.getNextValidatorSet().orElseThrow();

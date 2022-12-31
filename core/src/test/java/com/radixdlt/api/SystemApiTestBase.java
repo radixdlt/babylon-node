@@ -78,6 +78,7 @@ import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.*;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
@@ -116,9 +117,9 @@ public abstract class SystemApiTestBase {
                 TEST_KEY,
                 new FunctionalRadixNodeModule(
                     false,
-                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
-                    FunctionalRadixNodeModule.ConsensusConfig.of(),
-                    FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
+                    SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(),
+                    LedgerConfig.stateComputerWithSyncRelay(
                         StateComputerConfig.rev2(
                             Network.INTEGRATIONTESTNET.getId(),
                             TransactionBuilder.createGenesis(

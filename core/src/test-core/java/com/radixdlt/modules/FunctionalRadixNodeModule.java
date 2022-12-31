@@ -80,8 +80,10 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
 import com.radixdlt.environment.NodeAutoCloseable;
+import com.radixdlt.keys.BFTNodeFromGenesisModule;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.MockedBFTNodeModule;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
@@ -282,7 +284,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
       case MockedLedgerConfig config -> {
         install(new MockedLedgerRecoveryModule());
         install(new MockedLedgerModule());
-
+        install(new MockedBFTNodeModule());
         install(new MockedNoEpochsConsensusRecoveryModule(config.numValidators));
       }
       case StateComputerLedgerConfig stateComputerLedgerConfig -> {
@@ -298,13 +300,16 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
               install(new NoEpochsSyncModule());
             }
           }
-          case SyncConfig.Mocked ignored -> install(mockedSyncServiceModule);
+          case SyncConfig.Mocked ignored -> {
+            install(mockedSyncServiceModule);
+          }
           case SyncConfig.None ignored -> {}
         }
 
         // State Computer
         switch (stateComputerLedgerConfig.config) {
           case MockedStateComputerConfig c -> {
+            install(new MockedBFTNodeModule());
             install(new MockedLedgerRecoveryModule());
             install(new InMemoryCommittedReaderModule());
 
@@ -342,6 +347,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
             }
           }
           case REv2StateComputerConfig rev2Config -> {
+            install(new BFTNodeFromGenesisModule());
+
             var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
 
             if (REv2DatabaseConfig.isNone(rev2Config.databaseConfig())) {

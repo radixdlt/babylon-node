@@ -73,8 +73,8 @@ import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.StartProcessorOnRunner;
@@ -83,6 +83,7 @@ import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
+import com.radixdlt.ledger.MockedBFTNodeModule;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
@@ -95,6 +96,7 @@ import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.core.Flowable;
 import java.util.Comparator;
@@ -113,7 +115,9 @@ public final class MempoolRunnerTest {
     return new AbstractModule() {
       @Override
       public void configure() {
-        bind(BFTNode.class).annotatedWith(Self.class).toInstance(BFTNode.random());
+        bind(ECDSASecp256k1PublicKey.class)
+            .annotatedWith(Self.class)
+            .toInstance(PrivateKeys.ofNumeric(1).getPublicKey());
         bind(LedgerProof.class).annotatedWith(LastProof.class).toInstance(mock(LedgerProof.class));
         bind(StateComputer.class).toInstance(stateComputer);
         bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
@@ -131,6 +135,7 @@ public final class MempoolRunnerTest {
         bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
         Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
         install(MempoolRelayConfig.of(10).asModule());
+        install(new MockedBFTNodeModule());
         install(new MockedKeyModule());
         install(new MockedCryptoModule());
         install(new RxEnvironmentModule());

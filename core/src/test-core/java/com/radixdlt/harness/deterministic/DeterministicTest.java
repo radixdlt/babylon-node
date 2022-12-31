@@ -75,6 +75,7 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
@@ -109,7 +110,7 @@ public final class DeterministicTest implements AutoCloseable {
   private int numMessagesProcessed = 0;
 
   private DeterministicTest(
-      ImmutableList<BFTNode> nodes,
+      List<ECDSASecp256k1PublicKey> nodes,
       MessageSelector messageSelector,
       MessageMutator messageMutator,
       MessageMonitor messageMonitor,
@@ -127,8 +128,8 @@ public final class DeterministicTest implements AutoCloseable {
   }
 
   public static class Builder {
-    private ImmutableList<BFTNode> nodes =
-        ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
+    private ImmutableList<ECDSASecp256k1PublicKey> nodes =
+        ImmutableList.of(PrivateKeys.ofNumeric(1).getPublicKey());
     private MessageSelector messageSelector = MessageSelector.firstSelector();
     private MessageMutator messageMutator = MessageMutator.nothing();
     private Module overrideModule = null;
@@ -149,7 +150,7 @@ public final class DeterministicTest implements AutoCloseable {
         keys = keys.sorted(KeyComparator.instance());
       }
 
-      this.nodes = keys.map(BFTNode::create).collect(ImmutableList.toImmutableList());
+      this.nodes = keys.collect(ImmutableList.toImmutableList());
       return this;
     }
 

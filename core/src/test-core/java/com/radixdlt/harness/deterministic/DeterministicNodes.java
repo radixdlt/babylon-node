@@ -70,6 +70,7 @@ import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
@@ -100,7 +101,7 @@ public final class DeterministicNodes implements AutoCloseable {
   // Nodes
   private final List<Injector> nodeInstances;
   private final Map<BFTNode, Integer> addressBook;
-  private final Map<Integer, BFTNode> nodeIdentifiers;
+  private final Map<Integer, ECDSASecp256k1PublicKey> nodeInstanceConfigs;
   private final Module baseModule;
   private final Module overrideModule;
 
@@ -108,16 +109,22 @@ public final class DeterministicNodes implements AutoCloseable {
   private final DeterministicNetwork network;
 
   public DeterministicNodes(
-      List<BFTNode> nodes, DeterministicNetwork network, Module baseModule, Module overrideModule) {
+      List<ECDSASecp256k1PublicKey> nodeInstanceConfigs,
+      DeterministicNetwork network,
+      Module baseModule,
+      Module overrideModule) {
     this.baseModule = baseModule;
     this.overrideModule = overrideModule;
     this.network = network;
     this.addressBook = new HashMap<>();
-    this.nodeIdentifiers =
-        Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of((int) index, node))
+    this.nodeInstanceConfigs =
+        Streams.mapWithIndex(
+                nodeInstanceConfigs.stream(), (node, index) -> Pair.of((int) index, node))
             .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
     this.nodeInstances =
-        Stream.generate(() -> (Injector) null).limit(nodes.size()).collect(Collectors.toList());
+        Stream.generate(() -> (Injector) null)
+            .limit(nodeInstanceConfigs.size())
+            .collect(Collectors.toList());
 
     this.bootNodesTemporarilyAndBuildAddressBook(network);
   }
@@ -154,23 +161,27 @@ public final class DeterministicNodes implements AutoCloseable {
 
   private Injector createBFTInstance(
       int nodeIndex, Module baseModule, Module overrideModule, long time) {
-    var self = this.nodeIdentifiers.get(nodeIndex);
+    var self = this.nodeInstanceConfigs.get(nodeIndex);
     Module module =
         Modules.combine(
             new AbstractModule() {
               @Override
               public void configure() {
                 install(new EventLoggerModule(new EventLoggerConfig(k -> "Node" + nodeIndex)));
-                bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
+                bind(ECDSASecp256k1PublicKey.class).annotatedWith(Self.class).toInstance(self);
                 install(
                     new TestP2PModule.Builder()
                         .withAllNodes(addressBook.keySet().stream().toList())
                         .build());
-                bind(Environment.class)
-                    .toInstance(new ControlledSender(addressBook::get, network, self, nodeIndex));
                 bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
                 bind(ControlledTimeSupplier.class).toInstance(new ControlledTimeSupplier(time));
                 bind(TimeSupplier.class).to(ControlledTimeSupplier.class);
+              }
+
+              @Provides
+              @Singleton
+              Environment sender(@Self BFTNode self) {
+                return new ControlledSender(addressBook::get, network, self, nodeIndex);
               }
             },
             baseModule);
@@ -239,10 +250,8 @@ public final class DeterministicNodes implements AutoCloseable {
 
   public void handleMessage(Timed<ControlledMessage> timedNextMsg) {
     var nextMsg = timedNextMsg.value();
-
-    int senderIndex = nextMsg.channelId().senderIndex();
+    var sender = nextMsg.origin();
     int receiverIndex = nextMsg.channelId().receiverIndex();
-    var sender = this.nodeIdentifiers.get(senderIndex);
 
     var injector = nodeInstances.get(receiverIndex);
 
