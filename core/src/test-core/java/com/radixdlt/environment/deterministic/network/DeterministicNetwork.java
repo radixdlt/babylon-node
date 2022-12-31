@@ -87,6 +87,7 @@ public final class DeterministicNetwork {
   private final MessageMonitor messageMonitor;
 
   private long currentTime = 0L;
+  private long lastTimeLogged = 0L;
 
   /**
    * Create a BFT test network for deterministic tests.
@@ -139,6 +140,10 @@ public final class DeterministicNetwork {
                 });
     this.messageQueue.remove(controlledMessage);
     this.currentTime = Math.max(this.currentTime, controlledMessage.arrivalTime());
+    if ((this.currentTime / 1000) > (this.lastTimeLogged / 1000)) {
+      this.lastTimeLogged = this.currentTime;
+      log.info("Simulated Time: {}", this.currentTime);
+    }
 
     return new Timed<>(controlledMessage, this.currentTime, TimeUnit.MILLISECONDS);
   }

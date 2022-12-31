@@ -192,7 +192,9 @@ public final class DeterministicNodes implements AutoCloseable {
             new AbstractModule() {
               @Override
               public void configure() {
-                install(new EventLoggerModule(new EventLoggerConfig(k -> "Node" + nodeIndex)));
+                install(
+                        new EventLoggerModule(
+                                new EventLoggerConfig(k -> "Node" + addressBook.apply(BFTNode.create(k)))));
                 bind(ECDSASecp256k1PublicKey.class).annotatedWith(Self.class).toInstance(self);
                 install(
                     new TestP2PModule.Builder()
