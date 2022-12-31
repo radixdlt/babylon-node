@@ -64,33 +64,18 @@
 
 package com.radixdlt.harness.deterministic;
 
-import com.google.common.collect.ImmutableBiMap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.harness.deterministic.invariants.MessageMonitor;
 import com.radixdlt.harness.deterministic.invariants.StateMonitor;
-import com.radixdlt.utils.Pair;
 import java.util.Set;
-import java.util.function.Function;
 
 public class DeterministicMonitorsModule extends AbstractModule {
-  private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
-
-  public DeterministicMonitorsModule(ImmutableList<BFTNode> nodes) {
-    this.nodeLookup =
-        Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of(node, (int) index))
-            .collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
-  }
+  public DeterministicMonitorsModule() {}
 
   @Override
   protected void configure() {
-    bind(new TypeLiteral<Function<BFTNode, String>>() {})
-        .toInstance(n -> "Node" + nodeLookup.get(n));
     Multibinder.newSetBinder(binder(), MessageMonitor.class);
     Multibinder.newSetBinder(binder(), StateMonitor.class);
   }

@@ -80,6 +80,7 @@ import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -151,6 +152,10 @@ public final class DeterministicNodes implements AutoCloseable {
               public void configure() {
                 install(new EventLoggerModule(new EventLoggerConfig(k -> "Node" + nodeIndex)));
                 bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
+                install(
+                    new TestP2PModule.Builder()
+                        .withAllNodes(addressBook.keySet().stream().toList())
+                        .build());
                 bind(Environment.class)
                     .toInstance(new ControlledSender(addressBook::get, network, self, nodeIndex));
                 bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
