@@ -88,7 +88,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.PrivateKeys;
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -209,13 +208,12 @@ public final class DeterministicTest implements AutoCloseable {
           });
       modules.add(new MockedKeyModule());
       modules.add(new MockedCryptoModule());
-      modules.add(new TestP2PModule.Builder().withAllNodes(nodes).build());
       modules.add(new TestMessagingModule.Builder().build());
 
       // Retrieve monitors
       var monitorInjector =
           Guice.createInjector(
-              new DeterministicMonitorsModule(nodes), Modules.combine(testModules.build()));
+              new DeterministicMonitorsModule(), Modules.combine(testModules.build()));
       var messageMonitor = monitorInjector.getInstance(MessageMonitor.class);
       var stateMonitor = monitorInjector.getInstance(StateMonitor.class);
 
