@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - develop
       - release\/*
 jobs:
   cancel_running_workflows:
