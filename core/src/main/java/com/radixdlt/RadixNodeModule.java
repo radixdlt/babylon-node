@@ -67,6 +67,7 @@ package com.radixdlt;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.CoreApiServerModule;
 import com.radixdlt.api.prometheus.PrometheusApiModule;
@@ -108,6 +109,7 @@ import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -279,6 +281,13 @@ public final class RadixNodeModule extends AbstractModule {
             .map(LedgerSyncCapability.Builder::new)
             .orElse(LedgerSyncCapability.Builder.asDefault());
     install(new CapabilitiesModule(builder.build()));
+  }
+
+  @Provides
+  @Self
+  String name(
+      Function<ECDSASecp256k1PublicKey, String> nodeToString, @Self ECDSASecp256k1PublicKey key) {
+    return nodeToString.apply(key);
   }
 
   private String loadGenesisFromFile(String genesisFile) {

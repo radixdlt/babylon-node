@@ -75,6 +75,7 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.Metrics;
@@ -92,7 +93,7 @@ public class ProcessCachedEventsWithTimeoutCertTest {
   public void process_cached_sync_event_with_tc_test() {
     final var test =
         DeterministicTest.builder()
-            .numPhysicalNodes(5)
+            .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(5))
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutators(
                 dropProposalToNodes(Round.of(1), ImmutableList.of(TEST_NODE)),

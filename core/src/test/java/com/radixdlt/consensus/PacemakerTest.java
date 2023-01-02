@@ -72,6 +72,7 @@ import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -83,7 +84,7 @@ import org.junit.Test;
 public final class PacemakerTest {
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numPhysicalNodes(1)
+        .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(1))
         .messageSelector(MessageSelector.firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(

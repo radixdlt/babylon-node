@@ -70,12 +70,14 @@ import com.google.inject.Singleton;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.keys.BFTNodeFromGenesisModule;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
@@ -85,6 +87,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 /** Module which injects a full one node network */
@@ -106,10 +109,18 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
 
     var addressing = Addressing.ofNetwork(Network.INTEGRATIONTESTNET);
     bind(Addressing.class).toInstance(addressing);
+    install(new BFTNodeFromGenesisModule());
     install(new EventLoggerModule(EventLoggerConfig.addressed(addressing)));
     install(new InMemoryBFTKeyModule(self));
     install(new CryptoModule());
     install(radixNodeModule);
+  }
+
+  @Provides
+  @Self
+  String name(
+      Function<ECDSASecp256k1PublicKey, String> nodeToString, @Self ECDSASecp256k1PublicKey key) {
+    return nodeToString.apply(key);
   }
 
   @Provides

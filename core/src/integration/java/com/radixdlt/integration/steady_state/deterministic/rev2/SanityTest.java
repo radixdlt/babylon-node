@@ -70,6 +70,7 @@ import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitor
 import com.google.inject.*;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolAdd;
@@ -121,7 +122,7 @@ public final class SanityTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numPhysicalNodes(20)
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(20, true))
         .messageSelector(firstSelector())
         .addMonitors(
             byzantineBehaviorNotDetected(),

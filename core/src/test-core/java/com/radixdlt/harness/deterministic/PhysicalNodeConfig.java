@@ -62,75 +62,30 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.rev2.consensus_ledger_sync;
+package com.radixdlt.harness.deterministic;
 
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.rev2.SystemAddress;
+import com.radixdlt.utils.PrivateKeys;
+import java.util.List;
 
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
-import com.radixdlt.harness.invariants.Checkers;
-import com.radixdlt.harness.simulation.application.TransactionGenerator;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.REv2SimpleFuzzerTransactionGenerator;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.UInt64;
-import java.util.Random;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-public final class SimpleFuzzerTransactionsTest {
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-  private final TransactionGenerator<RawNotarizedTransaction> transactionGenerator =
-      new REv2SimpleFuzzerTransactionGenerator(new Random(12345));
-
-  private DeterministicTest createTest() {
-    return DeterministicTest.builder()
-        .addPhysicalNodes(PhysicalNodeConfig.createBatch(20, true))
-        .messageSelector(firstSelector())
-        .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                false,
-                SafetyRecoveryConfig.mocked(),
-                ConsensusConfig.of(1000),
-                LedgerConfig.stateComputerWithSyncRelay(
-                    StateComputerConfig.rev2(
-                        Network.LOCALSIMULATOR.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
-                            10, UInt64.fromNonNegativeLong(10)),
-                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
-                        REV2ProposerConfig.transactionGenerator(transactionGenerator, 10)),
-                    SyncRelayConfig.of(5000, 10, 3000L))));
+public record PhysicalNodeConfig(
+    ECDSASecp256k1PublicKey key, SystemAddress validatorAddress, boolean loadFromGenesis) {
+  public static PhysicalNodeConfig createBasic(ECDSASecp256k1PublicKey key) {
+    return new PhysicalNodeConfig(key, null, false);
   }
 
-  @Test
-  @Ignore(
-      "It causes unexpected errors, many txns fail with:"
-          + " ErrorBeforeFeeLoanRepaid(KernelError(WasmError(WasmError(Trap(Trap { kind:"
-          + " Unreachable })))))")
-  public void simple_fuzzer_transaction_generator_should_not_cause_unexpected_errors() {
-    // Arrange
-    try (var test = createTest()) {
+  public static List<PhysicalNodeConfig> createBasicBatch(int numPhysicalNodes) {
+    return createBatch(numPhysicalNodes, false);
+  }
 
-      // Run
-      test.startAllNodes();
-      test.runForCount(10000);
-
-      // Post-run assertions
-      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 100);
-      Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
-    }
+  public static List<PhysicalNodeConfig> createBatch(
+      int numPhysicalNodes, boolean loadFromGenesis) {
+    return PrivateKeys.numeric(1)
+        .limit(numPhysicalNodes)
+        .map(ECKeyPair::getPublicKey)
+        .map(k -> new PhysicalNodeConfig(k, null, loadFromGenesis))
+        .toList();
   }
 }

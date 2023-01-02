@@ -74,6 +74,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.predicates.NodePredicate;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
@@ -104,7 +105,7 @@ public final class REv2LargeTransactionTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numPhysicalNodes(2)
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(2, true))
         .messageSelector(firstSelector())
         .messageMutator(MessageMutator.dropTimeouts())
         .functionalNodeModule(

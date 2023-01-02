@@ -84,6 +84,8 @@ import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.monitors.SimulationNodeEventsModule;
 import com.radixdlt.harness.simulation.network.SimulationNetwork;
 import com.radixdlt.harness.simulation.network.SimulationNodes;
+import com.radixdlt.keys.BFTNodeFromGenesisModule;
+import com.radixdlt.ledger.MockedBFTNodeModule;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.mempool.MempoolRelayConfig;
@@ -348,6 +350,13 @@ public final class SimulationTest {
               bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
               bind(NodeEvents.class).toInstance(nodeEvents);
             }
+
+            @Provides
+            @Self
+            String name(
+                    Function<ECDSASecp256k1PublicKey, String> nodeToString, @Self ECDSASecp256k1PublicKey key) {
+              return nodeToString.apply(key);
+            }
           });
       modules.add(new MockedSystemModule());
       modules.add(new MockedKeyModule());
@@ -368,6 +377,11 @@ public final class SimulationTest {
 
       modules.add(new TestMessagingModule.Builder().withDefaultRateLimit().build());
       // Functional
+      if (this.functionalNodeModule.supportsREv2()) {
+        modules.add(new BFTNodeFromGenesisModule());
+      } else {
+        modules.add(new MockedBFTNodeModule());
+      }
       modules.add(this.functionalNodeModule);
 
       // Testing

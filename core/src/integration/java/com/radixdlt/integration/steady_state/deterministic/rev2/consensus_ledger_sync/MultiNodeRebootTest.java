@@ -71,6 +71,7 @@ import static org.assertj.core.api.Assertions.*;
 import com.google.inject.Module;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.predicates.NodesPredicate;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
@@ -191,7 +192,7 @@ public final class MultiNodeRebootTest {
     var databaseConfig = REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath());
     var builder =
         DeterministicTest.builder()
-            .numPhysicalNodes(numValidators)
+            .addPhysicalNodes(PhysicalNodeConfig.createBatch(numValidators, true))
             .messageSelector(randomSelector(random))
             .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety());
 

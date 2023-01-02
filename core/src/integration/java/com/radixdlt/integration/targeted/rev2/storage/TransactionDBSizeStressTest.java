@@ -67,6 +67,7 @@ package com.radixdlt.integration.targeted.rev2.storage;
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.predicates.NodesPredicate;
 import com.radixdlt.integration.Slow;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -99,7 +100,7 @@ public final class TransactionDBSizeStressTest {
 
   private DeterministicTest buildTest() {
     return DeterministicTest.builder()
-        .numPhysicalNodes(1)
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(

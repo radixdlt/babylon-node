@@ -70,6 +70,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
@@ -85,7 +86,7 @@ public class REv2IncreasingEpochTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numPhysicalNodes(1)
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
         .messageSelector(firstSelector())
         .messageMutator(MessageMutator.dropTimeouts())
         .functionalNodeModule(

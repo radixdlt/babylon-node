@@ -74,7 +74,6 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
-import java.util.function.Function;
 
 public final class BFTNodeFromGenesisModule extends AbstractModule {
   @Provides
@@ -98,12 +97,5 @@ public final class BFTNodeFromGenesisModule extends AbstractModule {
     }
 
     return potentialBFTNodes.stream().findFirst().orElse(BFTNode.create(key));
-  }
-
-  @Provides
-  @Self
-  String name(
-      Function<ECDSASecp256k1PublicKey, String> nodeToString, @Self ECDSASecp256k1PublicKey key) {
-    return nodeToString.apply(key);
   }
 }

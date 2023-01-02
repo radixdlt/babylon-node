@@ -76,6 +76,7 @@ import com.radixdlt.environment.deterministic.network.ChannelId;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.Metrics;
@@ -99,7 +100,7 @@ public class MovingWindowValidatorsTest {
   private void run(int numNodes, int windowSize, long maxEpoch, Round epochMaxRound) {
     DeterministicTest bftTest =
         DeterministicTest.builder()
-            .numPhysicalNodes(numNodes)
+            .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(numNodes))
             .messageMutator(mutator())
             .messageSelector(firstSelector())
             .functionalNodeModule(

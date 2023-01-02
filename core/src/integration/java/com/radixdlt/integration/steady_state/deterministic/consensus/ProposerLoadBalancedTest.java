@@ -74,6 +74,7 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -95,7 +96,7 @@ public class ProposerLoadBalancedTest {
 
     DeterministicTest test =
         DeterministicTest.builder()
-            .numPhysicalNodes(numValidatorNodes)
+            .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(numValidatorNodes))
             .messageSelector(MessageSelector.firstSelector())
             .messageMutator(mutator())
             .functionalNodeModule(

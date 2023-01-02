@@ -72,6 +72,7 @@ import static com.radixdlt.harness.predicates.NodesPredicate.*;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.*;
 import com.radixdlt.modules.StateComputerConfig;
@@ -90,7 +91,7 @@ public class FullNodeSyncTest {
             numValidators + numFullNodes, /* send ledger status update to all nodes */
             Integer.MAX_VALUE /* no rate limiting */);
     return DeterministicTest.builder()
-        .numPhysicalNodes(numValidators + numFullNodes)
+        .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(numValidators + numFullNodes))
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(

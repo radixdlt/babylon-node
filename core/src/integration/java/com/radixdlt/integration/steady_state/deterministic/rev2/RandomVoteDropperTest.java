@@ -69,6 +69,7 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.predicates.NodePredicate;
 import com.radixdlt.harness.predicates.NodesPredicate;
@@ -90,13 +91,11 @@ public final class RandomVoteDropperTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numPhysicalNodes(10)
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(10, true))
         .messageSelector(firstSelector())
         .messageMutator(voteDropper(0.2))
         .addMonitors(
-            byzantineBehaviorNotDetected(),
-            consensusLiveness(3000),
-            ledgerTransactionSafety())
+            byzantineBehaviorNotDetected(), consensusLiveness(3000), ledgerTransactionSafety())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 true,

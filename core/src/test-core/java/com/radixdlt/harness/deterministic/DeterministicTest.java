@@ -75,8 +75,6 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -89,9 +87,8 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.networks.Network;
-import com.radixdlt.utils.KeyComparator;
-import com.radixdlt.utils.PrivateKeys;
 import io.reactivex.rxjava3.schedulers.Timed;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -110,7 +107,7 @@ public final class DeterministicTest implements AutoCloseable {
   private int numMessagesProcessed = 0;
 
   private DeterministicTest(
-      List<ECDSASecp256k1PublicKey> nodes,
+      List<PhysicalNodeConfig> nodes,
       MessageSelector messageSelector,
       MessageMutator messageMutator,
       MessageMonitor messageMonitor,
@@ -128,8 +125,7 @@ public final class DeterministicTest implements AutoCloseable {
   }
 
   public static class Builder {
-    private ImmutableList<ECDSASecp256k1PublicKey> nodes =
-        ImmutableList.of(PrivateKeys.ofNumeric(1).getPublicKey());
+    private final List<PhysicalNodeConfig> nodes = new ArrayList<>();
     private MessageSelector messageSelector = MessageSelector.firstSelector();
     private MessageMutator messageMutator = MessageMutator.nothing();
     private Module overrideModule = null;
@@ -140,17 +136,8 @@ public final class DeterministicTest implements AutoCloseable {
       // Nothing to do here
     }
 
-    public Builder numPhysicalNodes(int numPhysicalNodes) {
-      return numPhysicalNodes(numPhysicalNodes, false);
-    }
-
-    public Builder numPhysicalNodes(int numPhysicalNodes, boolean ordered) {
-      var keys = PrivateKeys.numeric(1).limit(numPhysicalNodes).map(ECKeyPair::getPublicKey);
-      if (ordered) {
-        keys = keys.sorted(KeyComparator.instance());
-      }
-
-      this.nodes = keys.collect(ImmutableList.toImmutableList());
+    public Builder addPhysicalNodes(List<PhysicalNodeConfig> nodeConfigs) {
+      this.nodes.addAll(nodeConfigs);
       return this;
     }
 

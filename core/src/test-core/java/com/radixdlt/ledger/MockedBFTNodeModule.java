@@ -70,7 +70,6 @@ import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import java.util.function.Function;
 
 public final class MockedBFTNodeModule extends AbstractModule {
   @Provides
@@ -78,12 +77,5 @@ public final class MockedBFTNodeModule extends AbstractModule {
   @Self
   private BFTNode self(@Self ECDSASecp256k1PublicKey key) {
     return BFTNode.create(key);
-  }
-
-  @Provides
-  @Self
-  String name(
-      Function<ECDSASecp256k1PublicKey, String> nodeToString, @Self ECDSASecp256k1PublicKey key) {
-    return nodeToString.apply(key);
   }
 }

@@ -79,6 +79,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -103,7 +104,7 @@ public final class REv2RegisterValidatorTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numPhysicalNodes(1)
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
         .messageSelector(firstSelector())
         .messageMutator(MessageMutator.dropTimeouts())
         .addMonitors(

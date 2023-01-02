@@ -75,6 +75,7 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.predicates.NodePredicate;
 import com.radixdlt.harness.predicates.NodesPredicate;
@@ -103,7 +104,7 @@ public final class IncreasingValidatorsTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numPhysicalNodes(NUM_VALIDATORS)
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(NUM_VALIDATORS, true))
         .messageSelector(firstSelector())
         .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
         .functionalNodeModule(

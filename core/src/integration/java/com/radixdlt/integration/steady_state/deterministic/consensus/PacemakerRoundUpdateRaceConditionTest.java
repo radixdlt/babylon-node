@@ -73,12 +73,14 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
@@ -86,6 +88,7 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.utils.KeyComparator;
+import com.radixdlt.utils.PrivateKeys;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.*;
 import java.util.function.Predicate;
@@ -107,9 +110,17 @@ public class PacemakerRoundUpdateRaceConditionTest {
 
   @Test
   public void test_pacemaker_round_update_race_condition() {
+    var nodeConfigs =
+        PrivateKeys.numeric(1)
+            .limit(numValidatorNodes)
+            .map(ECKeyPair::getPublicKey)
+            .sorted(KeyComparator.instance())
+            .map(PhysicalNodeConfig::createBasic)
+            .toList();
+
     final DeterministicTest test =
         DeterministicTest.builder()
-            .numPhysicalNodes(numValidatorNodes, true)
+            .addPhysicalNodes(nodeConfigs)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(messUpMessagesForNodeUnderTest())
             .overrideWithIncorrectModule(

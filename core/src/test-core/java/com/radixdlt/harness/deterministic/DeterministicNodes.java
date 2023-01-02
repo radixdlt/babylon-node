@@ -77,6 +77,7 @@ import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
+import com.radixdlt.keys.BFTNodeFromGenesisModule;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.monitoring.Metrics;
@@ -102,7 +103,7 @@ public final class DeterministicNodes implements AutoCloseable {
   // Nodes
   private final List<Injector> nodeInstances;
   private final ControlledAddressBook addressBook;
-  private final Map<Integer, ECDSASecp256k1PublicKey> nodeInstanceConfigs;
+  private final Map<Integer, PhysicalNodeConfig> nodeConfigs;
   private final Module baseModule;
   private final Module overrideModule;
 
@@ -110,7 +111,7 @@ public final class DeterministicNodes implements AutoCloseable {
   private final DeterministicNetwork network;
 
   public DeterministicNodes(
-      List<ECDSASecp256k1PublicKey> nodeInstanceConfigs,
+      List<PhysicalNodeConfig> nodeConfigs,
       DeterministicNetwork network,
       Module baseModule,
       Module overrideModule) {
@@ -118,13 +119,12 @@ public final class DeterministicNodes implements AutoCloseable {
     this.overrideModule = overrideModule;
     this.network = network;
     this.addressBook = new ControlledAddressBook();
-    this.nodeInstanceConfigs =
-        Streams.mapWithIndex(
-                nodeInstanceConfigs.stream(), (node, index) -> Pair.of((int) index, node))
+    this.nodeConfigs =
+        Streams.mapWithIndex(nodeConfigs.stream(), (node, index) -> Pair.of((int) index, node))
             .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
     this.nodeInstances =
         Stream.generate(() -> (Injector) null)
-            .limit(nodeInstanceConfigs.size())
+            .limit(nodeConfigs.size())
             .collect(Collectors.toList());
 
     this.bootNodesTemporarilyAndBuildAddressBook(network);
@@ -186,7 +186,8 @@ public final class DeterministicNodes implements AutoCloseable {
 
   private Injector createBFTInstance(
       int nodeIndex, Module baseModule, Module overrideModule, long time) {
-    var self = this.nodeInstanceConfigs.get(nodeIndex);
+    var config = this.nodeConfigs.get(nodeIndex);
+
     Module module =
         Modules.combine(
             new AbstractModule() {
@@ -195,7 +196,18 @@ public final class DeterministicNodes implements AutoCloseable {
                 install(
                     new EventLoggerModule(
                         new EventLoggerConfig(k -> "Node" + addressBook.apply(BFTNode.create(k)))));
-                bind(ECDSASecp256k1PublicKey.class).annotatedWith(Self.class).toInstance(self);
+                bind(ECDSASecp256k1PublicKey.class)
+                    .annotatedWith(Self.class)
+                    .toInstance(config.key());
+
+                if (config.loadFromGenesis()) {
+                  install(new BFTNodeFromGenesisModule());
+                } else {
+                  bind(BFTNode.class)
+                      .annotatedWith(Self.class)
+                      .toInstance(BFTNode.create(config.validatorAddress(), config.key()));
+                }
+
                 install(
                     new TestP2PModule.Builder()
                         .withAllNodes(addressBook.addressBook.keySet().stream().toList())
@@ -203,6 +215,14 @@ public final class DeterministicNodes implements AutoCloseable {
                 bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
                 bind(ControlledTimeSupplier.class).toInstance(new ControlledTimeSupplier(time));
                 bind(TimeSupplier.class).to(ControlledTimeSupplier.class);
+              }
+
+              @Provides
+              @Self
+              String name(
+                  Function<ECDSASecp256k1PublicKey, String> nodeToString,
+                  @Self ECDSASecp256k1PublicKey key) {
+                return nodeToString.apply(key);
               }
 
               @Provides

@@ -72,17 +72,21 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.DeterministicTest.DeterministicManualExecutor;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
+import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.PrivateKeys;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.Test;
@@ -91,10 +95,17 @@ public class DifferentTimestampsCauseTimeoutTest {
   @Test
   public void when_four_nodes_receive_qcs_with_same_timestamps__quorum_is_achieved() {
     final int numValidatorNodes = 4;
+    var nodeConfigs =
+        PrivateKeys.numeric(1)
+            .limit(numValidatorNodes)
+            .map(ECKeyPair::getPublicKey)
+            .sorted(KeyComparator.instance())
+            .map(PhysicalNodeConfig::createBasic)
+            .toList();
 
     DeterministicManualExecutor executor =
         DeterministicTest.builder()
-            .numPhysicalNodes(numValidatorNodes, true)
+            .addPhysicalNodes(nodeConfigs)
             .messageMutator(mutateProposalsBy(0))
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
@@ -126,6 +137,13 @@ public class DifferentTimestampsCauseTimeoutTest {
   @Test
   public void when_four_nodes_receive_qcs_with_different_timestamps__quorum_is_not_achieved() {
     final int numValidatorNodes = 4;
+    var nodeConfigs =
+        PrivateKeys.numeric(1)
+            .limit(numValidatorNodes)
+            .map(ECKeyPair::getPublicKey)
+            .sorted(KeyComparator.instance())
+            .map(PhysicalNodeConfig::createBasic)
+            .toList();
 
     // TODO: this test isn't exactly right and should be updated so that
     // TODO: byzantine node sends different sets of valid QCs to each node
@@ -139,7 +157,7 @@ public class DifferentTimestampsCauseTimeoutTest {
                     bind(HashSigner.class).toInstance(h -> ECDSASecp256k1Signature.zeroSignature());
                   }
                 })
-            .numPhysicalNodes(numValidatorNodes, true)
+            .addPhysicalNodes(nodeConfigs)
             .messageMutator(mutateProposalsBy(1))
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
