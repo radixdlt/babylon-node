@@ -354,7 +354,8 @@ public final class SimulationTest {
             @Provides
             @Self
             String name(
-                    Function<ECDSASecp256k1PublicKey, String> nodeToString, @Self ECDSASecp256k1PublicKey key) {
+                Function<ECDSASecp256k1PublicKey, String> nodeToString,
+                @Self ECDSASecp256k1PublicKey key) {
               return nodeToString.apply(key);
             }
           });

@@ -80,6 +80,11 @@ public record PhysicalNodeConfig(
     return createBatch(numPhysicalNodes, false);
   }
 
+  public static PhysicalNodeConfig create(
+      ECDSASecp256k1PublicKey key, SystemAddress validatorAddress) {
+    return new PhysicalNodeConfig(key, validatorAddress, false);
+  }
+
   public static List<PhysicalNodeConfig> createBatch(
       int numPhysicalNodes, boolean loadFromGenesis) {
     return PrivateKeys.numeric(1)

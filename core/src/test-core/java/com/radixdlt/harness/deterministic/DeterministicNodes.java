@@ -171,7 +171,7 @@ public final class DeterministicNodes implements AutoCloseable {
     @Override
     public Integer apply(BFTNode bftNode) {
       var index = this.addressBook.get(bftNode);
-      if (index == null && bftNode.getValidatorAddress() == null) {
+      if (index == null) {
         index =
             this.addressBook.entrySet().stream()
                 .filter(e -> e.getKey().getKey().equals(bftNode.getKey()))
@@ -325,6 +325,10 @@ public final class DeterministicNodes implements AutoCloseable {
 
   public List<Injector> getNodeInjectors() {
     return this.nodeInstances;
+  }
+
+  public void setNodeConfig(int nodeIndex, PhysicalNodeConfig config) {
+    this.nodeConfigs.put(nodeIndex, config);
   }
 
   public int getNode(Predicate<Injector> injectorPredicate) {

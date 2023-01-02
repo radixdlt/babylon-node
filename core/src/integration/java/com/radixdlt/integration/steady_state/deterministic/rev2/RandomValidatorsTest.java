@@ -171,7 +171,13 @@ public final class RandomValidatorsTest {
                     test.getNodeInjectors().get(randomValidator), inflightTransaction);
             maybeExecuted.ifPresent(
                 executedTransaction -> {
-                  validators.put(randomValidator, executedTransaction.newSystemAddresses().get(0));
+                  var validatorAddress = executedTransaction.newSystemAddresses().get(0);
+                  test.restartNodeWithConfig(
+                      randomValidator,
+                      PhysicalNodeConfig.create(
+                          PrivateKeys.ofNumeric(randomValidator + 1).getPublicKey(),
+                          validatorAddress));
+                  validators.put(randomValidator, validatorAddress);
                   creating_validators.remove(randomValidator);
                 });
           }

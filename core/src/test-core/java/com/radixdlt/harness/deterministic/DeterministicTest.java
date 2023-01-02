@@ -290,6 +290,12 @@ public final class DeterministicTest implements AutoCloseable {
     this.startNode(nodeIndex);
   }
 
+  public void restartNodeWithConfig(int nodeIndex, PhysicalNodeConfig config) {
+    this.shutdownNode(nodeIndex);
+    this.nodes.setNodeConfig(nodeIndex, config);
+    this.startNode(nodeIndex);
+  }
+
   public static class NeverReachedStateException extends IllegalStateException {
     private NeverReachedStateException(int max) {
       super("Never reached state after " + max + " messages");
