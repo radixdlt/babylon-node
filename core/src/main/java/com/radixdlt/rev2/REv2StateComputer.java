@@ -95,16 +95,20 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   private final RustStateComputer stateComputer;
   private final int transactionsPerProposalCount;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher;
+
+  private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
   private final Serialization serialization;
 
   public REv2StateComputer(
       RustStateComputer stateComputer,
       int transactionsPerProposalCount,
       EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
+      EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
       Serialization serialization) {
     this.stateComputer = stateComputer;
     this.transactionsPerProposalCount = transactionsPerProposalCount;
     this.ledgerUpdateEventDispatcher = ledgerUpdateEventDispatcher;
+    this.mempoolAddSuccessEventDispatcher = mempoolAddSuccessEventDispatcher;
     this.serialization = serialization;
   }
 
@@ -116,7 +120,15 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
             transaction -> {
               try {
                 stateComputer.getMempoolInserter().addTransaction(transaction);
-              } catch (MempoolFullException ignored) {
+
+                // TODO: Implement this event in the RustMempool. This requires a JNI -> Java
+                // callback
+                // TODO: interface which hasn't been implemented yet.
+                var success =
+                    MempoolAddSuccess.create(
+                        RawNotarizedTransaction.create(transaction.getPayload()), null, origin);
+                mempoolAddSuccessEventDispatcher.dispatch(success);
+              } catch (MempoolFullException | MempoolDuplicateException ignored) {
               } catch (MempoolRejectedException e) {
                 log.error(e);
               }

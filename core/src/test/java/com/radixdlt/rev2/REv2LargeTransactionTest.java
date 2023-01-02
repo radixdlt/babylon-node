@@ -70,11 +70,12 @@ import static com.radixdlt.harness.predicates.NodesPredicate.*;
 
 import com.google.inject.*;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.predicates.NodePredicate;
-import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
@@ -140,13 +141,9 @@ public final class REv2LargeTransactionTest {
 
       // Act: Submit transaction to fullnode mempool
       test.startAllNodes();
-      var mempoolInserter =
-          test.getInstance(
-              fullNodeIndex,
-              Key.get(
-                  new TypeLiteral<
-                      MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
-      mempoolInserter.addTransaction(largeTransaction);
+      var mempoolDispatcher =
+          test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+      mempoolDispatcher.dispatch(MempoolAdd.create(largeTransaction));
       test.runForCount(10, onlyMempoolSyncEvents());
 
       // Now wait for mempool sync to the validator and commit

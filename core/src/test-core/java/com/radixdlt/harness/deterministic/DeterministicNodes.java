@@ -70,10 +70,7 @@ import com.google.inject.*;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
@@ -84,6 +81,7 @@ import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
 import java.util.Objects;
@@ -100,7 +98,6 @@ import org.apache.logging.log4j.ThreadContext;
 public final class DeterministicNodes implements AutoCloseable {
   private static final Logger log = LogManager.getLogger();
 
-  private final BFTValidatorSet initialValidatorSet;
   private final List<Injector> nodeInstances;
   private final DeterministicNetwork network;
   private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
@@ -109,12 +106,7 @@ public final class DeterministicNodes implements AutoCloseable {
   private final Module overrideModule;
 
   public DeterministicNodes(
-      List<BFTNode> nodes,
-      BFTValidatorSet initialValidatorSet,
-      DeterministicNetwork network,
-      Module baseModule,
-      Module overrideModule) {
-    this.initialValidatorSet = initialValidatorSet;
+      List<BFTNode> nodes, DeterministicNetwork network, Module baseModule, Module overrideModule) {
     this.baseModule = baseModule;
     this.overrideModule = overrideModule;
     this.network = network;
@@ -123,6 +115,23 @@ public final class DeterministicNodes implements AutoCloseable {
             .collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
     this.nodeInstances =
         Stream.generate(() -> (Injector) null).limit(nodes.size()).collect(Collectors.toList());
+  }
+
+  private static class ControlledTimeSupplier implements TimeSupplier {
+    private long time;
+
+    ControlledTimeSupplier(long time) {
+      this.time = time;
+    }
+
+    private void setTime(long time) {
+      this.time = time;
+    }
+
+    @Override
+    public long currentTime() {
+      return time;
+    }
   }
 
   private Injector createBFTInstance(int nodeIndex, Module baseModule, Module overrideModule) {
@@ -138,6 +147,8 @@ public final class DeterministicNodes implements AutoCloseable {
                 bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
                 bind(Environment.class).toInstance(network.createSender(self));
                 bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
+                bind(ControlledTimeSupplier.class).toInstance(new ControlledTimeSupplier(0));
+                bind(TimeSupplier.class).to(ControlledTimeSupplier.class);
               }
             },
             baseModule);
@@ -156,20 +167,9 @@ public final class DeterministicNodes implements AutoCloseable {
   }
 
   public void startAllNodes() {
-    /* Since the nodes start processing messages as soon as they're started, we want to make sure that
-    the first leader starts last (so that all other nodes have a chance to init and get ready to process the proposal).
-    Otherwise, if for example the leader started first, for tests with lots of nodes to init (~100) the interval between
-    the proposal being generated and its processing can be greater than the acceptable proposal timestamp deviation,
-    resulting in no votes being sent and a timed-out round. */
-    final var firstLeader =
-        new WeightedRotatingLeaders(initialValidatorSet).getProposer(Round.genesis().next());
-    final int firstLeaderIdx = Objects.requireNonNull(this.nodeLookup.get(firstLeader));
     for (int nodeIndex = 0; nodeIndex < this.nodeInstances.size(); nodeIndex++) {
-      if (firstLeaderIdx != nodeIndex) {
-        this.startNode(nodeIndex);
-      }
+      this.startNode(nodeIndex);
     }
-    this.startNode(firstLeaderIdx);
   }
 
   public void shutdownNode(int nodeIndex) {
@@ -216,7 +216,8 @@ public final class DeterministicNodes implements AutoCloseable {
   }
 
   public void handleMessage(Timed<ControlledMessage> timedNextMsg) {
-    ControlledMessage nextMsg = timedNextMsg.value();
+    var nextMsg = timedNextMsg.value();
+
     int senderIndex = nextMsg.channelId().senderIndex();
     int receiverIndex = nextMsg.channelId().receiverIndex();
     BFTNode sender = this.nodeLookup.inverse().get(senderIndex);
@@ -227,9 +228,12 @@ public final class DeterministicNodes implements AutoCloseable {
       return;
     }
 
+    var time = timedNextMsg.time();
+    injector.getInstance(ControlledTimeSupplier.class).setTime(time);
+
     ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
     try {
-      log.debug("Received message {} at {}", nextMsg, timedNextMsg.time());
+      log.debug("Receive message {} at {}", nextMsg, timedNextMsg.time());
       nodeInstances
           .get(receiverIndex)
           .getInstance(DeterministicProcessor.class)
