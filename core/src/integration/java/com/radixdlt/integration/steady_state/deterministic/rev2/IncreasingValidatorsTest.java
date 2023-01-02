@@ -139,23 +139,28 @@ public final class IncreasingValidatorsTest {
                           REv2TestTransactions.constructCreateValidatorTransaction(
                               NetworkDefinition.INT_TEST_NET, 0, 12, k),
                           k))
-              .limit(NUM_VALIDATORS)
+              .limit(NUM_VALIDATORS - 1)
               .toList();
 
       // Create Validators
       for (var txn : transactions) {
-        test.runForCount(1000);
+        test.runForCount(100);
         mempoolDispatcher.dispatch(MempoolAdd.create(txn.getFirst()));
         test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
       }
 
       // Register Validators
-      for (var txn : transactions) {
+      for (int i = 0; i < transactions.size(); i++) {
+        var txn = transactions.get(i);
         test.runForCount(1000);
         test.runUntilState(nodeAt(0, NodePredicate.committedUserTransaction(txn.getFirst())));
         var executedTransaction =
             NodesReader.getCommittedUserTransaction(test.getNodeInjectors(), txn.getFirst());
         var validatorAddress = executedTransaction.newSystemAddresses().get(0);
+        test.restartNodeWithConfig(
+            i + 1,
+            PhysicalNodeConfig.create(
+                PrivateKeys.ofNumeric(i + 2).getPublicKey(), validatorAddress));
         var registerValidatorTxn =
             REv2TestTransactions.constructRegisterValidatorTransaction(
                 NetworkDefinition.INT_TEST_NET, 0, 13, validatorAddress, txn.getSecond());
