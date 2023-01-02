@@ -89,8 +89,13 @@ public final class BFTNode {
   }
 
   public static BFTNode create(SystemAddress validatorAddress, ECDSASecp256k1PublicKey key) {
-    var shortenedAddress = key.toHex().substring(0, 10);
-    return new BFTNode(validatorAddress, key, shortenedAddress);
+    final String name;
+    if (validatorAddress == null) {
+      name = key.toHex().substring(0, 10);
+    } else {
+      name = validatorAddress.toHexString().substring(0, 6) + ":" + key.toHex().substring(0, 6);
+    }
+    return new BFTNode(validatorAddress, key, name);
   }
 
   public static BFTNode create(ECDSASecp256k1PublicKey key) {

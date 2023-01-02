@@ -74,6 +74,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.sync.messages.remote.StatusResponse;
+import com.radixdlt.utils.PrivateKeys;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
@@ -125,7 +126,7 @@ public class SyncStateTest {
 
   @Test
   public void sync_check_state_should_add_status_response() {
-    final var peer = mock(BFTNode.class);
+    final var peer = BFTNode.create(PrivateKeys.ofNumeric(1).getPublicKey());
 
     final var initialState =
         SyncState.SyncCheckState.init(mock(LedgerProof.class), ImmutableSet.of(peer));
@@ -137,7 +138,7 @@ public class SyncStateTest {
     assertEquals(1, newState.responses().size());
     assertTrue(newState.gotAllResponses());
 
-    final var otherPeer = mock(BFTNode.class);
+    final var otherPeer = BFTNode.create(PrivateKeys.ofNumeric(2).getPublicKey());
     assertFalse(newState.hasAskedPeer(otherPeer));
   }
 

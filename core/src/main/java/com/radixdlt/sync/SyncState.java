@@ -157,11 +157,12 @@ public sealed interface SyncState {
     }
 
     public boolean hasAskedPeer(BFTNode peer) {
-      return this.peersAskedForStatus.contains(peer);
+      return this.peersAskedForStatus.stream().anyMatch(p -> peer.getKey().equals(p.getKey()));
     }
 
     public boolean receivedResponseFrom(BFTNode peer) {
-      return this.receivedStatusResponses.containsKey(peer);
+      return this.receivedStatusResponses.keySet().stream()
+          .anyMatch(p -> peer.getKey().equals(p.getKey()));
     }
 
     public boolean gotAllResponses() {
