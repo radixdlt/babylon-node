@@ -124,7 +124,9 @@ public abstract class SystemApiTestBase {
                         StateComputerConfig.rev2(
                             Network.INTEGRATIONTESTNET.getId(),
                             TransactionBuilder.createGenesis(
-                                TEST_KEY.getPublicKey(), Decimal.of(1), UInt64.fromNonNegativeLong(10)),
+                                TEST_KEY.getPublicKey(),
+                                Decimal.of(1),
+                                UInt64.fromNonNegativeLong(10)),
                             REv2DatabaseConfig.inMemory(),
                             StateComputerConfig.REV2ProposerConfig.mempool(
                                 10, 10, MempoolRelayConfig.of())),

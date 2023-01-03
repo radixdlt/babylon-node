@@ -186,6 +186,24 @@ public final class REv2TestTransactions {
         faucetAddress, systemAddress);
   }
 
+  public static String constructStakeValidatorManifest(
+      NetworkDefinition networkDefinition, SystemAddress validatorAddress) {
+    final var addressing = Addressing.ofNetwork(networkDefinition);
+    final var faucetAddress =
+        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+    final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
+    final var systemAddress = addressing.encodeSystemAddress(validatorAddress);
+
+    return String.format(
+        """
+                            CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
+                            CALL_METHOD ComponentAddress("%s") "free";
+                            TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
+                            STAKE_VALIDATOR SystemAddress("%s") Bucket("xrd");
+                            """,
+        faucetAddress, faucetAddress, xrdAddress, systemAddress);
+  }
+
   public static String constructUnregisterValidatorManifest(
       NetworkDefinition networkDefinition, SystemAddress validatorAddress) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
@@ -262,6 +280,18 @@ public final class REv2TestTransactions {
       SystemAddress validatorAddress,
       ECKeyPair keyPair) {
     var manifest = constructRegisterValidatorManifest(networkDefinition, validatorAddress);
+    var signatories = List.of(keyPair);
+    return constructRawTransaction(
+        networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
+  }
+
+  public static RawNotarizedTransaction constructStakeValidatorTransaction(
+      NetworkDefinition networkDefinition,
+      long fromEpoch,
+      long nonce,
+      SystemAddress validatorAddress,
+      ECKeyPair keyPair) {
+    var manifest = constructStakeValidatorManifest(networkDefinition, validatorAddress);
     var signatories = List.of(keyPair);
     return constructRawTransaction(
         networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);

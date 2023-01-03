@@ -70,10 +70,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.statecomputer.commit.Validator;
-import com.radixdlt.utils.UInt256;
-
 import java.util.Map;
-import java.util.Set;
 
 public final class REv2ToConsensus {
   private REv2ToConsensus() {
@@ -81,18 +78,20 @@ public final class REv2ToConsensus {
   }
 
   public static BFTValidator validator(SystemAddress address, Validator validator) {
-    return BFTValidator.from(BFTNode.create(address, validator.key()), validator.stake().toUInt256());
+    return BFTValidator.from(
+        BFTNode.create(address, validator.key()), validator.stake().toUInt256());
   }
 
   public static BFTValidatorSet validatorSet(Map<SystemAddress, Validator> validators) {
-    var bftValidators = validators.entrySet().stream().map(e -> REv2ToConsensus.validator(e.getKey(), e.getValue()));
+    var bftValidators =
+        validators.entrySet().stream()
+            .map(e -> REv2ToConsensus.validator(e.getKey(), e.getValue()));
     return BFTValidatorSet.from(bftValidators);
   }
 
   public static NextEpoch nextEpoch(com.radixdlt.statecomputer.commit.NextEpoch nextEpoch) {
     var validators =
-        nextEpoch.validators().entrySet()
-              .stream()
+        nextEpoch.validators().entrySet().stream()
             .map(e -> REv2ToConsensus.validator(e.getKey(), e.getValue()))
             .collect(ImmutableSet.toImmutableSet());
     return NextEpoch.create(nextEpoch.epoch().toNonNegativeLong().unwrap(), validators);

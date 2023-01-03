@@ -67,7 +67,6 @@ package com.radixdlt.statecomputer.commit;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.SystemAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 

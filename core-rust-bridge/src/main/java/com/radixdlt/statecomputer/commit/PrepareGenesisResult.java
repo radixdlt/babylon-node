@@ -69,11 +69,9 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.rev2.SystemAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-
 import java.util.Map;
-import java.util.Set;
 
-public record PrepareGenesisResult(Option<Map<SystemAddress, Validator>>validatorSet) {
+public record PrepareGenesisResult(Option<Map<SystemAddress, Validator>> validatorSet) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PrepareGenesisResult.class,

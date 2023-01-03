@@ -123,7 +123,8 @@ public class REv2SyncTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(1, Decimal.of(1), roundsPerEpoch),
+                        TransactionBuilder.createGenesisWithNumValidators(
+                            1, Decimal.of(1), roundsPerEpoch),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.transactionGenerator(new REV2TransactionGenerator(), 1)),
                     SyncRelayConfig.of(200, 10, 2000))));

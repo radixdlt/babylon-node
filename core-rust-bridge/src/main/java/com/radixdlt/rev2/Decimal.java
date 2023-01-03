@@ -69,11 +69,9 @@ import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.Objects;
-
 import com.radixdlt.utils.UInt256;
+import java.math.BigDecimal;
+import java.util.Objects;
 import org.bouncycastle.util.Arrays;
 
 /** Decimal represents a 256 bit representation of a fixed-scale decimal number. */
