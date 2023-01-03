@@ -468,6 +468,8 @@ pub mod v0_transaction_submit_response;
 pub use self::v0_transaction_submit_response::V0TransactionSubmitResponse;
 pub mod validator;
 pub use self::validator::Validator;
+pub mod validator_entry;
+pub use self::validator_entry::ValidatorEntry;
 pub mod validator_ledger_transaction;
 pub use self::validator_ledger_transaction::ValidatorLedgerTransaction;
 pub mod validator_ledger_transaction_all_of;

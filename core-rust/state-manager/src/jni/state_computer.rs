@@ -71,7 +71,8 @@ use radix_engine::model::Validator;
 use radix_engine::types::{
     scrypto, ComponentAddress, Decimal, Decode, Encode, TypeId, RADIX_TOKEN,
 };
-use std::collections::BTreeSet;
+use radix_engine_interface::model::SystemAddress;
+use std::collections::BTreeMap;
 
 use crate::jni::utils::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
@@ -310,7 +311,7 @@ impl From<JavaPrepareGenesisRequest> for PrepareGenesisRequest {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct JavaPrepareGenesisResult {
-    pub validator_set: Option<BTreeSet<Validator>>,
+    pub validator_set: Option<BTreeMap<SystemAddress, Validator>>,
 }
 
 impl From<PrepareGenesisResult> for JavaPrepareGenesisResult {

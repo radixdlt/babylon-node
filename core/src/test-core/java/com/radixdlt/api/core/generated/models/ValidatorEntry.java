@@ -22,84 +22,84 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EcdsaSecp256k1PublicKey;
+import com.radixdlt.api.core.generated.models.Validator;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * Validator
+ * ValidatorEntry
  */
 @JsonPropertyOrder({
-  Validator.JSON_PROPERTY_KEY,
-  Validator.JSON_PROPERTY_STAKE
+  ValidatorEntry.JSON_PROPERTY_ADDRESS,
+  ValidatorEntry.JSON_PROPERTY_VALIDATOR
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class Validator {
-  public static final String JSON_PROPERTY_KEY = "key";
-  private EcdsaSecp256k1PublicKey key;
+public class ValidatorEntry {
+  public static final String JSON_PROPERTY_ADDRESS = "address";
+  private String address;
 
-  public static final String JSON_PROPERTY_STAKE = "stake";
-  private String stake;
+  public static final String JSON_PROPERTY_VALIDATOR = "validator";
+  private Validator validator;
 
-  public Validator() { 
+  public ValidatorEntry() { 
   }
 
-  public Validator key(EcdsaSecp256k1PublicKey key) {
-    this.key = key;
+  public ValidatorEntry address(String address) {
+    this.address = address;
     return this;
   }
 
    /**
-   * Get key
-   * @return key
+   * The Bech32m-encoded human readable version of the system address
+   * @return address
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the system address")
+  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getAddress() {
+    return address;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAddress(String address) {
+    this.address = address;
+  }
+
+
+  public ValidatorEntry validator(Validator validator) {
+    this.validator = validator;
+    return this;
+  }
+
+   /**
+   * Get validator
+   * @return validator
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonProperty(JSON_PROPERTY_VALIDATOR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EcdsaSecp256k1PublicKey getKey() {
-    return key;
+  public Validator getValidator() {
+    return validator;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonProperty(JSON_PROPERTY_VALIDATOR)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKey(EcdsaSecp256k1PublicKey key) {
-    this.key = key;
-  }
-
-
-  public Validator stake(String stake) {
-    this.stake = stake;
-    return this;
-  }
-
-   /**
-   * The string-encoded decimal representing the amount of XRD staked. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
-   * @return stake
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the amount of XRD staked. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
-  @JsonProperty(JSON_PROPERTY_STAKE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getStake() {
-    return stake;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_STAKE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setStake(String stake) {
-    this.stake = stake;
+  public void setValidator(Validator validator) {
+    this.validator = validator;
   }
 
 
   /**
-   * Return true if this Validator object is equal to o.
+   * Return true if this ValidatorEntry object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -109,22 +109,22 @@ public class Validator {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Validator validator = (Validator) o;
-    return Objects.equals(this.key, validator.key) &&
-        Objects.equals(this.stake, validator.stake);
+    ValidatorEntry validatorEntry = (ValidatorEntry) o;
+    return Objects.equals(this.address, validatorEntry.address) &&
+        Objects.equals(this.validator, validatorEntry.validator);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, stake);
+    return Objects.hash(address, validator);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class Validator {\n");
-    sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    stake: ").append(toIndentedString(stake)).append("\n");
+    sb.append("class ValidatorEntry {\n");
+    sb.append("    address: ").append(toIndentedString(address)).append("\n");
+    sb.append("    validator: ").append(toIndentedString(validator)).append("\n");
     sb.append("}");
     return sb.toString();
   }

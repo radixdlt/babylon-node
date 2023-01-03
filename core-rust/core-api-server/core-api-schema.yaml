@@ -2077,16 +2077,29 @@ components:
 #######################################
 # GENERAL / SHARED MODELS - validators #
 #######################################
-    Validator:
+    ValidatorEntry:
       type: object
       required:
         - address
-        - key
+        - validator
       properties:
         address:
           $ref: '#/components/schemas/SystemAddress'
+        validator:
+          $ref: '#/components/schemas/Validator'
+    Validator:
+      type: object
+      required:
+        - key
+        - stake
+      properties:
         key:
           $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
+        stake:
+          type: string
+          description: |
+            The string-encoded decimal representing the amount of XRD staked.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
 # GENERAL / SHARED MODELS - substates #
 #######################################
     EntityType:
@@ -2424,7 +2437,7 @@ components:
             validator_set:
               type: array
               items:
-                $ref: '#/components/schemas/Validator'
+                $ref: '#/components/schemas/ValidatorEntry'
             epoch:
               type: integer
               format: int64
@@ -2439,6 +2452,8 @@ components:
             - manager
             - address
             - key
+            - stake_vault
+            - is_registered
           properties:
             manager:
               $ref: '#/components/schemas/SystemAddress'
@@ -2446,6 +2461,10 @@ components:
               $ref: '#/components/schemas/SystemAddress'
             key:
               $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
+            stake_vault:
+              $ref: '#/components/schemas/EntityReference'
+            is_registered:
+              type: boolean
     ClockCurrentMinuteSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'

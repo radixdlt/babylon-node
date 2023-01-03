@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EcdsaSecp256k1PublicKey;
+import com.radixdlt.api.core.generated.models.EntityReference;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,7 +35,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   ValidatorSubstateAllOf.JSON_PROPERTY_MANAGER,
   ValidatorSubstateAllOf.JSON_PROPERTY_ADDRESS,
-  ValidatorSubstateAllOf.JSON_PROPERTY_KEY
+  ValidatorSubstateAllOf.JSON_PROPERTY_KEY,
+  ValidatorSubstateAllOf.JSON_PROPERTY_STAKE_VAULT,
+  ValidatorSubstateAllOf.JSON_PROPERTY_IS_REGISTERED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ValidatorSubstateAllOf {
@@ -46,6 +49,12 @@ public class ValidatorSubstateAllOf {
 
   public static final String JSON_PROPERTY_KEY = "key";
   private EcdsaSecp256k1PublicKey key;
+
+  public static final String JSON_PROPERTY_STAKE_VAULT = "stake_vault";
+  private EntityReference stakeVault;
+
+  public static final String JSON_PROPERTY_IS_REGISTERED = "is_registered";
+  private Boolean isRegistered;
 
   public ValidatorSubstateAllOf() { 
   }
@@ -128,6 +137,58 @@ public class ValidatorSubstateAllOf {
   }
 
 
+  public ValidatorSubstateAllOf stakeVault(EntityReference stakeVault) {
+    this.stakeVault = stakeVault;
+    return this;
+  }
+
+   /**
+   * Get stakeVault
+   * @return stakeVault
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_STAKE_VAULT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public EntityReference getStakeVault() {
+    return stakeVault;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_STAKE_VAULT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setStakeVault(EntityReference stakeVault) {
+    this.stakeVault = stakeVault;
+  }
+
+
+  public ValidatorSubstateAllOf isRegistered(Boolean isRegistered) {
+    this.isRegistered = isRegistered;
+    return this;
+  }
+
+   /**
+   * Get isRegistered
+   * @return isRegistered
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IS_REGISTERED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsRegistered() {
+    return isRegistered;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_REGISTERED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsRegistered(Boolean isRegistered) {
+    this.isRegistered = isRegistered;
+  }
+
+
   /**
    * Return true if this ValidatorSubstate_allOf object is equal to o.
    */
@@ -142,12 +203,14 @@ public class ValidatorSubstateAllOf {
     ValidatorSubstateAllOf validatorSubstateAllOf = (ValidatorSubstateAllOf) o;
     return Objects.equals(this.manager, validatorSubstateAllOf.manager) &&
         Objects.equals(this.address, validatorSubstateAllOf.address) &&
-        Objects.equals(this.key, validatorSubstateAllOf.key);
+        Objects.equals(this.key, validatorSubstateAllOf.key) &&
+        Objects.equals(this.stakeVault, validatorSubstateAllOf.stakeVault) &&
+        Objects.equals(this.isRegistered, validatorSubstateAllOf.isRegistered);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(manager, address, key);
+    return Objects.hash(manager, address, key, stakeVault, isRegistered);
   }
 
   @Override
@@ -157,6 +220,8 @@ public class ValidatorSubstateAllOf {
     sb.append("    manager: ").append(toIndentedString(manager)).append("\n");
     sb.append("    address: ").append(toIndentedString(address)).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
+    sb.append("    stakeVault: ").append(toIndentedString(stakeVault)).append("\n");
+    sb.append("    isRegistered: ").append(toIndentedString(isRegistered)).append("\n");
     sb.append("}");
     return sb.toString();
   }

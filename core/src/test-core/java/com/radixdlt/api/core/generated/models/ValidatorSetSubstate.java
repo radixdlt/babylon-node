@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.SubstateBase;
 import com.radixdlt.api.core.generated.models.SubstateType;
-import com.radixdlt.api.core.generated.models.Validator;
+import com.radixdlt.api.core.generated.models.ValidatorEntry;
 import com.radixdlt.api.core.generated.models.ValidatorSetSubstateAllOf;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -47,7 +47,7 @@ public class ValidatorSetSubstate {
   private SubstateType substateType;
 
   public static final String JSON_PROPERTY_VALIDATOR_SET = "validator_set";
-  private List<Validator> validatorSet = new ArrayList<>();
+  private List<ValidatorEntry> validatorSet = new ArrayList<>();
 
   public static final String JSON_PROPERTY_EPOCH = "epoch";
   private Long epoch;
@@ -81,12 +81,12 @@ public class ValidatorSetSubstate {
   }
 
 
-  public ValidatorSetSubstate validatorSet(List<Validator> validatorSet) {
+  public ValidatorSetSubstate validatorSet(List<ValidatorEntry> validatorSet) {
     this.validatorSet = validatorSet;
     return this;
   }
 
-  public ValidatorSetSubstate addValidatorSetItem(Validator validatorSetItem) {
+  public ValidatorSetSubstate addValidatorSetItem(ValidatorEntry validatorSetItem) {
     this.validatorSet.add(validatorSetItem);
     return this;
   }
@@ -100,14 +100,14 @@ public class ValidatorSetSubstate {
   @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<Validator> getValidatorSet() {
+  public List<ValidatorEntry> getValidatorSet() {
     return validatorSet;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidatorSet(List<Validator> validatorSet) {
+  public void setValidatorSet(List<ValidatorEntry> validatorSet) {
     this.validatorSet = validatorSet;
   }
 

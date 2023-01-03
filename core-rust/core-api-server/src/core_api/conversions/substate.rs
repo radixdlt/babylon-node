@@ -20,6 +20,7 @@ use radix_engine::types::{
     SubstateId, SubstateOffset, RADIX_TOKEN,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::model::SystemAddress;
 use utils::ContextualDisplay;
 
 use super::MappingError;
@@ -490,13 +491,21 @@ pub fn to_api_ecdsa_secp256k1_public_key(
     }
 }
 
-pub fn to_api_validator(
-    bech32_encoder: &Bech32Encoder,
-    validator: &Validator,
-) -> models::Validator {
+pub fn to_api_validator(validator: &Validator) -> models::Validator {
     models::Validator {
         key: Box::new(to_api_ecdsa_secp256k1_public_key(&validator.key)),
-        address: bech32_encoder.encode_system_address_to_string(&validator.address),
+        stake: to_api_decimal(&validator.stake),
+    }
+}
+
+pub fn to_api_validator_entry(
+    bech32_encoder: &Bech32Encoder,
+    address: &SystemAddress,
+    validator: &Validator,
+) -> models::ValidatorEntry {
+    models::ValidatorEntry {
+        address: bech32_encoder.encode_system_address_to_string(address),
+        validator: Box::new(to_api_validator(validator)),
     }
 }
 
@@ -740,7 +749,7 @@ pub fn to_api_validator_set_substate(
 
     let validator_set = validator_set
         .iter()
-        .map(|v| to_api_validator(bech32_encoder, v))
+        .map(|(address, validator)| to_api_validator_entry(bech32_encoder, address, validator))
         .collect();
     Ok(models::Substate::ValidatorSetSubstate {
         validator_set,
@@ -758,12 +767,18 @@ pub fn to_api_validator_substate(
         manager,
         address,
         key,
+        stake_vault_id,
+        is_registered,
     } = substate;
+
+    let owned_stake_vault_id = MappedEntityId::try_from(RENodeId::Vault(*stake_vault_id))?;
 
     Ok(models::Substate::ValidatorSubstate {
         manager: bech32_encoder.encode_system_address_to_string(manager),
         address: bech32_encoder.encode_system_address_to_string(address),
         key: Box::new(to_api_ecdsa_secp256k1_public_key(key)),
+        stake_vault: Box::new(owned_stake_vault_id.into()),
+        is_registered: *is_registered,
     })
 }
 

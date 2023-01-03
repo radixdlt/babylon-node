@@ -23,15 +23,21 @@ pub struct ValidatorSubstate {
     pub address: String,
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
+    #[serde(rename = "stake_vault")]
+    pub stake_vault: Box<crate::core_api::generated::models::EntityReference>,
+    #[serde(rename = "is_registered")]
+    pub is_registered: bool,
 }
 
 impl ValidatorSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, manager: String, address: String, key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey) -> ValidatorSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, manager: String, address: String, key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey, stake_vault: crate::core_api::generated::models::EntityReference, is_registered: bool) -> ValidatorSubstate {
         ValidatorSubstate {
             substate_type,
             manager,
             address,
             key: Box::new(key),
+            stake_vault: Box::new(stake_vault),
+            is_registered,
         }
     }
 }

@@ -74,7 +74,7 @@ pub enum ExtractionError {
 
 impl ExtractionError {
     pub(crate) fn into_response_error(self, field_name: &str) -> RequestHandlingError {
-        client_error(&format!(
+        client_error(format!(
             "Error extracting {} from request: {:?}",
             field_name, self
         ))

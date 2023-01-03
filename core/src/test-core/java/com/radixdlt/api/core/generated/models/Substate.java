@@ -55,7 +55,7 @@ import com.radixdlt.api.core.generated.models.ResourceManagerSubstate;
 import com.radixdlt.api.core.generated.models.ResourceType;
 import com.radixdlt.api.core.generated.models.RoyaltyConfig;
 import com.radixdlt.api.core.generated.models.SubstateType;
-import com.radixdlt.api.core.generated.models.Validator;
+import com.radixdlt.api.core.generated.models.ValidatorEntry;
 import com.radixdlt.api.core.generated.models.ValidatorSetSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorSubstate;
 import com.radixdlt.api.core.generated.models.VaultSubstate;

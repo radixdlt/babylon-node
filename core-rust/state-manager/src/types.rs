@@ -67,7 +67,8 @@ use radix_engine::model::Validator;
 use radix_engine::types::{
     scrypto, scrypto_encode, sha256_twice, Decode, Encode, Hash, PublicKey, TypeId,
 };
-use std::collections::BTreeSet;
+use radix_engine_interface::model::SystemAddress;
+use std::collections::BTreeMap;
 use std::fmt;
 use transaction::model::{
     NotarizedTransaction, PreviewFlags, SignedTransactionIntent, TransactionIntent,
@@ -86,7 +87,7 @@ impl AccumulatorHash {
 
     pub fn accumulate(&self, ledger_payload_hash: &LedgerPayloadHash) -> Self {
         let concat_bytes = [self.0, ledger_payload_hash.0].concat();
-        Self(sha256_twice(&concat_bytes).0)
+        Self(sha256_twice(concat_bytes).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -126,7 +127,7 @@ impl LedgerPayloadHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_transaction(transaction: &LedgerTransaction) -> Self {
-        Self(sha256_twice(&scrypto_encode(transaction).unwrap()).0)
+        Self(sha256_twice(scrypto_encode(transaction).unwrap()).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -190,7 +191,7 @@ impl UserPayloadHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_transaction(transaction: &NotarizedTransaction) -> Self {
-        Self(sha256_twice(&scrypto_encode(transaction).unwrap()).0)
+        Self(sha256_twice(scrypto_encode(transaction).unwrap()).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -240,7 +241,7 @@ impl SignaturesHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_signed_intent(signed_intent: &SignedTransactionIntent) -> Self {
-        Self(sha256_twice(&scrypto_encode(signed_intent).unwrap()).0)
+        Self(sha256_twice(scrypto_encode(signed_intent).unwrap()).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -296,7 +297,7 @@ impl IntentHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_intent(intent: &TransactionIntent) -> Self {
-        Self(sha256_twice(&scrypto_encode(intent).unwrap()).0)
+        Self(sha256_twice(scrypto_encode(intent).unwrap()).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -419,7 +420,7 @@ pub struct PrepareResult {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct NextEpoch {
-    pub validator_set: BTreeSet<Validator>,
+    pub validator_set: BTreeMap<SystemAddress, Validator>,
     pub epoch: u64,
 }
 
@@ -431,5 +432,5 @@ pub struct PrepareGenesisRequest {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct PrepareGenesisResult {
-    pub validator_set: Option<BTreeSet<Validator>>,
+    pub validator_set: Option<BTreeMap<SystemAddress, Validator>>,
 }
