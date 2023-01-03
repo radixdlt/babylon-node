@@ -85,7 +85,7 @@ impl AccumulatorHash {
 
     pub fn accumulate(&self, ledger_payload_hash: &LedgerPayloadHash) -> Self {
         let concat_bytes = [self.0, ledger_payload_hash.0].concat();
-        Self(sha256_twice(&concat_bytes).0)
+        Self(sha256_twice(concat_bytes).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -125,7 +125,7 @@ impl LedgerPayloadHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_transaction(transaction: &LedgerTransaction) -> Self {
-        Self(sha256_twice(&scrypto_encode(transaction).unwrap()).0)
+        Self(sha256_twice(scrypto_encode(transaction).unwrap()).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -189,7 +189,7 @@ impl UserPayloadHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_transaction(transaction: &NotarizedTransaction) -> Self {
-        Self(sha256_twice(&scrypto_encode(transaction).unwrap()).0)
+        Self(sha256_twice(scrypto_encode(transaction).unwrap()).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -239,7 +239,7 @@ impl SignaturesHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_signed_intent(signed_intent: &SignedTransactionIntent) -> Self {
-        Self(sha256_twice(&scrypto_encode(signed_intent).unwrap()).0)
+        Self(sha256_twice(scrypto_encode(signed_intent).unwrap()).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -295,7 +295,7 @@ impl IntentHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_intent(intent: &TransactionIntent) -> Self {
-        Self(sha256_twice(&scrypto_encode(intent).unwrap()).0)
+        Self(sha256_twice(scrypto_encode(intent).unwrap()).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
