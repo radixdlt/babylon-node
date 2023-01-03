@@ -84,6 +84,7 @@ import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2TestTransactions;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
@@ -117,7 +118,7 @@ public final class IncreasingValidatorsTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
-                            1, UInt64.fromNonNegativeLong(10)),
+                            1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             2, 100, MempoolRelayConfig.of(5, 5))),
@@ -164,7 +165,11 @@ public final class IncreasingValidatorsTest {
         var registerValidatorTxn =
             REv2TestTransactions.constructRegisterValidatorTransaction(
                 NetworkDefinition.INT_TEST_NET, 0, 13, validatorAddress, txn.getSecond());
+        var stakeValidatorTxn =
+            REv2TestTransactions.constructStakeValidatorTransaction(
+                NetworkDefinition.INT_TEST_NET, 0, 13, validatorAddress, txn.getSecond());
         mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTxn));
+        mempoolDispatcher.dispatch(MempoolAdd.create(stakeValidatorTxn));
       }
 
       test.runUntilState(

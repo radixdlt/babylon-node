@@ -79,6 +79,7 @@ import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2TestTransactions;
 import com.radixdlt.rev2.SystemAddress;
@@ -99,7 +100,7 @@ public final class RandomValidatorsTest {
   private static final int NUM_VALIDATORS = 30;
   private static final RawLedgerTransaction GENESIS =
       TransactionBuilder.createGenesisWithNumValidators(
-          NUM_VALIDATORS / 2, UInt64.fromNonNegativeLong(10));
+          NUM_VALIDATORS / 2, Decimal.of(1), UInt64.fromNonNegativeLong(10));
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
@@ -182,21 +183,36 @@ public final class RandomValidatorsTest {
                 });
           }
         } else {
-          var txn =
-              random.nextBoolean()
-                  ? REv2TestTransactions.constructRegisterValidatorTransaction(
-                      NetworkDefinition.INT_TEST_NET,
-                      0,
-                      random.nextInt(1000000),
-                      systemAddress,
-                      PrivateKeys.ofNumeric(randomValidator + 1))
-                  : REv2TestTransactions.constructUnregisterValidatorTransaction(
+          final RawNotarizedTransaction txn;
+          switch (random.nextInt(0, 3)) {
+            case 0 -> {
+              txn =
+                  REv2TestTransactions.constructRegisterValidatorTransaction(
                       NetworkDefinition.INT_TEST_NET,
                       0,
                       random.nextInt(1000000),
                       systemAddress,
                       PrivateKeys.ofNumeric(randomValidator + 1));
-
+            }
+            case 1 -> {
+              txn =
+                  REv2TestTransactions.constructUnregisterValidatorTransaction(
+                      NetworkDefinition.INT_TEST_NET,
+                      0,
+                      random.nextInt(1000000),
+                      systemAddress,
+                      PrivateKeys.ofNumeric(randomValidator + 1));
+            }
+            default -> {
+              txn =
+                  REv2TestTransactions.constructStakeValidatorTransaction(
+                      NetworkDefinition.INT_TEST_NET,
+                      0,
+                      random.nextInt(1000000),
+                      systemAddress,
+                      PrivateKeys.ofNumeric(randomValidator + 1));
+            }
+          }
           mempoolDispatcher.dispatch(MempoolAdd.create(txn));
         }
       }
