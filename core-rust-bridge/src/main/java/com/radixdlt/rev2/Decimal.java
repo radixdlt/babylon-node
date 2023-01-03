@@ -107,6 +107,11 @@ public class Decimal implements Comparable<Decimal> {
     return new Decimal(underlying);
   }
 
+  public Decimal subtract(Decimal other) {
+    var newUnderlying = this.underlyingValue.subtract(other.underlyingValue);
+    return new Decimal(newUnderlying);
+  }
+
   public UInt256 toUInt256() {
     return underlyingValue;
   }

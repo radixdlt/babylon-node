@@ -128,7 +128,7 @@ public class REv2RejectedTransactionMempoolTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(1, this.roundsPerEpoch),
+                        TransactionBuilder.createGenesisWithNumValidators(1, Decimal.of(1), this.roundsPerEpoch),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             1, mempoolSize, MempoolRelayConfig.of())))));

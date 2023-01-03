@@ -125,7 +125,7 @@ public final class REv2RejectedTransactionTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(1, roundsPerEpoch),
+                        TransactionBuilder.createGenesisWithNumValidators(1, Decimal.of(1), roundsPerEpoch),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.transactionGenerator(proposalGenerator)))));
   }

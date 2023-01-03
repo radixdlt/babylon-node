@@ -89,6 +89,7 @@ import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.Assert;
@@ -99,7 +100,7 @@ public final class RustMempoolTest {
     var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
     var genesis =
         TransactionBuilder.createGenesis(
-            Set.of(), UInt64.fromNonNegativeLong(1), UInt64.fromNonNegativeLong(10));
+            Map.of(), UInt64.fromNonNegativeLong(1), UInt64.fromNonNegativeLong(10));
     var accumulatorState =
         accumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
     var proof = LedgerProof.genesis(accumulatorState, BFTValidatorSet.from(Stream.of()), 0, 0);
