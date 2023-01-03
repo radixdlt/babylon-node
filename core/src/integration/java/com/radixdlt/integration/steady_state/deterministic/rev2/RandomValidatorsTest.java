@@ -100,7 +100,7 @@ public final class RandomValidatorsTest {
   private static final int NUM_VALIDATORS = 30;
   private static final RawLedgerTransaction GENESIS =
       TransactionBuilder.createGenesisWithNumValidators(
-          NUM_VALIDATORS / 2, Decimal.of(1), UInt64.fromNonNegativeLong(10));
+          NUM_VALIDATORS / 2, Decimal.of(1000), UInt64.fromNonNegativeLong(10));
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
@@ -184,7 +184,7 @@ public final class RandomValidatorsTest {
           }
         } else {
           final RawNotarizedTransaction txn;
-          switch (random.nextInt(0, 3)) {
+          switch (random.nextInt(0, 4)) {
             case 0 -> {
               txn =
                   REv2TestTransactions.constructRegisterValidatorTransaction(
@@ -203,9 +203,18 @@ public final class RandomValidatorsTest {
                       systemAddress,
                       PrivateKeys.ofNumeric(randomValidator + 1));
             }
-            default -> {
+            case 2 -> {
               txn =
                   REv2TestTransactions.constructStakeValidatorTransaction(
+                      NetworkDefinition.INT_TEST_NET,
+                      0,
+                      random.nextInt(1000000),
+                      systemAddress,
+                      PrivateKeys.ofNumeric(randomValidator + 1));
+            }
+            default -> {
+              txn =
+                  REv2TestTransactions.constructUnstakeValidatorTransaction(
                       NetworkDefinition.INT_TEST_NET,
                       0,
                       random.nextInt(1000000),

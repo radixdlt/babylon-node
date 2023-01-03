@@ -62,76 +62,27 @@
  * permissions under this License.
  */
 
-use bech32::{FromBase32, ToBase32, Variant};
-use jni::objects::JClass;
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use radix_engine_interface::model::ComponentAddress;
+package com.radixdlt.identifiers;
 
-use super::utils::jni_static_sbor_call;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.sbor.NativeCalls;
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_identifiers_Bech32mCoder_encodeBech32m(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, do_encode_bech32m)
+public final class Address {
+  static {
+    // This is idempotent with the other calls
+    System.loadLibrary("corerust");
+  }
+
+  public static ComponentAddress virtualAccountAddress(ECDSASecp256k1PublicKey key) {
+    return virtualAccountAddress.call(key);
+  }
+
+  private static final NativeCalls.StaticFunc1<ECDSASecp256k1PublicKey, ComponentAddress>
+      virtualAccountAddress =
+          NativeCalls.StaticFunc1.with(
+              new TypeToken<>() {}, new TypeToken<>() {}, Address::virtualAccountAddress);
+
+  private static native byte[] virtualAccountAddress(byte[] requestPayload);
 }
-
-fn do_encode_bech32m((hrp, full_data): (String, Vec<u8>)) -> Result<String, String> {
-    let base32_data = full_data.to_base32();
-
-    let address = bech32::encode(&hrp, base32_data, bech32::Variant::Bech32m)
-        .map_err(|e| format!("Unable to encode bech32m address: {:?}", e))?;
-
-    Ok(address)
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_identifiers_Bech32mCoder_decodeBech32m(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, do_decode_bech32m)
-}
-
-fn do_decode_bech32m(address: String) -> Result<(String, Vec<u8>), String> {
-    let (hrp, base32_data, variant) = bech32::decode(&address)
-        .map_err(|e| format!("Unable to decode bech32 address: {:?}", e))?;
-
-    check_variant_is_bech32m(variant)?;
-
-    let data = Vec::<u8>::from_base32(&base32_data).map_err(|e| {
-        format!(
-            "Unable to decode bech32 data from 5 bits to 8 bits: {:?}",
-            e
-        )
-    })?;
-
-    Ok((hrp, data))
-}
-
-fn check_variant_is_bech32m(variant: Variant) -> Result<(), String> {
-    match variant {
-        bech32::Variant::Bech32 => Err("Address was bech32 encoded, not bech32m".to_owned()),
-        bech32::Variant::Bech32m => Ok(()),
-    }
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_identifiers_Address_virtualAccountAddress(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, do_virtual_account_address)
-}
-
-fn do_virtual_account_address(key: EcdsaSecp256k1PublicKey) -> ComponentAddress {
-    ComponentAddress::virtual_account_from_public_key(&key)
-}
-
-pub fn export_extern_functions() {}

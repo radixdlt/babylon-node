@@ -67,6 +67,7 @@ package com.radixdlt.rev2;
 import com.google.common.hash.HashCode;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.*;
+import com.radixdlt.identifiers.Address;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
@@ -186,24 +187,6 @@ public final class REv2TestTransactions {
         faucetAddress, systemAddress);
   }
 
-  public static String constructStakeValidatorManifest(
-      NetworkDefinition networkDefinition, SystemAddress validatorAddress) {
-    final var addressing = Addressing.ofNetwork(networkDefinition);
-    final var faucetAddress =
-        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
-    final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
-    final var systemAddress = addressing.encodeSystemAddress(validatorAddress);
-
-    return String.format(
-        """
-                            CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
-                            CALL_METHOD ComponentAddress("%s") "free";
-                            TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
-                            STAKE_VALIDATOR SystemAddress("%s") Bucket("xrd");
-                            """,
-        faucetAddress, faucetAddress, xrdAddress, systemAddress);
-  }
-
   public static String constructUnregisterValidatorManifest(
       NetworkDefinition networkDefinition, SystemAddress validatorAddress) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
@@ -217,6 +200,44 @@ public final class REv2TestTransactions {
                             UNREGISTER_VALIDATOR SystemAddress("%s");
                             """,
         faucetAddress, systemAddress);
+  }
+
+  public static String constructStakeValidatorManifest(
+      NetworkDefinition networkDefinition, SystemAddress validatorAddress) {
+    final var addressing = Addressing.ofNetwork(networkDefinition);
+    final var faucetAddress =
+        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+    final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
+    final var systemAddress = addressing.encodeSystemAddress(validatorAddress);
+
+    return String.format(
+        """
+                                CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
+                                CALL_METHOD ComponentAddress("%s") "free";
+                                TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
+                                STAKE_VALIDATOR SystemAddress("%s") Bucket("xrd");
+                                """,
+        faucetAddress, faucetAddress, xrdAddress, systemAddress);
+  }
+
+  public static String constructUnstakeValidatorManifest(
+      NetworkDefinition networkDefinition, SystemAddress validatorAddress) {
+    final var addressing = Addressing.ofNetwork(networkDefinition);
+    final var faucetAddress =
+        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+    final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
+    final var systemAddress = addressing.encodeSystemAddress(validatorAddress);
+    final var toAccount = Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
+    final var toAccountAddress = addressing.encodeAccountAddress(toAccount);
+
+    return String.format(
+        """
+                                CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
+                                UNSTAKE_VALIDATOR SystemAddress("%s") Decimal("1000");
+                                TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
+                                CALL_METHOD ComponentAddress("%s") "deposit" Bucket("xrd");
+                                """,
+        faucetAddress, systemAddress, xrdAddress, toAccountAddress);
   }
 
   public static RawNotarizedTransaction constructNewAccountFromAccountTransaction(
@@ -285,6 +306,18 @@ public final class REv2TestTransactions {
         networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
   }
 
+  public static RawNotarizedTransaction constructUnregisterValidatorTransaction(
+      NetworkDefinition networkDefinition,
+      long fromEpoch,
+      long nonce,
+      SystemAddress validatorAddress,
+      ECKeyPair keyPair) {
+    var manifest = constructUnregisterValidatorManifest(networkDefinition, validatorAddress);
+    var signatories = List.of(keyPair);
+    return constructRawTransaction(
+        networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
+  }
+
   public static RawNotarizedTransaction constructStakeValidatorTransaction(
       NetworkDefinition networkDefinition,
       long fromEpoch,
@@ -297,13 +330,13 @@ public final class REv2TestTransactions {
         networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
   }
 
-  public static RawNotarizedTransaction constructUnregisterValidatorTransaction(
+  public static RawNotarizedTransaction constructUnstakeValidatorTransaction(
       NetworkDefinition networkDefinition,
       long fromEpoch,
       long nonce,
       SystemAddress validatorAddress,
       ECKeyPair keyPair) {
-    var manifest = constructUnregisterValidatorManifest(networkDefinition, validatorAddress);
+    var manifest = constructUnstakeValidatorManifest(networkDefinition, validatorAddress);
     var signatories = List.of(keyPair);
     return constructRawTransaction(
         networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
