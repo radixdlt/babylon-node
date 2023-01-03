@@ -71,6 +71,8 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.statecomputer.commit.Validator;
 import com.radixdlt.utils.UInt256;
+
+import java.util.Map;
 import java.util.Set;
 
 public final class REv2ToConsensus {
@@ -78,19 +80,20 @@ public final class REv2ToConsensus {
     throw new IllegalStateException("Cannot instantiate.");
   }
 
-  public static BFTValidator validator(Validator validator) {
-    return BFTValidator.from(BFTNode.create(validator.address(), validator.key()), UInt256.ONE);
+  public static BFTValidator validator(SystemAddress address, Validator validator) {
+    return BFTValidator.from(BFTNode.create(address, validator.key()), validator.stake().toUInt256());
   }
 
-  public static BFTValidatorSet validatorSet(Set<Validator> validators) {
-    var bftValidators = validators.stream().map(REv2ToConsensus::validator);
+  public static BFTValidatorSet validatorSet(Map<SystemAddress, Validator> validators) {
+    var bftValidators = validators.entrySet().stream().map(e -> REv2ToConsensus.validator(e.getKey(), e.getValue()));
     return BFTValidatorSet.from(bftValidators);
   }
 
   public static NextEpoch nextEpoch(com.radixdlt.statecomputer.commit.NextEpoch nextEpoch) {
     var validators =
-        nextEpoch.validators().stream()
-            .map(REv2ToConsensus::validator)
+        nextEpoch.validators().entrySet()
+              .stream()
+            .map(e -> REv2ToConsensus.validator(e.getKey(), e.getValue()))
             .collect(ImmutableSet.toImmutableSet());
     return NextEpoch.create(nextEpoch.epoch().toNonNegativeLong().unwrap(), validators);
   }

@@ -66,11 +66,12 @@ package com.radixdlt.statecomputer.commit;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.SystemAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
-public record Validator(SystemAddress address, ECDSASecp256k1PublicKey key) {
+public record Validator(ECDSASecp256k1PublicKey key, Decimal stake) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         Validator.class,
@@ -79,6 +80,6 @@ public record Validator(SystemAddress address, ECDSASecp256k1PublicKey key) {
                 Validator::new,
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
-                (t, encoder) -> encoder.encode(t.address, t.key)));
+                (t, encoder) -> encoder.encode(t.key, t.stake)));
   }
 }

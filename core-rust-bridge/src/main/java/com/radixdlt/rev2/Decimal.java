@@ -72,9 +72,11 @@ import com.radixdlt.sbor.codec.constants.TypeId;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Objects;
+
+import com.radixdlt.utils.UInt256;
 import org.bouncycastle.util.Arrays;
 
-/** Decimal represents a 128 bit representation of a fixed-scale decimal number. */
+/** Decimal represents a 256 bit representation of a fixed-scale decimal number. */
 @SecurityCritical(SecurityKind.NUMERIC)
 public class Decimal implements Comparable<Decimal> {
   private static final int SCALE = 18;
@@ -87,31 +89,31 @@ public class Decimal implements Comparable<Decimal> {
                 TypeId.TYPE_CUSTOM_DECIMAL,
                 SBOR_BYTE_LENGTH,
                 decimal -> {
-                  final var bytes = decimal.underlyingValue.unscaledValue().toByteArray();
-                  return Arrays.reverse(bytes);
+                  return Arrays.reverse(decimal.underlyingValue.toByteArray());
                 },
-                bytes -> {
-                  final var reversed = Arrays.reverse(bytes);
-                  return new Decimal(new BigDecimal(new BigInteger(reversed), SCALE));
-                }));
+                bytes -> new Decimal(UInt256.from(Arrays.reverse(bytes)))));
   }
 
   public static final int SBOR_BYTE_LENGTH = 32;
 
-  private final BigDecimal underlyingValue;
+  private final UInt256 underlyingValue;
 
-  private Decimal(BigDecimal underlyingValue) {
+  private Decimal(UInt256 underlyingValue) {
     this.underlyingValue = Objects.requireNonNull(underlyingValue);
   }
 
   public static Decimal of(long amount) {
-    var scaledBigInteger = BigInteger.valueOf(amount).multiply(BigInteger.TEN.pow(SCALE));
-    return new Decimal(new BigDecimal(scaledBigInteger, SCALE));
+    var underlying = UInt256.from(amount).multiply(UInt256.from(10).pow(SCALE));
+    return new Decimal(underlying);
+  }
+
+  public UInt256 toUInt256() {
+    return underlyingValue;
   }
 
   @Override
   public String toString() {
-    return underlyingValue.toPlainString();
+    return new BigDecimal(underlyingValue.toBigInt(), SCALE).toString();
   }
 
   @Override
