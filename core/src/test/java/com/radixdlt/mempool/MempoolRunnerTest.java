@@ -118,6 +118,7 @@ public final class MempoolRunnerTest {
         bind(ECDSASecp256k1PublicKey.class)
             .annotatedWith(Self.class)
             .toInstance(PrivateKeys.ofNumeric(1).getPublicKey());
+        bind(String.class).annotatedWith(Self.class).toInstance("Self");
         bind(LedgerProof.class).annotatedWith(LastProof.class).toInstance(mock(LedgerProof.class));
         bind(StateComputer.class).toInstance(stateComputer);
         bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
