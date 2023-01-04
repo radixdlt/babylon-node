@@ -332,7 +332,7 @@ public final class EpochManager {
       queuedEvents
           .computeIfAbsent(consensusEvent.getEpoch(), e -> new ArrayList<>())
           .add(consensusEvent);
-      metrics.misc().epochManagerEnqueuedConsensusEvents().inc();
+      metrics.epochManager().enqueuedConsensusEvents().inc();
       return;
     }
 

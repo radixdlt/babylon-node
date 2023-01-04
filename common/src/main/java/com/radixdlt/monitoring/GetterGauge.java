@@ -62,70 +62,67 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.prometheus;
+package com.radixdlt.monitoring;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.system.health.HealthInfoService;
-import com.radixdlt.prometheus.StateManagerPrometheus;
+import com.google.common.base.Preconditions;
+import io.prometheus.client.Collector;
+import io.prometheus.client.GaugeMetricFamily;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.DoubleSupplier;
+import javax.annotation.Nullable;
 
-public class PrometheusService {
+/**
+ * A "direct getter" counterpart of a Prometheus gauge.
+ *
+ * <p>Every instance needs to be explicitly {@link #initialize(DoubleSupplier) initialized} with an
+ * actual sample provider (commonly, a getter). The {@link #collect()} will simply return empty
+ * samples when not initialized.
+ */
+public class GetterGauge extends Collector implements Collector.Describable {
 
-  private final JavaPrometheus javaPrometheus;
-  private final StateManagerPrometheus stateManagerPrometheus;
-  private final HealthInfoService healthInfoService;
+  /** A metric name. */
+  private final String name;
 
-  @Inject
-  public PrometheusService(
-      HealthInfoService healthInfoService,
-      StateManagerPrometheus stateManagerPrometheus,
-      JavaPrometheus javaPrometheus) {
-    this.healthInfoService = healthInfoService;
-    this.stateManagerPrometheus = stateManagerPrometheus;
-    this.javaPrometheus = javaPrometheus;
+  /**
+   * A reference to getter (will hold {@literal null} before {@link #initialize(DoubleSupplier)}).
+   */
+  private final AtomicReference<DoubleSupplier> getter;
+
+  /**
+   * A basic constructor, after which a further {@link #initialize(DoubleSupplier) initialization}
+   * is still required.
+   *
+   * @param name A metric name; will also be used as a description.
+   */
+  public GetterGauge(String name) {
+    this.name = name;
+    this.getter = new AtomicReference<>();
   }
 
-  public String getMetrics() {
-    var builder = new StringBuilder();
-    builder.append(this.stateManagerPrometheus.prometheusMetrics());
-    builder.append(this.javaPrometheus.prometheusMetrics());
-    exportHealth(builder);
-    return builder.append('\n').toString();
+  /**
+   * Initializes the gauge.
+   *
+   * @param getter A getter to be used directly when {@link #collect() collecting samples}.
+   */
+  public void initialize(DoubleSupplier getter) {
+    final boolean initialized = this.getter.compareAndSet(null, getter);
+    Preconditions.checkState(initialized, "getter for gauge %s already initialized", name);
   }
 
-  private void exportHealth(StringBuilder builder) {
-    appendCounterExtended(
-        builder,
-        prepareHealth(),
-        "nodeinfo",
-        "Special metric used to convey information about the current node using labels. Value will"
-            + " always be 0.",
-        0.0);
+  @Override
+  public List<MetricFamilySamples> collect() {
+    final @Nullable DoubleSupplier currentGetter = getter.get();
+    if (currentGetter == null) {
+      return List.of();
+    }
+    final MetricFamilySamples.Sample sample =
+        new MetricFamilySamples.Sample(name, List.of(), List.of(), currentGetter.getAsDouble());
+    return List.of(new MetricFamilySamples(name, "", Type.GAUGE, name, List.of(sample)));
   }
 
-  private String prepareHealth() {
-    var builder = new StringBuilder("nodeinfo{");
-    appendField(builder, "health", healthInfoService.nodeStatus().name());
-    return builder.append("}").toString();
-  }
-
-  private void appendField(StringBuilder builder, String name, Object value) {
-    builder.append(name).append("=\"").append(value).append("\",");
-  }
-
-  private static void appendCounterExtended(
-      StringBuilder builder, String name, String type, String help, Object value) {
-    builder
-        .append("# HELP ")
-        .append(help)
-        .append('\n')
-        .append("# TYPE ")
-        .append(type)
-        .append(' ')
-        .append("counter")
-        .append('\n')
-        .append(name)
-        .append(' ')
-        .append(value)
-        .append('\n');
+  @Override
+  public List<MetricFamilySamples> describe() {
+    return List.of(new GaugeMetricFamily(name, name, List.of()));
   }
 }
