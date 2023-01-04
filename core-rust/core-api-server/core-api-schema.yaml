@@ -2405,6 +2405,7 @@ components:
             - epoch
             - round
             - rounds_per_epoch
+            - num_unstake_epochs
           properties:
             address:
               $ref: '#/components/schemas/SystemAddress'
@@ -2426,6 +2427,11 @@ components:
               minimum: 0
               maximum: 10000000000
               description: An integer between `0` and `10^10`, specifying the number of rounds per epoch
+            num_unstake_epochs:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
     ValidatorSetSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
@@ -2453,6 +2459,8 @@ components:
             - address
             - key
             - stake_vault
+            - unstake_vault
+            - unstake_nft_address
             - is_registered
           properties:
             manager:
@@ -2463,6 +2471,10 @@ components:
               $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
             stake_vault:
               $ref: '#/components/schemas/EntityReference'
+            unstake_vault:
+              $ref: '#/components/schemas/EntityReference'
+            unstake_nft_address:
+              $ref: '#/components/schemas/ResourceAddress'
             is_registered:
               type: boolean
     ClockCurrentMinuteSubstate:

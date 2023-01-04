@@ -41,6 +41,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   ValidatorSubstate.JSON_PROPERTY_ADDRESS,
   ValidatorSubstate.JSON_PROPERTY_KEY,
   ValidatorSubstate.JSON_PROPERTY_STAKE_VAULT,
+  ValidatorSubstate.JSON_PROPERTY_UNSTAKE_VAULT,
+  ValidatorSubstate.JSON_PROPERTY_UNSTAKE_NFT_ADDRESS,
   ValidatorSubstate.JSON_PROPERTY_IS_REGISTERED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -59,6 +61,12 @@ public class ValidatorSubstate {
 
   public static final String JSON_PROPERTY_STAKE_VAULT = "stake_vault";
   private EntityReference stakeVault;
+
+  public static final String JSON_PROPERTY_UNSTAKE_VAULT = "unstake_vault";
+  private EntityReference unstakeVault;
+
+  public static final String JSON_PROPERTY_UNSTAKE_NFT_ADDRESS = "unstake_nft_address";
+  private String unstakeNftAddress;
 
   public static final String JSON_PROPERTY_IS_REGISTERED = "is_registered";
   private Boolean isRegistered;
@@ -196,6 +204,58 @@ public class ValidatorSubstate {
   }
 
 
+  public ValidatorSubstate unstakeVault(EntityReference unstakeVault) {
+    this.unstakeVault = unstakeVault;
+    return this;
+  }
+
+   /**
+   * Get unstakeVault
+   * @return unstakeVault
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_UNSTAKE_VAULT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public EntityReference getUnstakeVault() {
+    return unstakeVault;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_UNSTAKE_VAULT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setUnstakeVault(EntityReference unstakeVault) {
+    this.unstakeVault = unstakeVault;
+  }
+
+
+  public ValidatorSubstate unstakeNftAddress(String unstakeNftAddress) {
+    this.unstakeNftAddress = unstakeNftAddress;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable version of the resource address
+   * @return unstakeNftAddress
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
+  @JsonProperty(JSON_PROPERTY_UNSTAKE_NFT_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getUnstakeNftAddress() {
+    return unstakeNftAddress;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_UNSTAKE_NFT_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setUnstakeNftAddress(String unstakeNftAddress) {
+    this.unstakeNftAddress = unstakeNftAddress;
+  }
+
+
   public ValidatorSubstate isRegistered(Boolean isRegistered) {
     this.isRegistered = isRegistered;
     return this;
@@ -239,12 +299,14 @@ public class ValidatorSubstate {
         Objects.equals(this.address, validatorSubstate.address) &&
         Objects.equals(this.key, validatorSubstate.key) &&
         Objects.equals(this.stakeVault, validatorSubstate.stakeVault) &&
+        Objects.equals(this.unstakeVault, validatorSubstate.unstakeVault) &&
+        Objects.equals(this.unstakeNftAddress, validatorSubstate.unstakeNftAddress) &&
         Objects.equals(this.isRegistered, validatorSubstate.isRegistered);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(substateType, manager, address, key, stakeVault, isRegistered);
+    return Objects.hash(substateType, manager, address, key, stakeVault, unstakeVault, unstakeNftAddress, isRegistered);
   }
 
   @Override
@@ -256,6 +318,8 @@ public class ValidatorSubstate {
     sb.append("    address: ").append(toIndentedString(address)).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("    stakeVault: ").append(toIndentedString(stakeVault)).append("\n");
+    sb.append("    unstakeVault: ").append(toIndentedString(unstakeVault)).append("\n");
+    sb.append("    unstakeNftAddress: ").append(toIndentedString(unstakeNftAddress)).append("\n");
     sb.append("    isRegistered: ").append(toIndentedString(isRegistered)).append("\n");
     sb.append("}");
     return sb.toString();

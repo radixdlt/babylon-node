@@ -38,7 +38,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   EpochManagerSubstate.JSON_PROPERTY_ADDRESS,
   EpochManagerSubstate.JSON_PROPERTY_EPOCH,
   EpochManagerSubstate.JSON_PROPERTY_ROUND,
-  EpochManagerSubstate.JSON_PROPERTY_ROUNDS_PER_EPOCH
+  EpochManagerSubstate.JSON_PROPERTY_ROUNDS_PER_EPOCH,
+  EpochManagerSubstate.JSON_PROPERTY_NUM_UNSTAKE_EPOCHS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class EpochManagerSubstate {
@@ -56,6 +57,9 @@ public class EpochManagerSubstate {
 
   public static final String JSON_PROPERTY_ROUNDS_PER_EPOCH = "rounds_per_epoch";
   private Long roundsPerEpoch;
+
+  public static final String JSON_PROPERTY_NUM_UNSTAKE_EPOCHS = "num_unstake_epochs";
+  private Long numUnstakeEpochs;
 
   public EpochManagerSubstate() { 
   }
@@ -196,6 +200,34 @@ public class EpochManagerSubstate {
   }
 
 
+  public EpochManagerSubstate numUnstakeEpochs(Long numUnstakeEpochs) {
+    this.numUnstakeEpochs = numUnstakeEpochs;
+    return this;
+  }
+
+   /**
+   * Get numUnstakeEpochs
+   * minimum: 0
+   * maximum: 10000000000
+   * @return numUnstakeEpochs
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_NUM_UNSTAKE_EPOCHS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getNumUnstakeEpochs() {
+    return numUnstakeEpochs;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_NUM_UNSTAKE_EPOCHS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setNumUnstakeEpochs(Long numUnstakeEpochs) {
+    this.numUnstakeEpochs = numUnstakeEpochs;
+  }
+
+
   /**
    * Return true if this EpochManagerSubstate object is equal to o.
    */
@@ -212,12 +244,13 @@ public class EpochManagerSubstate {
         Objects.equals(this.address, epochManagerSubstate.address) &&
         Objects.equals(this.epoch, epochManagerSubstate.epoch) &&
         Objects.equals(this.round, epochManagerSubstate.round) &&
-        Objects.equals(this.roundsPerEpoch, epochManagerSubstate.roundsPerEpoch);
+        Objects.equals(this.roundsPerEpoch, epochManagerSubstate.roundsPerEpoch) &&
+        Objects.equals(this.numUnstakeEpochs, epochManagerSubstate.numUnstakeEpochs);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(substateType, address, epoch, round, roundsPerEpoch);
+    return Objects.hash(substateType, address, epoch, round, roundsPerEpoch, numUnstakeEpochs);
   }
 
   @Override
@@ -229,6 +262,7 @@ public class EpochManagerSubstate {
     sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
     sb.append("    round: ").append(toIndentedString(round)).append("\n");
     sb.append("    roundsPerEpoch: ").append(toIndentedString(roundsPerEpoch)).append("\n");
+    sb.append("    numUnstakeEpochs: ").append(toIndentedString(numUnstakeEpochs)).append("\n");
     sb.append("}");
     return sb.toString();
   }

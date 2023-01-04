@@ -92,16 +92,25 @@ public final class TransactionBuilder {
   public static RawLedgerTransaction createGenesis(
       Map<ECDSASecp256k1PublicKey, Decimal> validatorSet,
       UInt64 initialEpoch,
-      UInt64 roundsPerEpoch) {
+      UInt64 roundsPerEpoch,
+      UInt64 numUnstakeEpochs) {
     return RawLedgerTransaction.create(
-        createGenesisFunc.call(tuple(validatorSet, initialEpoch, roundsPerEpoch)));
+        createGenesisFunc.call(
+            tuple(validatorSet, initialEpoch, roundsPerEpoch, numUnstakeEpochs)));
   }
 
   public static RawLedgerTransaction createGenesis(
-      ECDSASecp256k1PublicKey validator, Decimal initialStake, UInt64 roundsPerEpoch) {
+      ECDSASecp256k1PublicKey validator,
+      Decimal initialStake,
+      UInt64 roundsPerEpoch,
+      UInt64 numUnstakeEpochs) {
     return RawLedgerTransaction.create(
         createGenesisFunc.call(
-            tuple(Map.of(validator, initialStake), UInt64.fromNonNegativeLong(1), roundsPerEpoch)));
+            tuple(
+                Map.of(validator, initialStake),
+                UInt64.fromNonNegativeLong(1),
+                roundsPerEpoch,
+                numUnstakeEpochs)));
   }
 
   public static RawLedgerTransaction createGenesisWithNumValidators(
@@ -112,7 +121,12 @@ public final class TransactionBuilder {
             .map(ECKeyPair::getPublicKey)
             .collect(Collectors.toMap(k -> k, k -> initialStake));
     return RawLedgerTransaction.create(
-        createGenesisFunc.call(tuple(validators, UInt64.fromNonNegativeLong(1), roundsPerEpoch)));
+        createGenesisFunc.call(
+            tuple(
+                validators,
+                UInt64.fromNonNegativeLong(1),
+                roundsPerEpoch,
+                UInt64.fromNonNegativeLong(1))));
   }
 
   public static byte[] compileManifest(
@@ -151,7 +165,7 @@ public final class TransactionBuilder {
   private static native byte[] compileManifest(byte[] payload);
 
   private static final NativeCalls.StaticFunc1<
-          Tuple.Tuple3<Map<ECDSASecp256k1PublicKey, Decimal>, UInt64, UInt64>, byte[]>
+          Tuple.Tuple4<Map<ECDSASecp256k1PublicKey, Decimal>, UInt64, UInt64, UInt64>, byte[]>
       createGenesisFunc =
           NativeCalls.StaticFunc1.with(
               new TypeToken<>() {},

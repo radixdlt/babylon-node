@@ -63,6 +63,8 @@ pub enum Substate {
         /// An integer between `0` and `10^10`, specifying the number of rounds per epoch
         #[serde(rename = "rounds_per_epoch")]
         rounds_per_epoch: i64,
+        #[serde(rename = "num_unstake_epochs")]
+        num_unstake_epochs: i64,
     },
     #[serde(rename="GlobalAddress")]
     GlobalAddressSubstate {
@@ -139,6 +141,11 @@ pub enum Substate {
         key: Box<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
         #[serde(rename = "stake_vault")]
         stake_vault: Box<crate::core_api::generated::models::EntityReference>,
+        #[serde(rename = "unstake_vault")]
+        unstake_vault: Box<crate::core_api::generated::models::EntityReference>,
+        /// The Bech32m-encoded human readable version of the resource address
+        #[serde(rename = "unstake_nft_address")]
+        unstake_nft_address: String,
         #[serde(rename = "is_registered")]
         is_registered: bool,
     },

@@ -126,7 +126,8 @@ public abstract class SystemApiTestBase {
                             TransactionBuilder.createGenesis(
                                 TEST_KEY.getPublicKey(),
                                 Decimal.of(1),
-                                UInt64.fromNonNegativeLong(10)),
+                                UInt64.fromNonNegativeLong(10),
+                                UInt64.fromNonNegativeLong(1)),
                             REv2DatabaseConfig.inMemory(),
                             StateComputerConfig.REV2ProposerConfig.mempool(
                                 10, 10, MempoolRelayConfig.of())),

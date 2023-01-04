@@ -25,18 +25,25 @@ pub struct ValidatorSubstate {
     pub key: Box<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
     #[serde(rename = "stake_vault")]
     pub stake_vault: Box<crate::core_api::generated::models::EntityReference>,
+    #[serde(rename = "unstake_vault")]
+    pub unstake_vault: Box<crate::core_api::generated::models::EntityReference>,
+    /// The Bech32m-encoded human readable version of the resource address
+    #[serde(rename = "unstake_nft_address")]
+    pub unstake_nft_address: String,
     #[serde(rename = "is_registered")]
     pub is_registered: bool,
 }
 
 impl ValidatorSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, manager: String, address: String, key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey, stake_vault: crate::core_api::generated::models::EntityReference, is_registered: bool) -> ValidatorSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, manager: String, address: String, key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey, stake_vault: crate::core_api::generated::models::EntityReference, unstake_vault: crate::core_api::generated::models::EntityReference, unstake_nft_address: String, is_registered: bool) -> ValidatorSubstate {
         ValidatorSubstate {
             substate_type,
             manager,
             address,
             key: Box::new(key),
             stake_vault: Box::new(stake_vault),
+            unstake_vault: Box::new(unstake_vault),
+            unstake_nft_address,
             is_registered,
         }
     }

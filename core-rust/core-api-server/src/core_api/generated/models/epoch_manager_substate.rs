@@ -27,16 +27,19 @@ pub struct EpochManagerSubstate {
     /// An integer between `0` and `10^10`, specifying the number of rounds per epoch
     #[serde(rename = "rounds_per_epoch")]
     pub rounds_per_epoch: i64,
+    #[serde(rename = "num_unstake_epochs")]
+    pub num_unstake_epochs: i64,
 }
 
 impl EpochManagerSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, address: String, epoch: i64, round: i64, rounds_per_epoch: i64) -> EpochManagerSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, address: String, epoch: i64, round: i64, rounds_per_epoch: i64, num_unstake_epochs: i64) -> EpochManagerSubstate {
         EpochManagerSubstate {
             substate_type,
             address,
             epoch,
             round,
             rounds_per_epoch,
+            num_unstake_epochs,
         }
     }
 }

@@ -769,15 +769,20 @@ pub fn to_api_validator_substate(
         key,
         stake_vault_id,
         is_registered,
+        unstake_nft_address,
+        unstake_vault_id,
     } = substate;
 
     let owned_stake_vault_id = MappedEntityId::try_from(RENodeId::Vault(*stake_vault_id))?;
+    let owned_unstake_vault_id = MappedEntityId::try_from(RENodeId::Vault(*unstake_vault_id))?;
 
     Ok(models::Substate::ValidatorSubstate {
         manager: bech32_encoder.encode_system_address_to_string(manager),
         address: bech32_encoder.encode_system_address_to_string(address),
         key: Box::new(to_api_ecdsa_secp256k1_public_key(key)),
         stake_vault: Box::new(owned_stake_vault_id.into()),
+        unstake_vault: Box::new(owned_unstake_vault_id.into()),
+        unstake_nft_address: bech32_encoder.encode_resource_address_to_string(unstake_nft_address),
         is_registered: *is_registered,
     })
 }
@@ -793,6 +798,7 @@ pub fn to_api_epoch_manager_substate(
         epoch,
         round,
         rounds_per_epoch,
+        num_unstake_epochs,
     } = substate;
 
     Ok(models::Substate::EpochManagerSubstate {
@@ -800,6 +806,7 @@ pub fn to_api_epoch_manager_substate(
         epoch: to_api_epoch(*epoch)?,
         round: to_api_round(*round)?,
         rounds_per_epoch: to_api_round(*rounds_per_epoch)?,
+        num_unstake_epochs: to_api_epoch(*num_unstake_epochs)?,
     })
 }
 

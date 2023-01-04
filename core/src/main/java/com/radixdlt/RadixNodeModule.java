@@ -239,7 +239,8 @@ public final class RadixNodeModule extends AbstractModule {
         TransactionBuilder.createGenesis(
             validatorSet,
             UInt64.fromNonNegativeLong(1),
-            UInt64.fromNonNegativeLong(1800)); // approximately 5 minutes per epoch
+            UInt64.fromNonNegativeLong(1800), // approximately 5 minutes per epoch
+            UInt64.fromNonNegativeLong(1));
 
     install(
         REv2StateManagerModule.create(
