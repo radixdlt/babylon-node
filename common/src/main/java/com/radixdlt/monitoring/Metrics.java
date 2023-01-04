@@ -150,7 +150,6 @@ public record Metrics(
     Networking networking,
     Crypto crypto,
     EpochManager epochManager,
-    Peers peers,
     Misc misc) {
 
   public record Bft(
@@ -165,6 +164,8 @@ public record Metrics(
       Counter voteQuorums,
       Counter timeoutQuorums,
       LabelledCounter<RejectedConsensusEvent> rejectedConsensusEvents,
+      GetterGauge validatorCount,
+      GetterGauge inValidatorSet,
       Pacemaker pacemaker,
       Sync sync,
       VertexStore vertexStore) {
@@ -243,10 +244,11 @@ public record Metrics(
   public record EpochManager(
       GetterGauge currentEpoch, GetterGauge currentRound, Counter enqueuedConsensusEvents) {}
 
-  public record Peers(
-      GetterGauge peerCount, GetterGauge validatorCount, GetterGauge inValidatorSet) {}
-
-  public record Misc(TypedInfo<Config> config, Timer applicationStart, Counter vertexStoreSaved) {}
+  public record Misc(
+      TypedInfo<Config> config,
+      Timer applicationStart,
+      Counter vertexStoreSaved,
+      GetterGauge peerCount) {}
 
   public record RejectedConsensusEvent(
       Type type, Invalidity invalidity, @Nullable TimestampIssue timestampIssue) {

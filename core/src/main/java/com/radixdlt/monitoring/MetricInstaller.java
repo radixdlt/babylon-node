@@ -105,9 +105,9 @@ public final class MetricInstaller {
   public void installAt(Metrics metrics) {
     final var config = new Config(ApplicationVersion.INSTANCE.string(), this.self.getKey().toHex());
     metrics.misc().config().set(config);
-    metrics.peers().peerCount().initialize(() -> this.peersView.peers().count());
-    metrics.peers().validatorCount().initialize(this::countValidators);
-    metrics.peers().inValidatorSet().initialize(() -> this.isInValidatorSet() ? 1 : 0);
+    metrics.misc().peerCount().initialize(() -> this.peersView.peers().count());
+    metrics.bft().validatorCount().initialize(this::countValidators);
+    metrics.bft().inValidatorSet().initialize(() -> this.isInValidatorSet() ? 1 : 0);
     metrics
         .epochManager()
         .currentEpoch()
