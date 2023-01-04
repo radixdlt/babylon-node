@@ -71,6 +71,8 @@ import com.radixdlt.mempool.*;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
+import com.radixdlt.rev2.ResourceAddress;
+import com.radixdlt.rev2.SystemAddress;
 import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.statecomputer.commit.*;
 import com.radixdlt.statemanager.StateManager;
@@ -120,6 +122,12 @@ public class RustStateComputer {
             new TypeToken<>() {},
             new TypeToken<>() {},
             RustStateComputer::componentXrdAmount);
+    this.validatorUnstakeAddressFunc =
+            NativeCalls.Func1.with(
+                    stateManager,
+                    new TypeToken<>() {},
+                    new TypeToken<>() {},
+                    RustStateComputer::validatorUnstakeAddress);
     this.epoch =
         NativeCalls.Func1.with(
             stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::epoch);
@@ -204,4 +212,13 @@ public class RustStateComputer {
   }
 
   private static native byte[] epoch(StateManager stateManager, byte[] payload);
+
+  private final NativeCalls.Func1<StateManager, SystemAddress, ResourceAddress> validatorUnstakeAddressFunc;
+
+  public ResourceAddress getValidatorUnstakeAddress(SystemAddress validatorAddress) {
+    return validatorUnstakeAddressFunc.call(validatorAddress);
+  }
+
+  private static native byte[] validatorUnstakeAddress(StateManager stateManager, byte[] payload);
+
 }

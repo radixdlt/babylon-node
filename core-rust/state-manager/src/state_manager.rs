@@ -67,6 +67,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use prometheus::Registry;
 use radix_engine::engine::ScryptoInterpreter;
+use radix_engine::model::ValidatorSubstate;
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     execute_and_commit_transaction, execute_preview, execute_transaction, ExecutionConfig,
@@ -79,7 +80,9 @@ use radix_engine::types::{
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
+use radix_engine_interface::api::types::{SubstateId, SubstateOffset, ValidatorOffset};
 use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::model::SystemAddress;
 use tracing::info;
 use transaction::errors::TransactionValidationError;
 use transaction::model::{
@@ -844,6 +847,17 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
                 component_address,
             )))
             .map_or(None, |()| Some(resource_accounter.into_map()))
+    }
+
+    pub fn get_validator_unstake_address(
+        &self,
+        system_address: SystemAddress,
+    ) -> ResourceAddress {
+        let node_id = self.store.global_deref(GlobalAddress::System(system_address)).unwrap();
+        let substate_id = SubstateId(node_id, SubstateOffset::Validator(ValidatorOffset::Validator));
+        let output = self.store.get_substate(&substate_id).unwrap();
+        let validator_substate: ValidatorSubstate = output.substate.to_runtime().into();
+        validator_substate.unstake_nft_address
     }
 
     pub fn get_epoch(&self) -> u64 {

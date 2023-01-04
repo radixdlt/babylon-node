@@ -66,6 +66,7 @@ package com.radixdlt.transaction;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.rev2.ResourceAddress;
 import com.radixdlt.rev2.SystemAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
@@ -80,7 +81,8 @@ public record ExecutedTransaction(
     byte[] ledgerReceiptBytes,
     byte[] transactionBytes,
     List<ComponentAddress> newComponentAddresses,
-    List<SystemAddress> newSystemAddresses) {
+    List<SystemAddress> newSystemAddresses,
+    List<ResourceAddress> newResourceAddresses) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         ExecutedTransaction.class,
@@ -92,13 +94,15 @@ public record ExecutedTransaction(
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
+                codecs.of(new TypeToken<>() {}),
                 (t, encoder) ->
                     encoder.encode(
                         t.status,
                         t.ledgerReceiptBytes,
                         t.transactionBytes,
                         t.newComponentAddresses,
-                        t.newSystemAddresses)));
+                        t.newSystemAddresses,
+                        t.newResourceAddresses)));
   }
 
   public RawLedgerTransaction rawTransaction() {
@@ -114,12 +118,14 @@ public record ExecutedTransaction(
         && Arrays.equals(ledgerReceiptBytes, that.ledgerReceiptBytes)
         && Arrays.equals(transactionBytes, that.transactionBytes)
         && Objects.equals(newComponentAddresses, that.newComponentAddresses)
+        && Objects.equals(newResourceAddresses, that.newResourceAddresses)
         && Objects.equals(newSystemAddresses, that.newSystemAddresses);
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(status, newComponentAddresses, newSystemAddresses);
+    int result =
+        Objects.hash(status, newComponentAddresses, newSystemAddresses, newResourceAddresses);
     result = 31 * result + Arrays.hashCode(ledgerReceiptBytes);
     result = 31 * result + Arrays.hashCode(transactionBytes);
     return result;

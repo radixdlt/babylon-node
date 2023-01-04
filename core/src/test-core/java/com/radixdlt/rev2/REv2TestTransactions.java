@@ -240,6 +240,37 @@ public final class REv2TestTransactions {
         faucetAddress, systemAddress, xrdAddress, toAccountAddress);
   }
 
+  public static String constructClaimXrdManifest(
+      NetworkDefinition networkDefinition,
+      SystemAddress validatorAddress,
+      ResourceAddress unstakeResource) {
+    final var addressing = Addressing.ofNetwork(networkDefinition);
+    final var faucetAddress =
+        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+    final var unstakeResourceAddress = addressing.encodeResourceAddress(unstakeResource);
+    final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
+    final var systemAddress = addressing.encodeSystemAddress(validatorAddress);
+    final var account = Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
+    final var accountAddress = addressing.encodeAccountAddress(account);
+
+    return String.format(
+        """
+                                    CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
+                                    CALL_METHOD ComponentAddress("%s") "withdraw" ResourceAddress("%s");
+                                    TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("unstake");
+                                    CLAIM_XRD SystemAddress("%s") Bucket("unstake");
+                                    TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
+                                    CALL_METHOD ComponentAddress("%s") "deposit" Bucket("xrd");
+                                    """,
+        faucetAddress,
+        accountAddress,
+        unstakeResourceAddress,
+        unstakeResourceAddress,
+        systemAddress,
+        xrdAddress,
+        accountAddress);
+  }
+
   public static RawNotarizedTransaction constructNewAccountFromAccountTransaction(
       NetworkDefinition networkDefinition, ComponentAddress from, long fromEpoch, long nonce) {
     var manifest = constructNewAccountFromAccountManifest(networkDefinition, from);
@@ -337,6 +368,19 @@ public final class REv2TestTransactions {
       SystemAddress validatorAddress,
       ECKeyPair keyPair) {
     var manifest = constructUnstakeValidatorManifest(networkDefinition, validatorAddress);
+    var signatories = List.of(keyPair);
+    return constructRawTransaction(
+        networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
+  }
+
+  public static RawNotarizedTransaction constructClaimXrdTransaction(
+      NetworkDefinition networkDefinition,
+      long fromEpoch,
+      long nonce,
+      SystemAddress validatorAddress,
+      ResourceAddress unstakeAddress,
+      ECKeyPair keyPair) {
+    var manifest = constructClaimXrdManifest(networkDefinition, validatorAddress, unstakeAddress);
     var signatories = List.of(keyPair);
     return constructRawTransaction(
         networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);

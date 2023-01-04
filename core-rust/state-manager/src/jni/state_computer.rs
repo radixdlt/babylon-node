@@ -71,7 +71,7 @@ use radix_engine::model::Validator;
 use radix_engine::types::{
     scrypto, ComponentAddress, Decimal, Decode, Encode, TypeId, RADIX_TOKEN,
 };
-use radix_engine_interface::model::SystemAddress;
+use radix_engine_interface::model::{ResourceAddress, SystemAddress};
 use std::collections::BTreeMap;
 
 use crate::jni::utils::*;
@@ -207,6 +207,21 @@ fn get_component_xrd(state_manager: &ActualStateManager, args: ComponentAddress)
     resources
         .map(|r| r.get(&RADIX_TOKEN).cloned().unwrap_or_else(Decimal::zero))
         .unwrap_or_else(Decimal::zero)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_validatorUnstakeAddress(
+    env: JNIEnv,
+    _class: JClass,
+    j_state_manager: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, get_validator_unstake_address)
+}
+
+fn get_validator_unstake_address(state_manager: &ActualStateManager, args: SystemAddress) -> ResourceAddress {
+    let validator_address = args;
+    state_manager.get_validator_unstake_address(validator_address)
 }
 
 #[no_mangle]
