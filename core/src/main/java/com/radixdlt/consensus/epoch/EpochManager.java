@@ -191,7 +191,7 @@ public final class EpochManager {
     final var bftConfiguration = this.lastEpochChange.getBFTConfiguration();
     final var proposerElection = bftConfiguration.getProposerElection();
     final var highQC = bftConfiguration.getVertexStoreState().getHighQC();
-    final var round = highQC.highestQC().getRound().next();
+    final var round = highQC.getHighestRound().next();
     final var leader = proposerElection.getProposer(round);
     final var nextLeader = proposerElection.getProposer(round.next());
     final var initialRoundUpdate = RoundUpdate.create(round, highQC, leader, nextLeader);

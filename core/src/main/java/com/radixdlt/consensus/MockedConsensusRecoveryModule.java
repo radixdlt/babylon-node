@@ -105,7 +105,7 @@ public class MockedConsensusRecoveryModule extends AbstractModule {
   private RoundUpdate initialRoundUpdate(
       BFTConfiguration configuration, ProposerElection proposerElection) {
     HighQC highQC = configuration.getVertexStoreState().getHighQC();
-    Round round = highQC.highestQC().getRound().next();
+    Round round = highQC.getHighestRound().next();
     final BFTNode leader = proposerElection.getProposer(round);
     final BFTNode nextLeader = proposerElection.getProposer(round.next());
 
