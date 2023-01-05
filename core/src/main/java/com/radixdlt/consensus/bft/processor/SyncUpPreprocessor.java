@@ -79,6 +79,7 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundLeaderFailure;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.monitoring.Metrics;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -87,8 +88,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
-
-import com.radixdlt.monitoring.Metrics;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -100,7 +99,7 @@ import org.apache.logging.log4j.Logger;
  * <p>This class is NOT thread-safe.
  */
 public final class SyncUpPreprocessor implements BFTEventProcessor {
-  private record QueuedConsensusEvent(ConsensusEvent event, Stopwatch stopwatch) { }
+  private record QueuedConsensusEvent(ConsensusEvent event, Stopwatch stopwatch) {}
 
   private static final Logger log = LogManager.getLogger();
 
@@ -112,7 +111,10 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
   private RoundUpdate latestRoundUpdate;
 
   public SyncUpPreprocessor(
-      BFTEventProcessor forwardTo, BFTSyncer bftSyncer, Metrics metrics, RoundUpdate initialRoundUpdate) {
+      BFTEventProcessor forwardTo,
+      BFTSyncer bftSyncer,
+      Metrics metrics,
+      RoundUpdate initialRoundUpdate) {
     this.forwardTo = Objects.requireNonNull(forwardTo);
     this.bftSyncer = Objects.requireNonNull(bftSyncer);
     this.metrics = Objects.requireNonNull(metrics);
@@ -163,7 +165,8 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
     log.trace("LOCAL_SYNC: {}", vertexId);
 
     syncingEvents.stream()
-        .filter(e -> e.event.highQC().highestQC().getProposedHeader().getVertexId().equals(vertexId))
+        .filter(
+            e -> e.event.highQC().highestQC().getProposedHeader().getVertexId().equals(vertexId))
         .forEach(this::processQueuedConsensusEvent);
 
     syncingEvents.removeIf(
@@ -183,11 +186,22 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
               syncingEvents.stream()
                   .filter(
                       e ->
-                          e.event.highQC().highestQC().getProposedHeader().getVertexId().equals(vertexId))
+                          e.event
+                              .highQC()
+                              .highestQC()
+                              .getProposedHeader()
+                              .getVertexId()
+                              .equals(vertexId))
                   .forEach(this::processQueuedConsensusEvent);
 
               syncingEvents.removeIf(
-                  e -> e.event.highQC().highestQC().getProposedHeader().getVertexId().equals(vertexId));
+                  e ->
+                      e.event
+                          .highQC()
+                          .highestQC()
+                          .getProposedHeader()
+                          .getVertexId()
+                          .equals(vertexId));
             });
   }
 
@@ -281,7 +295,9 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
     } else if (latestRoundUpdate.getCurrentRound().lt(event.getRound())) {
       log.trace("Caching {}, current round is {}", event, latestRoundUpdate.getCurrentRound());
       roundQueues.putIfAbsent(event.getRound(), new LinkedList<>());
-      roundQueues.get(event.getRound()).add(new QueuedConsensusEvent(event, Stopwatch.createStarted()));
+      roundQueues
+          .get(event.getRound())
+          .add(new QueuedConsensusEvent(event, Stopwatch.createStarted()));
     } else {
       log.debug("Ignoring {} for past round", event);
     }
