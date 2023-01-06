@@ -123,11 +123,11 @@ public class RustStateComputer {
             new TypeToken<>() {},
             RustStateComputer::componentXrdAmount);
     this.validatorUnstakeAddressFunc =
-            NativeCalls.Func1.with(
-                    stateManager,
-                    new TypeToken<>() {},
-                    new TypeToken<>() {},
-                    RustStateComputer::validatorUnstakeAddress);
+        NativeCalls.Func1.with(
+            stateManager,
+            new TypeToken<>() {},
+            new TypeToken<>() {},
+            RustStateComputer::validatorUnstakeAddress);
     this.epoch =
         NativeCalls.Func1.with(
             stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::epoch);
@@ -213,12 +213,12 @@ public class RustStateComputer {
 
   private static native byte[] epoch(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<StateManager, SystemAddress, ResourceAddress> validatorUnstakeAddressFunc;
+  private final NativeCalls.Func1<StateManager, SystemAddress, ResourceAddress>
+      validatorUnstakeAddressFunc;
 
   public ResourceAddress getValidatorUnstakeAddress(SystemAddress validatorAddress) {
     return validatorUnstakeAddressFunc.call(validatorAddress);
   }
 
   private static native byte[] validatorUnstakeAddress(StateManager stateManager, byte[] payload);
-
 }

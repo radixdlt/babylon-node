@@ -215,12 +215,12 @@ public final class REv2StateManagerModule extends AbstractModule {
                   return stateComputer.getComponentXrdAmount(componentAddress);
                 }
 
-                  @Override
-                  public ResourceAddress getValidatorUnstakeResource(SystemAddress systemAddress) {
-                      return stateComputer.getValidatorUnstakeAddress(systemAddress);
-                  }
+                @Override
+                public ResourceAddress getValidatorUnstakeResource(SystemAddress systemAddress) {
+                  return stateComputer.getValidatorUnstakeAddress(systemAddress);
+                }
 
-                  @Override
+                @Override
                 public long getEpoch() {
                   return stateComputer
                       .getEpoch()

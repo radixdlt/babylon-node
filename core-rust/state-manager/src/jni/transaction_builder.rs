@@ -79,6 +79,7 @@ use radix_engine::types::{
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::model::ComponentAddress;
 use radix_engine_interface::scrypto;
 use std::collections::BTreeMap;
 use transaction::model::{
@@ -114,15 +115,15 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createGenesi
 }
 
 fn do_create_genesis_ledger_transaction(
-    (validator_set, initial_epoch, rounds_per_epoch, num_unstake_epochs): (
-        BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
+    (validator_set_and_stake_owners, initial_epoch, rounds_per_epoch, num_unstake_epochs): (
+        BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
         u64,
         u64,
         u64,
     ),
 ) -> Vec<u8> {
     create_genesis_ledger_transaction_bytes(
-        validator_set,
+        validator_set_and_stake_owners,
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,

@@ -849,15 +849,18 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
             .map_or(None, |()| Some(resource_accounter.into_map()))
     }
 
-    pub fn get_validator_unstake_address(
-        &self,
-        system_address: SystemAddress,
-    ) -> ResourceAddress {
-        let node_id = self.store.global_deref(GlobalAddress::System(system_address)).unwrap();
-        let substate_id = SubstateId(node_id, SubstateOffset::Validator(ValidatorOffset::Validator));
+    pub fn get_validator_unstake_address(&self, system_address: SystemAddress) -> ResourceAddress {
+        let node_id = self
+            .store
+            .global_deref(GlobalAddress::System(system_address))
+            .unwrap();
+        let substate_id = SubstateId(
+            node_id,
+            SubstateOffset::Validator(ValidatorOffset::Validator),
+        );
         let output = self.store.get_substate(&substate_id).unwrap();
         let validator_substate: ValidatorSubstate = output.substate.to_runtime().into();
-        validator_substate.unstake_nft_address
+        validator_substate.unstake_nft
     }
 
     pub fn get_epoch(&self) -> u64 {

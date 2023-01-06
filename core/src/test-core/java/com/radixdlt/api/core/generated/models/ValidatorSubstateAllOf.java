@@ -38,6 +38,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   ValidatorSubstateAllOf.JSON_PROPERTY_KEY,
   ValidatorSubstateAllOf.JSON_PROPERTY_STAKE_VAULT,
   ValidatorSubstateAllOf.JSON_PROPERTY_UNSTAKE_VAULT,
+  ValidatorSubstateAllOf.JSON_PROPERTY_LIQUIDITY_TOKEN,
   ValidatorSubstateAllOf.JSON_PROPERTY_UNSTAKE_NFT_ADDRESS,
   ValidatorSubstateAllOf.JSON_PROPERTY_IS_REGISTERED
 })
@@ -57,6 +58,9 @@ public class ValidatorSubstateAllOf {
 
   public static final String JSON_PROPERTY_UNSTAKE_VAULT = "unstake_vault";
   private EntityReference unstakeVault;
+
+  public static final String JSON_PROPERTY_LIQUIDITY_TOKEN = "liquidity_token";
+  private String liquidityToken;
 
   public static final String JSON_PROPERTY_UNSTAKE_NFT_ADDRESS = "unstake_nft_address";
   private String unstakeNftAddress;
@@ -197,6 +201,32 @@ public class ValidatorSubstateAllOf {
   }
 
 
+  public ValidatorSubstateAllOf liquidityToken(String liquidityToken) {
+    this.liquidityToken = liquidityToken;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable version of the resource address
+   * @return liquidityToken
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
+  @JsonProperty(JSON_PROPERTY_LIQUIDITY_TOKEN)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getLiquidityToken() {
+    return liquidityToken;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_LIQUIDITY_TOKEN)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setLiquidityToken(String liquidityToken) {
+    this.liquidityToken = liquidityToken;
+  }
+
+
   public ValidatorSubstateAllOf unstakeNftAddress(String unstakeNftAddress) {
     this.unstakeNftAddress = unstakeNftAddress;
     return this;
@@ -266,13 +296,14 @@ public class ValidatorSubstateAllOf {
         Objects.equals(this.key, validatorSubstateAllOf.key) &&
         Objects.equals(this.stakeVault, validatorSubstateAllOf.stakeVault) &&
         Objects.equals(this.unstakeVault, validatorSubstateAllOf.unstakeVault) &&
+        Objects.equals(this.liquidityToken, validatorSubstateAllOf.liquidityToken) &&
         Objects.equals(this.unstakeNftAddress, validatorSubstateAllOf.unstakeNftAddress) &&
         Objects.equals(this.isRegistered, validatorSubstateAllOf.isRegistered);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(manager, address, key, stakeVault, unstakeVault, unstakeNftAddress, isRegistered);
+    return Objects.hash(manager, address, key, stakeVault, unstakeVault, liquidityToken, unstakeNftAddress, isRegistered);
   }
 
   @Override
@@ -284,6 +315,7 @@ public class ValidatorSubstateAllOf {
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("    stakeVault: ").append(toIndentedString(stakeVault)).append("\n");
     sb.append("    unstakeVault: ").append(toIndentedString(unstakeVault)).append("\n");
+    sb.append("    liquidityToken: ").append(toIndentedString(liquidityToken)).append("\n");
     sb.append("    unstakeNftAddress: ").append(toIndentedString(unstakeNftAddress)).append("\n");
     sb.append("    isRegistered: ").append(toIndentedString(isRegistered)).append("\n");
     sb.append("}");

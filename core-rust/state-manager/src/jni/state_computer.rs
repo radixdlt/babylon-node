@@ -216,10 +216,18 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_validatorUn
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, get_validator_unstake_address)
+    jni_state_manager_sbor_read_call(
+        env,
+        j_state_manager,
+        request_payload,
+        get_validator_unstake_address,
+    )
 }
 
-fn get_validator_unstake_address(state_manager: &ActualStateManager, args: SystemAddress) -> ResourceAddress {
+fn get_validator_unstake_address(
+    state_manager: &ActualStateManager,
+    args: SystemAddress,
+) -> ResourceAddress {
     let validator_address = args;
     state_manager.get_validator_unstake_address(validator_address)
 }

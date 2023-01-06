@@ -209,6 +209,8 @@ public final class REv2TestTransactions {
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
     final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
     final var systemAddress = addressing.encodeSystemAddress(validatorAddress);
+    final var toAccount = Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
+    final var toAccountAddress = addressing.encodeAccountAddress(toAccount);
 
     return String.format(
         """
@@ -216,8 +218,9 @@ public final class REv2TestTransactions {
                                 CALL_METHOD ComponentAddress("%s") "free";
                                 TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
                                 STAKE_VALIDATOR SystemAddress("%s") Bucket("xrd");
+                                CALL_METHOD ComponentAddress("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
                                 """,
-        faucetAddress, faucetAddress, xrdAddress, systemAddress);
+        faucetAddress, faucetAddress, xrdAddress, systemAddress, toAccountAddress);
   }
 
   public static String constructUnstakeValidatorManifest(

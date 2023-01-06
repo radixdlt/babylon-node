@@ -79,9 +79,11 @@ import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
+import com.radixdlt.identifiers.Address;
 import com.radixdlt.keys.BFTNodeFromGenesisModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Tuple;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
@@ -95,6 +97,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
+import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.modules.BerkeleySafetyStoreModule;
 import com.radixdlt.rev2.modules.REv2ConsensusRecoveryModule;
@@ -105,6 +108,7 @@ import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.IOUtils;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.FileInputStream;
@@ -231,9 +235,12 @@ public final class RadixNodeModule extends AbstractModule {
                   }
                 })
             .toList();
+    var validatorSet =
+        new HashMap<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>>();
+    final var stakingAccount =
+        Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
 
-    var validatorSet = new HashMap<ECDSASecp256k1PublicKey, Decimal>();
-    initialVset.forEach(k -> validatorSet.put(k, Decimal.of(1)));
+    initialVset.forEach(k -> validatorSet.put(k, Tuple.tuple(Decimal.of(1), stakingAccount)));
 
     var genesis =
         TransactionBuilder.createGenesis(

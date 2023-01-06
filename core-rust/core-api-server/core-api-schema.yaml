@@ -2460,6 +2460,7 @@ components:
             - key
             - stake_vault
             - unstake_vault
+            - liquidity_token
             - unstake_nft_address
             - is_registered
           properties:
@@ -2473,6 +2474,8 @@ components:
               $ref: '#/components/schemas/EntityReference'
             unstake_vault:
               $ref: '#/components/schemas/EntityReference'
+            liquidity_token:
+              $ref: '#/components/schemas/ResourceAddress'
             unstake_nft_address:
               $ref: '#/components/schemas/ResourceAddress'
             is_registered:
