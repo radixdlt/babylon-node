@@ -210,26 +210,21 @@ fn get_component_xrd(state_manager: &ActualStateManager, args: ComponentAddress)
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_validatorUnstakeAddress(
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_validatorInfo(
     env: JNIEnv,
     _class: JClass,
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_read_call(
-        env,
-        j_state_manager,
-        request_payload,
-        get_validator_unstake_address,
-    )
+    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, get_validator_info)
 }
 
-fn get_validator_unstake_address(
+fn get_validator_info(
     state_manager: &ActualStateManager,
     args: SystemAddress,
-) -> ResourceAddress {
+) -> JavaValidatorInfo {
     let validator_address = args;
-    state_manager.get_validator_unstake_address(validator_address)
+    state_manager.get_validator_info(validator_address)
 }
 
 #[no_mangle]
@@ -343,4 +338,11 @@ impl From<PrepareGenesisResult> for JavaPrepareGenesisResult {
             validator_set: prepare_results.validator_set,
         }
     }
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct JavaValidatorInfo {
+    pub lp_token_address: ResourceAddress,
+    pub unstake_resource: ResourceAddress,
 }

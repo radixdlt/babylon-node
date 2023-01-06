@@ -224,23 +224,26 @@ public final class REv2TestTransactions {
   }
 
   public static String constructUnstakeValidatorManifest(
-      NetworkDefinition networkDefinition, SystemAddress validatorAddress) {
+      NetworkDefinition networkDefinition,
+      ResourceAddress lpTokenAddress,
+      SystemAddress validatorAddress) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var faucetAddress =
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
-    final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
     final var systemAddress = addressing.encodeSystemAddress(validatorAddress);
-    final var toAccount = Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
-    final var toAccountAddress = addressing.encodeAccountAddress(toAccount);
+    final var account = Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
+    final var accountAddress = addressing.encodeAccountAddress(account);
+    final var lpAddress = addressing.encodeResourceAddress(lpTokenAddress);
 
     return String.format(
         """
                                 CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
-                                UNSTAKE_VALIDATOR SystemAddress("%s") Decimal("1000");
-                                TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
-                                CALL_METHOD ComponentAddress("%s") "deposit" Bucket("xrd");
+                                CALL_METHOD ComponentAddress("%s") "withdraw_by_amount" ResourceAddress("%s") Decimal("1");
+                                TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("lp_token");
+                                UNSTAKE_VALIDATOR SystemAddress("%s") Bucket("lp_token");
+                                CALL_METHOD ComponentAddress("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
                                 """,
-        faucetAddress, systemAddress, xrdAddress, toAccountAddress);
+        faucetAddress, accountAddress, lpAddress, lpAddress, systemAddress, accountAddress);
   }
 
   public static String constructClaimXrdManifest(
@@ -368,9 +371,11 @@ public final class REv2TestTransactions {
       NetworkDefinition networkDefinition,
       long fromEpoch,
       long nonce,
+      ResourceAddress lpTokenAddress,
       SystemAddress validatorAddress,
       ECKeyPair keyPair) {
-    var manifest = constructUnstakeValidatorManifest(networkDefinition, validatorAddress);
+    var manifest =
+        constructUnstakeValidatorManifest(networkDefinition, lpTokenAddress, validatorAddress);
     var signatories = List.of(keyPair);
     return constructRawTransaction(
         networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);

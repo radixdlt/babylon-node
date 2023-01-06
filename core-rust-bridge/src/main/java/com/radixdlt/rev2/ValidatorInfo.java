@@ -64,11 +64,18 @@
 
 package com.radixdlt.rev2;
 
-/** Reads REv2 state */
-public interface REv2StateReader {
-  Decimal getComponentXrdAmount(ComponentAddress componentAddress);
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-  ValidatorInfo getValidatorInfo(SystemAddress systemAddress);
-
-  long getEpoch();
+public record ValidatorInfo(ResourceAddress lpTokenAddress, ResourceAddress unstakeResource) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        ValidatorInfo.class,
+        codecs ->
+            StructCodec.with(
+                ValidatorInfo::new,
+                codecs.of(ResourceAddress.class),
+                codecs.of(ResourceAddress.class),
+                (t, encoder) -> encoder.encode(t.lpTokenAddress, t.unstakeResource)));
+  }
 }

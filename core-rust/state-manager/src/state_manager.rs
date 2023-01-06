@@ -91,6 +91,7 @@ use transaction::model::{
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{TestIntentHashManager, ValidationConfig};
 
+use crate::jni::state_computer::JavaValidatorInfo;
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::mempool::transaction_rejection_cache::{RejectionCache, RejectionReason};
 use crate::query::*;
@@ -849,7 +850,7 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
             .map_or(None, |()| Some(resource_accounter.into_map()))
     }
 
-    pub fn get_validator_unstake_address(&self, system_address: SystemAddress) -> ResourceAddress {
+    pub fn get_validator_info(&self, system_address: SystemAddress) -> JavaValidatorInfo {
         let node_id = self
             .store
             .global_deref(GlobalAddress::System(system_address))
@@ -860,7 +861,10 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
         );
         let output = self.store.get_substate(&substate_id).unwrap();
         let validator_substate: ValidatorSubstate = output.substate.to_runtime().into();
-        validator_substate.unstake_nft
+        JavaValidatorInfo {
+            lp_token_address: validator_substate.liquidity_token,
+            unstake_resource: validator_substate.unstake_nft,
+        }
     }
 
     pub fn get_epoch(&self) -> u64 {

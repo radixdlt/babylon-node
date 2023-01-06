@@ -210,24 +210,27 @@ public final class RandomValidatorsTest {
                       PrivateKeys.ofNumeric(randomValidatorIndex + 1));
             }
             case 3 -> {
+              var stateReader = test.getInstance(randomValidatorIndex, REv2StateReader.class);
+              var validatorInfo = stateReader.getValidatorInfo(systemAddress);
               txn =
                   REv2TestTransactions.constructUnstakeValidatorTransaction(
                       NetworkDefinition.INT_TEST_NET,
                       0,
                       random.nextInt(1000000),
+                      validatorInfo.lpTokenAddress(),
                       systemAddress,
                       PrivateKeys.ofNumeric(randomValidatorIndex + 1));
             }
             default -> {
               var stateReader = test.getInstance(randomValidatorIndex, REv2StateReader.class);
-              var unstakeAddress = stateReader.getValidatorUnstakeResource(systemAddress);
+              var validatorInfo = stateReader.getValidatorInfo(systemAddress);
               txn =
                   REv2TestTransactions.constructClaimXrdTransaction(
                       NetworkDefinition.INT_TEST_NET,
                       0,
                       random.nextInt(1000000),
                       systemAddress,
-                      unstakeAddress,
+                      validatorInfo.unstakeResource(),
                       PrivateKeys.ofNumeric(randomValidatorIndex + 1));
             }
           }

@@ -216,8 +216,8 @@ public final class REv2StateManagerModule extends AbstractModule {
                 }
 
                 @Override
-                public ResourceAddress getValidatorUnstakeResource(SystemAddress systemAddress) {
-                  return stateComputer.getValidatorUnstakeAddress(systemAddress);
+                public ValidatorInfo getValidatorInfo(SystemAddress systemAddress) {
+                  return stateComputer.getValidatorInfo(systemAddress);
                 }
 
                 @Override
