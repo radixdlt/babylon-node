@@ -358,7 +358,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                     private RoundUpdate initialRoundUpdate(
                         BFTConfiguration configuration, ProposerElection proposerElection) {
                       var highQC = configuration.getVertexStoreState().getHighQC();
-                      var round = highQC.highestQC().getRound().next();
+                      var round = highQC.getHighestRound().next();
                       var leader = proposerElection.getProposer(round);
                       var nextLeader = proposerElection.getProposer(round.next());
 

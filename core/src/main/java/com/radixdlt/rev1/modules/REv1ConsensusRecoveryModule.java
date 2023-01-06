@@ -81,7 +81,7 @@ public class REv1ConsensusRecoveryModule extends AbstractModule {
   private RoundUpdate initialRoundUpdate(
       VertexStoreState vertexStoreState, BFTConfiguration configuration) {
     var highQC = vertexStoreState.getHighQC();
-    var round = highQC.highestQC().getRound().next();
+    var round = highQC.getHighestRound().next();
     var proposerElection = configuration.getProposerElection();
     var leader = proposerElection.getProposer(round);
     var nextLeader = proposerElection.getProposer(round.next());
