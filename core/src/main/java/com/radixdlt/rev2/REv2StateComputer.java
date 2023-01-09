@@ -187,7 +187,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                     r -> (Exception) new InvalidREv2Transaction(r.last())));
 
     return new StateComputerLedger.StateComputerResult(
-        committableTransactions, rejectedTransactions);
+        committableTransactions, rejectedTransactions, result.stateHash());
   }
 
   @Override

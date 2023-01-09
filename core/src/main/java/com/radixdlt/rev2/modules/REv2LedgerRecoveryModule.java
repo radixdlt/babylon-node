@@ -114,6 +114,7 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
             lastEpochProof.getNextEpoch(),
             Round.genesis(),
             lastEpochProof.getAccumulatorState(),
+            lastEpochProof.getHeader().getStateHash(),
             lastEpochProof.consensusParentRoundTimestamp(),
             lastEpochProof.proposerTimestamp());
     var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);

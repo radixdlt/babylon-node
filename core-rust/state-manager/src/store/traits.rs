@@ -67,6 +67,7 @@ pub use proofs::*;
 pub use substate::*;
 pub use transactions::*;
 pub use vertex::*;
+pub use tree::*;
 
 pub mod vertex {
     pub trait RecoverableVertexStore {
@@ -82,6 +83,28 @@ pub mod substate {
     pub use radix_engine::ledger::{
         QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
     };
+}
+
+pub mod tree {
+    use radix_engine_stores::tree::{
+        ReadableTreeStore, WriteableTreeStore, TreeStore
+    };
+
+    /* DEV: the following will be found there in radixdlt-scrypto/radix-engine-stores:
+
+    pub trait ReadableTreeStore {
+        fn get_node(&mut self, key: NodeKey) -> Option<Node>;
+    }
+
+    pub trait WriteableTreeStore {
+        fn insert_node(&mut self, key: NodeKey, node: Node);
+        fn record_stale_node(&mut self, key: NodeKey);
+    }
+
+    pub trait TreeStore: ReadableTreeStore + WriteableTreeStore {}
+
+    (and NodeKey + Node + all their deps are coming from JMT impl)
+     */
 }
 
 pub mod transactions {
@@ -167,6 +190,7 @@ pub mod commit {
         + WriteableVertexStore
         + WriteableSubstateStore
         + ReadableSubstateStore
+        + TreeStore
     {
         fn commit(self);
     }

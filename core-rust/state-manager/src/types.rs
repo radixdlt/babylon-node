@@ -182,6 +182,48 @@ impl HasLedgerPayloadHash for NotarizedTransaction {
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
 #[scrypto(TypeId, Encode, Decode)]
+pub struct StateHash([u8; Self::LENGTH]);
+
+impl StateHash {
+    pub const LENGTH: usize = 32;
+
+    pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
+        Self(hash_bytes)
+    }
+
+    pub fn into_bytes(self) -> [u8; Self::LENGTH] {
+        self.0
+    }
+}
+
+impl AsRef<[u8]> for StateHash {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl From<Hash> for StateHash {
+    fn from(hash: Hash) -> Self {
+        StateHash(hash.0)
+    }
+}
+
+impl fmt::Display for StateHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(self.0))
+    }
+}
+
+impl fmt::Debug for StateHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("StateHash")
+            .field(&hex::encode(self.0))
+            .finish()
+    }
+}
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct UserPayloadHash([u8; Self::LENGTH]);
 
 impl UserPayloadHash {
@@ -404,4 +446,5 @@ pub struct PrepareRequest {
 pub struct PrepareResult {
     pub committed: Vec<Vec<u8>>,
     pub rejected: Vec<(Vec<u8>, String)>,
+    pub state_hash: StateHash,
 }

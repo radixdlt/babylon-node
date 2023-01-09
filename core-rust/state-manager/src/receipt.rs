@@ -13,13 +13,14 @@ use radix_engine::types::{hash, scrypto_encode, Hash, Level, SubstateId};
 use radix_engine_interface::scrypto;
 use sbor::*;
 
-use crate::AccumulatorHash;
+use crate::{AccumulatorHash, StateHash};
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct CommittedTransactionIdentifiers {
     pub state_version: u64,
     pub accumulator_hash: AccumulatorHash,
+    pub state_hash: StateHash,
 }
 
 impl CommittedTransactionIdentifiers {
@@ -27,6 +28,7 @@ impl CommittedTransactionIdentifiers {
         Self {
             state_version: 0,
             accumulator_hash: AccumulatorHash::pre_genesis(),
+            state_hash: StateHash::from(Hash([0; Hash::LENGTH]))
         }
     }
 }

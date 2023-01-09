@@ -66,6 +66,7 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
@@ -94,21 +95,25 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   public static class StateComputerResult {
     private final List<ExecutedTransaction> executedTransactions;
     private final Map<RawLedgerTransaction, Exception> failedTransactions;
+    private final HashCode stateHash;
     private final BFTValidatorSet nextValidatorSet;
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
         Map<RawLedgerTransaction, Exception> failedTransactions,
+        HashCode stateHash,
         BFTValidatorSet nextValidatorSet) {
       this.executedTransactions = Objects.requireNonNull(executedTransactions);
       this.failedTransactions = Objects.requireNonNull(failedTransactions);
+      this.stateHash = Objects.requireNonNull(stateHash);
       this.nextValidatorSet = nextValidatorSet;
     }
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
-        Map<RawLedgerTransaction, Exception> failedTransactions) {
-      this(executedTransactions, failedTransactions, null);
+        Map<RawLedgerTransaction, Exception> failedTransactions,
+        HashCode stateHash) {
+      this(executedTransactions, failedTransactions, stateHash, null);
     }
 
     public Optional<BFTValidatorSet> getNextValidatorSet() {
@@ -121,6 +126,10 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
     public Map<RawLedgerTransaction, Exception> getFailedTransactions() {
       return failedTransactions;
+    }
+
+    public HashCode getStateHash() {
+      return stateHash;
     }
   }
 
@@ -259,6 +268,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               parentHeader.getEpoch(),
               vertex.getRound(),
               accumulatorState,
+              result.getStateHash(),
               vertex.getQCToParent().getWeightedTimestampOfSignatures(),
               vertex.proposerTimestamp(),
               result.getNextValidatorSet().orElse(null));

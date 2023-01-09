@@ -68,9 +68,11 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use prometheus::Registry;
 use radix_engine::engine::ScryptoInterpreter;
+use radix_engine::ledger::SubstateStore;
+use radix_engine::model::PersistedSubstate;
 use radix_engine::state_manager::{StagedSubstateStore, StagedSubstateStoreManager};
 use radix_engine::transaction::{
-    execute_and_commit_transaction, execute_preview, execute_transaction, ExecutionConfig,
+    execute_preview, execute_transaction, ExecutionConfig,
     FeeReserveConfig, PreviewError, PreviewResult, TransactionOutcome, TransactionReceipt,
     TransactionResult,
 };
@@ -80,12 +82,11 @@ use radix_engine::types::{
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
+use radix_engine_interface::api::types::SubstateId;
 use radix_engine_interface::core::NetworkDefinition;
 use tracing::info;
 use transaction::errors::TransactionValidationError;
-use transaction::model::{
-    NotarizedTransaction, PreviewFlags, PreviewIntent, TransactionHeader, TransactionIntent,
-};
+use transaction::model::{Executable, NotarizedTransaction, PreviewFlags, PreviewIntent, TransactionHeader, TransactionIntent};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{TestIntentHashManager, ValidationConfig};
 
@@ -93,14 +94,9 @@ use crate::mempool::simple_mempool::SimpleMempool;
 use crate::mempool::transaction_rejection_cache::{RejectionCache, RejectionReason};
 use crate::query::*;
 use crate::store::traits::*;
-use crate::transaction::{
-    LedgerTransaction, LedgerTransactionValidator, UserTransactionValidator, ValidatorTransaction,
-};
+use crate::transaction::{LedgerTransaction, LedgerTransactionValidator, PreparedLedgerTransaction, UserTransactionValidator, ValidatorTransaction};
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult, PreviewRequest};
-use crate::{
-    CommittedTransactionIdentifiers, HasIntentHash, HasUserPayloadHash, IntentHash,
-    LedgerTransactionReceipt, MempoolAddError, Metrics, PendingTransaction,
-};
+use crate::{CommittedTransactionIdentifiers, HasIntentHash, HasUserPayloadHash, IntentHash, LedgerTransactionReceipt, MempoolAddError, Metrics, PendingTransaction, StateHash};
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct LoggingConfig {
@@ -178,6 +174,74 @@ impl<S> StateManager<S> {
             prometheus_registry,
         }
     }
+
+    fn execute_and_commit_validator_transaction<T: SubstateStore>(
+        scrypto_interpreter: &ScryptoInterpreter<DefaultWasmEngine>,
+        fee_reserve_config: &FeeReserveConfig,
+        execution_config: &ExecutionConfig,
+        validator_transaction: ValidatorTransaction,
+        substate_store: &mut T,
+        hash_tree: &mut HashTree
+    ) -> Result<LedgerTransaction, String> {
+        let prepared_txn = validator_transaction.prepare();
+        let executable = &prepared_txn.get_executable();
+
+        let result = Self::execute_and_commit_transaction(
+            scrypto_interpreter,
+            fee_reserve_config,
+            execution_config,
+            executable,
+            substate_store,
+            hash_tree
+        );
+
+        match result {
+            TransactionResult::Commit(commit_result) => match commit_result.outcome {
+                TransactionOutcome::Failure(error) => {
+                    Err(format!("Validator txn failed: {:?}", error))
+                }
+                TransactionOutcome::Success(..) => {
+                    Ok(LedgerTransaction::Validator(validator_transaction))
+                }
+            },
+            TransactionResult::Reject(reject_result) => {
+                Err(format!("Validator txn rejected: {:?}", reject_result))
+            }
+        }
+    }
+
+    // DEV: question - should this, instead, become a new behavior of
+    // radix_engine::transaction::execute_and_commit_transaction() ?
+    fn execute_and_commit_transaction<T: SubstateStore>(
+        scrypto_interpreter: &ScryptoInterpreter<DefaultWasmEngine>,
+        fee_reserve_config: &FeeReserveConfig,
+        execution_config: &ExecutionConfig,
+        transaction: &Executable,
+        substate_store: &mut T,
+        hash_tree: &mut HashTree
+    ) -> TransactionResult {
+        let receipt = execute_transaction(
+            substate_store,
+            scrypto_interpreter,
+            fee_reserve_config,
+            execution_config,
+            transaction,
+        );
+        if let TransactionResult::Commit(commit) = &receipt.result {
+            commit.state_updates.commit(substate_store);
+            /* DEV:
+             * We can handle the "down substates" via Option = None here; should we from v1? (tree vs store!)
+             */
+            let kv_changes: [(SubstateId, Option<PersistedSubstate>)] = commit_result
+                .state_updates
+                .up_substates
+                .into_iter()
+                .map(|map_entry| (map_entry.0, Some(map_entry.1)))
+                .collect();
+            hash_tree.put_at_next_version(kv_changes);
+        }
+        receipt.result
+    }
 }
 
 impl<S> StateManager<S>
@@ -228,6 +292,7 @@ where
     S: ReadableSubstateStore,
     S: for<'a> TransactionIndex<&'a IntentHash> + TransactionIndex<u64> + QueryableTransactionStore,
     S: ReadableSubstateStore + QueryableSubstateStore, // Temporary - can remove when epoch validation moves to executor
+    S: QueryableProofStore + ReadableTreeStore
 {
     /// Performs static-validation, and then executes the transaction.
     /// By checking the TransactionReceipt, you can see if the transaction is presently commitable.
@@ -469,6 +534,36 @@ where
         let staged_node = staged_store_manager.new_child_node(0);
         let mut staged_store = staged_store_manager.get_output_store(staged_node);
 
+        /* DEV:
+         * We will use this trivial in-memory flat HashMap<NodeKey, Node> to get cheap staging for
+         * our tree.
+         */
+        let mut memory_tree_store: impl TreeStore = MemoryTreeStore::new();
+
+        /* DEV:
+         * The "overlay" is probably a struct similar to "staged" (just with a name describing its
+         * behavior rather than purpose):
+         *
+         * struct OverlayTreeStore<B: ReadableTreeStore, L: TreeStore> {
+         *   base: &B,
+         *   overlaid: &mut L
+         * }
+         */
+        let mut staged_tree_store: impl TreeStore = OverlayTreeStore::new(&self.store, &mut memory_tree_store);
+
+        /* DEV:
+         * Here is the place where we actually instantiate our thin wrapper over a raw JMT tree.
+         * impl HashTree {
+         *   pub fn new(store: &mut TreeStore, current_version: u64) -> HashTree {
+         *     HashTree { JellyfishMerkleTree::new(...), store, current_version }
+         *   }
+         *   pub fn put_at_next_version([(SubstateId, Option<PersistedSubstate>)]);
+         *   pub fn get_current_root_hash();
+         * }
+         */
+        let current_version: u64 = self.store.max_state_version();
+        let staged_tree = HashTree::new(&mut staged_tree_store, current_version);
+
         for prepared in prepare_request.already_prepared_payloads {
             let parsed_transaction =
                 LedgerTransactionValidator::parse_unvalidated_transaction_from_slice(&prepared)
@@ -485,12 +580,13 @@ where
                 .validate_and_create_executable(&prepared_parsed_transaction)
                 .expect("Already prepared tranasctions should be valid");
 
-            let receipt = execute_and_commit_transaction(
-                &mut staged_store,
+            let receipt = Self::execute_and_commit_transaction(
                 &self.scrypto_interpreter,
                 &self.fee_reserve_config,
                 &self.execution_config,
                 executable,
+                &mut staged_store,
+                &mut staged_tree
             );
             match receipt.result {
                 TransactionResult::Commit(_) => {}
@@ -516,6 +612,7 @@ where
                     scrypto_epoch: new_epoch,
                 },
                 &mut staged_store,
+                &mut staged_tree
             )
             .expect("Epoch update txn failed");
             committed.push(scrypto_encode(&epoch_update_ledger_txn).unwrap());
@@ -532,6 +629,7 @@ where
                 round_in_epoch: prepare_request.round_number,
             },
             &mut staged_store,
+            &mut staged_tree
         )
         .expect("Time update txn failed");
         committed.push(scrypto_encode(&time_update_ledger_txn).unwrap());
@@ -571,12 +669,13 @@ where
                 }
             };
 
-            let receipt = execute_and_commit_transaction(
-                &mut staged_store,
+            let receipt = Self::execute_and_commit_transaction(
                 &self.scrypto_interpreter,
                 &self.fee_reserve_config,
                 &self.execution_config,
                 &executable,
+                &mut staged_store,
+                &mut staged_tree
             );
 
             match receipt.result {
@@ -599,40 +698,7 @@ where
         PrepareResult {
             committed,
             rejected,
-        }
-    }
-
-    fn execute_and_commit_validator_transaction(
-        scrypto_interpreter: &ScryptoInterpreter<DefaultWasmEngine>,
-        fee_reserve_config: &FeeReserveConfig,
-        execution_config: &ExecutionConfig,
-        validator_transaction: ValidatorTransaction,
-        staged_store: &mut StagedSubstateStore<S>,
-    ) -> Result<LedgerTransaction, String> {
-        let prepared_txn = validator_transaction.prepare();
-        let executable = prepared_txn.get_executable();
-
-        let receipt = execute_transaction(
-            staged_store,
-            scrypto_interpreter,
-            fee_reserve_config,
-            execution_config,
-            &executable,
-        );
-
-        match receipt.result {
-            TransactionResult::Commit(commit_result) => match commit_result.outcome {
-                TransactionOutcome::Failure(error) => {
-                    Err(format!("Validator txn failed: {:?}", error))
-                }
-                TransactionOutcome::Success(..) => {
-                    commit_result.state_updates.commit(staged_store);
-                    Ok(LedgerTransaction::Validator(validator_transaction))
-                }
-            },
-            TransactionResult::Reject(reject_result) => {
-                Err(format!("Validator txn rejected: {:?}", reject_result))
-            }
+            state_hash: StateHash::from(staged_tree.get_current_root_hash())
         }
     }
 }
@@ -688,45 +754,40 @@ where
             );
         }
 
+        // DEV: here we will will need impl TreeStore for DbTransaction
         let mut db_transaction = self.store.create_db_transaction();
         let mut current_state_version = current_top_of_ledger.state_version;
         let mut current_accumulator = current_top_of_ledger.accumulator_hash;
+        let mut hash_tree = HashTree::new(&mut db_transaction, current_state_version);
 
-        let receipts = prepared_parsed_transactions
-            .iter()
-            .map(|prepared| {
-                let executable = self
-                    .ledger_transaction_validator
-                    .validate_and_create_executable(prepared)
-                    .unwrap_or_else(|error| {
-                        panic!(
-                            "Committed transaction is not valid - likely byzantine quorum: {:?}",
-                            error
-                        );
-                    });
-
-                let engine_receipt = execute_and_commit_transaction(
-                    &mut db_transaction,
-                    &self.scrypto_interpreter,
-                    &self.fee_reserve_config,
-                    &self.execution_config,
-                    &executable,
-                );
-
-                let ledger_receipt: LedgerTransactionReceipt =
-                    engine_receipt.try_into().unwrap_or_else(|error| {
-                        panic!(
-                            "Failed to commit a txn at state version {}: {}",
-                            commit_request.state_version, error
-                        )
-                    });
-                ledger_receipt
-            })
-            .collect::<Vec<_>>();
-
-        for (transaction, ledger_receipt) in
-            parsed_transactions.into_iter().zip(receipts.into_iter())
+        for (transaction, prepared) in
+            parsed_transactions.into_iter().zip(prepared_parsed_transactions.into_iter())
         {
+            let executable = self
+                .ledger_transaction_validator
+                .validate_and_create_executable(&prepared)
+                .unwrap_or_else(|error| {
+                    panic!(
+                        "Committed transaction is not valid - likely byzantine quorum: {:?}",
+                        error
+                    );
+                });
+            let engine_receipt = Self::execute_and_commit_transaction(
+                &self.scrypto_interpreter,
+                &self.fee_reserve_config,
+                &self.execution_config,
+                &executable,
+                &mut db_transaction,
+                &mut hash_tree
+            );
+            let ledger_receipt: LedgerTransactionReceipt =
+                engine_receipt.try_into().unwrap_or_else(|error| {
+                    panic!(
+                        "Failed to commit a txn at state version {}: {}",
+                        commit_request.state_version, error
+                    )
+                });
+
             let payload_hash = transaction.get_hash();
             if let LedgerTransaction::User(notarized_transaction) = &transaction {
                 let intent_hash = notarized_transaction.intent_hash();
@@ -739,6 +800,7 @@ where
             let identifiers = CommittedTransactionIdentifiers {
                 state_version: current_state_version,
                 accumulator_hash: current_accumulator,
+                state_hash: StateHash::from(hash_tree.current_root_hash()),
             };
 
             to_store.push((transaction, ledger_receipt, identifiers));
