@@ -136,8 +136,7 @@ public class ConsensusModuleTest {
     this.validatorBftNode = BFTNode.create(this.validatorKeyPair.getPublicKey());
     var validatorSet =
         BFTValidatorSet.from(Stream.of(BFTValidator.from(this.validatorBftNode, UInt256.ONE)));
-    var vertexStoreState =
-        VertexStoreState.create(HighQC.from(qc), genesisVertex, Optional.empty(), hasher);
+    var vertexStoreState = VertexStoreState.create(HighQC.from(qc), genesisVertex, hasher);
     var proposerElection = new WeightedRotatingLeaders(validatorSet);
     this.bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
     this.ecKeyPair = ECKeyPair.generateNew();

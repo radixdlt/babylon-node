@@ -99,7 +99,6 @@ import com.radixdlt.statecomputer.RandomTransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.SyncRelayConfig;
-import java.util.Optional;
 
 /** Manages the functional components of a node */
 public final class FunctionalRadixNodeModule extends AbstractModule {
@@ -386,8 +385,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                       return new BFTConfiguration(
                           proposerElection,
                           validatorSet,
-                          VertexStoreState.create(
-                              HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher));
+                          VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, hasher));
                     }
                   });
             } else {

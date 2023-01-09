@@ -89,7 +89,6 @@ import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -259,10 +258,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                       QuorumCertificate.createInitialEpochQC(initialEpochVertex, nextLedgerHeader);
                   final var initialState =
                       VertexStoreState.create(
-                          HighQC.from(initialEpochQC),
-                          initialEpochVertex,
-                          Optional.empty(),
-                          hasher);
+                          HighQC.from(initialEpochQC), initialEpochVertex, hasher);
                   var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
                   var proposerElection = new WeightedRotatingLeaders(validatorSet);
                   var bftConfiguration =

@@ -74,7 +74,6 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.serialization.*;
 import java.util.HashMap;
 import java.util.Objects;
-import java.util.Optional;
 import javax.annotation.concurrent.Immutable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -100,34 +99,26 @@ public final class VertexStoreState {
   // TODO: collapse the following two
   private final ImmutableList<VertexWithHash> vertices;
   private final ImmutableMap<HashCode, VertexWithHash> idToVertex;
-  private Optional<TimeoutCertificate> highestTC;
 
   private VertexStoreState(
       HighQC highQC,
       LedgerProof rootHeader,
       VertexWithHash root,
       ImmutableMap<HashCode, VertexWithHash> idToVertex,
-      ImmutableList<VertexWithHash> vertices,
-      Optional<TimeoutCertificate> highestTC) {
+      ImmutableList<VertexWithHash> vertices) {
     this.highQC = highQC;
     this.rootHeader = rootHeader;
     this.root = root;
     this.idToVertex = idToVertex;
     this.vertices = vertices;
-    this.highestTC = highestTC;
+  }
+
+  public static VertexStoreState create(HighQC highQC, VertexWithHash root, Hasher hasher) {
+    return create(highQC, root, ImmutableList.of(), hasher);
   }
 
   public static VertexStoreState create(
-      HighQC highQC, VertexWithHash root, Optional<TimeoutCertificate> highestTC, Hasher hasher) {
-    return create(highQC, root, ImmutableList.of(), highestTC, hasher);
-  }
-
-  public static VertexStoreState create(
-      HighQC highQC,
-      VertexWithHash root,
-      ImmutableList<VertexWithHash> vertices,
-      Optional<TimeoutCertificate> highestTC,
-      Hasher hasher) {
+      HighQC highQC, VertexWithHash root, ImmutableList<VertexWithHash> vertices, Hasher hasher) {
     final var headers =
         highQC
             .highestCommittedQC()
@@ -211,11 +202,12 @@ public final class VertexStoreState {
     }
 
     return new VertexStoreState(
-        highQC, headers.getSecond(), root, ImmutableMap.copyOf(seen), vertices, highestTC);
+        highQC, headers.getSecond(), root, ImmutableMap.copyOf(seen), vertices);
   }
 
   public VertexStoreState prune(Hasher hasher) {
-    var stateProof = highQC.highestQC().getCommittedAndLedgerStateProof(hasher);
+    final var highestQc = highQC.highestQC();
+    var stateProof = highestQc.getCommittedAndLedgerStateProof(hasher);
     if (stateProof.isPresent()) {
       var newHeaders = stateProof.get();
       var header = newHeaders.getFirst();
@@ -224,16 +216,15 @@ public final class VertexStoreState {
         var newRoot = idToVertex.get(header.getVertexId());
         var newVertices =
             ImmutableList.of(
-                idToVertex.get(highQC.highestQC().getParentHeader().getVertexId()),
-                idToVertex.get(highQC.highestQC().getProposedHeader().getVertexId()));
+                idToVertex.get(highestQc.getParentHeader().getVertexId()),
+                idToVertex.get(highestQc.getProposedHeader().getVertexId()));
         var idToVertexMap =
             ImmutableMap.of(
-                highQC.highestQC().getParentHeader().getVertexId(), newVertices.get(0),
-                highQC.highestQC().getProposedHeader().getVertexId(), newVertices.get(1));
-        var newHighQC = HighQC.from(highQC.highestQC());
-        var proof = newHeaders.getSecond();
-        return new VertexStoreState(
-            newHighQC, proof, newRoot, idToVertexMap, newVertices, highestTC);
+                highestQc.getParentHeader().getVertexId(), newVertices.get(0),
+                highestQc.getProposedHeader().getVertexId(), newVertices.get(1));
+        final var newHighQC = HighQC.from(highestQc, highestQc, highQC.highestTC());
+        final var proof = newHeaders.getSecond();
+        return new VertexStoreState(newHighQC, proof, newRoot, idToVertexMap, newVertices);
       }
     }
 
@@ -244,8 +235,9 @@ public final class VertexStoreState {
     return new SerializedVertexStoreState(
         this.highQC,
         this.root.vertex(),
-        this.vertices.stream().map(VertexWithHash::vertex).collect(ImmutableList.toImmutableList()),
-        this.highestTC.orElse(null));
+        this.vertices.stream()
+            .map(VertexWithHash::vertex)
+            .collect(ImmutableList.toImmutableList()));
   }
 
   public HighQC getHighQC() {
@@ -266,7 +258,7 @@ public final class VertexStoreState {
 
   @Override
   public int hashCode() {
-    return Objects.hash(root, rootHeader, highQC, idToVertex, vertices, highestTC);
+    return Objects.hash(root, rootHeader, highQC, idToVertex, vertices);
   }
 
   @Override
@@ -280,8 +272,7 @@ public final class VertexStoreState {
         && Objects.equals(this.rootHeader, other.rootHeader)
         && Objects.equals(this.highQC, other.highQC)
         && Objects.equals(this.vertices, other.vertices)
-        && Objects.equals(this.idToVertex, other.idToVertex)
-        && Objects.equals(this.highestTC, other.highestTC);
+        && Objects.equals(this.idToVertex, other.idToVertex);
   }
 
   /** Vertex Store State version which can be serialized. */
@@ -304,21 +295,16 @@ public final class VertexStoreState {
     @DsonOutput(DsonOutput.Output.ALL)
     private final HighQC highQC;
 
-    @JsonProperty("highest_tc")
-    @DsonOutput(DsonOutput.Output.ALL)
-    private final TimeoutCertificate highestTC;
-
     @JsonCreator
     public SerializedVertexStoreState(
         @JsonProperty(value = "high_qc", required = true) HighQC highQC,
         @JsonProperty(value = "root", required = true) Vertex root,
         @JsonProperty(value = "vertices")
-            ImmutableList<Vertex> vertices, // Cannot be required due to DSON deserialization
-        @JsonProperty("highest_tc") TimeoutCertificate highestTC) {
+            ImmutableList<Vertex> vertices // Cannot be required due to DSON deserialization
+        ) {
       this.root = Objects.requireNonNull(root);
       this.vertices = vertices == null ? ImmutableList.of() : vertices;
       this.highQC = Objects.requireNonNull(highQC);
-      this.highestTC = highestTC;
     }
 
     public Vertex getRoot() {
@@ -333,13 +319,9 @@ public final class VertexStoreState {
       return highQC;
     }
 
-    public Optional<TimeoutCertificate> getHighestTC() {
-      return Optional.ofNullable(highestTC);
-    }
-
     @Override
     public int hashCode() {
-      return Objects.hash(root, vertices, highQC, highestTC);
+      return Objects.hash(root, vertices, highQC);
     }
 
     public boolean isForEpoch(long epoch) {
@@ -354,7 +336,7 @@ public final class VertexStoreState {
               .map(v -> v.withId(hasher))
               .collect(ImmutableList.toImmutableList());
 
-      return VertexStoreState.create(getHighQC(), rootVertex, vertices, getHighestTC(), hasher);
+      return VertexStoreState.create(getHighQC(), rootVertex, vertices, hasher);
     }
 
     @Override
@@ -366,15 +348,14 @@ public final class VertexStoreState {
       return (o instanceof SerializedVertexStoreState other)
           && Objects.equals(this.root, other.root)
           && Objects.equals(this.vertices, other.vertices)
-          && Objects.equals(this.highQC, other.highQC)
-          && Objects.equals(this.highestTC, other.highestTC);
+          && Objects.equals(this.highQC, other.highQC);
     }
 
     @Override
     public String toString() {
       return String.format(
-          "%s{highQC=%s root=%s vertices=%s highestTc=%s}",
-          this.getClass().getSimpleName(), this.highQC, this.root, this.vertices, this.highestTC);
+          "%s{highQC=%s root=%s vertices=%s}",
+          this.getClass().getSimpleName(), this.highQC, this.root, this.vertices);
     }
   }
 }

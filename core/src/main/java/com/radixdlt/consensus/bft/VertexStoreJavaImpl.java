@@ -117,8 +117,8 @@ public final class VertexStoreJavaImpl implements VertexStore {
     this.rootVertex = Objects.requireNonNull(rootVertex);
     this.highestQC = Objects.requireNonNull(highestQC);
     this.highestCommittedQC = Objects.requireNonNull(commitQC);
-    this.vertexChildren.put(rootVertex.hash(), new HashSet<>());
     this.highestTC = Objects.requireNonNull(highestTC);
+    this.vertexChildren.put(rootVertex.hash(), new HashSet<>());
   }
 
   public static VertexStoreJavaImpl create(
@@ -183,6 +183,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     this.rootVertex = vertexStoreState.getRoot();
     this.highestCommittedQC = vertexStoreState.getHighQC().highestCommittedQC();
     this.highestQC = vertexStoreState.getHighQC().highestQC();
+    this.highestTC = vertexStoreState.getHighQC().highestTC();
     this.vertices.clear();
     this.vertexChildren.clear();
     this.vertexChildren.put(rootVertex.hash(), new HashSet<>());
@@ -213,7 +214,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     }
 
     // proposed vertex doesn't have any children
-    boolean isHighQC = qc.getRound().gt(highestQC.getRound());
+    boolean isHighQC = qc.getRound().gt(highQC().getHighestRound());
     boolean isAnythingCommitted = qc.getCommittedAndLedgerStateProof(hasher).isPresent();
     if (!isHighQC && !isAnythingCommitted) {
       return new VertexStore.InsertQcResult.Ignored();
@@ -247,8 +248,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     // TODO: store list dynamically rather than recomputing
     ImmutableList.Builder<VertexWithHash> verticesBuilder = ImmutableList.builder();
     getChildrenVerticesList(this.rootVertex, verticesBuilder);
-    return VertexStoreState.create(
-        this.highQC(), this.rootVertex, verticesBuilder.build(), this.highestTC, hasher);
+    return VertexStoreState.create(this.highQC(), this.rootVertex, verticesBuilder.build(), hasher);
   }
 
   /**
@@ -257,8 +257,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
    * @param timeoutCertificate the timeout certificate
    */
   public void insertTimeoutCertificate(TimeoutCertificate timeoutCertificate) {
-    if (this.highestTC.isEmpty()
-        || this.highestTC.get().getRound().lt(timeoutCertificate.getRound())) {
+    if (timeoutCertificate.getRound().gt(highQC().getHighestRound())) {
       this.highestTC = Optional.of(timeoutCertificate);
     }
   }

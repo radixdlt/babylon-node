@@ -215,13 +215,13 @@ public final class BFTSync implements BFTSyncer {
       final var highQC =
           switch (roundQuorumReached.votingResult()) {
             case FormedQC formedQc -> HighQC.from(
-                ((FormedQC) roundQuorumReached.votingResult()).getQC(),
+                formedQc.getQC(),
                 this.vertexStore.highQC().highestCommittedQC(),
                 this.vertexStore.highQC().highestTC());
             case FormedTC formedTc -> HighQC.from(
                 this.vertexStore.highQC().highestQC(),
                 this.vertexStore.highQC().highestCommittedQC(),
-                Optional.of(((FormedTC) roundQuorumReached.votingResult()).getTC()));
+                Optional.of(formedTc.getTC()));
           };
 
       syncToQC(highQC, roundQuorumReached.lastAuthor());
@@ -317,7 +317,7 @@ public final class BFTSync implements BFTSyncer {
   private void doCommittedSync(SyncState syncState) {
     final var committedQCId =
         syncState.highQC().highestCommittedQC().getProposedHeader().getVertexId();
-    final var commitedRound = syncState.highQC().highestCommittedQC().getRound();
+    final var committedRound = syncState.highQC().highestCommittedQC().getRound();
 
     syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
     log.debug(
@@ -336,7 +336,7 @@ public final class BFTSync implements BFTSyncer {
             .collect(ImmutableList.toImmutableList());
 
     this.sendBFTSyncRequest(
-        "CommittedSync", commitedRound, committedQCId, 3, authors, syncState.localSyncId);
+        "CommittedSync", committedRound, committedQCId, 3, authors, syncState.localSyncId);
   }
 
   public EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor() {
@@ -442,12 +442,32 @@ public final class BFTSync implements BFTSyncer {
       syncState.fetched.sort(Comparator.comparing(v -> v.vertex().getRound()));
       ImmutableList<VertexWithHash> nonRootVertices =
           syncState.fetched.stream().skip(1).collect(ImmutableList.toImmutableList());
+
+      final var syncStateHighestCommittedQc = syncState.highQC().highestCommittedQC();
+      final var syncStateHighestTc = syncState.highQC.highestTC();
+      final var currentHighestTc = vertexStore.highQC().highestTC();
+      final Optional<TimeoutCertificate> highestKnownTc;
+      /* highestKnownTc = max(syncStateHighestTc, currentHighestTc) but must handle Optionals */
+      if (syncStateHighestTc.isPresent() && currentHighestTc.isPresent()) {
+        // If both are present, return the highest round TC (keep current if equal)
+        if (syncStateHighestTc.get().getRound().gt(currentHighestTc.get().getRound())) {
+          highestKnownTc = syncStateHighestTc;
+        } else {
+          highestKnownTc = currentHighestTc;
+        }
+      } else if (syncStateHighestTc.isPresent()) {
+        // If there's no current TC, use the sync state TC
+        highestKnownTc = syncStateHighestTc;
+      } else {
+        // Else use current TC (can be empty)
+        highestKnownTc = currentHighestTc;
+      }
+
       var vertexStoreState =
           VertexStoreState.create(
-              HighQC.from(syncState.highQC().highestCommittedQC()),
+              HighQC.from(syncStateHighestCommittedQc, syncStateHighestCommittedQc, highestKnownTc),
               syncState.fetched.get(0),
               nonRootVertices,
-              vertexStore.highQC().highestTC(),
               hasher);
       if (vertexStore.tryRebuild(vertexStoreState)) {
         // TODO: Move pacemaker outside of sync

@@ -88,7 +88,6 @@ import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
-import java.util.Optional;
 
 public final class REv2LedgerRecoveryModule extends AbstractModule {
   private final AccumulatorState initialAccumulatorState;
@@ -177,7 +176,7 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
             lastEpochProof.consensusParentRoundTimestamp(),
             lastEpochProof.proposerTimestamp());
     var genesisQC = QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
-    return VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
+    return VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, hasher);
   }
 
   @Provides

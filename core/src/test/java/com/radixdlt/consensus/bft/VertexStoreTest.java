@@ -140,9 +140,7 @@ public class VertexStoreTest {
     this.rootQC = QuorumCertificate.createInitialEpochQC(genesisVertex, MOCKED_HEADER);
     this.underlyingVertexStore =
         VertexStoreJavaImpl.create(
-            VertexStoreState.create(HighQC.from(rootQC), genesisVertex, Optional.empty(), hasher),
-            ledger,
-            hasher);
+            VertexStoreState.create(HighQC.from(rootQC), genesisVertex, hasher), ledger, hasher);
     this.vertexStoreAdapter =
         new VertexStoreAdapter(
             underlyingVertexStore,
@@ -358,12 +356,13 @@ public class VertexStoreTest {
   public void rebuilding_should_emit_updates() {
     // Arrange
     final var vertices = Stream.generate(this.nextVertex).limit(4).toList();
+
+    final var qc = vertices.get(3).vertex().getQCToParent();
     VertexStoreState vertexStoreState =
         VertexStoreState.create(
-            HighQC.from(vertices.get(3).vertex().getQCToParent()),
+            HighQC.from(qc, qc, vertexStoreAdapter.highQC().highestTC()),
             vertices.get(0),
             vertices.stream().skip(1).collect(ImmutableList.toImmutableList()),
-            vertexStoreAdapter.highQC().highestTC(),
             hasher);
 
     // Act

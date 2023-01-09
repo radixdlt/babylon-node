@@ -78,7 +78,6 @@ import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 import java.util.stream.IntStream;
@@ -136,7 +135,7 @@ public class MockedConsensusRecoveryModule extends AbstractModule {
     return new BFTConfiguration(
         proposerElection,
         validatorSet,
-        VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher));
+        VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, hasher));
   }
 
   public static class Builder {

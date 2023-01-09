@@ -130,7 +130,7 @@ public final class HighQC {
   }
 
   /**
-   * Creates a {@link HighQC} from the a QC
+   * Creates a {@link HighQC} from a QC
    *
    * @param qc The qc
    * @return A new {@link HighQC}
