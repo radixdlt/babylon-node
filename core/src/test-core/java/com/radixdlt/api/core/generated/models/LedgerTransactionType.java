@@ -31,7 +31,9 @@ public enum LedgerTransactionType {
   
   USER("User"),
   
-  VALIDATOR("Validator");
+  VALIDATOR("Validator"),
+  
+  SYSTEM("System");
 
   private String value;
 

@@ -4,6 +4,7 @@ use radix_engine::types::hash;
 use radix_engine::types::Bech32Encoder;
 use radix_engine_interface::core::NetworkDefinition;
 
+use radix_engine_interface::data::scrypto_encode;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
 use state_manager::transaction::{LedgerTransaction, ValidatorTransaction};
@@ -15,7 +16,8 @@ use std::cmp;
 use std::collections::HashMap;
 use transaction::manifest;
 use transaction::model::{
-    NotarizedTransaction, SignedTransactionIntent, TransactionIntent, TransactionManifest,
+    NotarizedTransaction, SignedTransactionIntent, SystemTransaction, TransactionIntent,
+    TransactionManifest,
 };
 
 #[tracing::instrument(skip(state))]
@@ -48,7 +50,7 @@ fn handle_transaction_stream_internal(
     }
 
     if limit > MAX_TXN_COUNT_PER_REQUEST.into() {
-        return Err(client_error(&format!(
+        return Err(client_error(format!(
             "limit must <= {}",
             MAX_TXN_COUNT_PER_REQUEST
         )));
@@ -79,7 +81,7 @@ fn handle_transaction_stream_internal(
             .store
             .get_payload_hash(state_version)
             .ok_or_else(|| {
-                server_error(&format!(
+                server_error(format!(
                     "A transaction id is missing at state version {}",
                     state_version
                 ))
@@ -88,7 +90,7 @@ fn handle_transaction_stream_internal(
             .store
             .get_committed_transaction(&next_tid)
             .ok_or_else(|| {
-                server_error(&format!(
+                server_error(format!(
                     "A transaction is missing at state version {}",
                     state_version
                 ))
@@ -104,7 +106,7 @@ fn handle_transaction_stream_internal(
         .map(
             |((ledger_transaction, receipt, identifiers), state_version)| {
                 if identifiers.state_version != state_version {
-                    Err(server_error(&format!(
+                    Err(server_error(format!(
                         "Loaded state version {} doesn't match its stored state version {}",
                         state_version, identifiers.state_version
                     )))?
@@ -186,6 +188,15 @@ pub fn to_api_ledger_transaction(
                 }
             })?),
             validator_transaction: Box::new(to_api_validator_transaction(tx, network)?),
+        },
+        LedgerTransaction::System(tx) => models::LedgerTransaction::SystemLedgerTransaction {
+            payload_hex: to_hex(ledger_transaction.create_payload().map_err(|err| {
+                MappingError::SborEncodeError {
+                    encode_error: err,
+                    message: "Error encoding system payload sbor".to_string(),
+                }
+            })?),
+            system_transaction: Box::new(to_api_system_transaction(tx, network)?),
         },
     })
 }
@@ -299,5 +310,21 @@ pub fn to_api_validator_transaction(
             consensus_epoch: to_api_epoch(*consensus_epoch)?,
             round_in_epoch: to_api_round(*round_in_epoch)?,
         },
+    })
+}
+
+pub fn to_api_system_transaction(
+    system_transaction: &SystemTransaction,
+    _network: &NetworkDefinition,
+) -> Result<models::SystemTransaction, MappingError> {
+    // NOTE: We don't use the .hash() method on the struct impls themselves,
+    //       because they use the wrong hash function
+    let payload =
+        scrypto_encode(system_transaction).map_err(|err| MappingError::SborEncodeError {
+            encode_error: err,
+            message: "Error encoding user system sbor".to_string(),
+        })?;
+    Ok(models::SystemTransaction {
+        payload_hex: to_hex(payload),
     })
 }

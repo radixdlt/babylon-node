@@ -17,6 +17,8 @@ pub enum LedgerTransactionType {
     User,
     #[serde(rename = "Validator")]
     Validator,
+    #[serde(rename = "System")]
+    System,
 
 }
 
@@ -25,6 +27,7 @@ impl ToString for LedgerTransactionType {
         match self {
             Self::User => String::from("User"),
             Self::Validator => String::from("Validator"),
+            Self::System => String::from("System"),
         }
     }
 }

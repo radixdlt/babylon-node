@@ -156,6 +156,21 @@ fn do_get_next_proof(
 }
 
 #[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getEpochProof(
+    env: JNIEnv,
+    _class: JClass,
+    j_state_manager: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_get_epoch_proof)
+}
+
+#[tracing::instrument(skip_all)]
+fn do_get_epoch_proof(state_manager: &ActualStateManager, state_version: u64) -> Option<Vec<u8>> {
+    state_manager.store.get_epoch_proof(state_version)
+}
+
+#[no_mangle]
 extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getLastProof(
     env: JNIEnv,
     _class: JClass,

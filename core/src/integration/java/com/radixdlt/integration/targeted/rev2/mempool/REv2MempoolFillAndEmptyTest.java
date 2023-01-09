@@ -86,6 +86,7 @@ import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import org.apache.logging.log4j.LogManager;
@@ -113,6 +114,7 @@ public final class REv2MempoolFillAndEmptyTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
+                        TransactionBuilder.createGenesisWithNumValidators(1),
                         new REv2StateConfig(UInt64.fromNonNegativeLong(1000000)),
                         REv2DatabaseConfig.inMemory(),
                         StateComputerConfig.REV2ProposerConfig.mempool(
@@ -124,7 +126,6 @@ public final class REv2MempoolFillAndEmptyTest {
       new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
 
   private void fillAndEmptyMempool(DeterministicTest test) {
-
     var rateLimiter = RateLimiter.create(0.5);
     var mempoolReader =
         test.getInstance(0, Key.get(new TypeLiteral<MempoolReader<RawNotarizedTransaction>>() {}));

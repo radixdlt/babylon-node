@@ -67,10 +67,14 @@ use crate::transaction::UserTransactionValidator;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::types::{ComponentAddress, Decimal, Decode, Encode, TypeId, RADIX_TOKEN};
+use radix_engine::types::{
+    scrypto, ComponentAddress, Decimal, Decode, Encode, TypeId, RADIX_TOKEN,
+};
+use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 
 use crate::jni::utils::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
+use crate::{PrepareGenesisRequest, PrepareGenesisResult};
 
 use super::state_manager::ActualStateManager;
 
@@ -118,6 +122,28 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_saveVertexS
 fn do_save_vertex_store(state_manager: &mut ActualStateManager, args: Vec<u8>) {
     let vertex_store_bytes: Vec<u8> = args;
     state_manager.save_vertex_store(vertex_store_bytes);
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepareGenesis(
+    env: JNIEnv,
+    _class: JClass,
+    j_state_manager: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_prepare_genesis)
+}
+
+#[tracing::instrument(skip_all)]
+fn do_prepare_genesis(
+    state_manager: &mut ActualStateManager,
+    args: JavaPrepareGenesisRequest,
+) -> JavaPrepareGenesisResult {
+    let prepare_request = args;
+
+    let result = state_manager.prepare_genesis(prepare_request.into());
+
+    result.into()
 }
 
 #[no_mangle]
@@ -256,6 +282,33 @@ impl From<PrepareResult> for JavaPrepareResult {
         JavaPrepareResult {
             committed: prepare_results.committed,
             rejected: prepare_results.rejected,
+        }
+    }
+}
+
+#[derive(Debug, Decode, Encode, TypeId)]
+pub struct JavaPrepareGenesisRequest {
+    pub genesis: JavaRawTransaction,
+}
+
+impl From<JavaPrepareGenesisRequest> for PrepareGenesisRequest {
+    fn from(prepare_genesis_request: JavaPrepareGenesisRequest) -> Self {
+        PrepareGenesisRequest {
+            genesis: prepare_genesis_request.genesis.payload,
+        }
+    }
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct JavaPrepareGenesisResult {
+    pub validator_list: Option<Vec<EcdsaSecp256k1PublicKey>>,
+}
+
+impl From<PrepareGenesisResult> for JavaPrepareGenesisResult {
+    fn from(prepare_results: PrepareGenesisResult) -> Self {
+        JavaPrepareGenesisResult {
+            validator_list: prepare_results.validator_list,
         }
     }
 }

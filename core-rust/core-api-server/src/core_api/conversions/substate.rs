@@ -10,7 +10,7 @@ use radix_engine::model::{
     EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate,
     NonFungible, NonFungibleSubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate,
     PackageRoyaltyConfigSubstate, PersistedSubstate, Resource, ResourceManagerSubstate,
-    VaultSubstate,
+    ValidatorSetSubstate, VaultSubstate,
 };
 use radix_engine::types::{
     scrypto_encode, AccessRule, AccessRuleEntry, AccessRuleKey, AccessRuleNode, AccessRules,
@@ -19,6 +19,7 @@ use radix_engine::types::{
     RoyaltyConfig, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible,
     SoftResourceOrNonFungibleList, SubstateId, SubstateOffset, RADIX_TOKEN,
 };
+use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use utils::ContextualDisplay;
 
 use super::MappingError;
@@ -66,6 +67,9 @@ pub fn to_api_substate(
         }
         PersistedSubstate::EpochManager(epoch_manager) => {
             to_api_epoch_manager_substate(epoch_manager)?
+        }
+        PersistedSubstate::ValidatorSet(validator_set) => {
+            to_api_validator_set_substate(validator_set)?
         }
         PersistedSubstate::CurrentTimeRoundedToMinutes(substate) => {
             to_api_clock_current_time_rounded_down_to_minutes_substate(substate)?
@@ -479,6 +483,15 @@ pub fn to_api_dynamic_resource_descriptor(
     })
 }
 
+pub fn to_api_ecdsa_secp256k1_public_key(
+    key: &EcdsaSecp256k1PublicKey,
+) -> models::EcdsaSecp256k1PublicKey {
+    models::EcdsaSecp256k1PublicKey {
+        key_type: models::PublicKeyType::EcdsaSecp256k1,
+        key_hex: to_hex(key.0),
+    }
+}
+
 pub fn to_api_non_fungible_id(non_fungible_id: &NonFungibleId) -> models::NonFungibleId {
     models::NonFungibleId {
         simple_rep: non_fungible_id.to_simple_string(),
@@ -706,10 +719,25 @@ pub fn to_api_package_royalty_accumulator_substate(
     })
 }
 
+pub fn to_api_validator_set_substate(
+    substate: &ValidatorSetSubstate,
+) -> Result<models::Substate, MappingError> {
+    // Use compiler to unpack to ensure we map all fields
+    // TODO: convert validator_set
+    let ValidatorSetSubstate { validator_set } = substate;
+
+    let validator_set = validator_set
+        .iter()
+        .map(to_api_ecdsa_secp256k1_public_key)
+        .collect();
+    Ok(models::Substate::ValidatorSetSubstate { validator_set })
+}
+
 pub fn to_api_epoch_manager_substate(
     substate: &EpochManagerSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
+    // TODO: convert validator_set
     let EpochManagerSubstate { epoch } = substate;
 
     Ok(models::Substate::EpochManagerSubstate {

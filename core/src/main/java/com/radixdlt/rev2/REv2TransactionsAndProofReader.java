@@ -173,7 +173,16 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
 
   @Override
   public Optional<LedgerProof> getEpochProof(long epoch) {
-    return Optional.empty();
+    return this.transactionStore
+        .getEpochProof(epoch)
+        .map(
+            b -> {
+              try {
+                return serialization.fromDson(b, LedgerProof.class);
+              } catch (DeserializeException e) {
+                throw new RuntimeException(e);
+              }
+            });
   }
 
   @Override

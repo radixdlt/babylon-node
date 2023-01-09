@@ -62,18 +62,29 @@
  * permissions under this License.
  */
 
+use radix_engine::ledger::create_genesis;
 use radix_engine::types::{
     AccessRule, PublicKey, Signature, SignatureWithPublicKey, FAUCET_COMPONENT, RADIX_TOKEN,
 };
 use radix_engine_interface::args;
 use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::data::scrypto_encode;
 
+use crate::transaction::LedgerTransaction;
 use transaction::builder::ManifestBuilder;
 use transaction::manifest::{compile, CompileError};
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
     TransactionManifest,
 };
+
+pub fn create_genesis_ledger_transaction_bytes(
+    validator_list: Vec<EcdsaSecp256k1PublicKey>,
+) -> Vec<u8> {
+    let genesis = create_genesis(validator_list);
+    scrypto_encode(&LedgerTransaction::System(genesis)).unwrap()
+}
 
 pub fn create_new_account_intent_bytes(
     network_definition: &NetworkDefinition,
