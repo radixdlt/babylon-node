@@ -89,15 +89,6 @@ public final class MessageQueue {
     return true;
   }
 
-  public boolean addFirst(ControlledMessage item) {
-    long messageTime = item.arrivalTime();
-    this.messagesByTime.computeIfAbsent(messageTime, k -> Lists.newLinkedList()).addFirst(item);
-    if (messageTime < this.minimumMessageTime) {
-      this.minimumMessageTime = messageTime;
-    }
-    return true;
-  }
-
   public boolean addBefore(ControlledMessage item, Predicate<ControlledMessage> test) {
     var messageTime = item.arrivalTime();
     var i =

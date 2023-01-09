@@ -134,7 +134,8 @@ public final class DeterministicNodes implements AutoCloseable {
     }
   }
 
-  private Injector createBFTInstance(int nodeIndex, Module baseModule, Module overrideModule) {
+  private Injector createBFTInstance(
+      int nodeIndex, Module baseModule, Module overrideModule, long time) {
     var self = this.nodeLookup.inverse().get(nodeIndex);
     Module module =
         Modules.combine(
@@ -147,7 +148,7 @@ public final class DeterministicNodes implements AutoCloseable {
                 bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
                 bind(Environment.class).toInstance(network.createSender(self));
                 bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
-                bind(ControlledTimeSupplier.class).toInstance(new ControlledTimeSupplier(0));
+                bind(ControlledTimeSupplier.class).toInstance(new ControlledTimeSupplier(time));
                 bind(TimeSupplier.class).to(ControlledTimeSupplier.class);
               }
             },
@@ -166,9 +167,9 @@ public final class DeterministicNodes implements AutoCloseable {
     return (int) this.nodeInstances.stream().filter(Objects::nonNull).count();
   }
 
-  public void startAllNodes() {
+  public void startAllNodes(long time) {
     for (int nodeIndex = 0; nodeIndex < this.nodeInstances.size(); nodeIndex++) {
-      this.startNode(nodeIndex);
+      this.startNode(nodeIndex, time);
     }
   }
 
@@ -188,12 +189,21 @@ public final class DeterministicNodes implements AutoCloseable {
     this.nodeInstances.set(nodeIndex, null);
   }
 
-  public void startNode(int nodeIndex) {
+  public static class EventHandleException extends RuntimeException {
+    private final ControlledMessage message;
+
+    EventHandleException(ControlledMessage message, Exception e) {
+      super("Exception: " + e + "\nOn message: " + message.toString(), e);
+      this.message = message;
+    }
+  }
+
+  public void startNode(int nodeIndex, long time) {
     if (isNodeLive(nodeIndex)) {
       return;
     }
 
-    var injector = createBFTInstance(nodeIndex, baseModule, overrideModule);
+    var injector = createBFTInstance(nodeIndex, baseModule, overrideModule, time);
 
     ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
     try {
@@ -204,15 +214,6 @@ public final class DeterministicNodes implements AutoCloseable {
     }
 
     this.nodeInstances.set(nodeIndex, injector);
-  }
-
-  public static class EventHandleException extends RuntimeException {
-    private final ControlledMessage message;
-
-    EventHandleException(ControlledMessage message, Exception e) {
-      super("Exception: " + e + "\nOn message: " + message.toString(), e);
-      this.message = message;
-    }
   }
 
   public void handleMessage(Timed<ControlledMessage> timedNextMsg) {
@@ -233,7 +234,7 @@ public final class DeterministicNodes implements AutoCloseable {
 
     ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
     try {
-      log.debug("Receive message {} at {}", nextMsg, timedNextMsg.time());
+      log.debug("{}: Receive message {}", timedNextMsg.time(), nextMsg);
       nodeInstances
           .get(receiverIndex)
           .getInstance(DeterministicProcessor.class)

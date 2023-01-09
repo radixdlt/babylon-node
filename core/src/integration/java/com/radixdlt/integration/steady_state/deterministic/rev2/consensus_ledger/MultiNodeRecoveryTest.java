@@ -80,6 +80,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
 import java.util.Collections;
 import java.util.Random;
@@ -116,6 +117,7 @@ public final class MultiNodeRecoveryTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
+                        TransactionBuilder.createGenesisWithNumValidators(NUM_VALIDATORS),
                         new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
                         databaseConfig,
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(

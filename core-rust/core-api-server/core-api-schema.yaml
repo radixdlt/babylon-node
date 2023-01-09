@@ -2112,6 +2112,7 @@ components:
         - $ref: '#/components/schemas/PackageRoyaltyAccumulatorSubstate'
         - $ref: '#/components/schemas/ResourceManagerSubstate'
         - $ref: '#/components/schemas/EpochManagerSubstate'
+        - $ref: '#/components/schemas/ValidatorSetSubstate'
         - $ref: '#/components/schemas/ClockCurrentMinuteSubstate'
         - $ref: '#/components/schemas/KeyValueStoreEntrySubstate'
         - $ref: '#/components/schemas/VaultSubstate'
@@ -2132,6 +2133,7 @@ components:
           PackageRoyaltyAccumulator: '#/components/schemas/PackageRoyaltyAccumulatorSubstate'
           ResourceManager: '#/components/schemas/ResourceManagerSubstate'
           EpochManager: '#/components/schemas/EpochManagerSubstate'
+          ValidatorSet: '#/components/schemas/ValidatorSetSubstate'
           ClockCurrentMinute: '#/components/schemas/ClockCurrentMinuteSubstate'
           KeyValueStoreEntry: '#/components/schemas/KeyValueStoreEntrySubstate'
           Vault: '#/components/schemas/VaultSubstate'
@@ -2153,6 +2155,7 @@ components:
         - PackageRoyaltyAccumulator
         - ResourceManager
         - EpochManager
+        - ValidatorSet
         - ClockCurrentMinute
         - KeyValueStoreEntry
         - NonFungibleStoreEntry
@@ -2180,6 +2183,7 @@ components:
         - ResourceManager
         - ResourceManagerVaultAccessRulesChain
         - EpochManager
+        - ValidatorSet
         - ClockCurrentMinute
         - KeyValueStoreEntry
         - NonFungibleStoreEntry
@@ -2383,6 +2387,17 @@ components:
               minimum: 0
               maximum: 10000000000
               description: An integer between `0` and `10^10`, marking the current epoch
+    ValidatorSetSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - validator_set
+          properties:
+            validator_set:
+              type: array
+              items:
+                $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
     ClockCurrentMinuteSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
@@ -3072,16 +3087,19 @@ components:
       enum:
         - User
         - Validator
+        - System
     LedgerTransaction:
       oneOf:
         - $ref: '#/components/schemas/UserLedgerTransaction'
         - $ref: '#/components/schemas/ValidatorLedgerTransaction'
+        - $ref: '#/components/schemas/SystemLedgerTransaction'
       discriminator:
         propertyName: type
         mapping:
           # NOTE: These need to match LedgerTransactionType
           User: '#/components/schemas/UserLedgerTransaction'
           Validator: '#/components/schemas/ValidatorLedgerTransaction'
+          System: '#/components/schemas/SystemLedgerTransaction'
     LedgerTransactionBase:
       type: object
       required:
@@ -3111,6 +3129,15 @@ components:
           properties:
             validator_transaction:
               $ref: "#/components/schemas/ValidatorTransaction"
+    SystemLedgerTransaction:
+      allOf:
+        - $ref: "#/components/schemas/LedgerTransactionBase"
+        - type: object
+          required:
+            - system_transaction
+          properties:
+            system_transaction:
+              $ref: "#/components/schemas/SystemTransaction"
     ValidatorTransactionType:
       type: string
       description: The type of the validator transaction
@@ -3178,6 +3205,14 @@ components:
               minimum: 0
               maximum: 10000000000
               description: An integer between `0` and `10^10`, marking the consensus round in the epoch
+    SystemTransaction:
+      type: object
+      required:
+        - payload_hex
+      properties:
+        payload_hex:
+          type: string
+          description: The hex-encoded system transaction payload
 ############################################################################################################
 # V0
 ###################################

@@ -72,9 +72,7 @@ import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.NativeCalls;
-import com.radixdlt.statecomputer.commit.CommitRequest;
-import com.radixdlt.statecomputer.commit.PrepareRequest;
-import com.radixdlt.statecomputer.commit.PrepareResult;
+import com.radixdlt.statecomputer.commit.*;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -104,6 +102,12 @@ public class RustStateComputer {
             new TypeToken<>() {},
             RustStateComputer::saveVertexStore);
 
+    this.prepareGenesisFunc =
+        NativeCalls.Func1.with(
+            stateManager,
+            new TypeToken<>() {},
+            new TypeToken<>() {},
+            RustStateComputer::prepareGenesis);
     this.prepareFunc =
         NativeCalls.Func1.with(
             stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::prepare);
@@ -158,6 +162,15 @@ public class RustStateComputer {
   private final NativeCalls.Func1<StateManager, byte[], Unit> saveVertexStoreFunc;
 
   private static native byte[] saveVertexStore(StateManager stateManager, byte[] payload);
+
+  public PrepareGenesisResult prepareGenesis(PrepareGenesisRequest prepareGenesisRequest) {
+    return prepareGenesisFunc.call(prepareGenesisRequest);
+  }
+
+  private final NativeCalls.Func1<StateManager, PrepareGenesisRequest, PrepareGenesisResult>
+      prepareGenesisFunc;
+
+  private static native byte[] prepareGenesis(StateManager stateManager, byte[] payload);
 
   public PrepareResult prepare(PrepareRequest prepareRequest) {
     return prepareFunc.call(prepareRequest);

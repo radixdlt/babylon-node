@@ -63,7 +63,6 @@
  */
 
 use std::collections::{HashMap, HashSet};
-use std::convert::TryInto;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use prometheus::Registry;
@@ -99,7 +98,8 @@ use crate::transaction::{
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult, PreviewRequest};
 use crate::{
     CommittedTransactionIdentifiers, HasIntentHash, HasUserPayloadHash, IntentHash,
-    LedgerTransactionReceipt, MempoolAddError, Metrics, PendingTransaction,
+    LedgerTransactionReceipt, MempoolAddError, Metrics, PendingTransaction, PrepareGenesisRequest,
+    PrepareGenesisResult,
 };
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
@@ -443,6 +443,35 @@ where
             .collect()
     }
 
+    // TODO: Update to prepare_system_transaction when we start to support forking
+    pub fn prepare_genesis(&mut self, genesis: PrepareGenesisRequest) -> PrepareGenesisResult {
+        let parsed_transaction =
+            LedgerTransactionValidator::parse_unvalidated_transaction_from_slice(&genesis.genesis)
+                .expect("Already prepared transactions should be decodeable");
+        let executable = self
+            .ledger_transaction_validator
+            .validate_and_create_executable(&parsed_transaction)
+            .expect("Failed to validate genesis");
+        let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
+        let staged_node = staged_store_manager.new_child_node(0);
+        let mut staged_store = staged_store_manager.get_output_store(staged_node);
+        let receipt = execute_and_commit_transaction(
+            &mut staged_store,
+            &self.scrypto_interpreter,
+            &self.fee_reserve_config,
+            &self.execution_config,
+            &executable,
+        );
+        match receipt.result {
+            TransactionResult::Commit(commit) => PrepareGenesisResult {
+                validator_list: commit.next_validator_set,
+            },
+            TransactionResult::Reject(reject_result) => {
+                panic!("Genesis rejected. Result: {:?}", reject_result)
+            }
+        }
+    }
+
     pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
         // This intent hash check, and current epoch should eventually live in the executor
         let mut already_committed_or_prepared_intent_hashes: HashSet<IntentHash> = HashSet::new();
@@ -474,23 +503,28 @@ where
                 LedgerTransactionValidator::parse_unvalidated_transaction_from_slice(&prepared)
                     .expect("Already prepared transactions should be decodeable");
 
-            if let LedgerTransaction::User(notarized_transaction) = &parsed_transaction {
-                already_committed_or_prepared_intent_hashes
-                    .insert(notarized_transaction.intent_hash());
+            let executable = match &parsed_transaction {
+                LedgerTransaction::User(notarized_transaction) => {
+                    already_committed_or_prepared_intent_hashes
+                        .insert(notarized_transaction.intent_hash());
+                    self.ledger_transaction_validator
+                        .validate_and_create_executable(&parsed_transaction)
+                }
+                LedgerTransaction::Validator(..) => self
+                    .ledger_transaction_validator
+                    .validate_and_create_executable(&parsed_transaction),
+                LedgerTransaction::System(..) => {
+                    panic!("System Transactions should not be prepared");
+                }
             }
-
-            let prepared_parsed_transaction = parsed_transaction.prepare();
-            let executable = &self
-                .ledger_transaction_validator
-                .validate_and_create_executable(&prepared_parsed_transaction)
-                .expect("Already prepared tranasctions should be valid");
+            .expect("Already prepared tranasctions should be valid");
 
             let receipt = execute_and_commit_transaction(
                 &mut staged_store,
                 &self.scrypto_interpreter,
                 &self.fee_reserve_config,
                 &self.execution_config,
-                executable,
+                &executable,
             );
             match receipt.result {
                 TransactionResult::Commit(_) => {}
@@ -610,7 +644,7 @@ where
         staged_store: &mut StagedSubstateStore<S>,
     ) -> Result<LedgerTransaction, String> {
         let prepared_txn = validator_transaction.prepare();
-        let executable = prepared_txn.get_executable();
+        let executable = prepared_txn.to_executable();
 
         let receipt = execute_transaction(
             staged_store,
@@ -672,14 +706,10 @@ where
                 })
                 .collect::<Vec<_>>();
 
-        let prepared_parsed_transactions = parsed_transactions
-            .iter()
-            .map(|parsed| parsed.prepare())
-            .collect::<Vec<_>>();
-
         let current_top_of_ledger = self
             .store
-            .get_top_of_ledger_transaction_identifiers_unwrap(); // Genesis must have happened to be here
+            .get_top_of_ledger_transaction_identifiers()
+            .unwrap_or_else(CommittedTransactionIdentifiers::pre_genesis);
         if current_top_of_ledger.state_version != commit_request_start_state_version {
             panic!(
                 "Mismatched state versions - the commit request claims {} but the database thinks we're at {}",
@@ -691,13 +721,22 @@ where
         let mut db_transaction = self.store.create_db_transaction();
         let mut current_state_version = current_top_of_ledger.state_version;
         let mut current_accumulator = current_top_of_ledger.accumulator_hash;
+        let mut epoch_boundary = None;
 
-        let receipts = prepared_parsed_transactions
+        let receipts = parsed_transactions
             .iter()
-            .map(|prepared| {
+            .enumerate()
+            .map(|(i, transaction)| {
+                if let LedgerTransaction::System(..) = transaction {
+                    // TODO: Cleanup and use real system transaction logic
+                    if commit_request.state_version != 1 && i != 0 {
+                        panic!("Non Genesis system transaction cannot be committed.");
+                    }
+                }
+
                 let executable = self
                     .ledger_transaction_validator
-                    .validate_and_create_executable(prepared)
+                    .validate_and_create_executable(transaction)
                     .unwrap_or_else(|error| {
                         panic!(
                             "Committed transaction is not valid - likely byzantine quorum: {:?}",
@@ -713,13 +752,27 @@ where
                     &executable,
                 );
 
-                let ledger_receipt: LedgerTransactionReceipt =
-                    engine_receipt.try_into().unwrap_or_else(|error| {
+                let ledger_receipt: LedgerTransactionReceipt = match engine_receipt.result {
+                    TransactionResult::Commit(result) => {
+                        if result.next_validator_set.is_some() {
+                            let is_last = i == (parsed_transactions.len() - 1);
+                            if !is_last {
+                                panic!("Next Epoch occurs in the middle of transaction set at proof state_version {}", commit_request.state_version);
+                            }
+                            // TODO: Use actual result and verify proof validator set matches transaction receipt validator set
+                            epoch_boundary = Some(1u64);
+                        }
+
+                        (result, engine_receipt.execution.fee_summary).into()
+                    }
+                    TransactionResult::Reject(error) => {
                         panic!(
-                            "Failed to commit a txn at state version {}: {}",
+                            "Failed to commit a txn at state version {}: {:?}",
                             commit_request.state_version, error
                         )
-                    });
+                    }
+                };
+
                 ledger_receipt
             })
             .collect::<Vec<_>>();
@@ -750,6 +803,7 @@ where
         db_transaction.insert_committed_transactions(to_store);
         db_transaction.insert_tids_and_proof(
             commit_request.state_version,
+            epoch_boundary,
             payload_hashes,
             commit_request.proof,
         );

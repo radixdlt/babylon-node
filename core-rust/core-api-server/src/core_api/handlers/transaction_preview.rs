@@ -29,7 +29,7 @@ fn handle_preview_internal(
         .preview(preview_request)
         .map_err(|err| match err {
             PreviewError::TransactionValidationError(err) => {
-                client_error(&format!("Transaction validation error: {:?}", err))
+                client_error(format!("Transaction validation error: {:?}", err))
             }
         })?;
 
@@ -96,18 +96,6 @@ fn to_api_response(
 ) -> Result<models::TransactionPreviewResponse, RequestHandlingError> {
     let receipt = result.receipt;
 
-    let logs = receipt
-        .execution
-        .application_logs
-        .iter()
-        .map(
-            |(level, message)| models::TransactionPreviewResponseLogsInner {
-                level: level.to_string(),
-                message: message.to_string(),
-            },
-        )
-        .collect();
-
     let response = match &receipt.result {
         TransactionResult::Commit(commit_result) => {
             let api_resource_changes = commit_result
@@ -126,6 +114,17 @@ fn to_api_response(
                 })
                 .collect::<Result<_, MappingError>>()
                 .map_err(|_| server_error("Can't map entity references"))?;
+
+            let logs = commit_result
+                .application_logs
+                .iter()
+                .map(
+                    |(level, message)| models::TransactionPreviewResponseLogsInner {
+                        level: level.to_string(),
+                        message: message.to_string(),
+                    },
+                )
+                .collect();
 
             let ledger_receipt: LedgerTransactionReceipt = receipt
                 .try_into()
@@ -149,7 +148,7 @@ fn to_api_response(
                 error_message: Some(format!("{:?}", reject_result)),
             }),
             resource_changes: vec![],
-            logs,
+            logs: vec![],
         },
     };
 

@@ -76,6 +76,7 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
 import org.junit.Rule;
 import org.junit.Test;
@@ -97,6 +98,7 @@ public class REv2IncreasingEpochTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
+                        TransactionBuilder.createGenesisWithNumValidators(1),
                         new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         StateComputerConfig.REV2ProposerConfig.noUserTransactions()))));

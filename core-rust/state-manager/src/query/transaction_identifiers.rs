@@ -2,7 +2,6 @@ use crate::store::traits::*;
 use crate::CommittedTransactionIdentifiers;
 
 pub trait TransactionIdentifierLoader {
-    fn get_top_of_ledger_transaction_identifiers_unwrap(&self) -> CommittedTransactionIdentifiers;
     fn get_top_of_ledger_transaction_identifiers(&self) -> Option<CommittedTransactionIdentifiers>;
     fn get_transaction_identifiers(
         &self,
@@ -11,17 +10,6 @@ pub trait TransactionIdentifierLoader {
 }
 
 impl<T: QueryableProofStore + TransactionIndex<u64>> TransactionIdentifierLoader for T {
-    fn get_top_of_ledger_transaction_identifiers_unwrap(&self) -> CommittedTransactionIdentifiers {
-        let top_state_version = self.max_state_version();
-        self.get_transaction_identifiers(top_state_version)
-            .unwrap_or_else(|| {
-                panic!(
-                    "No transactions found in database at top-of-ledger state version: {}",
-                    top_state_version
-                )
-            })
-    }
-
     fn get_top_of_ledger_transaction_identifiers(&self) -> Option<CommittedTransactionIdentifiers> {
         let top_state_version = self.max_state_version();
         self.get_transaction_identifiers(top_state_version)

@@ -65,8 +65,9 @@
 use crate::jni::java_structure::JavaStructure;
 use crate::result::StateManagerResult;
 use crate::transaction::{
-    create_intent_bytes, create_manifest, create_new_account_intent_bytes, create_notarized_bytes,
-    create_signed_intent_bytes, LedgerTransaction,
+    create_genesis_ledger_transaction_bytes, create_intent_bytes, create_manifest,
+    create_new_account_intent_bytes, create_notarized_bytes, create_signed_intent_bytes,
+    LedgerTransaction,
 };
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
@@ -76,6 +77,7 @@ use radix_engine::types::{
     TypeId,
 };
 use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::scrypto;
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
@@ -98,6 +100,19 @@ fn do_compile_manifest(
     create_manifest(&network, &manifest_str, blobs)
         .map_err(|err| format!("{:?}", err))
         .map(|manifest| scrypto_encode(&manifest).unwrap())
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createGenesisLedgerTransaction(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_static_sbor_call(env, request_payload, do_create_genesis_ledger_transaction)
+}
+
+fn do_create_genesis_ledger_transaction(validator_list: Vec<EcdsaSecp256k1PublicKey>) -> Vec<u8> {
+    create_genesis_ledger_transaction_bytes(validator_list)
 }
 
 #[no_mangle]
@@ -242,6 +257,7 @@ fn do_transaction_bytes_to_notarized_transaction_bytes(
             Some(scrypto_encode(&notarized_transaction.to_bytes())?)
         }
         LedgerTransaction::Validator(..) => None,
+        LedgerTransaction::System(..) => None,
     })
 }
 

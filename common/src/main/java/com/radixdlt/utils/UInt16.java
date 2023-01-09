@@ -74,7 +74,7 @@ import com.radixdlt.sbor.coding.EncoderApi;
 import java.io.Serializable;
 import java.util.Objects;
 
-/** A 32-bit unsigned integer wrapper */
+/** A 16-bit unsigned integer wrapper */
 @SecurityCritical(SecurityKind.NUMERIC)
 public class UInt16 implements Comparable<UInt16>, Serializable {
 

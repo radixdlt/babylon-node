@@ -346,8 +346,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
             install(new REv1ConsensusRecoveryModule());
           }
           case REv2StateComputerConfig rev2Config -> {
-            // Start at stateVersion 1 for now due to lack serialized genesis transaction
-            var initialAccumulatorState = new AccumulatorState(1, HashUtils.zero256());
+            var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
 
             if (REv2DatabaseConfig.isNone(rev2Config.databaseConfig())) {
               install(new REv2StatelessComputerModule());
@@ -391,7 +390,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                     }
                   });
             } else {
-              install(new REv2LedgerRecoveryModule(initialAccumulatorState));
+              install(new REv2LedgerRecoveryModule(initialAccumulatorState, rev2Config.genesis()));
               install(new REv2ConsensusRecoveryModule());
             }
 

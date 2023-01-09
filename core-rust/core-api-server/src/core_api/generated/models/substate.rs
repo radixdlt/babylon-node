@@ -118,6 +118,11 @@ pub enum Substate {
         #[serde(rename = "owned_non_fungible_store", skip_serializing_if = "Option::is_none")]
         owned_non_fungible_store: Option<Box<crate::core_api::generated::models::EntityReference>>,
     },
+    #[serde(rename="ValidatorSet")]
+    ValidatorSetSubstate {
+        #[serde(rename = "validator_set")]
+        validator_set: Vec<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
+    },
     #[serde(rename="Vault")]
     VaultSubstate {
         #[serde(rename = "resource_amount")]

@@ -62,42 +62,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.statecomputer.commit;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.store.LastEpochProof;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.lang.Option;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import java.util.List;
 
-public final class REv2ConsensusRecoveryModule extends AbstractModule {
-  @Provides
-  private RoundUpdate initialRoundUpdate(
-      VertexStoreState vertexStoreState, BFTConfiguration configuration) {
-    var highQC = vertexStoreState.getHighQC();
-    var round = highQC.getHighestRound().next();
-    var proposerElection = configuration.getProposerElection();
-    var leader = proposerElection.getProposer(round);
-    var nextLeader = proposerElection.getProposer(round.next());
-
-    return RoundUpdate.create(round, highQC, leader, nextLeader);
-  }
-
-  @Provides
-  @Singleton
-  private BFTConfiguration initialConfig(
-      BFTValidatorSet validatorSet, VertexStoreState vertexStoreState) {
-    var proposerElection = new WeightedRotatingLeaders(validatorSet);
-    return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
-  }
-
-  @Provides
-  private BFTValidatorSet initialValidatorSet(@LastEpochProof LedgerProof lastEpochProof) {
-    return lastEpochProof
-        .getNextValidatorSet()
-        .orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
+public record PrepareGenesisResult(Option<List<ECDSASecp256k1PublicKey>> validatorList) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        PrepareGenesisResult.class,
+        codecs ->
+            StructCodec.with(
+                PrepareGenesisResult::new,
+                codecs.of(new TypeToken<>() {}),
+                (t, encoder) -> encoder.encode(t.validatorList)));
   }
 }

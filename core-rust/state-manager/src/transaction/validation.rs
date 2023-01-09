@@ -1,14 +1,13 @@
 use crate::transaction::ledger_transaction::LedgerTransaction;
 use radix_engine::types::scrypto_decode;
 use radix_engine_interface::data::scrypto_encode;
+use radix_engine_interface::modules::auth::AuthAddresses;
 use transaction::errors::TransactionValidationError;
 use transaction::model::{Executable, NotarizedTransaction};
 use transaction::validation::ValidationConfig;
 use transaction::validation::{
     NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator,
 };
-
-use super::PreparedLedgerTransaction;
 
 pub struct UserTransactionValidator {
     pub validation_config: ValidationConfig,
@@ -71,11 +70,11 @@ impl LedgerTransactionValidator {
 
     pub fn validate_and_create_executable<'a>(
         &self,
-        prepared_transaction: &'a PreparedLedgerTransaction<'a>,
+        ledger_transaction: &'a LedgerTransaction,
     ) -> Result<Executable<'a>, TransactionValidationError> {
         let validator = NotarizedTransactionValidator::new(self.validation_config);
-        match prepared_transaction {
-            PreparedLedgerTransaction::User(notarized_transaction) => {
+        match ledger_transaction {
+            LedgerTransaction::User(notarized_transaction) => {
                 // TODO: Remove
                 let payload_size = scrypto_encode(notarized_transaction).unwrap().len();
                 validator.validate(
@@ -84,8 +83,12 @@ impl LedgerTransactionValidator {
                     &self.intent_hash_manager,
                 )
             }
-            PreparedLedgerTransaction::Validator(validator_transaction) => {
-                Ok(validator_transaction.get_executable())
+            LedgerTransaction::Validator(validator_transaction) => {
+                let prepared = validator_transaction.prepare();
+                Ok(prepared.to_executable())
+            }
+            LedgerTransaction::System(system_transaction) => {
+                Ok(system_transaction.get_executable(vec![AuthAddresses::system_role()]))
             }
         }
     }
