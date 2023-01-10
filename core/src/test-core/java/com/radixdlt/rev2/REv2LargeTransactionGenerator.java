@@ -70,7 +70,8 @@ import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
 
 /** Generates valid REv2 1 MB transactions */
-public final class REv2LargeTransactionGenerator implements TransactionGenerator {
+public final class REv2LargeTransactionGenerator
+    implements TransactionGenerator<RawNotarizedTransaction> {
   private final NetworkDefinition networkDefinition;
 
   private int currentKey = 1;
