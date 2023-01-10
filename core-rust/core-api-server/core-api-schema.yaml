@@ -788,6 +788,8 @@ components:
           $ref: "#/components/schemas/FeeSummary"
         state_updates:
           $ref: "#/components/schemas/StateUpdates"
+        next_epoch:
+          $ref: "#/components/schemas/NextEpoch"
         output:
           type: array
           description: The manifest line-by-line engine return data (only present if status is Succeeded)
@@ -1111,6 +1113,22 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/GlobalEntityAssignment"
+    NextEpoch:
+      type: object
+      required:
+        - epoch
+        - validators
+      properties:
+        epoch:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`
+        validators:
+          type: array
+          items:
+            $ref: "#/components/schemas/EcdsaSecp256k1PublicKey"
     NewSubstateVersion:
       type: object
       required:

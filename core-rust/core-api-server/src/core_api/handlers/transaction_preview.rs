@@ -145,6 +145,7 @@ fn to_api_response(
                 )?),
                 state_updates: Box::default(),
                 output: None,
+                next_epoch: None,
                 error_message: Some(format!("{:?}", reject_result)),
             }),
             resource_changes: vec![],
