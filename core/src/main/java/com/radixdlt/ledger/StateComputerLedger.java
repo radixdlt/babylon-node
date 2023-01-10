@@ -64,6 +64,7 @@
 
 package com.radixdlt.ledger;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -196,6 +197,19 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   @Override
   public Optional<ExecutedVertex> prepare(
       LinkedList<ExecutedVertex> previous, VertexWithHash vertexWithHash) {
+    return this.prepareWithTimer(previous, vertexWithHash);
+  }
+
+  private Optional<ExecutedVertex> prepareWithTimer(
+      LinkedList<ExecutedVertex> previous, VertexWithHash vertexWithHash) {
+    final var stopwatch = Stopwatch.createStarted();
+    final var result = this.prepareInternal(previous, vertexWithHash);
+    metrics.ledger().prepare().observe(stopwatch.elapsed());
+    return result;
+  }
+
+  private Optional<ExecutedVertex> prepareInternal(
+      LinkedList<ExecutedVertex> previous, VertexWithHash vertexWithHash) {
     final var vertex = vertexWithHash.vertex();
     final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
     final AccumulatorState parentAccumulatorState = parentHeader.getAccumulatorState();
@@ -280,12 +294,20 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       var proof = committedUpdate.vertexStoreState().getRootHeader();
       var transactionsWithProof = CommittedTransactionsWithProof.create(transactions, proof);
 
-      this.commit(transactionsWithProof, committedUpdate.vertexStoreState());
+      this.commitWithTimer(transactionsWithProof, committedUpdate.vertexStoreState());
     };
   }
 
   public EventProcessor<CommittedTransactionsWithProof> syncEventProcessor() {
-    return p -> this.commit(p, null);
+    return p -> this.commitWithTimer(p, null);
+  }
+
+  private void commitWithTimer(
+      CommittedTransactionsWithProof committedTransactionsWithProof,
+      VertexStoreState vertexStoreState) {
+    final var stopwatch = Stopwatch.createStarted();
+    this.commit(committedTransactionsWithProof, vertexStoreState);
+    metrics.ledger().commit().observe(stopwatch.elapsed());
   }
 
   private void commit(
