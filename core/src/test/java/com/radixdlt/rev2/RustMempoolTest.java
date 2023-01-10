@@ -97,7 +97,9 @@ import org.junit.Test;
 public final class RustMempoolTest {
   private static CommittedTransactionsWithProof buildGenesis(LedgerAccumulator accumulator) {
     var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    var genesis = TransactionBuilder.createGenesis(List.of());
+    var genesis =
+        TransactionBuilder.createGenesis(
+            Set.of(), UInt64.fromNonNegativeLong(1), UInt64.fromNonNegativeLong(10));
     var accumulatorState =
         accumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
     var proof = LedgerProof.genesis(accumulatorState, BFTValidatorSet.from(Stream.of()), 0, 0);
@@ -113,12 +115,14 @@ public final class RustMempoolTest {
     var transactions = transactionsWithProof.getTransactions();
     var proof = transactionsWithProof.getProof();
     var proofBytes = DefaultSerialization.getInstance().toDson(proof, DsonOutput.Output.ALL);
-    stateComputer.commit(
-        new CommitRequest(
-            transactions,
-            UInt64.fromNonNegativeLong(proof.getStateVersion()),
-            proofBytes,
-            Option.none()));
+    stateComputer
+        .commit(
+            new CommitRequest(
+                transactions,
+                UInt64.fromNonNegativeLong(proof.getStateVersion()),
+                proofBytes,
+                Option.none()))
+        .unwrap();
   }
 
   @Test
@@ -127,7 +131,6 @@ public final class RustMempoolTest {
     final var config =
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
-            new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
             Option.some(new RustMempoolConfig(mempoolSize)),
             REv2DatabaseConfig.inMemory(),
             LoggingConfig.getDefault());
@@ -189,7 +192,6 @@ public final class RustMempoolTest {
     final var config =
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
-            new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
             Option.some(new RustMempoolConfig(mempoolSize)),
             REv2DatabaseConfig.inMemory(),
             LoggingConfig.getDefault());
@@ -288,7 +290,6 @@ public final class RustMempoolTest {
     final var config =
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
-            new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
             Option.some(new RustMempoolConfig(mempoolSize)),
             REv2DatabaseConfig.inMemory(),
             LoggingConfig.getDefault());

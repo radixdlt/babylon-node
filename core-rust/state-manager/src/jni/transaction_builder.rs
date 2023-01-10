@@ -76,9 +76,10 @@ use radix_engine::types::{
     scrypto_decode, scrypto_encode, Decode, Encode, PublicKey, Signature, SignatureWithPublicKey,
     TypeId,
 };
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::node::NetworkDefinition;
 use radix_engine_interface::scrypto;
+use std::collections::HashSet;
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
 };
@@ -111,8 +112,10 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createGenesi
     jni_static_sbor_call(env, request_payload, do_create_genesis_ledger_transaction)
 }
 
-fn do_create_genesis_ledger_transaction(validator_list: Vec<EcdsaSecp256k1PublicKey>) -> Vec<u8> {
-    create_genesis_ledger_transaction_bytes(validator_list)
+fn do_create_genesis_ledger_transaction(
+    (validator_set, initial_epoch, rounds_per_epoch): (HashSet<EcdsaSecp256k1PublicKey>, u64, u64),
+) -> Vec<u8> {
+    create_genesis_ledger_transaction_bytes(validator_set, initial_epoch, rounds_per_epoch)
 }
 
 #[no_mangle]

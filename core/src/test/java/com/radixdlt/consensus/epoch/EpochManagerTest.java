@@ -70,6 +70,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.*;
 import com.google.inject.Module;
@@ -191,7 +192,9 @@ public class EpochManagerTest {
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<NoVote>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<EventDispatcher<DoubleVote>>() {})
+        bind(new TypeLiteral<EventDispatcher<ConsensusByzantineEvent.DoubleVote>>() {})
+            .toInstance(rmock(EventDispatcher.class));
+        bind(new TypeLiteral<EventDispatcher<ConsensusByzantineEvent>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {})
             .toInstance(rmock(EventDispatcher.class));
@@ -263,10 +266,11 @@ public class EpochManagerTest {
           @Self BFTNode self, Hasher hasher, BFTValidatorSet validatorSet) {
         var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
         var vertex =
-            Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0, 0))
+            Vertex.createInitialEpochVertex(
+                    LedgerHeader.genesis(accumulatorState, validatorSet, 0, 0))
                 .withId(hasher);
         var qc =
-            QuorumCertificate.ofGenesis(
+            QuorumCertificate.createInitialEpochQC(
                 vertex, LedgerHeader.genesis(accumulatorState, validatorSet, 0, 0));
         var proposerElection = new WeightedRotatingLeaders(validatorSet);
         return new BFTConfiguration(
@@ -296,7 +300,7 @@ public class EpochManagerTest {
         BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     LedgerHeader header = LedgerHeader.genesis(accumulatorState, nextValidatorSet, 0, 0);
-    VertexWithHash verifiedGenesisVertex = Vertex.createGenesis(header).withId(hasher);
+    VertexWithHash verifiedGenesisVertex = Vertex.createInitialEpochVertex(header).withId(hasher);
     LedgerHeader nextLedgerHeader =
         LedgerHeader.create(
             header.getEpoch() + 1,
@@ -304,7 +308,7 @@ public class EpochManagerTest {
             header.getAccumulatorState(),
             header.consensusParentRoundTimestamp(),
             header.proposerTimestamp());
-    var genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
+    var genesisQC = QuorumCertificate.createInitialEpochQC(verifiedGenesisVertex, nextLedgerHeader);
     var proposerElection = new WeightedRotatingLeaders(nextValidatorSet);
     var bftConfiguration =
         new BFTConfiguration(
@@ -314,7 +318,8 @@ public class EpochManagerTest {
                 HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty(), hasher));
     LedgerProof proof = mock(LedgerProof.class);
     when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);
-    when(proof.getNextEpoch()).thenReturn(header.getEpoch() + 2);
+    when(proof.getNextEpoch())
+        .thenReturn(Optional.of(NextEpoch.create(header.getEpoch() + 2, ImmutableSet.of())));
     var epochChange = new EpochChange(proof, bftConfiguration);
     var ledgerUpdate =
         new LedgerUpdate(

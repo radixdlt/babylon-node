@@ -67,6 +67,7 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -155,24 +156,25 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
     var output =
         txnsAndProof
             .getProof()
-            .getNextValidatorSet()
+            .getNextEpoch()
             .map(
-                validatorSet -> {
+                nextEpoch -> {
                   LedgerProof header = txnsAndProof.getProof();
                   VertexWithHash genesisVertex =
-                      Vertex.createGenesis(header.getHeader()).withId(hasher);
+                      Vertex.createInitialEpochVertex(header.getHeader()).withId(hasher);
                   LedgerHeader nextLedgerHeader =
                       LedgerHeader.create(
-                          header.getNextEpoch(),
+                          nextEpoch.getEpoch(),
                           Round.genesis(),
                           header.getAccumulatorState(),
                           header.consensusParentRoundTimestamp(),
                           header.proposerTimestamp());
                   QuorumCertificate genesisQC =
-                      QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+                      QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
                   final var initialState =
                       VertexStoreState.create(
                           HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
+                  var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
                   var proposerElection = new WeightedRotatingLeaders(validatorSet);
                   var bftConfiguration =
                       new BFTConfiguration(proposerElection, validatorSet, initialState);

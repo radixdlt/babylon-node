@@ -67,7 +67,7 @@ package com.radixdlt.harness.deterministic.invariants;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.DoubleVote;
+import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.harness.invariants.Checkers;
 import java.util.function.Function;
@@ -78,8 +78,8 @@ public final class DeterministicMonitors {
   }
 
   public static class ByzantineBehaviorDetected extends IllegalStateException {
-    ByzantineBehaviorDetected(String nodeName, DoubleVote doubleVote) {
-      super("Byzantine Behavior detected on " + nodeName + ": " + doubleVote);
+    ByzantineBehaviorDetected(String nodeName, ConsensusByzantineEvent event) {
+      super("Byzantine Behavior detected on " + nodeName + ": " + event);
     }
   }
 
@@ -88,9 +88,9 @@ public final class DeterministicMonitors {
       @ProvidesIntoSet
       private MessageMonitor byzantineDetection(Function<BFTNode, String> nodeToString) {
         return m -> {
-          if (m.message() instanceof DoubleVote doubleVote) {
-            var nodeName = nodeToString.apply(doubleVote.author());
-            throw new ByzantineBehaviorDetected(nodeName, doubleVote);
+          if (m.message() instanceof ConsensusByzantineEvent event) {
+            var nodeName = nodeToString.apply(event.getAuthor());
+            throw new ByzantineBehaviorDetected(nodeName, event);
           }
         };
       }

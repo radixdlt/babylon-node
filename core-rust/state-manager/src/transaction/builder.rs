@@ -67,9 +67,10 @@ use radix_engine::types::{
     AccessRule, PublicKey, Signature, SignatureWithPublicKey, FAUCET_COMPONENT, RADIX_TOKEN,
 };
 use radix_engine_interface::args;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::data::scrypto_encode;
+use radix_engine_interface::node::NetworkDefinition;
+use std::collections::HashSet;
 
 use crate::transaction::LedgerTransaction;
 use transaction::builder::ManifestBuilder;
@@ -80,9 +81,11 @@ use transaction::model::{
 };
 
 pub fn create_genesis_ledger_transaction_bytes(
-    validator_list: Vec<EcdsaSecp256k1PublicKey>,
+    validator_set: HashSet<EcdsaSecp256k1PublicKey>,
+    initial_epoch: u64,
+    rounds_per_epoch: u64,
 ) -> Vec<u8> {
-    let genesis = create_genesis(validator_list);
+    let genesis = create_genesis(validator_set, initial_epoch, rounds_per_epoch);
     scrypto_encode(&LedgerTransaction::System(genesis)).unwrap()
 }
 
@@ -90,7 +93,7 @@ pub fn create_new_account_intent_bytes(
     network_definition: &NetworkDefinition,
     public_key: PublicKey,
 ) -> Vec<u8> {
-    let manifest = ManifestBuilder::new(network_definition)
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
         .call_method(FAUCET_COMPONENT, "free", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {

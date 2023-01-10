@@ -85,7 +85,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
@@ -113,8 +112,8 @@ public final class REv2ConsensusTransferTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(1),
-                        new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
+                        TransactionBuilder.createGenesisWithNumValidators(
+                            1, UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             10, 1, MempoolRelayConfig.of())))));

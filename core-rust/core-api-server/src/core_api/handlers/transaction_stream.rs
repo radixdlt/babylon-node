@@ -2,9 +2,9 @@ use crate::core_api::*;
 
 use radix_engine::types::hash;
 use radix_engine::types::Bech32Encoder;
-use radix_engine_interface::core::NetworkDefinition;
 
 use radix_engine_interface::data::scrypto_encode;
+use radix_engine_interface::node::NetworkDefinition;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
 use state_manager::transaction::{LedgerTransaction, ValidatorTransaction};
@@ -296,11 +296,6 @@ pub fn to_api_validator_transaction(
     _network: &NetworkDefinition,
 ) -> Result<models::ValidatorTransaction, MappingError> {
     Ok(match validator_transaction {
-        ValidatorTransaction::EpochUpdate { scrypto_epoch } => {
-            models::ValidatorTransaction::EpochUpdateValidatorTransaction {
-                scrypto_epoch: to_api_epoch(*scrypto_epoch)?,
-            }
-        }
         ValidatorTransaction::RoundUpdate {
             proposer_timestamp_ms,
             consensus_epoch,

@@ -22,86 +22,93 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LocalMethodReferenceBase;
-import com.radixdlt.api.core.generated.models.LocalMethodReferenceType;
-import com.radixdlt.api.core.generated.models.LocalNativeMethodReferenceAllOf;
+import com.radixdlt.api.core.generated.models.EcdsaSecp256k1PublicKey;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * LocalNativeFunctionReference
+ * NextEpoch
  */
 @JsonPropertyOrder({
-  LocalNativeFunctionReference.JSON_PROPERTY_TYPE,
-  LocalNativeFunctionReference.JSON_PROPERTY_NAME
+  NextEpoch.JSON_PROPERTY_EPOCH,
+  NextEpoch.JSON_PROPERTY_VALIDATORS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LocalNativeFunctionReference {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private LocalMethodReferenceType type;
+public class NextEpoch {
+  public static final String JSON_PROPERTY_EPOCH = "epoch";
+  private Long epoch;
 
-  public static final String JSON_PROPERTY_NAME = "name";
-  private String name;
+  public static final String JSON_PROPERTY_VALIDATORS = "validators";
+  private List<EcdsaSecp256k1PublicKey> validators = new ArrayList<>();
 
-  public LocalNativeFunctionReference() { 
+  public NextEpoch() { 
   }
 
-  public LocalNativeFunctionReference type(LocalMethodReferenceType type) {
-    this.type = type;
+  public NextEpoch epoch(Long epoch) {
+    this.epoch = epoch;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;
+   * minimum: 0
+   * maximum: 10000000000
+   * @return epoch
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`")
+  @JsonProperty(JSON_PROPERTY_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LocalMethodReferenceType getType() {
-    return type;
+  public Long getEpoch() {
+    return epoch;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(LocalMethodReferenceType type) {
-    this.type = type;
+  public void setEpoch(Long epoch) {
+    this.epoch = epoch;
   }
 
 
-  public LocalNativeFunctionReference name(String name) {
-    this.name = name;
+  public NextEpoch validators(List<EcdsaSecp256k1PublicKey> validators) {
+    this.validators = validators;
+    return this;
+  }
+
+  public NextEpoch addValidatorsItem(EcdsaSecp256k1PublicKey validatorsItem) {
+    this.validators.add(validatorsItem);
     return this;
   }
 
    /**
-   * Get name
-   * @return name
+   * Get validators
+   * @return validators
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NAME)
+  @JsonProperty(JSON_PROPERTY_VALIDATORS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getName() {
-    return name;
+  public List<EcdsaSecp256k1PublicKey> getValidators() {
+    return validators;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NAME)
+  @JsonProperty(JSON_PROPERTY_VALIDATORS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setName(String name) {
-    this.name = name;
+  public void setValidators(List<EcdsaSecp256k1PublicKey> validators) {
+    this.validators = validators;
   }
 
 
   /**
-   * Return true if this LocalNativeFunctionReference object is equal to o.
+   * Return true if this NextEpoch object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -111,22 +118,22 @@ public class LocalNativeFunctionReference {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LocalNativeFunctionReference localNativeFunctionReference = (LocalNativeFunctionReference) o;
-    return Objects.equals(this.type, localNativeFunctionReference.type) &&
-        Objects.equals(this.name, localNativeFunctionReference.name);
+    NextEpoch nextEpoch = (NextEpoch) o;
+    return Objects.equals(this.epoch, nextEpoch.epoch) &&
+        Objects.equals(this.validators, nextEpoch.validators);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, name);
+    return Objects.hash(epoch, validators);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LocalNativeFunctionReference {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
-    sb.append("    name: ").append(toIndentedString(name)).append("\n");
+    sb.append("class NextEpoch {\n");
+    sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
+    sb.append("    validators: ").append(toIndentedString(validators)).append("\n");
     sb.append("}");
     return sb.toString();
   }

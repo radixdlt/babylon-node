@@ -127,6 +127,7 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
           // can't fit. Stop the processing and use the transactions up to latestUsableProof.
           break top_level_while;
         }
+
         transactionsUpToNextProof.add(RawLedgerTransaction.create(executedTxn.transactionBytes()));
       }
 
@@ -134,6 +135,11 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
       // Added them to the list and use a new latestUsableProof.
       transactionsUpToLatestUsableProof.addAll(transactionsUpToNextProof);
       maybeLatestUsableProof = maybeNextProof;
+
+      // New epoch proofs should always be returned
+      if (maybeLatestUsableProof.unwrap().getNextEpoch().isPresent()) {
+        break;
+      }
 
       // Continue the loop: try fitting some more txns up to the next proof (if there is any)
       latestStateVersion = nextProofStateVersion;

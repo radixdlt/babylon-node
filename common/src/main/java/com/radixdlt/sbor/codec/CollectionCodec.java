@@ -66,6 +66,7 @@ package com.radixdlt.sbor.codec;
 
 import static com.radixdlt.sbor.codec.constants.TypeId.TYPE_ARRAY;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.lang.Functions;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
@@ -177,7 +178,8 @@ interface CollectionCodec {
         Set::size,
         set -> set,
         list -> {
-          var set = new HashSet<>(list);
+          // Use ImmutableSet so that ordering is not lost
+          var set = ImmutableSet.copyOf(list);
           assertNoDuplicates(set, list);
           return set;
         });

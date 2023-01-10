@@ -3,7 +3,7 @@ use radix_engine::{
     transaction::{PreviewError, PreviewResult, TransactionResult},
     types::{Bech32Encoder, RENodeId},
 };
-use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::node::NetworkDefinition;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::{LedgerTransactionReceipt, PreviewRequest};
 use transaction::manifest;
@@ -145,6 +145,7 @@ fn to_api_response(
                 )?),
                 state_updates: Box::default(),
                 output: None,
+                next_epoch: None,
                 error_message: Some(format!("{:?}", reject_result)),
             }),
             resource_changes: vec![],

@@ -74,6 +74,7 @@ import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
@@ -85,6 +86,7 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.invariants.MessageMonitor;
 import com.radixdlt.harness.deterministic.invariants.StateMonitor;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
@@ -200,17 +202,7 @@ public final class DeterministicTest implements AutoCloseable {
     private void addFunctionalNodeModule(FunctionalRadixNodeModule module) {
       modules.add(module);
 
-      if (module.supportsREv2()) {
-        /*
-        modules.add(
-            new AbstractModule() {
-              @Override
-              protected void configure() {
-                bind(BFTValidatorSet.class).toInstance(initialValidatorSet);
-              }
-            });
-         */
-      } else {
+      if (!module.supportsREv2()) {
         MockedConsensusRecoveryModule.Builder mockedConsensusRecoveryModuleBuilder =
             new MockedConsensusRecoveryModule.Builder(module.supportsEpochs());
         mockedConsensusRecoveryModuleBuilder.withNodes(initialValidatorNodes);
@@ -553,6 +545,18 @@ public final class DeterministicTest implements AutoCloseable {
       } else {
         return false;
       }
+    };
+  }
+
+  public static Predicate<Timed<ControlledMessage>> epochLedgerUpdate(long epoch) {
+    return timedMsg -> {
+      final var message = timedMsg.value();
+      if (message.message() instanceof final LedgerUpdate ledgerUpdate) {
+        var epochChange = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
+        return epochChange != null && epochChange.getNextEpoch() == epoch;
+      }
+
+      return false;
     };
   }
 

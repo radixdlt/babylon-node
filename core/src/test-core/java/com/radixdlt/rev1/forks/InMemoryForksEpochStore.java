@@ -102,7 +102,8 @@ public final class InMemoryForksEpochStore implements ForksEpochStore {
               .getNextForkName()
               .ifPresent(
                   nextForkName ->
-                      this.store.storedForks.put(update.getTail().getNextEpoch(), nextForkName));
+                      this.store.storedForks.put(
+                          update.getTail().getNextEpoch().orElseThrow().getEpoch(), nextForkName));
         }
       }
     };

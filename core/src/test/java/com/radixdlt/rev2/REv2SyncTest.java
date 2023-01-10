@@ -69,7 +69,6 @@ import static com.radixdlt.harness.predicates.EventPredicate.*;
 import static com.radixdlt.harness.predicates.NodePredicate.*;
 import static com.radixdlt.harness.predicates.NodesPredicate.*;
 
-import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -80,19 +79,36 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.sync.messages.local.SyncRequestTimeout;
-import com.radixdlt.sync.messages.remote.SyncResponse;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
-import java.util.function.Predicate;
+import java.util.Collection;
+import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public class REv2SyncTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
+
+  @Parameterized.Parameters
+  public static Collection<Object[]> parameters() {
+    return List.of(
+        new Object[][] {
+          {false, UInt64.fromNonNegativeLong(100000)}, {true, UInt64.fromNonNegativeLong(10)}
+        });
+  }
+
+  private final boolean epochs;
+  private final UInt64 roundsPerEpoch;
+
+  public REv2SyncTest(boolean epochs, UInt64 roundsPerEpoch) {
+    this.epochs = epochs;
+    this.roundsPerEpoch = roundsPerEpoch;
+  }
 
   private DeterministicTest buildTest() {
     return DeterministicTest.builder()
@@ -100,14 +116,13 @@ public class REv2SyncTest {
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
-                false,
+                epochs,
                 SafetyRecoveryConfig.mocked(),
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(1),
-                        new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
+                        TransactionBuilder.createGenesisWithNumValidators(1, roundsPerEpoch),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.transactionGenerator(new REV2TransactionGenerator(), 1)),
                     SyncRelayConfig.of(200, 10, 2000))));
@@ -124,23 +139,14 @@ public class REv2SyncTest {
   }
 
   private void test_sync_n_txns(int n) {
-    final Predicate<ControlledMessage> isSyncResponse =
-        msg -> msg.message() instanceof SyncResponse;
-    final Predicate<ControlledMessage> isSyncRequestTimeout =
-        msg -> msg.message() instanceof SyncRequestTimeout;
-
     try (var test = buildTest()) {
       // Arrange: n transactions committed - across a number of rounds
       test.startAllNodes();
-      test.runUntilState(nodeAt(0, atOrOverStateVersion(n)), onlyConsensusEvents());
+      test.runUntilState(
+          nodeAt(0, atOrOverStateVersion(n)), onlyConsensusEventsAndSelfLedgerUpdates());
 
-      // Process all noisy sync events except SyncResponses (and also filter out timeouts)
-      test.runUntilOutOfMessagesOfType(
-          1000, onlyLedgerSyncEvents().and(Predicate.not(isSyncResponse.or(isSyncRequestTimeout))));
-
-      // Act: Only allow through a single Sync Response
-      // Allowing through only one sync response ensures it's been batched together
-      test.runForCount(1, msg -> msg.message() instanceof SyncResponse);
+      // Act: Sync
+      test.runUntilState(nodeAt(1, atOrOverStateVersion(n)));
 
       // Assert
       Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());

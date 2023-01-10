@@ -69,8 +69,6 @@ import static java.util.Objects.requireNonNull;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.ledger.AccumulatorState;
@@ -118,9 +116,9 @@ public final class LedgerHeader {
   @DsonOutput(Output.ALL)
   private final long proposerTimestampMs;
 
-  @JsonProperty("next_validators")
+  @JsonProperty("next_epoch")
   @DsonOutput(Output.ALL)
-  private final ImmutableSet<BFTValidator> nextValidators;
+  private final NextEpoch nextEpoch;
 
   @JsonCreator
   @VisibleForTesting
@@ -130,14 +128,14 @@ public final class LedgerHeader {
       @JsonProperty(value = "accumulator_state", required = true) AccumulatorState accumulatorState,
       @JsonProperty("consensus_parent_round_timestamp_ms") long consensusParentRoundTimestampMs,
       @JsonProperty("proposer_timestamp") long proposerTimestampMs,
-      @JsonProperty("next_validators") ImmutableSet<BFTValidator> nextValidators) {
+      @JsonProperty("next_epoch") NextEpoch nextEpoch) {
     this(
         epoch,
         Round.of(roundNumber),
         accumulatorState,
         consensusParentRoundTimestampMs,
         proposerTimestampMs,
-        nextValidators);
+        nextEpoch);
   }
 
   private LedgerHeader(
@@ -146,7 +144,7 @@ public final class LedgerHeader {
       AccumulatorState accumulatorState,
       long consensusParentRoundTimestampMs,
       long proposerTimestampMs,
-      ImmutableSet<BFTValidator> nextValidators) {
+      NextEpoch nextEpoch) {
     this.epoch = epoch;
 
     if (epoch < 0) {
@@ -155,14 +153,14 @@ public final class LedgerHeader {
 
     this.round = round;
     this.accumulatorState = requireNonNull(accumulatorState);
-    this.nextValidators = nextValidators;
+    this.nextEpoch = nextEpoch;
     this.consensusParentRoundTimestampMs = consensusParentRoundTimestampMs;
     this.proposerTimestampMs = proposerTimestampMs;
   }
 
   public static LedgerHeader genesis(
       AccumulatorState accumulatorState,
-      BFTValidatorSet nextValidators,
+      BFTValidatorSet validatorSet,
       long consensusParentRoundTimestamp,
       long proposerTimestamp) {
     return new LedgerHeader(
@@ -171,7 +169,7 @@ public final class LedgerHeader {
         accumulatorState,
         consensusParentRoundTimestamp,
         proposerTimestamp,
-        nextValidators == null ? null : nextValidators.getValidators());
+        validatorSet == null ? null : NextEpoch.create(1, validatorSet.getValidators()));
   }
 
   public static LedgerHeader create(
@@ -190,14 +188,14 @@ public final class LedgerHeader {
       AccumulatorState accumulatorState,
       long consensusParentRoundTimestamp,
       long proposerTimestamp,
-      BFTValidatorSet validatorSet) {
+      NextEpoch nextEpoch) {
     return new LedgerHeader(
         epoch,
         round,
         accumulatorState,
         consensusParentRoundTimestamp,
         proposerTimestamp,
-        validatorSet == null ? null : validatorSet.getValidators());
+        nextEpoch);
   }
 
   public LedgerHeader updateRoundAndTimestamps(
@@ -208,7 +206,7 @@ public final class LedgerHeader {
         this.accumulatorState,
         consensusParentRoundTimestamp,
         proposerTimestamp,
-        this.nextValidators);
+        this.nextEpoch);
   }
 
   @JsonProperty("round")
@@ -221,8 +219,8 @@ public final class LedgerHeader {
     return round;
   }
 
-  public Optional<BFTValidatorSet> getNextValidatorSet() {
-    return Optional.ofNullable(nextValidators).map(BFTValidatorSet::from);
+  public Optional<NextEpoch> getNextEpoch() {
+    return Optional.ofNullable(nextEpoch);
   }
 
   public AccumulatorState getAccumulatorState() {
@@ -234,7 +232,7 @@ public final class LedgerHeader {
   }
 
   public boolean isEndOfEpoch() {
-    return nextValidators != null;
+    return nextEpoch != null;
   }
 
   public long consensusParentRoundTimestamp() {
@@ -253,7 +251,7 @@ public final class LedgerHeader {
         this.proposerTimestampMs,
         this.epoch,
         this.round,
-        this.nextValidators);
+        this.nextEpoch);
   }
 
   @Override
@@ -268,20 +266,20 @@ public final class LedgerHeader {
         && Objects.equals(this.accumulatorState, other.accumulatorState)
         && this.epoch == other.epoch
         && Objects.equals(this.round, other.round)
-        && Objects.equals(this.nextValidators, other.nextValidators);
+        && Objects.equals(this.nextEpoch, other.nextEpoch);
   }
 
   @Override
   public String toString() {
     return String.format(
         "%s{accumulator=%s consensus_parent_round_timestamp=%s proposer_timestamp=%s epoch=%s"
-            + " round=%s nextValidators=%s}",
+            + " round=%s nextEpoch=%s}",
         getClass().getSimpleName(),
         this.accumulatorState,
         this.consensusParentRoundTimestampMs,
         this.proposerTimestampMs,
         this.epoch,
         this.round,
-        this.nextValidators);
+        this.nextEpoch);
   }
 }

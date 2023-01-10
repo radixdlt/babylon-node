@@ -65,9 +65,8 @@
 package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
-import static com.radixdlt.harness.predicates.NodesPredicate.anyAtOrOverStateEpoch;
 import static com.radixdlt.modules.FunctionalRadixNodeModule.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -75,7 +74,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
 import org.junit.Rule;
@@ -92,14 +90,14 @@ public class REv2IncreasingEpochTest {
         .messageMutator(MessageMutator.dropTimeouts())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
-                false,
+                true,
                 SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(1),
-                        new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
+                        TransactionBuilder.createGenesisWithNumValidators(
+                            1, UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         StateComputerConfig.REV2ProposerConfig.noUserTransactions()))));
   }
@@ -113,7 +111,9 @@ public class REv2IncreasingEpochTest {
       var epoch0 = stateReader.getEpoch();
 
       // Act/Assert: Run until next epoch is reached
-      test.runUntilState(anyAtOrOverStateEpoch(epoch0 + 1), onlyConsensusEvents());
+      test.runUntilMessage(DeterministicTest.epochLedgerUpdate(epoch0 + 2));
+      assertThat(test.getNodeInjectors().get(0).getInstance(REv2StateReader.class).getEpoch())
+          .isGreaterThanOrEqualTo(epoch0 + 2);
     }
   }
 }

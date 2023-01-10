@@ -70,6 +70,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.NodeAutoCloseable;
@@ -94,7 +95,6 @@ public final class REv2StateManagerModule extends AbstractModule {
   private final int networkId;
   private final int transactionsPerProposalCount;
   private final REv2DatabaseConfig databaseConfig;
-  private final REv2StateConfig stateConfig;
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean testing;
   private final boolean debugLogging;
@@ -103,14 +103,12 @@ public final class REv2StateManagerModule extends AbstractModule {
       int networkId,
       int transactionsPerProposalCount,
       boolean prefixDatabase,
-      REv2StateConfig stateComputerConfig,
       REv2DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging) {
     this.networkId = networkId;
     this.transactionsPerProposalCount = transactionsPerProposalCount;
     this.testing = prefixDatabase;
-    this.stateConfig = stateComputerConfig;
     this.databaseConfig = databaseConfig;
     this.mempoolConfig = mempoolConfig;
     this.debugLogging = debugLogging;
@@ -119,34 +117,20 @@ public final class REv2StateManagerModule extends AbstractModule {
   public static REv2StateManagerModule create(
       int networkId,
       int transactionsPerProposalCount,
-      REv2StateConfig stateComputerConfig,
       REv2DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig) {
     return new REv2StateManagerModule(
-        networkId,
-        transactionsPerProposalCount,
-        false,
-        stateComputerConfig,
-        databaseConfig,
-        mempoolConfig,
-        false);
+        networkId, transactionsPerProposalCount, false, databaseConfig, mempoolConfig, false);
   }
 
   public static REv2StateManagerModule createForTesting(
       int networkId,
       int transactionsPerProposalCount,
-      REv2StateConfig stateComputerConfig,
       REv2DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging) {
     return new REv2StateManagerModule(
-        networkId,
-        transactionsPerProposalCount,
-        true,
-        stateComputerConfig,
-        databaseConfig,
-        mempoolConfig,
-        debugLogging);
+        networkId, transactionsPerProposalCount, true, databaseConfig, mempoolConfig, debugLogging);
   }
 
   @Override
@@ -164,7 +148,6 @@ public final class REv2StateManagerModule extends AbstractModule {
               return StateManager.createAndInitialize(
                   new StateManagerConfig(
                       NetworkDefinition.from(network),
-                      stateConfig,
                       mempoolConfig,
                       databaseConfigToUse,
                       getLoggingConfig()));
@@ -180,7 +163,6 @@ public final class REv2StateManagerModule extends AbstractModule {
               return StateManager.createAndInitialize(
                   new StateManagerConfig(
                       NetworkDefinition.from(network),
-                      stateConfig,
                       mempoolConfig,
                       databaseConfig,
                       getLoggingConfig()));
@@ -199,11 +181,13 @@ public final class REv2StateManagerModule extends AbstractModule {
             REv2StateComputer rEv2StateComputer(
                 RustStateComputer stateComputer,
                 EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
+                Hasher hasher,
                 EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
                 Serialization serialization) {
               return new REv2StateComputer(
                   stateComputer,
                   transactionsPerProposalCount,
+                  hasher,
                   ledgerUpdateEventDispatcher,
                   mempoolAddSuccessEventDispatcher,
                   serialization);

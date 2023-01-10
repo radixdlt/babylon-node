@@ -67,5 +67,23 @@ package com.radixdlt.consensus;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
 
-/** A Double vote which has detected. This is proof that there is byzantine node. */
-public record DoubleVote(BFTNode author, PreviousVote previousVote, Vote vote, HashCode voteHash) {}
+public sealed interface ConsensusByzantineEvent {
+  BFTNode getAuthor();
+
+  record ConflictingGenesis(QuorumCertificate qc, BFTNode author)
+      implements ConsensusByzantineEvent {
+    @Override
+    public BFTNode getAuthor() {
+      return author;
+    }
+  }
+
+  /** A Double vote which has detected. This is proof that there is byzantine node. */
+  record DoubleVote(BFTNode author, PreviousVote previousVote, Vote vote, HashCode voteHash)
+      implements ConsensusByzantineEvent {
+    @Override
+    public BFTNode getAuthor() {
+      return author;
+    }
+  }
+}

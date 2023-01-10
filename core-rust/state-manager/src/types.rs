@@ -67,6 +67,7 @@ use radix_engine::types::{
     scrypto, scrypto_encode, sha256_twice, Decode, Encode, Hash, PublicKey, TypeId,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use std::collections::HashSet;
 use std::fmt;
 use transaction::model::{
     NotarizedTransaction, PreviewFlags, SignedTransactionIntent, TransactionIntent,
@@ -384,10 +385,16 @@ pub struct PreviewRequest {
     pub flags: PreviewFlags,
 }
 
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum CommitError {
+    MissingEpochProof,
+}
+
 #[derive(Debug, Decode, Encode, TypeId)]
 pub struct CommitRequest {
     pub transaction_payloads: Vec<Vec<u8>>,
-    pub state_version: u64,
+    pub proof_state_version: u64, // TODO: Use actual proof to get this info
     pub proof: Vec<u8>,
     pub vertex_store: Option<Vec<u8>>,
 }
@@ -401,10 +408,19 @@ pub struct PrepareRequest {
     pub proposer_timestamp_ms: i64,
 }
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct PrepareResult {
     pub committed: Vec<Vec<u8>>,
     pub rejected: Vec<(Vec<u8>, String)>,
+    pub next_epoch: Option<NextEpoch>,
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct NextEpoch {
+    pub validator_set: HashSet<EcdsaSecp256k1PublicKey>,
+    pub epoch: u64,
 }
 
 #[derive(Debug, Decode, Encode, TypeId)]
@@ -415,5 +431,5 @@ pub struct PrepareGenesisRequest {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct PrepareGenesisResult {
-    pub validator_list: Option<Vec<EcdsaSecp256k1PublicKey>>,
+    pub validator_set: Option<HashSet<EcdsaSecp256k1PublicKey>>,
 }

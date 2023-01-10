@@ -71,10 +71,11 @@ use radix_engine::types::{
     scrypto, ComponentAddress, Decimal, Decode, Encode, TypeId, RADIX_TOKEN,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use std::collections::HashSet;
 
 use crate::jni::utils::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
-use crate::{PrepareGenesisRequest, PrepareGenesisResult};
+use crate::{CommitError, NextEpoch, PrepareGenesisRequest, PrepareGenesisResult};
 
 use super::state_manager::ActualStateManager;
 
@@ -179,9 +180,13 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
 }
 
 #[tracing::instrument(skip_all)]
-fn do_commit(state_manager: &mut ActualStateManager, args: JavaCommitRequest) {
+fn do_commit(
+    state_manager: &mut ActualStateManager,
+    args: JavaCommitRequest,
+) -> Result<(), CommitError> {
     let commit_request = args;
-    state_manager.commit(commit_request.into());
+
+    state_manager.commit(commit_request.into())
 }
 
 #[no_mangle]
@@ -235,7 +240,7 @@ impl From<JavaCommitRequest> for CommitRequest {
                 .into_iter()
                 .map(|t| t.payload)
                 .collect(),
-            state_version: commit_request.state_version,
+            proof_state_version: commit_request.state_version,
             proof: commit_request.proof,
             vertex_store: commit_request.vertex_store,
         }
@@ -271,10 +276,12 @@ impl From<JavaPrepareRequest> for PrepareRequest {
     }
 }
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct JavaPrepareResult {
     pub committed: Vec<Vec<u8>>,
     pub rejected: Vec<(Vec<u8>, String)>,
+    pub next_epoch: Option<NextEpoch>,
 }
 
 impl From<PrepareResult> for JavaPrepareResult {
@@ -282,6 +289,7 @@ impl From<PrepareResult> for JavaPrepareResult {
         JavaPrepareResult {
             committed: prepare_results.committed,
             rejected: prepare_results.rejected,
+            next_epoch: prepare_results.next_epoch,
         }
     }
 }
@@ -302,13 +310,13 @@ impl From<JavaPrepareGenesisRequest> for PrepareGenesisRequest {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct JavaPrepareGenesisResult {
-    pub validator_list: Option<Vec<EcdsaSecp256k1PublicKey>>,
+    pub validator_set: Option<HashSet<EcdsaSecp256k1PublicKey>>,
 }
 
 impl From<PrepareGenesisResult> for JavaPrepareGenesisResult {
     fn from(prepare_results: PrepareGenesisResult) -> Self {
         JavaPrepareGenesisResult {
-            validator_list: prepare_results.validator_list,
+            validator_set: prepare_results.validator_set,
         }
     }
 }

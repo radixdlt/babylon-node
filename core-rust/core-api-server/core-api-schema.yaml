@@ -788,6 +788,8 @@ components:
           $ref: "#/components/schemas/FeeSummary"
         state_updates:
           $ref: "#/components/schemas/StateUpdates"
+        next_epoch:
+          $ref: "#/components/schemas/NextEpoch"
         output:
           type: array
           description: The manifest line-by-line engine return data (only present if status is Succeeded)
@@ -1111,6 +1113,22 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/GlobalEntityAssignment"
+    NextEpoch:
+      type: object
+      required:
+        - epoch
+        - validators
+      properties:
+        epoch:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`
+        validators:
+          type: array
+          items:
+            $ref: "#/components/schemas/EcdsaSecp256k1PublicKey"
     NewSubstateVersion:
       type: object
       required:
@@ -1424,19 +1442,16 @@ components:
       type: string
       enum:
         - NativeMethod
-        - NativeFunction
         - ScryptoMethod
     LocalMethodReference:
       anyOf:
         - $ref: '#/components/schemas/LocalNativeMethodReference'
-        - $ref: '#/components/schemas/LocalNativeFunctionReference'
         - $ref: '#/components/schemas/LocalScryptoMethodReference'
       discriminator:
         propertyName: type
         mapping:
           # NOTE: These need to match LocalMethodReferenceType options above
           NativeMethod: '#/components/schemas/LocalNativeMethodReference'
-          NativeFunction: '#/components/schemas/LocalNativeFunctionReference'
           ScryptoMethod: '#/components/schemas/LocalScryptoMethodReference'
     LocalMethodReferenceBase:
       type: object
@@ -1446,15 +1461,6 @@ components:
         type:
           $ref: '#/components/schemas/LocalMethodReferenceType'
     LocalNativeMethodReference:
-      allOf:
-        - $ref: '#/components/schemas/LocalMethodReferenceBase'
-        - type: object
-          required:
-            - name
-          properties:
-            name:
-              type: string
-    LocalNativeFunctionReference:
       allOf:
         - $ref: '#/components/schemas/LocalMethodReferenceBase'
         - type: object
@@ -2380,6 +2386,8 @@ components:
         - type: object
           required:
             - epoch
+            - round
+            - rounds_per_epoch
           properties:
             epoch:
               type: integer
@@ -2387,17 +2395,36 @@ components:
               minimum: 0
               maximum: 10000000000
               description: An integer between `0` and `10^10`, marking the current epoch
+            round:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description: An integer between `0` and `10^10`, marking the current round in an epoch
+            rounds_per_epoch:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description: An integer between `0` and `10^10`, specifying the number of rounds per epoch
     ValidatorSetSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
         - type: object
           required:
             - validator_set
+            - epoch
           properties:
             validator_set:
               type: array
               items:
                 $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
+            epoch:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description: An integer between `0` and `10^10`, marking the epoch the validator set is a part of
     ClockCurrentMinuteSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'

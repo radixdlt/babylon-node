@@ -64,27 +64,22 @@
 
 package com.radixdlt.statecomputer.commit;
 
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.EnumCodec;
-import com.radixdlt.sbor.codec.EnumEntry;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt64;
+import java.util.Set;
 
-public sealed interface TransactionPrepareResult {
-  static void registerCodec(CodecMap codecMap) {
+public record NextEpoch(Set<ECDSASecp256k1PublicKey> validators, UInt64 epoch) {
+  public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        TransactionPrepareResult.class,
-        (codecs) ->
-            EnumCodec.fromEntries(
-                EnumEntry.noFields(
-                    TransactionPrepareResult.CanCommit.class,
-                    TransactionPrepareResult.CanCommit::new),
-                EnumEntry.with(
-                    TransactionPrepareResult.Reject.class,
-                    TransactionPrepareResult.Reject::new,
-                    codecs.of(String.class),
-                    (t, encoder) -> encoder.encode(t.reason))));
+        NextEpoch.class,
+        codecs ->
+            StructCodec.with(
+                NextEpoch::new,
+                codecs.of(new TypeToken<>() {}),
+                codecs.of(new TypeToken<>() {}),
+                (t, encoder) -> encoder.encode(t.validators, t.epoch)));
   }
-
-  record CanCommit() implements TransactionPrepareResult {}
-
-  record Reject(String reason) implements TransactionPrepareResult {}
 }

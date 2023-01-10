@@ -67,20 +67,9 @@ package com.radixdlt.utils;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimeoutCertificate;
-import com.radixdlt.consensus.TimestampedECDSASignature;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.ECKeyPair;
@@ -136,10 +125,10 @@ public class SerializerTestDataGenerator {
                 Math.abs(random.nextLong()) + 1, HashCode.fromLong(random.nextLong())),
             Math.abs(random.nextLong()) + 1,
             Math.abs(random.nextLong()) + 1,
-            BFTValidatorSet.from(
-                ImmutableSet.<BFTValidator>builder()
-                    .add(BFTValidator.from(BFTNode.random(), UInt256.from(random.nextLong())))
-                    .build())));
+            NextEpoch.create(
+                Math.abs(random.nextLong()) + 1,
+                ImmutableSet.of(
+                    BFTValidator.from(BFTNode.random(), UInt256.from(random.nextLong()))))));
   }
 
   public static TimestampedECDSASignatures randomTimestampedECDSASignatures() {

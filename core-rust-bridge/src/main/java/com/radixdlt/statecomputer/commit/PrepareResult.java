@@ -65,12 +65,16 @@
 package com.radixdlt.statecomputer.commit;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import java.util.List;
 
-public record PrepareResult(List<byte[]> committed, List<Tuple.Tuple2<byte[], String>> rejected) {
+public record PrepareResult(
+    List<byte[]> committed,
+    List<Tuple.Tuple2<byte[], String>> rejected,
+    Option<NextEpoch> nextEpoch) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PrepareResult.class,
@@ -79,6 +83,7 @@ public record PrepareResult(List<byte[]> committed, List<Tuple.Tuple2<byte[], St
                 PrepareResult::new,
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
-                (t, encoder) -> encoder.encode(t.committed, t.rejected)));
+                codecs.of(new TypeToken<>() {}),
+                (t, encoder) -> encoder.encode(t.committed, t.rejected, t.nextEpoch)));
   }
 }

@@ -97,9 +97,10 @@ public final class PendingVotes {
   private final Map<HashCode, ValidationState> timeoutVoteState = Maps.newHashMap();
   private final Map<BFTNode, PreviousVote> previousVotes = Maps.newHashMap();
   private final Hasher hasher;
-  private final EventDispatcher<DoubleVote> doubleVoteEventDispatcher;
+  private final EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher;
 
-  public PendingVotes(Hasher hasher, EventDispatcher<DoubleVote> doubleVoteEventDispatcher) {
+  public PendingVotes(
+      Hasher hasher, EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher) {
     this.hasher = Objects.requireNonNull(hasher);
     this.doubleVoteEventDispatcher = Objects.requireNonNull(doubleVoteEventDispatcher);
   }
@@ -224,7 +225,7 @@ public final class PendingVotes {
       var isValidVote = thisVote.getHash().equals(previousVote.getHash());
       if (!isValidVote) {
         this.doubleVoteEventDispatcher.dispatch(
-            new DoubleVote(author, previousVote, vote, thisVote.getHash()));
+            new ConsensusByzantineEvent.DoubleVote(author, previousVote, vote, thisVote.getHash()));
       }
       return isValidVote && !previousVote.isTimeout() && vote.isTimeout();
     } else {

@@ -140,11 +140,12 @@ public final class StateManagerSbor {
     PrepareGenesisResult.registerCodec(codecMap);
     PrepareRequest.registerCodec(codecMap);
     PrepareResult.registerCodec(codecMap);
+    NextEpoch.registerCodec(codecMap);
     CommitRequest.registerCodec(codecMap);
+    CommitError.registerCodec(codecMap);
     REv2DatabaseConfig.registerCodec(codecMap);
     TransactionHeader.registerCodec(codecMap);
     CoreApiServerConfig.registerCodec(codecMap);
-    REv2StateConfig.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

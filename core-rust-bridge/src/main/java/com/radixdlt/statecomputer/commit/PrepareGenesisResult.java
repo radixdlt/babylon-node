@@ -69,9 +69,9 @@ import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import java.util.List;
+import java.util.Set;
 
-public record PrepareGenesisResult(Option<List<ECDSASecp256k1PublicKey>> validatorList) {
+public record PrepareGenesisResult(Option<Set<ECDSASecp256k1PublicKey>> validatorSet) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PrepareGenesisResult.class,
@@ -79,6 +79,6 @@ public record PrepareGenesisResult(Option<List<ECDSASecp256k1PublicKey>> validat
             StructCodec.with(
                 PrepareGenesisResult::new,
                 codecs.of(new TypeToken<>() {}),
-                (t, encoder) -> encoder.encode(t.validatorList)));
+                (t, encoder) -> encoder.encode(t.validatorSet)));
   }
 }

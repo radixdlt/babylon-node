@@ -64,14 +64,15 @@
 
 package com.radixdlt.rev1;
 
-import static com.radixdlt.substate.TxAction.NextEpoch;
 import static com.radixdlt.substate.TxAction.NextRound;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.*;
+import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -100,6 +101,7 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.rev1.forks.Forks;
+import com.radixdlt.substate.TxAction;
 import com.radixdlt.substate.TxBuilderException;
 import com.radixdlt.substate.TxLowLevelBuilder;
 import com.radixdlt.substate.TxnConstructionRequest;
@@ -268,21 +270,23 @@ public final class RadixEngineStateComputer implements StateComputer {
       successBuilder.add(systemUpdateTransaction);
 
       var exceptionBuilder = ImmutableMap.<RawLedgerTransaction, Exception>builder();
-      var nextValidatorSet =
+      var nextEpoch =
           systemUpdateTransaction.processed().getEvents().stream()
               .filter(REEvent.NextValidatorSetEvent.class::isInstance)
               .map(REEvent.NextValidatorSetEvent.class::cast)
               .findFirst()
               .map(
                   e ->
-                      BFTValidatorSet.from(
+                      NextEpoch.create(
+                          roundDetails.epoch() + 1,
                           e.nextValidators().stream()
                               .map(
                                   v ->
                                       BFTValidator.from(
-                                          BFTNode.create(v.validatorKey()), v.amount()))));
+                                          BFTNode.create(v.validatorKey()), v.amount()))
+                              .collect(ImmutableSet.toImmutableSet())));
       // Don't execute and user transactions if changing epochs
-      if (nextValidatorSet.isEmpty()) {
+      if (nextEpoch.isEmpty()) {
         this.executeUserTransactions(
             roundDetails.roundProposer(),
             transientBranch,
@@ -295,7 +299,7 @@ public final class RadixEngineStateComputer implements StateComputer {
       this.radixEngine.deleteBranches();
 
       return new StateComputerResult(
-          successBuilder.build(), exceptionBuilder.build(), nextValidatorSet.orElse(null));
+          successBuilder.build(), exceptionBuilder.build(), nextEpoch.orElse(null));
     }
   }
 
@@ -355,7 +359,7 @@ public final class RadixEngineStateComputer implements StateComputer {
                 roundDetails.consensusParentRoundTimestampMs(),
                 getValidatorMapping()));
       }
-      systemActions.action(new NextEpoch(roundDetails.consensusParentRoundTimestampMs()));
+      systemActions.action(new TxAction.NextEpoch(roundDetails.consensusParentRoundTimestampMs()));
     }
 
     try {
@@ -474,23 +478,26 @@ public final class RadixEngineStateComputer implements StateComputer {
       var epochChangeOptional =
           txnsAndProof
               .getProof()
-              .getNextValidatorSet()
+              .getNextEpoch()
               .map(
-                  validatorSet -> {
+                  nextEpoch -> {
                     var header = txnsAndProof.getProof();
                     // TODO: Move vertex stuff somewhere else
-                    var genesisVertex = Vertex.createGenesis(header.getHeader()).withId(hasher);
+                    var genesisVertex =
+                        Vertex.createInitialEpochVertex(header.getHeader()).withId(hasher);
                     var nextLedgerHeader =
                         LedgerHeader.create(
-                            header.getNextEpoch(),
+                            nextEpoch.getEpoch(),
                             Round.genesis(),
                             header.getAccumulatorState(),
                             header.consensusParentRoundTimestamp(),
                             header.proposerTimestamp());
-                    var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+                    var genesisQC =
+                        QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
                     final var initialState =
                         VertexStoreState.create(
                             HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
+                    var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
                     var proposerElection = new WeightedRotatingLeaders(validatorSet);
                     var bftConfiguration =
                         new BFTConfiguration(proposerElection, validatorSet, initialState);

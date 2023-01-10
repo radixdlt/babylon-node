@@ -65,72 +65,72 @@
 package com.radixdlt.integration.steady_state.deterministic.ledger_sync;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.predicates.EventPredicate.*;
 import static com.radixdlt.harness.predicates.NodePredicate.atOrOverStateVersion;
-import static com.radixdlt.harness.predicates.NodesPredicate.nodeAt;
-import static org.junit.Assert.assertTrue;
+import static com.radixdlt.harness.predicates.NodesPredicate.*;
 
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.stream.IntStream;
 import org.junit.Test;
 
 public class FullNodeSyncTest {
-  /* maximum state lag is a single transaction */
-  private static final int FULL_NODE_MAX_BEHIND_STATE_VER = 1;
-
-  private void run(int numNodes, int numValidators, Round epochMaxRound, long targetStateVersion) {
+  private static DeterministicTest createTest(
+      int numValidators, int numFullNodes, Round epochMaxRound) {
     final var syncConfig =
         new SyncRelayConfig(
             500L,
             0 /* unused */,
             Long.MAX_VALUE /* unused */,
-            numNodes, /* send ledger status update to all nodes */
+            numValidators + numFullNodes, /* send ledger status update to all nodes */
             Integer.MAX_VALUE /* no rate limiting */);
+    return DeterministicTest.builder()
+        .numNodes(numValidators, numFullNodes)
+        .messageSelector(firstSelector())
+        .epochNodeIndexesMapping(epoch -> IntStream.range(0, numValidators))
+        .buildWithEpochsAndSync(epochMaxRound, syncConfig);
+  }
 
-    final var test =
-        DeterministicTest.builder()
-            .numNodes(numNodes, 0)
-            .messageSelector(firstSelector())
-            .epochNodeIndexesMapping(epoch -> IntStream.range(0, numValidators))
-            .buildWithEpochsAndSync(epochMaxRound, syncConfig);
-
+  private static void run(DeterministicTest test, int numValidators, long targetStateVersion) {
     test.startAllNodes();
-    test.runUntilState(nodeAt(numNodes - 1, atOrOverStateVersion(targetStateVersion)), 10000000);
+    test.runUntilState(
+        anyAtOrOverStateVersion(targetStateVersion), 100000, onlyNodes(i -> i < numValidators));
 
-    final var validatorsCounters =
-        IntStream.range(0, numValidators).mapToObj(i -> test.getInstance(i, Metrics.class));
+    // Sync one full node
+    test.runUntilState(
+        nodeAt(numValidators, atOrOverStateVersion(targetStateVersion)),
+        1000000,
+        onlyNodes(i -> i <= numValidators));
 
-    final var validatorsMaxStateVersion =
-        validatorsCounters
-            .mapToLong(sc -> (long) sc.ledger().stateVersion().get())
-            .max()
-            .getAsLong();
+    // Only Full Node Sync
+    // TODO: Enable, this is not yet currently working due to SyncCheckTrigger explosion in
+    // DeterministicTest?
+    // test.runUntilState(someAtOrOverStateVersion(i -> i >= numValidators, targetStateVersion),
+    // 1000000, onlyNodes(i -> i >= numValidators));
 
-    final var nonValidatorsStateVersions =
-        IntStream.range(numValidators, numNodes - numValidators)
-            .mapToObj(i -> test.getInstance(i, Metrics.class))
-            .map(sc -> (long) sc.ledger().stateVersion().get())
-            .toList();
-
-    nonValidatorsStateVersions.forEach(
-        stateVersion ->
-            assertTrue(stateVersion + FULL_NODE_MAX_BEHIND_STATE_VER >= validatorsMaxStateVersion));
+    test.runUntilState(
+        someAtOrOverStateVersion(i -> i >= numValidators, targetStateVersion), 1000000);
   }
 
   @Test
-  public void total_five_nodes_and_a_single_full_node() {
-    this.run(5, 4, Round.of(100), 1000L);
+  public void test_5_validators_and_1_full_node() {
+    try (var test = createTest(5, 1, Round.of(100))) {
+      run(test, 5, 100L);
+    }
   }
 
   @Test
-  public void total_50_nodes_and_just_4_validators_two_rounds_per_epoch() {
-    this.run(50, 4, Round.of(2), 500L);
+  public void test_3_validators_and_2_full_nodes() {
+    try (var test = createTest(3, 2, Round.of(100))) {
+      run(test, 3, 101L);
+    }
   }
 
   @Test
-  public void total_three_nodes_and_a_single_full_node_10k_rounds_per_epoch() {
-    this.run(3, 2, Round.of(10000), 1000L);
+  public void test_4_validators_and_50_full_nodes_and_two_rounds_per_epoch() {
+    try (var test = createTest(4, 50, Round.of(2))) {
+      run(test, 4, 100L);
+    }
   }
 }

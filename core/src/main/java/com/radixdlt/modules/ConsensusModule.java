@@ -129,7 +129,7 @@ public final class ConsensusModule extends AbstractModule {
       Metrics metrics,
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteEventDispatcher,
-      EventDispatcher<DoubleVote> doubleVoteEventDispatcher,
+      EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
       RemoteEventDispatcher<Vote> voteDispatcher,
       EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher,
       RoundUpdate roundUpdate) {
@@ -205,6 +205,7 @@ public final class ConsensusModule extends AbstractModule {
       RemoteEventDispatcher<GetVerticesRequest> requestSender,
       EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
       ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
+      EventDispatcher<ConsensusByzantineEvent> unexpectedEventEventDispatcher,
       @LastProof LedgerProof ledgerLastProof, // Use this instead of configuration.getRoot()
       Random random,
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
@@ -222,6 +223,7 @@ public final class ConsensusModule extends AbstractModule {
         requestSender,
         syncLedgerRequestSender,
         timeoutDispatcher,
+        unexpectedEventEventDispatcher,
         ledgerLastProof,
         random,
         bftSyncPatienceMillis,

@@ -83,7 +83,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -107,8 +106,8 @@ public final class REv2MempoolRelayerTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(1),
-                        new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
+                        TransactionBuilder.createGenesisWithNumValidators(
+                            1, UInt64.fromNonNegativeLong(100000)),
                         REv2DatabaseConfig.inMemory(),
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             0, MEMPOOL_SIZE, new MempoolRelayConfig(0, 100))),

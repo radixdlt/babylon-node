@@ -62,22 +62,76 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.consensus;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.utils.UInt64;
+import static java.util.Objects.requireNonNull;
 
-// TODO: This should be replaced by a genesis configuration at some point
-public record REv2StateConfig(UInt64 roundsPerEpoch) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        REv2StateConfig.class,
-        codecs ->
-            StructCodec.with(
-                REv2StateConfig::new,
-                codecs.of(new TypeToken<>() {}),
-                (s, encoder) -> encoder.encode(s.roundsPerEpoch)));
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
+import java.util.Objects;
+import javax.annotation.concurrent.Immutable;
+
+@Immutable
+@SerializerId2("consensus.next_epoch")
+public final class NextEpoch {
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
+  SerializerDummy serializer = SerializerDummy.DUMMY;
+
+  @JsonProperty("validators")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final ImmutableSet<BFTValidator> validators;
+
+  @JsonProperty("epoch")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final long epoch;
+
+  @JsonCreator
+  @VisibleForTesting
+  NextEpoch(
+      @JsonProperty(value = "epoch", required = true) long epoch,
+      @JsonProperty(value = "validators", required = true) ImmutableSet<BFTValidator> validators) {
+    this.epoch = epoch;
+    if (epoch < 0) {
+      throw new IllegalArgumentException("Epoch can't be < 0");
+    }
+    this.validators = requireNonNull(validators);
+  }
+
+  public static NextEpoch create(long epoch, ImmutableSet<BFTValidator> validators) {
+    return new NextEpoch(epoch, validators);
+  }
+
+  public ImmutableSet<BFTValidator> getValidators() {
+    return validators;
+  }
+
+  public long getEpoch() {
+    return epoch;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    NextEpoch nextEpoch = (NextEpoch) o;
+    return epoch == nextEpoch.epoch && Objects.equals(validators, nextEpoch.validators);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(validators, epoch);
+  }
+
+  @Override
+  public String toString() {
+    return "NextEpoch{" + "validators=" + validators + ", epoch=" + epoch + '}';
   }
 }

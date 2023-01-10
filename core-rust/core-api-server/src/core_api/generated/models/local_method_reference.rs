@@ -13,11 +13,6 @@
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type")]
 pub enum LocalMethodReference {
-    #[serde(rename="NativeFunction")]
-    LocalNativeFunctionReference {
-        #[serde(rename = "name")]
-        name: String,
-    },
     #[serde(rename="NativeMethod")]
     LocalNativeMethodReference {
         #[serde(rename = "name")]

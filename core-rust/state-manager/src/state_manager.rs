@@ -67,7 +67,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use prometheus::Registry;
 use radix_engine::engine::ScryptoInterpreter;
-use radix_engine::state_manager::{StagedSubstateStore, StagedSubstateStoreManager};
+use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     execute_and_commit_transaction, execute_preview, execute_transaction, ExecutionConfig,
     FeeReserveConfig, PreviewError, PreviewResult, TransactionOutcome, TransactionReceipt,
@@ -79,7 +79,7 @@ use radix_engine::types::{
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
-use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::node::NetworkDefinition;
 use tracing::info;
 use transaction::errors::TransactionValidationError;
 use transaction::model::{
@@ -97,9 +97,9 @@ use crate::transaction::{
 };
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult, PreviewRequest};
 use crate::{
-    CommittedTransactionIdentifiers, HasIntentHash, HasUserPayloadHash, IntentHash,
-    LedgerTransactionReceipt, MempoolAddError, Metrics, PendingTransaction, PrepareGenesisRequest,
-    PrepareGenesisResult,
+    CommitError, CommittedTransactionIdentifiers, HasIntentHash, HasUserPayloadHash, IntentHash,
+    LedgerTransactionReceipt, MempoolAddError, Metrics, NextEpoch, PendingTransaction,
+    PrepareGenesisRequest, PrepareGenesisResult,
 };
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
@@ -121,7 +121,6 @@ pub struct StateManager<S> {
     pub user_transaction_validator: UserTransactionValidator,
     pub ledger_transaction_validator: LedgerTransactionValidator,
     pub rejection_cache: RejectionCache,
-    rounds_per_epoch: u64,
     pub metrics: Metrics,
     pub prometheus_registry: Registry,
     execution_config: ExecutionConfig,
@@ -134,7 +133,6 @@ pub struct StateManager<S> {
 impl<S> StateManager<S> {
     pub fn new(
         network: NetworkDefinition,
-        rounds_per_epoch: u64,
         mempool: SimpleMempool,
         store: S,
         logging_config: LoggingConfig,
@@ -159,7 +157,6 @@ impl<S> StateManager<S> {
             store,
             user_transaction_validator,
             ledger_transaction_validator: committed_transaction_validator,
-            rounds_per_epoch,
             execution_config: ExecutionConfig {
                 max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                 trace: logging_config.engine_trace,
@@ -464,7 +461,7 @@ where
         );
         match receipt.result {
             TransactionResult::Commit(commit) => PrepareGenesisResult {
-                validator_list: commit.next_validator_set,
+                validator_set: commit.next_epoch.map(|(validator_set, _)| validator_set),
             },
             TransactionResult::Reject(reject_result) => {
                 panic!("Genesis rejected. Result: {:?}", reject_result)
@@ -527,7 +524,9 @@ where
                 &executable,
             );
             match receipt.result {
-                TransactionResult::Commit(_) => {}
+                TransactionResult::Commit(_) => {
+                    // TODO: Do we need to check that next epoch request has been prepared?
+                }
                 TransactionResult::Reject(reject_result) => {
                     panic!(
                         "Already prepared transactions should be committable. Reject result: {:?}",
@@ -538,90 +537,105 @@ where
         }
 
         let mut committed = Vec::new();
+        let mut rejected = Vec::new();
 
-        // Update the epoch
-        if prepare_request.round_number % self.rounds_per_epoch == 0 {
-            let new_epoch = (prepare_request.round_number / self.rounds_per_epoch) + 1;
-            let epoch_update_ledger_txn = Self::execute_and_commit_validator_transaction(
-                &self.scrypto_interpreter,
-                &self.fee_reserve_config,
-                &self.execution_config,
-                ValidatorTransaction::EpochUpdate {
-                    scrypto_epoch: new_epoch,
-                },
-                &mut staged_store,
-            )
-            .expect("Epoch update txn failed");
-            committed.push(scrypto_encode(&epoch_update_ledger_txn).unwrap());
-        }
-
-        // Update the time
-        let time_update_ledger_txn = Self::execute_and_commit_validator_transaction(
+        // Round Update
+        // TODO: Unify this with the proposed payloads execution
+        let validator_transaction = ValidatorTransaction::RoundUpdate {
+            proposer_timestamp_ms: prepare_request.proposer_timestamp_ms,
+            consensus_epoch: prepare_request.consensus_epoch,
+            round_in_epoch: prepare_request.round_number,
+        };
+        let prepared_txn = validator_transaction.prepare();
+        let executable = prepared_txn.to_executable();
+        let receipt = execute_transaction(
+            &staged_store,
             &self.scrypto_interpreter,
             &self.fee_reserve_config,
             &self.execution_config,
-            ValidatorTransaction::RoundUpdate {
-                proposer_timestamp_ms: prepare_request.proposer_timestamp_ms,
-                consensus_epoch: prepare_request.consensus_epoch,
-                round_in_epoch: prepare_request.round_number,
-            },
-            &mut staged_store,
-        )
-        .expect("Time update txn failed");
-        committed.push(scrypto_encode(&time_update_ledger_txn).unwrap());
+            &executable,
+        );
+        let mut next_epoch = match receipt.result {
+            TransactionResult::Commit(commit_result) => {
+                if let TransactionOutcome::Failure(error) = commit_result.outcome {
+                    panic!("Validator txn failed: {:?}", error);
+                }
 
-        let mut rejected = Vec::new();
+                commit_result.state_updates.commit(&mut staged_store);
+                let validator_txn = LedgerTransaction::Validator(validator_transaction);
+                committed.push(scrypto_encode(&validator_txn).unwrap());
 
-        for proposed_payload in prepare_request.proposed_payloads {
-            let parsed =
-                match UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
-                    &proposed_payload,
-                ) {
-                    Ok(parsed) => parsed,
+                commit_result.next_epoch.map(|e| NextEpoch {
+                    validator_set: e.0,
+                    epoch: e.1,
+                })
+            }
+            TransactionResult::Reject(reject_result) => {
+                panic!("Validator txn failed: {:?}", reject_result)
+            }
+        };
+
+        // Don't process any additional transactions if next epoch has occurred
+        if next_epoch.is_none() {
+            for proposed_payload in prepare_request.proposed_payloads {
+                let parsed =
+                    match UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
+                        &proposed_payload,
+                    ) {
+                        Ok(parsed) => parsed,
+                        Err(error) => {
+                            rejected.push((proposed_payload, format!("{:?}", error)));
+                            continue;
+                        }
+                    };
+
+                let intent_hash = parsed.intent_hash();
+                if already_committed_or_prepared_intent_hashes.contains(&intent_hash) {
+                    rejected.push((
+                        proposed_payload,
+                        format!("Duplicate intent hash: {:?}", &intent_hash),
+                    ));
+                    continue;
+                }
+
+                let validate_result = self
+                    .user_transaction_validator
+                    .validate_and_create_executable(&parsed, proposed_payload.len());
+
+                let executable = match validate_result {
+                    Ok(executable) => executable,
                     Err(error) => {
                         rejected.push((proposed_payload, format!("{:?}", error)));
                         continue;
                     }
                 };
 
-            let intent_hash = parsed.intent_hash();
-            if already_committed_or_prepared_intent_hashes.contains(&intent_hash) {
-                rejected.push((
-                    proposed_payload,
-                    format!("Duplicate intent hash: {:?}", &intent_hash),
-                ));
-                continue;
+                let receipt = execute_and_commit_transaction(
+                    &mut staged_store,
+                    &self.scrypto_interpreter,
+                    &self.fee_reserve_config,
+                    &self.execution_config,
+                    &executable,
+                );
+
+                match receipt.result {
+                    TransactionResult::Commit(result) => {
+                        already_committed_or_prepared_intent_hashes.insert(intent_hash);
+                        committed.push(LedgerTransaction::User(parsed).create_payload().unwrap());
+
+                        if let Some(e) = result.next_epoch {
+                            next_epoch = Some(NextEpoch {
+                                validator_set: e.0,
+                                epoch: e.1,
+                            });
+                            break;
+                        }
+                    }
+                    TransactionResult::Reject(reject_result) => {
+                        rejected.push((proposed_payload, format!("{:?}", reject_result)));
+                    }
+                };
             }
-
-            let validate_result = self
-                .user_transaction_validator
-                .validate_and_create_executable(&parsed, proposed_payload.len());
-
-            let executable = match validate_result {
-                Ok(executable) => executable,
-                Err(error) => {
-                    rejected.push((proposed_payload, format!("{:?}", error)));
-                    continue;
-                }
-            };
-
-            let receipt = execute_and_commit_transaction(
-                &mut staged_store,
-                &self.scrypto_interpreter,
-                &self.fee_reserve_config,
-                &self.execution_config,
-                &executable,
-            );
-
-            match receipt.result {
-                TransactionResult::Commit(..) => {
-                    already_committed_or_prepared_intent_hashes.insert(intent_hash);
-                    committed.push(LedgerTransaction::User(parsed).create_payload().unwrap());
-                }
-                TransactionResult::Reject(reject_result) => {
-                    rejected.push((proposed_payload, format!("{:?}", reject_result)));
-                }
-            };
         }
 
         if self.logging_config.log_on_transaction_rejection {
@@ -633,40 +647,7 @@ where
         PrepareResult {
             committed,
             rejected,
-        }
-    }
-
-    fn execute_and_commit_validator_transaction(
-        scrypto_interpreter: &ScryptoInterpreter<DefaultWasmEngine>,
-        fee_reserve_config: &FeeReserveConfig,
-        execution_config: &ExecutionConfig,
-        validator_transaction: ValidatorTransaction,
-        staged_store: &mut StagedSubstateStore<S>,
-    ) -> Result<LedgerTransaction, String> {
-        let prepared_txn = validator_transaction.prepare();
-        let executable = prepared_txn.to_executable();
-
-        let receipt = execute_transaction(
-            staged_store,
-            scrypto_interpreter,
-            fee_reserve_config,
-            execution_config,
-            &executable,
-        );
-
-        match receipt.result {
-            TransactionResult::Commit(commit_result) => match commit_result.outcome {
-                TransactionOutcome::Failure(error) => {
-                    Err(format!("Validator txn failed: {:?}", error))
-                }
-                TransactionOutcome::Success(..) => {
-                    commit_result.state_updates.commit(staged_store);
-                    Ok(LedgerTransaction::Validator(validator_transaction))
-                }
-            },
-            TransactionResult::Reject(reject_result) => {
-                Err(format!("Validator txn rejected: {:?}", reject_result))
-            }
+            next_epoch,
         }
     }
 }
@@ -683,12 +664,12 @@ where
         db_transaction.commit();
     }
 
-    pub fn commit(&'db mut self, commit_request: CommitRequest) {
+    pub fn commit(&'db mut self, commit_request: CommitRequest) -> Result<(), CommitError> {
         let mut to_store = Vec::new();
         let mut payload_hashes = Vec::new();
         let mut intent_hashes = Vec::new();
         let commit_request_start_state_version =
-            commit_request.state_version - (commit_request.transaction_payloads.len() as u64);
+            commit_request.proof_state_version - (commit_request.transaction_payloads.len() as u64);
 
         // Whilst we should probably validate intent hash duplicates here, these are checked by validators on prepare already,
         // and the check will move into the engine at some point and we'll get it for free then...
@@ -722,60 +703,56 @@ where
         let mut current_state_version = current_top_of_ledger.state_version;
         let mut current_accumulator = current_top_of_ledger.accumulator_hash;
         let mut epoch_boundary = None;
+        let mut receipts = Vec::new();
 
-        let receipts = parsed_transactions
-            .iter()
-            .enumerate()
-            .map(|(i, transaction)| {
-                if let LedgerTransaction::System(..) = transaction {
-                    // TODO: Cleanup and use real system transaction logic
-                    if commit_request.state_version != 1 && i != 0 {
-                        panic!("Non Genesis system transaction cannot be committed.");
-                    }
+        for (i, transaction) in parsed_transactions.iter().enumerate() {
+            if let LedgerTransaction::System(..) = transaction {
+                // TODO: Cleanup and use real system transaction logic
+                if commit_request.proof_state_version != 1 && i != 0 {
+                    panic!("Non Genesis system transaction cannot be committed.");
                 }
+            }
 
-                let executable = self
-                    .ledger_transaction_validator
-                    .validate_and_create_executable(transaction)
-                    .unwrap_or_else(|error| {
-                        panic!(
-                            "Committed transaction is not valid - likely byzantine quorum: {:?}",
-                            error
-                        );
-                    });
+            let executable = self
+                .ledger_transaction_validator
+                .validate_and_create_executable(transaction)
+                .unwrap_or_else(|error| {
+                    panic!(
+                        "Committed transaction is not valid - likely byzantine quorum: {:?}",
+                        error
+                    );
+                });
 
-                let engine_receipt = execute_and_commit_transaction(
-                    &mut db_transaction,
-                    &self.scrypto_interpreter,
-                    &self.fee_reserve_config,
-                    &self.execution_config,
-                    &executable,
-                );
+            let engine_receipt = execute_and_commit_transaction(
+                &mut db_transaction,
+                &self.scrypto_interpreter,
+                &self.fee_reserve_config,
+                &self.execution_config,
+                &executable,
+            );
 
-                let ledger_receipt: LedgerTransactionReceipt = match engine_receipt.result {
-                    TransactionResult::Commit(result) => {
-                        if result.next_validator_set.is_some() {
-                            let is_last = i == (parsed_transactions.len() - 1);
-                            if !is_last {
-                                panic!("Next Epoch occurs in the middle of transaction set at proof state_version {}", commit_request.state_version);
-                            }
-                            // TODO: Use actual result and verify proof validator set matches transaction receipt validator set
-                            epoch_boundary = Some(1u64);
+            let ledger_receipt: LedgerTransactionReceipt = match engine_receipt.result {
+                TransactionResult::Commit(result) => {
+                    if let Some((_, next_epoch)) = result.next_epoch {
+                        let is_last = i == (parsed_transactions.len() - 1);
+                        if !is_last {
+                            return Err(CommitError::MissingEpochProof);
                         }
-
-                        (result, engine_receipt.execution.fee_summary).into()
+                        // TODO: Use actual result and verify proof validator set matches transaction receipt validator set
+                        epoch_boundary = Some(next_epoch);
                     }
-                    TransactionResult::Reject(error) => {
-                        panic!(
-                            "Failed to commit a txn at state version {}: {:?}",
-                            commit_request.state_version, error
-                        )
-                    }
-                };
 
-                ledger_receipt
-            })
-            .collect::<Vec<_>>();
+                    (result, engine_receipt.execution.fee_summary).into()
+                }
+                TransactionResult::Reject(error) => {
+                    panic!(
+                        "Failed to commit a txn at state version {}: {:?}",
+                        commit_request.proof_state_version, error
+                    )
+                }
+            };
+            receipts.push(ledger_receipt);
+        }
 
         for (transaction, ledger_receipt) in
             parsed_transactions.into_iter().zip(receipts.into_iter())
@@ -802,7 +779,7 @@ where
 
         db_transaction.insert_committed_transactions(to_store);
         db_transaction.insert_tids_and_proof(
-            commit_request.state_version,
+            commit_request.proof_state_version,
             epoch_boundary,
             payload_hashes,
             commit_request.proof,
@@ -831,6 +808,8 @@ where
 
         self.rejection_cache
             .track_committed_transactions(intent_hashes);
+
+        Ok(())
     }
 }
 

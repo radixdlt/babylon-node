@@ -81,7 +81,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.MockedVertexStoreModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
@@ -98,7 +97,13 @@ import org.junit.runners.Parameterized;
 public final class MultiNodeRebootTest {
   @Parameterized.Parameters
   public static Collection<Object[]> numNodes() {
-    return List.of(new Object[][] {{4, 500}, {10, 200}});
+    return List.of(
+        new Object[][] {
+          {false, UInt64.fromNonNegativeLong(100000), 4, 500},
+          {false, UInt64.fromNonNegativeLong(100000), 10, 200},
+          {true, UInt64.fromNonNegativeLong(100), 4, 500},
+          {true, UInt64.fromNonNegativeLong(100), 10, 200}
+        });
   }
 
   private interface NodeLivenessController {
@@ -167,10 +172,15 @@ public final class MultiNodeRebootTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private final Random random = new Random(12345);
+  private final boolean epochs;
+  private final UInt64 roundsPerEpoch;
   private final int numValidators;
   private final int numTestRounds;
 
-  public MultiNodeRebootTest(int numValidators, int numTestRounds) {
+  public MultiNodeRebootTest(
+      boolean epochs, UInt64 roundsPerEpoch, int numValidators, int numTestRounds) {
+    this.epochs = epochs;
+    this.roundsPerEpoch = roundsPerEpoch;
     this.numValidators = numValidators;
     this.numTestRounds = numTestRounds;
   }
@@ -190,14 +200,14 @@ public final class MultiNodeRebootTest {
 
     return builder.functionalNodeModule(
         new FunctionalRadixNodeModule(
-            false,
+            this.epochs,
             safetyRecoveryConfig,
             ConsensusConfig.of(1000),
             LedgerConfig.stateComputerWithSyncRelay(
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),
-                    TransactionBuilder.createGenesisWithNumValidators(numValidators),
-                    new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
+                    TransactionBuilder.createGenesisWithNumValidators(
+                        numValidators, this.roundsPerEpoch),
                     databaseConfig,
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                         new REV2TransactionGenerator(), 1)),
