@@ -14,10 +14,10 @@ use radix_engine::model::{
 };
 use radix_engine::types::{
     scrypto_encode, AccessRule, AccessRuleEntry, AccessRuleKey, AccessRuleNode, AccessRules,
-    Bech32Encoder, Decimal, GlobalOffset, KeyValueStoreOffset, NativeFn, NonFungibleId,
-    NonFungibleIdType, NonFungibleStoreOffset, ProofRule, RENodeId, ResourceAddress, ResourceType,
-    RoyaltyConfig, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible,
-    SoftResourceOrNonFungibleList, SubstateId, SubstateOffset, RADIX_TOKEN,
+    Bech32Encoder, Decimal, GlobalOffset, KeyValueStoreOffset, NonFungibleId, NonFungibleIdType,
+    NonFungibleStoreOffset, ProofRule, RENodeId, ResourceAddress, ResourceType, RoyaltyConfig,
+    SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
+    SubstateId, SubstateOffset, RADIX_TOKEN,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use utils::ContextualDisplay;
@@ -286,16 +286,9 @@ pub fn to_api_local_method_reference(key: &AccessRuleKey) -> models::LocalMethod
                 name: method_name.to_string(),
             }
         }
-        AccessRuleKey::Native(NativeFn::Function(function)) => {
-            models::LocalMethodReference::LocalNativeFunctionReference {
-                name: format!("{:?}", function),
-            }
-        }
-        AccessRuleKey::Native(NativeFn::Method(method)) => {
-            models::LocalMethodReference::LocalNativeMethodReference {
-                name: format!("{:?}", method),
-            }
-        }
+        AccessRuleKey::Native(method) => models::LocalMethodReference::LocalNativeMethodReference {
+            name: format!("{:?}", method),
+        },
     }
 }
 
@@ -496,7 +489,7 @@ pub fn to_api_non_fungible_id(non_fungible_id: &NonFungibleId) -> models::NonFun
     models::NonFungibleId {
         simple_rep: non_fungible_id.to_simple_string(),
         id_type: to_api_fungible_id_type(&non_fungible_id.id_type()),
-        sbor_hex: to_hex(non_fungible_id.to_vec()),
+        sbor_hex: to_hex(scrypto_encode(non_fungible_id).unwrap()),
     }
 }
 
@@ -562,19 +555,19 @@ fn extract_entities(
     bech32_encoder: &Bech32Encoder,
     struct_scrypto_value: &IndexedScryptoValue,
 ) -> Result<Entities, MappingError> {
-    if !struct_scrypto_value.bucket_ids.is_empty() {
+    if !struct_scrypto_value.buckets.is_empty() {
         return Err(MappingError::InvalidComponentStateEntities {
             message: "Bucket/s in state".to_owned(),
         });
     }
-    if !struct_scrypto_value.proof_ids.is_empty() {
+    if !struct_scrypto_value.proofs.is_empty() {
         return Err(MappingError::InvalidComponentStateEntities {
             message: "Proof/s in state".to_owned(),
         });
     }
 
     let owned_entities = struct_scrypto_value
-        .node_ids()
+        .owned_node_ids()
         .into_iter()
         .map(|node_id| -> Result<models::EntityReference, MappingError> {
             Ok(MappedEntityId::try_from(node_id)?.into())

@@ -1424,19 +1424,16 @@ components:
       type: string
       enum:
         - NativeMethod
-        - NativeFunction
         - ScryptoMethod
     LocalMethodReference:
       anyOf:
         - $ref: '#/components/schemas/LocalNativeMethodReference'
-        - $ref: '#/components/schemas/LocalNativeFunctionReference'
         - $ref: '#/components/schemas/LocalScryptoMethodReference'
       discriminator:
         propertyName: type
         mapping:
           # NOTE: These need to match LocalMethodReferenceType options above
           NativeMethod: '#/components/schemas/LocalNativeMethodReference'
-          NativeFunction: '#/components/schemas/LocalNativeFunctionReference'
           ScryptoMethod: '#/components/schemas/LocalScryptoMethodReference'
     LocalMethodReferenceBase:
       type: object
@@ -1446,15 +1443,6 @@ components:
         type:
           $ref: '#/components/schemas/LocalMethodReferenceType'
     LocalNativeMethodReference:
-      allOf:
-        - $ref: '#/components/schemas/LocalMethodReferenceBase'
-        - type: object
-          required:
-            - name
-          properties:
-            name:
-              type: string
-    LocalNativeFunctionReference:
       allOf:
         - $ref: '#/components/schemas/LocalMethodReferenceBase'
         - type: object

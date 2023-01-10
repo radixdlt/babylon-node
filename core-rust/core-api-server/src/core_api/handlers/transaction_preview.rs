@@ -3,7 +3,7 @@ use radix_engine::{
     transaction::{PreviewError, PreviewResult, TransactionResult},
     types::{Bech32Encoder, RENodeId},
 };
-use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::node::NetworkDefinition;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::{LedgerTransactionReceipt, PreviewRequest};
 use transaction::manifest;

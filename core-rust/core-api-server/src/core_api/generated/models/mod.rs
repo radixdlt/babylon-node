@@ -194,8 +194,6 @@ pub mod local_method_reference_base;
 pub use self::local_method_reference_base::LocalMethodReferenceBase;
 pub mod local_method_reference_type;
 pub use self::local_method_reference_type::LocalMethodReferenceType;
-pub mod local_native_function_reference;
-pub use self::local_native_function_reference::LocalNativeFunctionReference;
 pub mod local_native_method_reference;
 pub use self::local_native_method_reference::LocalNativeMethodReference;
 pub mod local_native_method_reference_all_of;

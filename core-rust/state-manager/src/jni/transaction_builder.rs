@@ -76,8 +76,8 @@ use radix_engine::types::{
     scrypto_decode, scrypto_encode, Decode, Encode, PublicKey, Signature, SignatureWithPublicKey,
     TypeId,
 };
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::node::NetworkDefinition;
 use radix_engine_interface::scrypto;
 use std::collections::HashSet;
 use transaction::model::{

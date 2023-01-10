@@ -10,8 +10,18 @@ use radix_engine::{
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use radix_engine_interface::args;
 use state_manager::PreviewRequest;
-use transaction::args_from_bytes_vec;
 use transaction::model::{BasicInstruction, PreviewFlags, TransactionManifest};
+
+macro_rules! args_from_bytes_vec {
+    ($args: expr) => {{
+        let mut fields = Vec::new();
+        for arg in $args {
+            fields.push(::radix_engine_interface::data::scrypto_decode(&arg).unwrap());
+        }
+        let input_struct = ::radix_engine_interface::data::ScryptoValue::Tuple { fields };
+        ::radix_engine_interface::data::scrypto_encode(&input_struct).unwrap()
+    }};
+}
 
 #[tracing::instrument(level = "debug", skip_all, err(Debug))]
 pub(crate) async fn handle_transaction_callpreview(
