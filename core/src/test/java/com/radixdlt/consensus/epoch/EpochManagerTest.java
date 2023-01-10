@@ -238,7 +238,7 @@ public class EpochManagerTest {
       @Provides
       private RoundUpdate initialRoundUpdate(BFTConfiguration bftConfiguration) {
         HighQC highQC = bftConfiguration.getVertexStoreState().getHighQC();
-        Round round = highQC.highestQC().getRound().next();
+        Round round = highQC.getHighestRound().next();
         return RoundUpdate.create(round, highQC, self, self);
       }
 

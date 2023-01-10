@@ -33,7 +33,7 @@ fn handle_v0_transaction_receipt_internal(
             )?),
         })
     } else {
-        Err(not_found_error(&format!(
+        Err(not_found_error(format!(
             "Committed transaction not found with intent hash: {}",
             intent_hash
         )))

@@ -62,42 +62,67 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.monitoring;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.store.LastEpochProof;
+import com.google.common.base.Preconditions;
+import io.prometheus.client.Collector;
+import io.prometheus.client.GaugeMetricFamily;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.DoubleSupplier;
+import javax.annotation.Nullable;
 
-public final class REv2ConsensusRecoveryModule extends AbstractModule {
-  @Provides
-  private RoundUpdate initialRoundUpdate(
-      VertexStoreState vertexStoreState, BFTConfiguration configuration) {
-    var highQC = vertexStoreState.getHighQC();
-    var round = highQC.getHighestRound().next();
-    var proposerElection = configuration.getProposerElection();
-    var leader = proposerElection.getProposer(round);
-    var nextLeader = proposerElection.getProposer(round.next());
+/**
+ * A "direct getter" counterpart of a Prometheus gauge.
+ *
+ * <p>Every instance needs to be explicitly {@link #initialize(DoubleSupplier) initialized} with an
+ * actual sample provider (commonly, a getter). The {@link #collect()} will simply return empty
+ * samples when not initialized.
+ */
+public class GetterGauge extends Collector implements Collector.Describable {
 
-    return RoundUpdate.create(round, highQC, leader, nextLeader);
+  /** A metric name. */
+  private final String name;
+
+  /**
+   * A reference to getter (will hold {@literal null} before {@link #initialize(DoubleSupplier)}).
+   */
+  private final AtomicReference<DoubleSupplier> getter;
+
+  /**
+   * A basic constructor, after which a further {@link #initialize(DoubleSupplier) initialization}
+   * is still required.
+   *
+   * @param name A metric name; will also be used as a description.
+   */
+  public GetterGauge(String name) {
+    this.name = name;
+    this.getter = new AtomicReference<>();
   }
 
-  @Provides
-  @Singleton
-  private BFTConfiguration initialConfig(
-      BFTValidatorSet validatorSet, VertexStoreState vertexStoreState) {
-    var proposerElection = new WeightedRotatingLeaders(validatorSet);
-    return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
+  /**
+   * Initializes the gauge.
+   *
+   * @param getter A getter to be used directly when {@link #collect() collecting samples}.
+   */
+  public void initialize(DoubleSupplier getter) {
+    final boolean initialized = this.getter.compareAndSet(null, getter);
+    Preconditions.checkState(initialized, "getter for gauge %s already initialized", name);
   }
 
-  @Provides
-  private BFTValidatorSet initialValidatorSet(@LastEpochProof LedgerProof lastEpochProof) {
-    return lastEpochProof
-        .getNextValidatorSet()
-        .orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
+  @Override
+  public List<MetricFamilySamples> collect() {
+    final @Nullable DoubleSupplier currentGetter = getter.get();
+    if (currentGetter == null) {
+      return List.of();
+    }
+    final MetricFamilySamples.Sample sample =
+        new MetricFamilySamples.Sample(name, List.of(), List.of(), currentGetter.getAsDouble());
+    return List.of(new MetricFamilySamples(name, "", Type.GAUGE, name, List.of(sample)));
+  }
+
+  @Override
+  public List<MetricFamilySamples> describe() {
+    return List.of(new GaugeMetricFamily(name, name, List.of()));
   }
 }

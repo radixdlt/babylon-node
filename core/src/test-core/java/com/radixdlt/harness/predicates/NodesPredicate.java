@@ -85,13 +85,17 @@ public final class NodesPredicate {
     return n -> injectorPredicate.test(n.get(nodeIndex));
   }
 
+  public static Predicate<List<Injector>> allNodesMatch(Predicate<Injector> injectorPredicate) {
+    return n -> n.stream().allMatch(injectorPredicate);
+  }
+
   public static Predicate<List<Injector>> allAtExactlyStateVersion(long stateVersion) {
-    return n -> n.stream().allMatch(NodePredicate.atExactlyStateVersion(stateVersion));
+    return allNodesMatch(NodePredicate.atExactlyStateVersion(stateVersion));
   }
 
   public static Predicate<List<Injector>> allCommittedTransaction(
       RawNotarizedTransaction transaction) {
-    return n -> n.stream().allMatch(NodePredicate.committedUserTransaction(transaction));
+    return allNodesMatch(NodePredicate.committedUserTransaction(transaction));
   }
 
   public static Predicate<List<Injector>> anyCommittedTransaction(
@@ -116,7 +120,7 @@ public final class NodesPredicate {
   }
 
   public static Predicate<List<Injector>> allAtOrOverStateVersion(long stateVersion) {
-    return n -> n.stream().allMatch(NodePredicate.atOrOverStateVersion(stateVersion));
+    return allNodesMatch(NodePredicate.atOrOverStateVersion(stateVersion));
   }
 
   public static Predicate<List<Injector>> anyAtOrOverStateVersion(long stateVersion) {
@@ -131,14 +135,11 @@ public final class NodesPredicate {
   }
 
   public static Predicate<List<Injector>> allHaveExactMempoolCount(int count) {
-    return n ->
-        n.stream()
-            .allMatch(
-                i -> {
-                  var reader =
-                      i.getInstance(
-                          Key.get(new TypeLiteral<MempoolReader<RawNotarizedTransaction>>() {}));
-                  return reader.getCount() == count;
-                });
+    return allNodesMatch(
+        i -> {
+          var reader =
+              i.getInstance(Key.get(new TypeLiteral<MempoolReader<RawNotarizedTransaction>>() {}));
+          return reader.getCount() == count;
+        });
   }
 }

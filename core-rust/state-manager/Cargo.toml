@@ -33,6 +33,14 @@ radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto",
 radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "round-updates-75b370" }
 utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "round-updates-75b370" }
 
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-18ee3f", features = ["serde", "indexmap"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-18ee3f" }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-18ee3f", features = ["serde"]  }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-18ee3f" }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-18ee3f" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-18ee3f" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-18ee3f" }
+
 # Non-Radix Engine Dependencies:
 rocksdb = { version = "0.19.0" }
 hex = { version = "0.4.3", default-features = false }

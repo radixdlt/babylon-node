@@ -227,7 +227,7 @@ public final class BFTBuilder {
         new BFTEventStatefulVerifier(proposalTimestampVerifier, metrics, roundUpdate);
 
     final var syncUpPreprocessor =
-        new SyncUpPreprocessor(bftEventStatefulVerifier, bftSyncer, roundUpdate);
+        new SyncUpPreprocessor(bftEventStatefulVerifier, bftSyncer, metrics, roundUpdate);
 
     return new BFTEventStatelessVerifier(
         validatorSet, syncUpPreprocessor, hasher, verifier, safetyRules, metrics);
