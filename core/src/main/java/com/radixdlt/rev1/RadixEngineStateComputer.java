@@ -483,7 +483,8 @@ public final class RadixEngineStateComputer implements StateComputer {
                   nextEpoch -> {
                     var header = txnsAndProof.getProof();
                     // TODO: Move vertex stuff somewhere else
-                    var genesisVertex = Vertex.createGenesis(header.getHeader()).withId(hasher);
+                    var genesisVertex =
+                        Vertex.createInitialEpochVertex(header.getHeader()).withId(hasher);
                     var nextLedgerHeader =
                         LedgerHeader.create(
                             nextEpoch.getEpoch(),
@@ -491,7 +492,8 @@ public final class RadixEngineStateComputer implements StateComputer {
                             header.getAccumulatorState(),
                             header.consensusParentRoundTimestamp(),
                             header.proposerTimestamp());
-                    var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+                    var genesisQC =
+                        QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
                     final var initialState =
                         VertexStoreState.create(
                             HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);

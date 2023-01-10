@@ -78,7 +78,7 @@ public class GetVerticesResponseMessageSerializeTest
 
   private static GetVerticesResponseMessage get() {
     LedgerHeader ledgerHeader = LedgerHeaderMock.get();
-    Vertex genesisVertex = Vertex.createGenesis(ledgerHeader);
+    Vertex genesisVertex = Vertex.createInitialEpochVertex(ledgerHeader);
     return new GetVerticesResponseMessage(ImmutableList.of(genesisVertex));
   }
 }

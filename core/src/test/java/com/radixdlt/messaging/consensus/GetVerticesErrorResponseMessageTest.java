@@ -89,7 +89,8 @@ public class GetVerticesErrorResponseMessageTest {
     when(vertexWithHash.vertex()).thenReturn(vertex);
     when(vertex.getRound()).thenReturn(Round.genesis());
     when(vertexWithHash.hash()).thenReturn(HashCode.fromInt(1));
-    QuorumCertificate qc = QuorumCertificate.ofGenesis(vertexWithHash, mock(LedgerHeader.class));
+    QuorumCertificate qc =
+        QuorumCertificate.createInitialEpochQC(vertexWithHash, mock(LedgerHeader.class));
     HighQC highQC = HighQC.from(qc, qc, Optional.empty());
     final var request = mock(GetVerticesRequestMessage.class);
     GetVerticesErrorResponseMessage msg1 = new GetVerticesErrorResponseMessage(highQC, request);

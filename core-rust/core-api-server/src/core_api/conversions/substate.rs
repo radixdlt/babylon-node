@@ -715,8 +715,6 @@ pub fn to_api_package_royalty_accumulator_substate(
 pub fn to_api_validator_set_substate(
     substate: &ValidatorSetSubstate,
 ) -> Result<models::Substate, MappingError> {
-    // Use compiler to unpack to ensure we map all fields
-    // TODO: convert validator_set
     let ValidatorSetSubstate {
         validator_set,
         epoch,
@@ -735,8 +733,6 @@ pub fn to_api_validator_set_substate(
 pub fn to_api_epoch_manager_substate(
     substate: &EpochManagerSubstate,
 ) -> Result<models::Substate, MappingError> {
-    // Use compiler to unpack to ensure we map all fields
-    // TODO: convert validator_set
     let EpochManagerSubstate {
         epoch,
         round,

@@ -81,7 +81,8 @@ public class QuorumCertificateTest {
     final var vertex = mock(Vertex.class);
     when(vertexWithHash.vertex()).thenReturn(vertex);
     when(vertex.getRound()).thenReturn(Round.of(1));
-    assertThatThrownBy(() -> QuorumCertificate.ofGenesis(vertexWithHash, mock(LedgerHeader.class)))
+    assertThatThrownBy(
+            () -> QuorumCertificate.createInitialEpochQC(vertexWithHash, mock(LedgerHeader.class)))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
