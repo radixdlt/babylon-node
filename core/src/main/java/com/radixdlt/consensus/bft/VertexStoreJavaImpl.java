@@ -214,7 +214,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     }
 
     // proposed vertex doesn't have any children
-    boolean isHighQC = qc.getRound().gt(highQC().getHighestRound());
+    boolean isHighQC = qc.getRound().gt(highestQC.getRound());
     boolean isAnythingCommitted = qc.getCommittedAndLedgerStateProof(hasher).isPresent();
     if (!isHighQC && !isAnythingCommitted) {
       return new VertexStore.InsertQcResult.Ignored();
@@ -255,11 +255,14 @@ public final class VertexStoreJavaImpl implements VertexStore {
    * Inserts a timeout certificate into the store.
    *
    * @param timeoutCertificate the timeout certificate
+   * @return true if the timeout certificate was inserted, false if it was ignored
    */
-  public void insertTimeoutCertificate(TimeoutCertificate timeoutCertificate) {
+  public boolean insertTimeoutCertificate(TimeoutCertificate timeoutCertificate) {
     if (timeoutCertificate.getRound().gt(highQC().getHighestRound())) {
       this.highestTC = Optional.of(timeoutCertificate);
+      return true;
     }
+    return false;
   }
 
   /**

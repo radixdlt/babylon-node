@@ -269,9 +269,9 @@ public class VertexStoreTest {
             .getQCToParent();
 
     // Act
-    boolean success = vertexStoreAdapter.insertQc(qcForVertexG);
+    final var insertQcResult = vertexStoreAdapter.insertQc(qcForVertexG);
 
-    assertTrue(success);
+    assertTrue(insertQcResult instanceof VertexStore.InsertQcResult.Inserted);
     assertEquals(vertexStoreAdapter.getRoot().hash(), vertexD.hash());
     assertFalse(vertexStoreAdapter.containsVertex(vertexA.hash()));
     assertFalse(vertexStoreAdapter.containsVertex(vertexB.hash()));
@@ -309,10 +309,10 @@ public class VertexStoreTest {
 
     // Act
     QuorumCertificate qc = vertices.get(3).vertex().getQCToParent();
-    boolean success = vertexStoreAdapter.insertQc(qc);
+    final var insertQcResult = vertexStoreAdapter.insertQc(qc);
 
     // Assert
-    assertThat(success).isTrue();
+    assertTrue(insertQcResult instanceof VertexStore.InsertQcResult.Inserted);
     assertThat(vertexStoreAdapter.highQC().highestQC()).isEqualTo(qc);
     assertThat(vertexStoreAdapter.highQC().highestCommittedQC()).isEqualTo(qc);
     assertThat(vertexStoreAdapter.getVertices(vertices.get(2).hash(), 3))
@@ -340,16 +340,16 @@ public class VertexStoreTest {
   }
 
   @Test
-  public void adding_a_qc_which_has_not_been_inserted_should_return_false() {
+  public void adding_a_qc_which_needs_sync_should_return_a_matching_result() {
     // Arrange
     this.nextVertex.get();
 
     // Act
     QuorumCertificate qc = this.nextVertex.get().vertex().getQCToParent();
-    boolean success = vertexStoreAdapter.insertQc(qc);
+    final var insertQcResult = vertexStoreAdapter.insertQc(qc);
 
     // Assert
-    assertThat(success).isFalse();
+    assertTrue(insertQcResult instanceof VertexStore.InsertQcResult.VertexIsMissing);
   }
 
   @Test

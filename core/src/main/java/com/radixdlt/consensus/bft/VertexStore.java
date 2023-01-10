@@ -94,7 +94,7 @@ public interface VertexStore {
 
   InsertQcResult insertQc(QuorumCertificate qc);
 
-  void insertTimeoutCertificate(TimeoutCertificate timeoutCertificate);
+  boolean insertTimeoutCertificate(TimeoutCertificate timeoutCertificate);
 
   Option<BFTInsertUpdate> insertVertex(VertexWithHash vertex);
 

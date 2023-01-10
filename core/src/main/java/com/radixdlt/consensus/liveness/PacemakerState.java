@@ -104,7 +104,7 @@ public class PacemakerState implements PacemakerReducer {
   public void processQC(HighQC highQC) {
     log.trace("QuorumCertificate: {}", highQC);
 
-    final Round round = highQC.getHighestRound();
+    final var round = highQC.getHighestRound();
     if (round.gte(this.currentRound)) {
       this.highQC = highQC;
       this.updateRound(round.next());
