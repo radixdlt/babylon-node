@@ -459,22 +459,10 @@ public final class BFTSync implements BFTSyncer {
       final var syncStateHighestCommittedQc = syncState.highQC().highestCommittedQC();
       final var syncStateHighestTc = syncState.highQC.highestTC();
       final var currentHighestTc = vertexStore.highQC().highestTC();
-      final Optional<TimeoutCertificate> highestKnownTc;
-      /* highestKnownTc = max(syncStateHighestTc, currentHighestTc) but must handle Optionals */
-      if (syncStateHighestTc.isPresent() && currentHighestTc.isPresent()) {
-        // If both are present, return the highest round TC (keep current if equal)
-        if (syncStateHighestTc.get().getRound().gt(currentHighestTc.get().getRound())) {
-          highestKnownTc = syncStateHighestTc;
-        } else {
-          highestKnownTc = currentHighestTc;
-        }
-      } else if (syncStateHighestTc.isPresent()) {
-        // If there's no current TC, use the sync state TC
-        highestKnownTc = syncStateHighestTc;
-      } else {
-        // Else use current TC (can be empty)
-        highestKnownTc = currentHighestTc;
-      }
+      final var highestKnownTc =
+          Stream.of(currentHighestTc, syncStateHighestTc)
+              .flatMap(Optional::stream)
+              .max(Comparator.comparing(TimeoutCertificate::getRound));
 
       var vertexStoreState =
           VertexStoreState.create(
