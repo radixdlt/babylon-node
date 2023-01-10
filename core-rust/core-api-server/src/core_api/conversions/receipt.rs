@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use super::addressing::*;
 use crate::core_api::*;
 use radix_engine::{
@@ -7,6 +6,7 @@ use radix_engine::{
     types::{hash, scrypto_encode, Bech32Encoder, Decimal, GlobalAddress, RENodeId, SubstateId},
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use std::collections::HashSet;
 
 use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
 

@@ -575,6 +575,7 @@ where
             }
         };
 
+        // Don't process any additional transactions if next epoch has occurred
         if next_epoch.is_none() {
             for proposed_payload in prepare_request.proposed_payloads {
                 let parsed =

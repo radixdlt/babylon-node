@@ -160,6 +160,9 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                         .stream()
                         .map(RawNotarizedTransaction::create))
             .toList();
+
+    // TODO: Don't include transactions if NextEpoch is to occur
+    // TODO: This will require Proposer to simulate a NextRound update before proposing
     return stateComputer.getTransactionsForProposal(
         transactionsPerProposalCount, transactionsNotToInclude);
   }
