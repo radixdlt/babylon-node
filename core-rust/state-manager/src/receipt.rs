@@ -17,7 +17,7 @@ use sbor::*;
 use crate::AccumulatorHash;
 
 #[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct CommittedTransactionIdentifiers {
     pub state_version: u64,
     pub accumulator_hash: AccumulatorHash,
@@ -33,14 +33,14 @@ impl CommittedTransactionIdentifiers {
 }
 
 #[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum CommittedTransactionStatus {
     Success(Vec<Vec<u8>>),
     Failure(RuntimeError),
 }
 
 #[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct SubstateChanges {
     pub created: BTreeMap<SubstateId, OutputValue>,
     pub updated: BTreeMap<SubstateId, OutputValue>,
@@ -48,14 +48,14 @@ pub struct SubstateChanges {
 }
 
 #[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct DeletedSubstateVersion {
     pub substate_hash: Hash,
     pub version: u32,
 }
 
 #[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum LedgerTransactionOutcome {
     Success(Vec<Vec<u8>>),
     Failure(RuntimeError),
@@ -73,7 +73,7 @@ impl From<TransactionOutcome> for LedgerTransactionOutcome {
 }
 
 #[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct LedgerTransactionReceipt {
     pub outcome: LedgerTransactionOutcome,
     pub fee_summary: FeeSummary,

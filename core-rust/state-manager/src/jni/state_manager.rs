@@ -120,7 +120,7 @@ extern "system" fn Java_com_radixdlt_prometheus_StateManagerPrometheus_prometheu
 }
 
 #[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct StateManagerConfig {
     pub network_definition: NetworkDefinition,
     pub mempool_config: Option<MempoolConfig>,

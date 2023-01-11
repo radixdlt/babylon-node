@@ -164,7 +164,10 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                     {
                         let value = IndexedScryptoValue::from_slice(entry)
                             .expect("Key Value Store Entry should be parseable.");
-                        for child_node_id in value.owned_node_ids() {
+                        for child_node_id in value
+                            .owned_node_ids()
+                            .expect("Should be able to read node ids")
+                        {
                             self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
                                 .expect("Broken Node Store");
                         }

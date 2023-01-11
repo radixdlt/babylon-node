@@ -84,7 +84,6 @@ fn handle_v0_state_package_internal(
             &package_royalty_config,
         )?),
         royalty_accumulator: Some(to_api_package_royalty_accumulator_substate(
-            &bech32_encoder,
             &package_royalty_accumulator,
         )?),
         metadata: Some(to_api_metadata_substate(

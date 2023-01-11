@@ -71,7 +71,6 @@ import com.radixdlt.lang.Option;
 
 public enum TypeId {
   // Primitive Types
-  TYPE_UNIT(0x00),
   TYPE_BOOL(0x01),
   TYPE_I8(0x02),
   TYPE_I16(0x03),
@@ -86,9 +85,9 @@ public enum TypeId {
   TYPE_STRING(0x0c),
 
   // Composite types
-  TYPE_TUPLE(0x21), // Any "product type" - Tuples and Structs (T1, T2, T3)
-  TYPE_ENUM(0x11),
   TYPE_ARRAY(0x20),
+  TYPE_TUPLE(0x21), // Any "product type" - Tuples and Structs (T1, T2, T3)
+  TYPE_ENUM(0x22),
 
   // Custom Start
   // custom types start from 0x80 and values are encoded as `len + data`

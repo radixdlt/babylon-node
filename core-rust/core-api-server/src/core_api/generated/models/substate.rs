@@ -35,9 +35,8 @@ pub enum Substate {
     },
     #[serde(rename="ComponentRoyaltyAccumulator")]
     ComponentRoyaltyAccumulatorSubstate {
-        /// The string-encoded decimal representing the amount of XRD available for claim in the royalty accumulator. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
-        #[serde(rename = "xrd_amount")]
-        xrd_amount: String,
+        #[serde(rename = "vault_entity")]
+        vault_entity: Box<crate::core_api::generated::models::EntityReference>,
     },
     #[serde(rename="ComponentRoyaltyConfig")]
     ComponentRoyaltyConfigSubstate {
@@ -101,9 +100,8 @@ pub enum Substate {
     },
     #[serde(rename="PackageRoyaltyAccumulator")]
     PackageRoyaltyAccumulatorSubstate {
-        /// The string-encoded decimal representing the amount of XRD available for claim in the royalty accumulator. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
-        #[serde(rename = "xrd_amount")]
-        xrd_amount: String,
+        #[serde(rename = "vault_entity")]
+        vault_entity: Box<crate::core_api::generated::models::EntityReference>,
     },
     #[serde(rename="PackageRoyaltyConfig")]
     PackageRoyaltyConfigSubstate {

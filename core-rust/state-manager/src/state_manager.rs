@@ -74,8 +74,8 @@ use radix_engine::transaction::{
     TransactionResult,
 };
 use radix_engine::types::{
-    scrypto_encode, ComponentAddress, Decimal, Decode, Encode, GlobalAddress, PublicKey, RENodeId,
-    ResourceAddress, TypeId,
+    scrypto_encode, Categorize, ComponentAddress, Decimal, Decode, Encode, GlobalAddress,
+    PublicKey, RENodeId, ResourceAddress,
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
@@ -102,14 +102,14 @@ use crate::{
     PrepareGenesisRequest, PrepareGenesisResult,
 };
 
-#[derive(Debug, TypeId, Encode, Decode, Clone)]
+#[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct LoggingConfig {
     pub engine_trace: bool,
     pub state_manager_config: StateManagerLoggingConfig,
 }
 
 // TODO: Replace this with better loglevel integration
-#[derive(Debug, TypeId, Encode, Decode, Clone)]
+#[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct StateManagerLoggingConfig {
     pub log_on_transaction_rejection: bool,
 }
