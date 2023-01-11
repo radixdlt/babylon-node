@@ -23,7 +23,7 @@ pub(crate) async fn handle_v0_transaction_submit(
             max_size: _,
         }) => Err(client_error("Mempool is full")),
         Err(MempoolAddError::Rejected(reason)) => {
-            Err(client_error(&format!("Rejected: {}", reason)))
+            Err(client_error(format!("Rejected: {}", reason)))
         }
     }
     .map(Json)

@@ -107,7 +107,7 @@ public final class QuorumCertificate {
    * @param genesisVertexWithHash the vertex to create a qc for
    * @return a mocked QC
    */
-  public static QuorumCertificate ofGenesis(
+  public static QuorumCertificate createInitialEpochQC(
       VertexWithHash genesisVertexWithHash, LedgerHeader ledgerHeader) {
     final var vertex = genesisVertexWithHash.vertex();
     if (!vertex.getRound().isGenesis()) {

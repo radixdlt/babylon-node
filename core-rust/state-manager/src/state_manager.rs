@@ -79,7 +79,7 @@ use radix_engine::types::{
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
-use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::node::NetworkDefinition;
 use tracing::info;
 use transaction::errors::TransactionValidationError;
 use transaction::model::{
@@ -587,6 +587,7 @@ where
             }
         };
 
+        // Don't process any additional transactions if next epoch has occurred
         if next_epoch.is_none() {
             for proposed_payload in prepare_request.proposed_payloads {
                 let parsed =

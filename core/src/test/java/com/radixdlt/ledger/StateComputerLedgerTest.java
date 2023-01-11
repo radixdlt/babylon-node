@@ -137,8 +137,8 @@ public class StateComputerLedgerTest {
 
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     this.ledgerHeader = LedgerHeader.genesis(accumulatorState, null, 0, 0);
-    this.genesisVertex = Vertex.createGenesis(ledgerHeader).withId(hasher);
-    this.genesisQC = QuorumCertificate.ofGenesis(genesisVertex, ledgerHeader);
+    this.genesisVertex = Vertex.createInitialEpochVertex(ledgerHeader).withId(hasher);
+    this.genesisQC = QuorumCertificate.createInitialEpochQC(genesisVertex, ledgerHeader);
     this.currentLedgerHeader =
         this.genesisQC.getCommittedAndLedgerStateProof(hasher).map(Pair::getSecond).orElseThrow();
 
@@ -166,8 +166,8 @@ public class StateComputerLedgerTest {
                     genesisEpoch + 1,
                     ImmutableSet.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
                 : null);
-    this.genesisVertex = Vertex.createGenesis(ledgerHeader).withId(hasher);
-    this.genesisQC = QuorumCertificate.ofGenesis(genesisVertex, ledgerHeader);
+    this.genesisVertex = Vertex.createInitialEpochVertex(ledgerHeader).withId(hasher);
+    this.genesisQC = QuorumCertificate.createInitialEpochQC(genesisVertex, ledgerHeader);
     this.currentLedgerHeader =
         this.genesisQC.getCommittedAndLedgerStateProof(hasher).map(Pair::getSecond).orElseThrow();
 

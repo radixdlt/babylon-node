@@ -182,6 +182,9 @@ public class MetricsInitializer {
     if (type == Timer.class) {
       return new Timer(name);
     }
+    if (type == GetterGauge.class) {
+      return new GetterGauge(name);
+    }
     if (type instanceof ParameterizedType generic) {
       Class<? extends Record> labelClass =
           (Class<? extends Record>) generic.getActualTypeArguments()[0];

@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
 use radix_engine::engine::RuntimeError;
 use radix_engine::fee::FeeSummary;
@@ -10,6 +10,7 @@ use radix_engine::transaction::{
     TransactionReceipt as EngineTransactionReceipt, TransactionResult,
 };
 use radix_engine::types::{hash, scrypto_encode, Hash, Level, SubstateId};
+use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::scrypto;
 use sbor::*;
 
@@ -80,6 +81,7 @@ pub struct LedgerTransactionReceipt {
     pub substate_changes: SubstateChanges,
     pub entity_changes: EntityChanges,
     pub resource_changes: Vec<ResourceChange>,
+    pub next_epoch: Option<(HashSet<EcdsaSecp256k1PublicKey>, u64)>,
 }
 
 impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
@@ -108,6 +110,7 @@ impl From<(CommitResult, FeeSummary)> for LedgerTransactionReceipt {
             substate_changes: map_state_updates(commit_result.state_updates),
             entity_changes: commit_result.entity_changes,
             resource_changes: commit_result.resource_changes,
+            next_epoch: commit_result.next_epoch,
         }
     }
 }
@@ -130,7 +133,7 @@ fn map_state_updates(state_updates: StateDiff) -> SubstateChanges {
             Some(up_substate_output_value) => {
                 // TODO - this check can be removed when the bug is fixed
                 let up_substate_hash =
-                    hash(&scrypto_encode(&up_substate_output_value.substate).unwrap());
+                    hash(scrypto_encode(&up_substate_output_value.substate).unwrap());
                 if up_substate_hash != down_substate_hash {
                     updated.insert(substate_id, up_substate_output_value);
                 } else {

@@ -12,18 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LocalNativeFunctionReference {
-    #[serde(rename = "type")]
-    pub _type: crate::core_api::generated::models::LocalMethodReferenceType,
-    #[serde(rename = "name")]
-    pub name: String,
+pub struct NextEpoch {
+    /// An integer between `0` and `10^10`
+    #[serde(rename = "epoch")]
+    pub epoch: i64,
+    #[serde(rename = "validators")]
+    pub validators: Vec<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
 }
 
-impl LocalNativeFunctionReference {
-    pub fn new(_type: crate::core_api::generated::models::LocalMethodReferenceType, name: String) -> LocalNativeFunctionReference {
-        LocalNativeFunctionReference {
-            _type,
-            name,
+impl NextEpoch {
+    pub fn new(epoch: i64, validators: Vec<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>) -> NextEpoch {
+        NextEpoch {
+            epoch,
+            validators,
         }
     }
 }

@@ -135,9 +135,9 @@ public class VertexStoreTest {
     this.bftHighQCUpdateEventDispatcher = rmock(EventDispatcher.class);
     this.committedSender = rmock(EventDispatcher.class);
 
-    this.genesisVertex = Vertex.createGenesis(MOCKED_HEADER).withId(ZeroHasher.INSTANCE);
+    this.genesisVertex = Vertex.createInitialEpochVertex(MOCKED_HEADER).withId(ZeroHasher.INSTANCE);
     this.genesisHash = genesisVertex.hash();
-    this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, MOCKED_HEADER);
+    this.rootQC = QuorumCertificate.createInitialEpochQC(genesisVertex, MOCKED_HEADER);
     this.underlyingVertexStore =
         VertexStoreJavaImpl.create(
             VertexStoreState.create(HighQC.from(rootQC), genesisVertex, Optional.empty(), hasher),

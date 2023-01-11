@@ -2,9 +2,9 @@ use crate::core_api::*;
 
 use radix_engine::types::hash;
 use radix_engine::types::Bech32Encoder;
-use radix_engine_interface::core::NetworkDefinition;
 
 use radix_engine_interface::data::scrypto_encode;
+use radix_engine_interface::node::NetworkDefinition;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
 use state_manager::transaction::{LedgerTransaction, ValidatorTransaction};
@@ -50,7 +50,7 @@ fn handle_transaction_stream_internal(
     }
 
     if limit > MAX_TXN_COUNT_PER_REQUEST.into() {
-        return Err(client_error(&format!(
+        return Err(client_error(format!(
             "limit must <= {}",
             MAX_TXN_COUNT_PER_REQUEST
         )));
@@ -81,7 +81,7 @@ fn handle_transaction_stream_internal(
             .store
             .get_payload_hash(state_version)
             .ok_or_else(|| {
-                server_error(&format!(
+                server_error(format!(
                     "A transaction id is missing at state version {}",
                     state_version
                 ))
@@ -90,7 +90,7 @@ fn handle_transaction_stream_internal(
             .store
             .get_committed_transaction(&next_tid)
             .ok_or_else(|| {
-                server_error(&format!(
+                server_error(format!(
                     "A transaction is missing at state version {}",
                     state_version
                 ))
@@ -106,7 +106,7 @@ fn handle_transaction_stream_internal(
         .map(
             |((ledger_transaction, receipt, identifiers), state_version)| {
                 if identifiers.state_version != state_version {
-                    Err(server_error(&format!(
+                    Err(server_error(format!(
                         "Loaded state version {} doesn't match its stored state version {}",
                         state_version, identifiers.state_version
                     )))?
