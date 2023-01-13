@@ -77,6 +77,11 @@ import java.util.Objects;
 import java.util.Optional;
 import javax.inject.Inject;
 
+/**
+ * A decorator dispatching events according to the results of the underlying {@link VertexStore},
+ * with a slightly modified API so that it can, at some point, bridge the Rust impl of a VertexStore
+ * and its existing clients on the Java side (mostly BFTSync).
+ */
 public final class VertexStoreAdapter {
   private final VertexStore vertexStore;
 

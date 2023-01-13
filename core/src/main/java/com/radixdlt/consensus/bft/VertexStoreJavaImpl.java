@@ -87,7 +87,6 @@ import javax.annotation.concurrent.NotThreadSafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/** Manages the BFT Vertex chain. TODO: Move this logic into ledger package. */
 @NotThreadSafe
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class VertexStoreJavaImpl implements VertexStore {
@@ -235,13 +234,6 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return VertexStoreState.create(this.highQC(), this.rootVertex, verticesBuilder.build(), hasher);
   }
 
-  /**
-   * Inserts a timeout certificate into the store.
-   *
-   * @param timeoutCertificate the timeout certificate
-   * @return true if the timeout certificate was inserted, false if it was ignored because it's not
-   *     the highest
-   */
   public boolean insertTimeoutCertificate(TimeoutCertificate timeoutCertificate) {
     if (timeoutCertificate.getRound().gt(highQC().getHighestRound())) {
       this.highQC = this.highQC.withHighestTC(timeoutCertificate);
@@ -250,12 +242,6 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return false;
   }
 
-  /**
-   * Returns the vertex with specified id or empty if not exists.
-   *
-   * @param vertexHash the id of a vertex
-   * @return the specified vertex or empty
-   */
   // TODO: reimplement in async way
   public Option<ExecutedVertex> getExecutedVertex(HashCode vertexHash) {
     return Option.option(vertices.get(vertexHash));
@@ -283,11 +269,6 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return new InsertVertexChainResult(insertedQcs, bftInsertUpdates);
   }
 
-  /**
-   * Inserts a vertex and then attempts to create the next header.
-   *
-   * @param vertexWithHash vertex to insert
-   */
   public Option<BFTInsertUpdate> insertVertex(VertexWithHash vertexWithHash) {
     ExecutedVertex v = vertices.get(vertexWithHash.hash());
     if (v != null) {
@@ -379,25 +360,11 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return path;
   }
 
-  /**
-   * Retrieves the highest QC and highest committed QC in the store.
-   *
-   * @return the highest QCs
-   */
+  @Override
   public HighQC highQC() {
     return this.highQC;
   }
 
-  /**
-   * Retrieves list of vertices starting with the given vertexId and then proceeding to its
-   * ancestors.
-   *
-   * <p>if the store does not contain some vertex then will return an empty list.
-   *
-   * @param vertexHash the id of the vertex
-   * @param count the number of vertices to retrieve
-   * @return the list of vertices if all found, otherwise an empty list
-   */
   public Option<ImmutableList<VertexWithHash>> getVertices(HashCode vertexHash, int count) {
     HashCode nextId = vertexHash;
     ImmutableList.Builder<VertexWithHash> builder = ImmutableList.builderWithExpectedSize(count);
