@@ -14,12 +14,13 @@ use radix_engine::model::{
 };
 use radix_engine::types::{
     scrypto_encode, AccessRule, AccessRuleEntry, AccessRuleKey, AccessRuleNode, AccessRules,
-    Bech32Encoder, Decimal, GlobalOffset, KeyValueStoreOffset, NonFungibleId, NonFungibleIdType,
+    Bech32Encoder, Decimal, GlobalOffset, KeyValueStoreOffset, NonFungibleId,
     NonFungibleStoreOffset, ProofRule, RENodeId, ResourceAddress, ResourceType, RoyaltyConfig,
     SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
     SubstateId, SubstateOffset,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::model::NonFungibleIdTypeId;
 
 use super::MappingError;
 
@@ -183,13 +184,12 @@ pub fn to_api_resource_manager_substate(
     })
 }
 
-pub fn to_api_fungible_id_type(id_type: &NonFungibleIdType) -> models::NonFungibleIdType {
+pub fn to_api_fungible_id_type(id_type: &NonFungibleIdTypeId) -> models::NonFungibleIdType {
     match id_type {
-        NonFungibleIdType::String => models::NonFungibleIdType::String,
-        NonFungibleIdType::U32 => models::NonFungibleIdType::U32,
-        NonFungibleIdType::U64 => models::NonFungibleIdType::U64,
-        NonFungibleIdType::Bytes => models::NonFungibleIdType::Bytes,
-        NonFungibleIdType::UUID => models::NonFungibleIdType::UUID,
+        NonFungibleIdTypeId::String => models::NonFungibleIdType::String,
+        NonFungibleIdTypeId::Number => models::NonFungibleIdType::Number,
+        NonFungibleIdTypeId::Bytes => models::NonFungibleIdType::Bytes,
+        NonFungibleIdTypeId::UUID => models::NonFungibleIdType::UUID,
     }
 }
 
@@ -816,7 +816,7 @@ fn to_api_fungible_resource_amount(
 fn to_api_non_fungible_resource_amount(
     bech32_encoder: &Bech32Encoder,
     resource_address: &ResourceAddress,
-    _id_type: &NonFungibleIdType,
+    _id_type: &NonFungibleIdTypeId,
     ids: &BTreeSet<NonFungibleId>,
 ) -> Result<models::ResourceAmount, MappingError> {
     let non_fungible_ids = ids.iter().map(to_api_non_fungible_id).collect();

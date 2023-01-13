@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EcdsaSecp256k1PublicKey;
+import com.radixdlt.api.core.generated.models.Validator;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -43,7 +43,7 @@ public class NextEpoch {
   private Long epoch;
 
   public static final String JSON_PROPERTY_VALIDATORS = "validators";
-  private List<EcdsaSecp256k1PublicKey> validators = new ArrayList<>();
+  private List<Validator> validators = new ArrayList<>();
 
   public NextEpoch() { 
   }
@@ -76,12 +76,12 @@ public class NextEpoch {
   }
 
 
-  public NextEpoch validators(List<EcdsaSecp256k1PublicKey> validators) {
+  public NextEpoch validators(List<Validator> validators) {
     this.validators = validators;
     return this;
   }
 
-  public NextEpoch addValidatorsItem(EcdsaSecp256k1PublicKey validatorsItem) {
+  public NextEpoch addValidatorsItem(Validator validatorsItem) {
     this.validators.add(validatorsItem);
     return this;
   }
@@ -95,14 +95,14 @@ public class NextEpoch {
   @JsonProperty(JSON_PROPERTY_VALIDATORS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<EcdsaSecp256k1PublicKey> getValidators() {
+  public List<Validator> getValidators() {
     return validators;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VALIDATORS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidators(List<EcdsaSecp256k1PublicKey> validators) {
+  public void setValidators(List<Validator> validators) {
     this.validators = validators;
   }
 

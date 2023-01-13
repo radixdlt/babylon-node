@@ -71,14 +71,12 @@ use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::types::{scrypto_encode, ComponentAddress};
 use radix_engine_interface::model::SystemAddress;
-use radix_engine_interface::scrypto;
-use sbor::{Categorize, Decode, Encode};
+use radix_engine_interface::*;
 
 use super::mempool::JavaPayloadHash;
 use super::utils::jni_state_manager_sbor_read_call;
 
-#[derive(Debug)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 struct ExecutedTransaction {
     outcome: TransactionOutcomeJava,
     ledger_receipt_bytes: Vec<u8>,
@@ -88,8 +86,7 @@ struct ExecutedTransaction {
     new_system_addresses: Vec<SystemAddress>,
 }
 
-#[derive(Debug)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum TransactionOutcomeJava {
     Success(Vec<Vec<u8>>),
     Failure(String),
