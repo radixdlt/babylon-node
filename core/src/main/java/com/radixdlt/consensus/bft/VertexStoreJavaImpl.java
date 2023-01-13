@@ -146,10 +146,12 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return vertexStore;
   }
 
+  @Override
   public VertexWithHash getRoot() {
     return rootVertex;
   }
 
+  @Override
   public Option<VertexStoreState> tryRebuild(VertexStoreState vertexStoreState) {
     // FIXME: Currently this assumes vertexStoreState is a chain with no forks which is our only use
     // case at the moment.
@@ -181,10 +183,12 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return Option.present(vertexStoreState);
   }
 
+  @Override
   public boolean containsVertex(HashCode vertexId) {
     return vertices.containsKey(vertexId) || rootVertex.hash().equals(vertexId);
   }
 
+  @Override
   public InsertQcResult insertQc(QuorumCertificate qc) {
     if (!this.containsVertex(qc.getProposedHeader().getVertexId())) {
       return new VertexStore.InsertQcResult.VertexIsMissing(); // false
@@ -234,6 +238,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return VertexStoreState.create(this.highQC(), this.rootVertex, verticesBuilder.build(), hasher);
   }
 
+  @Override
   public boolean insertTimeoutCertificate(TimeoutCertificate timeoutCertificate) {
     if (timeoutCertificate.getRound().gt(highQC().getHighestRound())) {
       this.highQC = this.highQC.withHighestTC(timeoutCertificate);
@@ -243,10 +248,12 @@ public final class VertexStoreJavaImpl implements VertexStore {
   }
 
   // TODO: reimplement in async way
+  @Override
   public Option<ExecutedVertex> getExecutedVertex(HashCode vertexHash) {
     return Option.option(vertices.get(vertexHash));
   }
 
+  @Override
   public InsertVertexChainResult insertVertexChain(VertexChain vertexChain) {
     final var bftInsertUpdates = new ArrayList<BFTInsertUpdate>();
     final var insertedQcs = new ArrayList<InsertQcResult.Inserted>();
@@ -269,6 +276,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return new InsertVertexChainResult(insertedQcs, bftInsertUpdates);
   }
 
+  @Override
   public Option<BFTInsertUpdate> insertVertex(VertexWithHash vertexWithHash) {
     ExecutedVertex v = vertices.get(vertexWithHash.hash());
     if (v != null) {
@@ -348,6 +356,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return Optional.of(new CommittedUpdate(path));
   }
 
+  @Override
   public LinkedList<ExecutedVertex> getPathFromRoot(HashCode vertexId) {
     final LinkedList<ExecutedVertex> path = new LinkedList<>();
 
@@ -365,6 +374,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return this.highQC;
   }
 
+  @Override
   public Option<ImmutableList<VertexWithHash>> getVertices(HashCode vertexHash, int count) {
     HashCode nextId = vertexHash;
     ImmutableList.Builder<VertexWithHash> builder = ImmutableList.builderWithExpectedSize(count);
