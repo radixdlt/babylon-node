@@ -71,7 +71,6 @@ import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
-import com.radixdlt.lang.Unit;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.statemanager.StateManager;
@@ -143,12 +142,12 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
 
   @Override
   public List<RawNotarizedTransaction> getTransactionsToRelay() {
-    return getTransactionsToRelayFunc.call(Unit.unit());
+    return getTransactionsToRelayFunc.call(Tuple.tuple());
   }
 
   @Override
   public int getCount() {
-    return getCountFunc.call(Unit.unit());
+    return getCountFunc.call(Tuple.Tuple0.of());
   }
 
   private static native byte[] add(StateManager stateManager, byte[] payload);
@@ -166,10 +165,10 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
 
   private static native byte[] getTransactionsToRelay(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<StateManager, Unit, List<RawNotarizedTransaction>>
+  private final NativeCalls.Func1<StateManager, Tuple.Tuple0, List<RawNotarizedTransaction>>
       getTransactionsToRelayFunc;
 
   private static native byte[] getCount(Object stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<StateManager, Unit, Integer> getCountFunc;
+  private final NativeCalls.Func1<StateManager, Tuple.Tuple0, Integer> getCountFunc;
 }

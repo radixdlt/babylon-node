@@ -62,16 +62,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.rev2.consensus_mempool_ledger_sync;
+package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
+import static com.radixdlt.harness.predicates.NodesPredicate.anyCommittedProof;
 
 import com.google.inject.*;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.invariants.Checkers;
-import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -79,83 +84,70 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.NetworkDefinition;
-import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt64;
-import java.util.Collection;
-import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-@RunWith(Parameterized.class)
-public final class SanityTest {
-  @Parameterized.Parameters
-  public static Collection<Object[]> parameters() {
-    return List.of(
-        new Object[][] {
-          {false, UInt64.fromNonNegativeLong(100000)},
-          {true, UInt64.fromNonNegativeLong(100)},
-        });
-  }
+public final class REv2RegisterValidatorTest {
 
+  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(2);
   @Rule public TemporaryFolder folder = new TemporaryFolder();
-  private final TransactionGenerator<RawNotarizedTransaction> transactionGenerator =
-      new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
-
-  private final boolean epochs;
-  private final UInt64 roundsPerEpoch;
-
-  public SanityTest(boolean epochs, UInt64 roundsPerEpoch) {
-    this.epochs = epochs;
-    this.roundsPerEpoch = roundsPerEpoch;
-  }
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(10, 10)
+        .numNodes(1, 0)
         .messageSelector(firstSelector())
-        .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
+        .messageMutator(MessageMutator.dropTimeouts())
+        .addMonitors(
+            byzantineBehaviorNotDetected(), consensusLiveness(3000), ledgerTransactionSafety())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
-                epochs,
+                true,
                 SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
                 ConsensusConfig.of(1000),
-                LedgerConfig.stateComputerWithSyncRelay(
+                LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(10, roundsPerEpoch),
+                        TransactionBuilder.createGenesisWithNumValidators(
+                            1, UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
-                        REV2ProposerConfig.mempool(10, 100, MempoolRelayConfig.of())),
-                    SyncRelayConfig.of(5000, 10, 3000L))));
+                        StateComputerConfig.REV2ProposerConfig.mempool(
+                            10, 1, MempoolRelayConfig.of())))));
   }
 
   @Test
-  public void normal_run_should_not_cause_unexpected_errors() {
+  public void registered_validator_gets_added_to_next_epoch() {
     try (var test = createTest()) {
+      // Arrange: Start single node network
       test.startAllNodes();
+      var registerValidatorTransaction =
+          REv2TestTransactions.constructRegisterValidatorTransaction(
+              NetworkDefinition.INT_TEST_NET, 0L, 1, TEST_KEY);
 
-      // Run
-      for (int i = 0; i < 100; i++) {
-        test.runForCount(1000);
+      // Act: Submit transaction to mempool and run consensus
+      var mempoolDispatcher =
+          test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+      mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTransaction));
 
-        var mempoolDispatcher =
-            test.getInstance(
-                i % test.numNodes(), Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
-        mempoolDispatcher.dispatch(MempoolAdd.create(transactionGenerator.nextTransaction()));
-      }
-
-      // Post-run assertions
-      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 20);
-      Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
+      // Assert: Validator becomes part of validator set
+      test.runUntilState(
+          anyCommittedProof(
+              p ->
+                  p.getNextEpoch()
+                      .map(
+                          e ->
+                              e.getValidators()
+                                  .contains(
+                                      BFTValidator.from(
+                                          BFTNode.create(TEST_KEY.getPublicKey()), UInt256.ONE)))
+                      .orElse(false)),
+          onlyConsensusEvents().or(onlyLocalMempoolAddEvents()));
     }
   }
 }

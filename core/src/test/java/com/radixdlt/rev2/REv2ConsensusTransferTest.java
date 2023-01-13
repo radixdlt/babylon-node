@@ -65,6 +65,7 @@
 package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
 import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
 import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransaction;
@@ -104,6 +105,8 @@ public final class REv2ConsensusTransferTest {
         .numNodes(1, 0)
         .messageSelector(firstSelector())
         .messageMutator(MessageMutator.dropTimeouts())
+        .addMonitors(
+            byzantineBehaviorNotDetected(), consensusLiveness(3000), ledgerTransactionSafety())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,

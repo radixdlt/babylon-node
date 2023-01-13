@@ -62,34 +62,66 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1.forks;
+package com.radixdlt.integration.steady_state.deterministic.rev2;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.OptionalBinder;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
+import static com.radixdlt.environment.deterministic.network.MessageMutators.*;
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 
-public final class ForksModule extends AbstractModule {
-  @Override
-  protected void configure() {
-    OptionalBinder.newOptionalBinder(
-        binder(), new TypeLiteral<UnaryOperator<Set<ForkBuilder>>>() {});
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.invariants.Checkers;
+import com.radixdlt.harness.predicates.NodePredicate;
+import com.radixdlt.harness.predicates.NodesPredicate;
+import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.networks.Network;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.utils.UInt64;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
+public final class RandomVoteDropperTest {
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .numNodes(1, 20)
+        .messageSelector(firstSelector())
+        .messageMutator(voteDropper(0.2))
+        .addMonitors(
+            byzantineBehaviorNotDetected(), consensusLiveness(3000), ledgerTransactionSafety())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                true,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.berkeleyStore(
+                    folder.getRoot().getAbsolutePath()),
+                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
+                    StateComputerConfig.rev2(
+                        Network.INTEGRATIONTESTNET.getId(),
+                        TransactionBuilder.createGenesisWithNumValidators(
+                            10, UInt64.fromNonNegativeLong(10)),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        StateComputerConfig.REV2ProposerConfig.mempool(
+                            10, 100, MempoolRelayConfig.of(5, 5))),
+                    SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
-  @Provides
-  @Singleton
-  private Forks forks(
-      Set<ForkBuilder> forkBuilders, Optional<UnaryOperator<Set<ForkBuilder>>> transformer) {
-    final var transformed = transformer.map(o -> o.apply(forkBuilders)).orElse(forkBuilders);
+  @Test
+  public void normal_run_should_not_cause_unexpected_errors() {
+    try (var test = createTest()) {
+      test.startAllNodes();
 
-    final var forkConfigs =
-        transformed.stream().map(ForkBuilder::build).collect(Collectors.toSet());
+      // Run
+      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverStateVersion(100)), 100000);
 
-    return Forks.create(forkConfigs);
+      // Post-run assertions
+      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 20);
+      Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
+    }
   }
 }

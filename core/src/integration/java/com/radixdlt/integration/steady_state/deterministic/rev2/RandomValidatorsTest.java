@@ -62,45 +62,94 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.simulation.application;
+package com.radixdlt.integration.steady_state.deterministic.rev2;
 
-import com.google.inject.Inject;
-import com.radixdlt.application.system.scrypt.Syscall;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.engine.parser.REParser;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.rev1.checkpoint.Genesis;
-import com.radixdlt.rev1.forks.CurrentForkView;
-import com.radixdlt.substate.SubstateId;
-import com.radixdlt.substate.TxBuilder;
-import com.radixdlt.transactions.RawLedgerTransaction;
-import java.nio.charset.StandardCharsets;
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 
-/**
- * Generates a new unique rri consumer transaction. Because new addresses are used on every call,
- * the transaction should never fail when executed on a radix engine.
- */
-public class RadixEngineUniqueGenerator implements TransactionGenerator<RawLedgerTransaction> {
-  @Inject private REParser parser;
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.invariants.Checkers;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.NetworkDefinition;
+import com.radixdlt.rev2.REv2TestTransactions;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt64;
+import java.util.Random;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-  @Inject private CurrentForkView currentForkView;
+public final class RandomValidatorsTest {
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  @Inject @Genesis private RawLedgerTransaction genesis;
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .numNodes(1, 50)
+        .messageSelector(firstSelector())
+        .addMonitors(
+            byzantineBehaviorNotDetected(), consensusLiveness(3000), ledgerTransactionSafety())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                true,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.berkeleyStore(
+                    folder.getRoot().getAbsolutePath()),
+                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
+                    StateComputerConfig.rev2(
+                        Network.INTEGRATIONTESTNET.getId(),
+                        TransactionBuilder.createGenesisWithNumValidators(
+                            25, UInt64.fromNonNegativeLong(10)),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        StateComputerConfig.REV2ProposerConfig.mempool(
+                            10, 100, MempoolRelayConfig.of(5, 5))),
+                    SyncRelayConfig.of(5000, 10, 3000L))));
+  }
 
-  @Override
-  public RawLedgerTransaction nextTransaction() {
-    var keyPair = ECKeyPair.generateNew();
-    var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "smthng");
-    var builder =
-        TxBuilder.newBuilder(
-                parser.getSubstateDeserialization(),
-                currentForkView.currentForkConfig().engineRules().serialization(),
-                255)
-            .toLowLevelBuilder()
-            .syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
-            .virtualDown(SubstateId.ofSubstate(genesis.getPayloadHash(), 0), addr.getBytes())
-            .end();
-    var sig = keyPair.sign(builder.hashToSign());
-    return builder.sig(sig).build();
+  @Test
+  public void normal_run_should_not_cause_unexpected_errors() {
+    try (var test = createTest()) {
+      test.startAllNodes();
+
+      var random = new Random(12345);
+
+      // Run
+      for (int i = 0; i < 100; i++) {
+        test.runForCount(1000);
+
+        for (int j = 0; j < 50; j++) {
+          var mempoolDispatcher =
+              test.getInstance(
+                  random.nextInt(0, 51),
+                  Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+          var txn =
+              random.nextBoolean()
+                  ? REv2TestTransactions.constructRegisterValidatorTransaction(
+                      NetworkDefinition.INT_TEST_NET,
+                      0,
+                      random.nextInt(1000000),
+                      PrivateKeys.ofNumeric(j + 1))
+                  : REv2TestTransactions.constructUnregisterValidatorTransaction(
+                      NetworkDefinition.INT_TEST_NET,
+                      0,
+                      random.nextInt(1000000),
+                      PrivateKeys.ofNumeric(j + 1));
+          mempoolDispatcher.dispatch(MempoolAdd.create(txn));
+        }
+      }
+
+      // Post-run assertions
+      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 20);
+      Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
+    }
   }
 }

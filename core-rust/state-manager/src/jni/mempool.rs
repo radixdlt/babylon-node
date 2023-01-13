@@ -70,7 +70,7 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::types::scrypto_encode;
-use sbor::{Decode, Encode, TypeId};
+use sbor::{Categorize, Decode, Encode};
 use transaction::errors::TransactionValidationError;
 
 use crate::jni::utils::*;
@@ -192,7 +192,7 @@ fn do_get_transactions_to_relay(
 //
 
 /// Corresponds to the payload_hash
-#[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq, Categorize, Encode, Decode)]
 pub struct JavaPayloadHash(Vec<u8>);
 
 impl From<LedgerPayloadHash> for JavaPayloadHash {
@@ -201,7 +201,7 @@ impl From<LedgerPayloadHash> for JavaPayloadHash {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Categorize, Encode, Decode)]
 pub struct JavaRawTransaction {
     pub payload: Vec<u8>,
     pub payload_hash: JavaPayloadHash,
@@ -216,7 +216,7 @@ impl From<PendingTransaction> for JavaRawTransaction {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Categorize, Encode, Decode)]
 enum MempoolAddErrorJava {
     Full { current_size: u64, max_size: u64 },
     Duplicate,

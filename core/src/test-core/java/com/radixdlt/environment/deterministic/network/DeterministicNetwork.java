@@ -70,7 +70,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.harness.deterministic.invariants.MessageMonitor;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
-import java.io.PrintStream;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -106,7 +105,7 @@ public final class DeterministicNetwork {
    */
   public DeterministicNetwork(
       List<BFTNode> nodes, MessageSelector messageSelector, MessageMutator messageMutator) {
-    this(nodes, messageSelector, messageMutator, m -> {});
+    this(nodes, messageSelector, messageMutator, (m, t) -> {});
   }
 
   public DeterministicNetwork(
@@ -195,10 +194,6 @@ public final class DeterministicNetwork {
     return this.currentTime;
   }
 
-  public void dumpMessages(PrintStream out) {
-    this.messageQueue.dump(out);
-  }
-
   public int lookup(BFTNode node) {
     return this.nodeLookup.get(node);
   }
@@ -216,11 +211,13 @@ public final class DeterministicNetwork {
 
   void handleMessage(ControlledMessage controlledMessage) {
     log.debug("{}: Dispatch message {}", this.currentTime, controlledMessage);
-    messageMonitor.next(controlledMessage);
+    messageMonitor.next(controlledMessage, this.currentTime);
 
     if (!this.messageMutator.mutate(controlledMessage, this.messageQueue)) {
       // If nothing processes this message, we just add it to the queue
       this.messageQueue.add(controlledMessage);
+    } else {
+      log.debug("Dropping message {}", controlledMessage);
     }
   }
 }

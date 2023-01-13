@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.EntityReference;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -31,39 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * ComponentRoyaltyAccumulatorSubstateAllOf
  */
 @JsonPropertyOrder({
-  ComponentRoyaltyAccumulatorSubstateAllOf.JSON_PROPERTY_XRD_AMOUNT
+  ComponentRoyaltyAccumulatorSubstateAllOf.JSON_PROPERTY_VAULT_ENTITY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ComponentRoyaltyAccumulatorSubstateAllOf {
-  public static final String JSON_PROPERTY_XRD_AMOUNT = "xrd_amount";
-  private String xrdAmount;
+  public static final String JSON_PROPERTY_VAULT_ENTITY = "vault_entity";
+  private EntityReference vaultEntity;
 
   public ComponentRoyaltyAccumulatorSubstateAllOf() { 
   }
 
-  public ComponentRoyaltyAccumulatorSubstateAllOf xrdAmount(String xrdAmount) {
-    this.xrdAmount = xrdAmount;
+  public ComponentRoyaltyAccumulatorSubstateAllOf vaultEntity(EntityReference vaultEntity) {
+    this.vaultEntity = vaultEntity;
     return this;
   }
 
    /**
-   * The string-encoded decimal representing the amount of XRD available for claim in the royalty accumulator. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
-   * @return xrdAmount
+   * Get vaultEntity
+   * @return vaultEntity
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the amount of XRD available for claim in the royalty accumulator. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
-  @JsonProperty(JSON_PROPERTY_XRD_AMOUNT)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getXrdAmount() {
-    return xrdAmount;
+  public EntityReference getVaultEntity() {
+    return vaultEntity;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_XRD_AMOUNT)
+  @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setXrdAmount(String xrdAmount) {
-    this.xrdAmount = xrdAmount;
+  public void setVaultEntity(EntityReference vaultEntity) {
+    this.vaultEntity = vaultEntity;
   }
 
 
@@ -79,19 +80,19 @@ public class ComponentRoyaltyAccumulatorSubstateAllOf {
       return false;
     }
     ComponentRoyaltyAccumulatorSubstateAllOf componentRoyaltyAccumulatorSubstateAllOf = (ComponentRoyaltyAccumulatorSubstateAllOf) o;
-    return Objects.equals(this.xrdAmount, componentRoyaltyAccumulatorSubstateAllOf.xrdAmount);
+    return Objects.equals(this.vaultEntity, componentRoyaltyAccumulatorSubstateAllOf.vaultEntity);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(xrdAmount);
+    return Objects.hash(vaultEntity);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ComponentRoyaltyAccumulatorSubstateAllOf {\n");
-    sb.append("    xrdAmount: ").append(toIndentedString(xrdAmount)).append("\n");
+    sb.append("    vaultEntity: ").append(toIndentedString(vaultEntity)).append("\n");
     sb.append("}");
     return sb.toString();
   }

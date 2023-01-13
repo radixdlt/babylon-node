@@ -93,9 +93,6 @@ import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
-import com.radixdlt.rev1.forks.FixedEpochForkConfig;
-import com.radixdlt.rev1.forks.ForkConfig;
-import com.radixdlt.rev1.forks.NewestForkConfig;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.DatabaseCacheSize;
@@ -219,9 +216,6 @@ public final class P2PTestNetworkRunner {
             bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
             bind(DeterministicProcessor.class);
             Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
-            bind(ForkConfig.class)
-                .annotatedWith(NewestForkConfig.class)
-                .toInstance(new FixedEpochForkConfig("genesis", null, 0L));
           }
         },
         new CapabilitiesModule(LedgerSyncCapability.Builder.asDefault().build()));

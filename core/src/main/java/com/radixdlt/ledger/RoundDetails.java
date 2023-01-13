@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1;
+package com.radixdlt.ledger;
 
 import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTNode;

@@ -97,11 +97,11 @@ public class DeterministicMonitorsModule extends AbstractModule {
 
   @Provides
   MessageMonitor messageMonitor(Set<MessageMonitor> messageMonitors) {
-    return m -> messageMonitors.forEach(c -> c.next(m));
+    return (m, t) -> messageMonitors.forEach(c -> c.next(m, t));
   }
 
   @Provides
   StateMonitor stateMonitor(Set<StateMonitor> stateMonitors) {
-    return s -> stateMonitors.forEach(c -> c.next(s));
+    return (s, time, msgs) -> stateMonitors.forEach(c -> c.next(s, time, msgs));
   }
 }

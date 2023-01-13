@@ -69,6 +69,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
@@ -183,6 +184,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                 EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
                 Hasher hasher,
                 EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
+                EventDispatcher<ConsensusByzantineEvent> byzantineEventEventDispatcher,
                 Serialization serialization) {
               return new REv2StateComputer(
                   stateComputer,
@@ -190,6 +192,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                   hasher,
                   ledgerUpdateEventDispatcher,
                   mempoolAddSuccessEventDispatcher,
+                  byzantineEventEventDispatcher,
                   serialization);
             }
 

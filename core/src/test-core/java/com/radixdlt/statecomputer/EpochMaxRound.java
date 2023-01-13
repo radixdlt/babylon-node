@@ -62,39 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1.forks;
+package com.radixdlt.statecomputer;
 
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.rev1.LedgerAndBFTProof;
-import java.util.Objects;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public final class CurrentForkView {
-  private final Forks forks;
-  private ForkConfig currentForkConfig;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  public CurrentForkView(Forks forks, ForkConfig initialForkConfig) {
-    this.forks = Objects.requireNonNull(forks);
-    this.currentForkConfig = Objects.requireNonNull(initialForkConfig);
-  }
-
-  /**
-   * Returns the fork configuration currently in use by the engine. The value is updated
-   * asynchronously, so there might be a short period of time when it still returns an old fork
-   * configuration but the engine has already forked to a newer one.
-   */
-  public ForkConfig currentForkConfig() {
-    return currentForkConfig;
-  }
-
-  public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
-    return ledgerUpdate -> {
-      final var ledgerAndBftProof =
-          (LedgerAndBFTProof) ledgerUpdate.getStateComputerOutput().get(LedgerAndBFTProof.class);
-      ledgerAndBftProof
-          .getNextForkName()
-          .flatMap(forks::getByName)
-          .ifPresent(nextFork -> currentForkConfig = nextFork);
-    };
-  }
-}
+/** Identifies the highest round per epoch when an epoch change must occur. */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface EpochMaxRound {}

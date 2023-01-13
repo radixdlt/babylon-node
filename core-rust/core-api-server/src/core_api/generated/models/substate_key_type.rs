@@ -39,8 +39,10 @@ pub enum SubstateKeyType {
     ResourceManagerVaultAccessRulesChain,
     #[serde(rename = "EpochManager")]
     EpochManager,
-    #[serde(rename = "ValidatorSet")]
-    ValidatorSet,
+    #[serde(rename = "CurrentValidatorSet")]
+    CurrentValidatorSet,
+    #[serde(rename = "PreparingValidatorSet")]
+    PreparingValidatorSet,
     #[serde(rename = "ClockCurrentMinute")]
     ClockCurrentMinute,
     #[serde(rename = "KeyValueStoreEntry")]
@@ -68,7 +70,8 @@ impl ToString for SubstateKeyType {
             Self::ResourceManager => String::from("ResourceManager"),
             Self::ResourceManagerVaultAccessRulesChain => String::from("ResourceManagerVaultAccessRulesChain"),
             Self::EpochManager => String::from("EpochManager"),
-            Self::ValidatorSet => String::from("ValidatorSet"),
+            Self::CurrentValidatorSet => String::from("CurrentValidatorSet"),
+            Self::PreparingValidatorSet => String::from("PreparingValidatorSet"),
             Self::ClockCurrentMinute => String::from("ClockCurrentMinute"),
             Self::KeyValueStoreEntry => String::from("KeyValueStoreEntry"),
             Self::NonFungibleStoreEntry => String::from("NonFungibleStoreEntry"),

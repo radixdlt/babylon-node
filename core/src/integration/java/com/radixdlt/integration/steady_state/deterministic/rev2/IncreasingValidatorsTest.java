@@ -62,28 +62,91 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1;
+package com.radixdlt.integration.steady_state.deterministic.rev2;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.byzantineBehaviorNotDetected;
+import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.ledgerTransactionSafety;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
+
+import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.environment.Dispatchers;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.invariants.Checkers;
+import com.radixdlt.harness.predicates.NodesPredicate;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.NetworkDefinition;
+import com.radixdlt.rev2.REv2TestTransactions;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt64;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-/** REV1-related events pulled out of DispatcherModule */
-public class ReV1DispatcherModule extends AbstractModule {
-  @Override
-  public void configure() {
-    // TODO: Remove, this hack required for initial genesis event emit
-    bind(new TypeLiteral<EventDispatcher<REOutput>>() {})
-        .toProvider(Dispatchers.dispatcherProvider(REOutput.class))
-        .in(Scopes.SINGLETON);
+public final class IncreasingValidatorsTest {
 
-    bind(new TypeLiteral<EventDispatcher<InvalidProposedTransaction>>() {})
-        .toProvider(
-            Dispatchers.dispatcherProvider(
-                InvalidProposedTransaction.class,
-                (counters, event) -> counters.v1RadixEngine().invalidProposedTransactions()))
-        .in(Scopes.SINGLETON);
+  private static final int NUM_VALIDATORS = 20;
+
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .numNodes(1, NUM_VALIDATORS)
+        .messageSelector(firstSelector())
+        .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                true,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.berkeleyStore(
+                    folder.getRoot().getAbsolutePath()),
+                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
+                    StateComputerConfig.rev2(
+                        Network.INTEGRATIONTESTNET.getId(),
+                        TransactionBuilder.createGenesisWithNumValidators(
+                            1, UInt64.fromNonNegativeLong(10)),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        StateComputerConfig.REV2ProposerConfig.mempool(
+                            10, 100, MempoolRelayConfig.of(5, 5))),
+                    SyncRelayConfig.of(5000, 10, 3000L))));
+  }
+
+  @Test
+  public void normal_run_should_not_cause_unexpected_errors() {
+    try (var test = createTest()) {
+      test.startAllNodes();
+
+      // Run
+      for (int i = 0; i < NUM_VALIDATORS; i++) {
+        test.runForCount(1000);
+        var mempoolDispatcher =
+            test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+
+        var txn =
+            REv2TestTransactions.constructRegisterValidatorTransaction(
+                NetworkDefinition.INT_TEST_NET, 0, i, PrivateKeys.ofNumeric(i + 2));
+        mempoolDispatcher.dispatch(MempoolAdd.create(txn));
+        test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
+      }
+      test.runUntilState(
+          NodesPredicate.anyCommittedProof(
+              p ->
+                  p.getNextEpoch()
+                      .map(e -> e.getValidators().size() >= NUM_VALIDATORS)
+                      .orElse(false)),
+          10000);
+
+      // Post-run assertions
+      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 20);
+      Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
+    }
   }
 }

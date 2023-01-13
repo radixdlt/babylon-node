@@ -133,7 +133,6 @@ public final class CodecMap {
   }
 
   public CodecMap addCoreSchemaCodecs() {
-    storeCodec(Unit.class, new UnitCodec());
     storeCodec(String.class, new StringCodec());
 
     storeCodec(Boolean.class, new BooleanCodec());

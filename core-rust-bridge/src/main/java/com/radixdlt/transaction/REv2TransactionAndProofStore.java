@@ -68,7 +68,6 @@ import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
-import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.utils.UInt64;
@@ -114,7 +113,7 @@ public final class REv2TransactionAndProofStore {
   }
 
   public Optional<byte[]> getLastProof() {
-    return this.getLastProofFunc.call(Unit.unit()).toOptional();
+    return this.getLastProofFunc.call(Tuple.tuple()).toOptional();
   }
 
   public Optional<byte[]> getEpochProof(long epoch) {
@@ -133,7 +132,7 @@ public final class REv2TransactionAndProofStore {
 
   private static native byte[] getNextProof(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<StateManager, Unit, Option<byte[]>> getLastProofFunc;
+  private final NativeCalls.Func1<StateManager, Tuple.Tuple0, Option<byte[]>> getLastProofFunc;
 
   private static native byte[] getLastProof(StateManager stateManager, byte[] payload);
 

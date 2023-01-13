@@ -1,5 +1,4 @@
 use radix_engine::types::{AddressError, ParseNonFungibleIdError};
-use radix_engine_interface::data::ScryptoValueDecodeError;
 use sbor::{DecodeError, EncodeError};
 use tracing::warn;
 use transaction::errors::TransactionValidationError;
@@ -19,7 +18,7 @@ pub enum MappingError {
         message: String,
     },
     ScryptoValueDecode {
-        decode_error: ScryptoValueDecodeError,
+        decode_error: DecodeError,
         bytes: Vec<u8>,
     },
     InvalidSbor {
@@ -44,9 +43,6 @@ pub enum MappingError {
         message: String,
     },
     IntegerError {
-        message: String,
-    },
-    NotXrdError {
         message: String,
     },
 }

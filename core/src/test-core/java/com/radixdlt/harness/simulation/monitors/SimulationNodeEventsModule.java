@@ -76,7 +76,6 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.rev1.InvalidProposedTransaction;
 
 /** Module which manages node testing events for simulation */
 public final class SimulationNodeEventsModule extends AbstractModule {
@@ -112,11 +111,5 @@ public final class SimulationNodeEventsModule extends AbstractModule {
   private EventProcessor<BFTHighQCUpdate> highQCProcessor(
       @Self BFTNode node, NodeEvents nodeEvents) {
     return nodeEvents.processor(node, BFTHighQCUpdate.class);
-  }
-
-  @ProvidesIntoSet
-  private EventProcessorOnDispatch<?> invalidProposedTransactionProcessor(
-      @Self BFTNode node, NodeEvents nodeEvents) {
-    return nodeEvents.processorOnDispatch(node, InvalidProposedTransaction.class);
   }
 }

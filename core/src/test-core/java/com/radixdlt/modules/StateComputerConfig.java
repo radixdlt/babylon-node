@@ -82,10 +82,6 @@ public sealed interface StateComputerConfig {
     return new MockedStateComputerConfig(mempoolType);
   }
 
-  static StateComputerConfig rev1(int mempoolSize) {
-    return new REv1StateComputerConfig(mempoolSize);
-  }
-
   static StateComputerConfig rev2(
       int networkId,
       RawLedgerTransaction genesis,
@@ -118,8 +114,6 @@ public sealed interface StateComputerConfig {
 
   record MockedStateComputerConfig(MockedMempoolConfig mempoolType)
       implements StateComputerConfig {}
-
-  record REv1StateComputerConfig(int mempoolSize) implements StateComputerConfig {}
 
   record REv2StateComputerConfig(
       int networkId,

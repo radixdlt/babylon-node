@@ -65,6 +65,7 @@
 package com.radixdlt.harness.predicates;
 
 import com.google.inject.Injector;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -129,18 +130,18 @@ public class NodePredicate {
   }
 
   public static Predicate<Injector> atExactlyStateVersion(long stateVersion) {
-    return i ->
-        i.getInstance(TransactionsAndProofReader.class)
-            .getLastProof()
-            .map(p -> p.getStateVersion() == stateVersion)
-            .orElse(false);
+    return proofCommitted(p -> p.getStateVersion() == stateVersion);
   }
 
   public static Predicate<Injector> atOrOverStateVersion(long stateVersion) {
+    return proofCommitted(p -> p.getStateVersion() >= stateVersion);
+  }
+
+  public static Predicate<Injector> proofCommitted(Predicate<LedgerProof> predicate) {
     return i ->
         i.getInstance(TransactionsAndProofReader.class)
             .getLastProof()
-            .map(p -> p.getStateVersion() >= stateVersion)
+            .map(predicate::test)
             .orElse(false);
   }
 

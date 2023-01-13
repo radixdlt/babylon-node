@@ -75,9 +75,9 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.RoundDetails;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.*;
-import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
@@ -103,6 +103,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   private final EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher;
 
   private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
+  private final EventDispatcher<ConsensusByzantineEvent> consensusByzantineEventEventDispatcher;
   private final Serialization serialization;
   private final Hasher hasher;
 
@@ -112,12 +113,14 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
       Hasher hasher,
       EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
       EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
+      EventDispatcher<ConsensusByzantineEvent> consensusByzantineEventEventDispatcher,
       Serialization serialization) {
     this.stateComputer = stateComputer;
     this.transactionsPerProposalCount = transactionsPerProposalCount;
     this.hasher = hasher;
     this.ledgerUpdateEventDispatcher = ledgerUpdateEventDispatcher;
     this.mempoolAddSuccessEventDispatcher = mempoolAddSuccessEventDispatcher;
+    this.consensusByzantineEventEventDispatcher = consensusByzantineEventEventDispatcher;
     this.serialization = serialization;
   }
 
@@ -195,8 +198,14 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         result.rejected().stream()
             .collect(
                 Collectors.toMap(
-                    r -> RawLedgerTransaction.create(r.first()),
+                    r -> RawNotarizedTransaction.create(r.first()),
                     r -> (Exception) new InvalidREv2Transaction(r.last())));
+
+    rejectedTransactions.forEach(
+        (rejected, exception) ->
+            consensusByzantineEventEventDispatcher.dispatch(
+                new ConsensusByzantineEvent.InvalidProposedTransaction(
+                    roundDetails, rejected, exception)));
 
     var nextEpoch =
         result

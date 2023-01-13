@@ -97,7 +97,7 @@ import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev1.EpochMaxRound;
+import com.radixdlt.statecomputer.EpochMaxRound;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.KeyComparator;
@@ -352,16 +352,8 @@ public final class DeterministicTest implements AutoCloseable {
   }
 
   private void handleMessage(Timed<ControlledMessage> nextMessage) {
+    this.stateMonitor.next(nodes.getNodeInjectors(), nextMessage.time(), this.numMessagesProcessed);
     this.nodes.handleMessage(nextMessage);
-
-    // Execute state monitor checks after some arbitrary number of messages
-    // so we don't kill our CPUs
-    // TODO: Clean this up
-    var numMessagesBeforeStateCheck = 89 * this.nodes.numNodes();
-    if (this.numMessagesProcessed % numMessagesBeforeStateCheck == 0) {
-      this.stateMonitor.next(nodes.getNodeInjectors());
-    }
-
     this.numMessagesProcessed++;
   }
 

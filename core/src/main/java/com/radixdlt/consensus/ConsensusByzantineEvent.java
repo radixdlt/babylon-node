@@ -66,6 +66,8 @@ package com.radixdlt.consensus;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.ledger.RoundDetails;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 
 public sealed interface ConsensusByzantineEvent {
   BFTNode getAuthor();
@@ -84,6 +86,15 @@ public sealed interface ConsensusByzantineEvent {
     @Override
     public BFTNode getAuthor() {
       return author;
+    }
+  }
+
+  record InvalidProposedTransaction(
+      RoundDetails roundDetails, RawNotarizedTransaction notarizedTransaction, Exception e)
+      implements ConsensusByzantineEvent {
+    @Override
+    public BFTNode getAuthor() {
+      return roundDetails.roundProposer();
     }
   }
 }
