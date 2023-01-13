@@ -64,6 +64,7 @@
 
 package com.radixdlt.monitoring;
 
+import com.radixdlt.lang.Functions;
 import io.prometheus.client.Collector;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Summary;
@@ -96,6 +97,14 @@ public class Timer extends Collector implements Collector.Describable {
    */
   public void observe(Duration duration) {
     this.wrapped.observe(duration.toNanos() / Timer.NANOS_IN_SECOND);
+  }
+
+  public <T> T measure(Functions.Func0<T> fn) {
+    return wrapped.time(fn::apply);
+  }
+
+  public void measure(Runnable fn) {
+    wrapped.time(fn);
   }
 
   @Override
