@@ -214,14 +214,8 @@ public final class BFTSync implements BFTSyncer {
 
       final var highQC =
           switch (roundQuorumReached.votingResult()) {
-            case FormedQC formedQc -> HighQC.from(
-                formedQc.getQC(),
-                this.vertexStore.highQC().highestCommittedQC(),
-                this.vertexStore.highQC().highestTC());
-            case FormedTC formedTc -> HighQC.from(
-                this.vertexStore.highQC().highestQC(),
-                this.vertexStore.highQC().highestCommittedQC(),
-                Optional.of(formedTc.getTC()));
+            case FormedQC formedQc -> this.vertexStore.highQC().withHighestQC(formedQc.getQC());
+            case FormedTC formedTc -> this.vertexStore.highQC().withHighestTC(formedTc.getTC());
           };
 
       syncToQC(highQC, roundQuorumReached.lastAuthor());

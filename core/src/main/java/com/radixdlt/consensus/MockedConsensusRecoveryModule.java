@@ -130,12 +130,12 @@ public class MockedConsensusRecoveryModule extends AbstractModule {
             proof.getAccumulatorState(),
             proof.consensusParentRoundTimestamp(),
             proof.proposerTimestamp());
-    var genesisQC = QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
+    var initialEpochQC = QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
     var proposerElection = new WeightedRotatingLeaders(validatorSet);
     return new BFTConfiguration(
         proposerElection,
         validatorSet,
-        VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, hasher));
+        VertexStoreState.create(HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher));
   }
 
   public static class Builder {

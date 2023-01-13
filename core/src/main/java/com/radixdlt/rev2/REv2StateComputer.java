@@ -258,7 +258,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                       QuorumCertificate.createInitialEpochQC(initialEpochVertex, nextLedgerHeader);
                   final var initialState =
                       VertexStoreState.create(
-                          HighQC.from(initialEpochQC), initialEpochVertex, hasher);
+                          HighQC.ofInitialEpochQc(initialEpochQC), initialEpochVertex, hasher);
                   var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
                   var proposerElection = new WeightedRotatingLeaders(validatorSet);
                   var bftConfiguration =

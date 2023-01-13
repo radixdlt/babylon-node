@@ -95,7 +95,9 @@ public class VertexStoreStateCreationTest {
     BFTHeader genesisHeader = new BFTHeader(Round.of(0), genesisHash, mock(LedgerHeader.class));
     VoteData voteData = new VoteData(genesisHeader, genesisHeader, null);
     QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-    assertThatThrownBy(() -> VertexStoreState.create(HighQC.from(badRootQC), genesisVertex, hasher))
+    assertThatThrownBy(
+            () ->
+                VertexStoreState.create(HighQC.ofInitialEpochQc(badRootQC), genesisVertex, hasher))
         .isInstanceOf(IllegalStateException.class);
   }
 
@@ -106,7 +108,9 @@ public class VertexStoreStateCreationTest {
         new BFTHeader(Round.of(0), HashUtils.random256(), mock(LedgerHeader.class));
     VoteData voteData = new VoteData(genesisHeader, genesisHeader, otherHeader);
     QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-    assertThatThrownBy(() -> VertexStoreState.create(HighQC.from(badRootQC), genesisVertex, hasher))
+    assertThatThrownBy(
+            () ->
+                VertexStoreState.create(HighQC.ofInitialEpochQc(badRootQC), genesisVertex, hasher))
         .isInstanceOf(IllegalStateException.class);
   }
 
@@ -116,7 +120,9 @@ public class VertexStoreStateCreationTest {
         new BFTHeader(Round.of(0), HashUtils.random256(), mock(LedgerHeader.class));
     VoteData voteData = new VoteData(genesisHeader, genesisHeader, genesisHeader);
     QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-    assertThatThrownBy(() -> VertexStoreState.create(HighQC.from(badRootQC), genesisVertex, hasher))
+    assertThatThrownBy(
+            () ->
+                VertexStoreState.create(HighQC.ofInitialEpochQc(badRootQC), genesisVertex, hasher))
         .isInstanceOf(IllegalStateException.class);
   }
 }

@@ -152,8 +152,8 @@ public final class REv1LedgerRecoveryModule extends AbstractModule {
             lastEpochProof.getAccumulatorState(),
             lastEpochProof.consensusParentRoundTimestamp(),
             lastEpochProof.proposerTimestamp());
-    var genesisQC = QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
-    return VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, hasher);
+    var initialEpochQC = QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
+    return VertexStoreState.create(HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher);
   }
 
   @Provides

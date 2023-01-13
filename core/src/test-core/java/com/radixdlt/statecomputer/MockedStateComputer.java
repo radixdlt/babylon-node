@@ -144,10 +144,11 @@ public final class MockedStateComputer implements StateComputer {
                           header.getAccumulatorState(),
                           header.consensusParentRoundTimestamp(),
                           header.proposerTimestamp());
-                  QuorumCertificate genesisQC =
+                  QuorumCertificate initialEpochQC =
                       QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
                   final var initialState =
-                      VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, hasher);
+                      VertexStoreState.create(
+                          HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher);
                   var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
                   var proposerElection = new WeightedRotatingLeaders(validatorSet);
                   var bftConfiguration =
