@@ -62,36 +62,67 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor.codec.core;
+package com.radixdlt.monitoring;
 
-import static com.radixdlt.sbor.codec.constants.TypeId.TYPE_UNIT;
+import com.google.common.base.Preconditions;
+import io.prometheus.client.Collector;
+import io.prometheus.client.GaugeMetricFamily;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.DoubleSupplier;
+import javax.annotation.Nullable;
 
-import com.radixdlt.lang.Unit;
-import com.radixdlt.sbor.codec.Codec;
-import com.radixdlt.sbor.codec.constants.TypeId;
-import com.radixdlt.sbor.coding.DecoderApi;
-import com.radixdlt.sbor.coding.EncoderApi;
-import com.radixdlt.sbor.exceptions.SborDecodeException;
+/**
+ * A "direct getter" counterpart of a Prometheus gauge.
+ *
+ * <p>Every instance needs to be explicitly {@link #initialize(DoubleSupplier) initialized} with an
+ * actual sample provider (commonly, a getter). The {@link #collect()} will simply return empty
+ * samples when not initialized.
+ */
+public class GetterGauge extends Collector implements Collector.Describable {
 
-public final class UnitCodec implements Codec<Unit> {
-  @Override
-  public TypeId getTypeId() {
-    return TYPE_UNIT;
+  /** A metric name. */
+  private final String name;
+
+  /**
+   * A reference to getter (will hold {@literal null} before {@link #initialize(DoubleSupplier)}).
+   */
+  private final AtomicReference<DoubleSupplier> getter;
+
+  /**
+   * A basic constructor, after which a further {@link #initialize(DoubleSupplier) initialization}
+   * is still required.
+   *
+   * @param name A metric name; will also be used as a description.
+   */
+  public GetterGauge(String name) {
+    this.name = name;
+    this.getter = new AtomicReference<>();
+  }
+
+  /**
+   * Initializes the gauge.
+   *
+   * @param getter A getter to be used directly when {@link #collect() collecting samples}.
+   */
+  public void initialize(DoubleSupplier getter) {
+    final boolean initialized = this.getter.compareAndSet(null, getter);
+    Preconditions.checkState(initialized, "getter for gauge %s already initialized", name);
   }
 
   @Override
-  public void encodeWithoutTypeId(EncoderApi encoder, Unit value) {
-    encoder.writeByte((byte) 0x00);
-  }
-
-  @Override
-  public Unit decodeWithoutTypeId(DecoderApi decoder) {
-    final var unitByte = decoder.readByte();
-    if (unitByte == 0x00) {
-      return Unit.unit();
-    } else {
-      throw new SborDecodeException(
-          String.format("Invalid unit, expected 0x00 but got %s", unitByte));
+  public List<MetricFamilySamples> collect() {
+    final @Nullable DoubleSupplier currentGetter = getter.get();
+    if (currentGetter == null) {
+      return List.of();
     }
+    final MetricFamilySamples.Sample sample =
+        new MetricFamilySamples.Sample(name, List.of(), List.of(), currentGetter.getAsDouble());
+    return List.of(new MetricFamilySamples(name, "", Type.GAUGE, name, List.of(sample)));
+  }
+
+  @Override
+  public List<MetricFamilySamples> describe() {
+    return List.of(new GaugeMetricFamily(name, name, List.of()));
   }
 }

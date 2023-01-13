@@ -353,7 +353,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                     private RoundUpdate initialRoundUpdate(
                         BFTConfiguration configuration, ProposerElection proposerElection) {
                       var highQC = configuration.getVertexStoreState().getHighQC();
-                      var round = highQC.highestQC().getRound().next();
+                      var round = highQC.getHighestRound().next();
                       var leader = proposerElection.getProposer(round);
                       var nextLeader = proposerElection.getProposer(round.next());
 
@@ -366,7 +366,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         BFTValidatorSet validatorSet,
                         Hasher hasher) {
                       var genesisVertex =
-                          Vertex.createGenesis(
+                          Vertex.createInitialEpochVertex(
                                   LedgerHeader.genesis(initialAccumulatorState, validatorSet, 0, 0))
                               .withId(hasher);
                       var nextLedgerHeader =
@@ -376,7 +376,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                               proof.getAccumulatorState(),
                               proof.consensusParentRoundTimestamp(),
                               proof.proposerTimestamp());
-                      var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+                      var genesisQC =
+                          QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
                       var proposerElection = new WeightedRotatingLeaders(validatorSet);
                       return new BFTConfiguration(
                           proposerElection,

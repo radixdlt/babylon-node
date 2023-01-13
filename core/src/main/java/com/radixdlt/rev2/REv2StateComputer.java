@@ -164,6 +164,8 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                         .map(RawNotarizedTransaction::create))
             .toList();
 
+    // TODO: Don't include transactions if NextEpoch is to occur
+    // TODO: This will require Proposer to simulate a NextRound update before proposing
     return stateComputer.getTransactionsForProposal(
         transactionsPerProposalCount, transactionsNotToInclude);
   }
@@ -253,7 +255,8 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                 nextEpoch -> {
                   var header = txnsAndProof.getProof();
                   // TODO: Move vertex stuff somewhere else
-                  var genesisVertex = Vertex.createGenesis(header.getHeader()).withId(hasher);
+                  var initialEpochVertex =
+                      Vertex.createInitialEpochVertex(header.getHeader()).withId(hasher);
                   var nextLedgerHeader =
                       LedgerHeader.create(
                           nextEpoch.getEpoch(),
@@ -261,10 +264,14 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                           header.getAccumulatorState(),
                           header.consensusParentRoundTimestamp(),
                           header.proposerTimestamp());
-                  var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+                  var initialEpochQC =
+                      QuorumCertificate.createInitialEpochQC(initialEpochVertex, nextLedgerHeader);
                   final var initialState =
                       VertexStoreState.create(
-                          HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
+                          HighQC.from(initialEpochQC),
+                          initialEpochVertex,
+                          Optional.empty(),
+                          hasher);
                   var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
                   var proposerElection = new WeightedRotatingLeaders(validatorSet);
                   var bftConfiguration =

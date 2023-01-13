@@ -26,7 +26,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.LocalMethodReferenceType;
-import com.radixdlt.api.core.generated.models.LocalNativeFunctionReference;
 import com.radixdlt.api.core.generated.models.LocalNativeMethodReference;
 import com.radixdlt.api.core.generated.models.LocalScryptoMethodReference;
 import io.swagger.annotations.ApiModel;
@@ -99,17 +98,6 @@ public class LocalMethodReference extends AbstractOpenApiSchema {
                 ret.setActualInstance(deserialized);
                 return ret;
             }
-            // deserialize LocalNativeFunctionReference
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(LocalNativeFunctionReference.class);
-                LocalMethodReference ret = new LocalMethodReference();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'LocalMethodReference'", e);
-            }
-
             // deserialize LocalNativeMethodReference
             try {
                 deserialized = tree.traverse(jp.getCodec()).readValueAs(LocalNativeMethodReference.class);
@@ -151,11 +139,6 @@ public class LocalMethodReference extends AbstractOpenApiSchema {
         super("anyOf", Boolean.FALSE);
     }
 
-    public LocalMethodReference(LocalNativeFunctionReference o) {
-        super("anyOf", Boolean.FALSE);
-        setActualInstance(o);
-    }
-
     public LocalMethodReference(LocalNativeMethodReference o) {
         super("anyOf", Boolean.FALSE);
         setActualInstance(o);
@@ -167,16 +150,13 @@ public class LocalMethodReference extends AbstractOpenApiSchema {
     }
 
     static {
-        schemas.put("LocalNativeFunctionReference", LocalNativeFunctionReference.class);
         schemas.put("LocalNativeMethodReference", LocalNativeMethodReference.class);
         schemas.put("LocalScryptoMethodReference", LocalScryptoMethodReference.class);
         JSON.registerDescendants(LocalMethodReference.class, Collections.unmodifiableMap(schemas));
         // Initialize and register the discriminator mappings.
         Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-        mappings.put("LocalNativeFunctionReference", LocalNativeFunctionReference.class);
         mappings.put("LocalNativeMethodReference", LocalNativeMethodReference.class);
         mappings.put("LocalScryptoMethodReference", LocalScryptoMethodReference.class);
-        mappings.put("NativeFunction", LocalNativeFunctionReference.class);
         mappings.put("NativeMethod", LocalNativeMethodReference.class);
         mappings.put("ScryptoMethod", LocalScryptoMethodReference.class);
         mappings.put("LocalMethodReference", LocalMethodReference.class);
@@ -191,18 +171,13 @@ public class LocalMethodReference extends AbstractOpenApiSchema {
     /**
      * Set the instance that matches the anyOf child schema, check
      * the instance parameter is valid against the anyOf child schemas:
-     * LocalNativeFunctionReference, LocalNativeMethodReference, LocalScryptoMethodReference
+     * LocalNativeMethodReference, LocalScryptoMethodReference
      *
      * It could be an instance of the 'anyOf' schemas.
      * The anyOf child schemas may themselves be a composed schema (allOf, anyOf, anyOf).
      */
     @Override
     public void setActualInstance(Object instance) {
-        if (JSON.isInstanceOf(LocalNativeFunctionReference.class, instance, new HashSet<Class<?>>())) {
-            super.setActualInstance(instance);
-            return;
-        }
-
         if (JSON.isInstanceOf(LocalNativeMethodReference.class, instance, new HashSet<Class<?>>())) {
             super.setActualInstance(instance);
             return;
@@ -213,29 +188,18 @@ public class LocalMethodReference extends AbstractOpenApiSchema {
             return;
         }
 
-        throw new RuntimeException("Invalid instance type. Must be LocalNativeFunctionReference, LocalNativeMethodReference, LocalScryptoMethodReference");
+        throw new RuntimeException("Invalid instance type. Must be LocalNativeMethodReference, LocalScryptoMethodReference");
     }
 
     /**
      * Get the actual instance, which can be the following:
-     * LocalNativeFunctionReference, LocalNativeMethodReference, LocalScryptoMethodReference
+     * LocalNativeMethodReference, LocalScryptoMethodReference
      *
-     * @return The actual instance (LocalNativeFunctionReference, LocalNativeMethodReference, LocalScryptoMethodReference)
+     * @return The actual instance (LocalNativeMethodReference, LocalScryptoMethodReference)
      */
     @Override
     public Object getActualInstance() {
         return super.getActualInstance();
-    }
-
-    /**
-     * Get the actual instance of `LocalNativeFunctionReference`. If the actual instance is not `LocalNativeFunctionReference`,
-     * the ClassCastException will be thrown.
-     *
-     * @return The actual instance of `LocalNativeFunctionReference`
-     * @throws ClassCastException if the instance is not `LocalNativeFunctionReference`
-     */
-    public LocalNativeFunctionReference getLocalNativeFunctionReference() throws ClassCastException {
-        return (LocalNativeFunctionReference)super.getActualInstance();
     }
 
     /**

@@ -144,7 +144,7 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
       @LastEpochProof LedgerProof proof, BFTValidatorSet validatorSet, Hasher hasher) {
     var accumulatorState = new AccumulatorState(0, this.preGenesisAccumulatorHash);
     VertexWithHash genesisVertex =
-        Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0, 0))
+        Vertex.createInitialEpochVertex(LedgerHeader.genesis(accumulatorState, validatorSet, 0, 0))
             .withId(hasher);
     LedgerHeader nextLedgerHeader =
         LedgerHeader.create(
@@ -153,7 +153,7 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
             proof.getAccumulatorState(),
             proof.consensusParentRoundTimestamp(),
             proof.proposerTimestamp());
-    var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+    var genesisQC = QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
     var proposerElection = new WeightedRotatingLeaders(validatorSet);
     return new BFTConfiguration(
         proposerElection,

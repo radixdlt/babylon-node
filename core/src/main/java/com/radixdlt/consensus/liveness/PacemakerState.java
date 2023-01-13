@@ -64,6 +64,7 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -123,5 +124,10 @@ public class PacemakerState implements PacemakerReducer {
     this.currentRound = nextRound;
     roundUpdateSender.dispatch(
         RoundUpdate.create(this.currentRound, this.highQC, leader, nextLeader));
+  }
+
+  @VisibleForTesting
+  public HighQC highQC() {
+    return this.highQC;
   }
 }

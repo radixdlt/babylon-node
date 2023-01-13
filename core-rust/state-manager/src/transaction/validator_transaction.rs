@@ -1,23 +1,19 @@
-use radix_engine::types::GlobalAddress;
-use radix_engine::types::NativeMethodIdent;
-use radix_engine::types::RENodeId;
+use radix_engine::types::*;
 
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto_encode;
 use radix_engine_interface::model::{
-    ClockSetCurrentTimeInvocation, EpochManagerNextRoundInvocation,
+    ClockInvocation, ClockSetCurrentTimeInvocation, EpochManagerInvocation, NativeInvocation,
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
-use sbor::*;
 use std::collections::BTreeSet;
 use transaction::model::{
     AuthZoneParams, Executable, ExecutionContext, FeePayment, Instruction, InstructionList,
-    SystemInstruction,
 };
 
-#[derive(Debug, Copy, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub enum ValidatorTransaction {
     RoundUpdate {
         proposer_timestamp_ms: i64,
@@ -40,28 +36,18 @@ impl ValidatorTransaction {
                 round_in_epoch,
                 ..
             } => {
-                let update_time = SystemInstruction::CallNativeMethod {
-                    method_ident: NativeMethodIdent {
-                        receiver: RENodeId::Global(GlobalAddress::System(CLOCK)),
-                        method_name: "set_current_time".to_string(),
-                    },
-                    args: scrypto_encode(&ClockSetCurrentTimeInvocation {
+                let update_time = NativeInvocation::Clock(ClockInvocation::SetCurrentTime(
+                    ClockSetCurrentTimeInvocation {
                         receiver: CLOCK,
                         current_time_ms: *timestamp_ms,
-                    })
-                    .unwrap(),
-                };
-                let update_round = SystemInstruction::CallNativeMethod {
-                    method_ident: NativeMethodIdent {
-                        receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-                        method_name: "next_round".to_string(),
                     },
-                    args: scrypto_encode(&EpochManagerNextRoundInvocation {
+                ));
+                let update_round = NativeInvocation::EpochManager(
+                    EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
                         receiver: EPOCH_MANAGER,
                         round: *round_in_epoch,
-                    })
-                    .unwrap(),
-                };
+                    }),
+                );
 
                 vec![
                     Instruction::System(update_time),
@@ -74,7 +60,7 @@ impl ValidatorTransaction {
     }
 }
 
-#[derive(Debug, Clone, TypeId, PartialEq, Eq)]
+#[derive(Debug, Clone, Categorize, PartialEq, Eq)]
 pub struct PreparedValidatorTransaction {
     hash: Hash,
     instructions: Vec<Instruction>,

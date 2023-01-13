@@ -30,8 +30,6 @@ public enum LocalMethodReferenceType {
   
   NATIVEMETHOD("NativeMethod"),
   
-  NATIVEFUNCTION("NativeFunction"),
-  
   SCRYPTOMETHOD("ScryptoMethod");
 
   private String value;

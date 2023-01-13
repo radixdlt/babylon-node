@@ -84,7 +84,7 @@ fn handle_v0_state_component_internal(
     };
 
     let component_dump = dump_component_state(&state_manager.store, component_address)
-        .map_err(|err| server_error(&format!("Error traversing component state: {:?}", err)))?;
+        .map_err(|err| server_error(format!("Error traversing component state: {:?}", err)))?;
 
     let state_owned_vaults = component_dump
         .vaults
@@ -113,7 +113,6 @@ fn handle_v0_state_component_internal(
             &component_royalty_config,
         )?),
         royalty_accumulator: Some(to_api_component_royalty_accumulator_substate(
-            &bech32_encoder,
             &component_royalty_accumulator,
         )?),
         access_rules: Some(to_api_access_rules_chain_substate(

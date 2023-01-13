@@ -87,7 +87,6 @@ import com.radixdlt.utils.UInt64;
 import java.util.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -250,7 +249,6 @@ public final class MultiNodeRebootTest {
   }
 
   @Test
-  @Ignore("Reinstate once NODE-459 task is implemented")
   public void restart_all_nodes_intermittently() {
     runTest(
         new MixedLivenessEachRound(random, 0),
@@ -276,7 +274,6 @@ public final class MultiNodeRebootTest {
   }
 
   @Test
-  @Ignore("Reinstate once NODE-459 task is implemented")
   public void restart_all_nodes_intermittently_while_f_nodes_down() {
     runTest(
         new MixedLivenessEachRound(random, (numValidators - 1) / 3),
