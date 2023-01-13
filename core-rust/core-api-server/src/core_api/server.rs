@@ -71,7 +71,7 @@ use axum::{
     Extension, Router,
 };
 use parking_lot::RwLock;
-use radix_engine::types::{Decode, Encode, TypeId};
+use radix_engine::types::{Categorize, Decode, Encode};
 use state_manager::jni::state_manager::ActualStateManager;
 use tower_http::limit::RequestBodyLimitLayer;
 
@@ -175,7 +175,7 @@ pub(crate) async fn handle_no_core_path() -> Result<(), RequestHandlingError> {
     Err(not_found_error("Try /core"))
 }
 
-#[derive(Debug, TypeId, Encode, Decode, Clone)]
+#[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct CoreApiServerConfig {
     pub bind_interface: String,
     pub port: u32,

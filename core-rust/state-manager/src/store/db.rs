@@ -88,7 +88,7 @@ use crate::{
 };
 use radix_engine::types::{KeyValueStoreId, SubstateId};
 
-#[derive(Debug, TypeId, Encode, Decode, Clone)]
+#[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub enum DatabaseConfig {
     InMemory,
     RocksDB(String),

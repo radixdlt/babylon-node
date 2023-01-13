@@ -62,42 +62,92 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.cli;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.addressing.Addressing;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.networks.Network;
+import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.PrivateKeys;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.security.Security;
+import java.util.HashSet;
+import java.util.stream.IntStream;
+import org.apache.commons.cli.*;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.util.encoders.Hex;
+import org.json.JSONObject;
 
-public final class REv2ConsensusRecoveryModule extends AbstractModule {
-  @Provides
-  private RoundUpdate initialRoundUpdate(
-      VertexStoreState vertexStoreState, BFTConfiguration configuration) {
-    var highQC = vertexStoreState.getHighQC();
-    var round = highQC.getHighestRound().next();
-    var proposerElection = configuration.getProposerElection();
-    var leader = proposerElection.getProposer(round);
-    var nextLeader = proposerElection.getProposer(round.next());
+/** Generates the universe (genesis commit) for the Olympia Radix Engine */
+public final class GenerateUniverses {
+  private GenerateUniverses() {}
 
-    return RoundUpdate.create(round, highQC, leader, nextLeader);
+  public static void main(String[] args) throws Exception {
+    Security.insertProviderAt(new BouncyCastleProvider(), 1);
+
+    Options options = new Options();
+    options.addOption("h", "help", false, "Show usage information (this message)");
+    options.addOption("p", "public-keys", true, "Specify validator keys");
+    options.addOption("v", "validator-count", true, "Specify number of validators to generate");
+
+    CommandLineParser parser = new DefaultParser();
+    CommandLine cmd = parser.parse(options, args);
+    if (!cmd.getArgList().isEmpty()) {
+      System.err.println("Extra arguments: " + String.join(" ", cmd.getArgList()));
+      usage(options);
+      return;
+    }
+
+    if (cmd.hasOption('h')) {
+      usage(options);
+      return;
+    }
+
+    var validatorKeys = new HashSet<ECDSASecp256k1PublicKey>();
+    if (cmd.getOptionValue("p") != null) {
+      var hexKeys = cmd.getOptionValue("p").split(",");
+      for (var hexKey : hexKeys) {
+        validatorKeys.add(ECDSASecp256k1PublicKey.fromHex(hexKey));
+      }
+    }
+    final int validatorsCount =
+        cmd.getOptionValue("v") != null ? Integer.parseInt(cmd.getOptionValue("v")) : 0;
+    var generatedValidatorKeys = PrivateKeys.numeric(6).limit(validatorsCount).toList();
+    generatedValidatorKeys.stream().map(ECKeyPair::getPublicKey).forEach(validatorKeys::add);
+    IntStream.range(0, generatedValidatorKeys.size())
+        .forEach(
+            i -> {
+              System.out.format(
+                  "export RADIXDLT_VALIDATOR_%s_PRIVKEY=%s%n",
+                  i, Bytes.toBase64String(generatedValidatorKeys.get(i).getPrivateKey()));
+              System.out.format(
+                  "export RADIXDLT_VALIDATOR_%s_PUBKEY=%s%n",
+                  i,
+                  Addressing.ofNetwork(Network.LOCALNET)
+                      .encodeNodeAddress(generatedValidatorKeys.get(i).getPublicKey()));
+            });
+
+    final var genesisTxnBuilder = new StringBuilder();
+    for (var key : validatorKeys) {
+      genesisTxnBuilder.append(Hex.toHexString(key.getCompressedBytes()));
+    }
+
+    final var genesisTxn = genesisTxnBuilder.toString();
+
+    if (validatorsCount > 0) {
+      System.out.format("export RADIXDLT_GENESIS_TXN=%s%n", genesisTxn);
+    } else {
+      try (var writer = new BufferedWriter(new FileWriter("genesis.json"))) {
+
+        writer.write(new JSONObject().put("genesis", genesisTxn).toString());
+      }
+    }
   }
 
-  @Provides
-  @Singleton
-  private BFTConfiguration initialConfig(
-      BFTValidatorSet validatorSet, VertexStoreState vertexStoreState) {
-    var proposerElection = new WeightedRotatingLeaders(validatorSet);
-    return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
-  }
-
-  @Provides
-  private BFTValidatorSet initialValidatorSet(@LastEpochProof LedgerProof lastEpochProof) {
-    return lastEpochProof
-        .getNextValidatorSet()
-        .orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
+  private static void usage(Options options) {
+    HelpFormatter formatter = new HelpFormatter();
+    formatter.printHelp(GenerateUniverses.class.getSimpleName(), options, true);
   }
 }

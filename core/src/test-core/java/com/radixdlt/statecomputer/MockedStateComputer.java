@@ -137,7 +137,7 @@ public final class MockedStateComputer implements StateComputer {
                 nextEpoch -> {
                   LedgerProof header = txnsAndProof.getProof();
                   VertexWithHash genesisVertex =
-                      Vertex.createGenesis(header.getHeader()).withId(hasher);
+                      Vertex.createInitialEpochVertex(header.getHeader()).withId(hasher);
                   LedgerHeader nextLedgerHeader =
                       LedgerHeader.create(
                           nextEpoch.getEpoch(),
@@ -146,7 +146,7 @@ public final class MockedStateComputer implements StateComputer {
                           header.consensusParentRoundTimestamp(),
                           header.proposerTimestamp());
                   QuorumCertificate genesisQC =
-                      QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+                      QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
                   final var initialState =
                       VertexStoreState.create(
                           HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);

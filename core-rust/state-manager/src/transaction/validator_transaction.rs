@@ -1,3 +1,5 @@
+use radix_engine::types::*;
+
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto_encode;
@@ -6,13 +8,12 @@ use radix_engine_interface::model::{
     EpochManagerNextRoundInvocation, NativeInvocation,
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
-use sbor::*;
 use std::collections::BTreeSet;
 use transaction::model::{
     AuthZoneParams, Executable, ExecutionContext, FeePayment, Instruction, InstructionList,
 };
 
-#[derive(Debug, Copy, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub enum ValidatorTransaction {
     RoundUpdate {
         proposer_timestamp_ms: i64,
@@ -41,7 +42,6 @@ impl ValidatorTransaction {
                         current_time_ms: *timestamp_ms,
                     },
                 ));
-
                 let update_round = NativeInvocation::EpochManager(
                     EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
                         receiver: EPOCH_MANAGER,
@@ -60,7 +60,7 @@ impl ValidatorTransaction {
     }
 }
 
-#[derive(Debug, Clone, TypeId, PartialEq, Eq)]
+#[derive(Debug, Clone, Categorize, PartialEq, Eq)]
 pub struct PreparedValidatorTransaction {
     hash: Hash,
     instructions: Vec<Instruction>,

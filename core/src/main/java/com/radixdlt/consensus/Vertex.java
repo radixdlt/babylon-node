@@ -167,7 +167,7 @@ public final class Vertex {
         proposerTimestamp);
   }
 
-  public static Vertex createGenesis(LedgerHeader ledgerHeader) {
+  public static Vertex createInitialEpochVertex(LedgerHeader ledgerHeader) {
     BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerHeader);
     final VoteData voteData = new VoteData(header, header, header);
     final QuorumCertificate parentQC =

@@ -3,7 +3,7 @@ name: Deploy
 on:
   push:
     branches:
-      - main
+      - develop
 
 jobs:
   cancel_running_workflows:
@@ -26,7 +26,10 @@ jobs:
           jenkins_token: ${{ secrets.BABYLON_NODE_JENKINS_API_TOKEN }}
           job_name: "v2-jobs/job/babylon-deploy-main"
           job_params: |
-            {"NETWORK_NAME":"gilganet"}
+            {
+              "NETWORK_NAME":"gilganet",
+              "FEATURE_BRANCH_NAME":"develop"
+            }
           job_timeout: "3600"
   smoke_test:
     needs:

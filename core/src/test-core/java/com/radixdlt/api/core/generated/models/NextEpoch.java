@@ -22,87 +22,93 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstateAllOf;
-import com.radixdlt.api.core.generated.models.EntityReference;
-import com.radixdlt.api.core.generated.models.SubstateBase;
-import com.radixdlt.api.core.generated.models.SubstateType;
+import com.radixdlt.api.core.generated.models.EcdsaSecp256k1PublicKey;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * ComponentRoyaltyAccumulatorSubstate
+ * NextEpoch
  */
 @JsonPropertyOrder({
-  ComponentRoyaltyAccumulatorSubstate.JSON_PROPERTY_SUBSTATE_TYPE,
-  ComponentRoyaltyAccumulatorSubstate.JSON_PROPERTY_VAULT_ENTITY
+  NextEpoch.JSON_PROPERTY_EPOCH,
+  NextEpoch.JSON_PROPERTY_VALIDATORS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class ComponentRoyaltyAccumulatorSubstate {
-  public static final String JSON_PROPERTY_SUBSTATE_TYPE = "substate_type";
-  private SubstateType substateType;
+public class NextEpoch {
+  public static final String JSON_PROPERTY_EPOCH = "epoch";
+  private Long epoch;
 
-  public static final String JSON_PROPERTY_VAULT_ENTITY = "vault_entity";
-  private EntityReference vaultEntity;
+  public static final String JSON_PROPERTY_VALIDATORS = "validators";
+  private List<EcdsaSecp256k1PublicKey> validators = new ArrayList<>();
 
-  public ComponentRoyaltyAccumulatorSubstate() { 
+  public NextEpoch() { 
   }
 
-  public ComponentRoyaltyAccumulatorSubstate substateType(SubstateType substateType) {
-    this.substateType = substateType;
+  public NextEpoch epoch(Long epoch) {
+    this.epoch = epoch;
     return this;
   }
 
    /**
-   * Get substateType
-   * @return substateType
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;
+   * minimum: 0
+   * maximum: 10000000000
+   * @return epoch
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SUBSTATE_TYPE)
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`")
+  @JsonProperty(JSON_PROPERTY_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public SubstateType getSubstateType() {
-    return substateType;
+  public Long getEpoch() {
+    return epoch;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SUBSTATE_TYPE)
+  @JsonProperty(JSON_PROPERTY_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSubstateType(SubstateType substateType) {
-    this.substateType = substateType;
+  public void setEpoch(Long epoch) {
+    this.epoch = epoch;
   }
 
 
-  public ComponentRoyaltyAccumulatorSubstate vaultEntity(EntityReference vaultEntity) {
-    this.vaultEntity = vaultEntity;
+  public NextEpoch validators(List<EcdsaSecp256k1PublicKey> validators) {
+    this.validators = validators;
+    return this;
+  }
+
+  public NextEpoch addValidatorsItem(EcdsaSecp256k1PublicKey validatorsItem) {
+    this.validators.add(validatorsItem);
     return this;
   }
 
    /**
-   * Get vaultEntity
-   * @return vaultEntity
+   * Get validators
+   * @return validators
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
+  @JsonProperty(JSON_PROPERTY_VALIDATORS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityReference getVaultEntity() {
-    return vaultEntity;
+  public List<EcdsaSecp256k1PublicKey> getValidators() {
+    return validators;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
+  @JsonProperty(JSON_PROPERTY_VALIDATORS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setVaultEntity(EntityReference vaultEntity) {
-    this.vaultEntity = vaultEntity;
+  public void setValidators(List<EcdsaSecp256k1PublicKey> validators) {
+    this.validators = validators;
   }
 
 
   /**
-   * Return true if this ComponentRoyaltyAccumulatorSubstate object is equal to o.
+   * Return true if this NextEpoch object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -112,22 +118,22 @@ public class ComponentRoyaltyAccumulatorSubstate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ComponentRoyaltyAccumulatorSubstate componentRoyaltyAccumulatorSubstate = (ComponentRoyaltyAccumulatorSubstate) o;
-    return Objects.equals(this.substateType, componentRoyaltyAccumulatorSubstate.substateType) &&
-        Objects.equals(this.vaultEntity, componentRoyaltyAccumulatorSubstate.vaultEntity);
+    NextEpoch nextEpoch = (NextEpoch) o;
+    return Objects.equals(this.epoch, nextEpoch.epoch) &&
+        Objects.equals(this.validators, nextEpoch.validators);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(substateType, vaultEntity);
+    return Objects.hash(epoch, validators);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ComponentRoyaltyAccumulatorSubstate {\n");
-    sb.append("    substateType: ").append(toIndentedString(substateType)).append("\n");
-    sb.append("    vaultEntity: ").append(toIndentedString(vaultEntity)).append("\n");
+    sb.append("class NextEpoch {\n");
+    sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
+    sb.append("    validators: ").append(toIndentedString(validators)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -83,20 +83,6 @@ import java.util.*;
 import org.junit.Test;
 
 public class SborTest {
-  @Test
-  public void unitCanBeEncodedAndDecoded() {
-
-    var r0 = BasicDefaultSbor.encode(Unit.unit(), Unit.class);
-
-    assertEquals(3, r0.length);
-    assertEquals(0x5b, r0[0]); // Prefix byte
-    assertEquals(0x00, r0[1]); // Type == 0x00 - Unit
-    assertEquals(0x00, r0[2]); // Followed by a single 0x00 byte
-
-    var r1 = BasicDefaultSbor.decode(r0, Unit.class);
-
-    assertEquals(Unit.unit(), r1);
-  }
 
   @Test
   public void booleanCanBeEncodedAndDecoded() {
@@ -434,7 +420,7 @@ public class SborTest {
     assertArrayEquals(
         new byte[] {
           0x5b, // Prefix Byte
-          0x11, // Type == 0x11 - Enum
+          0x22, // Type == 0x22 - Enum
           4, // Variant Name Length 4
           'S', 'o', 'm', 'e', // Some
           1, // Enum variant length
@@ -458,7 +444,7 @@ public class SborTest {
     assertArrayEquals(
         new byte[] {
           0x5b, // Prefix Byte
-          0x11, // Type == 0x11 - Enum
+          0x22, // Type == 0x22 - Enum
           4, // Variant Name Length 4
           'N', 'o', 'n', 'e', // None
           0, // Enum variant length
@@ -479,7 +465,7 @@ public class SborTest {
 
     assertEquals(18, successEncoded.length);
     assertEquals(0x5b, successEncoded[0]); // Prefix Byte
-    assertEquals(0x11, successEncoded[1]); // Type == 0x11 - Enum
+    assertEquals(0x22, successEncoded[1]); // Type == 0x22 - Enum
     assertEquals(2, successEncoded[2]); // "Ok" length
     assertEquals('O', successEncoded[3]);
     assertEquals('k', successEncoded[4]);
@@ -493,7 +479,7 @@ public class SborTest {
     var errorEncoded = BasicDefaultSbor.encode(errorResult, resultTypeLiteral);
     assertEquals(16, errorEncoded.length);
     assertEquals(0x5b, errorEncoded[0]); // Prefix Byte
-    assertEquals(0x11, errorEncoded[1]); // Type == 0x11 - Enum
+    assertEquals(0x22, errorEncoded[1]); // Type == 0x22 - Enum
     assertEquals(3, errorEncoded[2]); // "Err" length
     assertEquals('E', errorEncoded[3]);
     assertEquals('r', errorEncoded[4]);
@@ -515,7 +501,7 @@ public class SborTest {
     // NB - Left is "not-right", AKA failure
     assertEquals(19, leftEncoded.length);
     assertEquals(0x5b, leftEncoded[0]); // Prefix Byte
-    assertEquals(0x11, leftEncoded[1]); // Type == 0x11 - Enum
+    assertEquals(0x22, leftEncoded[1]); // Type == 0x22 - Enum
     assertEquals(3, leftEncoded[2]); // "Err" length
     assertEquals('E', leftEncoded[3]);
     assertEquals('r', leftEncoded[4]);
@@ -532,7 +518,7 @@ public class SborTest {
     // NB - Right is "right", AKA success
     assertEquals(15, rightEncoded.length);
     assertEquals(0x5b, rightEncoded[0]); // Prefix Byte
-    assertEquals(0x11, rightEncoded[1]); // Type == 0x11 - Enum
+    assertEquals(0x22, rightEncoded[1]); // Type == 0x22 - Enum
     assertEquals(2, rightEncoded[2]); // "Ok" length
     assertEquals('O', rightEncoded[3]);
     assertEquals('k', rightEncoded[4]);
@@ -589,7 +575,7 @@ public class SborTest {
     assertArrayEquals(
         new byte[] {
           0x5b, // Prefix Byte
-          17, // Enum Type
+          34, // Enum Type
           1, // String length 1
           65, // "A"
           2, // Number of fields
@@ -608,11 +594,11 @@ public class SborTest {
     assertArrayEquals(
         new byte[] {
           0x5b, // Prefix Byte
-          17, // Enum Type
+          34, // Enum Type
           1, // String length 1
           66, // "B"
           1, // number of fields
-          0x11, // Field 1 - Enum Type
+          0x22, // Field 1 - Enum Type
           3, // Variant name length
           'E',
           'r',

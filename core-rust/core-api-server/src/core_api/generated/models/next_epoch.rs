@@ -12,18 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ComponentRoyaltyAccumulatorSubstate {
-    #[serde(rename = "substate_type")]
-    pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "vault_entity")]
-    pub vault_entity: Box<crate::core_api::generated::models::EntityReference>,
+pub struct NextEpoch {
+    /// An integer between `0` and `10^10`
+    #[serde(rename = "epoch")]
+    pub epoch: i64,
+    #[serde(rename = "validators")]
+    pub validators: Vec<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
 }
 
-impl ComponentRoyaltyAccumulatorSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, vault_entity: crate::core_api::generated::models::EntityReference) -> ComponentRoyaltyAccumulatorSubstate {
-        ComponentRoyaltyAccumulatorSubstate {
-            substate_type,
-            vault_entity: Box::new(vault_entity),
+impl NextEpoch {
+    pub fn new(epoch: i64, validators: Vec<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>) -> NextEpoch {
+        NextEpoch {
+            epoch,
+            validators,
         }
     }
 }

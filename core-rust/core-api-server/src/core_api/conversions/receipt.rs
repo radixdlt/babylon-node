@@ -5,6 +5,8 @@ use radix_engine::{
     ledger::OutputValue,
     types::{hash, scrypto_encode, Bech32Encoder, Decimal, GlobalAddress, RENodeId, SubstateId},
 };
+use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use std::collections::HashSet;
 
 use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
 
@@ -76,11 +78,18 @@ pub fn to_api_receipt(
         None => None,
     };
 
+    let next_epoch = if let Some(next_epoch) = receipt.next_epoch {
+        Some(Box::new(to_api_next_epoch(next_epoch)?))
+    } else {
+        None
+    };
+
     Ok(models::TransactionReceipt {
         status,
         fee_summary: Box::new(api_fee_summary),
         state_updates: Box::new(api_state_updates),
         output: api_output,
+        next_epoch,
         error_message,
     })
 }
@@ -121,6 +130,24 @@ pub fn to_api_deleted_substate(
         substate_data_hash: to_hex(deleted_substate.substate_hash),
         version: to_api_substate_version(deleted_substate.version)?,
     })
+}
+
+#[tracing::instrument(skip_all)]
+pub fn to_api_next_epoch(
+    next_epoch: (HashSet<EcdsaSecp256k1PublicKey>, u64),
+) -> Result<models::NextEpoch, MappingError> {
+    let mut validators = Vec::new();
+    for key in next_epoch.0 {
+        let api_key = to_api_ecdsa_secp256k1_public_key(&key);
+        validators.push(api_key);
+    }
+
+    let next_epoch = models::NextEpoch {
+        epoch: to_api_epoch(next_epoch.1)?,
+        validators,
+    };
+
+    Ok(next_epoch)
 }
 
 #[tracing::instrument(skip_all)]

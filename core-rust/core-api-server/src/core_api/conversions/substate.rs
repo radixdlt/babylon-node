@@ -17,10 +17,9 @@ use radix_engine::types::{
     Bech32Encoder, Decimal, GlobalOffset, KeyValueStoreOffset, NonFungibleId, NonFungibleIdType,
     NonFungibleStoreOffset, ProofRule, RENodeId, ResourceAddress, ResourceType, RoyaltyConfig,
     SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
-    SubstateId, SubstateOffset, RADIX_TOKEN,
+    SubstateId, SubstateOffset,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use utils::ContextualDisplay;
 
 use super::MappingError;
 
@@ -51,7 +50,7 @@ pub fn to_api_substate(
             to_api_component_royalty_config_substate(bech32_encoder, substate)?
         }
         PersistedSubstate::ComponentRoyaltyAccumulator(substate) => {
-            to_api_component_royalty_accumulator_substate(bech32_encoder, substate)?
+            to_api_component_royalty_accumulator_substate(substate)?
         }
         PersistedSubstate::ResourceManager(resource_manager) => {
             to_api_resource_manager_substate(bech32_encoder, resource_manager)?
@@ -63,7 +62,7 @@ pub fn to_api_substate(
             to_api_package_royalty_config_substate(bech32_encoder, substate)?
         }
         PersistedSubstate::PackageRoyaltyAccumulator(substate) => {
-            to_api_package_royalty_accumulator_substate(bech32_encoder, substate)?
+            to_api_package_royalty_accumulator_substate(substate)?
         }
         PersistedSubstate::EpochManager(epoch_manager) => {
             to_api_epoch_manager_substate(bech32_encoder, epoch_manager)?
@@ -504,7 +503,7 @@ pub fn to_api_non_fungible_id(non_fungible_id: &NonFungibleId) -> models::NonFun
     models::NonFungibleId {
         simple_rep: non_fungible_id.to_simple_string(),
         id_type: to_api_fungible_id_type(&non_fungible_id.id_type()),
-        sbor_hex: to_hex(non_fungible_id.to_vec()),
+        sbor_hex: to_hex(scrypto_encode(non_fungible_id).unwrap()),
     }
 }
 
@@ -553,8 +552,8 @@ fn scrypto_value_to_api_data_struct(
     Ok(models::DataStruct {
         struct_data: Box::new(scrypto_value_to_api_sbor_data(
             bech32_encoder,
-            &scrypto_value.raw,
-            &scrypto_value.dom,
+            scrypto_value.as_slice(),
+            scrypto_value.as_value(),
         )?),
         owned_entities: entities.owned_entities,
         referenced_entities: entities.referenced_entities,
@@ -570,19 +569,22 @@ fn extract_entities(
     bech32_encoder: &Bech32Encoder,
     struct_scrypto_value: &IndexedScryptoValue,
 ) -> Result<Entities, MappingError> {
-    if !struct_scrypto_value.bucket_ids.is_empty() {
+    if !struct_scrypto_value.buckets().is_empty() {
         return Err(MappingError::InvalidComponentStateEntities {
             message: "Bucket/s in state".to_owned(),
         });
     }
-    if !struct_scrypto_value.proof_ids.is_empty() {
+    if !struct_scrypto_value.proofs().is_empty() {
         return Err(MappingError::InvalidComponentStateEntities {
             message: "Proof/s in state".to_owned(),
         });
     }
 
     let owned_entities = struct_scrypto_value
-        .node_ids()
+        .owned_node_ids()
+        .map_err(|_| MappingError::InvalidComponentStateEntities {
+            message: "Could not read owned nodes".to_owned(),
+        })?
         .into_iter()
         .map(|node_id| -> Result<models::EntityReference, MappingError> {
             Ok(MappedEntityId::try_from(node_id)?.into())
@@ -632,37 +634,14 @@ pub fn to_api_royalty_rule(royalty_rule: &u32) -> i64 {
 }
 
 pub fn to_api_component_royalty_accumulator_substate(
-    bech32_encoder: &Bech32Encoder,
     substate: &ComponentRoyaltyAccumulatorSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
     let ComponentRoyaltyAccumulatorSubstate { royalty } = substate;
 
     Ok(models::Substate::ComponentRoyaltyAccumulatorSubstate {
-        xrd_amount: to_api_xrd_amount(bech32_encoder, royalty)?,
+        vault_entity: Box::new(to_entity_reference(RENodeId::Vault(royalty.vault_id()))?),
     })
-}
-
-pub fn to_api_xrd_amount(
-    bech32_encoder: &Bech32Encoder,
-    resource: &Resource,
-) -> Result<String, MappingError> {
-    let Resource::Fungible {
-        resource_address,
-        divisibility: _,
-        amount,
-    } = resource else {
-        return Err(MappingError::NotXrdError { message: "Resource was not fungible".to_string() });
-    };
-    if *resource_address != RADIX_TOKEN {
-        return Err(MappingError::NotXrdError {
-            message: format!(
-                "Resource address was {}",
-                resource_address.display(bech32_encoder)
-            ),
-        });
-    }
-    Ok(to_api_decimal(amount))
 }
 
 pub fn to_api_package_info_substate(
@@ -716,14 +695,13 @@ pub fn to_api_package_royalty_config_substate(
 }
 
 pub fn to_api_package_royalty_accumulator_substate(
-    bech32_encoder: &Bech32Encoder,
     substate: &PackageRoyaltyAccumulatorSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
     let PackageRoyaltyAccumulatorSubstate { royalty } = substate;
 
     Ok(models::Substate::PackageRoyaltyAccumulatorSubstate {
-        xrd_amount: to_api_xrd_amount(bech32_encoder, royalty)?,
+        vault_entity: Box::new(to_entity_reference(RENodeId::Vault(royalty.vault_id()))?),
     })
 }
 
@@ -731,8 +709,6 @@ pub fn to_api_validator_set_substate(
     bech32_encoder: &Bech32Encoder,
     substate: &ValidatorSetSubstate,
 ) -> Result<models::Substate, MappingError> {
-    // Use compiler to unpack to ensure we map all fields
-    // TODO: convert validator_set
     let ValidatorSetSubstate {
         validator_set,
         epoch,
@@ -771,8 +747,6 @@ pub fn to_api_epoch_manager_substate(
     bech32_encoder: &Bech32Encoder,
     substate: &EpochManagerSubstate,
 ) -> Result<models::Substate, MappingError> {
-    // Use compiler to unpack to ensure we map all fields
-    // TODO: convert validator_set
     let EpochManagerSubstate {
         address,
         epoch,

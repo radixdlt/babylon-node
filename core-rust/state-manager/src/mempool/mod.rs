@@ -88,7 +88,7 @@ impl ToString for MempoolAddError {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode, Clone)]
+#[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct MempoolConfig {
     pub max_size: u32,
 }

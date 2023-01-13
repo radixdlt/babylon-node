@@ -113,7 +113,6 @@ fn handle_v0_state_component_internal(
             &component_royalty_config,
         )?),
         royalty_accumulator: Some(to_api_component_royalty_accumulator_substate(
-            &bech32_encoder,
             &component_royalty_accumulator,
         )?),
         access_rules: Some(to_api_access_rules_chain_substate(

@@ -234,6 +234,8 @@ pub mod network_status_response;
 pub use self::network_status_response::NetworkStatusResponse;
 pub mod new_substate_version;
 pub use self::new_substate_version::NewSubstateVersion;
+pub mod next_epoch;
+pub use self::next_epoch::NextEpoch;
 pub mod non_fungible_data;
 pub use self::non_fungible_data::NonFungibleData;
 pub mod non_fungible_dynamic_resource_descriptor;

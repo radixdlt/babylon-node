@@ -20,6 +20,8 @@ pub struct TransactionReceipt {
     pub fee_summary: Box<crate::core_api::generated::models::FeeSummary>,
     #[serde(rename = "state_updates")]
     pub state_updates: Box<crate::core_api::generated::models::StateUpdates>,
+    #[serde(rename = "next_epoch", skip_serializing_if = "Option::is_none")]
+    pub next_epoch: Option<Box<crate::core_api::generated::models::NextEpoch>>,
     /// The manifest line-by-line engine return data (only present if status is Succeeded)
     #[serde(rename = "output", skip_serializing_if = "Option::is_none")]
     pub output: Option<Vec<crate::core_api::generated::models::SborData>>,
@@ -35,6 +37,7 @@ impl TransactionReceipt {
             status,
             fee_summary: Box::new(fee_summary),
             state_updates: Box::new(state_updates),
+            next_epoch: None,
             output: None,
             error_message: None,
         }

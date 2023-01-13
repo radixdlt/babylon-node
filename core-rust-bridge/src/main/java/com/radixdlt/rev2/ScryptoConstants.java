@@ -67,7 +67,7 @@ package com.radixdlt.rev2;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Unit;
+import com.radixdlt.lang.Tuple;
 import com.radixdlt.sbor.NativeCalls;
 
 public final class ScryptoConstants {
@@ -78,24 +78,24 @@ public final class ScryptoConstants {
 
   public static final ComponentAddress FAUCET_COMPONENT_ADDRESS =
       NativeCalls.StaticFunc1.with(
-              new TypeToken<Unit>() {},
+              new TypeToken<Tuple.Tuple0>() {},
               new TypeToken<Result<ComponentAddress, StateManagerRuntimeError>>() {},
               ScryptoConstants::getFaucetComponentAddress)
-          .call(Unit.unit());
+          .call(Tuple.Tuple0.of());
 
   public static final PackageAddress ACCOUNT_PACKAGE_ADDRESS =
       NativeCalls.StaticFunc1.with(
-              new TypeToken<Unit>() {},
+              new TypeToken<Tuple.Tuple0>() {},
               new TypeToken<Result<PackageAddress, StateManagerRuntimeError>>() {},
               ScryptoConstants::getAccountPackageAddress)
-          .call(Unit.unit());
+          .call(Tuple.Tuple0.of());
 
   public static final ResourceAddress XRD_RESOURCE_ADDRESS =
       NativeCalls.StaticFunc1.with(
-              new TypeToken<Unit>() {},
+              new TypeToken<Tuple.Tuple0>() {},
               new TypeToken<Result<ResourceAddress, StateManagerRuntimeError>>() {},
               ScryptoConstants::getXrdResourceAddress)
-          .call(Unit.unit());
+          .call(Tuple.Tuple0.of());
 
   private static native byte[] getFaucetComponentAddress(byte[] unused);
 

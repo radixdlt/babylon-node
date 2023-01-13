@@ -80,6 +80,8 @@ import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -90,11 +92,13 @@ public class SyncUpPreprocessorTest {
 
   private final BFTEventProcessor forwardTo = mock(BFTEventProcessor.class);
   private final BFTSyncer bftSyncer = mock(BFTSyncer.class);
+  private final Metrics metrics = new MetricsInitializer().initialize();
   private final RoundUpdate initialRoundUpdate = mock(RoundUpdate.class);
 
   @Before
   public void setUp() {
-    this.syncUpPreprocessor = new SyncUpPreprocessor(forwardTo, bftSyncer, initialRoundUpdate);
+    this.syncUpPreprocessor =
+        new SyncUpPreprocessor(forwardTo, bftSyncer, metrics, initialRoundUpdate);
   }
 
   @Test
