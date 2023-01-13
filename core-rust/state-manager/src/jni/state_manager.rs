@@ -64,6 +64,7 @@
 
 use std::sync::{Arc, MutexGuard};
 
+use crate::jni::java_structure::JavaStructure;
 use crate::jni::utils::*;
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::mempool::MempoolConfig;
@@ -75,7 +76,6 @@ use jni::JNIEnv;
 use parking_lot::RwLock;
 use radix_engine_interface::node::NetworkDefinition;
 use radix_engine_interface::*;
-use crate::jni::java_structure::JavaStructure;
 
 const POINTER_JNI_FIELD_NAME: &str = "rustStateManagerPointer";
 

@@ -73,8 +73,7 @@ use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::types::{
-    scrypto_decode, scrypto_encode, PublicKey, Signature,
-    SignatureWithPublicKey,
+    scrypto_decode, scrypto_encode, PublicKey, Signature, SignatureWithPublicKey,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::node::NetworkDefinition;

@@ -119,7 +119,18 @@ impl fmt::Debug for AccumulatorHash {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    PartialEq,
+    Eq,
+    Hash,
+    Clone,
+    Copy,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub struct LedgerPayloadHash([u8; Self::LENGTH]);
 
 impl LedgerPayloadHash {
@@ -182,7 +193,18 @@ impl HasLedgerPayloadHash for NotarizedTransaction {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    PartialEq,
+    Eq,
+    Hash,
+    Clone,
+    Copy,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub struct UserPayloadHash([u8; Self::LENGTH]);
 
 impl UserPayloadHash {
@@ -231,7 +253,18 @@ impl HasUserPayloadHash for NotarizedTransaction {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    PartialEq,
+    Eq,
+    Hash,
+    Clone,
+    Copy,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub struct SignaturesHash([u8; Self::LENGTH]);
 
 impl SignaturesHash {

@@ -4,9 +4,8 @@ use crate::core_api::*;
 
 use models::{EntityType, SubstateKeyType, SubstateType};
 use radix_engine::types::{
-    ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset,
-    NonFungibleStoreOffset, PackageOffset, ResourceManagerOffset, SubstateOffset, SystemAddress,
-    VaultOffset,
+    ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, NonFungibleStoreOffset,
+    PackageOffset, ResourceManagerOffset, SubstateOffset, SystemAddress, VaultOffset,
 };
 use radix_engine::{
     model::GlobalAddressSubstate,

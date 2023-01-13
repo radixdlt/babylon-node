@@ -85,12 +85,12 @@ public record ResultCodec<T, E>(Codec<T> okCodec, Codec<E> errCodec)
   public void encodeWithoutTypeId(EncoderApi encoder, Result<T, E> result) {
     result.apply(
         value -> {
-          encoder.writeString(ResultVariants.OK);
+          encoder.writeByte(ResultVariants.OK);
           encoder.writeSize(1);
           encoder.encodeWithTypeId(value, okCodec);
         },
         error -> {
-          encoder.writeString(ResultVariants.ERR);
+          encoder.writeByte(ResultVariants.ERR);
           encoder.writeSize(1);
           encoder.encodeWithTypeId(error, errCodec);
         });
@@ -98,9 +98,9 @@ public record ResultCodec<T, E>(Codec<T> okCodec, Codec<E> errCodec)
 
   @Override
   public Result<T, E> decodeWithoutTypeId(DecoderApi decoder) {
-    var variantName = decoder.readString();
+    var variantByte = decoder.readByte();
 
-    return switch (variantName) {
+    return switch (variantByte) {
       case ResultVariants.OK -> {
         decoder.expectSize(1);
         yield Result.success(decoder.decodeWithTypeId(okCodec));
@@ -109,8 +109,9 @@ public record ResultCodec<T, E>(Codec<T> okCodec, Codec<E> errCodec)
         decoder.expectSize(1);
         yield Result.error(decoder.decodeWithTypeId(errCodec));
       }
-      default -> throw new SborDecodeException(
-          String.format("Unknown result variant %s", variantName));
+      default -> {
+        throw new SborDecodeException(String.format("Unknown result variant %s", variantByte));
+      }
     };
   }
 
