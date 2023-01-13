@@ -107,7 +107,7 @@ public final class RecoveryAfterTimeoutQuorumTest {
     final var databaseConfig = REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath());
     final var builder =
         DeterministicTest.builder()
-            .numNodes(NUM_VALIDATORS, 0)
+            .numPhysicalNodes(NUM_VALIDATORS)
             .messageSelector(randomSelector(new Random(12345)))
             .messageMutator(dropProposalForHalfNodesAtRound(TIMEOUT_QUORUM_ROUND))
             .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety());
