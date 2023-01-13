@@ -79,6 +79,7 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.RustStateComputer;
@@ -107,7 +108,8 @@ public final class RustMempoolTest {
   }
 
   private static void initStateComputer(StateManager stateManager) {
-    var stateComputer = new RustStateComputer(stateManager);
+    final var metrics = new MetricsInitializer().initialize();
+    var stateComputer = new RustStateComputer(metrics, stateManager);
     var accumulator =
         new SimpleLedgerAccumulatorAndVerifier(
             new Sha256Hasher(DefaultSerialization.getInstance()));
@@ -134,10 +136,11 @@ public final class RustMempoolTest {
             Option.some(new RustMempoolConfig(mempoolSize)),
             REv2DatabaseConfig.inMemory(),
             LoggingConfig.getDefault());
+    final var metrics = new MetricsInitializer().initialize();
 
     try (var stateManager = StateManager.createAndInitialize(config)) {
       initStateComputer(stateManager);
-      var rustMempool = new RustMempool(stateManager);
+      var rustMempool = new RustMempool(metrics, stateManager);
       var transaction1 = constructValidRawTransaction(0, 0);
       var transaction2 = constructValidRawTransaction(0, 1);
       var transaction3 = constructValidRawTransaction(0, 2);
@@ -195,9 +198,11 @@ public final class RustMempoolTest {
             Option.some(new RustMempoolConfig(mempoolSize)),
             REv2DatabaseConfig.inMemory(),
             LoggingConfig.getDefault());
+    final var metrics = new MetricsInitializer().initialize();
+
     try (var stateManager = StateManager.createAndInitialize(config)) {
       initStateComputer(stateManager);
-      var rustMempool = new RustMempool(stateManager);
+      var rustMempool = new RustMempool(metrics, stateManager);
       var transaction1 = constructValidRawTransaction(0, 0);
       var transaction2 = constructValidRawTransaction(0, 1);
       var transaction3 = constructValidRawTransaction(0, 2);
@@ -293,10 +298,12 @@ public final class RustMempoolTest {
             Option.some(new RustMempoolConfig(mempoolSize)),
             REv2DatabaseConfig.inMemory(),
             LoggingConfig.getDefault());
+    final var metrics = new MetricsInitializer().initialize();
+
     try (var stateManager = StateManager.createAndInitialize(config)) {
       initStateComputer(stateManager);
 
-      var rustMempool = new RustMempool(stateManager);
+      var rustMempool = new RustMempool(metrics, stateManager);
       var transaction1 = constructValidRawTransaction(0, 0);
       var transaction2 = constructValidRawTransaction(0, 1);
       var transaction3 = constructValidRawTransaction(0, 2);

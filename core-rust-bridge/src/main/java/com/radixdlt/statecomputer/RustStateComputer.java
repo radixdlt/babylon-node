@@ -68,6 +68,7 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.mempool.*;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
@@ -85,10 +86,10 @@ public class RustStateComputer {
   private final REv2TransactionAndProofStore transactionStore;
   private final VertexStoreRecovery vertexStoreRecovery;
 
-  public RustStateComputer(StateManager stateManager) {
+  public RustStateComputer(Metrics metrics, StateManager stateManager) {
     Objects.requireNonNull(stateManager);
 
-    this.mempool = new RustMempool(stateManager);
+    this.mempool = new RustMempool(metrics, stateManager);
     this.transactionStore = new REv2TransactionAndProofStore(stateManager);
     this.vertexStoreRecovery = new VertexStoreRecovery(stateManager);
 
