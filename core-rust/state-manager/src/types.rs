@@ -64,9 +64,10 @@
 
 use crate::transaction::LedgerTransaction;
 use radix_engine::types::{
-    scrypto, scrypto_encode, sha256_twice, Categorize, Decode, Encode, Hash, PublicKey,
+    scrypto_encode, sha256_twice, Categorize, Decode, Encode, Hash, PublicKey,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::*;
 use std::collections::HashSet;
 use std::fmt;
 use transaction::model::{
@@ -118,8 +119,7 @@ impl fmt::Debug for AccumulatorHash {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LedgerPayloadHash([u8; Self::LENGTH]);
 
 impl LedgerPayloadHash {
@@ -182,8 +182,7 @@ impl HasLedgerPayloadHash for NotarizedTransaction {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct UserPayloadHash([u8; Self::LENGTH]);
 
 impl UserPayloadHash {
@@ -232,8 +231,7 @@ impl HasUserPayloadHash for NotarizedTransaction {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct SignaturesHash([u8; Self::LENGTH]);
 
 impl SignaturesHash {
@@ -288,8 +286,7 @@ impl HasSignaturesHash for NotarizedTransaction {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct IntentHash([u8; Self::LENGTH]);
 
 impl IntentHash {
@@ -351,8 +348,7 @@ impl HasIntentHash for NotarizedTransaction {
 }
 
 /// An uncommitted user transaction, in eg the mempool
-#[derive(Debug, PartialEq, Eq, Clone)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PendingTransaction {
     pub payload: NotarizedTransaction,
     pub payload_hash: UserPayloadHash,
@@ -370,8 +366,7 @@ impl From<NotarizedTransaction> for PendingTransaction {
     }
 }
 
-#[derive(Debug)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PreviewRequest {
     pub manifest: TransactionManifest,
     pub start_epoch_inclusive: u64,
@@ -385,8 +380,7 @@ pub struct PreviewRequest {
     pub flags: PreviewFlags,
 }
 
-#[derive(Debug)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum CommitError {
     MissingEpochProof,
 }
@@ -408,16 +402,14 @@ pub struct PrepareRequest {
     pub proposer_timestamp_ms: i64,
 }
 
-#[derive(Debug)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareResult {
     pub committed: Vec<Vec<u8>>,
     pub rejected: Vec<(Vec<u8>, String)>,
     pub next_epoch: Option<NextEpoch>,
 }
 
-#[derive(Debug)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct NextEpoch {
     pub validator_set: HashSet<EcdsaSecp256k1PublicKey>,
     pub epoch: u64,
@@ -428,8 +420,7 @@ pub struct PrepareGenesisRequest {
     pub genesis: Vec<u8>,
 }
 
-#[derive(Debug)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareGenesisResult {
     pub validator_set: Option<HashSet<EcdsaSecp256k1PublicKey>>,
 }

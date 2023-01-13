@@ -4,7 +4,7 @@ use crate::core_api::*;
 
 use models::{EntityType, SubstateKeyType, SubstateType};
 use radix_engine::types::{
-    ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, NonFungibleIdType,
+    ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset,
     NonFungibleStoreOffset, PackageOffset, ResourceManagerOffset, SubstateOffset, SystemAddress,
     VaultOffset,
 };
@@ -16,6 +16,7 @@ use radix_engine::{
         RENodeId, ResourceAddress, SubstateId,
     },
 };
+use radix_engine_interface::model::NonFungibleIdTypeId;
 
 pub fn to_api_global_entity_assignment(
     bech32_encoder: &Bech32Encoder,
@@ -451,7 +452,7 @@ pub fn extract_resource_address(
 }
 
 pub fn extract_non_fungible_id_from_simple_representation(
-    id_type: NonFungibleIdType,
+    id_type: NonFungibleIdTypeId,
     simple_rep: &str,
 ) -> Result<NonFungibleId, ExtractionError> {
     Ok(NonFungibleId::try_from_simple_string(id_type, simple_rep)?)
