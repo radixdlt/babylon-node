@@ -196,6 +196,11 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   @Override
   public Optional<ExecutedVertex> prepare(
       LinkedList<ExecutedVertex> previous, VertexWithHash vertexWithHash) {
+    return metrics.ledger().prepare().measure(() -> this.prepareInternal(previous, vertexWithHash));
+  }
+
+  private Optional<ExecutedVertex> prepareInternal(
+      LinkedList<ExecutedVertex> previous, VertexWithHash vertexWithHash) {
     final var vertex = vertexWithHash.vertex();
     final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
     final AccumulatorState parentAccumulatorState = parentHeader.getAccumulatorState();
@@ -280,12 +285,15 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       var proof = committedUpdate.vertexStoreState().getRootHeader();
       var transactionsWithProof = CommittedTransactionsWithProof.create(transactions, proof);
 
-      this.commit(transactionsWithProof, committedUpdate.vertexStoreState());
+      metrics
+          .ledger()
+          .commit()
+          .measure(() -> this.commit(transactionsWithProof, committedUpdate.vertexStoreState()));
     };
   }
 
   public EventProcessor<CommittedTransactionsWithProof> syncEventProcessor() {
-    return p -> this.commit(p, null);
+    return p -> metrics.ledger().commit().measure(() -> this.commit(p, null));
   }
 
   private void commit(

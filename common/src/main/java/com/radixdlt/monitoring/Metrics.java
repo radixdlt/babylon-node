@@ -144,6 +144,7 @@ public record Metrics(
     BerkeleyDb berkeleyDb,
     Ledger ledger,
     LedgerSync sync,
+    Mempool mempool,
     V1Mempool v1Mempool,
     V1RadixEngine v1RadixEngine,
     Messages messages,
@@ -211,7 +212,9 @@ public record Metrics(
   public record Ledger(
       @NotExposed Gauge stateVersion,
       Counter syncTransactionsProcessed,
-      Counter bftTransactionsProcessed) {}
+      Counter bftTransactionsProcessed,
+      Timer commit,
+      Timer prepare) {}
 
   public record LedgerSync(
       Counter invalidResponsesReceived,
@@ -219,6 +222,8 @@ public record Metrics(
       Counter remoteRequestsReceived,
       Gauge currentStateVersion,
       Gauge targetStateVersion) {}
+
+  public record Mempool(Timer addTransaction) {}
 
   public record V1Mempool(
       Gauge size, Counter relaysSent, Counter addSuccesses, Counter addFailures) {}
