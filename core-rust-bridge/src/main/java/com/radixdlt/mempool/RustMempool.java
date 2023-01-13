@@ -78,15 +78,13 @@ import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt32;
 import java.util.List;
-import java.util.Objects;
 
 public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
 
   private final Metrics metrics;
 
   public RustMempool(Metrics metrics, StateManager stateManager) {
-    this.metrics = Objects.requireNonNull(metrics);
-    Objects.requireNonNull(stateManager);
+    this.metrics = metrics;
     addFunc =
         NativeCalls.Func1.with(
             stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustMempool::add);
