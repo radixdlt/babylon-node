@@ -105,7 +105,7 @@ fn do_add(
         )?;
 
     state_manager
-        .check_for_rejection_and_add_to_mempool_from_mempool_sync(notarized_transaction)
+        .check_for_rejection_and_add_to_mempool(MempoolAddSource::MempoolSync, notarized_transaction)
         .map(|_| transaction.payload_hash)
         .map_err(Into::into)
 }

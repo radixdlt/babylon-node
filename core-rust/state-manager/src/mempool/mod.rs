@@ -66,13 +66,55 @@ use sbor::*;
 
 use std::string::ToString;
 
-use self::transaction_rejection_cache::RejectionReason;
+use crate::MetricLabel;
+
+use self::pending_transaction_result_cache::RejectionReason;
+
+#[derive(Debug, Clone, Copy)]
+pub enum MempoolAddSource {
+    CoreApi,
+    MempoolSync,
+}
+
+impl MetricLabel for MempoolAddSource {
+    type StringReturnType = &'static str;
+
+    fn prometheus_label_name(&self) -> Self::StringReturnType {
+        match *self {
+            MempoolAddSource::CoreApi => "CoreApi",
+            MempoolAddSource::MempoolSync => "MempoolSync",
+        }
+    }
+}
 
 #[derive(Debug)]
 pub enum MempoolAddError {
     Full { current_size: u64, max_size: u64 },
     Duplicate,
     Rejected(RejectionReason),
+}
+
+impl MetricLabel for MempoolAddError {
+    type StringReturnType = &'static str;
+
+    fn prometheus_label_name(&self) -> Self::StringReturnType {
+        match *self {
+            MempoolAddError::Rejected(RejectionReason::FromExecution(_)) => {
+                "ExecutionError"
+            }
+            MempoolAddError::Rejected(RejectionReason::ValidationError(_)) => {
+                "ValidationError"
+            }
+            MempoolAddError::Rejected(RejectionReason::IntentHashCommitted) => {
+                "IntentHashCommitted"
+            }
+            MempoolAddError::Rejected(RejectionReason::ExecutionTookTooLong { .. }) => {
+                "ExecutionTooLong"
+            }
+            MempoolAddError::Full { .. } => "MempoolFull",
+            MempoolAddError::Duplicate => "Duplicate",
+        }
+    }
 }
 
 impl ToString for MempoolAddError {
@@ -94,4 +136,4 @@ pub struct MempoolConfig {
 }
 
 pub mod simple_mempool;
-pub mod transaction_rejection_cache;
+pub mod pending_transaction_result_cache;
