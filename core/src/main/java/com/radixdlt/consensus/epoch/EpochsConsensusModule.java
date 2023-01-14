@@ -260,8 +260,8 @@ public class EpochsConsensusModule extends AbstractModule {
       Hasher hasher,
       EventDispatcher<EpochLocalTimeoutOccurrence> timeoutEventDispatcher,
       ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>> localTimeoutSender,
-      RemoteEventDispatcher<Proposal> proposalDispatcher,
-      RemoteEventDispatcher<Vote> voteDispatcher,
+      RemoteEventDispatcher<BFTNode, Proposal> proposalDispatcher,
+      RemoteEventDispatcher<BFTNode, Vote> voteDispatcher,
       EventDispatcher<EpochRoundLeaderFailure> roundLeaderFailureEventDispatcher,
       TimeSupplier timeSupplier) {
     return (validatorSet, vertexStore, timeoutCalculator, safetyRules, initialRoundUpdate, epoch) ->
@@ -296,7 +296,7 @@ public class EpochsConsensusModule extends AbstractModule {
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteEventDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
-      RemoteEventDispatcher<Vote> voteDispatcher,
+      RemoteEventDispatcher<BFTNode, Vote> voteDispatcher,
       EventDispatcher<EpochRoundLeaderFailure> roundLeaderFailureEventDispatcher) {
     return (self,
         pacemaker,
@@ -337,8 +337,8 @@ public class EpochsConsensusModule extends AbstractModule {
 
   @Provides
   private BFTSyncRequestProcessorFactory vertexStoreSyncVerticesRequestProcessorFactory(
-      RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher,
-      RemoteEventDispatcher<GetVerticesResponse> responseDispatcher,
+      RemoteEventDispatcher<BFTNode, GetVerticesErrorResponse> errorResponseDispatcher,
+      RemoteEventDispatcher<BFTNode, GetVerticesResponse> responseDispatcher,
       Metrics metrics) {
     return vertexStore ->
         new VertexStoreBFTSyncRequestProcessor(
@@ -347,7 +347,7 @@ public class EpochsConsensusModule extends AbstractModule {
 
   @Provides
   private BFTSyncFactory bftSyncFactory(
-      RemoteEventDispatcher<GetVerticesRequest> requestSender,
+      RemoteEventDispatcher<BFTNode, GetVerticesRequest> requestSender,
       @Self BFTNode self,
       @GetVerticesRequestRateLimit RateLimiter syncRequestRateLimiter,
       EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,

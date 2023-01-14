@@ -120,10 +120,10 @@ public final class LocalSyncService {
   private static final Logger log = LogManager.getLogger();
 
   private final AtomicLong requestIdCounter = new AtomicLong();
-  private final RemoteEventDispatcher<StatusRequest> statusRequestDispatcher;
+  private final RemoteEventDispatcher<BFTNode, StatusRequest> statusRequestDispatcher;
   private final ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout>
       syncCheckReceiveStatusTimeoutDispatcher;
-  private final RemoteEventDispatcher<SyncRequest> syncRequestDispatcher;
+  private final RemoteEventDispatcher<BFTNode, SyncRequest> syncRequestDispatcher;
   private final ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher;
   private final ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher;
   private final SyncRelayConfig syncRelayConfig;
@@ -142,10 +142,10 @@ public final class LocalSyncService {
 
   @Inject
   public LocalSyncService(
-      RemoteEventDispatcher<StatusRequest> statusRequestDispatcher,
+      RemoteEventDispatcher<BFTNode, StatusRequest> statusRequestDispatcher,
       ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout>
           syncCheckReceiveStatusTimeoutDispatcher,
-      RemoteEventDispatcher<SyncRequest> syncRequestDispatcher,
+      RemoteEventDispatcher<BFTNode, SyncRequest> syncRequestDispatcher,
       ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher,
       ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher,
       SyncRelayConfig syncRelayConfig,

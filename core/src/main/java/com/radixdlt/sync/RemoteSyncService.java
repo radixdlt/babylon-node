@@ -90,9 +90,9 @@ public final class RemoteSyncService {
   private final PeersView peersView;
   private final LocalSyncService localSyncService; // TODO: consider removing this dependency
   private final TransactionsAndProofReader committedReader;
-  private final RemoteEventDispatcher<StatusResponse> statusResponseDispatcher;
-  private final RemoteEventDispatcher<SyncResponse> syncResponseDispatcher;
-  private final RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher;
+  private final RemoteEventDispatcher<BFTNode, StatusResponse> statusResponseDispatcher;
+  private final RemoteEventDispatcher<BFTNode, SyncResponse> syncResponseDispatcher;
+  private final RemoteEventDispatcher<BFTNode, LedgerStatusUpdate> statusUpdateDispatcher;
   private final SyncRelayConfig syncRelayConfig;
   private final Metrics metrics;
   private final Comparator<AccumulatorState> accComparator;
@@ -105,9 +105,9 @@ public final class RemoteSyncService {
       PeersView peersView,
       LocalSyncService localSyncService,
       TransactionsAndProofReader committedReader,
-      RemoteEventDispatcher<StatusResponse> statusResponseDispatcher,
-      RemoteEventDispatcher<SyncResponse> syncResponseDispatcher,
-      RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher,
+      RemoteEventDispatcher<BFTNode, StatusResponse> statusResponseDispatcher,
+      RemoteEventDispatcher<BFTNode, SyncResponse> syncResponseDispatcher,
+      RemoteEventDispatcher<BFTNode, LedgerStatusUpdate> statusUpdateDispatcher,
       SyncRelayConfig syncRelayConfig,
       Metrics metrics,
       Comparator<AccumulatorState> accComparator,

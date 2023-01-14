@@ -105,8 +105,8 @@ public final class PeerDiscovery {
   private final AddressBook addressBook;
   private final PeerControl peerControl;
   private final SeedNodesConfigParser seedNodesConfigParser;
-  private final RemoteEventDispatcher<GetPeers> getPeersRemoteEventDispatcher;
-  private final RemoteEventDispatcher<PeersResponse> peersResponseRemoteEventDispatcher;
+  private final RemoteEventDispatcher<BFTNode, GetPeers> getPeersRemoteEventDispatcher;
+  private final RemoteEventDispatcher<BFTNode, PeersResponse> peersResponseRemoteEventDispatcher;
   private final Addressing addressing;
 
   private final Set<NodeId> peersAsked = new HashSet<>();
@@ -118,8 +118,8 @@ public final class PeerDiscovery {
       AddressBook addressBook,
       PeerControl peerControl,
       SeedNodesConfigParser seedNodesConfigParser,
-      RemoteEventDispatcher<GetPeers> getPeersRemoteEventDispatcher,
-      RemoteEventDispatcher<PeersResponse> peersResponseRemoteEventDispatcher,
+      RemoteEventDispatcher<BFTNode, GetPeers> getPeersRemoteEventDispatcher,
+      RemoteEventDispatcher<BFTNode, PeersResponse> peersResponseRemoteEventDispatcher,
       Addressing addressing) {
     this.selfUri = Objects.requireNonNull(selfUri);
     this.peerManager = Objects.requireNonNull(peerManager);

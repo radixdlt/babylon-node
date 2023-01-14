@@ -79,15 +79,15 @@ public final class VertexStoreBFTSyncRequestProcessor
     implements RemoteEventProcessor<GetVerticesRequest> {
   private static final Logger log = LogManager.getLogger();
   private final VertexStoreAdapter vertexStore;
-  private final RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher;
-  private final RemoteEventDispatcher<GetVerticesResponse> responseDispatcher;
+  private final RemoteEventDispatcher<BFTNode, GetVerticesErrorResponse> errorResponseDispatcher;
+  private final RemoteEventDispatcher<BFTNode, GetVerticesResponse> responseDispatcher;
   private final Metrics metrics;
 
   @Inject
   public VertexStoreBFTSyncRequestProcessor(
       VertexStoreAdapter vertexStore,
-      RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher,
-      RemoteEventDispatcher<GetVerticesResponse> responseDispatcher,
+      RemoteEventDispatcher<BFTNode, GetVerticesErrorResponse> errorResponseDispatcher,
+      RemoteEventDispatcher<BFTNode, GetVerticesResponse> responseDispatcher,
       Metrics metrics) {
     this.vertexStore = Objects.requireNonNull(vertexStore);
     this.errorResponseDispatcher = Objects.requireNonNull(errorResponseDispatcher);

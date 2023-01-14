@@ -215,7 +215,7 @@ public class SimulationNetwork {
       return myMessages.flatMapMaybe(m -> m.remoteEvent(eventClass));
     }
 
-    public <T> RemoteEventDispatcher<T> remoteEventDispatcher(Class<T> eventClass) {
+    public <T> RemoteEventDispatcher<BFTNode, T> remoteEventDispatcher(Class<T> eventClass) {
       return this::sendRemoteEvent;
     }
 

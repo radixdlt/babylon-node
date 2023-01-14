@@ -127,8 +127,9 @@ public class EpochManagerTest {
   private ScheduledEventDispatcher<GetVerticesRequest> timeoutScheduler =
       rmock(ScheduledEventDispatcher.class);
   private EventDispatcher<LocalSyncRequest> syncLedgerRequestSender = rmock(EventDispatcher.class);
-  private RemoteEventDispatcher<Proposal> proposalDispatcher = rmock(RemoteEventDispatcher.class);
-  private RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
+  private RemoteEventDispatcher<BFTNode, Proposal> proposalDispatcher =
+      rmock(RemoteEventDispatcher.class);
+  private RemoteEventDispatcher<BFTNode, Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
   private Mempool mempool = mock(Mempool.class);
   private StateComputer stateComputer =
       new StateComputer() {
@@ -206,15 +207,16 @@ public class EpochManagerTest {
             .toInstance(rmock(ScheduledEventDispatcher.class));
         bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() {})
             .toInstance(rmock(ScheduledEventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<Proposal>>() {}).toInstance(proposalDispatcher);
-        bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() {}).toInstance(voteDispatcher);
-        bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesRequest>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, Proposal>>() {})
+            .toInstance(proposalDispatcher);
+        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, Vote>>() {}).toInstance(voteDispatcher);
+        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, GetVerticesRequest>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesResponse>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, GetVerticesResponse>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesErrorResponse>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, GetVerticesErrorResponse>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<LedgerStatusUpdate>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, LedgerStatusUpdate>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
 
         bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));

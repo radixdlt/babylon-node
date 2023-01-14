@@ -119,9 +119,9 @@ public class ConsensusModuleTest {
   private BFTConfiguration bftConfiguration;
 
   private ECKeyPair ecKeyPair;
-  private RemoteEventDispatcher<GetVerticesRequest> requestSender;
-  private RemoteEventDispatcher<GetVerticesResponse> responseSender;
-  private RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseSender;
+  private RemoteEventDispatcher<BFTNode, GetVerticesRequest> requestSender;
+  private RemoteEventDispatcher<BFTNode, GetVerticesResponse> responseSender;
+  private RemoteEventDispatcher<BFTNode, GetVerticesErrorResponse> errorResponseSender;
 
   @Before
   public void setup() {
@@ -177,15 +177,15 @@ public class ConsensusModuleTest {
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<RoundLeaderFailure>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, Vote>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<Proposal>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, Proposal>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesRequest>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, GetVerticesRequest>>() {})
             .toInstance(requestSender);
-        bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesResponse>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, GetVerticesResponse>>() {})
             .toInstance(responseSender);
-        bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesErrorResponse>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, GetVerticesErrorResponse>>() {})
             .toInstance(errorResponseSender);
         bind(new TypeLiteral<EventDispatcher<NoVote>>() {})
             .toInstance(rmock(EventDispatcher.class));

@@ -147,7 +147,7 @@ public final class MessageCentralLedgerSync {
             });
   }
 
-  public RemoteEventDispatcher<SyncRequest> syncRequestDispatcher() {
+  public RemoteEventDispatcher<BFTNode, SyncRequest> syncRequestDispatcher() {
     return this::sendSyncRequest;
   }
 
@@ -156,7 +156,7 @@ public final class MessageCentralLedgerSync {
     this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
   }
 
-  public RemoteEventDispatcher<SyncResponse> syncResponseDispatcher() {
+  public RemoteEventDispatcher<BFTNode, SyncResponse> syncResponseDispatcher() {
     return this::sendSyncResponse;
   }
 
@@ -165,7 +165,7 @@ public final class MessageCentralLedgerSync {
     this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
   }
 
-  public RemoteEventDispatcher<StatusRequest> statusRequestDispatcher() {
+  public RemoteEventDispatcher<BFTNode, StatusRequest> statusRequestDispatcher() {
     return this::sendStatusRequest;
   }
 
@@ -174,7 +174,7 @@ public final class MessageCentralLedgerSync {
     this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
   }
 
-  public RemoteEventDispatcher<StatusResponse> statusResponseDispatcher() {
+  public RemoteEventDispatcher<BFTNode, StatusResponse> statusResponseDispatcher() {
     return this::sendStatusResponse;
   }
 
@@ -183,7 +183,7 @@ public final class MessageCentralLedgerSync {
     this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
   }
 
-  public RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher() {
+  public RemoteEventDispatcher<BFTNode, LedgerStatusUpdate> ledgerStatusUpdateDispatcher() {
     return this::sendLedgerStatusUpdate;
   }
 

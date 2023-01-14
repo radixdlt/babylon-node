@@ -82,7 +82,7 @@ import javax.inject.Inject;
 @Singleton
 public final class MempoolRelayer {
   private final PeersView peersView;
-  private final RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher;
+  private final RemoteEventDispatcher<BFTNode, MempoolAdd> remoteEventDispatcher;
 
   private final Metrics metrics;
 
@@ -93,7 +93,7 @@ public final class MempoolRelayer {
   @Inject
   public MempoolRelayer(
       MempoolReader<RawNotarizedTransaction> mempoolRelayReader,
-      RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher,
+      RemoteEventDispatcher<BFTNode, MempoolAdd> remoteEventDispatcher,
       PeersView peersView,
       @MempoolRelayMaxPeers int maxPeers,
       Metrics metrics) {

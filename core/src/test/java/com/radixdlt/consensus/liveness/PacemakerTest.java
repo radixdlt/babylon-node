@@ -96,10 +96,11 @@ public class PacemakerTest {
   private SafetyRules safetyRules = mock(SafetyRules.class);
   private PacemakerTimeoutCalculator timeoutCalculator = mock(PacemakerTimeoutCalculator.class);
   private ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
-  private RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
+  private RemoteEventDispatcher<BFTNode, Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
   private EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher =
       rmock(EventDispatcher.class);
-  private RemoteEventDispatcher<Proposal> proposalDispatcher = rmock(RemoteEventDispatcher.class);
+  private RemoteEventDispatcher<BFTNode, Proposal> proposalDispatcher =
+      rmock(RemoteEventDispatcher.class);
   private EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher = rmock(EventDispatcher.class);
   private ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender =
       rmock(ScheduledEventDispatcher.class);

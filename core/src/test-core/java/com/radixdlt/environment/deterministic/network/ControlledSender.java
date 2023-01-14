@@ -126,7 +126,7 @@ public final class ControlledSender implements Environment {
   }
 
   @Override
-  public <T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass) {
+  public <T> RemoteEventDispatcher<BFTNode, T> getRemoteDispatcher(Class<T> eventClass) {
     return (node, e) -> {
       ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
       handleMessage(new ControlledMessage(self, channelId, e, null, arrivalTime(channelId)));

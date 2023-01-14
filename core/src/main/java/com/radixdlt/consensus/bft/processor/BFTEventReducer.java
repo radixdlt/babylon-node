@@ -96,7 +96,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
   private final Pacemaker pacemaker;
   private final EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher;
   private final EventDispatcher<NoVote> noVoteDispatcher;
-  private final RemoteEventDispatcher<Vote> voteDispatcher;
+  private final RemoteEventDispatcher<BFTNode, Vote> voteDispatcher;
   private final Hasher hasher;
   private final Metrics metrics;
   private final SafetyRules safetyRules;
@@ -120,7 +120,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
       VertexStoreAdapter vertexStore,
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteDispatcher,
-      RemoteEventDispatcher<Vote> voteDispatcher,
+      RemoteEventDispatcher<BFTNode, Vote> voteDispatcher,
       Hasher hasher,
       Metrics metrics,
       SafetyRules safetyRules,

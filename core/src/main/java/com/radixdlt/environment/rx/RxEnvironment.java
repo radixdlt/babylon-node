@@ -65,6 +65,7 @@
 package com.radixdlt.environment.rx;
 
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -140,14 +141,14 @@ public final class RxEnvironment implements Environment {
   }
 
   @Override
-  public <T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass) {
+  public <T> RemoteEventDispatcher<BFTNode, T> getRemoteDispatcher(Class<T> eventClass) {
     if (!remoteDispatchers.containsKey(eventClass)) {
       throw new IllegalStateException("No dispatcher for " + eventClass);
     }
 
     @SuppressWarnings("unchecked")
-    final RemoteEventDispatcher<T> dispatcher =
-        (RemoteEventDispatcher<T>) remoteDispatchers.get(eventClass).dispatcher();
+    final RemoteEventDispatcher<BFTNode, T> dispatcher =
+        (RemoteEventDispatcher<BFTNode, T>) remoteDispatchers.get(eventClass).dispatcher();
     return dispatcher;
   }
 

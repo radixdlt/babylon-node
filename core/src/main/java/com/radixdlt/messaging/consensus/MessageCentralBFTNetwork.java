@@ -118,7 +118,7 @@ public final class MessageCentralBFTNetwork {
         .toFlowable(BackpressureStrategy.BUFFER);
   }
 
-  public RemoteEventDispatcher<Proposal> proposalDispatcher() {
+  public RemoteEventDispatcher<BFTNode, Proposal> proposalDispatcher() {
     return this::sendProposal;
   }
 
@@ -127,7 +127,7 @@ public final class MessageCentralBFTNetwork {
     send(message, receiver);
   }
 
-  public RemoteEventDispatcher<Vote> voteDispatcher() {
+  public RemoteEventDispatcher<BFTNode, Vote> voteDispatcher() {
     return this::sendVote;
   }
 

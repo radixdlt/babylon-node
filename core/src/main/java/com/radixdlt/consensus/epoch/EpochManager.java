@@ -128,14 +128,14 @@ public final class EpochManager {
   private Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors;
   private Set<EventProcessor<BFTRebuildUpdate>> bftRebuildProcessors;
 
-  private final RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher;
+  private final RemoteEventDispatcher<BFTNode, LedgerStatusUpdate> ledgerStatusUpdateDispatcher;
 
   private final PersistentSafetyStateStore persistentSafetyStateStore;
 
   @Inject
   public EpochManager(
       @Self BFTNode self,
-      RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
+      RemoteEventDispatcher<BFTNode, LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
       EpochChange lastEpochChange,
       PacemakerFactory pacemakerFactory,
       VertexStoreFactory vertexStoreFactory,

@@ -70,6 +70,7 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.*;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
@@ -193,10 +194,10 @@ public class EpochsSyncModule extends AbstractModule {
 
   @Provides
   private LocalSyncServiceFactory localSyncServiceFactory(
-      RemoteEventDispatcher<StatusRequest> statusRequestDispatcher,
+      RemoteEventDispatcher<BFTNode, StatusRequest> statusRequestDispatcher,
       ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout>
           syncCheckReceiveStatusTimeoutDispatcher,
-      RemoteEventDispatcher<SyncRequest> syncRequestDispatcher,
+      RemoteEventDispatcher<BFTNode, SyncRequest> syncRequestDispatcher,
       ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher,
       ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher,
       SyncRelayConfig syncRelayConfig,

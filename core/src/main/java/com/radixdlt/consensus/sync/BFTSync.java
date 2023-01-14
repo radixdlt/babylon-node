@@ -159,7 +159,7 @@ public final class BFTSync implements BFTSyncer {
   private final Map<HashCode, SyncState> syncing = new HashMap<>();
   private final TreeMap<LedgerHeader, List<HashCode>> ledgerSyncing;
   private final Map<GetVerticesRequest, SyncRequestState> bftSyncing = new HashMap<>();
-  private final RemoteEventDispatcher<GetVerticesRequest> requestSender;
+  private final RemoteEventDispatcher<BFTNode, GetVerticesRequest> requestSender;
   private final EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher;
   private final ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher;
 
@@ -183,7 +183,7 @@ public final class BFTSync implements BFTSyncer {
       SafetyRules safetyRules,
       PacemakerReducer pacemakerReducer,
       Comparator<LedgerHeader> ledgerHeaderComparator,
-      RemoteEventDispatcher<GetVerticesRequest> requestSender,
+      RemoteEventDispatcher<BFTNode, GetVerticesRequest> requestSender,
       EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher,
       ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
       EventDispatcher<ConsensusByzantineEvent> unexpectedEventEventDispatcher,

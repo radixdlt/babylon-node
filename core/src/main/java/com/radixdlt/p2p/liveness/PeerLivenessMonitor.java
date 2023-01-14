@@ -88,8 +88,8 @@ public final class PeerLivenessMonitor {
   private final P2PConfig config;
   private final PeersView peersView;
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
-  private final RemoteEventDispatcher<Ping> pingEventDispatcher;
-  private final RemoteEventDispatcher<Pong> pongEventDispatcher;
+  private final RemoteEventDispatcher<BFTNode, Ping> pingEventDispatcher;
+  private final RemoteEventDispatcher<BFTNode, Pong> pongEventDispatcher;
   private final ScheduledEventDispatcher<PeerPingTimeout> pingTimeoutEventDispatcher;
 
   private final Set<NodeId> waitingForPong = new HashSet<>();
@@ -99,8 +99,8 @@ public final class PeerLivenessMonitor {
       P2PConfig config,
       PeersView peersView,
       EventDispatcher<PeerEvent> peerEventDispatcher,
-      RemoteEventDispatcher<Ping> pingEventDispatcher,
-      RemoteEventDispatcher<Pong> pongEventDispatcher,
+      RemoteEventDispatcher<BFTNode, Ping> pingEventDispatcher,
+      RemoteEventDispatcher<BFTNode, Pong> pongEventDispatcher,
       ScheduledEventDispatcher<PeerPingTimeout> pingTimeoutEventDispatcher) {
     if (config.peerLivenessCheckInterval() <= config.pingTimeout()) {
       throw new IllegalArgumentException("pingTimeout must be smaller than livenessCheckInterval");

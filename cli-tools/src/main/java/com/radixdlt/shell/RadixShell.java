@@ -337,7 +337,7 @@ public final class RadixShell {
 
     @SuppressWarnings("unchecked")
     public <T> void dispatchRemote(BFTNode receiver, T t) {
-      ((RemoteEventDispatcher<T>)
+      ((RemoteEventDispatcher<BFTNode, T>)
               injector.getInstance(Environment.class).getRemoteDispatcher(t.getClass()))
           .dispatch(receiver, t);
     }

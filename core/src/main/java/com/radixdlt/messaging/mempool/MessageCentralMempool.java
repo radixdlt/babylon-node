@@ -85,7 +85,7 @@ public final class MessageCentralMempool {
     this.messageCentral = Objects.requireNonNull(messageCentral);
   }
 
-  public RemoteEventDispatcher<MempoolAdd> mempoolAddRemoteEventDispatcher() {
+  public RemoteEventDispatcher<BFTNode, MempoolAdd> mempoolAddRemoteEventDispatcher() {
     return (receiver, msg) -> {
       MempoolAddMessage message = MempoolAddMessage.from(msg.transactions());
       this.send(message, receiver);

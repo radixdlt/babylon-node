@@ -109,7 +109,7 @@ public final class MessageCentralPeerLiveness {
             });
   }
 
-  public RemoteEventDispatcher<Ping> pingDispatcher() {
+  public RemoteEventDispatcher<BFTNode, Ping> pingDispatcher() {
     return this::sendPing;
   }
 
@@ -118,7 +118,7 @@ public final class MessageCentralPeerLiveness {
     this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
   }
 
-  public RemoteEventDispatcher<Pong> pongDispatcher() {
+  public RemoteEventDispatcher<BFTNode, Pong> pongDispatcher() {
     return this::sendPong;
   }
 

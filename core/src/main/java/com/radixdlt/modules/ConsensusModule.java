@@ -130,7 +130,7 @@ public final class ConsensusModule extends AbstractModule {
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteEventDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
-      RemoteEventDispatcher<Vote> voteDispatcher,
+      RemoteEventDispatcher<BFTNode, Vote> voteDispatcher,
       EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher,
       RoundUpdate roundUpdate) {
     return BFTBuilder.create()
@@ -170,8 +170,8 @@ public final class ConsensusModule extends AbstractModule {
       PacemakerTimeoutCalculator timeoutCalculator,
       ProposalGenerator proposalGenerator,
       Hasher hasher,
-      RemoteEventDispatcher<Proposal> proposalDispatcher,
-      RemoteEventDispatcher<Vote> voteDispatcher,
+      RemoteEventDispatcher<BFTNode, Proposal> proposalDispatcher,
+      RemoteEventDispatcher<BFTNode, Vote> voteDispatcher,
       EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher,
       TimeSupplier timeSupplier,
       RoundUpdate initialRoundUpdate,
@@ -202,7 +202,7 @@ public final class ConsensusModule extends AbstractModule {
       @GetVerticesRequestRateLimit RateLimiter syncRequestRateLimiter,
       VertexStoreAdapter vertexStore,
       PacemakerReducer pacemakerReducer,
-      RemoteEventDispatcher<GetVerticesRequest> requestSender,
+      RemoteEventDispatcher<BFTNode, GetVerticesRequest> requestSender,
       EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
       ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
       EventDispatcher<ConsensusByzantineEvent> unexpectedEventEventDispatcher,

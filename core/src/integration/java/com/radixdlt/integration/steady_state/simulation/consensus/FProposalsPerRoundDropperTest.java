@@ -68,6 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -144,7 +145,7 @@ public class FProposalsPerRoundDropperTest {
                 new AbstractModule() {
                   @Override
                   protected void configure() {
-                    bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesRequest>>() {})
+                    bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, GetVerticesRequest>>() {})
                         .toInstance((node, request) -> {});
                   }
                 })

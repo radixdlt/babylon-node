@@ -93,15 +93,16 @@ public class MessageCentralValidatorSync {
     this.hasher = Objects.requireNonNull(hasher);
   }
 
-  public RemoteEventDispatcher<GetVerticesRequest> verticesRequestDispatcher() {
+  public RemoteEventDispatcher<BFTNode, GetVerticesRequest> verticesRequestDispatcher() {
     return this::sendGetVerticesRequest;
   }
 
-  public RemoteEventDispatcher<GetVerticesResponse> verticesResponseDispatcher() {
+  public RemoteEventDispatcher<BFTNode, GetVerticesResponse> verticesResponseDispatcher() {
     return this::sendGetVerticesResponse;
   }
 
-  public RemoteEventDispatcher<GetVerticesErrorResponse> verticesErrorResponseDispatcher() {
+  public RemoteEventDispatcher<BFTNode, GetVerticesErrorResponse>
+      verticesErrorResponseDispatcher() {
     return this::sendGetVerticesErrorResponse;
   }
 

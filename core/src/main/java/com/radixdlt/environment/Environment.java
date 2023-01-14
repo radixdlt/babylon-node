@@ -65,6 +65,7 @@
 package com.radixdlt.environment;
 
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.bft.BFTNode;
 
 /**
  * The environment where events get dispatched to. The implementing environment is then responsible
@@ -77,5 +78,5 @@ public interface Environment {
 
   <T> ScheduledEventDispatcher<T> getScheduledDispatcher(TypeLiteral<T> typeLiteral);
 
-  <T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass);
+  <T> RemoteEventDispatcher<BFTNode, T> getRemoteDispatcher(Class<T> eventClass);
 }

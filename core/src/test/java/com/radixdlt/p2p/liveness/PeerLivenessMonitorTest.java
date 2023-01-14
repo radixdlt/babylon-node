@@ -101,8 +101,8 @@ public class PeerLivenessMonitorTest {
   private P2PConfig p2PConfig;
   private PeersView peersView;
   private EventDispatcher<PeerEvent> peerEventDispatcher;
-  private RemoteEventDispatcher<Ping> pingEventDispatcher;
-  private RemoteEventDispatcher<Pong> pongEventDispatcher;
+  private RemoteEventDispatcher<BFTNode, Ping> pingEventDispatcher;
+  private RemoteEventDispatcher<BFTNode, Pong> pongEventDispatcher;
   private ScheduledEventDispatcher<PeerPingTimeout> pingTimeoutEventDispatcher;
 
   private PeerLivenessMonitor sut;

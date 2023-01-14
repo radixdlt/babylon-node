@@ -98,9 +98,9 @@ public class RemoteSyncServiceTest {
   private PeersView peersView;
   private LocalSyncService localSyncService;
   private TransactionsAndProofReader reader;
-  private RemoteEventDispatcher<StatusResponse> statusResponseDispatcher;
-  private RemoteEventDispatcher<SyncResponse> syncResponseDispatcher;
-  private RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher;
+  private RemoteEventDispatcher<BFTNode, StatusResponse> statusResponseDispatcher;
+  private RemoteEventDispatcher<BFTNode, SyncResponse> syncResponseDispatcher;
+  private RemoteEventDispatcher<BFTNode, LedgerStatusUpdate> statusUpdateDispatcher;
 
   @Before
   public void setUp() {

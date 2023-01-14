@@ -109,7 +109,7 @@ public final class MessageCentralPeerDiscovery {
             });
   }
 
-  public RemoteEventDispatcher<GetPeers> getPeersDispatcher() {
+  public RemoteEventDispatcher<BFTNode, GetPeers> getPeersDispatcher() {
     return this::sendGetPeers;
   }
 
@@ -118,7 +118,7 @@ public final class MessageCentralPeerDiscovery {
     this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
   }
 
-  public RemoteEventDispatcher<PeersResponse> peersResponseDispatcher() {
+  public RemoteEventDispatcher<BFTNode, PeersResponse> peersResponseDispatcher() {
     return this::sendPeersResponse;
   }
 

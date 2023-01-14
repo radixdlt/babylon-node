@@ -138,7 +138,7 @@ public final class Dispatchers {
   }
 
   private static final class RemoteDispatcherProvider<T>
-      implements Provider<RemoteEventDispatcher<T>> {
+      implements Provider<RemoteEventDispatcher<BFTNode, T>> {
     @Inject private Provider<Environment> environmentProvider;
 
     @Inject private Metrics metrics;
@@ -154,7 +154,7 @@ public final class Dispatchers {
     }
 
     @Override
-    public RemoteEventDispatcher<T> get() {
+    public RemoteEventDispatcher<BFTNode, T> get() {
       var remoteDispatcher = environmentProvider.get().getRemoteDispatcher(c);
       var localDispatcher = environmentProvider.get().getDispatcher(c);
       final Set<EventProcessor<T>> onDispatch =
@@ -190,7 +190,8 @@ public final class Dispatchers {
     return new ScheduledDispatcherProvider<>(t);
   }
 
-  public static <T> Provider<RemoteEventDispatcher<T>> remoteDispatcherProvider(Class<T> c) {
+  public static <T> Provider<RemoteEventDispatcher<BFTNode, T>> remoteDispatcherProvider(
+      Class<T> c) {
     return new RemoteDispatcherProvider<>(c);
   }
 

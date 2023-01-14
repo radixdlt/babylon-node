@@ -105,10 +105,10 @@ import org.junit.Test;
 
 public class LocalSyncServiceTest {
   private LocalSyncService localSyncService;
-  private RemoteEventDispatcher<StatusRequest> statusRequestDispatcher;
+  private RemoteEventDispatcher<BFTNode, StatusRequest> statusRequestDispatcher;
   private ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout>
       syncCheckReceiveStatusTimeoutDispatcher;
-  private RemoteEventDispatcher<SyncRequest> syncRequestDispatcher;
+  private RemoteEventDispatcher<BFTNode, SyncRequest> syncRequestDispatcher;
   private ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher;
   private ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher;
   private SyncRelayConfig syncRelayConfig;
