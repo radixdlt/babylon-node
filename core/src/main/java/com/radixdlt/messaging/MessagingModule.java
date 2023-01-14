@@ -237,37 +237,38 @@ public final class MessagingModule extends AbstractModule {
       MessageCentralPeerDiscovery messageCentralPeerDiscovery) {
     return new RxRemoteEnvironment() {
       @Override
-      public <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> remoteEventClass) {
+      public <N, T> Flowable<RemoteEvent<N, T>> remoteEvents(
+          Class<N> nodeIdClass, Class<T> remoteEventClass) {
         if (remoteEventClass == Vote.class) {
-          return messageCentralBFT.remoteVotes().map(m -> (RemoteEvent<T>) m);
+          return messageCentralBFT.remoteVotes().map(m -> (RemoteEvent<N, T>) m);
         } else if (remoteEventClass == Proposal.class) {
-          return messageCentralBFT.remoteProposals().map(m -> (RemoteEvent<T>) m);
+          return messageCentralBFT.remoteProposals().map(m -> (RemoteEvent<N, T>) m);
         } else if (remoteEventClass == GetVerticesRequest.class) {
-          return messageCentralBFTSync.requests().map(m -> (RemoteEvent<T>) m);
+          return messageCentralBFTSync.requests().map(m -> (RemoteEvent<N, T>) m);
         } else if (remoteEventClass == GetVerticesResponse.class) {
-          return messageCentralBFTSync.responses().map(m -> (RemoteEvent<T>) m);
+          return messageCentralBFTSync.responses().map(m -> (RemoteEvent<N, T>) m);
         } else if (remoteEventClass == GetVerticesErrorResponse.class) {
-          return messageCentralBFTSync.errorResponses().map(m -> (RemoteEvent<T>) m);
+          return messageCentralBFTSync.errorResponses().map(m -> (RemoteEvent<N, T>) m);
         } else if (remoteEventClass == MempoolAdd.class) {
-          return messageCentralMempool.mempoolComands().map(m -> (RemoteEvent<T>) m);
+          return messageCentralMempool.mempoolComands().map(m -> (RemoteEvent<N, T>) m);
         } else if (remoteEventClass == SyncRequest.class) {
-          return messageCentralLedgerSync.syncRequests().map(m -> (RemoteEvent<T>) m);
+          return messageCentralLedgerSync.syncRequests().map(m -> (RemoteEvent<N, T>) m);
         } else if (remoteEventClass == SyncResponse.class) {
-          return messageCentralLedgerSync.syncResponses().map(m -> (RemoteEvent<T>) m);
+          return messageCentralLedgerSync.syncResponses().map(m -> (RemoteEvent<N, T>) m);
         } else if (remoteEventClass == StatusRequest.class) {
-          return messageCentralLedgerSync.statusRequests().map(m -> (RemoteEvent<T>) m);
+          return messageCentralLedgerSync.statusRequests().map(m -> (RemoteEvent<N, T>) m);
         } else if (remoteEventClass == StatusResponse.class) {
-          return messageCentralLedgerSync.statusResponses().map(m -> (RemoteEvent<T>) m);
+          return messageCentralLedgerSync.statusResponses().map(m -> (RemoteEvent<N, T>) m);
         } else if (remoteEventClass == LedgerStatusUpdate.class) {
-          return messageCentralLedgerSync.ledgerStatusUpdates().map(m -> (RemoteEvent<T>) m);
+          return messageCentralLedgerSync.ledgerStatusUpdates().map(m -> (RemoteEvent<N, T>) m);
         } else if (remoteEventClass == Ping.class) {
-          return messageCentralPeerLiveness.pings().map(m -> (RemoteEvent<T>) m);
+          return messageCentralPeerLiveness.pings().map(m -> (RemoteEvent<N, T>) m);
         } else if (remoteEventClass == Pong.class) {
-          return messageCentralPeerLiveness.pongs().map(m -> (RemoteEvent<T>) m);
+          return messageCentralPeerLiveness.pongs().map(m -> (RemoteEvent<N, T>) m);
         } else if (remoteEventClass == GetPeers.class) {
-          return messageCentralPeerDiscovery.getPeersEvents().map(m -> (RemoteEvent<T>) m);
+          return messageCentralPeerDiscovery.getPeersEvents().map(m -> (RemoteEvent<N, T>) m);
         } else if (remoteEventClass == PeersResponse.class) {
-          return messageCentralPeerDiscovery.peersResponses().map(m -> (RemoteEvent<T>) m);
+          return messageCentralPeerDiscovery.peersResponses().map(m -> (RemoteEvent<N, T>) m);
         } else {
           throw new IllegalStateException();
         }

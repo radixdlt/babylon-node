@@ -164,7 +164,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     this.currentLedgerHeader = initialLedgerState;
   }
 
-  public RemoteEventProcessor<MempoolAdd> mempoolAddRemoteEventProcessor() {
+  public RemoteEventProcessor<BFTNode, MempoolAdd> mempoolAddRemoteEventProcessor() {
     return (node, mempoolAdd) -> {
       synchronized (lock) {
         stateComputer.addToMempool(mempoolAdd, node);

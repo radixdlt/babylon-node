@@ -127,7 +127,7 @@ public final class RemoteSyncService {
     this.currentHeader = initialHeader;
   }
 
-  public RemoteEventProcessor<SyncRequest> syncRequestEventProcessor() {
+  public RemoteEventProcessor<BFTNode, SyncRequest> syncRequestEventProcessor() {
     return this::processSyncRequest;
   }
 
@@ -164,7 +164,7 @@ public final class RemoteSyncService {
     return committedReader.getTransactions(startHeader);
   }
 
-  public RemoteEventProcessor<StatusRequest> statusRequestEventProcessor() {
+  public RemoteEventProcessor<BFTNode, StatusRequest> statusRequestEventProcessor() {
     return this::processStatusRequest;
   }
 

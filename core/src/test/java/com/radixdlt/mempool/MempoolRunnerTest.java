@@ -121,7 +121,8 @@ public final class MempoolRunnerTest {
             .toInstance(
                 new RxRemoteEnvironment() {
                   @Override
-                  public <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> remoteEventClass) {
+                  public <N, T> Flowable<RemoteEvent<N, T>> remoteEvents(
+                      Class<N> NodeIdClass, Class<T> remoteEventClass) {
                     return Flowable.never();
                   }
                 });

@@ -164,7 +164,7 @@ public final class PeerDiscovery {
         .forEach(this.peerManager::tryConnect);
   }
 
-  public RemoteEventProcessor<PeersResponse> peersResponseRemoteEventProcessor() {
+  public RemoteEventProcessor<BFTNode, PeersResponse> peersResponseRemoteEventProcessor() {
     return (sender, peersResponse) -> {
       final var senderNodeId = NodeId.fromPublicKey(sender.getKey());
       if (!peersAsked.contains(senderNodeId)) {
@@ -184,7 +184,7 @@ public final class PeerDiscovery {
     };
   }
 
-  public RemoteEventProcessor<GetPeers> getPeersRemoteEventProcessor() {
+  public RemoteEventProcessor<BFTNode, GetPeers> getPeersRemoteEventProcessor() {
     return (sender, unused) -> {
       final var peers =
           Stream.concat(

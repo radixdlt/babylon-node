@@ -76,7 +76,7 @@ import org.apache.logging.log4j.Logger;
 
 /** Processor of sync requests and responds with info from a VertexStore */
 public final class VertexStoreBFTSyncRequestProcessor
-    implements RemoteEventProcessor<GetVerticesRequest> {
+    implements RemoteEventProcessor<BFTNode, GetVerticesRequest> {
   private static final Logger log = LogManager.getLogger();
   private final VertexStoreAdapter vertexStore;
   private final RemoteEventDispatcher<BFTNode, GetVerticesErrorResponse> errorResponseDispatcher;

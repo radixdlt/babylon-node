@@ -118,9 +118,9 @@ public class SimulationNetwork {
       return Maybe.empty();
     }
 
-    public <T> Maybe<RemoteEvent<T>> remoteEvent(Class<T> eventClass) {
+    public <N, T> Maybe<RemoteEvent<N, T>> remoteEvent(Class<N> nodeIdClass, Class<T> eventClass) {
       if (!sender.equals(receiver) && eventClass.isInstance(content)) {
-        return Maybe.just(RemoteEvent.create(sender, eventClass.cast(content)));
+        return Maybe.just(RemoteEvent.create(nodeIdClass.cast(sender), eventClass.cast(content)));
       }
 
       return Maybe.empty();
@@ -211,8 +211,9 @@ public class SimulationNetwork {
     }
 
     @Override
-    public <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> eventClass) {
-      return myMessages.flatMapMaybe(m -> m.remoteEvent(eventClass));
+    public <N, T> Flowable<RemoteEvent<N, T>> remoteEvents(
+        Class<N> nodeIdClass, Class<T> eventClass) {
+      return myMessages.flatMapMaybe(m -> m.remoteEvent(nodeIdClass, eventClass));
     }
 
     public <T> RemoteEventDispatcher<BFTNode, T> remoteEventDispatcher(Class<T> eventClass) {

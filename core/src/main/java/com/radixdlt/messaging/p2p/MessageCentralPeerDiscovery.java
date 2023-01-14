@@ -87,7 +87,7 @@ public final class MessageCentralPeerDiscovery {
     this.messageCentral = Objects.requireNonNull(messageCentral);
   }
 
-  public Flowable<RemoteEvent<GetPeers>> getPeersEvents() {
+  public Flowable<RemoteEvent<BFTNode, GetPeers>> getPeersEvents() {
     return this.messageCentral
         .messagesOf(GetPeersMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
@@ -98,7 +98,7 @@ public final class MessageCentralPeerDiscovery {
             });
   }
 
-  public Flowable<RemoteEvent<PeersResponse>> peersResponses() {
+  public Flowable<RemoteEvent<BFTNode, PeersResponse>> peersResponses() {
     return this.messageCentral
         .messagesOf(PeersResponseMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)

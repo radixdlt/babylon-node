@@ -93,8 +93,12 @@ public class SimulationNetworkTest {
   public void when_send_get_vertex_request_to_another_node__then_should_receive_it() {
     HashCode vertexId = mock(HashCode.class);
 
-    TestObserver<RemoteEvent<GetVerticesRequest>> rpcRequestListener =
-        network.getNetwork(node2).remoteEvents(GetVerticesRequest.class).toObservable().test();
+    TestObserver<RemoteEvent<BFTNode, GetVerticesRequest>> rpcRequestListener =
+        network
+            .getNetwork(node2)
+            .remoteEvents(BFTNode.class, GetVerticesRequest.class)
+            .toObservable()
+            .test();
 
     network
         .getNetwork(node1)

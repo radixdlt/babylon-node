@@ -577,7 +577,7 @@ public final class LocalSyncService {
     return (event) -> this.processEvent(SyncCheckTrigger.class, event);
   }
 
-  public RemoteEventProcessor<StatusResponse> statusResponseEventProcessor() {
+  public RemoteEventProcessor<BFTNode, StatusResponse> statusResponseEventProcessor() {
     return (peer, event) -> this.processRemoteEvent(StatusResponse.class, peer, event);
   }
 
@@ -586,11 +586,11 @@ public final class LocalSyncService {
     return (event) -> this.processEvent(SyncCheckReceiveStatusTimeout.class, event);
   }
 
-  public RemoteEventProcessor<SyncResponse> syncResponseEventProcessor() {
+  public RemoteEventProcessor<BFTNode, SyncResponse> syncResponseEventProcessor() {
     return (peer, event) -> this.processRemoteEvent(SyncResponse.class, peer, event);
   }
 
-  public RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateEventProcessor() {
+  public RemoteEventProcessor<BFTNode, LedgerStatusUpdate> ledgerStatusUpdateEventProcessor() {
     return (peer, event) -> this.processRemoteEvent(LedgerStatusUpdate.class, peer, event);
   }
 

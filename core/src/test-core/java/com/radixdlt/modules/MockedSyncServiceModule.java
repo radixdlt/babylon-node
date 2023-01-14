@@ -72,6 +72,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.NextEpoch;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnDispatch;
@@ -195,10 +196,11 @@ public class MockedSyncServiceModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> ledgerStatusUpdateRemoteEventProcessor(
+  private RemoteEventProcessorOnRunner<?, ?> ledgerStatusUpdateRemoteEventProcessor(
       EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.SYNC,
+        BFTNode.class,
         LedgerStatusUpdate.class,
         (sender, ev) ->
             localSyncRequestEventDispatcher.dispatch(
@@ -236,22 +238,22 @@ public class MockedSyncServiceModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> statusRequestEventProcessor() {
+  private RemoteEventProcessorOnRunner<?, ?> statusRequestEventProcessor() {
     return noOpRemoteProcessor(StatusRequest.class);
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> statusResponseEventProcessor() {
+  private RemoteEventProcessorOnRunner<?, ?> statusResponseEventProcessor() {
     return noOpRemoteProcessor(StatusResponse.class);
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> syncRequestEventProcessor() {
+  private RemoteEventProcessorOnRunner<?, ?> syncRequestEventProcessor() {
     return noOpRemoteProcessor(SyncRequest.class);
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> syncResponseEventProcessor() {
+  private RemoteEventProcessorOnRunner<?, ?> syncResponseEventProcessor() {
     return noOpRemoteProcessor(SyncResponse.class);
   }
 
@@ -259,7 +261,8 @@ public class MockedSyncServiceModule extends AbstractModule {
     return new EventProcessorOnRunner<>(Runners.SYNC, clazz, ev -> {});
   }
 
-  private RemoteEventProcessorOnRunner<?> noOpRemoteProcessor(Class<?> clazz) {
-    return new RemoteEventProcessorOnRunner<>(Runners.SYNC, clazz, (sender, ev) -> {});
+  private RemoteEventProcessorOnRunner<?, ?> noOpRemoteProcessor(Class<?> clazz) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.SYNC, BFTNode.class, clazz, (sender, ev) -> {});
   }
 }

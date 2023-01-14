@@ -88,7 +88,7 @@ public final class MessageCentralLedgerSync {
     this.messageCentral = Objects.requireNonNull(messageCentral);
   }
 
-  public Flowable<RemoteEvent<StatusRequest>> statusRequests() {
+  public Flowable<RemoteEvent<BFTNode, StatusRequest>> statusRequests() {
     return this.messageCentral
         .messagesOf(StatusRequestMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
@@ -99,7 +99,7 @@ public final class MessageCentralLedgerSync {
             });
   }
 
-  public Flowable<RemoteEvent<StatusResponse>> statusResponses() {
+  public Flowable<RemoteEvent<BFTNode, StatusResponse>> statusResponses() {
     return this.messageCentral
         .messagesOf(StatusResponseMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
@@ -111,7 +111,7 @@ public final class MessageCentralLedgerSync {
             });
   }
 
-  public Flowable<RemoteEvent<SyncRequest>> syncRequests() {
+  public Flowable<RemoteEvent<BFTNode, SyncRequest>> syncRequests() {
     return this.messageCentral
         .messagesOf(SyncRequestMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
@@ -123,7 +123,7 @@ public final class MessageCentralLedgerSync {
             });
   }
 
-  public Flowable<RemoteEvent<SyncResponse>> syncResponses() {
+  public Flowable<RemoteEvent<BFTNode, SyncResponse>> syncResponses() {
     return this.messageCentral
         .messagesOf(SyncResponseMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
@@ -135,7 +135,7 @@ public final class MessageCentralLedgerSync {
             });
   }
 
-  public Flowable<RemoteEvent<LedgerStatusUpdate>> ledgerStatusUpdates() {
+  public Flowable<RemoteEvent<BFTNode, LedgerStatusUpdate>> ledgerStatusUpdates() {
     return this.messageCentral
         .messagesOf(LedgerStatusUpdateMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)

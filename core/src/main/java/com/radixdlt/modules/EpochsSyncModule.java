@@ -170,24 +170,31 @@ public class EpochsSyncModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> statusResponseEventProcessor(
-      EpochsLocalSyncService epochsLocalSyncService) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.SYNC, StatusResponse.class, epochsLocalSyncService.statusResponseEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> syncResponseEventProcessor(
-      EpochsLocalSyncService epochsLocalSyncService) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.SYNC, SyncResponse.class, epochsLocalSyncService.syncResponseEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> ledgerStatusUpdateEventProcessor(
+  private RemoteEventProcessorOnRunner<?, ?> statusResponseEventProcessor(
       EpochsLocalSyncService epochsLocalSyncService) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.SYNC,
+        BFTNode.class,
+        StatusResponse.class,
+        epochsLocalSyncService.statusResponseEventProcessor());
+  }
+
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?, ?> syncResponseEventProcessor(
+      EpochsLocalSyncService epochsLocalSyncService) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.SYNC,
+        BFTNode.class,
+        SyncResponse.class,
+        epochsLocalSyncService.syncResponseEventProcessor());
+  }
+
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?, ?> ledgerStatusUpdateEventProcessor(
+      EpochsLocalSyncService epochsLocalSyncService) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.SYNC,
+        BFTNode.class,
         LedgerStatusUpdate.class,
         epochsLocalSyncService.ledgerStatusUpdateEventProcessor());
   }

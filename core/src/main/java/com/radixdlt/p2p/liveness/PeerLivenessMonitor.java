@@ -138,11 +138,11 @@ public final class PeerLivenessMonitor {
     };
   }
 
-  public RemoteEventProcessor<Ping> pingRemoteEventProcessor() {
+  public RemoteEventProcessor<BFTNode, Ping> pingRemoteEventProcessor() {
     return (sender, ping) -> this.pongEventDispatcher.dispatch(sender, Pong.create());
   }
 
-  public RemoteEventProcessor<Pong> pongRemoteEventProcessor() {
+  public RemoteEventProcessor<BFTNode, Pong> pongRemoteEventProcessor() {
     return (sender, pong) -> this.waitingForPong.remove(NodeId.fromPublicKey(sender.getKey()));
   }
 }

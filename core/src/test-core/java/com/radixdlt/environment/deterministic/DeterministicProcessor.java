@@ -78,14 +78,14 @@ public final class DeterministicProcessor {
   private final BFTNode self;
   private final Set<StartProcessorOnRunner> startProcessors;
   private final Set<EventProcessorOnRunner<?>> processorOnRunners;
-  private final Set<RemoteEventProcessorOnRunner<?>> remoteProcessorOnRunners;
+  private final Set<RemoteEventProcessorOnRunner<?, ?>> remoteProcessorOnRunners;
 
   @Inject
   public DeterministicProcessor(
       @Self BFTNode self,
       Set<StartProcessorOnRunner> startProcessors,
       Set<EventProcessorOnRunner<?>> processorOnRunners,
-      Set<RemoteEventProcessorOnRunner<?>> remoteProcessorOnRunners) {
+      Set<RemoteEventProcessorOnRunner<?, ?>> remoteProcessorOnRunners) {
     this.self = Objects.requireNonNull(self);
     this.startProcessors = Objects.requireNonNull(startProcessors);
     this.processorOnRunners = Objects.requireNonNull(processorOnRunners);
@@ -118,9 +118,9 @@ public final class DeterministicProcessor {
 
   @SuppressWarnings("unchecked")
   private static <T> boolean tryExecute(
-      BFTNode origin, T event, RemoteEventProcessorOnRunner<?> processor) {
+      BFTNode origin, T event, RemoteEventProcessorOnRunner<?, ?> processor) {
     final var eventClass = (Class<T>) event.getClass();
-    final var maybeProcessor = processor.getProcessor(eventClass);
+    final var maybeProcessor = processor.getProcessor(BFTNode.class, eventClass);
     maybeProcessor.ifPresent(p -> p.process(origin, event));
     return maybeProcessor.isPresent();
   }
@@ -132,7 +132,7 @@ public final class DeterministicProcessor {
         messageHandled = tryExecute(message, msgType, p) || messageHandled;
       }
     } else {
-      for (RemoteEventProcessorOnRunner<?> p : remoteProcessorOnRunners) {
+      for (RemoteEventProcessorOnRunner<?, ?> p : remoteProcessorOnRunners) {
         messageHandled = tryExecute(origin, message, p) || messageHandled;
       }
     }

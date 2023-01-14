@@ -96,7 +96,7 @@ public final class MessageCentralMempool {
     this.messageCentral.send(NodeId.fromPublicKey(recipient.getKey()), message);
   }
 
-  public Flowable<RemoteEvent<MempoolAdd>> mempoolComands() {
+  public Flowable<RemoteEvent<BFTNode, MempoolAdd>> mempoolComands() {
     return messageCentral
         .messagesOf(MempoolAddMessage.class)
         .map(

@@ -319,11 +319,12 @@ public final class RadixShell {
       dispatchRemote(BFTNode.create(receiver.getNodeId().getPublicKey()), t);
     }
 
-    public <T> Disposable onRemoteEvent(Class<T> eventClass, Consumer<RemoteEvent<T>> consumer) {
+    public <T> Disposable onRemoteEvent(
+        Class<T> eventClass, Consumer<RemoteEvent<BFTNode, T>> consumer) {
       final var disposable =
           injector
               .getInstance(RxRemoteEnvironment.class)
-              .remoteEvents(eventClass)
+              .remoteEvents(BFTNode.class, eventClass)
               .subscribe(consumer::accept);
 
       remoteEventConsumers.add(disposable);

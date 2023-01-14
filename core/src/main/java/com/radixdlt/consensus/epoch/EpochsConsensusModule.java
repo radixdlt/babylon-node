@@ -113,9 +113,12 @@ public class EpochsConsensusModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> remoteVoteProcessor(EpochManager epochManager) {
+  private RemoteEventProcessorOnRunner<?, ?> remoteVoteProcessor(EpochManager epochManager) {
     return new RemoteEventProcessorOnRunner<>(
-        Runners.CONSENSUS, Vote.class, (node, vote) -> epochManager.processConsensusEvent(vote));
+        Runners.CONSENSUS,
+        BFTNode.class,
+        Vote.class,
+        (node, vote) -> epochManager.processConsensusEvent(vote));
   }
 
   @ProvidesIntoSet
@@ -125,9 +128,10 @@ public class EpochsConsensusModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> remoteProposalProcessor(EpochManager epochManager) {
+  private RemoteEventProcessorOnRunner<?, ?> remoteProposalProcessor(EpochManager epochManager) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.CONSENSUS,
+        BFTNode.class,
         Proposal.class,
         (node, proposal) -> epochManager.processConsensusEvent(proposal));
   }
@@ -147,23 +151,31 @@ public class EpochsConsensusModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> localGetVerticesRequestRemoteEventProcessor(
-      EpochManager epochManager) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.CONSENSUS, GetVerticesRequest.class, epochManager.bftSyncRequestProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> responseRemoteEventProcessor(EpochManager epochManager) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.CONSENSUS, GetVerticesResponse.class, epochManager.bftSyncResponseProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> errorResponseRemoteEventProcessor(
+  private RemoteEventProcessorOnRunner<?, ?> localGetVerticesRequestRemoteEventProcessor(
       EpochManager epochManager) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.CONSENSUS,
+        BFTNode.class,
+        GetVerticesRequest.class,
+        epochManager.bftSyncRequestProcessor());
+  }
+
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?, ?> responseRemoteEventProcessor(
+      EpochManager epochManager) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.CONSENSUS,
+        BFTNode.class,
+        GetVerticesResponse.class,
+        epochManager.bftSyncResponseProcessor());
+  }
+
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?, ?> errorResponseRemoteEventProcessor(
+      EpochManager epochManager) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.CONSENSUS,
+        BFTNode.class,
         GetVerticesErrorResponse.class,
         epochManager.bftSyncErrorResponseProcessor());
   }

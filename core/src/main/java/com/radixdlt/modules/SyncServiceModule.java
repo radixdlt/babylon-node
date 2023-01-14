@@ -72,6 +72,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.*;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
@@ -114,17 +115,23 @@ public class SyncServiceModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> syncRequestEventProcessor(
+  private RemoteEventProcessorOnRunner<?, ?> syncRequestEventProcessor(
       RemoteSyncService remoteSyncService) {
     return new RemoteEventProcessorOnRunner<>(
-        Runners.SYNC, SyncRequest.class, remoteSyncService.syncRequestEventProcessor());
+        Runners.SYNC,
+        BFTNode.class,
+        SyncRequest.class,
+        remoteSyncService.syncRequestEventProcessor());
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> statusRequestEventProcessor(
+  private RemoteEventProcessorOnRunner<?, ?> statusRequestEventProcessor(
       RemoteSyncService remoteSyncService) {
     return new RemoteEventProcessorOnRunner<>(
-        Runners.SYNC, StatusRequest.class, remoteSyncService.statusRequestEventProcessor());
+        Runners.SYNC,
+        BFTNode.class,
+        StatusRequest.class,
+        remoteSyncService.statusRequestEventProcessor());
   }
 
   @ProvidesIntoSet

@@ -87,7 +87,7 @@ public final class MessageCentralPeerLiveness {
     this.messageCentral = Objects.requireNonNull(messageCentral);
   }
 
-  public Flowable<RemoteEvent<Ping>> pings() {
+  public Flowable<RemoteEvent<BFTNode, Ping>> pings() {
     return this.messageCentral
         .messagesOf(PeerPingMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
@@ -98,7 +98,7 @@ public final class MessageCentralPeerLiveness {
             });
   }
 
-  public Flowable<RemoteEvent<Pong>> pongs() {
+  public Flowable<RemoteEvent<BFTNode, Pong>> pongs() {
     return this.messageCentral
         .messagesOf(PeerPongMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)

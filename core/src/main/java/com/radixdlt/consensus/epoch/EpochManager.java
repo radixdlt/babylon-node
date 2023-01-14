@@ -121,9 +121,9 @@ public final class EpochManager {
   private EventProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
   private BFTEventProcessor bftEventProcessor;
 
-  private Set<RemoteEventProcessor<GetVerticesRequest>> syncRequestProcessors;
-  private Set<RemoteEventProcessor<GetVerticesResponse>> syncResponseProcessors;
-  private Set<RemoteEventProcessor<GetVerticesErrorResponse>> syncErrorResponseProcessors;
+  private Set<RemoteEventProcessor<BFTNode, GetVerticesRequest>> syncRequestProcessors;
+  private Set<RemoteEventProcessor<BFTNode, GetVerticesResponse>> syncResponseProcessors;
+  private Set<RemoteEventProcessor<BFTNode, GetVerticesErrorResponse>> syncErrorResponseProcessors;
 
   private Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors;
   private Set<EventProcessor<BFTRebuildUpdate>> bftRebuildProcessors;
@@ -398,15 +398,15 @@ public final class EpochManager {
     };
   }
 
-  public RemoteEventProcessor<GetVerticesRequest> bftSyncRequestProcessor() {
+  public RemoteEventProcessor<BFTNode, GetVerticesRequest> bftSyncRequestProcessor() {
     return (node, request) -> syncRequestProcessors.forEach(p -> p.process(node, request));
   }
 
-  public RemoteEventProcessor<GetVerticesResponse> bftSyncResponseProcessor() {
+  public RemoteEventProcessor<BFTNode, GetVerticesResponse> bftSyncResponseProcessor() {
     return (node, resp) -> syncResponseProcessors.forEach(p -> p.process(node, resp));
   }
 
-  public RemoteEventProcessor<GetVerticesErrorResponse> bftSyncErrorResponseProcessor() {
+  public RemoteEventProcessor<BFTNode, GetVerticesErrorResponse> bftSyncErrorResponseProcessor() {
     return (node, err) -> {
       if (log.isDebugEnabled()) {
         log.debug("SYNC_ERROR: Received GetVerticesErrorResponse {}", err);

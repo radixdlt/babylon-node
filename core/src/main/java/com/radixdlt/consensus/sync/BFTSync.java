@@ -559,11 +559,11 @@ public final class BFTSync implements BFTSyncer {
     }
   }
 
-  public RemoteEventProcessor<GetVerticesErrorResponse> errorResponseProcessor() {
+  public RemoteEventProcessor<BFTNode, GetVerticesErrorResponse> errorResponseProcessor() {
     return this::processGetVerticesErrorResponse;
   }
 
-  public RemoteEventProcessor<GetVerticesResponse> responseProcessor() {
+  public RemoteEventProcessor<BFTNode, GetVerticesResponse> responseProcessor() {
     return this::processGetVerticesResponse;
   }
 

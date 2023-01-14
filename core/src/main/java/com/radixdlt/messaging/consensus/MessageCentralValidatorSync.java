@@ -125,7 +125,7 @@ public class MessageCentralValidatorSync {
     this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
   }
 
-  public Flowable<RemoteEvent<GetVerticesRequest>> requests() {
+  public Flowable<RemoteEvent<BFTNode, GetVerticesRequest>> requests() {
     return this.createFlowable(
         GetVerticesRequestMessage.class,
         (peer, msg) -> {
@@ -135,7 +135,7 @@ public class MessageCentralValidatorSync {
         });
   }
 
-  public Flowable<RemoteEvent<GetVerticesResponse>> responses() {
+  public Flowable<RemoteEvent<BFTNode, GetVerticesResponse>> responses() {
     return this.createFlowable(
         GetVerticesResponseMessage.class,
         (src, msg) -> {
@@ -150,7 +150,7 @@ public class MessageCentralValidatorSync {
         });
   }
 
-  public Flowable<RemoteEvent<GetVerticesErrorResponse>> errorResponses() {
+  public Flowable<RemoteEvent<BFTNode, GetVerticesErrorResponse>> errorResponses() {
     return this.createFlowable(
         GetVerticesErrorResponseMessage.class,
         (src, msg) -> {

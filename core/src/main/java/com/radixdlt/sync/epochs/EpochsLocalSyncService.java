@@ -178,7 +178,7 @@ public class EpochsLocalSyncService {
     this.localSyncService.syncRequestTimeoutEventProcessor().process(syncRequestTimeout);
   }
 
-  public RemoteEventProcessor<StatusResponse> statusResponseEventProcessor() {
+  public RemoteEventProcessor<BFTNode, StatusResponse> statusResponseEventProcessor() {
     return this::processStatusResponse;
   }
 
@@ -186,7 +186,7 @@ public class EpochsLocalSyncService {
     this.localSyncService.statusResponseEventProcessor().process(sender, statusResponse);
   }
 
-  public RemoteEventProcessor<SyncResponse> syncResponseEventProcessor() {
+  public RemoteEventProcessor<BFTNode, SyncResponse> syncResponseEventProcessor() {
     return this::processSyncResponse;
   }
 
@@ -194,7 +194,7 @@ public class EpochsLocalSyncService {
     this.localSyncService.syncResponseEventProcessor().process(sender, syncResponse);
   }
 
-  public RemoteEventProcessor<LedgerStatusUpdate> ledgerStatusUpdateEventProcessor() {
+  public RemoteEventProcessor<BFTNode, LedgerStatusUpdate> ledgerStatusUpdateEventProcessor() {
     return this::processLedgerStatusUpdate;
   }
 

@@ -68,5 +68,5 @@ import io.reactivex.rxjava3.core.Flowable;
 
 /** Provides remote events */
 public interface RxRemoteEnvironment {
-  <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> remoteEventClass);
+  <N, T> Flowable<RemoteEvent<N, T>> remoteEvents(Class<N> nodeIdClass, Class<T> remoteEventClass);
 }

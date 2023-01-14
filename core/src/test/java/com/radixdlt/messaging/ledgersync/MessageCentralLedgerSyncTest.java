@@ -68,6 +68,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.ledger.CommittedTransactionsWithProofDto;
@@ -95,7 +96,7 @@ public class MessageCentralLedgerSyncTest {
 
   @Test
   public void when_receive_sync_request__then_should_receive_it() {
-    TestSubscriber<RemoteEvent<SyncRequest>> testObserver =
+    TestSubscriber<RemoteEvent<BFTNode, SyncRequest>> testObserver =
         this.messageCentralLedgerSync.syncRequests().test();
     final var peer = createPeer();
     SyncRequestMessage syncRequestMessage = mock(SyncRequestMessage.class);
@@ -111,7 +112,7 @@ public class MessageCentralLedgerSyncTest {
 
   @Test
   public void when_receive_sync_response__then_should_receive_it() {
-    TestSubscriber<RemoteEvent<SyncResponse>> testObserver =
+    TestSubscriber<RemoteEvent<BFTNode, SyncResponse>> testObserver =
         this.messageCentralLedgerSync.syncResponses().test();
     final var peer = createPeer();
     SyncResponseMessage syncResponseMessage = mock(SyncResponseMessage.class);
@@ -126,7 +127,7 @@ public class MessageCentralLedgerSyncTest {
 
   @Test
   public void when_receive_status_request__then_should_receive_it() {
-    TestSubscriber<RemoteEvent<StatusRequest>> testObserver =
+    TestSubscriber<RemoteEvent<BFTNode, StatusRequest>> testObserver =
         this.messageCentralLedgerSync.statusRequests().test();
     final var peer = createPeer();
     StatusRequestMessage statusRequestMessage = mock(StatusRequestMessage.class);
@@ -138,7 +139,7 @@ public class MessageCentralLedgerSyncTest {
 
   @Test
   public void when_receive_status_response__then_should_receive_it() {
-    TestSubscriber<RemoteEvent<StatusResponse>> testObserver =
+    TestSubscriber<RemoteEvent<BFTNode, StatusResponse>> testObserver =
         this.messageCentralLedgerSync.statusResponses().test();
     final var peer = createPeer();
     final var header = mock(LedgerProof.class);
