@@ -16,8 +16,8 @@ pub(crate) async fn handle_transaction_submit(
     let notarized_transaction = extract_unvalidated_transaction(&request.notarized_transaction_hex)
         .map_err(|err| err.into_response_error("notarized_transaction"))?;
 
-    let result =
-        state_manager.check_for_rejection_and_add_to_mempool(MempoolAddSource::CoreApi, notarized_transaction);
+    let result = state_manager
+        .check_for_rejection_and_add_to_mempool(MempoolAddSource::CoreApi, notarized_transaction);
 
     match result {
         Ok(_) => Ok(models::TransactionSubmitResponse::new(false)),
@@ -26,7 +26,9 @@ pub(crate) async fn handle_transaction_submit(
             current_size: _,
             max_size: _,
         }) => Err(client_error("Mempool is full")),
-        Err(MempoolAddError::Rejected(rejection)) => Err(client_error(format!("Rejected: {}", rejection.reason)))
+        Err(MempoolAddError::Rejected(rejection)) => {
+            Err(client_error(format!("Rejected: {}", rejection.reason)))
+        }
     }
     .map(Json)
 }

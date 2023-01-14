@@ -64,7 +64,9 @@ fn handle_v0_transaction_status_internal(
         };
 
         let mut known_payloads = vec![committed_payload];
-        known_payloads.append(&mut map_rejected_payloads_due_to_known_commit(known_pending_payloads));
+        known_payloads.append(&mut map_rejected_payloads_due_to_known_commit(
+            known_pending_payloads,
+        ));
 
         return Ok(models::V0TransactionStatusResponse {
             intent_status,
@@ -87,7 +89,9 @@ fn handle_v0_transaction_status_internal(
             .collect::<Vec<_>>();
 
         let mut known_payloads = mempool_payloads;
-        known_payloads.append(&mut map_pending_payloads_not_in_mempool(known_pending_payloads));
+        known_payloads.append(&mut map_pending_payloads_not_in_mempool(
+            known_pending_payloads,
+        ));
 
         return Ok(models::V0TransactionStatusResponse {
             intent_status: models::v0_transaction_status_response::IntentStatus::InMempool,
@@ -119,21 +123,17 @@ fn map_rejected_payloads_due_to_known_commit(
     known_rejected_payloads
         .into_iter()
         .map(
-            |(payload_hash, transaction_record)| {
-                match transaction_record.last_attempt.rejection {
-                    Some(reason) => {
-                        models::V0TransactionPayloadStatus {
-                            payload_hash: to_api_payload_hash(&payload_hash),
-                            status: PayloadStatus::PermanentlyRejected,
-                            error_message: Some(reason.to_string()),
-                        }
-                    },
-                    None => models::V0TransactionPayloadStatus {
-                        payload_hash: to_api_payload_hash(&payload_hash),
-                        status: PayloadStatus::PermanentlyRejected,
-                        error_message: Some(RejectionReason::IntentHashCommitted.to_string()),
-                    },
-                }
+            |(payload_hash, transaction_record)| match transaction_record.last_attempt.rejection {
+                Some(reason) => models::V0TransactionPayloadStatus {
+                    payload_hash: to_api_payload_hash(&payload_hash),
+                    status: PayloadStatus::PermanentlyRejected,
+                    error_message: Some(reason.to_string()),
+                },
+                None => models::V0TransactionPayloadStatus {
+                    payload_hash: to_api_payload_hash(&payload_hash),
+                    status: PayloadStatus::PermanentlyRejected,
+                    error_message: Some(RejectionReason::IntentHashCommitted.to_string()),
+                },
             },
         )
         .collect::<Vec<_>>()
@@ -144,23 +144,23 @@ fn map_pending_payloads_not_in_mempool(
 ) -> Vec<models::V0TransactionPayloadStatus> {
     known_rejected_payloads
         .into_iter()
-        .filter_map(
-            |(payload_hash, transaction_record)| {
-                match &transaction_record.last_attempt.rejection {
-                    Some(reason) => {
-                        Some(models::V0TransactionPayloadStatus {
-                            payload_hash: to_api_payload_hash(&payload_hash),
-                            status: if transaction_record.last_attempt.was_against_committed_state() && reason.is_permanent() {
-                                PayloadStatus::PermanentlyRejected
-                            } else {
-                                PayloadStatus::TransientlyRejected
-                            },
-                            error_message: Some(reason.to_string()),
-                        })
+        .filter_map(|(payload_hash, transaction_record)| {
+            match &transaction_record.last_attempt.rejection {
+                Some(reason) => Some(models::V0TransactionPayloadStatus {
+                    payload_hash: to_api_payload_hash(&payload_hash),
+                    status: if transaction_record
+                        .last_attempt
+                        .was_against_committed_state()
+                        && reason.is_permanent()
+                    {
+                        PayloadStatus::PermanentlyRejected
+                    } else {
+                        PayloadStatus::TransientlyRejected
                     },
-                    None => None,
-                }
-            },
-        )
+                    error_message: Some(reason.to_string()),
+                }),
+                None => None,
+            }
+        })
         .collect::<Vec<_>>()
 }

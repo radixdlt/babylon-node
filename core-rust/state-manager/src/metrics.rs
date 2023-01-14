@@ -1,5 +1,5 @@
-use prometheus::*;
 use prometheus::core::*;
+use prometheus::*;
 
 // TODO: Can move these into separate modules if we wish to, as long as they all register to the same registry
 pub struct StateManagerMetrics {
@@ -75,7 +75,12 @@ pub trait TakesMetricLabels {
 
     fn with_label(&self, label1: impl MetricLabel) -> Self::Metric;
     fn with_two_labels(&self, label1: impl MetricLabel, label2: impl MetricLabel) -> Self::Metric;
-    fn with_three_labels(&self, label1: impl MetricLabel, label2: impl MetricLabel, label3: impl MetricLabel) -> Self::Metric;
+    fn with_three_labels(
+        &self,
+        label1: impl MetricLabel,
+        label2: impl MetricLabel,
+        label3: impl MetricLabel,
+    ) -> Self::Metric;
 }
 
 impl<T: MetricVecBuilder> TakesMetricLabels for MetricVec<T> {
@@ -86,11 +91,23 @@ impl<T: MetricVecBuilder> TakesMetricLabels for MetricVec<T> {
     }
 
     fn with_two_labels(&self, label1: impl MetricLabel, label2: impl MetricLabel) -> Self::Metric {
-        self.with_label_values(&[label1.prometheus_label_name().as_ref(), label2.prometheus_label_name().as_ref()])
+        self.with_label_values(&[
+            label1.prometheus_label_name().as_ref(),
+            label2.prometheus_label_name().as_ref(),
+        ])
     }
 
-    fn with_three_labels(&self, label1: impl MetricLabel, label2: impl MetricLabel, label3: impl MetricLabel) -> Self::Metric {
-        self.with_label_values(&[label1.prometheus_label_name().as_ref(), label2.prometheus_label_name().as_ref(), label3.prometheus_label_name().as_ref()])
+    fn with_three_labels(
+        &self,
+        label1: impl MetricLabel,
+        label2: impl MetricLabel,
+        label3: impl MetricLabel,
+    ) -> Self::Metric {
+        self.with_label_values(&[
+            label1.prometheus_label_name().as_ref(),
+            label2.prometheus_label_name().as_ref(),
+            label3.prometheus_label_name().as_ref(),
+        ])
     }
 }
 
@@ -110,6 +127,6 @@ impl<T: MetricLabel> MetricLabel for &T {
     type StringReturnType = <T as MetricLabel>::StringReturnType;
 
     fn prometheus_label_name(&self) -> Self::StringReturnType {
-        T::prometheus_label_name(&self)
+        T::prometheus_label_name(self)
     }
 }

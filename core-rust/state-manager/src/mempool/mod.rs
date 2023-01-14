@@ -68,7 +68,7 @@ use std::string::ToString;
 
 use crate::MetricLabel;
 
-use crate::pending_transaction_result_cache::{RejectionReason, AtState};
+use crate::pending_transaction_result_cache::{AtState, RejectionReason};
 
 #[derive(Debug, Clone, Copy)]
 pub enum MempoolAddSource {
@@ -106,14 +106,12 @@ impl MetricLabel for MempoolAddError {
 
     fn prometheus_label_name(&self) -> Self::StringReturnType {
         match self {
-            MempoolAddError::Rejected(rejection) => {
-                match &rejection.reason {
-                    RejectionReason::FromExecution(_) => "ExecutionError",
-                    RejectionReason::ValidationError(_) => "ValidationError",
-                    RejectionReason::IntentHashCommitted => "IntentHashCommitted",
-                    RejectionReason::ExecutionTookTooLong { .. } => "ExecutionTooLong",
-                }
-            }
+            MempoolAddError::Rejected(rejection) => match &rejection.reason {
+                RejectionReason::FromExecution(_) => "ExecutionError",
+                RejectionReason::ValidationError(_) => "ValidationError",
+                RejectionReason::IntentHashCommitted => "IntentHashCommitted",
+                RejectionReason::ExecutionTookTooLong { .. } => "ExecutionTooLong",
+            },
             MempoolAddError::Full { .. } => "MempoolFull",
             MempoolAddError::Duplicate => "Duplicate",
         }
@@ -128,9 +126,7 @@ impl ToString for MempoolAddError {
                 max_size,
             } => format!("Mempool Full [{} - {}]", current_size, max_size),
             MempoolAddError::Duplicate => "Duplicate Entry".to_string(),
-            MempoolAddError::Rejected(rejection) => {
-                rejection.reason.to_string()
-            }
+            MempoolAddError::Rejected(rejection) => rejection.reason.to_string(),
         }
     }
 }
@@ -140,5 +136,5 @@ pub struct MempoolConfig {
     pub max_size: u32,
 }
 
-pub mod simple_mempool;
 pub mod pending_transaction_result_cache;
+pub mod simple_mempool;

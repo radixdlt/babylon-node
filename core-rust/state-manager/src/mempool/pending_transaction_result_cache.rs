@@ -8,7 +8,8 @@ use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
     fmt,
     num::NonZeroUsize,
-    time::{Duration, Instant}, ops::Add,
+    ops::Add,
+    time::{Duration, Instant},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -17,7 +18,9 @@ pub enum RejectionReason {
     ValidationError(TransactionValidationError),
     IntentHashCommitted,
     /// This is temporary until we get better execution limits
-    ExecutionTookTooLong { time_limit_ms: u32 },
+    ExecutionTookTooLong {
+        time_limit_ms: u32,
+    },
 }
 
 impl RejectionReason {
@@ -28,15 +31,27 @@ impl RejectionReason {
     pub fn permanence(&self) -> RejectionPermanence {
         match self {
             RejectionReason::FromExecution(rejection_error) => match **rejection_error {
-                RejectionError::SuccessButFeeLoanNotRepaid => RejectionPermanence::Temporary { base_allow_retry_after: Duration::from_secs(2 * 60) },
-                RejectionError::ErrorBeforeFeeLoanRepaid(_) => RejectionPermanence::Temporary { base_allow_retry_after: Duration::from_secs(2 * 60) },
-                RejectionError::TransactionEpochNotYetValid { .. } => RejectionPermanence::Temporary { base_allow_retry_after: Duration::from_secs(2 * 60) },
-                RejectionError::TransactionEpochNoLongerValid { .. } => RejectionPermanence::Permament,
+                RejectionError::SuccessButFeeLoanNotRepaid => RejectionPermanence::Temporary {
+                    base_allow_retry_after: Duration::from_secs(2 * 60),
+                },
+                RejectionError::ErrorBeforeFeeLoanRepaid(_) => RejectionPermanence::Temporary {
+                    base_allow_retry_after: Duration::from_secs(2 * 60),
+                },
+                RejectionError::TransactionEpochNotYetValid { .. } => {
+                    RejectionPermanence::Temporary {
+                        base_allow_retry_after: Duration::from_secs(2 * 60),
+                    }
+                }
+                RejectionError::TransactionEpochNoLongerValid { .. } => {
+                    RejectionPermanence::Permament
+                }
             },
             RejectionReason::ValidationError(_) => RejectionPermanence::Permament,
             RejectionReason::IntentHashCommitted => RejectionPermanence::Permament,
             // Temporary until we have better execution limits
-            RejectionReason::ExecutionTookTooLong { .. } => RejectionPermanence::Temporary { base_allow_retry_after: Duration::from_secs(10 * 60) },
+            RejectionReason::ExecutionTookTooLong { .. } => RejectionPermanence::Temporary {
+                base_allow_retry_after: Duration::from_secs(10 * 60),
+            },
         }
     }
 }
@@ -44,7 +59,7 @@ impl RejectionReason {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RejectionPermanence {
     Permament,
-    Temporary { base_allow_retry_after: Duration }
+    Temporary { base_allow_retry_after: Duration },
 }
 
 impl RejectionPermanence {
@@ -65,7 +80,11 @@ impl fmt::Display for RejectionReason {
             }
             RejectionReason::IntentHashCommitted => write!(f, "Intent hash already committed"),
             // Temporary until we have better execution limits
-            RejectionReason::ExecutionTookTooLong { time_limit_ms } => write!(f, "Execution took longer than max time allowed: {}", time_limit_ms),
+            RejectionReason::ExecutionTookTooLong { time_limit_ms } => write!(
+                f,
+                "Execution took longer than max time allowed: {}",
+                time_limit_ms
+            ),
         }
     }
 }
@@ -112,7 +131,7 @@ impl TransactionAttempt {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AtState {
     Committed { state_version: u64 },
-    PendingPreparingVertices { base_committed_state_version: u64, }
+    PendingPreparingVertices { base_committed_state_version: u64 },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -125,16 +144,19 @@ pub enum RecalculationDue {
 impl PendingTransactionRecord {
     pub fn new(intent_hash: IntentHash, attempt: TransactionAttempt) -> Self {
         let recalculate_after = Self::calculate_recalculation_timestamp(None, &attempt, 0, 0);
-        let (latest_committed_rejection, latest_prepared_rejection, rejection_count, non_rejection_count) = match (&attempt.against_state, &attempt.rejection) {
+        let (
+            latest_committed_rejection,
+            latest_prepared_rejection,
+            rejection_count,
+            non_rejection_count,
+        ) = match (&attempt.against_state, &attempt.rejection) {
             (AtState::Committed { .. }, Some(rejection_reason)) => {
                 (Some(rejection_reason.clone()), None, 0, 1)
             }
             (AtState::PendingPreparingVertices { .. }, Some(rejection_reason)) => {
                 (None, Some(rejection_reason.clone()), 0, 1)
             }
-            (_, None) => {
-                (None, None, 1, 0)
-            }
+            (_, None) => (None, None, 1, 0),
         };
         Self {
             intent_hash,
@@ -148,37 +170,39 @@ impl PendingTransactionRecord {
         }
     }
 
-    pub fn track_attempt(
-        &mut self,
-        attempt: TransactionAttempt,
-    ) {
+    pub fn track_attempt(&mut self, attempt: TransactionAttempt) {
         self.recalculation_due = Self::calculate_recalculation_timestamp(
             Some(&self.recalculation_due),
-            &attempt, 
+            &attempt,
             self.rejection_count,
-            self.non_rejection_count
+            self.non_rejection_count,
         );
         match &attempt.rejection {
             None => {
                 self.non_rejection_count += 1;
-            },
+            }
             Some(rejection_reason) => {
                 self.rejection_count += 1;
                 self.latest_rejection_against_committed_state = Some(rejection_reason.clone());
-            },
+            }
         }
         self.last_attempt = attempt;
     }
 
     pub fn should_recalculate(&self, current_timestamp: Instant) -> bool {
-        return match self.recalculation_due {
+        match self.recalculation_due {
             RecalculationDue::Never => false,
             RecalculationDue::Whenever => true,
             RecalculationDue::From(recalculate_after) => recalculate_after <= current_timestamp,
         }
     }
 
-    fn calculate_recalculation_timestamp(previous: Option<&RecalculationDue>, attempt: &TransactionAttempt, previous_rejection_count: u32, previous_non_rejection_count: u32) -> RecalculationDue {
+    fn calculate_recalculation_timestamp(
+        previous: Option<&RecalculationDue>,
+        attempt: &TransactionAttempt,
+        previous_rejection_count: u32,
+        previous_non_rejection_count: u32,
+    ) -> RecalculationDue {
         let delay = match &attempt.rejection {
             Some(rejection_reason) => {
                 match rejection_reason.permanence() {
@@ -188,34 +212,39 @@ impl PendingTransactionRecord {
                                 // Getting a permanent rejection against committed state means the rejection is permanent
                                 // So there's no need to recalculate
                                 return RecalculationDue::Never;
-                            },
+                            }
                             AtState::PendingPreparingVertices { .. } => {
                                 // Getting a permanent rejection against pending state isn't definite
                                 // So let's permit recalculation as per previously
                                 return previous.cloned().unwrap_or(RecalculationDue::Whenever);
-                            },
+                            }
                         }
-                    },
-                    RejectionPermanence::Temporary { base_allow_retry_after } => {
-                       // Use exponential back-off.
-                       // Previous rejections increase the exponent, previous non-rejections decrease it by half as much
-                       let base: f32 = 2.0;
-                       let exponent: f32 = (previous_rejection_count as f32) - ((previous_non_rejection_count as f32) / 2f32);
-                       let multiplier: f32 = base.powf(exponent);
-                       base_allow_retry_after.mul_f32(multiplier).min(MAX_RECALCULATION_DELAY)
-                    },
+                    }
+                    RejectionPermanence::Temporary {
+                        base_allow_retry_after,
+                    } => {
+                        // Use exponential back-off.
+                        // Previous rejections increase the exponent, previous non-rejections decrease it by half as much
+                        let base: f32 = 2.0;
+                        let exponent: f32 = (previous_rejection_count as f32)
+                            - ((previous_non_rejection_count as f32) / 2f32);
+                        let multiplier: f32 = base.powf(exponent);
+                        base_allow_retry_after
+                            .mul_f32(multiplier)
+                            .min(MAX_RECALCULATION_DELAY)
+                    }
                 }
-            },
+            }
             None => {
                 // Transaction was not rejected
                 // Use a flat delay to check it's still not rejected again soon (eg to catch a fee-vault now being out of money)
                 NON_REJECTION_RECALCULATION_DELAY
-            },
+            }
         };
 
         RecalculationDue::From(attempt.timestamp.add(delay))
     }
-} 
+}
 
 const NON_REJECTION_RECALCULATION_DELAY: Duration = Duration::from_secs(120);
 const MAX_RECALCULATION_DELAY: Duration = Duration::from_secs(1000);
@@ -227,10 +256,7 @@ pub struct PendingTransactionResultCache {
 }
 
 impl PendingTransactionResultCache {
-    pub fn new(
-        pending_txn_records_max_count: u32,
-        committed_intents_max_size: u32,
-    ) -> Self {
+    pub fn new(pending_txn_records_max_count: u32, committed_intents_max_size: u32) -> Self {
         PendingTransactionResultCache {
             pending_transaction_records: LruCache::new(
                 NonZeroUsize::new(pending_txn_records_max_count as usize).unwrap(),
@@ -256,7 +282,10 @@ impl PendingTransactionResultCache {
         }
 
         // NB - removed is the item kicked out of the LRU cache if it's at capacity
-        let removed = self.pending_transaction_records.push(payload_hash, PendingTransactionRecord::new(intent_hash, attempt));
+        let removed = self.pending_transaction_records.push(
+            payload_hash,
+            PendingTransactionRecord::new(intent_hash, attempt),
+        );
 
         self.handled_added(intent_hash, payload_hash);
         if let Some((p, r)) = removed {
@@ -264,17 +293,20 @@ impl PendingTransactionResultCache {
         }
     }
 
-    pub fn track_committed_transactions(&mut self, 
-        current_timestamp: Instant, previous_state_version: u64, hashes: Vec<IntentHash>) {
-
+    pub fn track_committed_transactions(
+        &mut self,
+        current_timestamp: Instant,
+        previous_state_version: u64,
+        hashes: Vec<IntentHash>,
+    ) {
         let mut resultant_state_version = previous_state_version;
         for intent_hash in hashes {
-
             // Note - we keep the relevant statuses of all known payloads for the intent in the cache
             // so that we can still serve status responses for them - we just ensure we mark them as rejected
             resultant_state_version += 1;
 
-            self.recently_committed_intents.push(intent_hash, (resultant_state_version, current_timestamp));
+            self.recently_committed_intents
+                .push(intent_hash, (resultant_state_version, current_timestamp));
 
             self.intent_lookup.get(&intent_hash).map(|payload_hashes| {
                 for cached_payload_hash in payload_hashes {
@@ -287,7 +319,9 @@ impl PendingTransactionResultCache {
                     // because this is a cache for pending transactions, and it can't be re-committed
                     record.track_attempt(TransactionAttempt {
                         rejection: Some(RejectionReason::IntentHashCommitted),
-                        against_state: AtState::Committed { state_version: resultant_state_version },
+                        against_state: AtState::Committed {
+                            state_version: resultant_state_version,
+                        },
                         timestamp: current_timestamp,
                     })
                 }
@@ -305,14 +339,18 @@ impl PendingTransactionResultCache {
         }
         // We might not have a pending transaction record for this, but we know it has to be rejected due to the committed intent cache
         // So let's create and return a transient committed record for it
-        if let Some((committed_at_state_version, timestamp)) = self.recently_committed_intents.get(intent_hash) {
+        if let Some((committed_at_state_version, timestamp)) =
+            self.recently_committed_intents.get(intent_hash)
+        {
             return Some(PendingTransactionRecord::new(
                 *intent_hash,
                 TransactionAttempt {
                     rejection: Some(RejectionReason::IntentHashCommitted),
-                    against_state: AtState::Committed { state_version: *committed_at_state_version },
+                    against_state: AtState::Committed {
+                        state_version: *committed_at_state_version,
+                    },
                     timestamp: *timestamp,
-                }
+                },
             ));
         }
 
@@ -409,13 +447,17 @@ mod tests {
         let intent_hash_3 = intent_hash(3);
 
         let example_attempt_1 = TransactionAttempt {
-            rejection: Some(RejectionReason::ValidationError(TransactionValidationError::TransactionTooLarge)),
+            rejection: Some(RejectionReason::ValidationError(
+                TransactionValidationError::TransactionTooLarge,
+            )),
             against_state: AtState::Committed { state_version: 0 },
             timestamp: Instant::now(),
         };
 
         let example_attempt_2 = TransactionAttempt {
-            rejection: Some(RejectionReason::FromExecution(Box::new(RejectionError::SuccessButFeeLoanNotRepaid))),
+            rejection: Some(RejectionReason::FromExecution(Box::new(
+                RejectionError::SuccessButFeeLoanNotRepaid,
+            ))),
             against_state: AtState::Committed { state_version: 0 },
             timestamp: Instant::now(),
         };
@@ -519,12 +561,10 @@ mod tests {
         let intent_hash_2 = intent_hash(2);
 
         cache.track_committed_transactions(now, 0, vec![intent_hash_1]);
-        let record = cache
-            .get_pending_transaction_record(&intent_hash_1, &payload_hash_1);
+        let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_1);
         assert!(record.is_some());
 
-        let record = cache
-            .get_pending_transaction_record(&intent_hash_2, &payload_hash_2);
+        let record = cache.get_pending_transaction_record(&intent_hash_2, &payload_hash_2);
         assert!(record.is_none());
     }
 
@@ -547,12 +587,16 @@ mod tests {
         let intent_hash_1 = intent_hash(1);
 
         let attempt_with_temporary_rejection = TransactionAttempt {
-            rejection: Some(RejectionReason::FromExecution(Box::new(RejectionError::SuccessButFeeLoanNotRepaid))),
+            rejection: Some(RejectionReason::FromExecution(Box::new(
+                RejectionError::SuccessButFeeLoanNotRepaid,
+            ))),
             against_state: AtState::Committed { state_version: 0 },
             timestamp: start,
         };
         let attempt_with_permanent_rejection = TransactionAttempt {
-            rejection: Some(RejectionReason::ValidationError(TransactionValidationError::TransactionTooLarge)),
+            rejection: Some(RejectionReason::ValidationError(
+                TransactionValidationError::TransactionTooLarge,
+            )),
             against_state: AtState::Committed { state_version: 0 },
             timestamp: start,
         };
@@ -563,14 +607,22 @@ mod tests {
         };
 
         // Permanent Rejection
-        cache.track_transaction_result(intent_hash_1, payload_hash_1, attempt_with_permanent_rejection);
+        cache.track_transaction_result(
+            intent_hash_1,
+            payload_hash_1,
+            attempt_with_permanent_rejection,
+        );
         let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_1);
         // Even far in future, a permanent rejection is still there and never ready for recalculation
         assert!(record.is_some());
         assert!(!record.unwrap().should_recalculate(far_in_future));
 
         // Temporary Rejection
-        cache.track_transaction_result(intent_hash_1, payload_hash_2, attempt_with_temporary_rejection);
+        cache.track_transaction_result(
+            intent_hash_1,
+            payload_hash_2,
+            attempt_with_temporary_rejection,
+        );
         // A little in future, a temporary rejection is not ready for recalculation
         let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_2);
         assert!(record.is_some());

@@ -191,17 +191,22 @@ impl SimpleMempool {
         self.data.clone()
     }
 
-    pub fn remove_transaction(&mut self, intent_hash: &IntentHash, payload_hash: &UserPayloadHash) -> Option<MempoolData> {
+    pub fn remove_transaction(
+        &mut self,
+        intent_hash: &IntentHash,
+        payload_hash: &UserPayloadHash,
+    ) -> Option<MempoolData> {
         let removed = self.data.remove(payload_hash);
         if removed.is_some() {
-            let payload_lookup = self.intent_lookup
+            let payload_lookup = self
+                .intent_lookup
                 .get_mut(intent_hash)
                 .expect("Mempool intent hash lookup out of sync on remove");
-            
+
             if !payload_lookup.remove(payload_hash) {
                 panic!("Mempool intent hash lookup out of sync on remove");
             }
-            if payload_lookup.len() == 0 {
+            if payload_lookup.is_empty() {
                 self.intent_lookup.remove(intent_hash);
             }
         }
@@ -425,20 +430,29 @@ mod tests {
                 .len(),
             3
         );
-        mp.remove_transaction(&intent_1_payload_2.intent_hash, &intent_1_payload_2.payload_hash);
+        mp.remove_transaction(
+            &intent_1_payload_2.intent_hash,
+            &intent_1_payload_2.payload_hash,
+        );
         assert_eq!(
             mp.get_payload_hashes_for_intent(&intent_1_payload_1.intent_hash)
                 .len(),
             2
         );
-        let removed_data = mp.remove_transaction(&intent_2_payload_2.intent_hash, &intent_2_payload_2.payload_hash);
+        let removed_data = mp.remove_transaction(
+            &intent_2_payload_2.intent_hash,
+            &intent_2_payload_2.payload_hash,
+        );
         assert!(removed_data.is_none());
         assert_eq!(
             mp.get_payload_hashes_for_intent(&intent_2_payload_2.intent_hash)
                 .len(),
             1
         );
-        let removed_data = mp.remove_transaction(&intent_2_payload_1.intent_hash, &intent_2_payload_1.payload_hash);
+        let removed_data = mp.remove_transaction(
+            &intent_2_payload_1.intent_hash,
+            &intent_2_payload_1.payload_hash,
+        );
         assert!(removed_data.is_some());
         assert_eq!(
             mp.get_payload_hashes_for_intent(&intent_2_payload_2.intent_hash)

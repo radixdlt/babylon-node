@@ -105,7 +105,10 @@ fn do_add(
         )?;
 
     state_manager
-        .check_for_rejection_and_add_to_mempool(MempoolAddSource::MempoolSync, notarized_transaction)
+        .check_for_rejection_and_add_to_mempool(
+            MempoolAddSource::MempoolSync,
+            notarized_transaction,
+        )
         .map(|_| transaction.payload_hash)
         .map_err(Into::into)
 }
@@ -239,7 +242,9 @@ impl From<MempoolAddError> for MempoolAddErrorJava {
                 max_size,
             },
             MempoolAddError::Duplicate => MempoolAddErrorJava::Duplicate,
-            MempoolAddError::Rejected(rejection) => MempoolAddErrorJava::Rejected(rejection.reason.to_string()),
+            MempoolAddError::Rejected(rejection) => {
+                MempoolAddErrorJava::Rejected(rejection.reason.to_string())
+            }
         }
     }
 }
