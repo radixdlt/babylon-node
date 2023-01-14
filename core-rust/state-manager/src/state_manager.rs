@@ -276,7 +276,7 @@ where
 
     /// Checking if the transaction should be rejected requires full validation, ie:
     /// * Static Validation
-    /// * Executing the transaction (up to loan replatment)
+    /// * Executing the transaction (up to loan repayment)
     ///
     /// We look for cached rejections first, to avoid this heavy lifting where we can
     pub fn check_for_rejection_and_add_to_mempool(
@@ -318,17 +318,22 @@ where
         self.mempool
             .check_add_would_be_possible(&unvalidated_transaction.user_payload_hash())?;
 
-        let rejection_check = self.check_for_rejection_with_caching(&unvalidated_transaction);
+        let (record, was_cached) = self.check_for_rejection_with_caching(&unvalidated_transaction);
+        let last_attempt = &record.last_attempt;
 
-        match rejection_check {
+        match &last_attempt.rejection {
             // Note - we purposefully don't save a validated transaction in the mempool:
             // * Currently (Nov 2022) static validation isn't sufficiently static, as it includes EG epoch validation
             // * Moreover, the engine expects the validated transaction to be presently valid, else panics
             // * Once epoch validation is moved to the executor, we can persist validated transactions in the mempool
-            Ok(_) => self
+            None => self
                 .mempool
                 .add_transaction(unvalidated_transaction.into()),
-            Err(reason) => Err(MempoolAddError::Rejected(reason))
+            Some(reason) => Err(MempoolAddError::Rejected(MempoolAddRejection {
+                reason: reason.clone(),
+                against_state: last_attempt.against_state.clone(),
+                was_cached
+            }))
         }
     }
 
@@ -337,26 +342,26 @@ where
     /// 
     /// The result is stored in the cache. If the transaction is freshly rejected,
     /// it is also removed from the mempool if it exists.
+    /// 
+    /// Its pending transaction record is returned, along with a boolean about whether the last attempt was cached.
     pub fn check_for_rejection_with_caching(
         &mut self,
         transaction: &NotarizedTransaction,
-    ) -> Result<(), RejectionReason> {
+    ) -> (PendingTransactionRecord, bool) {
         let current_time = Instant::now();
         let intent_hash = transaction.intent_hash();
         let payload_hash = transaction.user_payload_hash();
 
-        let (cached_status, should_recalculate) = self
+        let record_option = self
             .pending_transaction_result_cache
-            .get_rejection_status_and_if_recalculation_due(
-                current_time,
+            .get_pending_transaction_record(
                 &intent_hash,
                 &payload_hash
             );
 
-        if !should_recalculate {
-            return match cached_status {
-                Some(rejection_reason) => Err(rejection_reason.clone()),
-                None => Ok(()),
+        if let Some(record) = record_option {
+            if !record.should_recalculate(current_time) {
+                return (record, true);
             }
         }
 
@@ -364,7 +369,7 @@ where
 
         if new_status.is_err() {
             // If it's been rejected, let's remove it from the mempool, if it's present
-            if self.mempool.remove_transaction(&payload_hash).is_some() {
+            if self.mempool.remove_transaction(&intent_hash, &payload_hash).is_some() {
                 self.metrics
                     .mempool_current_transactions_total
                     .set(self.mempool.get_count() as i64);
@@ -373,12 +378,13 @@ where
 
         let attempt = TransactionAttempt {
             rejection: new_status.as_ref().err().cloned(),
-            state_version: self.store.max_state_version(),
+            against_state: AtState::Committed { state_version: self.store.max_state_version() },
             timestamp: current_time,
         };
         self.pending_transaction_result_cache.track_transaction_result(intent_hash, payload_hash, attempt);
 
-        new_status
+        // Unwrap allowed as we've just put it in the cache, and unless the cache has size 0 it must be there
+        (self.pending_transaction_result_cache.get_pending_transaction_record(&intent_hash, &payload_hash).unwrap(), false)
     }
 
     pub fn check_for_rejection_uncached(
@@ -417,16 +423,16 @@ where
         let mut mempool_txns = self.mempool.get_transactions();
 
         let mut txns_to_remove = Vec::new();
-        for (hash, data) in &mempool_txns {
-            let result = self.check_for_rejection_with_caching(&data.transaction.payload);
-            if result.is_err() {
-                txns_to_remove.push(*hash);
+        for (_, data) in &mempool_txns {
+            let (record, was_cached) = self.check_for_rejection_with_caching(&data.transaction.payload);
+            if !was_cached && record.last_attempt.rejection.is_some() {
+                txns_to_remove.push((data.transaction.intent_hash, data.transaction.payload_hash));
             }
         }
 
         for txn_to_remove in txns_to_remove {
-            mempool_txns.remove(&txn_to_remove);
-            if self.mempool.remove_transaction(&txn_to_remove).is_some() {
+            mempool_txns.remove(&txn_to_remove.1);
+            if self.mempool.remove_transaction(&txn_to_remove.0, &txn_to_remove.1).is_some() {
                 self.metrics
                     .mempool_current_transactions_total
                     .set(self.mempool.get_count() as i64);
@@ -442,6 +448,7 @@ where
     pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
         // This intent hash check, and current epoch should eventually live in the executor
         let mut already_committed_or_prepared_intent_hashes: HashSet<IntentHash> = HashSet::new();
+        let pending_transaction_base_state_version = self.store.max_state_version();
 
         let already_committed_proposed_payload_hashes = prepare_request
             .proposed_payloads
@@ -479,7 +486,7 @@ where
             let executable = &self
                 .ledger_transaction_validator
                 .validate_and_create_executable(&prepared_parsed_transaction)
-                .expect("Already prepared tranasctions should be valid");
+                .expect("Already prepared transactions should be valid");
 
             let receipt = execute_and_commit_transaction(
                 &mut staged_store,
@@ -532,7 +539,10 @@ where
         .expect("Time update txn failed");
         committed.push(scrypto_encode(&time_update_ledger_txn).unwrap());
 
-        let mut rejected = Vec::new();
+        let mut rejected_payloads = Vec::new();
+
+        let pending_transaction_timestamp = Instant::now();
+        let mut pending_transaction_results = Vec::new();
 
         for proposed_payload in prepare_request.proposed_payloads {
             let parsed =
@@ -541,17 +551,19 @@ where
                 ) {
                     Ok(parsed) => parsed,
                     Err(error) => {
-                        rejected.push((proposed_payload, format!("{:?}", error)));
+                        rejected_payloads.push((proposed_payload, format!("{:?}", error)));
                         continue;
                     }
                 };
 
             let intent_hash = parsed.intent_hash();
+            let user_payload_hash = parsed.user_payload_hash();
             if already_committed_or_prepared_intent_hashes.contains(&intent_hash) {
-                rejected.push((
+                rejected_payloads.push((
                     proposed_payload,
                     format!("Duplicate intent hash: {:?}", &intent_hash),
                 ));
+                pending_transaction_results.push((intent_hash, user_payload_hash, Some(RejectionReason::IntentHashCommitted)));
                 continue;
             }
 
@@ -562,7 +574,8 @@ where
             let executable = match validate_result {
                 Ok(executable) => executable,
                 Err(error) => {
-                    rejected.push((proposed_payload, format!("{:?}", error)));
+                    rejected_payloads.push((proposed_payload, format!("{:?}", &error)));
+                    pending_transaction_results.push((intent_hash, user_payload_hash, Some(RejectionReason::ValidationError(error))));
                     continue;
                 }
             };
@@ -579,22 +592,46 @@ where
                 TransactionResult::Commit(..) => {
                     already_committed_or_prepared_intent_hashes.insert(intent_hash);
                     committed.push(LedgerTransaction::User(parsed).create_payload().unwrap());
+                    pending_transaction_results.push((intent_hash, user_payload_hash, None));
                 }
                 TransactionResult::Reject(reject_result) => {
-                    rejected.push((proposed_payload, format!("{:?}", reject_result)));
+                    rejected_payloads.push((proposed_payload, format!("{:?}", &reject_result)));
+                    pending_transaction_results.push((intent_hash, user_payload_hash, Some(RejectionReason::FromExecution(Box::new(reject_result.error)))));
                 }
             };
         }
 
         if self.logging_config.log_on_transaction_rejection {
-            for rejection in rejected.iter() {
+            for rejection in rejected_payloads.iter() {
                 info!("TXN INVALID: {}", rejection.1);
             }
         }
 
+
+        for (intent_hash, user_payload_hash, rejection_option) in pending_transaction_results {
+            if rejection_option.is_some() {
+                // Removing transactions rejected during prepare from the mempool is a bit of overkill:
+                // just because transactions were rejected in this history doesn't mean this history will be committed.
+                //
+                // But it'll do for now as a defensive measure until we can have a more intelligent mempool.
+                if self.mempool.remove_transaction(&intent_hash, &user_payload_hash).is_some() {
+                    // TODO - fix this metric to live inside the mempool
+                    self.metrics
+                        .mempool_current_transactions_total
+                        .set(self.mempool.get_count() as i64);
+                }
+            }
+            let attempt = TransactionAttempt {
+                rejection: rejection_option,
+                against_state: AtState::PendingPreparingVertices { base_committed_state_version: pending_transaction_base_state_version },
+                timestamp: pending_transaction_timestamp,
+            };
+            self.pending_transaction_result_cache.track_transaction_result(intent_hash, user_payload_hash, attempt);
+        }
+
         PrepareResult {
             committed,
-            rejected,
+            rejected: rejected_payloads,
         }
     }
 

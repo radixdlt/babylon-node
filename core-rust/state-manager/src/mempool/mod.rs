@@ -68,7 +68,7 @@ use std::string::ToString;
 
 use crate::MetricLabel;
 
-use self::pending_transaction_result_cache::RejectionReason;
+use crate::pending_transaction_result_cache::{RejectionReason, AtState};
 
 #[derive(Debug, Clone, Copy)]
 pub enum MempoolAddSource {
@@ -91,25 +91,28 @@ impl MetricLabel for MempoolAddSource {
 pub enum MempoolAddError {
     Full { current_size: u64, max_size: u64 },
     Duplicate,
-    Rejected(RejectionReason),
+    Rejected(MempoolAddRejection),
+}
+
+#[derive(Debug)]
+pub struct MempoolAddRejection {
+    pub reason: RejectionReason,
+    pub against_state: AtState,
+    pub was_cached: bool,
 }
 
 impl MetricLabel for MempoolAddError {
     type StringReturnType = &'static str;
 
     fn prometheus_label_name(&self) -> Self::StringReturnType {
-        match *self {
-            MempoolAddError::Rejected(RejectionReason::FromExecution(_)) => {
-                "ExecutionError"
-            }
-            MempoolAddError::Rejected(RejectionReason::ValidationError(_)) => {
-                "ValidationError"
-            }
-            MempoolAddError::Rejected(RejectionReason::IntentHashCommitted) => {
-                "IntentHashCommitted"
-            }
-            MempoolAddError::Rejected(RejectionReason::ExecutionTookTooLong { .. }) => {
-                "ExecutionTooLong"
+        match self {
+            MempoolAddError::Rejected(rejection) => {
+                match &rejection.reason {
+                    RejectionReason::FromExecution(_) => "ExecutionError",
+                    RejectionReason::ValidationError(_) => "ValidationError",
+                    RejectionReason::IntentHashCommitted => "IntentHashCommitted",
+                    RejectionReason::ExecutionTookTooLong { .. } => "ExecutionTooLong",
+                }
             }
             MempoolAddError::Full { .. } => "MempoolFull",
             MempoolAddError::Duplicate => "Duplicate",
@@ -125,7 +128,9 @@ impl ToString for MempoolAddError {
                 max_size,
             } => format!("Mempool Full [{} - {}]", current_size, max_size),
             MempoolAddError::Duplicate => "Duplicate Entry".to_string(),
-            MempoolAddError::Rejected(reason) => reason.to_string(),
+            MempoolAddError::Rejected(rejection) => {
+                rejection.reason.to_string()
+            }
         }
     }
 }

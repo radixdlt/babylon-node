@@ -146,11 +146,11 @@ fn map_pending_payloads_not_in_mempool(
         .into_iter()
         .filter_map(
             |(payload_hash, transaction_record)| {
-                match transaction_record.last_attempt.rejection {
+                match &transaction_record.last_attempt.rejection {
                     Some(reason) => {
                         Some(models::V0TransactionPayloadStatus {
                             payload_hash: to_api_payload_hash(&payload_hash),
-                            status: if reason.is_permanent() {
+                            status: if transaction_record.last_attempt.was_against_committed_state() && reason.is_permanent() {
                                 PayloadStatus::PermanentlyRejected
                             } else {
                                 PayloadStatus::TransientlyRejected

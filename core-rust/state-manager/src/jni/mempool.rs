@@ -239,7 +239,7 @@ impl From<MempoolAddError> for MempoolAddErrorJava {
                 max_size,
             },
             MempoolAddError::Duplicate => MempoolAddErrorJava::Duplicate,
-            MempoolAddError::Rejected(reason) => MempoolAddErrorJava::Rejected(reason.to_string()),
+            MempoolAddError::Rejected(rejection) => MempoolAddErrorJava::Rejected(rejection.reason.to_string()),
         }
     }
 }
