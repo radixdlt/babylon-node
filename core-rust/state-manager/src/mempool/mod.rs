@@ -68,7 +68,7 @@ use std::string::ToString;
 
 use crate::MetricLabel;
 
-use crate::pending_transaction_result_cache::{AtState, RejectionReason};
+pub use crate::pending_transaction_result_cache::*;
 
 #[derive(Debug, Clone, Copy)]
 pub enum MempoolAddSource {
@@ -131,7 +131,7 @@ impl ToString for MempoolAddError {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode, Clone)]
+#[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct MempoolConfig {
     pub max_size: u32,
 }

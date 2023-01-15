@@ -70,13 +70,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
+import com.google.inject.*;
 import com.google.inject.Module;
-import com.google.inject.Provides;
-import com.google.inject.TypeLiteral;
 import com.google.inject.util.Modules;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashSigner;
@@ -91,11 +86,7 @@ import com.radixdlt.harness.simulation.NodeNetworkMessagesModule;
 import com.radixdlt.keys.LocalSigner;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.modules.ModuleRunner;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.rev1.LedgerAndBFTProof;
-import com.radixdlt.rev1.forks.InMemoryForksEpochStore;
-import com.radixdlt.store.InMemoryEngineStore;
-import com.radixdlt.store.InMemoryTransactionsAndProofReader;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
@@ -192,9 +183,7 @@ public class SimulationNodes {
 
     SimulationNetwork getUnderlyingNetwork();
 
-    Map<BFTNode, SystemCounters> getSystemCounters();
-
-    void addOrOverrideNode(ECKeyPair key, Module extraModule);
+    Map<BFTNode, Metrics> getMetrics();
 
     void runModule(BFTNode node, String name);
 
@@ -338,11 +327,10 @@ public class SimulationNodes {
     }
 
     @Override
-    public Map<BFTNode, SystemCounters> getSystemCounters() {
+    public Map<BFTNode, Metrics> getMetrics() {
       return nodes.entrySet().stream()
           .collect(
-              Collectors.toMap(
-                  Map.Entry::getKey, e -> e.getValue().getInstance(SystemCounters.class)));
+              Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getInstance(Metrics.class)));
     }
 
     @Override
@@ -352,52 +340,6 @@ public class SimulationNodes {
           .getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}))
           .get(name)
           .start();
-    }
-
-    @Override
-    public void addOrOverrideNode(ECKeyPair key, Module extraModule) {
-      final var bftNode = BFTNode.create(key.getPublicKey());
-
-      final var existingNode = this.nodes.get(bftNode);
-      if (existingNode != null) {
-        stopNode(existingNode);
-
-        final var baseModule = createBFTModule(key);
-        final var module =
-            Modules.override(baseModule)
-                .with(
-                    new AbstractModule() {
-                      @Override
-                      protected void configure() {
-                        bind(new TypeLiteral<InMemoryEngineStore.Store<LedgerAndBFTProof>>() {})
-                            .toInstance(
-                                existingNode
-                                    .getInstance(
-                                        new Key<InMemoryEngineStore<LedgerAndBFTProof>>() {})
-                                    .getStore());
-                        bind(InMemoryTransactionsAndProofReader.Store.class)
-                            .toInstance(
-                                existingNode
-                                    .getInstance(InMemoryTransactionsAndProofReader.class)
-                                    .getStore());
-                        bind(InMemoryForksEpochStore.Store.class)
-                            .toInstance(
-                                existingNode.getInstance(InMemoryForksEpochStore.class).getStore());
-                      }
-                    },
-                    extraModule);
-        final var injector = Guice.createInjector(module);
-        this.nodes.put(bftNode, injector);
-        this.addObservables(bftNode, injector);
-        this.startRunners(bftNode, injector);
-      } else {
-        final var baseModule = createBFTModule(key);
-        final var module = Modules.override(baseModule).with(extraModule);
-        final var injector = Guice.createInjector(module);
-        this.nodes.put(bftNode, injector);
-        this.addObservables(bftNode, injector);
-        this.startRunners(bftNode, injector);
-      }
     }
 
     @Override

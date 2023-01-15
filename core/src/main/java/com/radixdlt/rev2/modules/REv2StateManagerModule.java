@@ -64,9 +64,14 @@
 
 package com.radixdlt.rev2.modules;
 
-import com.google.inject.*;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.NodeAutoCloseable;
@@ -74,10 +79,8 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.mempool.MempoolInserter;
-import com.radixdlt.mempool.MempoolReader;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.mempool.*;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.*;
@@ -93,7 +96,6 @@ public final class REv2StateManagerModule extends AbstractModule {
   private final int networkId;
   private final int transactionsPerProposalCount;
   private final REv2DatabaseConfig databaseConfig;
-  private final REv2StateConfig stateConfig;
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean testing;
   private final boolean debugLogging;
@@ -102,14 +104,12 @@ public final class REv2StateManagerModule extends AbstractModule {
       int networkId,
       int transactionsPerProposalCount,
       boolean prefixDatabase,
-      REv2StateConfig stateComputerConfig,
       REv2DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging) {
     this.networkId = networkId;
     this.transactionsPerProposalCount = transactionsPerProposalCount;
     this.testing = prefixDatabase;
-    this.stateConfig = stateComputerConfig;
     this.databaseConfig = databaseConfig;
     this.mempoolConfig = mempoolConfig;
     this.debugLogging = debugLogging;
@@ -118,34 +118,20 @@ public final class REv2StateManagerModule extends AbstractModule {
   public static REv2StateManagerModule create(
       int networkId,
       int transactionsPerProposalCount,
-      REv2StateConfig stateComputerConfig,
       REv2DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig) {
     return new REv2StateManagerModule(
-        networkId,
-        transactionsPerProposalCount,
-        false,
-        stateComputerConfig,
-        databaseConfig,
-        mempoolConfig,
-        false);
+        networkId, transactionsPerProposalCount, false, databaseConfig, mempoolConfig, false);
   }
 
   public static REv2StateManagerModule createForTesting(
       int networkId,
       int transactionsPerProposalCount,
-      REv2StateConfig stateComputerConfig,
       REv2DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging) {
     return new REv2StateManagerModule(
-        networkId,
-        transactionsPerProposalCount,
-        true,
-        stateComputerConfig,
-        databaseConfig,
-        mempoolConfig,
-        debugLogging);
+        networkId, transactionsPerProposalCount, true, databaseConfig, mempoolConfig, debugLogging);
   }
 
   @Override
@@ -163,7 +149,6 @@ public final class REv2StateManagerModule extends AbstractModule {
               return StateManager.createAndInitialize(
                   new StateManagerConfig(
                       NetworkDefinition.from(network),
-                      stateConfig,
                       mempoolConfig,
                       databaseConfigToUse,
                       getLoggingConfig()));
@@ -179,7 +164,6 @@ public final class REv2StateManagerModule extends AbstractModule {
               return StateManager.createAndInitialize(
                   new StateManagerConfig(
                       NetworkDefinition.from(network),
-                      stateConfig,
                       mempoolConfig,
                       databaseConfig,
                       getLoggingConfig()));
@@ -198,11 +182,17 @@ public final class REv2StateManagerModule extends AbstractModule {
             REv2StateComputer rEv2StateComputer(
                 RustStateComputer stateComputer,
                 EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
+                Hasher hasher,
+                EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
+                EventDispatcher<ConsensusByzantineEvent> byzantineEventEventDispatcher,
                 Serialization serialization) {
               return new REv2StateComputer(
                   stateComputer,
                   transactionsPerProposalCount,
+                  hasher,
                   ledgerUpdateEventDispatcher,
+                  mempoolAddSuccessEventDispatcher,
+                  byzantineEventEventDispatcher,
                   serialization);
             }
 
@@ -236,11 +226,9 @@ public final class REv2StateManagerModule extends AbstractModule {
 
             @Provides
             PersistentVertexStore vertexStore(
-                RustStateComputer stateComputer,
-                SystemCounters systemCounters,
-                Serialization serialization) {
+                RustStateComputer stateComputer, Metrics metrics, Serialization serialization) {
               return s -> {
-                systemCounters.increment(SystemCounters.CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
+                metrics.misc().vertexStoreSaved().inc();
                 var vertexStoreBytes =
                     serialization.toDson(s.toSerialized(), DsonOutput.Output.ALL);
                 stateComputer.saveVertexStore(vertexStoreBytes);
@@ -292,7 +280,7 @@ public final class REv2StateManagerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private RustStateComputer rustStateComputer(StateManager stateManager) {
-    return new RustStateComputer(stateManager);
+  private RustStateComputer rustStateComputer(Metrics metrics, StateManager stateManager) {
+    return new RustStateComputer(metrics, stateManager);
   }
 }

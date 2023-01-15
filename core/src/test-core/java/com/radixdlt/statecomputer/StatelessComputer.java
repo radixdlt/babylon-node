@@ -67,6 +67,7 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -75,10 +76,9 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.RoundDetails;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.rev1.RoundDetails;
-import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -130,7 +130,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
-    var invalidTransactions = new HashMap<RawLedgerTransaction, Exception>();
+    var invalidTransactions = new HashMap<RawNotarizedTransaction, Exception>();
 
     for (var transaction : proposedTransactions) {
       var success = verifier.verify(transaction);
@@ -140,7 +140,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
                 transaction.INCORRECTInterpretDirectlyAsRawLedgerTransaction()));
       } else {
         invalidTransactions.put(
-            transaction.INCORRECTInterpretDirectlyAsRawLedgerTransaction(),
+            transaction.INCORRECTInterpretDirectlyAsRawNotarizedTransaction(),
             new StatelessTransactionException());
       }
     }
@@ -155,24 +155,25 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
     var output =
         txnsAndProof
             .getProof()
-            .getNextValidatorSet()
+            .getNextEpoch()
             .map(
-                validatorSet -> {
+                nextEpoch -> {
                   LedgerProof header = txnsAndProof.getProof();
                   VertexWithHash genesisVertex =
-                      Vertex.createGenesis(header.getHeader()).withId(hasher);
+                      Vertex.createInitialEpochVertex(header.getHeader()).withId(hasher);
                   LedgerHeader nextLedgerHeader =
                       LedgerHeader.create(
-                          header.getNextEpoch(),
+                          nextEpoch.getEpoch(),
                           Round.genesis(),
                           header.getAccumulatorState(),
                           header.consensusParentRoundTimestamp(),
                           header.proposerTimestamp());
                   QuorumCertificate genesisQC =
-                      QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+                      QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
                   final var initialState =
                       VertexStoreState.create(
                           HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
+                  var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
                   var proposerElection = new WeightedRotatingLeaders(validatorSet);
                   var bftConfiguration =
                       new BFTConfiguration(proposerElection, validatorSet, initialState);

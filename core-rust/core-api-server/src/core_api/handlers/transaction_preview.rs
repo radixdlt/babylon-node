@@ -3,7 +3,7 @@ use radix_engine::{
     transaction::{PreviewError, PreviewResult, TransactionResult},
     types::{Bech32Encoder, RENodeId},
 };
-use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::node::NetworkDefinition;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::{LedgerTransactionReceipt, PreviewRequest};
 use transaction::manifest;
@@ -76,7 +76,7 @@ fn parse_preview_request(
         notary_as_signatory: request.notary_as_signatory.unwrap_or(false),
         cost_unit_limit: extract_api_u32_as_i64(request.cost_unit_limit)
             .map_err(|err| err.into_response_error("cost_unit_limit"))?,
-        tip_percentage: extract_api_u8_as_i32(request.tip_percentage)
+        tip_percentage: extract_api_u16_as_i32(request.tip_percentage)
             .map_err(|err| err.into_response_error("tip_percentage"))?,
         nonce: extract_api_u64_as_string(request.nonce)
             .map_err(|err| err.into_response_error("nonce"))?,
@@ -95,18 +95,6 @@ fn to_api_response(
     bech32_encoder: &Bech32Encoder,
 ) -> Result<models::TransactionPreviewResponse, RequestHandlingError> {
     let receipt = result.receipt;
-
-    let logs = receipt
-        .execution
-        .application_logs
-        .iter()
-        .map(
-            |(level, message)| models::TransactionPreviewResponseLogsInner {
-                level: level.to_string(),
-                message: message.to_string(),
-            },
-        )
-        .collect();
 
     let response = match &receipt.result {
         TransactionResult::Commit(commit_result) => {
@@ -127,6 +115,17 @@ fn to_api_response(
                 .collect::<Result<_, MappingError>>()
                 .map_err(|_| server_error("Can't map entity references"))?;
 
+            let logs = commit_result
+                .application_logs
+                .iter()
+                .map(
+                    |(level, message)| models::TransactionPreviewResponseLogsInner {
+                        level: level.to_string(),
+                        message: message.to_string(),
+                    },
+                )
+                .collect();
+
             let ledger_receipt: LedgerTransactionReceipt = receipt
                 .try_into()
                 .map_err(|_| server_error("Can't create a ledger receipt"))?;
@@ -146,10 +145,11 @@ fn to_api_response(
                 )?),
                 state_updates: Box::default(),
                 output: None,
+                next_epoch: None,
                 error_message: Some(format!("{:?}", reject_result)),
             }),
             resource_changes: vec![],
-            logs,
+            logs: vec![],
         },
     };
 

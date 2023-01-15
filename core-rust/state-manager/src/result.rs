@@ -63,14 +63,14 @@
  */
 
 use radix_engine_interface::scrypto;
-use sbor::{Decode, DecodeError, Encode, EncodeError, TypeId};
+use sbor::{Categorize, Decode, DecodeError, Encode, EncodeError};
 
 // System Errors.
 pub const ERRCODE_JNI: i16 = 0;
 pub const ERRCODE_SBOR: i16 = 1;
 
 #[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct StateManagerError {
     error_code: i16,
     error_msg: String,

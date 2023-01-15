@@ -72,7 +72,6 @@ import com.google.inject.Provides;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
@@ -85,14 +84,10 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.utils.KeyComparator;
 import io.reactivex.rxjava3.schedulers.Timed;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 import java.util.function.Predicate;
 import org.junit.Test;
 
@@ -114,7 +109,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
   public void test_pacemaker_round_update_race_condition() {
     final DeterministicTest test =
         DeterministicTest.builder()
-            .numNodes(numValidatorNodes, 0)
+            .numNodes(numValidatorNodes, 0, true)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(messUpMessagesForNodeUnderTest())
             .overrideWithIncorrectModule(
@@ -163,10 +158,9 @@ public class PacemakerRoundUpdateRaceConditionTest {
     test.startAllNodes();
     test.runUntilMessage(nodeUnderTestReachesRound(Round.of(3)));
 
-    final var counters = test.getInstance(nodeUnderTestIndex, SystemCounters.class);
-    assertThat(counters.get(SystemCounters.CounterType.BFT_VOTE_QUORUMS))
-        .isEqualTo(2); // ensure that quorum was formed
-    assertThat(counters.get(SystemCounters.CounterType.BFT_PACEMAKER_TIMEOUTS_SENT))
+    final var counters = test.getInstance(nodeUnderTestIndex, Metrics.class);
+    assertThat(counters.bft().voteQuorums().get()).isEqualTo(2); // ensure that quorum was formed
+    assertThat(counters.bft().pacemaker().timeoutsSent().get())
         .isEqualTo(2); // ensure that timeouts were processed
   }
 

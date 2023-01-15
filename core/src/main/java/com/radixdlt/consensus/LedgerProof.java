@@ -160,7 +160,11 @@ public final class LedgerProof {
   }
 
   public Optional<BFTValidatorSet> getNextValidatorSet() {
-    return ledgerHeader.getNextValidatorSet();
+    return ledgerHeader.getNextEpoch().map(NextEpoch::getValidators).map(BFTValidatorSet::from);
+  }
+
+  public Optional<NextEpoch> getNextEpoch() {
+    return ledgerHeader.getNextEpoch();
   }
 
   /**
@@ -169,18 +173,6 @@ public final class LedgerProof {
    */
   public long getEpoch() {
     return ledgerHeader.getEpoch();
-  }
-
-  /**
-   * This returns the new epoch, after an epoch change. This method should only be called on
-   * end-of-epoch Ledger Proofs.
-   */
-  public long getNextEpoch() {
-    if (!ledgerHeader.isEndOfEpoch()) {
-      throw new UnsupportedOperationException(
-          "This method should only be called on Ledger Proofs representing a change of epoch");
-    }
-    return ledgerHeader.getEpoch() + 1;
   }
 
   public Round getRound() {

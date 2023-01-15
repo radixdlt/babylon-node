@@ -31,12 +31,20 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * EpochManagerSubstateAllOf
  */
 @JsonPropertyOrder({
-  EpochManagerSubstateAllOf.JSON_PROPERTY_EPOCH
+  EpochManagerSubstateAllOf.JSON_PROPERTY_EPOCH,
+  EpochManagerSubstateAllOf.JSON_PROPERTY_ROUND,
+  EpochManagerSubstateAllOf.JSON_PROPERTY_ROUNDS_PER_EPOCH
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class EpochManagerSubstateAllOf {
   public static final String JSON_PROPERTY_EPOCH = "epoch";
   private Long epoch;
+
+  public static final String JSON_PROPERTY_ROUND = "round";
+  private Long round;
+
+  public static final String JSON_PROPERTY_ROUNDS_PER_EPOCH = "rounds_per_epoch";
+  private Long roundsPerEpoch;
 
   public EpochManagerSubstateAllOf() { 
   }
@@ -69,6 +77,62 @@ public class EpochManagerSubstateAllOf {
   }
 
 
+  public EpochManagerSubstateAllOf round(Long round) {
+    this.round = round;
+    return this;
+  }
+
+   /**
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the current round in an epoch
+   * minimum: 0
+   * maximum: 10000000000
+   * @return round
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the current round in an epoch")
+  @JsonProperty(JSON_PROPERTY_ROUND)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getRound() {
+    return round;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ROUND)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setRound(Long round) {
+    this.round = round;
+  }
+
+
+  public EpochManagerSubstateAllOf roundsPerEpoch(Long roundsPerEpoch) {
+    this.roundsPerEpoch = roundsPerEpoch;
+    return this;
+  }
+
+   /**
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, specifying the number of rounds per epoch
+   * minimum: 0
+   * maximum: 10000000000
+   * @return roundsPerEpoch
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, specifying the number of rounds per epoch")
+  @JsonProperty(JSON_PROPERTY_ROUNDS_PER_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getRoundsPerEpoch() {
+    return roundsPerEpoch;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ROUNDS_PER_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setRoundsPerEpoch(Long roundsPerEpoch) {
+    this.roundsPerEpoch = roundsPerEpoch;
+  }
+
+
   /**
    * Return true if this EpochManagerSubstate_allOf object is equal to o.
    */
@@ -81,12 +145,14 @@ public class EpochManagerSubstateAllOf {
       return false;
     }
     EpochManagerSubstateAllOf epochManagerSubstateAllOf = (EpochManagerSubstateAllOf) o;
-    return Objects.equals(this.epoch, epochManagerSubstateAllOf.epoch);
+    return Objects.equals(this.epoch, epochManagerSubstateAllOf.epoch) &&
+        Objects.equals(this.round, epochManagerSubstateAllOf.round) &&
+        Objects.equals(this.roundsPerEpoch, epochManagerSubstateAllOf.roundsPerEpoch);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(epoch);
+    return Objects.hash(epoch, round, roundsPerEpoch);
   }
 
   @Override
@@ -94,6 +160,8 @@ public class EpochManagerSubstateAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class EpochManagerSubstateAllOf {\n");
     sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
+    sb.append("    round: ").append(toIndentedString(round)).append("\n");
+    sb.append("    roundsPerEpoch: ").append(toIndentedString(roundsPerEpoch)).append("\n");
     sb.append("}");
     return sb.toString();
   }

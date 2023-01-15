@@ -75,8 +75,9 @@ pub mod store;
 pub mod transaction;
 mod types;
 
-pub use mempool::*;
-pub use metrics::*;
-pub use receipt::*;
-pub use state_manager::*;
-pub use types::*;
+pub use crate::mempool::*;
+pub use crate::metrics::*;
+pub use crate::pending_transaction_result_cache::*;
+pub use crate::receipt::*;
+pub use crate::state_manager::*;
+pub use crate::types::*;

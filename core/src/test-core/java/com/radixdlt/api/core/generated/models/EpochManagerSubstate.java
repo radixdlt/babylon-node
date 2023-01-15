@@ -35,7 +35,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   EpochManagerSubstate.JSON_PROPERTY_SUBSTATE_TYPE,
-  EpochManagerSubstate.JSON_PROPERTY_EPOCH
+  EpochManagerSubstate.JSON_PROPERTY_EPOCH,
+  EpochManagerSubstate.JSON_PROPERTY_ROUND,
+  EpochManagerSubstate.JSON_PROPERTY_ROUNDS_PER_EPOCH
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class EpochManagerSubstate {
@@ -44,6 +46,12 @@ public class EpochManagerSubstate {
 
   public static final String JSON_PROPERTY_EPOCH = "epoch";
   private Long epoch;
+
+  public static final String JSON_PROPERTY_ROUND = "round";
+  private Long round;
+
+  public static final String JSON_PROPERTY_ROUNDS_PER_EPOCH = "rounds_per_epoch";
+  private Long roundsPerEpoch;
 
   public EpochManagerSubstate() { 
   }
@@ -102,6 +110,62 @@ public class EpochManagerSubstate {
   }
 
 
+  public EpochManagerSubstate round(Long round) {
+    this.round = round;
+    return this;
+  }
+
+   /**
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the current round in an epoch
+   * minimum: 0
+   * maximum: 10000000000
+   * @return round
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the current round in an epoch")
+  @JsonProperty(JSON_PROPERTY_ROUND)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getRound() {
+    return round;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ROUND)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setRound(Long round) {
+    this.round = round;
+  }
+
+
+  public EpochManagerSubstate roundsPerEpoch(Long roundsPerEpoch) {
+    this.roundsPerEpoch = roundsPerEpoch;
+    return this;
+  }
+
+   /**
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, specifying the number of rounds per epoch
+   * minimum: 0
+   * maximum: 10000000000
+   * @return roundsPerEpoch
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, specifying the number of rounds per epoch")
+  @JsonProperty(JSON_PROPERTY_ROUNDS_PER_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getRoundsPerEpoch() {
+    return roundsPerEpoch;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ROUNDS_PER_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setRoundsPerEpoch(Long roundsPerEpoch) {
+    this.roundsPerEpoch = roundsPerEpoch;
+  }
+
+
   /**
    * Return true if this EpochManagerSubstate object is equal to o.
    */
@@ -115,12 +179,14 @@ public class EpochManagerSubstate {
     }
     EpochManagerSubstate epochManagerSubstate = (EpochManagerSubstate) o;
     return Objects.equals(this.substateType, epochManagerSubstate.substateType) &&
-        Objects.equals(this.epoch, epochManagerSubstate.epoch);
+        Objects.equals(this.epoch, epochManagerSubstate.epoch) &&
+        Objects.equals(this.round, epochManagerSubstate.round) &&
+        Objects.equals(this.roundsPerEpoch, epochManagerSubstate.roundsPerEpoch);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(substateType, epoch);
+    return Objects.hash(substateType, epoch, round, roundsPerEpoch);
   }
 
   @Override
@@ -129,6 +195,8 @@ public class EpochManagerSubstate {
     sb.append("class EpochManagerSubstate {\n");
     sb.append("    substateType: ").append(toIndentedString(substateType)).append("\n");
     sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
+    sb.append("    round: ").append(toIndentedString(round)).append("\n");
+    sb.append("    roundsPerEpoch: ").append(toIndentedString(roundsPerEpoch)).append("\n");
     sb.append("}");
     return sb.toString();
   }

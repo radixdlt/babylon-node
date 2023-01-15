@@ -76,14 +76,9 @@ import com.radixdlt.consensus.bft.RoundVotingResult.FormedTC;
 import com.radixdlt.consensus.liveness.PacemakerReducer;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.RemoteEventProcessor;
-import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.environment.*;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -167,9 +162,11 @@ public final class BFTSync implements BFTSyncer {
   private final RemoteEventDispatcher<GetVerticesRequest> requestSender;
   private final EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher;
   private final ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher;
+
+  private final EventDispatcher<ConsensusByzantineEvent> unexpectedEventEventDispatcher;
   private final Random random;
   private final int bftSyncPatienceMillis;
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
   private LedgerProof currentLedgerHeader;
 
   // TODO: remove once we figure that out
@@ -189,10 +186,11 @@ public final class BFTSync implements BFTSyncer {
       RemoteEventDispatcher<GetVerticesRequest> requestSender,
       EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher,
       ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
+      EventDispatcher<ConsensusByzantineEvent> unexpectedEventEventDispatcher,
       LedgerProof currentLedgerHeader,
       Random random,
       int bftSyncPatienceMillis,
-      SystemCounters systemCounters) {
+      Metrics metrics) {
     this.self = self;
     this.syncRequestRateLimiter = Objects.requireNonNull(syncRequestRateLimiter);
     this.vertexStore = vertexStore;
@@ -203,10 +201,11 @@ public final class BFTSync implements BFTSyncer {
     this.requestSender = requestSender;
     this.localSyncRequestEventDispatcher = Objects.requireNonNull(localSyncRequestEventDispatcher);
     this.timeoutDispatcher = Objects.requireNonNull(timeoutDispatcher);
+    this.unexpectedEventEventDispatcher = Objects.requireNonNull(unexpectedEventEventDispatcher);
     this.currentLedgerHeader = Objects.requireNonNull(currentLedgerHeader);
     this.random = random;
     this.bftSyncPatienceMillis = bftSyncPatienceMillis;
-    this.systemCounters = Objects.requireNonNull(systemCounters);
+    this.metrics = Objects.requireNonNull(metrics);
   }
 
   public EventProcessor<RoundQuorumReached> roundQuorumReachedEventProcessor() {
@@ -251,10 +250,11 @@ public final class BFTSync implements BFTSyncer {
       return SyncResult.SYNCED;
     }
 
-    // TODO: Move this check into pre-check
+    // TODO: Check for other conflicting QCs which a bad validator set may have created
     // Bad genesis qc, ignore...
     if (qc.getRound().isGenesis()) {
-      log.warn("SYNC_TO_QC: Bad Genesis: {}", highQC);
+      this.unexpectedEventEventDispatcher.dispatch(
+          new ConsensusByzantineEvent.ConflictingGenesis(qc, author));
       return SyncResult.INVALID;
     }
 
@@ -362,7 +362,7 @@ public final class BFTSync implements BFTSyncer {
 
     //noinspection UnstableApiUsage
     for (var syncId : syncIds) {
-      systemCounters.increment(CounterType.BFT_SYNC_REQUEST_TIMEOUTS);
+      metrics.bft().sync().requestTimeouts().inc();
       var syncState = syncing.remove(syncId);
 
       if (syncState == null) {

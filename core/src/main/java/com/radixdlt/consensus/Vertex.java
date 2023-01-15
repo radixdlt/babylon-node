@@ -167,7 +167,7 @@ public final class Vertex {
         proposerTimestamp);
   }
 
-  public static Vertex createGenesis(LedgerHeader ledgerHeader) {
+  public static Vertex createInitialEpochVertex(LedgerHeader ledgerHeader) {
     BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerHeader);
     final VoteData voteData = new VoteData(header, header, header);
     final QuorumCertificate parentQC =
@@ -280,7 +280,9 @@ public final class Vertex {
 
   @Override
   public String toString() {
-    return String.format("Vertex{round=%s, qc=%s, txns=%s}", round, qcToParent, getTransactions());
+    return String.format(
+        "Vertex{round=%s, qc=%s, timestamp=%s txns=%s}",
+        round, qcToParent, proposerTimestamp, getTransactions());
   }
 
   @Override

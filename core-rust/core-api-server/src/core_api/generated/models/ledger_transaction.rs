@@ -13,6 +13,14 @@
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type")]
 pub enum LedgerTransaction {
+    #[serde(rename="System")]
+    SystemLedgerTransaction {
+        /// The hex-encoded full ledger transaction payload
+        #[serde(rename = "payload_hex")]
+        payload_hex: String,
+        #[serde(rename = "system_transaction")]
+        system_transaction: Box<crate::core_api::generated::models::SystemTransaction>,
+    },
     #[serde(rename="User")]
     UserLedgerTransaction {
         /// The hex-encoded full ledger transaction payload

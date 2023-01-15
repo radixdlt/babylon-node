@@ -66,15 +66,14 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Unit;
+import com.radixdlt.lang.Tuple;
 import com.radixdlt.mempool.*;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.NativeCalls;
-import com.radixdlt.statecomputer.commit.CommitRequest;
-import com.radixdlt.statecomputer.commit.PrepareRequest;
-import com.radixdlt.statecomputer.commit.PrepareResult;
+import com.radixdlt.statecomputer.commit.*;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -87,10 +86,10 @@ public class RustStateComputer {
   private final REv2TransactionAndProofStore transactionStore;
   private final VertexStoreRecovery vertexStoreRecovery;
 
-  public RustStateComputer(StateManager stateManager) {
+  public RustStateComputer(Metrics metrics, StateManager stateManager) {
     Objects.requireNonNull(stateManager);
 
-    this.mempool = new RustMempool(stateManager);
+    this.mempool = new RustMempool(metrics, stateManager);
     this.transactionStore = new REv2TransactionAndProofStore(stateManager);
     this.vertexStoreRecovery = new VertexStoreRecovery(stateManager);
 
@@ -104,6 +103,12 @@ public class RustStateComputer {
             new TypeToken<>() {},
             RustStateComputer::saveVertexStore);
 
+    this.prepareGenesisFunc =
+        NativeCalls.Func1.with(
+            stateManager,
+            new TypeToken<>() {},
+            new TypeToken<>() {},
+            RustStateComputer::prepareGenesis);
     this.prepareFunc =
         NativeCalls.Func1.with(
             stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::prepare);
@@ -142,11 +147,12 @@ public class RustStateComputer {
     return this.mempool.getTransactionsForProposal(count, transactionToExclude);
   }
 
-  public Result<Unit, String> verify(RawNotarizedTransaction transaction) {
+  public Result<Tuple.Tuple0, String> verify(RawNotarizedTransaction transaction) {
     return verifyFunc.call(transaction);
   }
 
-  private final NativeCalls.Func1<StateManager, RawNotarizedTransaction, Result<Unit, String>>
+  private final NativeCalls.Func1<
+          StateManager, RawNotarizedTransaction, Result<Tuple.Tuple0, String>>
       verifyFunc;
 
   private static native byte[] verify(StateManager stateManager, byte[] payload);
@@ -155,9 +161,18 @@ public class RustStateComputer {
     saveVertexStoreFunc.call(vertexStoreBytes);
   }
 
-  private final NativeCalls.Func1<StateManager, byte[], Unit> saveVertexStoreFunc;
+  private final NativeCalls.Func1<StateManager, byte[], Tuple.Tuple0> saveVertexStoreFunc;
 
   private static native byte[] saveVertexStore(StateManager stateManager, byte[] payload);
+
+  public PrepareGenesisResult prepareGenesis(PrepareGenesisRequest prepareGenesisRequest) {
+    return prepareGenesisFunc.call(prepareGenesisRequest);
+  }
+
+  private final NativeCalls.Func1<StateManager, PrepareGenesisRequest, PrepareGenesisResult>
+      prepareGenesisFunc;
+
+  private static native byte[] prepareGenesis(StateManager stateManager, byte[] payload);
 
   public PrepareResult prepare(PrepareRequest prepareRequest) {
     return prepareFunc.call(prepareRequest);
@@ -167,11 +182,12 @@ public class RustStateComputer {
 
   private static native byte[] prepare(StateManager stateManager, byte[] payload);
 
-  public void commit(CommitRequest commitRequest) {
-    commitFunc.call(commitRequest);
+  public Result<Tuple.Tuple0, CommitError> commit(CommitRequest commitRequest) {
+    return commitFunc.call(commitRequest);
   }
 
-  private final NativeCalls.Func1<StateManager, CommitRequest, Unit> commitFunc;
+  private final NativeCalls.Func1<StateManager, CommitRequest, Result<Tuple.Tuple0, CommitError>>
+      commitFunc;
 
   private static native byte[] commit(StateManager stateManager, byte[] payload);
 
@@ -183,10 +199,10 @@ public class RustStateComputer {
 
   private static native byte[] componentXrdAmount(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<StateManager, Unit, UInt64> epoch;
+  private final NativeCalls.Func1<StateManager, Tuple.Tuple0, UInt64> epoch;
 
   public UInt64 getEpoch() {
-    return epoch.call(Unit.unit());
+    return epoch.call(Tuple.tuple());
   }
 
   private static native byte[] epoch(StateManager stateManager, byte[] payload);

@@ -69,9 +69,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.api.system.health.MovingAverage;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerControl;
 import com.radixdlt.p2p.PeerManager;
@@ -81,9 +79,9 @@ import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.time.Time;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -92,7 +90,7 @@ public final class MessageCentralImpl implements MessageCentral {
   private static final Logger log = LogManager.getLogger();
 
   // Dependencies
-  private final SystemCounters counters;
+  private final Metrics metrics;
 
   // Message dispatching
   private final MessageDispatcher messageDispatcher;
@@ -103,11 +101,6 @@ public final class MessageCentralImpl implements MessageCentral {
 
   private final RateLimiter outboundLogRateLimiter = RateLimiter.create(1.0);
   private final RateLimiter discardedInboundMessagesLogRateLimiter = RateLimiter.create(1.0);
-
-  private final MovingAverage avgMessageQueuedTime = MovingAverage.create(5L);
-  private final MovingAverage avgMessageProcessingTime = MovingAverage.create(5L);
-  private long totalMessageQueuedTime = 0L;
-  private long totalMessageProcessingTime = 0L;
 
   private final Observable<MessageFromPeer<Message>> peerMessages;
 
@@ -122,11 +115,11 @@ public final class MessageCentralImpl implements MessageCentral {
       PeerManager peerManager,
       TimeSupplier timeSource,
       EventQueueFactory<OutboundMessageEvent> outboundEventQueueFactory,
-      SystemCounters counters,
+      Metrics metrics,
       Provider<PeerControl> peerControl,
       Addressing addressing,
       Capabilities capabilities) {
-    this.counters = Objects.requireNonNull(counters);
+    this.metrics = Objects.requireNonNull(metrics);
     this.outboundQueue =
         outboundEventQueueFactory.createEventQueue(
             config.messagingOutboundQueueMax(16384), OutboundMessageEvent.comparator());
@@ -135,11 +128,11 @@ public final class MessageCentralImpl implements MessageCentral {
     Objects.requireNonNull(serialization);
 
     this.messageDispatcher =
-        new MessageDispatcher(counters, config, serialization, timeSource, peerManager, addressing);
+        new MessageDispatcher(metrics, config, serialization, timeSource, peerManager, addressing);
 
     this.messagePreprocessor =
         new MessagePreprocessor(
-            counters, config, timeSource, serialization, peerControl, addressing, capabilities);
+            metrics, config, timeSource, serialization, peerControl, addressing, capabilities);
 
     // Start outbound processing thread
     this.outboundThreadPool =
@@ -163,10 +156,9 @@ public final class MessageCentralImpl implements MessageCentral {
   }
 
   private Optional<MessageFromPeer<Message>> processInboundMessage(InboundMessage inboundMessage) {
-    final var messageQueuedTime = Time.currentTimestamp() - inboundMessage.receiveTime();
-    avgMessageQueuedTime.update(messageQueuedTime);
-    totalMessageQueuedTime = Math.max(totalMessageQueuedTime + messageQueuedTime, 0L);
-    updateCounters();
+    final var messageQueuedTime =
+        Duration.ofMillis(Time.currentTimestamp() - inboundMessage.receiveTime());
+    this.metrics.messages().inbound().queueWait().observe(messageQueuedTime);
     final var processingStopwatch = Stopwatch.createStarted();
     try {
       return this.messagePreprocessor
@@ -196,22 +188,10 @@ public final class MessageCentralImpl implements MessageCentral {
 
   private <T> void logPreprocessedMessageAndUpdateCounters(
       MessageFromPeer<T> message, Stopwatch processingStopwatch) {
-    final var messageProcessingTime = processingStopwatch.elapsed(TimeUnit.MILLISECONDS);
-    avgMessageProcessingTime.update(messageProcessingTime);
-    totalMessageProcessingTime = Math.max(totalMessageProcessingTime + messageProcessingTime, 0L);
-    updateCounters();
+    this.metrics.messages().inbound().process().observe(processingStopwatch.elapsed());
     if (log.isTraceEnabled()) {
       log.trace("Received from {}: {}", message.source(), message.message());
     }
-  }
-
-  private void updateCounters() {
-    this.counters.set(CounterType.MESSAGES_INBOUND_AVG_QUEUED_TIME, avgMessageQueuedTime.asLong());
-    this.counters.set(CounterType.MESSAGES_INBOUND_TOTAL_QUEUED_TIME, totalMessageQueuedTime);
-    this.counters.set(
-        CounterType.MESSAGES_INBOUND_AVG_PROCESSING_TIME, avgMessageProcessingTime.asLong());
-    this.counters.set(
-        CounterType.MESSAGES_INBOUND_TOTAL_PROCESSING_TIME, totalMessageProcessingTime);
   }
 
   @Override
@@ -236,7 +216,7 @@ public final class MessageCentralImpl implements MessageCentral {
   }
 
   private void outboundMessageProcessor(OutboundMessageEvent outbound) {
-    this.counters.set(CounterType.MESSAGES_OUTBOUND_PENDING, outboundQueue.size());
+    this.metrics.messages().outbound().queued().set(outboundQueue.size());
     messageDispatcher.send(outbound);
   }
 }

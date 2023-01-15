@@ -98,16 +98,16 @@ import com.radixdlt.rev2.modules.REv2ConsensusRecoveryModule;
 import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.IOUtils;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt64;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
@@ -201,22 +201,7 @@ public final class RadixNodeModule extends AbstractModule {
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
     var databaseConfig = new REv2DatabaseConfig.RocksDB(databasePath);
     var transactionsPerProposalCount = 10;
-    var stateConfig =
-        new REv2StateConfig(UInt64.fromNonNegativeLong(1800)); // approximately 5 minutes per epoch
-    install(
-        REv2StateManagerModule.create(
-            networkId,
-            transactionsPerProposalCount,
-            stateConfig,
-            databaseConfig,
-            Option.some(mempoolConfig)));
 
-    // Recovery
-    install(new BerkeleySafetyStoreModule(databasePath));
-    // Start at stateVersion 1 for now due to lack serialized genesis transaction
-    var initialAccumulatorState = new AccumulatorState(1, HashUtils.zero256());
-    install(new REv2LedgerRecoveryModule(initialAccumulatorState));
-    install(new REv2ConsensusRecoveryModule());
     String genesisTxn;
     final var genesisFileProp = properties.get("network.genesis_file");
     if (genesisFileProp != null && !genesisFileProp.isBlank()) {
@@ -241,9 +226,25 @@ public final class RadixNodeModule extends AbstractModule {
                   }
                 })
             .toList();
-    var validatorSet =
-        BFTValidatorSet.from(initialVset.stream().map(n -> BFTValidator.from(n, UInt256.ONE)));
-    bind(BFTValidatorSet.class).toInstance(validatorSet);
+
+    var validatorSet = initialVset.stream().map(BFTNode::getKey).collect(Collectors.toSet());
+    var genesis =
+        TransactionBuilder.createGenesis(
+            validatorSet,
+            UInt64.fromNonNegativeLong(1),
+            UInt64.fromNonNegativeLong(1800)); // approximately 5 minutes per epoch
+
+    install(
+        REv2StateManagerModule.create(
+            networkId, transactionsPerProposalCount, databaseConfig, Option.some(mempoolConfig)));
+
+    // Recovery
+    install(new BerkeleySafetyStoreModule(databasePath));
+    var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
+    install(new REv2LedgerRecoveryModule(initialAccumulatorState, genesis));
+    install(new REv2ConsensusRecoveryModule());
+
+    install(new MetricsModule());
 
     // System Info
     install(new SystemInfoModule());

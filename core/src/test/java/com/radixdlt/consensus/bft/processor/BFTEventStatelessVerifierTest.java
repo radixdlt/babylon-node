@@ -66,19 +66,9 @@ package com.radixdlt.consensus.bft.processor;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -87,7 +77,8 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Optional;
 import org.junit.Before;
@@ -102,7 +93,7 @@ public class BFTEventStatelessVerifierTest {
   private BFTEventStatelessVerifier eventVerifier;
   private SafetyRules safetyRules;
   private TimeSupplier timeSupplier;
-  private SystemCounters systemCounters;
+  private Metrics metrics;
 
   @Before
   public void setup() {
@@ -112,10 +103,10 @@ public class BFTEventStatelessVerifierTest {
     this.verifier = mock(HashVerifier.class);
     this.safetyRules = mock(SafetyRules.class);
     this.timeSupplier = mock(TimeSupplier.class);
-    this.systemCounters = mock(SystemCounters.class);
+    this.metrics = new MetricsInitializer().initialize();
     this.eventVerifier =
         new BFTEventStatelessVerifier(
-            validatorSet, forwardTo, hasher, verifier, safetyRules, systemCounters);
+            validatorSet, forwardTo, hasher, verifier, safetyRules, metrics);
   }
 
   @Test

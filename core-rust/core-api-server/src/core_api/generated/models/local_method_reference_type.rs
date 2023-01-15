@@ -14,8 +14,6 @@
 pub enum LocalMethodReferenceType {
     #[serde(rename = "NativeMethod")]
     NativeMethod,
-    #[serde(rename = "NativeFunction")]
-    NativeFunction,
     #[serde(rename = "ScryptoMethod")]
     ScryptoMethod,
 
@@ -25,7 +23,6 @@ impl ToString for LocalMethodReferenceType {
     fn to_string(&self) -> String {
         match self {
             Self::NativeMethod => String::from("NativeMethod"),
-            Self::NativeFunction => String::from("NativeFunction"),
             Self::ScryptoMethod => String::from("ScryptoMethod"),
         }
     }

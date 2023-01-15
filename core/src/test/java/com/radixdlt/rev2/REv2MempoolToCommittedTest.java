@@ -65,24 +65,45 @@
 package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
 import static com.radixdlt.harness.predicates.NodesPredicate.*;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
+import java.util.Collection;
+import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public class REv2MempoolToCommittedTest {
+
+  @Parameterized.Parameters
+  public static Collection<Object[]> parameters() {
+    return List.of(
+        new Object[] {false, UInt64.fromNonNegativeLong(100000)},
+        new Object[] {true, UInt64.fromNonNegativeLong(100)});
+  }
+
+  private final boolean epochs;
+  private final UInt64 roundsPerEpoch;
+
+  public REv2MempoolToCommittedTest(boolean epochs, UInt64 roundsPerEpoch) {
+    this.epochs = epochs;
+    this.roundsPerEpoch = roundsPerEpoch;
+  }
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
@@ -90,13 +111,13 @@ public class REv2MempoolToCommittedTest {
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
-                false,
+                this.epochs,
                 FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
                 FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
+                        TransactionBuilder.createGenesisWithNumValidators(1, this.roundsPerEpoch),
                         REv2DatabaseConfig.inMemory(),
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             1, 1, new MempoolRelayConfig(0, 100))),
@@ -104,19 +125,16 @@ public class REv2MempoolToCommittedTest {
   }
 
   @Test
-  public void transaction_in_full_node_mempool_gets_committed() throws Exception {
+  public void transaction_in_full_node_mempool_gets_committed() {
     try (var test = createTest()) {
       test.startAllNodes();
 
       // Arrange: Add node1 mempool
-      var mempoolInserter =
-          test.getInstance(
-              1,
-              Key.get(
-                  new TypeLiteral<
-                      MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
-      var transaction = REv2TestTransactions.constructValidTransaction(0, 5);
-      mempoolInserter.addTransaction(transaction);
+      var transaction = REv2TestTransactions.constructValidRawTransaction(0, 5);
+      var mempoolDispatcher =
+          test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+      mempoolDispatcher.dispatch(MempoolAdd.create(transaction));
+      test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
       // Act/Assert
       test.runUntilState(anyCommittedTransaction(transaction), 20000);

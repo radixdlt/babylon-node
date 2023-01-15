@@ -308,7 +308,7 @@ impl PendingTransactionResultCache {
             self.recently_committed_intents
                 .push(intent_hash, (resultant_state_version, current_timestamp));
 
-            self.intent_lookup.get(&intent_hash).map(|payload_hashes| {
+            if let Some(payload_hashes) = self.intent_lookup.get(&intent_hash) {
                 for cached_payload_hash in payload_hashes {
                     let record = self
                         .pending_transaction_records
@@ -325,7 +325,7 @@ impl PendingTransactionResultCache {
                         timestamp: current_timestamp,
                     })
                 }
-            });
+            }
         }
     }
 

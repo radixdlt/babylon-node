@@ -2,8 +2,9 @@ use crate::core_api::*;
 
 use radix_engine::types::hash;
 use radix_engine::types::Bech32Encoder;
-use radix_engine_interface::core::NetworkDefinition;
 
+use radix_engine_interface::data::scrypto_encode;
+use radix_engine_interface::node::NetworkDefinition;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
 use state_manager::transaction::{LedgerTransaction, ValidatorTransaction};
@@ -15,7 +16,8 @@ use std::cmp;
 use std::collections::HashMap;
 use transaction::manifest;
 use transaction::model::{
-    NotarizedTransaction, SignedTransactionIntent, TransactionIntent, TransactionManifest,
+    NotarizedTransaction, SignedTransactionIntent, SystemTransaction, TransactionIntent,
+    TransactionManifest,
 };
 
 #[tracing::instrument(skip(state))]
@@ -187,6 +189,15 @@ pub fn to_api_ledger_transaction(
             })?),
             validator_transaction: Box::new(to_api_validator_transaction(tx, network)?),
         },
+        LedgerTransaction::System(tx) => models::LedgerTransaction::SystemLedgerTransaction {
+            payload_hex: to_hex(ledger_transaction.create_payload().map_err(|err| {
+                MappingError::SborEncodeError {
+                    encode_error: err,
+                    message: "Error encoding system payload sbor".to_string(),
+                }
+            })?),
+            system_transaction: Box::new(to_api_system_transaction(tx, network)?),
+        },
     })
 }
 
@@ -252,7 +263,7 @@ pub fn to_api_intent(
             notary_public_key: Some(to_api_public_key(&header.notary_public_key)),
             notary_as_signatory: header.notary_as_signatory,
             cost_unit_limit: to_api_u32_as_i64(header.cost_unit_limit),
-            tip_percentage: to_api_u8_as_i32(header.tip_percentage),
+            tip_percentage: to_api_u16_as_i32(header.tip_percentage),
         }),
         manifest: Box::new(to_api_manifest(&intent.manifest, network)?),
     })
@@ -285,19 +296,30 @@ pub fn to_api_validator_transaction(
     _network: &NetworkDefinition,
 ) -> Result<models::ValidatorTransaction, MappingError> {
     Ok(match validator_transaction {
-        ValidatorTransaction::EpochUpdate { scrypto_epoch } => {
-            models::ValidatorTransaction::EpochUpdateValidatorTransaction {
-                scrypto_epoch: to_api_epoch(*scrypto_epoch)?,
-            }
-        }
         ValidatorTransaction::RoundUpdate {
             proposer_timestamp_ms,
             consensus_epoch,
             round_in_epoch,
         } => models::ValidatorTransaction::TimeUpdateValidatorTransaction {
-            proposer_timestamp_ms: to_api_timestamp_ms_u64(*proposer_timestamp_ms)?,
+            proposer_timestamp_ms: *proposer_timestamp_ms,
             consensus_epoch: to_api_epoch(*consensus_epoch)?,
             round_in_epoch: to_api_round(*round_in_epoch)?,
         },
+    })
+}
+
+pub fn to_api_system_transaction(
+    system_transaction: &SystemTransaction,
+    _network: &NetworkDefinition,
+) -> Result<models::SystemTransaction, MappingError> {
+    // NOTE: We don't use the .hash() method on the struct impls themselves,
+    //       because they use the wrong hash function
+    let payload =
+        scrypto_encode(system_transaction).map_err(|err| MappingError::SborEncodeError {
+            encode_error: err,
+            message: "Error encoding user system sbor".to_string(),
+        })?;
+    Ok(models::SystemTransaction {
+        payload_hex: to_hex(payload),
     })
 }

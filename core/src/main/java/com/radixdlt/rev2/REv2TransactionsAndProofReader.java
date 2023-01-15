@@ -127,6 +127,7 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
           // can't fit. Stop the processing and use the transactions up to latestUsableProof.
           break top_level_while;
         }
+
         transactionsUpToNextProof.add(RawLedgerTransaction.create(executedTxn.transactionBytes()));
       }
 
@@ -134,6 +135,11 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
       // Added them to the list and use a new latestUsableProof.
       transactionsUpToLatestUsableProof.addAll(transactionsUpToNextProof);
       maybeLatestUsableProof = maybeNextProof;
+
+      // New epoch proofs should always be returned
+      if (maybeLatestUsableProof.unwrap().getNextEpoch().isPresent()) {
+        break;
+      }
 
       // Continue the loop: try fitting some more txns up to the next proof (if there is any)
       latestStateVersion = nextProofStateVersion;
@@ -173,7 +179,16 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
 
   @Override
   public Optional<LedgerProof> getEpochProof(long epoch) {
-    return Optional.empty();
+    return this.transactionStore
+        .getEpochProof(epoch)
+        .map(
+            b -> {
+              try {
+                return serialization.fromDson(b, LedgerProof.class);
+              } catch (DeserializeException e) {
+                throw new RuntimeException(e);
+              }
+            });
   }
 
   @Override

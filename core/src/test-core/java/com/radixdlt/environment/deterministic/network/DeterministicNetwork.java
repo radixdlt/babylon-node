@@ -70,12 +70,12 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.harness.deterministic.invariants.MessageMonitor;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
-import java.io.PrintStream;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -105,7 +105,7 @@ public final class DeterministicNetwork {
    */
   public DeterministicNetwork(
       List<BFTNode> nodes, MessageSelector messageSelector, MessageMutator messageMutator) {
-    this(nodes, messageSelector, messageMutator, m -> {});
+    this(nodes, messageSelector, messageMutator, (m, t) -> {});
   }
 
   public DeterministicNetwork(
@@ -152,10 +152,15 @@ public final class DeterministicNetwork {
             .filter(predicate)
             .findFirst()
             .orElseThrow(
-                () ->
-                    new IllegalStateException(
-                        String.format(
-                            "Could not find message. Messages present: %s", allMessages)));
+                () -> {
+                  var msgCount =
+                      allMessages.stream()
+                          .collect(
+                              Collectors.groupingBy(
+                                  m -> m.message().getClass(), Collectors.counting()));
+                  return new IllegalStateException(
+                      String.format("Could not find message. Messages present: %s", msgCount));
+                });
     this.messageQueue.remove(controlledMessage);
     this.currentTime = Math.max(this.currentTime, controlledMessage.arrivalTime());
 
@@ -189,10 +194,6 @@ public final class DeterministicNetwork {
     return this.currentTime;
   }
 
-  public void dumpMessages(PrintStream out) {
-    this.messageQueue.dump(out);
-  }
-
   public int lookup(BFTNode node) {
     return this.nodeLookup.get(node);
   }
@@ -209,12 +210,14 @@ public final class DeterministicNetwork {
   }
 
   void handleMessage(ControlledMessage controlledMessage) {
-    log.debug("Sent message {}", controlledMessage);
-    messageMonitor.next(controlledMessage);
+    log.debug("{}: Dispatch message {}", this.currentTime, controlledMessage);
+    messageMonitor.next(controlledMessage, this.currentTime);
 
     if (!this.messageMutator.mutate(controlledMessage, this.messageQueue)) {
       // If nothing processes this message, we just add it to the queue
       this.messageQueue.add(controlledMessage);
+    } else {
+      log.debug("Dropping message {}", controlledMessage);
     }
   }
 }

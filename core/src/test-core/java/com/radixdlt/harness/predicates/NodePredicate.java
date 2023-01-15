@@ -65,6 +65,10 @@
 package com.radixdlt.harness.predicates;
 
 import com.google.inject.Injector;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.liveness.PacemakerState;
+import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.CommittedTransactionStatus;
@@ -126,22 +130,30 @@ public class NodePredicate {
   }
 
   public static Predicate<Injector> atExactlyStateVersion(long stateVersion) {
-    return i ->
-        i.getInstance(TransactionsAndProofReader.class)
-            .getLastProof()
-            .map(p -> p.getStateVersion() == stateVersion)
-            .orElse(false);
+    return proofCommitted(p -> p.getStateVersion() == stateVersion);
   }
 
   public static Predicate<Injector> atOrOverStateVersion(long stateVersion) {
+    return proofCommitted(p -> p.getStateVersion() >= stateVersion);
+  }
+
+  public static Predicate<Injector> proofCommitted(Predicate<LedgerProof> predicate) {
     return i ->
         i.getInstance(TransactionsAndProofReader.class)
             .getLastProof()
-            .map(p -> p.getStateVersion() >= stateVersion)
+            .map(predicate::test)
             .orElse(false);
   }
 
   public static Predicate<Injector> atOrOverEpoch(long epoch) {
     return i -> i.getInstance(REv2StateReader.class).getEpoch() >= epoch;
+  }
+
+  public static Predicate<Injector> bftAtOrOverRound(Round round) {
+    return i -> i.getInstance(PacemakerState.class).highQC().getHighestRound().gte(round);
+  }
+
+  public static Predicate<Injector> votedAtRound(Round round) {
+    return i -> i.getInstance(SafetyRules.class).getLastVote(round).isPresent();
   }
 }

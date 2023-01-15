@@ -66,24 +66,16 @@ package com.radixdlt.integration.targeted.serialization;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.Slow;
-import com.radixdlt.messaging.core.EventQueueFactory;
-import com.radixdlt.messaging.core.InboundMessage;
-import com.radixdlt.messaging.core.Message;
-import com.radixdlt.messaging.core.MessageCentralConfiguration;
-import com.radixdlt.messaging.core.MessageCentralImpl;
-import com.radixdlt.messaging.core.OutboundMessageEvent;
-import com.radixdlt.messaging.core.SimplePriorityBlockingQueue;
+import com.radixdlt.messaging.core.*;
 import com.radixdlt.messaging.p2p.PeerPingMessage;
-import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerControl;
@@ -134,7 +126,7 @@ public class MessageCentralFuzzyTest {
             peerManager,
             Time::currentTimestamp,
             queueFactory,
-            new SystemCountersImpl(),
+            new MetricsInitializer().initialize(),
             () -> peerControl,
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
             new Capabilities(LedgerSyncCapability.Builder.asDefault().build()));

@@ -107,6 +107,7 @@ pub struct InMemoryStore {
     transaction_intent_lookup: HashMap<IntentHash, LedgerPayloadHash>,
     user_payload_hash_lookup: HashMap<UserPayloadHash, LedgerPayloadHash>,
     proofs: BTreeMap<u64, Vec<u8>>,
+    epoch_proofs: BTreeMap<u64, Vec<u8>>,
     txids: BTreeMap<u64, LedgerPayloadHash>,
 }
 
@@ -117,6 +118,7 @@ impl InMemoryStore {
             transaction_intent_lookup: HashMap::new(),
             user_payload_hash_lookup: HashMap::new(),
             proofs: BTreeMap::new(),
+            epoch_proofs: BTreeMap::new(),
             txids: BTreeMap::new(),
         }
     }
@@ -209,11 +211,15 @@ impl WriteableProofStore for InMemoryStore {
     fn insert_tids_and_proof(
         &mut self,
         state_version: u64,
+        epoch_boundary: Option<u64>,
         ids: Vec<LedgerPayloadHash>,
         proof_bytes: Vec<u8>,
     ) {
         self.insert_tids_without_proof(state_version, ids);
-
+        if let Some(epoch_boundary) = epoch_boundary {
+            self.epoch_proofs
+                .insert(epoch_boundary, proof_bytes.clone());
+        }
         self.proofs.insert(state_version, proof_bytes);
     }
 
@@ -250,6 +256,10 @@ impl QueryableProofStore for InMemoryStore {
                 }
                 (ids, proof.clone())
             })
+    }
+
+    fn get_epoch_proof(&self, epoch: u64) -> Option<Vec<u8>> {
+        self.epoch_proofs.get(&epoch).cloned()
     }
 
     fn get_last_proof(&self) -> Option<Vec<u8>> {

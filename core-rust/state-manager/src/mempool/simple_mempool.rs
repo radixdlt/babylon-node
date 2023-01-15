@@ -179,9 +179,14 @@ impl SimpleMempool {
         let transactions = self
             .data
             .iter()
-            .filter(|&(tid, _)| !prepared_ids.contains(tid))
+            .filter_map(|(tid, data)| {
+                if !prepared_ids.contains(tid) {
+                    Some(data.transaction.clone())
+                } else {
+                    None
+                }
+            })
             .take(count as usize)
-            .map(|(_, data)| data.transaction.clone())
             .collect();
 
         transactions
@@ -214,11 +219,10 @@ impl SimpleMempool {
     }
 
     pub fn get_payload_hashes_for_intent(&self, intent_hash: &IntentHash) -> Vec<UserPayloadHash> {
-        let payload_hashes = self.intent_lookup.get(intent_hash);
-        if payload_hashes.is_none() {
-            return vec![];
+        match self.intent_lookup.get(intent_hash) {
+            Some(payload_hashes) => payload_hashes.iter().cloned().collect(),
+            None => vec![],
         }
-        payload_hashes.unwrap().iter().cloned().collect()
     }
 
     pub fn list_all_hashes(&self) -> Vec<(&IntentHash, &UserPayloadHash)> {

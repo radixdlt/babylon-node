@@ -76,6 +76,10 @@ public record MempoolRelayConfig(long throttleMs, int relayMaxPeers) {
     return new MempoolRelayConfig(throttleMs, 100);
   }
 
+  public static MempoolRelayConfig of(long throttleMs, int relayMaxPeers) {
+    return new MempoolRelayConfig(throttleMs, relayMaxPeers);
+  }
+
   public AbstractModule asModule() {
     return new AbstractModule() {
       @Override

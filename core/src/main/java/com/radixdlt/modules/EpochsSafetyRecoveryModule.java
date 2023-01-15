@@ -72,30 +72,39 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
 import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class EpochsSafetyRecoveryModule extends AbstractModule {
+  private static final Logger log = LogManager.getLogger();
+
   @Provides
   @Singleton
   private SafetyState initialSafetyState(
       EpochChange initialEpoch, PersistentSafetyStateStore safetyStore) {
-    return safetyStore
-        .get()
-        .flatMap(
-            safetyState -> {
-              final long safetyStateEpoch =
-                  safetyState.getLastVote().map(Vote::getEpoch).orElse(0L);
+    var initialSafetyState =
+        safetyStore
+            .get()
+            .flatMap(
+                safetyState -> {
+                  final long safetyStateEpoch =
+                      safetyState.getLastVote().map(Vote::getEpoch).orElse(0L);
 
-              if (safetyStateEpoch > initialEpoch.getNextEpoch()) {
-                throw new IllegalStateException(
-                    String.format(
-                        "Last vote is in a future epoch. Vote epoch: %s, Epoch: %s",
-                        safetyStateEpoch, initialEpoch.getNextEpoch()));
-              } else if (safetyStateEpoch == initialEpoch.getNextEpoch()) {
-                return Optional.of(safetyState);
-              } else {
-                return Optional.empty();
-              }
-            })
-        .orElse(new SafetyState());
+                  if (safetyStateEpoch > initialEpoch.getNextEpoch()) {
+                    throw new IllegalStateException(
+                        String.format(
+                            "Last vote is in a future epoch. Vote epoch: %s, Epoch: %s",
+                            safetyStateEpoch, initialEpoch.getNextEpoch()));
+                  } else if (safetyStateEpoch == initialEpoch.getNextEpoch()) {
+                    return Optional.of(safetyState);
+                  } else {
+                    return Optional.empty();
+                  }
+                })
+            .orElse(new SafetyState());
+
+    log.info("Initial Safety State: {}", initialSafetyState);
+
+    return initialSafetyState;
   }
 }

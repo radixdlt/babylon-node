@@ -67,34 +67,52 @@ package com.radixdlt.rev2;
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static com.radixdlt.harness.invariants.Checkers.*;
 import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
 import static com.radixdlt.harness.predicates.NodesPredicate.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
-import com.radixdlt.mempool.MempoolInserter;
-import com.radixdlt.mempool.MempoolReader;
-import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.mempool.*;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.*;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.transaction.ExecutedTransaction;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
+import java.util.Collection;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public class REv2RejectedTransactionMempoolTest {
+  @Parameterized.Parameters
+  public static Collection<Object[]> parameters() {
+    return List.of(
+        new Object[] {false, UInt64.fromNonNegativeLong(100000)},
+        new Object[] {true, UInt64.fromNonNegativeLong(100)});
+  }
+
   @Rule public TemporaryFolder folder = new TemporaryFolder();
+
+  private final boolean epochs;
+  private final UInt64 roundsPerEpoch;
+
+  public REv2RejectedTransactionMempoolTest(boolean epochs, UInt64 roundsPerEpoch) {
+    this.epochs = epochs;
+    this.roundsPerEpoch = roundsPerEpoch;
+  }
 
   private DeterministicTest createTest(int mempoolSize) {
     return DeterministicTest.builder()
@@ -103,38 +121,34 @@ public class REv2RejectedTransactionMempoolTest {
         .messageMutator(MessageMutator.dropTimeouts())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
-                false,
+                this.epochs,
                 SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
+                        TransactionBuilder.createGenesisWithNumValidators(1, this.roundsPerEpoch),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             1, mempoolSize, MempoolRelayConfig.of())))));
   }
 
   @Test
-  public void initially_rejected_transaction_should_not_linger_in_mempool() throws Exception {
+  public void initially_rejected_transaction_should_not_linger_in_mempool() {
     try (var test = createTest(1)) {
       // Arrange
       test.startAllNodes();
-      var rejectableTransaction = REv2TestTransactions.constructValidButRejectTransaction(0, 1);
-      var mempoolInserter =
-          test.getInstance(
-              0,
-              Key.get(
-                  new TypeLiteral<
-                      MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
-      try {
-        mempoolInserter.addTransaction(rejectableTransaction);
-      } catch (MempoolRejectedException ignored) {
-      }
-      test.runForCount(100, onlyConsensusEvents());
+      var rawRejectableTransaction =
+          REv2TestTransactions.validButRejectTransaction(0, 1).constructRawTransaction();
+      var mempoolDispatcher =
+          test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+      mempoolDispatcher.dispatch(MempoolAdd.create(rawRejectableTransaction));
+      test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
       // Act: Submit valid transaction to mempool
-      mempoolInserter.addTransaction(REv2TestTransactions.constructValidTransaction(0, 0));
+      mempoolDispatcher.dispatch(
+          MempoolAdd.create(REv2TestTransactions.constructValidRawTransaction(0, 0)));
+      test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
       // Assert
       var mempoolReader =
@@ -142,26 +156,23 @@ public class REv2RejectedTransactionMempoolTest {
               0, Key.get(new TypeLiteral<MempoolReader<RawNotarizedTransaction>>() {}));
       assertThat(mempoolReader.getCount()).isEqualTo(1);
       // Verify that transaction was not committed
-      assertTransactionNotCommitted(test.getNodeInjectors(), rejectableTransaction);
+      assertTransactionNotCommitted(test.getNodeInjectors(), rawRejectableTransaction);
     }
   }
 
   private static ExecutedTransaction executeTransaction(
-      DeterministicTest test, RawNotarizedTransaction transaction) throws Exception {
-    var mempoolInserter =
-        test.getInstance(
-            0,
-            Key.get(
-                new TypeLiteral<
-                    MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
-    mempoolInserter.addTransaction(transaction);
+      DeterministicTest test, RawNotarizedTransaction transaction) {
+    var mempoolDispatcher =
+        test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+    mempoolDispatcher.dispatch(MempoolAdd.create(transaction));
+    test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
     test.runUntilState(allCommittedTransaction(transaction), onlyConsensusEvents());
     return NodesReader.getCommittedUserTransaction(test.getNodeInjectors(), transaction);
   }
 
   @Test
-  public void later_rejected_transaction_should_not_linger_in_mempool() throws Exception {
+  public void later_rejected_transaction_should_not_linger_in_mempool() {
     try (var test = createTest(2)) {
       // Arrange: Two conflicting transactions in mempool
       test.startAllNodes();
@@ -169,20 +180,17 @@ public class REv2RejectedTransactionMempoolTest {
           REv2TestTransactions.constructNewAccountTransaction(NetworkDefinition.INT_TEST_NET, 0, 0);
       var executedTransaction = executeTransaction(test, accountTxn);
       var accountAddress = executedTransaction.newComponentAddresses().get(0);
-      var mempoolInserter =
-          test.getInstance(
-              0,
-              Key.get(
-                  new TypeLiteral<
-                      MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
+      var mempoolDispatcher =
+          test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
       var transferTxn1 =
           REv2TestTransactions.constructNewAccountFromAccountTransaction(
               NetworkDefinition.INT_TEST_NET, accountAddress, 0, 0);
-      mempoolInserter.addTransaction(transferTxn1);
+      mempoolDispatcher.dispatch(MempoolAdd.create(transferTxn1));
       var transferTxn2 =
           REv2TestTransactions.constructNewAccountFromAccountTransaction(
               NetworkDefinition.INT_TEST_NET, accountAddress, 0, 1);
-      mempoolInserter.addTransaction(transferTxn2);
+      mempoolDispatcher.dispatch(MempoolAdd.create(transferTxn2));
+      test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 
       // Act
       var currentStateVersion = NodesReader.getHighestStateVersion(test.getNodeInjectors());

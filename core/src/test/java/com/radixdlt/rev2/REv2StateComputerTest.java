@@ -65,25 +65,32 @@
 package com.radixdlt.rev2;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.ConsensusByzantineEvent;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.lang.Option;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.ledger.*;
+import com.radixdlt.ledger.RoundDetails;
+import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.modules.CryptoModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.REv2StateConfig;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 import org.junit.Test;
@@ -93,18 +100,33 @@ public class REv2StateComputerTest {
     return Guice.createInjector(
         new CryptoModule(),
         REv2StateManagerModule.create(
-            Network.INTEGRATIONTESTNET.getId(),
-            10,
-            new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
-            REv2DatabaseConfig.inMemory(),
-            Option.none()),
+            Network.INTEGRATIONTESTNET.getId(), 10, REv2DatabaseConfig.inMemory(), Option.none()),
         new AbstractModule() {
           @Override
           protected void configure() {
+            bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
             bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
-            bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+            bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() {}).toInstance(e -> {});
+            bind(new TypeLiteral<EventDispatcher<ConsensusByzantineEvent>>() {})
+                .toInstance(e -> {});
+            bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
           }
         });
+  }
+
+  private CommittedTransactionsWithProof buildGenesis(LedgerAccumulator accumulator) {
+    var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
+    var genesis =
+        TransactionBuilder.createGenesisWithNumValidators(1, UInt64.fromNonNegativeLong(10));
+    var accumulatorState =
+        accumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
+    var validatorSet =
+        BFTValidatorSet.from(
+            PrivateKeys.numeric(1)
+                .map(k -> BFTValidator.from(BFTNode.create(k.getPublicKey()), UInt256.ONE))
+                .limit(1));
+    var proof = LedgerProof.genesis(accumulatorState, validatorSet, 0, 0);
+    return CommittedTransactionsWithProof.create(List.of(genesis), proof);
   }
 
   @Test
@@ -112,11 +134,13 @@ public class REv2StateComputerTest {
     // Arrange
     var injector = createInjector();
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var validTransaction = REv2TestTransactions.constructValidTransaction(0, 0);
+    var accumulator = injector.getInstance(LedgerAccumulator.class);
+    stateComputer.commit(buildGenesis(accumulator), null);
+    var validTransaction = REv2TestTransactions.constructValidRawTransaction(0, 0);
 
     // Act
-    var result =
-        stateComputer.prepare(List.of(), List.of(validTransaction), mock(RoundDetails.class));
+    var roundDetails = new RoundDetails(1, 1, 0, BFTNode.random(), false, 1000, 1000);
+    var result = stateComputer.prepare(List.of(), List.of(validTransaction), roundDetails);
 
     // Assert
     assertThat(result.getFailedTransactions()).isEmpty();
@@ -127,14 +151,15 @@ public class REv2StateComputerTest {
     // Arrange
     var injector = createInjector();
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
+    var accumulator = injector.getInstance(LedgerAccumulator.class);
+    stateComputer.commit(buildGenesis(accumulator), null);
     var invalidTransaction = RawNotarizedTransaction.create(new byte[1]);
 
     // Act
-    var result =
-        stateComputer.prepare(List.of(), List.of(invalidTransaction), mock(RoundDetails.class));
+    var roundDetails = new RoundDetails(1, 1, 0, BFTNode.random(), false, 1000, 1000);
+    var result = stateComputer.prepare(List.of(), List.of(invalidTransaction), roundDetails);
 
     // Assert
-    assertThat(result.getSuccessfullyExecutedTransactions().isEmpty());
     assertThat(result.getFailedTransactions()).hasSize(1);
   }
 }

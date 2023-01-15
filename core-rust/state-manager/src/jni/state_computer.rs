@@ -67,10 +67,15 @@ use crate::transaction::UserTransactionValidator;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::types::{ComponentAddress, Decimal, Decode, Encode, TypeId, RADIX_TOKEN};
+use radix_engine::types::{
+    scrypto, Categorize, ComponentAddress, Decimal, Decode, Encode, RADIX_TOKEN,
+};
+use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use std::collections::HashSet;
 
 use crate::jni::utils::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
+use crate::{CommitError, NextEpoch, PrepareGenesisRequest, PrepareGenesisResult};
 
 use super::state_manager::ActualStateManager;
 
@@ -98,7 +103,7 @@ fn do_verify(state_manager: &ActualStateManager, args: JavaRawTransaction) -> Re
 
     let _static_validation = state_manager
         .user_transaction_validator
-        .validate_and_create_executable(&parsed)
+        .validate_and_create_executable(&parsed, transaction.payload.len())
         .map_err(|err| format!("{:?}", err))?;
 
     Ok(())
@@ -118,6 +123,28 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_saveVertexS
 fn do_save_vertex_store(state_manager: &mut ActualStateManager, args: Vec<u8>) {
     let vertex_store_bytes: Vec<u8> = args;
     state_manager.save_vertex_store(vertex_store_bytes);
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepareGenesis(
+    env: JNIEnv,
+    _class: JClass,
+    j_state_manager: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_prepare_genesis)
+}
+
+#[tracing::instrument(skip_all)]
+fn do_prepare_genesis(
+    state_manager: &mut ActualStateManager,
+    args: JavaPrepareGenesisRequest,
+) -> JavaPrepareGenesisResult {
+    let prepare_request = args;
+
+    let result = state_manager.prepare_genesis(prepare_request.into());
+
+    result.into()
 }
 
 #[no_mangle]
@@ -153,9 +180,13 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
 }
 
 #[tracing::instrument(skip_all)]
-fn do_commit(state_manager: &mut ActualStateManager, args: JavaCommitRequest) {
+fn do_commit(
+    state_manager: &mut ActualStateManager,
+    args: JavaCommitRequest,
+) -> Result<(), CommitError> {
     let commit_request = args;
-    state_manager.commit(commit_request.into());
+
+    state_manager.commit(commit_request.into())
 }
 
 #[no_mangle]
@@ -193,7 +224,7 @@ fn do_get_epoch(state_manager: &ActualStateManager, _args: ()) -> u64 {
 
 pub fn export_extern_functions() {}
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug, Decode, Encode, Categorize)]
 pub struct JavaCommitRequest {
     pub transactions: Vec<JavaRawTransaction>,
     pub state_version: u64,
@@ -209,20 +240,20 @@ impl From<JavaCommitRequest> for CommitRequest {
                 .into_iter()
                 .map(|t| t.payload)
                 .collect(),
-            state_version: commit_request.state_version,
+            proof_state_version: commit_request.state_version,
             proof: commit_request.proof,
             vertex_store: commit_request.vertex_store,
         }
     }
 }
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug, Decode, Encode, Categorize)]
 pub struct JavaPrepareRequest {
     pub already_prepared: Vec<JavaRawTransaction>,
     pub proposed: Vec<JavaRawTransaction>,
     pub consensus_epoch: u64,
     pub round_number: u64,
-    pub proposer_timestamp_ms: u64,
+    pub proposer_timestamp_ms: i64,
 }
 
 impl From<JavaPrepareRequest> for PrepareRequest {
@@ -245,10 +276,12 @@ impl From<JavaPrepareRequest> for PrepareRequest {
     }
 }
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct JavaPrepareResult {
     pub committed: Vec<Vec<u8>>,
     pub rejected: Vec<(Vec<u8>, String)>,
+    pub next_epoch: Option<NextEpoch>,
 }
 
 impl From<PrepareResult> for JavaPrepareResult {
@@ -256,6 +289,34 @@ impl From<PrepareResult> for JavaPrepareResult {
         JavaPrepareResult {
             committed: prepare_results.committed,
             rejected: prepare_results.rejected,
+            next_epoch: prepare_results.next_epoch,
+        }
+    }
+}
+
+#[derive(Debug, Decode, Encode, Categorize)]
+pub struct JavaPrepareGenesisRequest {
+    pub genesis: JavaRawTransaction,
+}
+
+impl From<JavaPrepareGenesisRequest> for PrepareGenesisRequest {
+    fn from(prepare_genesis_request: JavaPrepareGenesisRequest) -> Self {
+        PrepareGenesisRequest {
+            genesis: prepare_genesis_request.genesis.payload,
+        }
+    }
+}
+
+#[derive(Debug)]
+#[scrypto(Categorize, Encode, Decode)]
+pub struct JavaPrepareGenesisResult {
+    pub validator_set: Option<HashSet<EcdsaSecp256k1PublicKey>>,
+}
+
+impl From<PrepareGenesisResult> for JavaPrepareGenesisResult {
+    fn from(prepare_results: PrepareGenesisResult) -> Self {
+        JavaPrepareGenesisResult {
+            validator_set: prepare_results.validator_set,
         }
     }
 }

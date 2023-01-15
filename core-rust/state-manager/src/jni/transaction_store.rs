@@ -65,19 +65,19 @@
 use crate::jni::state_manager::ActualStateManager;
 use crate::store::traits::*;
 
+use crate::LedgerTransactionOutcome;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::transaction::TransactionOutcome;
 use radix_engine::types::{scrypto_encode, ComponentAddress};
 use radix_engine_interface::scrypto;
-use sbor::{Decode, Encode, TypeId};
+use sbor::{Categorize, Decode, Encode};
 
 use super::mempool::JavaPayloadHash;
 use super::utils::jni_state_manager_sbor_read_call;
 
 #[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 struct ExecutedTransaction {
     outcome: TransactionOutcomeJava,
     ledger_receipt_bytes: Vec<u8>,
@@ -87,7 +87,7 @@ struct ExecutedTransaction {
 }
 
 #[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum TransactionOutcomeJava {
     Success(Vec<Vec<u8>>),
     Failure(String),
@@ -122,8 +122,8 @@ fn do_get_transaction_at_state_version(
 
     Some(ExecutedTransaction {
         outcome: match ledger_receipt.outcome {
-            TransactionOutcome::Success(output) => TransactionOutcomeJava::Success(output),
-            TransactionOutcome::Failure(err) => {
+            LedgerTransactionOutcome::Success(output) => TransactionOutcomeJava::Success(output),
+            LedgerTransactionOutcome::Failure(err) => {
                 TransactionOutcomeJava::Failure(format!("{:?}", err))
             }
         },
@@ -153,6 +153,21 @@ fn do_get_next_proof(
     let payload_hashes = payload_hashes.into_iter().map(|hash| hash.into()).collect();
 
     Some((payload_hashes, proof))
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getEpochProof(
+    env: JNIEnv,
+    _class: JClass,
+    j_state_manager: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_get_epoch_proof)
+}
+
+#[tracing::instrument(skip_all)]
+fn do_get_epoch_proof(state_manager: &ActualStateManager, state_version: u64) -> Option<Vec<u8>> {
+    state_manager.store.get_epoch_proof(state_version)
 }
 
 #[no_mangle]

@@ -64,7 +64,7 @@
 
 package com.radixdlt;
 
-import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Stopwatch;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
@@ -77,7 +77,9 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.modules.ModuleRunner;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.ApplicationVersion;
+import com.radixdlt.monitoring.MetricInstaller;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.store.BerkeleyAddressBookStore;
 import com.radixdlt.utils.IOUtils;
@@ -87,11 +89,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.security.Security;
-import java.util.HashMap;
-import java.util.Locale;
+import java.time.Duration;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -103,48 +102,8 @@ public final class RadixNodeApplication {
 
   private RadixNodeApplication() {}
 
-  private static final String SYSTEM_VERSION_DISPLAY;
-  private static final String SYSTEM_VERSION_BRANCH;
-  private static final String SYSTEM_VERSION_COMMIT;
-  private static final Map<String, Map<String, Object>> SYSTEM_VERSION_INFO;
-
-  public static final String SYSTEM_VERSION_KEY = "system_version";
-  public static final String VERSION_STRING_KEY = "version_string";
-
   static {
     System.setProperty("java.net.preferIPv4Stack", "true");
-
-    var branch = "unknown-branch";
-    var commit = "unknown-commit";
-    var display = "unknown-version";
-    var map = new HashMap<String, Object>();
-
-    try (var is = RadixNodeApplication.class.getResourceAsStream("/version.properties")) {
-      if (is != null) {
-        var p = new Properties();
-        p.load(is);
-        branch = p.getProperty("VERSION_BRANCH", branch);
-        commit = p.getProperty("VERSION_COMMIT", commit);
-        display = p.getProperty("VERSION_DISPLAY", display);
-
-        for (var key : p.stringPropertyNames()) {
-          var mapKey = key.split("_", 2)[1].toLowerCase(Locale.US);
-          var defaultValue = "unknown-" + mapKey;
-
-          map.put(mapKey, p.getProperty(key, defaultValue));
-        }
-      }
-    } catch (IOException e) {
-      // Ignore exception
-    }
-
-    SYSTEM_VERSION_DISPLAY = display;
-    SYSTEM_VERSION_BRANCH = branch;
-    SYSTEM_VERSION_COMMIT = commit;
-
-    map.put(VERSION_STRING_KEY, calculateVersionString(map));
-
-    SYSTEM_VERSION_INFO = Map.of(SYSTEM_VERSION_KEY, Map.copyOf(map));
   }
 
   private static final Object BC_LOCK = new Object();
@@ -188,17 +147,13 @@ public final class RadixNodeApplication {
     log.always()
         .log(
             "Radix distributed ledger '{}' from branch '{}' commit '{}'",
-            SYSTEM_VERSION_DISPLAY,
-            SYSTEM_VERSION_BRANCH,
-            SYSTEM_VERSION_COMMIT);
-  }
-
-  public static Map<String, Map<String, Object>> systemVersionInfo() {
-    return SYSTEM_VERSION_INFO;
+            ApplicationVersion.INSTANCE.display(),
+            ApplicationVersion.INSTANCE.branch(),
+            ApplicationVersion.INSTANCE.commit());
   }
 
   public static void start(RuntimeProperties properties) {
-    long start = System.currentTimeMillis();
+    Stopwatch startTimer = Stopwatch.createStarted();
     var injector = Guice.createInjector(new RadixNodeModule(properties));
 
     final Map<String, ModuleRunner> moduleRunners =
@@ -239,13 +194,14 @@ public final class RadixNodeApplication {
     consensusRunner.start();
 
     final BFTNode self = injector.getInstance(Key.get(BFTNode.class, Self.class));
-    long finish = System.currentTimeMillis();
-    var systemCounters = injector.getInstance(SystemCounters.class);
-    systemCounters.set(SystemCounters.CounterType.STARTUP_TIME_MS, finish - start);
 
+    Duration startTime = startTimer.elapsed();
+    var metrics = injector.getInstance(Metrics.class);
+    metrics.misc().applicationStart().observe(startTime);
+    injector.getInstance(MetricInstaller.class).installAt(metrics);
     Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown(injector)));
 
-    log.info("Node '{}' started successfully in {} seconds", self, (finish - start) / 1000);
+    log.info("Node '{}' started successfully in {} seconds", self, startTime.toSeconds());
   }
 
   private static void shutdown(Injector injector) {
@@ -312,37 +268,5 @@ public final class RadixNodeApplication {
       }
     }
     return new RuntimeProperties(runtimeConfigurationJSON, args);
-  }
-
-  @VisibleForTesting
-  static String calculateVersionString(Map<String, Object> details) {
-    if (isCleanTag(details)) {
-      return lastTag(details);
-    } else {
-      var version =
-          branchName(details) == null
-              ? "detached-head-" + gitHash(details)
-              : (lastTag(details) + "-" + branchName(details)).replace('/', '~')
-                  + "-"
-                  + gitHash(details);
-
-      return version;
-    }
-  }
-
-  private static boolean isCleanTag(Map<String, Object> details) {
-    return Objects.equals(details.get("tag"), details.get("last_tag"));
-  }
-
-  private static String lastTag(Map<String, Object> details) {
-    return (String) details.get("last_tag");
-  }
-
-  private static String gitHash(Map<String, Object> details) {
-    return (String) details.get("build");
-  }
-
-  private static String branchName(Map<String, Object> details) {
-    return (String) details.get("branch");
   }
 }

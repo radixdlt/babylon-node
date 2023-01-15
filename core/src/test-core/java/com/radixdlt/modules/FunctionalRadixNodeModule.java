@@ -87,9 +87,6 @@ import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.modules.StateComputerConfig.*;
-import com.radixdlt.rev1.ReV1DispatcherModule;
-import com.radixdlt.rev1.mempool.ReV1MempoolRelayerModule;
-import com.radixdlt.rev1.modules.*;
 import com.radixdlt.rev2.modules.*;
 import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerModule;
@@ -188,13 +185,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
       return false;
     }
 
-    default boolean isREV1() {
-      if (this instanceof StateComputerLedgerConfig c) {
-        return c.config instanceof REv1StateComputerConfig;
-      }
-      return false;
-    }
-
     default boolean isREV2() {
       if (this instanceof StateComputerLedgerConfig c) {
         return c.config instanceof REv2StateComputerConfig;
@@ -257,10 +247,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
   public boolean supportsEpochs() {
     return epochs;
-  }
-
-  public boolean supportsREv1() {
-    return this.ledgerConfig.isREV1();
   }
 
   public boolean supportsREv2() {
@@ -336,18 +322,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
               }
             }
           }
-          case REv1StateComputerConfig config -> {
-            install(new MempoolReceiverModule());
-            install(new ReV1MempoolRelayerModule(10000));
-            install(new RadixEngineStateComputerModule(config.mempoolSize()));
-            install(new RadixEngineModule());
-            install(new ReV1DispatcherModule());
-            install(new REv1LedgerRecoveryModule());
-            install(new REv1ConsensusRecoveryModule());
-          }
           case REv2StateComputerConfig rev2Config -> {
-            // Start at stateVersion 1 for now due to lack serialized genesis transaction
-            var initialAccumulatorState = new AccumulatorState(1, HashUtils.zero256());
+            var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
 
             if (REv2DatabaseConfig.isNone(rev2Config.databaseConfig())) {
               install(new REv2StatelessComputerModule());
@@ -358,7 +334,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                     private RoundUpdate initialRoundUpdate(
                         BFTConfiguration configuration, ProposerElection proposerElection) {
                       var highQC = configuration.getVertexStoreState().getHighQC();
-                      var round = highQC.highestQC().getRound().next();
+                      var round = highQC.getHighestRound().next();
                       var leader = proposerElection.getProposer(round);
                       var nextLeader = proposerElection.getProposer(round.next());
 
@@ -371,17 +347,18 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         BFTValidatorSet validatorSet,
                         Hasher hasher) {
                       var genesisVertex =
-                          Vertex.createGenesis(
+                          Vertex.createInitialEpochVertex(
                                   LedgerHeader.genesis(initialAccumulatorState, validatorSet, 0, 0))
                               .withId(hasher);
                       var nextLedgerHeader =
                           LedgerHeader.create(
-                              proof.getNextEpoch(),
+                              proof.getNextEpoch().orElseThrow().getEpoch(),
                               Round.genesis(),
                               proof.getAccumulatorState(),
                               proof.consensusParentRoundTimestamp(),
                               proof.proposerTimestamp());
-                      var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+                      var genesisQC =
+                          QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
                       var proposerElection = new WeightedRotatingLeaders(validatorSet);
                       return new BFTConfiguration(
                           proposerElection,
@@ -391,7 +368,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                     }
                   });
             } else {
-              install(new REv2LedgerRecoveryModule(initialAccumulatorState));
+              install(new REv2LedgerRecoveryModule(initialAccumulatorState, rev2Config.genesis()));
               install(new REv2ConsensusRecoveryModule());
             }
 
@@ -402,7 +379,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                     REv2StateManagerModule.createForTesting(
                         rev2Config.networkId(),
                         0,
-                        rev2Config.stateConfig(),
                         rev2Config.databaseConfig(),
                         Option.none(),
                         rev2Config.debugLogging()));
@@ -415,7 +391,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                     REv2StateManagerModule.createForTesting(
                         rev2Config.networkId(),
                         mempool.transactionsPerProposal(),
-                        rev2Config.stateConfig(),
                         rev2Config.databaseConfig(),
                         Option.some(mempool.mempoolConfig()),
                         rev2Config.debugLogging()));

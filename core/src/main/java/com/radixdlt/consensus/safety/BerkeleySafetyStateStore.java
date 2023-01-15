@@ -67,21 +67,15 @@ package com.radixdlt.consensus.safety;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.BerkeleyStoreException;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.utils.Longs;
-import com.sleepycat.je.Cursor;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseConfig;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.Environment;
-import com.sleepycat.je.LockMode;
-import com.sleepycat.je.OperationStatus;
+import com.sleepycat.je.*;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -99,18 +93,18 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 
   private final DatabaseEnvironment dbEnv;
   private final Database safetyStore;
-  private final SystemCounters systemCounters;
+  private final Metrics metrics;
   private final AtomicLong cleanupCounter = new AtomicLong();
   private final Serialization serialization;
 
   @Inject
   public BerkeleySafetyStateStore(
-      DatabaseEnvironment dbEnv, Serialization serialization, SystemCounters systemCounters) {
+      DatabaseEnvironment dbEnv, Serialization serialization, Metrics metrics) {
     this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
     this.serialization = Objects.requireNonNull(serialization);
 
     this.safetyStore = this.open();
-    this.systemCounters = Objects.requireNonNull(systemCounters);
+    this.metrics = Objects.requireNonNull(metrics);
 
     if (Boolean.valueOf(System.getProperty("db.check_integrity", "true"))) {
       // TODO implement integrity check
@@ -179,8 +173,6 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 
   @Override
   public void commitState(SafetyState safetyState) {
-    this.systemCounters.increment(CounterType.PERSISTENCE_SAFETY_STORE_SAVES);
-
     final var start = System.nanoTime();
 
     final var transaction = dbEnv.getEnvironment().beginTransaction(null, null);
@@ -254,17 +246,16 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
   }
 
   private void addTime(long start) {
-    final var elapsed = (System.nanoTime() - start + 500L) / 1000L;
-    this.systemCounters.add(CounterType.ELAPSED_BDB_SAFETY_STATE, elapsed);
-    this.systemCounters.increment(CounterType.COUNT_BDB_SAFETY_STATE_TOTAL);
+    final var elapsed = Duration.ofNanos(System.nanoTime() - start);
+    this.metrics.berkeleyDb().safetyState().commitState().observe(elapsed);
   }
 
   private void addBytesRead(int bytesRead) {
-    this.systemCounters.add(CounterType.COUNT_BDB_SAFETY_STATE_BYTES_READ, bytesRead);
+    this.metrics.berkeleyDb().safetyState().bytesRead().inc(bytesRead);
   }
 
   private void addBytesWrite(int bytesWrite) {
-    this.systemCounters.add(CounterType.COUNT_BDB_SAFETY_STATE_BYTES_WRITE, bytesWrite);
+    this.metrics.berkeleyDb().safetyState().bytesWritten().inc(bytesWrite);
   }
 
   private byte[] keyFor(SafetyState safetyState) {

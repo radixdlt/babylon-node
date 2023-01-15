@@ -82,7 +82,7 @@ import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.REv2StateConfig;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -105,7 +105,8 @@ public class SanityTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
+                        TransactionBuilder.createGenesisWithNumValidators(
+                            4, UInt64.fromNonNegativeLong(100000)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.mempool(10, 100, MempoolRelayConfig.of())))))
         .addTestModules(

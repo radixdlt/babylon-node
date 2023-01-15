@@ -67,11 +67,14 @@ package com.radixdlt.harness.predicates;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.IntPredicate;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 
 public final class NodesPredicate {
   private NodesPredicate() {
@@ -83,13 +86,17 @@ public final class NodesPredicate {
     return n -> injectorPredicate.test(n.get(nodeIndex));
   }
 
+  public static Predicate<List<Injector>> allNodesMatch(Predicate<Injector> injectorPredicate) {
+    return n -> n.stream().allMatch(injectorPredicate);
+  }
+
   public static Predicate<List<Injector>> allAtExactlyStateVersion(long stateVersion) {
-    return n -> n.stream().allMatch(NodePredicate.atExactlyStateVersion(stateVersion));
+    return allNodesMatch(NodePredicate.atExactlyStateVersion(stateVersion));
   }
 
   public static Predicate<List<Injector>> allCommittedTransaction(
       RawNotarizedTransaction transaction) {
-    return n -> n.stream().allMatch(NodePredicate.committedUserTransaction(transaction));
+    return allNodesMatch(NodePredicate.committedUserTransaction(transaction));
   }
 
   public static Predicate<List<Injector>> anyCommittedTransaction(
@@ -104,8 +111,17 @@ public final class NodesPredicate {
             .anyMatch(NodePredicate.atExactlyStateVersion(stateVersion));
   }
 
+  public static Predicate<List<Injector>> someAtOrOverStateVersion(
+      IntPredicate nodePredicate, long stateVersion) {
+    return n ->
+        IntStream.range(0, n.size())
+            .filter(nodePredicate)
+            .mapToObj(n::get)
+            .allMatch(i -> NodePredicate.atOrOverStateVersion(stateVersion).test(i));
+  }
+
   public static Predicate<List<Injector>> allAtOrOverStateVersion(long stateVersion) {
-    return n -> n.stream().allMatch(NodePredicate.atOrOverStateVersion(stateVersion));
+    return allNodesMatch(NodePredicate.atOrOverStateVersion(stateVersion));
   }
 
   public static Predicate<List<Injector>> anyAtOrOverStateVersion(long stateVersion) {
@@ -115,19 +131,17 @@ public final class NodesPredicate {
             .anyMatch(NodePredicate.atOrOverStateVersion(stateVersion));
   }
 
-  public static Predicate<List<Injector>> anyAtOrOverStateEpoch(long epoch) {
-    return n -> n.stream().filter(Objects::nonNull).anyMatch(NodePredicate.atOrOverEpoch(epoch));
+  public static Predicate<List<Injector>> anyCommittedProof(Predicate<LedgerProof> predicate) {
+    return n ->
+        n.stream().filter(Objects::nonNull).anyMatch(NodePredicate.proofCommitted(predicate));
   }
 
   public static Predicate<List<Injector>> allHaveExactMempoolCount(int count) {
-    return n ->
-        n.stream()
-            .allMatch(
-                i -> {
-                  var reader =
-                      i.getInstance(
-                          Key.get(new TypeLiteral<MempoolReader<RawNotarizedTransaction>>() {}));
-                  return reader.getCount() == count;
-                });
+    return allNodesMatch(
+        i -> {
+          var reader =
+              i.getInstance(Key.get(new TypeLiteral<MempoolReader<RawNotarizedTransaction>>() {}));
+          return reader.getCount() == count;
+        });
   }
 }

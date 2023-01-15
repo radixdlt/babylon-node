@@ -75,14 +75,13 @@ import com.radixdlt.rev2.*;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.statecomputer.commit.CommitRequest;
-import com.radixdlt.statecomputer.commit.PrepareRequest;
-import com.radixdlt.statecomputer.commit.PrepareResult;
+import com.radixdlt.statecomputer.commit.*;
 import com.radixdlt.statemanager.*;
 import com.radixdlt.transaction.CommittedTransactionStatus;
 import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.UInt16;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 
@@ -109,6 +108,7 @@ public final class StateManagerSbor {
   }
 
   public static void registerCodecsWithCodecMap(CodecMap codecMap) {
+    UInt16.registerCodec(codecMap);
     UInt32.registerCodec(codecMap);
     UInt64.registerCodec(codecMap);
     RustMempoolConfig.registerCodec(codecMap);
@@ -136,13 +136,16 @@ public final class StateManagerSbor {
     ECDSASecp256k1Signature.registerCodec(codecMap);
     EdDSAEd25519Signature.registerCodec(codecMap);
     SignatureWithPublicKey.registerCodec(codecMap);
+    PrepareGenesisRequest.registerCodec(codecMap);
+    PrepareGenesisResult.registerCodec(codecMap);
     PrepareRequest.registerCodec(codecMap);
     PrepareResult.registerCodec(codecMap);
+    NextEpoch.registerCodec(codecMap);
     CommitRequest.registerCodec(codecMap);
+    CommitError.registerCodec(codecMap);
     REv2DatabaseConfig.registerCodec(codecMap);
     TransactionHeader.registerCodec(codecMap);
     CoreApiServerConfig.registerCodec(codecMap);
-    REv2StateConfig.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

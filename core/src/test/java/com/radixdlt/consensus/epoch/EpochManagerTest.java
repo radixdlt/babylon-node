@@ -67,33 +67,18 @@ package com.radixdlt.consensus.epoch;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.RateLimiter;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
+import com.google.inject.*;
 import com.google.inject.Module;
-import com.google.inject.Provides;
-import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
-import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.liveness.*;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.sync.VertexRequestTimeout;
+import com.radixdlt.consensus.sync.*;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
@@ -103,6 +88,7 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.RoundDetails;
 import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
@@ -112,9 +98,8 @@ import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.modules.ConsensusModule;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.LedgerModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
-import com.radixdlt.rev1.RoundDetails;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
@@ -207,7 +192,9 @@ public class EpochManagerTest {
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<NoVote>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<EventDispatcher<DoubleVote>>() {})
+        bind(new TypeLiteral<EventDispatcher<ConsensusByzantineEvent.DoubleVote>>() {})
+            .toInstance(rmock(EventDispatcher.class));
+        bind(new TypeLiteral<EventDispatcher<ConsensusByzantineEvent>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {})
             .toInstance(rmock(EventDispatcher.class));
@@ -232,7 +219,7 @@ public class EpochManagerTest {
 
         bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
         bind(ProposalGenerator.class).toInstance(proposalGenerator);
-        bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+        bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
         bind(Mempool.class).toInstance(mempool);
         bind(StateComputer.class).toInstance(stateComputer);
         bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
@@ -251,7 +238,7 @@ public class EpochManagerTest {
       @Provides
       private RoundUpdate initialRoundUpdate(BFTConfiguration bftConfiguration) {
         HighQC highQC = bftConfiguration.getVertexStoreState().getHighQC();
-        Round round = highQC.highestQC().getRound().next();
+        Round round = highQC.getHighestRound().next();
         return RoundUpdate.create(round, highQC, self, self);
       }
 
@@ -279,10 +266,11 @@ public class EpochManagerTest {
           @Self BFTNode self, Hasher hasher, BFTValidatorSet validatorSet) {
         var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
         var vertex =
-            Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0, 0))
+            Vertex.createInitialEpochVertex(
+                    LedgerHeader.genesis(accumulatorState, validatorSet, 0, 0))
                 .withId(hasher);
         var qc =
-            QuorumCertificate.ofGenesis(
+            QuorumCertificate.createInitialEpochQC(
                 vertex, LedgerHeader.genesis(accumulatorState, validatorSet, 0, 0));
         var proposerElection = new WeightedRotatingLeaders(validatorSet);
         return new BFTConfiguration(
@@ -312,7 +300,7 @@ public class EpochManagerTest {
         BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     LedgerHeader header = LedgerHeader.genesis(accumulatorState, nextValidatorSet, 0, 0);
-    VertexWithHash verifiedGenesisVertex = Vertex.createGenesis(header).withId(hasher);
+    VertexWithHash verifiedGenesisVertex = Vertex.createInitialEpochVertex(header).withId(hasher);
     LedgerHeader nextLedgerHeader =
         LedgerHeader.create(
             header.getEpoch() + 1,
@@ -320,7 +308,7 @@ public class EpochManagerTest {
             header.getAccumulatorState(),
             header.consensusParentRoundTimestamp(),
             header.proposerTimestamp());
-    var genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
+    var genesisQC = QuorumCertificate.createInitialEpochQC(verifiedGenesisVertex, nextLedgerHeader);
     var proposerElection = new WeightedRotatingLeaders(nextValidatorSet);
     var bftConfiguration =
         new BFTConfiguration(
@@ -330,7 +318,8 @@ public class EpochManagerTest {
                 HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty(), hasher));
     LedgerProof proof = mock(LedgerProof.class);
     when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);
-    when(proof.getNextEpoch()).thenReturn(header.getEpoch() + 2);
+    when(proof.getNextEpoch())
+        .thenReturn(Optional.of(NextEpoch.create(header.getEpoch() + 2, ImmutableSet.of())));
     var epochChange = new EpochChange(proof, bftConfiguration);
     var ledgerUpdate =
         new LedgerUpdate(

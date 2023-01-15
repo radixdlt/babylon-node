@@ -83,8 +83,10 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent;
+import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.TimestampIssue;
+import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.Type;
 import com.radixdlt.utils.TimeSupplier;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -161,27 +163,37 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
 
     final var network = runningTest.getNetwork();
     for (final var node : network.getNodes()) {
-      final var counters = network.getInstance(SystemCounters.class, node);
+      final var counters = network.getInstance(Metrics.class, node);
       if (node.equals(rushingNode.get())) {
         // There are some invalid timestamp proposals reported (delayed from this node's point of
         // view)
-        assertTrue(counters.get(CounterType.BFT_INVALID_PROPOSAL_TIMESTAMPS) >= 1);
-        assertTrue(counters.get(CounterType.BFT_INVALID_PROPOSAL_TIMESTAMP_WAS_TOO_BEHIND) >= 1);
+        assertTrue(
+            counters
+                    .bft()
+                    .rejectedConsensusEvents()
+                    .label(new RejectedConsensusEvent(Type.PROPOSAL, TimestampIssue.TOO_FAR_PAST))
+                    .get()
+                >= 1);
       } else if (node.equals(downNode)) {
         // The down node shouldn't process any consensus events
-        assertEquals(0, counters.get(CounterType.BFT_SUCCESSFULLY_PROCESSED_VOTES));
-        assertEquals(0, counters.get(CounterType.BFT_SUCCESSFULLY_PROCESSED_PROPOSALS));
+        assertEquals(0, (long) counters.bft().successfullyProcessedVotes().get());
+        assertEquals(0, (long) counters.bft().successfullyProcessedProposals().get());
       } else {
         // A healthy node:
         // There are some invalid timestamp proposals reported
-        assertTrue(counters.get(CounterType.BFT_INVALID_PROPOSAL_TIMESTAMPS) >= 1);
-        assertTrue(counters.get(CounterType.BFT_INVALID_PROPOSAL_TIMESTAMP_WAS_TOO_AHEAD) >= 1);
+        assertTrue(
+            counters
+                    .bft()
+                    .rejectedConsensusEvents()
+                    .label(new RejectedConsensusEvent(Type.PROPOSAL, TimestampIssue.TOO_FAR_FUTURE))
+                    .get()
+                >= 1);
         // And some timed out rounds
-        assertTrue(counters.get(CounterType.BFT_PACEMAKER_TIMED_OUT_ROUNDS) >= 1);
+        assertTrue(counters.bft().pacemaker().timedOutRounds().get() >= 1);
         // And all timed out rounds only required a single timeout event to proceed
         assertEquals(
-            counters.get(CounterType.BFT_PACEMAKER_TIMED_OUT_ROUNDS),
-            counters.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT));
+            (long) counters.bft().pacemaker().timedOutRounds().get(),
+            (long) counters.bft().pacemaker().timeoutsSent().get());
       }
     }
   }

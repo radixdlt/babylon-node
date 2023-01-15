@@ -68,55 +68,115 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.*;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.VertexStoreState;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.statecomputer.commit.CommitRequest;
+import com.radixdlt.statecomputer.commit.PrepareGenesisRequest;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
+import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt64;
+import java.util.List;
 import java.util.Optional;
 
 public final class REv2LedgerRecoveryModule extends AbstractModule {
   private final AccumulatorState initialAccumulatorState;
+  private final RawLedgerTransaction genesis;
 
-  public REv2LedgerRecoveryModule(AccumulatorState initialAccumulatorState) {
+  public REv2LedgerRecoveryModule(
+      AccumulatorState initialAccumulatorState, RawLedgerTransaction genesis) {
     this.initialAccumulatorState = initialAccumulatorState;
+    this.genesis = genesis;
   }
 
   @Provides
-  @LastProof
+  @Singleton
+  @LastStoredProof
   private LedgerProof lastProof(
-      TransactionsAndProofReader transactionsAndProofReader, BFTValidatorSet validatorSet) {
+      RustStateComputer stateComputer,
+      Serialization serialization,
+      TransactionsAndProofReader transactionsAndProofReader,
+      LedgerAccumulator ledgerAccumulator) {
     final var timestamp = 0L; /* TODO: use Olympia end-state timestamp */
     return transactionsAndProofReader
         .getLastProof()
         .orElseGet(
-            () -> LedgerProof.genesis(initialAccumulatorState, validatorSet, timestamp, timestamp));
+            () -> {
+              /* TODO: Move this into StateManager init() when Proof generation is supported by state_manager */
+              var result = stateComputer.prepareGenesis(new PrepareGenesisRequest(genesis));
+              var validatorSet =
+                  result
+                      .validatorSet()
+                      .map(
+                          list -> {
+                            var validators =
+                                list.stream()
+                                    .map(
+                                        key -> BFTValidator.from(BFTNode.create(key), UInt256.ONE));
+                            return BFTValidatorSet.from(validators);
+                          })
+                      .or((BFTValidatorSet) null);
+              var accumulatorState =
+                  ledgerAccumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
+              var proof = LedgerProof.genesis(accumulatorState, validatorSet, timestamp, timestamp);
+              var proofBytes = serialization.toDson(proof, DsonOutput.Output.ALL);
+              var stateVersion = UInt64.fromNonNegativeLong(proof.getStateVersion());
+              var commitRequest =
+                  new CommitRequest(List.of(genesis), stateVersion, proofBytes, Option.none());
+              var commitResult = stateComputer.commit(commitRequest);
+              commitResult.unwrap();
+
+              return proof;
+            });
   }
 
   @Provides
+  @Singleton
+  @LastProof
+  LedgerProof lastProof(
+      VertexStoreState vertexStoreState, @LastStoredProof LedgerProof lastStoredProof) {
+    if (lastStoredProof.isEndOfEpoch()) {
+      return vertexStoreState.getRootHeader();
+    } else {
+      return lastStoredProof;
+    }
+  }
+
+  @Provides
+  @Singleton
   @LastEpochProof
-  public LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
-    /* TODO: use Olympia end-state timestamp */
-    return LedgerProof.genesis(initialAccumulatorState, validatorSet, 0L, 0L);
+  LedgerProof lastEpochProof(
+      TransactionsAndProofReader transactionsAndProofReader,
+      @LastStoredProof LedgerProof lastStoredProof) {
+    if (lastStoredProof.isEndOfEpoch()) {
+      return lastStoredProof;
+    }
+    var lastEpoch = lastStoredProof.getEpoch();
+    return transactionsAndProofReader.getEpochProof(lastEpoch).orElseThrow();
   }
 
   private static VertexStoreState genesisEpochProofToGenesisVertexStore(
       LedgerProof lastEpochProof, Hasher hasher) {
-    var genesisVertex = Vertex.createGenesis(lastEpochProof.getHeader()).withId(hasher);
+    var genesisVertex = Vertex.createInitialEpochVertex(lastEpochProof.getHeader()).withId(hasher);
     var nextLedgerHeader =
         LedgerHeader.create(
-            lastEpochProof.getNextEpoch(),
+            lastEpochProof.getNextEpoch().orElseThrow().getEpoch(),
             Round.genesis(),
             lastEpochProof.getAccumulatorState(),
             lastEpochProof.consensusParentRoundTimestamp(),
             lastEpochProof.proposerTimestamp());
-    var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+    var genesisQC = QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
     return VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
   }
 

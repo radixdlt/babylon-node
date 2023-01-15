@@ -65,16 +65,19 @@
 package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
 import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransaction;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.*;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
-import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
@@ -83,7 +86,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
@@ -103,6 +105,8 @@ public final class REv2ConsensusTransferTest {
         .numNodes(1, 0)
         .messageSelector(firstSelector())
         .messageMutator(MessageMutator.dropTimeouts())
+        .addMonitors(
+            byzantineBehaviorNotDetected(), consensusLiveness(3000), ledgerTransactionSafety())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
@@ -111,7 +115,8 @@ public final class REv2ConsensusTransferTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
+                        TransactionBuilder.createGenesisWithNumValidators(
+                            1, UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             10, 1, MempoolRelayConfig.of())))));
@@ -122,25 +127,23 @@ public final class REv2ConsensusTransferTest {
     var intentBytes =
         TransactionBuilder.buildNewAccountIntent(
             NetworkDefinition.INT_TEST_NET, notary.getPublicKey().toPublicKey());
-    return REv2TestTransactions.constructTransaction(intentBytes, notary, List.of(TEST_KEY));
+    return REv2TestTransactions.constructRawTransaction(intentBytes, notary, List.of(TEST_KEY));
   }
 
   @Test
-  public void new_account_creates_transfer_of_xrd_to_account() throws Exception {
+  public void new_account_creates_transfer_of_xrd_to_account() {
     try (var test = createTest()) {
       // Arrange: Start single node network
       test.startAllNodes();
       var newAccountTransaction = createNewAccountTransaction();
 
       // Act: Submit transaction to mempool and run consensus
-      var mempoolInserter =
-          test.getInstance(
-              0,
-              Key.get(
-                  new TypeLiteral<
-                      MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
-      mempoolInserter.addTransaction(newAccountTransaction);
-      test.runUntilState(allCommittedTransaction(newAccountTransaction), onlyConsensusEvents());
+      var mempoolDispatcher =
+          test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+      mempoolDispatcher.dispatch(MempoolAdd.create(newAccountTransaction));
+      test.runUntilState(
+          allCommittedTransaction(newAccountTransaction),
+          onlyConsensusEvents().or(onlyLocalMempoolAddEvents()));
 
       // Assert: Check transaction and post submission state
       var executedTransaction =

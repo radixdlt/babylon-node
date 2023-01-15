@@ -65,15 +65,19 @@
 package com.radixdlt.rev2;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VertexStoreState;
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.*;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.RoundDetails;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.*;
-import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
@@ -82,8 +86,10 @@ import com.radixdlt.statecomputer.commit.PrepareRequest;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -95,16 +101,26 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   private final RustStateComputer stateComputer;
   private final int transactionsPerProposalCount;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher;
+
+  private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
+  private final EventDispatcher<ConsensusByzantineEvent> consensusByzantineEventEventDispatcher;
   private final Serialization serialization;
+  private final Hasher hasher;
 
   public REv2StateComputer(
       RustStateComputer stateComputer,
       int transactionsPerProposalCount,
+      Hasher hasher,
       EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
+      EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
+      EventDispatcher<ConsensusByzantineEvent> consensusByzantineEventEventDispatcher,
       Serialization serialization) {
     this.stateComputer = stateComputer;
     this.transactionsPerProposalCount = transactionsPerProposalCount;
+    this.hasher = hasher;
     this.ledgerUpdateEventDispatcher = ledgerUpdateEventDispatcher;
+    this.mempoolAddSuccessEventDispatcher = mempoolAddSuccessEventDispatcher;
+    this.consensusByzantineEventEventDispatcher = consensusByzantineEventEventDispatcher;
     this.serialization = serialization;
   }
 
@@ -116,7 +132,15 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
             transaction -> {
               try {
                 stateComputer.getMempoolInserter().addTransaction(transaction);
-              } catch (MempoolFullException ignored) {
+
+                // TODO: Implement this event in the RustMempool. This requires a JNI -> Java
+                // callback
+                // TODO: interface which hasn't been implemented yet.
+                var success =
+                    MempoolAddSuccess.create(
+                        RawNotarizedTransaction.create(transaction.getPayload()), null, origin);
+                mempoolAddSuccessEventDispatcher.dispatch(success);
+              } catch (MempoolFullException | MempoolDuplicateException ignored) {
               } catch (MempoolRejectedException e) {
                 log.error(e);
               }
@@ -139,6 +163,9 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                         .stream()
                         .map(RawNotarizedTransaction::create))
             .toList();
+
+    // TODO: Don't include transactions if NextEpoch is to occur
+    // TODO: This will require Proposer to simulate a NextRound update before proposing
     return stateComputer.getTransactionsForProposal(
         transactionsPerProposalCount, transactionsNotToInclude);
   }
@@ -158,7 +185,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
             proposedTransactions,
             UInt64.fromNonNegativeLong(roundDetails.epoch()),
             UInt64.fromNonNegativeLong(roundDetails.roundNumber()),
-            UInt64.fromNonNegativeLong(roundDetails.proposerTimestampMs()));
+            roundDetails.proposerTimestampMs());
 
     var result = stateComputer.prepare(prepareRequest);
     var committableTransactions =
@@ -171,11 +198,30 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         result.rejected().stream()
             .collect(
                 Collectors.toMap(
-                    r -> RawLedgerTransaction.create(r.first()),
+                    r -> RawNotarizedTransaction.create(r.first()),
                     r -> (Exception) new InvalidREv2Transaction(r.last())));
 
+    rejectedTransactions.forEach(
+        (rejected, exception) ->
+            consensusByzantineEventEventDispatcher.dispatch(
+                new ConsensusByzantineEvent.InvalidProposedTransaction(
+                    roundDetails, rejected, exception)));
+
+    var nextEpoch =
+        result
+            .nextEpoch()
+            .map(
+                next -> {
+                  var validators =
+                      next.validators().stream()
+                          .map(v -> BFTValidator.from(BFTNode.create(v), UInt256.ONE))
+                          .collect(ImmutableSet.toImmutableSet());
+                  return NextEpoch.create(next.epoch().toNonNegativeLong().unwrap(), validators);
+                })
+            .or((NextEpoch) null);
+
     return new StateComputerLedger.StateComputerResult(
-        committableTransactions, rejectedTransactions);
+        committableTransactions, rejectedTransactions, nextEpoch);
   }
 
   @Override
@@ -195,9 +241,47 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         new CommitRequest(
             txnsAndProof.getTransactions(), stateVersion, proofBytes, vertexStoreBytes);
 
-    stateComputer.commit(commitRequest);
+    var result = stateComputer.commit(commitRequest);
+    if (result.isError()) {
+      log.warn("Could not commit: {}", result.unwrapError());
+      return;
+    }
 
-    var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
+    var epochChangeOptional =
+        txnsAndProof
+            .getProof()
+            .getNextEpoch()
+            .map(
+                nextEpoch -> {
+                  var header = txnsAndProof.getProof();
+                  // TODO: Move vertex stuff somewhere else
+                  var initialEpochVertex =
+                      Vertex.createInitialEpochVertex(header.getHeader()).withId(hasher);
+                  var nextLedgerHeader =
+                      LedgerHeader.create(
+                          nextEpoch.getEpoch(),
+                          Round.genesis(),
+                          header.getAccumulatorState(),
+                          header.consensusParentRoundTimestamp(),
+                          header.proposerTimestamp());
+                  var initialEpochQC =
+                      QuorumCertificate.createInitialEpochQC(initialEpochVertex, nextLedgerHeader);
+                  final var initialState =
+                      VertexStoreState.create(
+                          HighQC.from(initialEpochQC),
+                          initialEpochVertex,
+                          Optional.empty(),
+                          hasher);
+                  var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
+                  var proposerElection = new WeightedRotatingLeaders(validatorSet);
+                  var bftConfiguration =
+                      new BFTConfiguration(proposerElection, validatorSet, initialState);
+                  return new EpochChange(header, bftConfiguration);
+                });
+    var outputBuilder = ImmutableClassToInstanceMap.builder();
+    epochChangeOptional.ifPresent(e -> outputBuilder.put(EpochChange.class, e));
+
+    var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build());
     ledgerUpdateEventDispatcher.dispatch(ledgerUpdate);
   }
 }

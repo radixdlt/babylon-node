@@ -67,33 +67,18 @@ package com.radixdlt.ledger;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.ExecutedVertex;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.VertexStoreState;
+import com.radixdlt.consensus.*;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.rev1.RoundDetails;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.TimeSupplier;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 /** Synchronizes execution */
 public final class StateComputerLedger implements Ledger, ProposalGenerator {
@@ -104,33 +89,33 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
   public static class StateComputerResult {
     private final List<ExecutedTransaction> executedTransactions;
-    private final Map<RawLedgerTransaction, Exception> failedTransactions;
-    private final BFTValidatorSet nextValidatorSet;
+    private final Map<RawNotarizedTransaction, Exception> failedTransactions;
+    private final NextEpoch nextEpoch;
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
-        Map<RawLedgerTransaction, Exception> failedTransactions,
-        BFTValidatorSet nextValidatorSet) {
+        Map<RawNotarizedTransaction, Exception> failedTransactions,
+        NextEpoch nextEpoch) {
       this.executedTransactions = Objects.requireNonNull(executedTransactions);
       this.failedTransactions = Objects.requireNonNull(failedTransactions);
-      this.nextValidatorSet = nextValidatorSet;
+      this.nextEpoch = nextEpoch;
     }
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
-        Map<RawLedgerTransaction, Exception> failedTransactions) {
+        Map<RawNotarizedTransaction, Exception> failedTransactions) {
       this(executedTransactions, failedTransactions, null);
     }
 
-    public Optional<BFTValidatorSet> getNextValidatorSet() {
-      return Optional.ofNullable(nextValidatorSet);
+    public Optional<NextEpoch> getNextEpoch() {
+      return Optional.ofNullable(nextEpoch);
     }
 
     public List<ExecutedTransaction> getSuccessfullyExecutedTransactions() {
       return executedTransactions;
     }
 
-    public Map<RawLedgerTransaction, Exception> getFailedTransactions() {
+    public Map<RawNotarizedTransaction, Exception> getFailedTransactions() {
       return failedTransactions;
     }
   }
@@ -153,7 +138,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
   private final Comparator<LedgerProof> headerComparator;
   private final StateComputer stateComputer;
-  private final SystemCounters counters;
+  private final Metrics metrics;
   private final LedgerAccumulator accumulator;
   private final LedgerAccumulatorVerifier verifier;
   private final Object lock = new Object();
@@ -169,11 +154,11 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       StateComputer stateComputer,
       LedgerAccumulator accumulator,
       LedgerAccumulatorVerifier verifier,
-      SystemCounters counters) {
+      Metrics metrics) {
     this.timeSupplier = Objects.requireNonNull(timeSupplier);
     this.headerComparator = Objects.requireNonNull(headerComparator);
     this.stateComputer = Objects.requireNonNull(stateComputer);
-    this.counters = Objects.requireNonNull(counters);
+    this.metrics = Objects.requireNonNull(metrics);
     this.accumulator = Objects.requireNonNull(accumulator);
     this.verifier = Objects.requireNonNull(verifier);
     this.currentLedgerHeader = initialLedgerState;
@@ -209,6 +194,11 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
   @Override
   public Optional<ExecutedVertex> prepare(
+      LinkedList<ExecutedVertex> previous, VertexWithHash vertexWithHash) {
+    return metrics.ledger().prepare().measure(() -> this.prepareInternal(previous, vertexWithHash));
+  }
+
+  private Optional<ExecutedVertex> prepareInternal(
       LinkedList<ExecutedVertex> previous, VertexWithHash vertexWithHash) {
     final var vertex = vertexWithHash.vertex();
     final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
@@ -272,7 +262,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               accumulatorState,
               vertex.getQCToParent().getWeightedTimestampOfSignatures(),
               vertex.proposerTimestamp(),
-              result.getNextValidatorSet().orElse(null));
+              result.getNextEpoch().orElse(null));
 
       return Optional.of(
           new ExecutedVertex(
@@ -294,12 +284,15 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       var proof = committedUpdate.vertexStoreState().getRootHeader();
       var transactionsWithProof = CommittedTransactionsWithProof.create(transactions, proof);
 
-      this.commit(transactionsWithProof, committedUpdate.vertexStoreState());
+      metrics
+          .ledger()
+          .commit()
+          .measure(() -> this.commit(transactionsWithProof, committedUpdate.vertexStoreState()));
     };
   }
 
   public EventProcessor<CommittedTransactionsWithProof> syncEventProcessor() {
-    return p -> this.commit(p, null);
+    return p -> metrics.ledger().commit().measure(() -> this.commit(p, null));
   }
 
   private void commit(
@@ -325,9 +318,9 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
       var transactions = verifiedExtension.get();
       if (vertexStoreState == null) {
-        this.counters.add(CounterType.LEDGER_SYNC_TRANSACTIONS_PROCESSED, transactions.size());
+        this.metrics.ledger().syncTransactionsProcessed().inc(transactions.size());
       } else {
-        this.counters.add(CounterType.LEDGER_BFT_TRANSACTIONS_PROCESSED, transactions.size());
+        this.metrics.ledger().bftTransactionsProcessed().inc(transactions.size());
       }
 
       var extensionToCommit =
@@ -339,8 +332,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
       // TODO: move all of the following to post-persist event handling
       this.currentLedgerHeader = nextHeader;
-      this.counters.set(
-          CounterType.LEDGER_STATE_VERSION, this.currentLedgerHeader.getStateVersion());
+      this.metrics.ledger().stateVersion().set(this.currentLedgerHeader.getStateVersion());
     }
   }
 }

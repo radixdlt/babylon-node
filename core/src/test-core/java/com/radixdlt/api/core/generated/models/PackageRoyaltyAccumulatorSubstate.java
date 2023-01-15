@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstateAllOf;
+import com.radixdlt.api.core.generated.models.EntityReference;
 import com.radixdlt.api.core.generated.models.SubstateBase;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import io.swagger.annotations.ApiModel;
@@ -35,15 +36,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   PackageRoyaltyAccumulatorSubstate.JSON_PROPERTY_SUBSTATE_TYPE,
-  PackageRoyaltyAccumulatorSubstate.JSON_PROPERTY_XRD_AMOUNT
+  PackageRoyaltyAccumulatorSubstate.JSON_PROPERTY_VAULT_ENTITY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PackageRoyaltyAccumulatorSubstate {
   public static final String JSON_PROPERTY_SUBSTATE_TYPE = "substate_type";
   private SubstateType substateType;
 
-  public static final String JSON_PROPERTY_XRD_AMOUNT = "xrd_amount";
-  private String xrdAmount;
+  public static final String JSON_PROPERTY_VAULT_ENTITY = "vault_entity";
+  private EntityReference vaultEntity;
 
   public PackageRoyaltyAccumulatorSubstate() { 
   }
@@ -74,29 +75,29 @@ public class PackageRoyaltyAccumulatorSubstate {
   }
 
 
-  public PackageRoyaltyAccumulatorSubstate xrdAmount(String xrdAmount) {
-    this.xrdAmount = xrdAmount;
+  public PackageRoyaltyAccumulatorSubstate vaultEntity(EntityReference vaultEntity) {
+    this.vaultEntity = vaultEntity;
     return this;
   }
 
    /**
-   * The string-encoded decimal representing the amount of XRD available for claim in the royalty accumulator. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
-   * @return xrdAmount
+   * Get vaultEntity
+   * @return vaultEntity
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the amount of XRD available for claim in the royalty accumulator. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
-  @JsonProperty(JSON_PROPERTY_XRD_AMOUNT)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getXrdAmount() {
-    return xrdAmount;
+  public EntityReference getVaultEntity() {
+    return vaultEntity;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_XRD_AMOUNT)
+  @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setXrdAmount(String xrdAmount) {
-    this.xrdAmount = xrdAmount;
+  public void setVaultEntity(EntityReference vaultEntity) {
+    this.vaultEntity = vaultEntity;
   }
 
 
@@ -113,12 +114,12 @@ public class PackageRoyaltyAccumulatorSubstate {
     }
     PackageRoyaltyAccumulatorSubstate packageRoyaltyAccumulatorSubstate = (PackageRoyaltyAccumulatorSubstate) o;
     return Objects.equals(this.substateType, packageRoyaltyAccumulatorSubstate.substateType) &&
-        Objects.equals(this.xrdAmount, packageRoyaltyAccumulatorSubstate.xrdAmount);
+        Objects.equals(this.vaultEntity, packageRoyaltyAccumulatorSubstate.vaultEntity);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(substateType, xrdAmount);
+    return Objects.hash(substateType, vaultEntity);
   }
 
   @Override
@@ -126,7 +127,7 @@ public class PackageRoyaltyAccumulatorSubstate {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageRoyaltyAccumulatorSubstate {\n");
     sb.append("    substateType: ").append(toIndentedString(substateType)).append("\n");
-    sb.append("    xrdAmount: ").append(toIndentedString(xrdAmount)).append("\n");
+    sb.append("    vaultEntity: ").append(toIndentedString(vaultEntity)).append("\n");
     sb.append("}");
     return sb.toString();
   }

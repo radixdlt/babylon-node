@@ -70,7 +70,8 @@ import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
 
 /** Generates valid REv2 1 MB transactions */
-public final class REv2LargeTransactionGenerator implements TransactionGenerator {
+public final class REv2LargeTransactionGenerator
+    implements TransactionGenerator<RawNotarizedTransaction> {
   private final NetworkDefinition networkDefinition;
 
   private int currentKey = 1;
@@ -88,6 +89,6 @@ public final class REv2LargeTransactionGenerator implements TransactionGenerator
     var intentBytes =
         REv2TestTransactions.constructLargeValidTransactionIntent(
             networkDefinition, 0, 1, notary.getPublicKey().toPublicKey(), size);
-    return REv2TestTransactions.constructTransaction(intentBytes, notary, List.of());
+    return REv2TestTransactions.constructRawTransaction(intentBytes, notary, List.of());
   }
 }

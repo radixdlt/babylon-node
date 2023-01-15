@@ -64,29 +64,14 @@
 
 package com.radixdlt.api.system.routes;
 
-import static com.radixdlt.RadixNodeApplication.SYSTEM_VERSION_KEY;
-import static com.radixdlt.RadixNodeApplication.VERSION_STRING_KEY;
-
-import com.google.inject.Inject;
-import com.radixdlt.RadixNodeApplication;
 import com.radixdlt.api.system.SystemGetJsonHandler;
 import com.radixdlt.api.system.generated.models.VersionResponse;
+import com.radixdlt.monitoring.ApplicationVersion;
 
 public class VersionHandler extends SystemGetJsonHandler<VersionResponse> {
-  private final String version;
-
-  @Inject
-  public VersionHandler() {
-    super();
-    this.version =
-        (String)
-            RadixNodeApplication.systemVersionInfo()
-                .get(SYSTEM_VERSION_KEY)
-                .get(VERSION_STRING_KEY);
-  }
 
   @Override
   public VersionResponse handleRequest() {
-    return new VersionResponse().version(version);
+    return new VersionResponse().version(ApplicationVersion.INSTANCE.string());
   }
 }

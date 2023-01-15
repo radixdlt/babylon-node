@@ -64,55 +64,18 @@
 
 package com.radixdlt.cli;
 
-import static com.radixdlt.substate.TxAction.*;
-
-import com.google.common.collect.ImmutableList;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Key;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
-import com.radixdlt.modules.CryptoModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev1.MaxValidators;
-import com.radixdlt.rev1.checkpoint.Genesis;
-import com.radixdlt.rev1.checkpoint.GenesisProvider;
-import com.radixdlt.rev1.checkpoint.TokenIssuance;
-import com.radixdlt.rev1.forks.CurrentForkView;
-import com.radixdlt.rev1.forks.ForkBuilder;
-import com.radixdlt.rev1.forks.ForkConfig;
-import com.radixdlt.rev1.forks.Forks;
-import com.radixdlt.rev1.forks.MainnetForksModule;
-import com.radixdlt.rev1.forks.NewestForkConfig;
-import com.radixdlt.substate.TxAction;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.security.Security;
-import java.time.Instant;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
+import org.apache.commons.cli.*;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
@@ -120,12 +83,6 @@ import org.json.JSONObject;
 /** Generates the universe (genesis commit) for the Olympia Radix Engine */
 public final class GenerateUniverses {
   private GenerateUniverses() {}
-
-  private static final UInt256 DEFAULT_ISSUANCE =
-      Amount.ofTokens(1000000000).toSubunits(); // 1 Billion!
-  private static final UInt256 DEFAULT_STAKE = Amount.ofTokens(100).toSubunits();
-  private static final String mnemomicKeyHex =
-      "0236856ea9fa8c243e45fc94ec27c29cf3f17e3a9e19a410ee4a41f4858e379918";
 
   public static void main(String[] args) throws Exception {
     Security.insertProviderAt(new BouncyCastleProvider(), 1);
@@ -159,80 +116,6 @@ public final class GenerateUniverses {
         cmd.getOptionValue("v") != null ? Integer.parseInt(cmd.getOptionValue("v")) : 0;
     var generatedValidatorKeys = PrivateKeys.numeric(6).limit(validatorsCount).toList();
     generatedValidatorKeys.stream().map(ECKeyPair::getPublicKey).forEach(validatorKeys::add);
-
-    // Issuances to mnemomic account, keys 1-5, and 1st validator
-    final var mnemomicKey = ECDSASecp256k1PublicKey.fromHex(mnemomicKeyHex);
-    final ImmutableList.Builder<TokenIssuance> tokenIssuancesBuilder = ImmutableList.builder();
-    tokenIssuancesBuilder.add(TokenIssuance.of(mnemomicKey, DEFAULT_ISSUANCE));
-    PrivateKeys.numeric(1)
-        .limit(5)
-        .map(k -> TokenIssuance.of(k.getPublicKey(), DEFAULT_ISSUANCE))
-        .forEach(tokenIssuancesBuilder::add);
-    // Issue tokens to initial validators for now to support application services
-    validatorKeys.forEach(pk -> tokenIssuancesBuilder.add(TokenIssuance.of(pk, DEFAULT_ISSUANCE)));
-
-    // Stakes issued by mnemomic account
-    var stakes =
-        validatorKeys.stream()
-            .map(pk -> new StakeTokens(REAddr.ofPubKeyAccount(mnemomicKey), pk, DEFAULT_STAKE))
-            .collect(Collectors.toSet());
-
-    var timestamp = String.valueOf(Instant.now().getEpochSecond());
-
-    var genesisProvider =
-        Guice.createInjector(
-                new AbstractModule() {
-                  @Override
-                  protected void configure() {
-                    install(new CryptoModule());
-                    install(
-                        new AbstractModule() {
-                          @Provides
-                          @Singleton
-                          private Forks forks(Set<ForkBuilder> forkBuilders) {
-                            return Forks.create(
-                                forkBuilders.stream()
-                                    .map(ForkBuilder::build)
-                                    .collect(Collectors.toSet()));
-                          }
-
-                          @Provides
-                          @Singleton
-                          private CurrentForkView currentForkView(Forks forks) {
-                            return new CurrentForkView(forks, forks.genesisFork());
-                          }
-
-                          @Provides
-                          @Singleton
-                          @NewestForkConfig
-                          private ForkConfig newestForkConfig(Forks forks) {
-                            return forks.newestFork();
-                          }
-                        });
-                    install(new MainnetForksModule());
-                    bind(new TypeLiteral<List<TxAction>>() {})
-                        .annotatedWith(Genesis.class)
-                        .toInstance(List.of());
-                    bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-                    bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-                    bindConstant().annotatedWith(Genesis.class).to(timestamp);
-                    bind(new TypeLiteral<Set<StakeTokens>>() {})
-                        .annotatedWith(Genesis.class)
-                        .toInstance(stakes);
-                    bind(new TypeLiteral<ImmutableList<TokenIssuance>>() {})
-                        .annotatedWith(Genesis.class)
-                        .toInstance(tokenIssuancesBuilder.build());
-                    bind(new TypeLiteral<Set<ECDSASecp256k1PublicKey>>() {})
-                        .annotatedWith(Genesis.class)
-                        .toInstance(validatorKeys);
-                    bindConstant().annotatedWith(MaxValidators.class).to(100);
-                    OptionalBinder.newOptionalBinder(
-                        binder(), Key.get(new TypeLiteral<List<TxAction>>() {}, Genesis.class));
-                  }
-                })
-            .getInstance(GenesisProvider.class);
-
-    var genesis = genesisProvider.get().getTransactions().get(0);
     IntStream.range(0, generatedValidatorKeys.size())
         .forEach(
             i -> {

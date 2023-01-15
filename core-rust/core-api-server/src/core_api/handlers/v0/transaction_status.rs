@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
 use crate::core_api::*;
-use radix_engine::transaction::TransactionOutcome;
 use state_manager::jni::state_manager::ActualStateManager;
-use state_manager::pending_transaction_result_cache::RejectionReason;
-use state_manager::{HasUserPayloadHash, UserPayloadHash};
+use state_manager::{
+    HasUserPayloadHash, LedgerTransactionOutcome, RejectionReason, UserPayloadHash,
+};
 
 use state_manager::mempool::pending_transaction_result_cache::PendingTransactionRecord;
 use state_manager::store::traits::*;
@@ -45,13 +45,13 @@ fn handle_v0_transaction_status_internal(
         known_pending_payloads.remove(&payload_hash);
 
         let intent_status = match &receipt.outcome {
-            TransactionOutcome::Success(_) => IntentStatus::CommittedSuccess,
-            TransactionOutcome::Failure(_) => IntentStatus::CommittedFailure,
+            LedgerTransactionOutcome::Success(_) => IntentStatus::CommittedSuccess,
+            LedgerTransactionOutcome::Failure(_) => IntentStatus::CommittedFailure,
         };
 
         let (payload_status, error_message) = match &receipt.outcome {
-            TransactionOutcome::Success(_) => (PayloadStatus::CommittedSuccess, None),
-            TransactionOutcome::Failure(reason) => (
+            LedgerTransactionOutcome::Success(_) => (PayloadStatus::CommittedSuccess, None),
+            LedgerTransactionOutcome::Failure(reason) => (
                 PayloadStatus::CommittedFailure,
                 Some(format!("{:?}", reason)),
             ),

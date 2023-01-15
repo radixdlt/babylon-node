@@ -64,38 +64,86 @@
 
 package com.radixdlt.rev2;
 
-import static com.radixdlt.rev2.REv2TestTransactions.constructValidTransaction;
+import static com.radixdlt.rev2.REv2TestTransactions.constructValidRawTransaction;
 
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.lang.Option;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statemanager.*;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.Assert;
 import org.junit.Test;
 
 public final class RustMempoolTest {
+  private static CommittedTransactionsWithProof buildGenesis(LedgerAccumulator accumulator) {
+    var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
+    var genesis =
+        TransactionBuilder.createGenesis(
+            Set.of(), UInt64.fromNonNegativeLong(1), UInt64.fromNonNegativeLong(10));
+    var accumulatorState =
+        accumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
+    var proof = LedgerProof.genesis(accumulatorState, BFTValidatorSet.from(Stream.of()), 0, 0);
+    return CommittedTransactionsWithProof.create(List.of(genesis), proof);
+  }
+
+  private static void initStateComputer(StateManager stateManager) {
+    final var metrics = new MetricsInitializer().initialize();
+    var stateComputer = new RustStateComputer(metrics, stateManager);
+    var accumulator =
+        new SimpleLedgerAccumulatorAndVerifier(
+            new Sha256Hasher(DefaultSerialization.getInstance()));
+    var transactionsWithProof = buildGenesis(accumulator);
+    var transactions = transactionsWithProof.getTransactions();
+    var proof = transactionsWithProof.getProof();
+    var proofBytes = DefaultSerialization.getInstance().toDson(proof, DsonOutput.Output.ALL);
+    stateComputer
+        .commit(
+            new CommitRequest(
+                transactions,
+                UInt64.fromNonNegativeLong(proof.getStateVersion()),
+                proofBytes,
+                Option.none()))
+        .unwrap();
+  }
+
   @Test
   public void test_rust_mempool_add() throws Exception {
     final var mempoolSize = 2;
     final var config =
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
-            new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
             Option.some(new RustMempoolConfig(mempoolSize)),
             REv2DatabaseConfig.inMemory(),
             LoggingConfig.getDefault());
+    final var metrics = new MetricsInitializer().initialize();
+
     try (var stateManager = StateManager.createAndInitialize(config)) {
-      var rustMempool = new RustMempool(stateManager);
-      var transaction1 = constructValidTransaction(0, 0);
-      var transaction2 = constructValidTransaction(0, 1);
-      var transaction3 = constructValidTransaction(0, 2);
+      initStateComputer(stateManager);
+      var rustMempool = new RustMempool(metrics, stateManager);
+      var transaction1 = constructValidRawTransaction(0, 0);
+      var transaction2 = constructValidRawTransaction(0, 1);
+      var transaction3 = constructValidRawTransaction(0, 2);
 
       Assert.assertEquals(0, rustMempool.getCount());
 
@@ -147,15 +195,17 @@ public final class RustMempoolTest {
     final var config =
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
-            new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
             Option.some(new RustMempoolConfig(mempoolSize)),
             REv2DatabaseConfig.inMemory(),
             LoggingConfig.getDefault());
+    final var metrics = new MetricsInitializer().initialize();
+
     try (var stateManager = StateManager.createAndInitialize(config)) {
-      var rustMempool = new RustMempool(stateManager);
-      var transaction1 = constructValidTransaction(0, 0);
-      var transaction2 = constructValidTransaction(0, 1);
-      var transaction3 = constructValidTransaction(0, 2);
+      initStateComputer(stateManager);
+      var rustMempool = new RustMempool(metrics, stateManager);
+      var transaction1 = constructValidRawTransaction(0, 0);
+      var transaction2 = constructValidRawTransaction(0, 1);
+      var transaction3 = constructValidRawTransaction(0, 2);
 
       // Add Transactions
       rustMempool.addTransaction(transaction1);
@@ -245,15 +295,18 @@ public final class RustMempoolTest {
     final var config =
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
-            new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
             Option.some(new RustMempoolConfig(mempoolSize)),
             REv2DatabaseConfig.inMemory(),
             LoggingConfig.getDefault());
+    final var metrics = new MetricsInitializer().initialize();
+
     try (var stateManager = StateManager.createAndInitialize(config)) {
-      var rustMempool = new RustMempool(stateManager);
-      var transaction1 = constructValidTransaction(0, 0);
-      var transaction2 = constructValidTransaction(0, 1);
-      var transaction3 = constructValidTransaction(0, 2);
+      initStateComputer(stateManager);
+
+      var rustMempool = new RustMempool(metrics, stateManager);
+      var transaction1 = constructValidRawTransaction(0, 0);
+      var transaction2 = constructValidRawTransaction(0, 1);
+      var transaction3 = constructValidRawTransaction(0, 2);
 
       rustMempool.addTransaction(transaction1);
       rustMempool.addTransaction(transaction2);

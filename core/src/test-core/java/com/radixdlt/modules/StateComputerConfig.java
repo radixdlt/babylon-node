@@ -70,7 +70,7 @@ import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.HalfCorrectREv2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.REv2StateConfig;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -82,27 +82,22 @@ public sealed interface StateComputerConfig {
     return new MockedStateComputerConfig(mempoolType);
   }
 
-  static StateComputerConfig rev1(int mempoolSize) {
-    return new REv1StateComputerConfig(mempoolSize);
-  }
-
   static StateComputerConfig rev2(
       int networkId,
-      REv2StateConfig stateConfig,
+      RawLedgerTransaction genesis,
       REv2DatabaseConfig databaseConfig,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging) {
     return new REv2StateComputerConfig(
-        networkId, stateConfig, databaseConfig, proposerConfig, debugLogging);
+        networkId, genesis, databaseConfig, proposerConfig, debugLogging);
   }
 
   static StateComputerConfig rev2(
       int networkId,
-      REv2StateConfig stateConfig,
+      RawLedgerTransaction genesis,
       REv2DatabaseConfig databaseConfig,
       REV2ProposerConfig proposerConfig) {
-    return new REv2StateComputerConfig(
-        networkId, stateConfig, databaseConfig, proposerConfig, false);
+    return new REv2StateComputerConfig(networkId, genesis, databaseConfig, proposerConfig, false);
   }
 
   sealed interface MockedMempoolConfig {
@@ -120,11 +115,9 @@ public sealed interface StateComputerConfig {
   record MockedStateComputerConfig(MockedMempoolConfig mempoolType)
       implements StateComputerConfig {}
 
-  record REv1StateComputerConfig(int mempoolSize) implements StateComputerConfig {}
-
   record REv2StateComputerConfig(
       int networkId,
-      REv2StateConfig stateConfig,
+      RawLedgerTransaction genesis,
       REv2DatabaseConfig databaseConfig,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging)

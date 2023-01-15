@@ -35,9 +35,8 @@ pub enum Substate {
     },
     #[serde(rename="ComponentRoyaltyAccumulator")]
     ComponentRoyaltyAccumulatorSubstate {
-        /// The string-encoded decimal representing the amount of XRD available for claim in the royalty accumulator. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
-        #[serde(rename = "xrd_amount")]
-        xrd_amount: String,
+        #[serde(rename = "vault_entity")]
+        vault_entity: Box<crate::core_api::generated::models::EntityReference>,
     },
     #[serde(rename="ComponentRoyaltyConfig")]
     ComponentRoyaltyConfigSubstate {
@@ -54,6 +53,12 @@ pub enum Substate {
         /// An integer between `0` and `10^10`, marking the current epoch
         #[serde(rename = "epoch")]
         epoch: i64,
+        /// An integer between `0` and `10^10`, marking the current round in an epoch
+        #[serde(rename = "round")]
+        round: i64,
+        /// An integer between `0` and `10^10`, specifying the number of rounds per epoch
+        #[serde(rename = "rounds_per_epoch")]
+        rounds_per_epoch: i64,
     },
     #[serde(rename="GlobalAddress")]
     GlobalAddressSubstate {
@@ -95,9 +100,8 @@ pub enum Substate {
     },
     #[serde(rename="PackageRoyaltyAccumulator")]
     PackageRoyaltyAccumulatorSubstate {
-        /// The string-encoded decimal representing the amount of XRD available for claim in the royalty accumulator. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
-        #[serde(rename = "xrd_amount")]
-        xrd_amount: String,
+        #[serde(rename = "vault_entity")]
+        vault_entity: Box<crate::core_api::generated::models::EntityReference>,
     },
     #[serde(rename="PackageRoyaltyConfig")]
     PackageRoyaltyConfigSubstate {
@@ -117,6 +121,14 @@ pub enum Substate {
         total_supply: String,
         #[serde(rename = "owned_non_fungible_store", skip_serializing_if = "Option::is_none")]
         owned_non_fungible_store: Option<Box<crate::core_api::generated::models::EntityReference>>,
+    },
+    #[serde(rename="ValidatorSet")]
+    ValidatorSetSubstate {
+        #[serde(rename = "validator_set")]
+        validator_set: Vec<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
+        /// An integer between `0` and `10^10`, marking the epoch the validator set is a part of
+        #[serde(rename = "epoch")]
+        epoch: i64,
     },
     #[serde(rename="Vault")]
     VaultSubstate {

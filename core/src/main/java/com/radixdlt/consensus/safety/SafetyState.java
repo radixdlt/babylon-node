@@ -66,7 +66,6 @@ package com.radixdlt.consensus.safety;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.inject.Inject;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.serialization.DsonOutput;
@@ -90,7 +89,6 @@ public final class SafetyState {
 
   private final Optional<Vote> lastVote;
 
-  @Inject
   public SafetyState() {
     this(Round.genesis(), Optional.empty());
   }

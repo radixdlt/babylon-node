@@ -70,7 +70,7 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::types::scrypto_encode;
-use sbor::{Decode, Encode, TypeId};
+use sbor::{Categorize, Decode, Encode};
 use transaction::errors::TransactionValidationError;
 
 use crate::jni::utils::*;
@@ -95,10 +95,8 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
 #[tracing::instrument(skip_all)]
 fn do_add(
     state_manager: &mut ActualStateManager,
-    args: JavaRawTransaction,
+    transaction: JavaRawTransaction,
 ) -> Result<JavaPayloadHash, MempoolAddErrorJava> {
-    let transaction = args;
-
     let notarized_transaction =
         UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
             &transaction.payload,
@@ -131,10 +129,8 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForPropo
 #[tracing::instrument(skip_all)]
 fn do_get_transactions_for_proposal(
     state_manager: &ActualStateManager,
-    args: (u32, Vec<JavaPayloadHash>),
+    (count, prepared_transactions): (u32, Vec<JavaPayloadHash>),
 ) -> Vec<JavaRawTransaction> {
-    let (count, prepared_transactions) = args;
-
     let prepared_ids: HashSet<UserPayloadHash> = prepared_transactions
         .into_iter()
         .map(|id| {
@@ -199,7 +195,7 @@ fn do_get_transactions_to_relay(
 //
 
 /// Corresponds to the payload_hash
-#[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq, Categorize, Encode, Decode)]
 pub struct JavaPayloadHash(Vec<u8>);
 
 impl From<LedgerPayloadHash> for JavaPayloadHash {
@@ -208,7 +204,7 @@ impl From<LedgerPayloadHash> for JavaPayloadHash {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Categorize, Encode, Decode)]
 pub struct JavaRawTransaction {
     pub payload: Vec<u8>,
     pub payload_hash: JavaPayloadHash,
@@ -223,7 +219,7 @@ impl From<PendingTransaction> for JavaRawTransaction {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Categorize, Encode, Decode)]
 enum MempoolAddErrorJava {
     Full { current_size: u64, max_size: u64 },
     Duplicate,

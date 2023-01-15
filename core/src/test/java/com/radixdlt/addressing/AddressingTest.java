@@ -81,7 +81,7 @@ public class AddressingTest {
     assertThat(
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
                 .encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS))
-        .isEqualTo("component_test1qftacppvmr9ezmekxqpq58en0nk954x0a7jv2zz0hc7qxmn0qc");
+        .isEqualTo("component_test1qg5fe67sukas49kytvluq72uederg3wfehh0rjfl2qsq736xyz");
   }
 
   @Test
@@ -89,7 +89,7 @@ public class AddressingTest {
     assertThat(
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
                 .decodeNormalComponentAddress(
-                    "component_test1qftacppvmr9ezmekxqpq58en0nk954x0a7jv2zz0hc7qxmn0qc"))
+                    "component_test1qg5fe67sukas49kytvluq72uederg3wfehh0rjfl2qsq736xyz"))
         .isEqualTo(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
   }
 

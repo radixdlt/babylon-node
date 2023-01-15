@@ -73,7 +73,7 @@ use std::path::PathBuf;
 use crate::types::UserPayloadHash;
 
 use radix_engine::ledger::{
-    bootstrap, OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
+    OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
 };
 use radix_engine::model::PersistedSubstate;
 
@@ -82,16 +82,13 @@ use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 use crate::store::in_memory::InMemoryVertexStore;
 use crate::store::rocks_db::RocksDBCommitTransaction;
 use crate::store::traits::RecoverableVertexStore;
-use crate::transaction::{LedgerTransaction, ValidatorTransaction};
+use crate::transaction::LedgerTransaction;
 use crate::{
-    AccumulatorHash, CommittedTransactionIdentifiers, IntentHash, LedgerPayloadHash,
-    LedgerTransactionReceipt,
+    CommittedTransactionIdentifiers, IntentHash, LedgerPayloadHash, LedgerTransactionReceipt,
 };
 use radix_engine::types::{KeyValueStoreId, SubstateId};
 
-use tracing::debug;
-
-#[derive(Debug, TypeId, Encode, Decode, Clone)]
+#[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub enum DatabaseConfig {
     InMemory,
     RocksDB(String),
@@ -110,7 +107,7 @@ pub enum StateManagerDatabase {
 
 impl StateManagerDatabase {
     pub fn from_config(config: DatabaseConfig) -> Self {
-        let mut state_manager_db = match config {
+        match config {
             DatabaseConfig::InMemory => StateManagerDatabase::InMemory {
                 transactions_and_proofs: InMemoryStore::new(),
                 substates: SerializedInMemorySubstateStore::new(),
@@ -121,44 +118,7 @@ impl StateManagerDatabase {
                 StateManagerDatabase::RocksDB(db)
             }
             DatabaseConfig::None => StateManagerDatabase::None,
-        };
-
-        // Bootstrap genesis
-        if !matches!(state_manager_db, StateManagerDatabase::None)
-            && state_manager_db.max_state_version() == 0
-        {
-            debug!("Running genesis on the engine...");
-            let mut db_txn = state_manager_db.create_db_transaction();
-
-            let genesis_receipt = bootstrap(&mut db_txn).expect("Genesis wasn't run");
-
-            // TODO: Remove this when serialized genesis intent is implemented
-            {
-                let ledger_receipt: LedgerTransactionReceipt = genesis_receipt
-                    .try_into()
-                    .expect("Failed to convert genesis receipt to LedgerTransactionReceipt");
-
-                let mock_genesis =
-                    LedgerTransaction::Validator(ValidatorTransaction::EpochUpdate {
-                        scrypto_epoch: 0,
-                    }); // Mocked genesis transaction for the purposes of ledger state
-                let payload_hash = mock_genesis.get_hash();
-                let identifiers = CommittedTransactionIdentifiers {
-                    state_version: 1,
-                    accumulator_hash: AccumulatorHash::pre_genesis().accumulate(&payload_hash),
-                };
-                db_txn.insert_committed_transactions(vec![(
-                    mock_genesis,
-                    ledger_receipt,
-                    identifiers,
-                )]);
-                db_txn.insert_tids_without_proof(1, vec![payload_hash]);
-            }
-
-            db_txn.commit();
         }
-
-        state_manager_db
     }
 }
 
@@ -217,6 +177,7 @@ impl<'db> WriteableProofStore for StateManagerCommitTransaction<'db> {
     fn insert_tids_and_proof(
         &mut self,
         state_version: u64,
+        epoch_boundary: Option<u64>,
         ids: Vec<LedgerPayloadHash>,
         proof_bytes: Vec<u8>,
     ) {
@@ -224,9 +185,14 @@ impl<'db> WriteableProofStore for StateManagerCommitTransaction<'db> {
             StateManagerCommitTransaction::InMemory {
                 transactions_and_proofs,
                 ..
-            } => transactions_and_proofs.insert_tids_and_proof(state_version, ids, proof_bytes),
+            } => transactions_and_proofs.insert_tids_and_proof(
+                state_version,
+                epoch_boundary,
+                ids,
+                proof_bytes,
+            ),
             StateManagerCommitTransaction::RocksDB(db_txn) => {
-                db_txn.insert_tids_and_proof(state_version, ids, proof_bytes)
+                db_txn.insert_tids_and_proof(state_version, epoch_boundary, ids, proof_bytes)
             }
         }
     }
@@ -381,6 +347,17 @@ impl QueryableProofStore for StateManagerDatabase {
                 ..
             } => transactions_and_proofs.get_next_proof(state_version),
             StateManagerDatabase::RocksDB(store) => store.get_next_proof(state_version),
+            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
+        }
+    }
+
+    fn get_epoch_proof(&self, epoch: u64) -> Option<Vec<u8>> {
+        match self {
+            StateManagerDatabase::InMemory {
+                transactions_and_proofs,
+                ..
+            } => transactions_and_proofs.get_epoch_proof(epoch),
+            StateManagerDatabase::RocksDB(store) => store.get_epoch_proof(epoch),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }

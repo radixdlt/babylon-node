@@ -66,7 +66,7 @@ package com.radixdlt.prometheus;
 
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
-import com.radixdlt.lang.Unit;
+import com.radixdlt.lang.Tuple;
 import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.statemanager.StateManager;
 
@@ -83,10 +83,10 @@ public class StateManagerPrometheus {
   }
 
   public String prometheusMetrics() {
-    return prometheusMetricsFunc.call(Unit.unit());
+    return prometheusMetricsFunc.call(Tuple.tuple());
   }
 
-  private final NativeCalls.Func1<StateManager, Unit, String> prometheusMetricsFunc;
+  private final NativeCalls.Func1<StateManager, Tuple.Tuple0, String> prometheusMetricsFunc;
 
   private static native byte[] prometheusMetrics(StateManager stateManager, byte[] args);
 }

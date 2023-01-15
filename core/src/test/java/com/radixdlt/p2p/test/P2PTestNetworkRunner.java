@@ -65,12 +65,7 @@
 package com.radixdlt.p2p.test;
 
 import com.google.common.collect.ImmutableList;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.Provides;
-import com.google.inject.Scopes;
+import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.addressing.Addressing;
@@ -87,8 +82,8 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.modules.CapabilitiesModule;
 import com.radixdlt.modules.DispatcherModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PConfig;
@@ -98,9 +93,6 @@ import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
-import com.radixdlt.rev1.forks.FixedEpochForkConfig;
-import com.radixdlt.rev1.forks.ForkConfig;
-import com.radixdlt.rev1.forks.NewestForkConfig;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.DatabaseCacheSize;
@@ -177,7 +169,7 @@ public final class P2PTestNetworkRunner {
                     bind(TestCounters.class).toInstance(new TestCounters());
                     bind(P2PConfig.class).toInstance(p2pConfig);
                     bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
-                    bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+                    bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
                   }
 
                   @Provides
@@ -224,9 +216,6 @@ public final class P2PTestNetworkRunner {
             bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
             bind(DeterministicProcessor.class);
             Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
-            bind(ForkConfig.class)
-                .annotatedWith(NewestForkConfig.class)
-                .toInstance(new FixedEpochForkConfig("genesis", null, 0L));
           }
         },
         new CapabilitiesModule(LedgerSyncCapability.Builder.asDefault().build()));

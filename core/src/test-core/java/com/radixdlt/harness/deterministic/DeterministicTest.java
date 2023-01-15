@@ -74,6 +74,7 @@ import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
@@ -85,6 +86,7 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.invariants.MessageMonitor;
 import com.radixdlt.harness.deterministic.invariants.StateMonitor;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
@@ -95,12 +97,11 @@ import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev1.EpochMaxRound;
+import com.radixdlt.statecomputer.EpochMaxRound;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
@@ -124,7 +125,6 @@ public final class DeterministicTest implements AutoCloseable {
 
   private DeterministicTest(
       ImmutableList<BFTNode> nodes,
-      BFTValidatorSet initialValidatorSet,
       MessageSelector messageSelector,
       MessageMutator messageMutator,
       MessageMonitor messageMonitor,
@@ -132,9 +132,7 @@ public final class DeterministicTest implements AutoCloseable {
       Module baseModule,
       Module overrideModule) {
     this.network = new DeterministicNetwork(nodes, messageSelector, messageMutator, messageMonitor);
-    this.nodes =
-        new DeterministicNodes(
-            nodes, initialValidatorSet, this.network, baseModule, overrideModule);
+    this.nodes = new DeterministicNodes(nodes, this.network, baseModule, overrideModule);
     this.stateMonitor = stateMonitor;
   }
 
@@ -163,13 +161,19 @@ public final class DeterministicTest implements AutoCloseable {
     }
 
     public Builder numNodes(int numInitialValidators, int numFullNodes) {
-      this.nodes =
+      return numNodes(numInitialValidators, numFullNodes, false);
+    }
+
+    public Builder numNodes(int numInitialValidators, int numFullNodes, boolean ordered) {
+      var keys =
           PrivateKeys.numeric(1)
               .limit(numFullNodes + numInitialValidators)
-              .map(ECKeyPair::getPublicKey)
-              .sorted(KeyComparator.instance())
-              .map(BFTNode::create)
-              .collect(ImmutableList.toImmutableList());
+              .map(ECKeyPair::getPublicKey);
+      if (ordered) {
+        keys = keys.sorted(KeyComparator.instance());
+      }
+
+      this.nodes = keys.map(BFTNode::create).collect(ImmutableList.toImmutableList());
       this.initialValidatorNodes =
           this.nodes.stream().limit(numInitialValidators).collect(ImmutableList.toImmutableList());
       this.initialValidatorSet =
@@ -198,15 +202,7 @@ public final class DeterministicTest implements AutoCloseable {
     private void addFunctionalNodeModule(FunctionalRadixNodeModule module) {
       modules.add(module);
 
-      if (module.supportsREv2()) {
-        modules.add(
-            new AbstractModule() {
-              @Override
-              protected void configure() {
-                bind(BFTValidatorSet.class).toInstance(initialValidatorSet);
-              }
-            });
-      } else {
+      if (!module.supportsREv2()) {
         MockedConsensusRecoveryModule.Builder mockedConsensusRecoveryModuleBuilder =
             new MockedConsensusRecoveryModule.Builder(module.supportsEpochs());
         mockedConsensusRecoveryModuleBuilder.withNodes(initialValidatorNodes);
@@ -297,7 +293,6 @@ public final class DeterministicTest implements AutoCloseable {
             @Override
             public void configure() {
               bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
-              bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
               bind(Random.class).toInstance(new Random(123456));
             }
           });
@@ -315,7 +310,6 @@ public final class DeterministicTest implements AutoCloseable {
 
       return new DeterministicTest(
           this.nodes,
-          this.initialValidatorSet,
           this.messageSelector,
           this.messageMutator,
           messageMonitor,
@@ -358,16 +352,8 @@ public final class DeterministicTest implements AutoCloseable {
   }
 
   private void handleMessage(Timed<ControlledMessage> nextMessage) {
+    this.stateMonitor.next(nodes.getNodeInjectors(), nextMessage.time(), this.numMessagesProcessed);
     this.nodes.handleMessage(nextMessage);
-
-    // Execute state monitor checks after some arbitrary number of messages
-    // so we don't kill our CPUs
-    // TODO: Clean this up
-    var numMessagesBeforeStateCheck = 89 * this.nodes.numNodes();
-    if (this.numMessagesProcessed % numMessagesBeforeStateCheck == 0) {
-      this.stateMonitor.next(nodes.getNodeInjectors());
-    }
-
     this.numMessagesProcessed++;
   }
 
@@ -381,7 +367,7 @@ public final class DeterministicTest implements AutoCloseable {
     return new DeterministicManualExecutor() {
       @Override
       public void start() {
-        nodes.startAllNodes();
+        nodes.startAllNodes(network.currentTime());
       }
 
       @Override
@@ -399,7 +385,7 @@ public final class DeterministicTest implements AutoCloseable {
   }
 
   public void startAllNodes() {
-    this.nodes.startAllNodes();
+    this.nodes.startAllNodes(this.network.currentTime());
   }
 
   public void shutdownNode(int nodeIndex) {
@@ -411,7 +397,7 @@ public final class DeterministicTest implements AutoCloseable {
   }
 
   public void startNode(int nodeIndex) {
-    this.nodes.startNode(nodeIndex);
+    this.nodes.startNode(nodeIndex, this.network.currentTime());
   }
 
   public void restartNode(int nodeIndex) {
@@ -551,6 +537,18 @@ public final class DeterministicTest implements AutoCloseable {
       } else {
         return false;
       }
+    };
+  }
+
+  public static Predicate<Timed<ControlledMessage>> epochLedgerUpdate(long epoch) {
+    return timedMsg -> {
+      final var message = timedMsg.value();
+      if (message.message() instanceof final LedgerUpdate ledgerUpdate) {
+        var epochChange = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
+        return epochChange != null && epochChange.getNextEpoch() == epoch;
+      }
+
+      return false;
     };
   }
 

@@ -112,10 +112,11 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
                   transactions.subList(index, transactions.size()), update.getTail()));
         }
 
-        if (update.getTail().isEndOfEpoch()) {
-          final var nextEpoch = update.getTail().getNextEpoch();
-          this.store.epochProofs.put(nextEpoch, update.getTail());
-        }
+        update
+            .getTail()
+            .getNextEpoch()
+            .ifPresent(
+                nextEpoch -> this.store.epochProofs.put(nextEpoch.getEpoch(), update.getTail()));
       }
     };
   }

@@ -3,11 +3,12 @@ use crate::core_api::*;
 use radix_engine::{
     fee::{FeeSummary, RoyaltyReceiver},
     ledger::OutputValue,
-    transaction::TransactionOutcome,
     types::{hash, scrypto_encode, Bech32Encoder, Decimal, GlobalAddress, RENodeId, SubstateId},
 };
+use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use std::collections::HashSet;
 
-use state_manager::{DeletedSubstateVersion, LedgerTransactionReceipt};
+use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
 
 pub fn to_api_receipt(
     bech32_encoder: &Bech32Encoder,
@@ -16,10 +17,10 @@ pub fn to_api_receipt(
     let fee_summary = receipt.fee_summary;
 
     let (status, output, error_message) = match receipt.outcome {
-        TransactionOutcome::Success(output) => {
+        LedgerTransactionOutcome::Success(output) => {
             (models::TransactionStatus::Succeeded, Some(output), None)
         }
-        TransactionOutcome::Failure(error) => (
+        LedgerTransactionOutcome::Failure(error) => (
             models::TransactionStatus::Failed,
             None,
             Some(format!("{:?}", error)),
@@ -77,11 +78,18 @@ pub fn to_api_receipt(
         None => None,
     };
 
+    let next_epoch = if let Some(next_epoch) = receipt.next_epoch {
+        Some(Box::new(to_api_next_epoch(next_epoch)?))
+    } else {
+        None
+    };
+
     Ok(models::TransactionReceipt {
         status,
         fee_summary: Box::new(api_fee_summary),
         state_updates: Box::new(api_state_updates),
         output: api_output,
+        next_epoch,
         error_message,
     })
 }
@@ -125,13 +133,31 @@ pub fn to_api_deleted_substate(
 }
 
 #[tracing::instrument(skip_all)]
+pub fn to_api_next_epoch(
+    next_epoch: (HashSet<EcdsaSecp256k1PublicKey>, u64),
+) -> Result<models::NextEpoch, MappingError> {
+    let mut validators = Vec::new();
+    for key in next_epoch.0 {
+        let api_key = to_api_ecdsa_secp256k1_public_key(&key);
+        validators.push(api_key);
+    }
+
+    let next_epoch = models::NextEpoch {
+        epoch: to_api_epoch(next_epoch.1)?,
+        validators,
+    };
+
+    Ok(next_epoch)
+}
+
+#[tracing::instrument(skip_all)]
 pub fn to_api_fee_summary(
     bech32_encoder: &Bech32Encoder,
     fee_summary: FeeSummary,
 ) -> Result<models::FeeSummary, MappingError> {
     Ok(models::FeeSummary {
         cost_unit_price: to_api_decimal(&fee_summary.cost_unit_price),
-        tip_percentage: to_api_u8_as_i32(fee_summary.tip_percentage),
+        tip_percentage: to_api_u16_as_i32(fee_summary.tip_percentage),
         cost_unit_limit: to_api_u32_as_i64(fee_summary.cost_unit_limit),
         cost_units_consumed: to_api_u32_as_i64(fee_summary.cost_unit_consumed),
         xrd_total_execution_cost: to_api_decimal(&fee_summary.total_execution_cost_xrd),

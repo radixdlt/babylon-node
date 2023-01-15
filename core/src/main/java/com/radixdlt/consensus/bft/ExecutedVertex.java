@@ -70,6 +70,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.Pair;
 import java.util.List;
 import java.util.Map;
@@ -93,13 +94,13 @@ public final class ExecutedVertex {
   private final LedgerHeader ledgerHeader;
 
   private final List<ExecutedTransaction> executedTransactions;
-  private final Map<RawLedgerTransaction, Exception> transactionsWhichRaisedAnException;
+  private final Map<RawNotarizedTransaction, Exception> transactionsWhichRaisedAnException;
 
   public ExecutedVertex(
       VertexWithHash vertexWithHash,
       LedgerHeader ledgerHeader,
       List<ExecutedTransaction> executedTransactions,
-      Map<RawLedgerTransaction, Exception> transactionsWhichRaisedAnException,
+      Map<RawNotarizedTransaction, Exception> transactionsWhichRaisedAnException,
       long timeOfExecution) {
     this.vertexWithHash = Objects.requireNonNull(vertexWithHash);
     this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
@@ -133,15 +134,13 @@ public final class ExecutedVertex {
     return executedTransactions.stream();
   }
 
-  public Stream<Pair<RawLedgerTransaction, Exception>> errorTransactions() {
+  public Stream<Pair<RawNotarizedTransaction, Exception>> errorTransactions() {
     return transactionsWhichRaisedAnException.entrySet().stream()
         .map(e -> Pair.of(e.getKey(), e.getValue()));
   }
 
   public Stream<RawLedgerTransaction> getTransactions() {
-    return Stream.concat(
-        successfulTransactions().map(ExecutedTransaction::transaction),
-        errorTransactions().map(Pair::getFirst));
+    return successfulTransactions().map(ExecutedTransaction::transaction);
   }
 
   /**

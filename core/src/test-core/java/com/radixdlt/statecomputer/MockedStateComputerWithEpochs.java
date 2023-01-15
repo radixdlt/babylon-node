@@ -66,6 +66,7 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.Hasher;
@@ -73,12 +74,11 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.MockExecuted;
+import com.radixdlt.ledger.RoundDetails;
 import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.rev1.EpochMaxRound;
-import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.Objects;
@@ -122,7 +122,9 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
               .map(tx -> new MockExecuted(tx.INCORRECTInterpretDirectlyAsRawLedgerTransaction()))
               .collect(Collectors.toList()),
           ImmutableMap.of(),
-          validatorSetMapping.apply(roundDetails.epoch() + 1));
+          NextEpoch.create(
+              roundDetails.epoch() + 1,
+              validatorSetMapping.apply(roundDetails.epoch() + 1).getValidators()));
     } else {
       return stateComputer.prepare(previous, proposedTransactions, roundDetails);
     }

@@ -67,34 +67,20 @@ package com.radixdlt.modules;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.RateLimiter;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
+import com.google.inject.*;
 import com.google.inject.Module;
-import com.google.inject.Provides;
-import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.VertexStoreAdapter;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.sync.VertexRequestTimeout;
+import com.radixdlt.consensus.sync.*;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
@@ -103,7 +89,8 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
@@ -140,10 +127,10 @@ public class ConsensusModuleTest {
   public void setup() {
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     var genesisVertex =
-        Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, null, 0, 0))
+        Vertex.createInitialEpochVertex(LedgerHeader.genesis(accumulatorState, null, 0, 0))
             .withId(ZeroHasher.INSTANCE);
     var qc =
-        QuorumCertificate.ofGenesis(
+        QuorumCertificate.createInitialEpochQC(
             genesisVertex, LedgerHeader.genesis(accumulatorState, null, 0, 0));
     this.validatorKeyPair = ECKeyPair.generateNew();
     this.validatorBftNode = BFTNode.create(this.validatorKeyPair.getPublicKey());
@@ -202,7 +189,9 @@ public class ConsensusModuleTest {
             .toInstance(errorResponseSender);
         bind(new TypeLiteral<EventDispatcher<NoVote>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<EventDispatcher<DoubleVote>>() {})
+        bind(new TypeLiteral<EventDispatcher<ConsensusByzantineEvent.DoubleVote>>() {})
+            .toInstance(rmock(EventDispatcher.class));
+        bind(new TypeLiteral<EventDispatcher<ConsensusByzantineEvent>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<ScheduledEventDispatcher<Round>>() {})
             .toInstance(rmock(ScheduledEventDispatcher.class));
@@ -212,7 +201,7 @@ public class ConsensusModuleTest {
         bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
         bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
         bind(ProposalGenerator.class).toInstance(mock(ProposalGenerator.class));
-        bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
+        bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
         bind(TimeSupplier.class).toInstance(mock(TimeSupplier.class));
         bind(BFTConfiguration.class).toInstance(bftConfiguration);
         bind(BFTValidatorSet.class).toInstance(bftConfiguration.getValidatorSet());

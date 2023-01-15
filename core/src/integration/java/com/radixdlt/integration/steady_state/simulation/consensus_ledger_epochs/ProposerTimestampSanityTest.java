@@ -77,7 +77,6 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
@@ -160,9 +159,8 @@ public final class ProposerTimestampSanityTest {
 
     // In this test scenario there should be no liveness whatsoever.
     // Making sure that not a single transaction went through.
-    for (final var nodeCounters : runningTest.getNetwork().getSystemCounters().values()) {
-      assertEquals(
-          0, nodeCounters.get(SystemCounters.CounterType.LEDGER_BFT_TRANSACTIONS_PROCESSED));
+    for (final var nodeCounters : runningTest.getNetwork().getMetrics().values()) {
+      assertEquals(0, (long) nodeCounters.ledger().bftTransactionsProcessed().get());
     }
   }
 

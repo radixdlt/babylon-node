@@ -66,32 +66,21 @@ package com.radixdlt.ledger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Sha256Hasher;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.ExecutedVertex;
-import com.radixdlt.consensus.bft.Round;
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.*;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2TestTransactions;
 import com.radixdlt.serialization.DefaultSerialization;
@@ -106,7 +95,6 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -116,7 +104,7 @@ public class StateComputerLedgerTest {
   private StateComputer stateComputer;
   private StateComputerLedger sut;
   private LedgerProof currentLedgerHeader;
-  private SystemCounters counters;
+  private Metrics metrics;
   private Comparator<LedgerProof> headerComparator;
   private LedgerAccumulator accumulator;
   private LedgerAccumulatorVerifier accumulatorVerifier;
@@ -141,7 +129,7 @@ public class StateComputerLedgerTest {
     this.mempool = TypedMocks.rmock(Mempool.class);
     // No type check issues with mocking generic here
     this.stateComputer = mock(StateComputer.class);
-    this.counters = mock(SystemCounters.class);
+    this.metrics = new MetricsInitializer().initialize();
     this.headerComparator = TypedMocks.rmock(Comparator.class);
 
     this.accumulator = new SimpleLedgerAccumulatorAndVerifier(hasher);
@@ -149,8 +137,8 @@ public class StateComputerLedgerTest {
 
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     this.ledgerHeader = LedgerHeader.genesis(accumulatorState, null, 0, 0);
-    this.genesisVertex = Vertex.createGenesis(ledgerHeader).withId(hasher);
-    this.genesisQC = QuorumCertificate.ofGenesis(genesisVertex, ledgerHeader);
+    this.genesisVertex = Vertex.createInitialEpochVertex(ledgerHeader).withId(hasher);
+    this.genesisQC = QuorumCertificate.createInitialEpochQC(genesisVertex, ledgerHeader);
     this.currentLedgerHeader =
         this.genesisQC.getCommittedAndLedgerStateProof(hasher).map(Pair::getSecond).orElseThrow();
 
@@ -162,7 +150,7 @@ public class StateComputerLedgerTest {
             stateComputer,
             accumulator,
             accumulatorVerifier,
-            counters);
+            metrics);
   }
 
   public void genesisIsEndOfEpoch(boolean endOfEpoch) {
@@ -174,10 +162,12 @@ public class StateComputerLedgerTest {
             12345,
             12345,
             endOfEpoch
-                ? BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
+                ? NextEpoch.create(
+                    genesisEpoch + 1,
+                    ImmutableSet.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
                 : null);
-    this.genesisVertex = Vertex.createGenesis(ledgerHeader).withId(hasher);
-    this.genesisQC = QuorumCertificate.ofGenesis(genesisVertex, ledgerHeader);
+    this.genesisVertex = Vertex.createInitialEpochVertex(ledgerHeader).withId(hasher);
+    this.genesisQC = QuorumCertificate.createInitialEpochQC(genesisVertex, ledgerHeader);
     this.currentLedgerHeader =
         this.genesisQC.getCommittedAndLedgerStateProof(hasher).map(Pair::getSecond).orElseThrow();
 
@@ -189,7 +179,7 @@ public class StateComputerLedgerTest {
             stateComputer,
             accumulator,
             accumulatorVerifier,
-            counters);
+            metrics);
   }
 
   @Test

@@ -77,7 +77,7 @@ public record PrepareRequest(
     List<RawNotarizedTransaction> proposed,
     UInt64 epoch,
     UInt64 roundNumber,
-    UInt64 proposerTimestampMs) {
+    long proposerTimestampMs) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PrepareRequest.class,

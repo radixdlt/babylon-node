@@ -65,19 +65,13 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.*;
-import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
-import com.radixdlt.consensus.bft.processor.BFTEventReducer;
-import com.radixdlt.consensus.bft.processor.BFTEventStatefulVerifier;
-import com.radixdlt.consensus.bft.processor.BFTEventStatelessVerifier;
-import com.radixdlt.consensus.bft.processor.EmptyBFTEventProcessor;
-import com.radixdlt.consensus.bft.processor.ProposalTimestampVerifier;
-import com.radixdlt.consensus.bft.processor.SyncUpPreprocessor;
+import com.radixdlt.consensus.bft.processor.*;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.utils.TimeSupplier;
 
 /** A helper class to help in constructing a BFT validator state machine */
@@ -92,7 +86,7 @@ public final class BFTBuilder {
   private VertexStoreAdapter vertexStore;
   private BFTSyncer bftSyncer;
   private EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher;
-  private EventDispatcher<DoubleVote> doubleVoteEventDispatcher;
+  private EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher;
   private EventDispatcher<NoVote> noVoteEventDispatcher;
   private EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher;
 
@@ -104,7 +98,7 @@ public final class BFTBuilder {
   private SafetyRules safetyRules;
 
   private TimeSupplier timeSupplier;
-  private SystemCounters systemCounters;
+  private Metrics metrics;
 
   private BFTBuilder() {
     // Just making this inaccessible
@@ -136,7 +130,7 @@ public final class BFTBuilder {
   }
 
   public BFTBuilder doubleVoteEventDispatcher(
-      EventDispatcher<DoubleVote> doubleVoteEventDispatcher) {
+      EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher) {
     this.doubleVoteEventDispatcher = doubleVoteEventDispatcher;
     return this;
   }
@@ -192,8 +186,8 @@ public final class BFTBuilder {
     return this;
   }
 
-  public BFTBuilder systemCounters(SystemCounters systemCounters) {
-    this.systemCounters = systemCounters;
+  public BFTBuilder metrics(Metrics metrics) {
+    this.metrics = metrics;
     return this;
   }
 
@@ -219,7 +213,7 @@ public final class BFTBuilder {
             noVoteEventDispatcher,
             voteDispatcher,
             hasher,
-            systemCounters,
+            metrics,
             safetyRules,
             validatorSet,
             pendingVotes,
@@ -227,15 +221,15 @@ public final class BFTBuilder {
 
     final var proposalTimestampVerifier =
         new ProposalTimestampVerifier(
-            bftEventReducer, timeSupplier, systemCounters, roundLeaderFailureEventDispatcher);
+            bftEventReducer, timeSupplier, metrics, roundLeaderFailureEventDispatcher);
 
     final var bftEventStatefulVerifier =
-        new BFTEventStatefulVerifier(proposalTimestampVerifier, systemCounters, roundUpdate);
+        new BFTEventStatefulVerifier(proposalTimestampVerifier, metrics, roundUpdate);
 
     final var syncUpPreprocessor =
-        new SyncUpPreprocessor(bftEventStatefulVerifier, bftSyncer, roundUpdate);
+        new SyncUpPreprocessor(bftEventStatefulVerifier, bftSyncer, metrics, roundUpdate);
 
     return new BFTEventStatelessVerifier(
-        validatorSet, syncUpPreprocessor, hasher, verifier, safetyRules, systemCounters);
+        validatorSet, syncUpPreprocessor, hasher, verifier, safetyRules, metrics);
   }
 }

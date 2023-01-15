@@ -65,18 +65,21 @@
 use crate::jni::java_structure::JavaStructure;
 use crate::result::StateManagerResult;
 use crate::transaction::{
-    create_intent_bytes, create_manifest, create_new_account_intent_bytes, create_notarized_bytes,
-    create_set_epoch_intent, create_signed_intent_bytes, LedgerTransaction,
+    create_genesis_ledger_transaction_bytes, create_intent_bytes, create_manifest,
+    create_new_account_intent_bytes, create_notarized_bytes, create_signed_intent_bytes,
+    LedgerTransaction,
 };
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::types::{
-    scrypto_decode, scrypto_encode, Decode, Encode, PublicKey, Signature, SignatureWithPublicKey,
-    TypeId,
+    scrypto_decode, scrypto_encode, Categorize, Decode, Encode, PublicKey, Signature,
+    SignatureWithPublicKey,
 };
-use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::node::NetworkDefinition;
 use radix_engine_interface::scrypto;
+use std::collections::HashSet;
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
 };
@@ -92,12 +95,27 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_compileManif
     jni_static_sbor_call(env, request_payload, do_compile_manifest)
 }
 
-fn do_compile_manifest(args: (NetworkDefinition, String, Vec<Vec<u8>>)) -> Result<Vec<u8>, String> {
-    let (network, manifest_str, blobs) = args;
-
+fn do_compile_manifest(
+    (network, manifest_str, blobs): (NetworkDefinition, String, Vec<Vec<u8>>),
+) -> Result<Vec<u8>, String> {
     create_manifest(&network, &manifest_str, blobs)
         .map_err(|err| format!("{:?}", err))
         .map(|manifest| scrypto_encode(&manifest).unwrap())
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createGenesisLedgerTransaction(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_static_sbor_call(env, request_payload, do_create_genesis_ledger_transaction)
+}
+
+fn do_create_genesis_ledger_transaction(
+    (validator_set, initial_epoch, rounds_per_epoch): (HashSet<EcdsaSecp256k1PublicKey>, u64, u64),
+) -> Vec<u8> {
+    create_genesis_ledger_transaction_bytes(validator_set, initial_epoch, rounds_per_epoch)
 }
 
 #[no_mangle]
@@ -109,27 +127,10 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_newAccountIn
     jni_static_sbor_call(env, request_payload, do_create_new_account_intent)
 }
 
-fn do_create_new_account_intent(args: (NetworkDefinition, PublicKey)) -> Vec<u8> {
-    let (network_definition, public_key) = args;
-
+fn do_create_new_account_intent(
+    (network_definition, public_key): (NetworkDefinition, PublicKey),
+) -> Vec<u8> {
     create_new_account_intent_bytes(&network_definition, public_key)
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_setEpochIntent(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, do_set_epoch)
-}
-
-fn do_set_epoch(args: (NetworkDefinition, PublicKey, u64)) -> Vec<u8> {
-    let (network_definition, public_key, epoch) = args;
-
-    create_set_epoch_intent(&network_definition, public_key, epoch)
-        .to_bytes()
-        .unwrap()
 }
 
 #[no_mangle]
@@ -144,7 +145,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createIntent
 // To ensure that any change to TransactionHeader is picked up as a compile error,
 // not an SBOR error
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 struct TransactionHeaderJava {
     pub version: u8,
     pub network_id: u8,
@@ -154,7 +155,7 @@ struct TransactionHeaderJava {
     pub notary_public_key: PublicKey,
     pub notary_as_signatory: bool,
     pub cost_unit_limit: u32,
-    pub tip_percentage: u8,
+    pub tip_percentage: u16,
 }
 
 impl From<TransactionHeaderJava> for TransactionHeader {
@@ -174,15 +175,13 @@ impl From<TransactionHeaderJava> for TransactionHeader {
 }
 
 fn do_create_intent_bytes(
-    args: (
+    (network_definition, header, manifest, blobs): (
         NetworkDefinition,
         TransactionHeaderJava,
         String,
         Vec<Vec<u8>>,
     ),
 ) -> Result<Vec<u8>, String> {
-    let (network_definition, header, manifest, blobs) = args;
-
     create_intent_bytes(&network_definition, header.into(), manifest, blobs)
         .map_err(|err| format!("{:?}", err))
 }
@@ -197,10 +196,8 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createSigned
 }
 
 fn do_create_signed_intent_bytes(
-    args: (Vec<u8>, Vec<SignatureWithPublicKey>),
+    (intent_bytes, signatures): (Vec<u8>, Vec<SignatureWithPublicKey>),
 ) -> StateManagerResult<Vec<u8>> {
-    let (intent_bytes, signatures) = args;
-
     // It's passed through to us as bytes - and need to decode these bytes
     let intent = TransactionIntent::from_java(&intent_bytes)?;
 
@@ -216,9 +213,9 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createNotari
     jni_static_sbor_call_flatten_result(env, request_payload, do_create_notarized_bytes)
 }
 
-fn do_create_notarized_bytes(args: (Vec<u8>, Signature)) -> StateManagerResult<Vec<u8>> {
-    let (signed_intent_bytes, signature) = args;
-
+fn do_create_notarized_bytes(
+    (signed_intent_bytes, signature): (Vec<u8>, Signature),
+) -> StateManagerResult<Vec<u8>> {
     // It's passed through to us as bytes - and need to decode these bytes
     let signed_intent = SignedTransactionIntent::from_java(&signed_intent_bytes)?;
 
@@ -259,10 +256,9 @@ fn do_transaction_bytes_to_notarized_transaction_bytes(
 ) -> StateManagerResult<Option<Vec<u8>>> {
     let transaction: LedgerTransaction = scrypto_decode(&args)?;
     Ok(match transaction {
-        LedgerTransaction::User(notarized_transaction) => {
-            Some(scrypto_encode(&notarized_transaction.to_bytes())?)
-        }
+        LedgerTransaction::User(notarized_transaction) => Some(notarized_transaction.to_bytes()?),
         LedgerTransaction::Validator(..) => None,
+        LedgerTransaction::System(..) => None,
     })
 }
 
