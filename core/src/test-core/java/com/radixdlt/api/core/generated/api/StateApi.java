@@ -18,9 +18,11 @@ import com.radixdlt.api.core.generated.client.ApiResponse;
 import com.radixdlt.api.core.generated.client.Pair;
 
 import com.radixdlt.api.core.generated.models.ErrorResponse;
+import com.radixdlt.api.core.generated.models.StateClockRequest;
 import com.radixdlt.api.core.generated.models.StateClockResponse;
 import com.radixdlt.api.core.generated.models.StateComponentRequest;
 import com.radixdlt.api.core.generated.models.StateComponentResponse;
+import com.radixdlt.api.core.generated.models.StateEpochRequest;
 import com.radixdlt.api.core.generated.models.StateEpochResponse;
 import com.radixdlt.api.core.generated.models.StateNonFungibleRequest;
 import com.radixdlt.api.core.generated.models.StateNonFungibleResponse;
@@ -87,22 +89,24 @@ public class StateApi {
   /**
    * Get Clock Details
    * Reads the clock&#39;s substate/s from the top of the current ledger. 
+   * @param stateClockRequest  (required)
    * @return StateClockResponse
    * @throws ApiException if fails to make API call
    */
-  public StateClockResponse stateClockPost() throws ApiException {
-    ApiResponse<StateClockResponse> localVarResponse = stateClockPostWithHttpInfo();
+  public StateClockResponse stateClockPost(StateClockRequest stateClockRequest) throws ApiException {
+    ApiResponse<StateClockResponse> localVarResponse = stateClockPostWithHttpInfo(stateClockRequest);
     return localVarResponse.getData();
   }
 
   /**
    * Get Clock Details
    * Reads the clock&#39;s substate/s from the top of the current ledger. 
+   * @param stateClockRequest  (required)
    * @return ApiResponse&lt;StateClockResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<StateClockResponse> stateClockPostWithHttpInfo() throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = stateClockPostRequestBuilder();
+  public ApiResponse<StateClockResponse> stateClockPostWithHttpInfo(StateClockRequest stateClockRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = stateClockPostRequestBuilder(stateClockRequest);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -131,7 +135,11 @@ public class StateApi {
     }
   }
 
-  private HttpRequest.Builder stateClockPostRequestBuilder() throws ApiException {
+  private HttpRequest.Builder stateClockPostRequestBuilder(StateClockRequest stateClockRequest) throws ApiException {
+    // verify the required parameter 'stateClockRequest' is set
+    if (stateClockRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'stateClockRequest' when calling stateClockPost");
+    }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
@@ -139,9 +147,15 @@ public class StateApi {
 
     localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
 
+    localVarRequestBuilder.header("Content-Type", "application/json");
     localVarRequestBuilder.header("Accept", "application/json");
 
-    localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.noBody());
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(stateClockRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
     if (memberVarReadTimeout != null) {
       localVarRequestBuilder.timeout(memberVarReadTimeout);
     }
@@ -231,22 +245,24 @@ public class StateApi {
   /**
    * Get Epoch Details
    * Reads the epoch manager&#39;s substate/s from the top of the current ledger. 
+   * @param stateEpochRequest  (required)
    * @return StateEpochResponse
    * @throws ApiException if fails to make API call
    */
-  public StateEpochResponse stateEpochPost() throws ApiException {
-    ApiResponse<StateEpochResponse> localVarResponse = stateEpochPostWithHttpInfo();
+  public StateEpochResponse stateEpochPost(StateEpochRequest stateEpochRequest) throws ApiException {
+    ApiResponse<StateEpochResponse> localVarResponse = stateEpochPostWithHttpInfo(stateEpochRequest);
     return localVarResponse.getData();
   }
 
   /**
    * Get Epoch Details
    * Reads the epoch manager&#39;s substate/s from the top of the current ledger. 
+   * @param stateEpochRequest  (required)
    * @return ApiResponse&lt;StateEpochResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<StateEpochResponse> stateEpochPostWithHttpInfo() throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = stateEpochPostRequestBuilder();
+  public ApiResponse<StateEpochResponse> stateEpochPostWithHttpInfo(StateEpochRequest stateEpochRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = stateEpochPostRequestBuilder(stateEpochRequest);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -275,7 +291,11 @@ public class StateApi {
     }
   }
 
-  private HttpRequest.Builder stateEpochPostRequestBuilder() throws ApiException {
+  private HttpRequest.Builder stateEpochPostRequestBuilder(StateEpochRequest stateEpochRequest) throws ApiException {
+    // verify the required parameter 'stateEpochRequest' is set
+    if (stateEpochRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'stateEpochRequest' when calling stateEpochPost");
+    }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
@@ -283,9 +303,15 @@ public class StateApi {
 
     localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
 
+    localVarRequestBuilder.header("Content-Type", "application/json");
     localVarRequestBuilder.header("Accept", "application/json");
 
-    localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.noBody());
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(stateEpochRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
     if (memberVarReadTimeout != null) {
       localVarRequestBuilder.timeout(memberVarReadTimeout);
     }

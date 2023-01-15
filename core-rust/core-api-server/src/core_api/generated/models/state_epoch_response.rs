@@ -13,18 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StateEpochResponse {
-    /// The logical name of the network
-    #[serde(rename = "network")]
-    pub network: String,
     /// An integer between `0` and `10^10`, marking the current epoch
     #[serde(rename = "epoch")]
     pub epoch: i64,
 }
 
 impl StateEpochResponse {
-    pub fn new(network: String, epoch: i64) -> StateEpochResponse {
+    pub fn new(epoch: i64) -> StateEpochResponse {
         StateEpochResponse {
-            network,
             epoch,
         }
     }

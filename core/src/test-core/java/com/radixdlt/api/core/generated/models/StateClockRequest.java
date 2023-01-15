@@ -28,49 +28,47 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * StateEpochResponse
+ * StateClockRequest
  */
 @JsonPropertyOrder({
-  StateEpochResponse.JSON_PROPERTY_EPOCH
+  StateClockRequest.JSON_PROPERTY_NETWORK
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class StateEpochResponse {
-  public static final String JSON_PROPERTY_EPOCH = "epoch";
-  private Long epoch;
+public class StateClockRequest {
+  public static final String JSON_PROPERTY_NETWORK = "network";
+  private String network;
 
-  public StateEpochResponse() { 
+  public StateClockRequest() { 
   }
 
-  public StateEpochResponse epoch(Long epoch) {
-    this.epoch = epoch;
+  public StateClockRequest network(String network) {
+    this.network = network;
     return this;
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the current epoch
-   * minimum: 0
-   * maximum: 10000000000
-   * @return epoch
+   * The logical name of the network
+   * @return network
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the current epoch")
-  @JsonProperty(JSON_PROPERTY_EPOCH)
+  @ApiModelProperty(example = "{{network}}", required = true, value = "The logical name of the network")
+  @JsonProperty(JSON_PROPERTY_NETWORK)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getEpoch() {
-    return epoch;
+  public String getNetwork() {
+    return network;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EPOCH)
+  @JsonProperty(JSON_PROPERTY_NETWORK)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEpoch(Long epoch) {
-    this.epoch = epoch;
+  public void setNetwork(String network) {
+    this.network = network;
   }
 
 
   /**
-   * Return true if this StateEpochResponse object is equal to o.
+   * Return true if this StateClockRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -80,20 +78,20 @@ public class StateEpochResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    StateEpochResponse stateEpochResponse = (StateEpochResponse) o;
-    return Objects.equals(this.epoch, stateEpochResponse.epoch);
+    StateClockRequest stateClockRequest = (StateClockRequest) o;
+    return Objects.equals(this.network, stateClockRequest.network);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(epoch);
+    return Objects.hash(network);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class StateEpochResponse {\n");
-    sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
+    sb.append("class StateClockRequest {\n");
+    sb.append("    network: ").append(toIndentedString(network)).append("\n");
     sb.append("}");
     return sb.toString();
   }

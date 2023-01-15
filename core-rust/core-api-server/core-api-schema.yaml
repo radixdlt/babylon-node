@@ -508,6 +508,12 @@ paths:
         Reads the epoch manager's substate/s from the top of the current ledger.
       tags:
         - State
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StateEpochRequest"
       responses:
         '200':
           description: Current state response
@@ -534,6 +540,12 @@ paths:
         Reads the clock's substate/s from the top of the current ledger.
       tags:
         - State
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StateClockRequest"
       responses:
         '200':
           description: Current state response
@@ -3258,15 +3270,18 @@ components:
 ############################
 # REQUEST: /state/epoch #
 ############################
-    # No request body required
-    StateEpochResponse:
+    StateEpochRequest:
       type: object
       required:
         - network
-        - epoch
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
+    StateEpochResponse:
+      type: object
+      required:
+        - epoch
+      properties:
         epoch:
           type: integer
           format: int64
@@ -3276,15 +3291,18 @@ components:
 ############################
 # REQUEST: /state/clock #
 ############################
-    # No request body required
-    StateClockResponse:
+    StateClockRequest:
       type: object
       required:
         - network
-        - current_minute
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
+    StateClockResponse:
+      type: object
+      required:
+        - current_minute
+      properties:
         current_minute:
           $ref: "#/components/schemas/Substate"
 ################################
