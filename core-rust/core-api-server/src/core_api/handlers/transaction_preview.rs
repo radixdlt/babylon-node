@@ -29,7 +29,7 @@ fn handle_preview_internal(
         .preview(preview_request)
         .map_err(|err| match err {
             PreviewError::TransactionValidationError(err) => {
-                client_error(&format!("Transaction validation error: {:?}", err))
+                client_error(format!("Transaction validation error: {:?}", err))
             }
         })?;
 

@@ -120,7 +120,7 @@ fn map_state_updates(state_updates: StateDiff) -> SubstateChanges {
             Some(up_substate_output_value) => {
                 // TODO - this check can be removed when the bug is fixed
                 let up_substate_hash =
-                    hash(&scrypto_encode(&up_substate_output_value.substate).unwrap());
+                    hash(scrypto_encode(&up_substate_output_value.substate).unwrap());
                 if up_substate_hash != down_substate_hash {
                     updated.insert(substate_id, up_substate_output_value);
                 } else {

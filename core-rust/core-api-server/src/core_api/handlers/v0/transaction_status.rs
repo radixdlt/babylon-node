@@ -3,9 +3,10 @@ use std::collections::HashMap;
 use crate::core_api::*;
 use radix_engine::transaction::TransactionOutcome;
 use state_manager::jni::state_manager::ActualStateManager;
+use state_manager::pending_transaction_result_cache::RejectionReason;
 use state_manager::{HasUserPayloadHash, UserPayloadHash};
 
-use state_manager::mempool::transaction_rejection_cache::RejectionRecord;
+use state_manager::mempool::pending_transaction_result_cache::PendingTransactionRecord;
 use state_manager::store::traits::*;
 
 #[tracing::instrument(err(Debug), skip(state))]
@@ -30,9 +31,9 @@ fn handle_v0_transaction_status_internal(
         .store
         .get_committed_transaction_by_identifier(&intent_hash);
 
-    let mut rejected_payloads = state_manager
-        .rejection_cache
-        .peek_all_rejected_payloads_for_intent(&intent_hash);
+    let mut known_pending_payloads = state_manager
+        .pending_transaction_result_cache
+        .peek_all_known_payloads_for_intent(&intent_hash);
 
     if let Some((stored_transaction, receipt, _)) = committed_option {
         let payload_hash = stored_transaction
@@ -41,7 +42,7 @@ fn handle_v0_transaction_status_internal(
             .user_payload_hash();
 
         // Remove the committed payload from the rejection list if it's present
-        rejected_payloads.remove(&payload_hash);
+        known_pending_payloads.remove(&payload_hash);
 
         let intent_status = match &receipt.outcome {
             TransactionOutcome::Success(_) => IntentStatus::CommittedSuccess,
@@ -63,7 +64,9 @@ fn handle_v0_transaction_status_internal(
         };
 
         let mut known_payloads = vec![committed_payload];
-        known_payloads.append(&mut map_rejected_payloads(rejected_payloads));
+        known_payloads.append(&mut map_rejected_payloads_due_to_known_commit(
+            known_pending_payloads,
+        ));
 
         return Ok(models::V0TransactionStatusResponse {
             intent_status,
@@ -86,7 +89,9 @@ fn handle_v0_transaction_status_internal(
             .collect::<Vec<_>>();
 
         let mut known_payloads = mempool_payloads;
-        known_payloads.append(&mut map_rejected_payloads(rejected_payloads));
+        known_payloads.append(&mut map_pending_payloads_not_in_mempool(
+            known_pending_payloads,
+        ));
 
         return Ok(models::V0TransactionStatusResponse {
             intent_status: models::v0_transaction_status_response::IntentStatus::InMempool,
@@ -94,7 +99,7 @@ fn handle_v0_transaction_status_internal(
         });
     }
 
-    let known_payloads = map_rejected_payloads(rejected_payloads);
+    let known_payloads = map_pending_payloads_not_in_mempool(known_pending_payloads);
 
     let intent_status = if !known_payloads.is_empty() {
         // NOTE
@@ -112,21 +117,50 @@ fn handle_v0_transaction_status_internal(
     })
 }
 
-fn map_rejected_payloads(
-    known_rejected_payloads: HashMap<UserPayloadHash, RejectionRecord>,
+fn map_rejected_payloads_due_to_known_commit(
+    known_rejected_payloads: HashMap<UserPayloadHash, PendingTransactionRecord>,
 ) -> Vec<models::V0TransactionPayloadStatus> {
     known_rejected_payloads
         .into_iter()
         .map(
-            |(payload_hash, rejection_record)| models::V0TransactionPayloadStatus {
-                payload_hash: to_api_payload_hash(&payload_hash),
-                status: if rejection_record.reason.is_permanent() {
-                    PayloadStatus::PermanentlyRejected
-                } else {
-                    PayloadStatus::TransientlyRejected
+            |(payload_hash, transaction_record)| match transaction_record.last_attempt.rejection {
+                Some(reason) => models::V0TransactionPayloadStatus {
+                    payload_hash: to_api_payload_hash(&payload_hash),
+                    status: PayloadStatus::PermanentlyRejected,
+                    error_message: Some(reason.to_string()),
                 },
-                error_message: Some(rejection_record.reason.to_string()),
+                None => models::V0TransactionPayloadStatus {
+                    payload_hash: to_api_payload_hash(&payload_hash),
+                    status: PayloadStatus::PermanentlyRejected,
+                    error_message: Some(RejectionReason::IntentHashCommitted.to_string()),
+                },
             },
         )
+        .collect::<Vec<_>>()
+}
+
+fn map_pending_payloads_not_in_mempool(
+    known_rejected_payloads: HashMap<UserPayloadHash, PendingTransactionRecord>,
+) -> Vec<models::V0TransactionPayloadStatus> {
+    known_rejected_payloads
+        .into_iter()
+        .filter_map(|(payload_hash, transaction_record)| {
+            match &transaction_record.last_attempt.rejection {
+                Some(reason) => Some(models::V0TransactionPayloadStatus {
+                    payload_hash: to_api_payload_hash(&payload_hash),
+                    status: if transaction_record
+                        .last_attempt
+                        .was_against_committed_state()
+                        && reason.is_permanent()
+                    {
+                        PayloadStatus::PermanentlyRejected
+                    } else {
+                        PayloadStatus::TransientlyRejected
+                    },
+                    error_message: Some(reason.to_string()),
+                }),
+                None => None,
+            }
+        })
         .collect::<Vec<_>>()
 }

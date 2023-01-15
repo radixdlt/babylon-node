@@ -276,7 +276,7 @@ impl<'db> WriteableSubstateStore for RocksDBCommitTransaction<'db> {
 impl<'db> WriteableVertexStore for RocksDBCommitTransaction<'db> {
     fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>) {
         self.db_txn
-            .put(db_key!(VertexStore, &[]), &vertex_store_bytes)
+            .put(db_key!(VertexStore, &[]), vertex_store_bytes)
             .unwrap();
     }
 }
@@ -351,7 +351,7 @@ impl TransactionIndex<u64> for RocksDBStore {
     fn get_payload_hash(&self, state_version: u64) -> Option<LedgerPayloadHash> {
         let state_version_entry = self
             .db
-            .get(&db_key!(StateVersions, &state_version.to_be_bytes()))
+            .get(db_key!(StateVersions, &state_version.to_be_bytes()))
             .expect("DB error loading state version")?;
         let hash = LedgerPayloadHash::from_raw_bytes(
             state_version_entry

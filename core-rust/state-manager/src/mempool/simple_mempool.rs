@@ -159,7 +159,7 @@ impl SimpleMempool {
                     if let Some(mempool_data) = removed_option {
                         removed_transactions.push(mempool_data.transaction);
                     } else {
-                        panic!("Mempool intent hash lookup out of sync");
+                        panic!("Mempool intent hash lookup out of sync on handle committed");
                     }
                 }
             }
@@ -191,8 +191,26 @@ impl SimpleMempool {
         self.data.clone()
     }
 
-    pub fn remove_transaction(&mut self, hash: &UserPayloadHash) -> Option<MempoolData> {
-        self.data.remove(hash)
+    pub fn remove_transaction(
+        &mut self,
+        intent_hash: &IntentHash,
+        payload_hash: &UserPayloadHash,
+    ) -> Option<MempoolData> {
+        let removed = self.data.remove(payload_hash);
+        if removed.is_some() {
+            let payload_lookup = self
+                .intent_lookup
+                .get_mut(intent_hash)
+                .expect("Mempool intent hash lookup out of sync on remove");
+
+            if !payload_lookup.remove(payload_hash) {
+                panic!("Mempool intent hash lookup out of sync on remove");
+            }
+            if payload_lookup.is_empty() {
+                self.intent_lookup.remove(intent_hash);
+            }
+        }
+        removed
     }
 
     pub fn get_payload_hashes_for_intent(&self, intent_hash: &IntentHash) -> Vec<UserPayloadHash> {
@@ -399,11 +417,11 @@ mod tests {
         mp.add_transaction(intent_1_payload_1.clone()).unwrap();
         mp.add_transaction(intent_1_payload_2.clone()).unwrap();
         mp.add_transaction(intent_1_payload_3).unwrap();
-        mp.add_transaction(intent_2_payload_1).unwrap();
+        mp.add_transaction(intent_2_payload_1.clone()).unwrap();
 
         assert_eq!(mp.get_count(), 4);
         assert_eq!(
-            mp.get_payload_hashes_for_intent(&intent_2_payload_2.intent_hash)
+            mp.get_payload_hashes_for_intent(&intent_2_payload_1.intent_hash)
                 .len(),
             1
         );
@@ -412,6 +430,37 @@ mod tests {
                 .len(),
             3
         );
+        mp.remove_transaction(
+            &intent_1_payload_2.intent_hash,
+            &intent_1_payload_2.payload_hash,
+        );
+        assert_eq!(
+            mp.get_payload_hashes_for_intent(&intent_1_payload_1.intent_hash)
+                .len(),
+            2
+        );
+        let removed_data = mp.remove_transaction(
+            &intent_2_payload_2.intent_hash,
+            &intent_2_payload_2.payload_hash,
+        );
+        assert!(removed_data.is_none());
+        assert_eq!(
+            mp.get_payload_hashes_for_intent(&intent_2_payload_2.intent_hash)
+                .len(),
+            1
+        );
+        let removed_data = mp.remove_transaction(
+            &intent_2_payload_1.intent_hash,
+            &intent_2_payload_1.payload_hash,
+        );
+        assert!(removed_data.is_some());
+        assert_eq!(
+            mp.get_payload_hashes_for_intent(&intent_2_payload_2.intent_hash)
+                .len(),
+            0
+        );
+        mp.add_transaction(intent_2_payload_1).unwrap();
+
         mp.handle_committed_transactions(&[intent_1_payload_2.intent_hash]);
         assert_eq!(
             mp.get_payload_hashes_for_intent(&intent_1_payload_1.intent_hash)

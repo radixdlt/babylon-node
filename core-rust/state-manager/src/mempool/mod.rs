@@ -66,13 +66,56 @@ use sbor::*;
 
 use std::string::ToString;
 
-use self::transaction_rejection_cache::RejectionReason;
+use crate::MetricLabel;
+
+use crate::pending_transaction_result_cache::{AtState, RejectionReason};
+
+#[derive(Debug, Clone, Copy)]
+pub enum MempoolAddSource {
+    CoreApi,
+    MempoolSync,
+}
+
+impl MetricLabel for MempoolAddSource {
+    type StringReturnType = &'static str;
+
+    fn prometheus_label_name(&self) -> Self::StringReturnType {
+        match *self {
+            MempoolAddSource::CoreApi => "CoreApi",
+            MempoolAddSource::MempoolSync => "MempoolSync",
+        }
+    }
+}
 
 #[derive(Debug)]
 pub enum MempoolAddError {
     Full { current_size: u64, max_size: u64 },
     Duplicate,
-    Rejected(RejectionReason),
+    Rejected(MempoolAddRejection),
+}
+
+#[derive(Debug)]
+pub struct MempoolAddRejection {
+    pub reason: RejectionReason,
+    pub against_state: AtState,
+    pub was_cached: bool,
+}
+
+impl MetricLabel for MempoolAddError {
+    type StringReturnType = &'static str;
+
+    fn prometheus_label_name(&self) -> Self::StringReturnType {
+        match self {
+            MempoolAddError::Rejected(rejection) => match &rejection.reason {
+                RejectionReason::FromExecution(_) => "ExecutionError",
+                RejectionReason::ValidationError(_) => "ValidationError",
+                RejectionReason::IntentHashCommitted => "IntentHashCommitted",
+                RejectionReason::ExecutionTookTooLong { .. } => "ExecutionTooLong",
+            },
+            MempoolAddError::Full { .. } => "MempoolFull",
+            MempoolAddError::Duplicate => "Duplicate",
+        }
+    }
 }
 
 impl ToString for MempoolAddError {
@@ -83,7 +126,7 @@ impl ToString for MempoolAddError {
                 max_size,
             } => format!("Mempool Full [{} - {}]", current_size, max_size),
             MempoolAddError::Duplicate => "Duplicate Entry".to_string(),
-            MempoolAddError::Rejected(reason) => reason.to_string(),
+            MempoolAddError::Rejected(rejection) => rejection.reason.to_string(),
         }
     }
 }
@@ -93,5 +136,5 @@ pub struct MempoolConfig {
     pub max_size: u32,
 }
 
+pub mod pending_transaction_result_cache;
 pub mod simple_mempool;
-pub mod transaction_rejection_cache;
