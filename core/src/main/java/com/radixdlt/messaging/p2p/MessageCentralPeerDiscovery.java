@@ -98,15 +98,11 @@ public final class MessageCentralPeerDiscovery {
             });
   }
 
-  public Flowable<RemoteEvent<BFTNode, PeersResponse>> peersResponses() {
+  public Flowable<RemoteEvent<NodeId, PeersResponse>> peersResponses() {
     return this.messageCentral
         .messagesOf(PeersResponseMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(
-            m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
-              return RemoteEvent.create(node, PeersResponse.create(m.message().getPeers()));
-            });
+        .map(m -> RemoteEvent.create(m.source(), PeersResponse.create(m.message().getPeers())));
   }
 
   public RemoteEventDispatcher<BFTNode, GetPeers> getPeersDispatcher() {

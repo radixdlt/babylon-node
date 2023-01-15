@@ -164,9 +164,8 @@ public final class PeerDiscovery {
         .forEach(this.peerManager::tryConnect);
   }
 
-  public RemoteEventProcessor<BFTNode, PeersResponse> peersResponseRemoteEventProcessor() {
-    return (sender, peersResponse) -> {
-      final var senderNodeId = NodeId.fromPublicKey(sender.getKey());
+  public RemoteEventProcessor<NodeId, PeersResponse> peersResponseRemoteEventProcessor() {
+    return (senderNodeId, peersResponse) -> {
       if (!peersAsked.contains(senderNodeId)) {
         log.warn(
             "Received unexpected peers response from {}",

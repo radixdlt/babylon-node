@@ -126,7 +126,7 @@ public final class PeerDiscoveryModule extends AbstractModule {
       PeerDiscovery peerDiscovery) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.P2P_NETWORK,
-        BFTNode.class,
+        NodeId.class,
         PeersResponse.class,
         peerDiscovery.peersResponseRemoteEventProcessor());
   }

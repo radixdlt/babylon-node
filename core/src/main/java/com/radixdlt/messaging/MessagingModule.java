@@ -87,6 +87,7 @@ import com.radixdlt.messaging.ledgersync.MessageCentralLedgerSync;
 import com.radixdlt.messaging.mempool.MessageCentralMempool;
 import com.radixdlt.messaging.p2p.MessageCentralPeerDiscovery;
 import com.radixdlt.messaging.p2p.MessageCentralPeerLiveness;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.discovery.GetPeers;
 import com.radixdlt.p2p.discovery.PeersResponse;
 import com.radixdlt.p2p.liveness.Ping;
@@ -267,7 +268,7 @@ public final class MessagingModule extends AbstractModule {
           return messageCentralPeerLiveness.pongs().map(m -> (RemoteEvent<N, T>) m);
         } else if (remoteEventClass == GetPeers.class) {
           return messageCentralPeerDiscovery.getPeersEvents().map(m -> (RemoteEvent<N, T>) m);
-        } else if (remoteEventClass == PeersResponse.class) {
+        } else if (nodeIdClass == NodeId.class && remoteEventClass == PeersResponse.class) {
           return messageCentralPeerDiscovery.peersResponses().map(m -> (RemoteEvent<N, T>) m);
         } else {
           throw new IllegalStateException();
