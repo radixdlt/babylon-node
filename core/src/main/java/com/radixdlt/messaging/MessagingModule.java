@@ -219,14 +219,14 @@ public final class MessagingModule extends AbstractModule {
   private RxRemoteDispatcher<?, ?> getPeersDispatcher(
       MessageCentralPeerDiscovery messageCentralPeerDiscovery) {
     return RxRemoteDispatcher.create(
-        BFTNode.class, GetPeers.class, messageCentralPeerDiscovery.getPeersDispatcher());
+        NodeId.class, GetPeers.class, messageCentralPeerDiscovery.getPeersDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?, ?> peersResponseDispatcher(
       MessageCentralPeerDiscovery messageCentralPeerDiscovery) {
     return RxRemoteDispatcher.create(
-        BFTNode.class, PeersResponse.class, messageCentralPeerDiscovery.peersResponseDispatcher());
+        NodeId.class, PeersResponse.class, messageCentralPeerDiscovery.peersResponseDispatcher());
   }
 
   @ProvidesIntoSet
@@ -292,7 +292,7 @@ public final class MessagingModule extends AbstractModule {
             MessageTransportType.create(BFTNode.class, Pong.class))) {
           return messageCentralPeerLiveness.pongs().map(m -> (RemoteEvent<N, T>) m);
         } else if (messageTransportType.equals(
-            MessageTransportType.create(BFTNode.class, GetPeers.class))) {
+            MessageTransportType.create(NodeId.class, GetPeers.class))) {
           return messageCentralPeerDiscovery.getPeersEvents().map(m -> (RemoteEvent<N, T>) m);
         } else if (messageTransportType.equals(
             MessageTransportType.create(NodeId.class, PeersResponse.class))) {

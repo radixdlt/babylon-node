@@ -88,6 +88,7 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerEvent;
 import com.radixdlt.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
 import com.radixdlt.p2p.discovery.DiscoverPeers;
@@ -266,11 +267,11 @@ public class DispatcherModule extends AbstractModule {
     bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, Pong>>() {})
         .toProvider(Dispatchers.remoteDispatcherProvider(BFTNode.class, Pong.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, GetPeers>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(BFTNode.class, GetPeers.class))
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetPeers>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, GetPeers.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, PeersResponse>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(BFTNode.class, PeersResponse.class))
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, PeersResponse>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, PeersResponse.class))
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<EventDispatcher<DiscoverPeers>>() {})
         .toProvider(Dispatchers.dispatcherProvider(DiscoverPeers.class))
