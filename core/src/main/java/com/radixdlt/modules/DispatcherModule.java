@@ -294,6 +294,10 @@ public class DispatcherModule extends AbstractModule {
     bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, SyncResponse>>() {})
         .toProvider(Dispatchers.remoteDispatcherProvider(BFTNode.class, SyncResponse.class))
         .in(Scopes.SINGLETON);
+
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, LedgerStatusUpdate>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, LedgerStatusUpdate.class))
+        .in(Scopes.SINGLETON);
     bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, LedgerStatusUpdate>>() {})
         .toProvider(Dispatchers.remoteDispatcherProvider(BFTNode.class, LedgerStatusUpdate.class))
         .in(Scopes.SINGLETON);

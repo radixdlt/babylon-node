@@ -82,6 +82,7 @@ import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusResponse;
@@ -100,7 +101,7 @@ public class RemoteSyncServiceTest {
   private TransactionsAndProofReader reader;
   private RemoteEventDispatcher<BFTNode, StatusResponse> statusResponseDispatcher;
   private RemoteEventDispatcher<BFTNode, SyncResponse> syncResponseDispatcher;
-  private RemoteEventDispatcher<BFTNode, LedgerStatusUpdate> statusUpdateDispatcher;
+  private RemoteEventDispatcher<NodeId, LedgerStatusUpdate> statusUpdateDispatcher;
 
   @Before
   public void setUp() {

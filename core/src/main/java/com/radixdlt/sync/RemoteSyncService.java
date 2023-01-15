@@ -73,6 +73,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.*;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.remote.*;
@@ -92,7 +93,7 @@ public final class RemoteSyncService {
   private final TransactionsAndProofReader committedReader;
   private final RemoteEventDispatcher<BFTNode, StatusResponse> statusResponseDispatcher;
   private final RemoteEventDispatcher<BFTNode, SyncResponse> syncResponseDispatcher;
-  private final RemoteEventDispatcher<BFTNode, LedgerStatusUpdate> statusUpdateDispatcher;
+  private final RemoteEventDispatcher<NodeId, LedgerStatusUpdate> statusUpdateDispatcher;
   private final SyncRelayConfig syncRelayConfig;
   private final Metrics metrics;
   private final Comparator<AccumulatorState> accComparator;
@@ -107,7 +108,7 @@ public final class RemoteSyncService {
       TransactionsAndProofReader committedReader,
       RemoteEventDispatcher<BFTNode, StatusResponse> statusResponseDispatcher,
       RemoteEventDispatcher<BFTNode, SyncResponse> syncResponseDispatcher,
-      RemoteEventDispatcher<BFTNode, LedgerStatusUpdate> statusUpdateDispatcher,
+      RemoteEventDispatcher<NodeId, LedgerStatusUpdate> statusUpdateDispatcher,
       SyncRelayConfig syncRelayConfig,
       Metrics metrics,
       Comparator<AccumulatorState> accComparator,
@@ -198,7 +199,7 @@ public final class RemoteSyncService {
 
     currentPeers.stream()
         .limit(syncRelayConfig.ledgerStatusUpdateMaxPeersToNotify())
-        .map(PeersView.PeerInfo::bftNode)
+        .map(PeersView.PeerInfo::getNodeId)
         .forEach(
             peer -> {
               if (this.ledgerStatusUpdateSendRateLimiter.tryAcquire()) {

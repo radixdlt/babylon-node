@@ -233,9 +233,21 @@ public final class MessagingModule extends AbstractModule {
   private RxRemoteDispatcher<?, ?> ledgerStatusUpdateDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        BFTNode.class,
+        NodeId.class,
         LedgerStatusUpdate.class,
         messageCentralLedgerSync.ledgerStatusUpdateDispatcher());
+  }
+
+  @ProvidesIntoSet
+  private RxRemoteDispatcher<?, ?> bftLedgerStatusUpdateDispatcher(
+      MessageCentralLedgerSync messageCentralLedgerSync) {
+    return RxRemoteDispatcher.create(
+        BFTNode.class,
+        LedgerStatusUpdate.class,
+        (n, m) -> {
+          var nodeId = NodeId.fromPublicKey(n.getKey());
+          messageCentralLedgerSync.ledgerStatusUpdateDispatcher().dispatch(nodeId, m);
+        });
   }
 
   // TODO: Clean this up
@@ -283,7 +295,7 @@ public final class MessagingModule extends AbstractModule {
             MessageTransportType.create(BFTNode.class, StatusResponse.class))) {
           return messageCentralLedgerSync.statusResponses().map(m -> (RemoteEvent<N, T>) m);
         } else if (messageTransportType.equals(
-            MessageTransportType.create(BFTNode.class, LedgerStatusUpdate.class))) {
+            MessageTransportType.create(NodeId.class, LedgerStatusUpdate.class))) {
           return messageCentralLedgerSync.ledgerStatusUpdates().map(m -> (RemoteEvent<N, T>) m);
         } else if (messageTransportType.equals(
             MessageTransportType.create(NodeId.class, Ping.class))) {

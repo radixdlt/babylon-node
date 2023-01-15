@@ -160,8 +160,7 @@ public class MessageCentralLedgerSyncTest {
     final var updateMsg = mock(LedgerStatusUpdateMessage.class);
     messageCentral.send(peer, updateMsg);
     testObserver.awaitCount(1);
-    testObserver.assertValue(
-        receivedMsg -> receivedMsg.getOrigin().getKey().equals(peer.getPublicKey()));
+    testObserver.assertValue(receivedMsg -> receivedMsg.getOrigin().equals(peer));
   }
 
   private NodeId createPeer() {

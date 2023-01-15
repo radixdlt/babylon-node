@@ -135,15 +135,14 @@ public final class MessageCentralLedgerSync {
             });
   }
 
-  public Flowable<RemoteEvent<BFTNode, LedgerStatusUpdate>> ledgerStatusUpdates() {
+  public Flowable<RemoteEvent<NodeId, LedgerStatusUpdate>> ledgerStatusUpdates() {
     return this.messageCentral
         .messagesOf(LedgerStatusUpdateMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
               final var header = m.message().getHeader();
-              return RemoteEvent.create(node, LedgerStatusUpdate.create(header));
+              return RemoteEvent.create(m.source(), LedgerStatusUpdate.create(header));
             });
   }
 
@@ -183,12 +182,12 @@ public final class MessageCentralLedgerSync {
     this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
   }
 
-  public RemoteEventDispatcher<BFTNode, LedgerStatusUpdate> ledgerStatusUpdateDispatcher() {
+  public RemoteEventDispatcher<NodeId, LedgerStatusUpdate> ledgerStatusUpdateDispatcher() {
     return this::sendLedgerStatusUpdate;
   }
 
-  private void sendLedgerStatusUpdate(BFTNode node, LedgerStatusUpdate ledgerStatusUpdate) {
+  private void sendLedgerStatusUpdate(NodeId nodeId, LedgerStatusUpdate ledgerStatusUpdate) {
     final var msg = new LedgerStatusUpdateMessage(ledgerStatusUpdate.getHeader());
-    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+    this.messageCentral.send(nodeId, msg);
   }
 }
