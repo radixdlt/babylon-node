@@ -77,7 +77,7 @@ use tower_http::limit::RequestBodyLimitLayer;
 
 use super::{handlers::*, not_found_error, RequestHandlingError};
 
-use handle_network_configuration as handle_provide_info_at_root_path;
+use handle_status_network_configuration as handle_provide_info_at_root_path;
 
 #[derive(Clone)]
 pub(crate) struct CoreApiState {
@@ -105,9 +105,9 @@ pub async fn create_server<F>(
         // Status Sub-API
         .route(
             "/status/network-configuration",
-            post(handle_network_configuration),
+            post(handle_status_network_configuration),
         )
-        .route("/status/network-status", post(handle_network_status))
+        .route("/status/network-status", post(handle_status_network_status))
         // Mempool Sub-API
         .route("/mempool/list", post(handle_mempool_list))
         .route("/mempool/transaction", post(handle_mempool_transaction))

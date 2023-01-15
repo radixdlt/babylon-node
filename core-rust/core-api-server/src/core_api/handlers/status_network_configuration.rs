@@ -4,13 +4,13 @@ use radix_engine_interface::address::{EntityType, HrpSet};
 use state_manager::jni::state_manager::ActualStateManager;
 
 #[tracing::instrument(err(Debug), skip(state))]
-pub(crate) async fn handle_network_configuration(
+pub(crate) async fn handle_status_network_configuration(
     state: Extension<CoreApiState>,
 ) -> Result<Json<models::NetworkConfigurationResponse>, RequestHandlingError> {
-    core_api_handler_empty_request(state, handle_network_configuration_internal)
+    core_api_handler_empty_request(state, handle_status_network_configuration_internal)
 }
 
-pub(crate) fn handle_network_configuration_internal(
+pub(crate) fn handle_status_network_configuration_internal(
     state_manager: &mut ActualStateManager,
 ) -> Result<models::NetworkConfigurationResponse, RequestHandlingError> {
     let network = state_manager.network.clone();

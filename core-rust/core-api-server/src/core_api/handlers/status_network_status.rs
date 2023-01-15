@@ -4,14 +4,14 @@ use state_manager::query::TransactionIdentifierLoader;
 use state_manager::CommittedTransactionIdentifiers;
 
 #[tracing::instrument(skip(state), err(Debug))]
-pub(crate) async fn handle_network_status(
+pub(crate) async fn handle_status_network_status(
     state: Extension<CoreApiState>,
     request: Json<models::NetworkStatusRequest>,
 ) -> Result<Json<models::NetworkStatusResponse>, RequestHandlingError> {
-    core_api_read_handler(state, request, handle_network_status_internal)
+    core_api_read_handler(state, request, handle_status_network_status_internal)
 }
 
-pub(crate) fn handle_network_status_internal(
+pub(crate) fn handle_status_network_status_internal(
     state_manager: &ActualStateManager,
     request: models::NetworkStatusRequest,
 ) -> Result<models::NetworkStatusResponse, RequestHandlingError> {
