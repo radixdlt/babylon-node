@@ -64,6 +64,7 @@
 
 package com.radixdlt.environment.rx;
 
+import com.radixdlt.environment.MessageTransportType;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import java.util.Objects;
 
@@ -82,6 +83,10 @@ public final class RxRemoteDispatcher<N, T> {
     this.nodeIdClass = nodeIdClass;
     this.eventClass = eventClass;
     this.dispatcher = dispatcher;
+  }
+
+  public MessageTransportType<?, ?> messageTransportType() {
+    return MessageTransportType.create(nodeIdClass, eventClass);
   }
 
   public Class<T> eventClass() {

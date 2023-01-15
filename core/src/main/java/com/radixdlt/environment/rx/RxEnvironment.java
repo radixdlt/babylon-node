@@ -65,11 +65,7 @@
 package com.radixdlt.environment.rx;
 
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.environment.*;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -86,13 +82,14 @@ public final class RxEnvironment implements Environment {
   private final Map<Class<?>, Subject<?>> subjects;
   private final Map<TypeLiteral<?>, Subject<?>> typeLiteralSubjects;
   private final ScheduledExecutorService executorService;
-  private final Map<Class<?>, RxRemoteDispatcher<BFTNode, ?>> remoteDispatchers;
+
+  private final Map<MessageTransportType<?, ?>, RxRemoteDispatcher<?, ?>> remoteDispatchers;
 
   public RxEnvironment(
       Set<TypeLiteral<?>> localEventTypeLiterals,
       Set<Class<?>> localEventClasses,
       ScheduledExecutorService executorService,
-      Set<RxRemoteDispatcher<BFTNode, ?>> remoteDispatchers) {
+      Set<RxRemoteDispatcher<?, ?>> remoteDispatchers) {
     this.typeLiteralSubjects =
         localEventTypeLiterals.stream()
             .collect(Collectors.toMap(c -> c, c -> ReplaySubject.createWithSize(5).toSerialized()));
@@ -102,7 +99,7 @@ public final class RxEnvironment implements Environment {
     this.executorService = Objects.requireNonNull(executorService);
     this.remoteDispatchers =
         remoteDispatchers.stream()
-            .collect(Collectors.toMap(RxRemoteDispatcher::eventClass, d -> d));
+            .collect(Collectors.toMap(RxRemoteDispatcher::messageTransportType, d -> d));
   }
 
   private <T> Optional<Subject<T>> getSubject(TypeLiteral<T> t) {
@@ -141,14 +138,15 @@ public final class RxEnvironment implements Environment {
   }
 
   @Override
-  public <T> RemoteEventDispatcher<BFTNode, T> getRemoteDispatcher(Class<T> eventClass) {
-    if (!remoteDispatchers.containsKey(eventClass)) {
-      throw new IllegalStateException("No dispatcher for " + eventClass);
+  public <N, T> RemoteEventDispatcher<N, T> getRemoteDispatcher(
+      MessageTransportType<N, T> messageTransportType) {
+    if (!remoteDispatchers.containsKey(messageTransportType)) {
+      throw new IllegalStateException("No dispatcher for " + messageTransportType);
     }
 
     @SuppressWarnings("unchecked")
-    final RemoteEventDispatcher<BFTNode, T> dispatcher =
-        (RemoteEventDispatcher<BFTNode, T>) remoteDispatchers.get(eventClass).dispatcher();
+    final RemoteEventDispatcher<N, T> dispatcher =
+        (RemoteEventDispatcher<N, T>) remoteDispatchers.get(messageTransportType).dispatcher();
     return dispatcher;
   }
 

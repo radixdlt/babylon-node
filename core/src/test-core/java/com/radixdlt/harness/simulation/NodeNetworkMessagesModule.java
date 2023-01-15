@@ -105,14 +105,13 @@ public class NodeNetworkMessagesModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<BFTNode, ?> mempoolAdd(
-      SimulationNetwork.SimulatedNetworkImpl network) {
+  private RxRemoteDispatcher<?, ?> mempoolAdd(SimulationNetwork.SimulatedNetworkImpl network) {
     return RxRemoteDispatcher.create(
         BFTNode.class, MempoolAdd.class, network.remoteEventDispatcher(MempoolAdd.class));
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<BFTNode, ?> vertexRequestDispatcher(
+  private RxRemoteDispatcher<?, ?> vertexRequestDispatcher(
       SimulationNetwork.SimulatedNetworkImpl network) {
     return RxRemoteDispatcher.create(
         BFTNode.class,
@@ -121,7 +120,7 @@ public class NodeNetworkMessagesModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<BFTNode, ?> vertexResponseDispatcher(
+  private RxRemoteDispatcher<?, ?> vertexResponseDispatcher(
       SimulationNetwork.SimulatedNetworkImpl network) {
     return RxRemoteDispatcher.create(
         BFTNode.class,
@@ -130,7 +129,7 @@ public class NodeNetworkMessagesModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<BFTNode, ?> bftSyncErrorDispatcher(
+  private RxRemoteDispatcher<?, ?> bftSyncErrorDispatcher(
       SimulationNetwork.SimulatedNetworkImpl network) {
     return RxRemoteDispatcher.create(
         BFTNode.class,
@@ -139,49 +138,48 @@ public class NodeNetworkMessagesModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<BFTNode, ?> proposalDispatcher(
+  private RxRemoteDispatcher<?, ?> proposalDispatcher(
       SimulationNetwork.SimulatedNetworkImpl network) {
     return RxRemoteDispatcher.create(
         BFTNode.class, Proposal.class, network.remoteEventDispatcher(Proposal.class));
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<BFTNode, ?> voteDispatcher(
-      SimulationNetwork.SimulatedNetworkImpl network) {
+  private RxRemoteDispatcher<?, ?> voteDispatcher(SimulationNetwork.SimulatedNetworkImpl network) {
     return RxRemoteDispatcher.create(
         BFTNode.class, Vote.class, network.remoteEventDispatcher(Vote.class));
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<BFTNode, ?> syncRequestDispatcher(
+  private RxRemoteDispatcher<?, ?> syncRequestDispatcher(
       SimulationNetwork.SimulatedNetworkImpl network) {
     return RxRemoteDispatcher.create(
         BFTNode.class, SyncRequest.class, network.remoteEventDispatcher(SyncRequest.class));
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<BFTNode, ?> syncResponseDispatcher(
+  private RxRemoteDispatcher<?, ?> syncResponseDispatcher(
       SimulationNetwork.SimulatedNetworkImpl network) {
     return RxRemoteDispatcher.create(
         BFTNode.class, SyncResponse.class, network.remoteEventDispatcher(SyncResponse.class));
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<BFTNode, ?> statusRequestDispatcher(
+  private RxRemoteDispatcher<?, ?> statusRequestDispatcher(
       SimulationNetwork.SimulatedNetworkImpl network) {
     return RxRemoteDispatcher.create(
         BFTNode.class, StatusRequest.class, network.remoteEventDispatcher(StatusRequest.class));
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<BFTNode, ?> statusResponseDispatcher(
+  private RxRemoteDispatcher<?, ?> statusResponseDispatcher(
       SimulationNetwork.SimulatedNetworkImpl network) {
     return RxRemoteDispatcher.create(
         BFTNode.class, StatusResponse.class, network.remoteEventDispatcher(StatusResponse.class));
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<BFTNode, ?> ledgerStatusUpdateDispatcher(
+  private RxRemoteDispatcher<?, ?> ledgerStatusUpdateDispatcher(
       SimulationNetwork.SimulatedNetworkImpl network) {
     return RxRemoteDispatcher.create(
         BFTNode.class,

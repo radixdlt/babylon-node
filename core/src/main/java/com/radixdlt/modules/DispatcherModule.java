@@ -426,7 +426,8 @@ public class DispatcherModule extends AbstractModule {
       @ProcessOnDispatch Set<EventProcessor<GetVerticesRequest>> processors,
       Environment environment,
       Metrics metrics) {
-    var dispatcher = environment.getRemoteDispatcher(GetVerticesRequest.class);
+    var messageTransportType = MessageTransportType.create(BFTNode.class, GetVerticesRequest.class);
+    var dispatcher = environment.getRemoteDispatcher(messageTransportType);
     return (node, request) -> {
       metrics.bft().sync().requestsSent().inc();
       dispatcher.dispatch(node, request);

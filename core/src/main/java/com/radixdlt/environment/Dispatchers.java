@@ -155,7 +155,8 @@ public final class Dispatchers {
 
     @Override
     public RemoteEventDispatcher<BFTNode, T> get() {
-      var remoteDispatcher = environmentProvider.get().getRemoteDispatcher(c);
+      var messageTransportType = MessageTransportType.create(BFTNode.class, c);
+      var remoteDispatcher = environmentProvider.get().getRemoteDispatcher(messageTransportType);
       var localDispatcher = environmentProvider.get().getDispatcher(c);
       final Set<EventProcessor<T>> onDispatch =
           onDispatchProcessors.stream()

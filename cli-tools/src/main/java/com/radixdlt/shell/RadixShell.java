@@ -77,10 +77,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
-import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.Runners;
+import com.radixdlt.environment.*;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
@@ -339,7 +336,9 @@ public final class RadixShell {
     @SuppressWarnings("unchecked")
     public <T> void dispatchRemote(BFTNode receiver, T t) {
       ((RemoteEventDispatcher<BFTNode, T>)
-              injector.getInstance(Environment.class).getRemoteDispatcher(t.getClass()))
+              injector
+                  .getInstance(Environment.class)
+                  .getRemoteDispatcher(MessageTransportType.create(BFTNode.class, t.getClass())))
           .dispatch(receiver, t);
     }
 

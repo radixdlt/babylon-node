@@ -66,10 +66,7 @@ package com.radixdlt.environment.deterministic.network;
 
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.environment.*;
 
 /** A sender within a deterministic network. */
 public final class ControlledSender implements Environment {
@@ -126,9 +123,14 @@ public final class ControlledSender implements Environment {
   }
 
   @Override
-  public <T> RemoteEventDispatcher<BFTNode, T> getRemoteDispatcher(Class<T> eventClass) {
+  public <N, T> RemoteEventDispatcher<N, T> getRemoteDispatcher(
+      MessageTransportType<N, T> messageTransportType) {
+    if (messageTransportType.getNodeIdType() != BFTNode.class) {
+      throw new IllegalStateException();
+    }
+
     return (node, e) -> {
-      ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
+      ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup((BFTNode) node));
       handleMessage(new ControlledMessage(self, channelId, e, null, arrivalTime(channelId)));
     };
   }
