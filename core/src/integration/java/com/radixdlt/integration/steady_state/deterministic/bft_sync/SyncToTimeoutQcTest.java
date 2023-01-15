@@ -67,12 +67,15 @@ package com.radixdlt.integration.steady_state.deterministic.bft_sync;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.Metrics;
 import java.util.Random;
 import org.junit.Test;
@@ -101,10 +104,19 @@ public class SyncToTimeoutQcTest {
   public void sync_to_timeout_qc_test() {
     final DeterministicTest test =
         DeterministicTest.builder()
-            .numNodes(NUM_NODES, 0)
+            .numPhysicalNodes(NUM_NODES)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(dropProposalsToNodes(ImmutableSet.of(2, 3)).andThen(dropVotesToNode(0)))
-            .buildWithEpochs(Round.of(10));
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    true,
+                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                    FunctionalRadixNodeModule.ConsensusConfig.of(),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
+                        StateComputerConfig.mockedWithEpochs(
+                            Round.of(10),
+                            EpochNodeWeightMapping.constant(NUM_NODES),
+                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
 
     test.startAllNodes();
     test.runUntilMessage(DeterministicTest.roundUpdateOnNode(Round.of(2), 0));

@@ -64,78 +64,100 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.utils.UInt256;
-import java.util.Arrays;
+import com.google.common.hash.HashCode;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
+import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.statecomputer.EpochMaxRound;
+import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.utils.PrivateKeys;
+import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.IntFunction;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
-/** Mapping from epoch to validator set. */
-/**
- * This class has been temporarily moved from the tests to main as code has been moved from tests to
- * MockedConsensusRecoveryModule and this module lives in main for now.
- */
-@FunctionalInterface
-public interface EpochNodeWeightMapping {
-  Stream<NodeIndexAndWeight> nodesAndWeightFor(long epoch);
+/** Starting configuration for simulation/deterministic steady state tests. */
+public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
 
-  /**
-   * Returns an {@code EpochValidatorSetMapping} of the specified size and all with the specified
-   * weight.
-   */
-  static EpochNodeWeightMapping constant(int numNodes, long weight) {
-    return repeatingSequence(numNodes, UInt256.from(weight));
+  private final HashCode preGenesisAccumulatorHash;
+  private final Round epochMaxRound;
+  private final EpochNodeWeightMapping epochNodeWeightMapping;
+
+  public MockedEpochsConsensusRecoveryModule(
+      Round epochMaxRound,
+      EpochNodeWeightMapping epochNodeWeightMapping,
+      HashCode preGenesisAccumulatorHash) {
+    this.epochMaxRound = epochMaxRound;
+    this.epochNodeWeightMapping = epochNodeWeightMapping;
+    this.preGenesisAccumulatorHash = preGenesisAccumulatorHash;
   }
 
-  static EpochNodeWeightMapping constant(int numNodes) {
-    return repeatingSequence(numNodes, UInt256.ONE);
+  public MockedEpochsConsensusRecoveryModule(
+      Round epochMaxRound, EpochNodeWeightMapping epochNodeWeightMapping) {
+    this.epochMaxRound = epochMaxRound;
+    this.epochNodeWeightMapping = epochNodeWeightMapping;
+    this.preGenesisAccumulatorHash = HashUtils.zero256();
   }
 
-  static EpochNodeWeightMapping constant(Function<Long, IntStream> epochToNodeIndexesMapping) {
-    return epoch ->
-        epochToNodeIndexesMapping
-            .apply(epoch)
-            .mapToObj(i -> NodeIndexAndWeight.from(i, UInt256.ONE));
+  @Override
+  protected void configure() {
+    bind(Round.class).annotatedWith(EpochMaxRound.class).toInstance(epochMaxRound);
+    bind(new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() {}).toInstance(t -> {});
+    bind(new TypeLiteral<Function<Long, BFTValidatorSet>>() {})
+        .toInstance(
+            epoch ->
+                BFTValidatorSet.from(
+                    epochNodeWeightMapping
+                        .nodesAndWeightFor(epoch)
+                        .map(
+                            niw ->
+                                BFTValidator.from(
+                                    BFTNode.create(
+                                        PrivateKeys.ofNumeric(niw.index() + 1).getPublicKey()),
+                                    niw.weight()))));
   }
 
-  /**
-   * Returns an {@code EpochValidatorSetMapping} of the specified size and all with the specified
-   * weight.
-   */
-  static EpochNodeWeightMapping constant(int numNodes, UInt256 weight) {
-    return repeatingSequence(numNodes, weight);
+  @Provides
+  private RoundUpdate initialRoundUpdate(
+      BFTConfiguration configuration, ProposerElection proposerElection) {
+    HighQC highQC = configuration.getVertexStoreState().getHighQC();
+    Round round = highQC.highestQC().getRound().next();
+    final BFTNode leader = proposerElection.getProposer(round);
+    final BFTNode nextLeader = proposerElection.getProposer(round.next());
+
+    return RoundUpdate.create(round, highQC, leader, nextLeader);
   }
 
-  /**
-   * Returns an {@code EpochValidatorSetMapping} of the specified size and with the specified
-   * weights. If the length of {@code weights} is less than {@code numNodes}, then the weights are
-   * cycled starting from the zeroth weight.
-   */
-  static EpochNodeWeightMapping repeatingSequence(int numNodes, long... weights) {
-    UInt256[] weights256 = Arrays.stream(weights).mapToObj(UInt256::from).toArray(UInt256[]::new);
-    return repeatingSequence(numNodes, weights256);
+  @Provides
+  private BFTValidatorSet validatorSet(Function<Long, BFTValidatorSet> validatorSetMapping) {
+    return validatorSetMapping.apply(1L);
   }
 
-  /**
-   * Returns an {@code EpochValidatorSetMapping} of the specified size and with the specified
-   * weights. If the length of {@code weights} is less than {@code numNodes}, then the weights are
-   * cycled starting from the zeroth weight.
-   */
-  static EpochNodeWeightMapping repeatingSequence(int numNodes, UInt256... weights) {
-    int length = weights.length;
-    return epoch ->
-        IntStream.range(0, numNodes)
-            .mapToObj(index -> NodeIndexAndWeight.from(index, weights[index % length]));
-  }
-
-  /**
-   * Returns an {@code EpochValidatorSetMapping} of the specified size and with each weight computed
-   * using the specified function.
-   */
-  static EpochNodeWeightMapping computed(int numNodes, IntFunction<UInt256> function) {
-    return epoch ->
-        IntStream.range(0, numNodes)
-            .mapToObj(index -> NodeIndexAndWeight.from(index, function.apply(index)));
+  @Provides
+  private BFTConfiguration configuration(
+      @LastEpochProof LedgerProof proof, BFTValidatorSet validatorSet, Hasher hasher) {
+    var accumulatorState = new AccumulatorState(0, this.preGenesisAccumulatorHash);
+    VertexWithHash genesisVertex =
+        Vertex.createInitialEpochVertex(LedgerHeader.genesis(accumulatorState, validatorSet, 0, 0))
+            .withId(hasher);
+    LedgerHeader nextLedgerHeader =
+        LedgerHeader.create(
+            proof.getNextEpoch().orElseThrow().getEpoch(),
+            Round.genesis(),
+            proof.getAccumulatorState(),
+            proof.consensusParentRoundTimestamp(),
+            proof.proposerTimestamp());
+    var genesisQC = QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
+    var proposerElection = new WeightedRotatingLeaders(validatorSet);
+    return new BFTConfiguration(
+        proposerElection,
+        validatorSet,
+        VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher));
   }
 }

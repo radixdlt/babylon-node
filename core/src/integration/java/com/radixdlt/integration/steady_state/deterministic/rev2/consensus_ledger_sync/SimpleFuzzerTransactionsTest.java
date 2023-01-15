@@ -96,7 +96,7 @@ public final class SimpleFuzzerTransactionsTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(10, 10)
+        .numPhysicalNodes(20)
         .messageSelector(firstSelector())
         .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
         .functionalNodeModule(

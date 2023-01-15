@@ -64,7 +64,6 @@
 
 package com.radixdlt.harness.deterministic;
 
-import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.Streams;
 import com.google.inject.*;
 import com.google.inject.Module;
@@ -75,15 +74,18 @@ import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -98,21 +100,27 @@ import org.apache.logging.log4j.ThreadContext;
 public final class DeterministicNodes implements AutoCloseable {
   private static final Logger log = LogManager.getLogger();
 
+  // Nodes
   private final List<Injector> nodeInstances;
-  private final DeterministicNetwork network;
-  private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
-
+  private final Map<BFTNode, Integer> addressBook;
+  private final Map<Integer, BFTNode> nodeIdentifiers;
   private final Module baseModule;
   private final Module overrideModule;
+
+  // Network
+  private final DeterministicNetwork network;
 
   public DeterministicNodes(
       List<BFTNode> nodes, DeterministicNetwork network, Module baseModule, Module overrideModule) {
     this.baseModule = baseModule;
     this.overrideModule = overrideModule;
     this.network = network;
-    this.nodeLookup =
-        Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of(node, (int) index))
-            .collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
+    this.addressBook =
+        Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of((int) index, node))
+            .collect(Collectors.toMap(Pair::getSecond, Pair::getFirst));
+    this.nodeIdentifiers =
+        Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of((int) index, node))
+            .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
     this.nodeInstances =
         Stream.generate(() -> (Injector) null).limit(nodes.size()).collect(Collectors.toList());
   }
@@ -136,7 +144,7 @@ public final class DeterministicNodes implements AutoCloseable {
 
   private Injector createBFTInstance(
       int nodeIndex, Module baseModule, Module overrideModule, long time) {
-    var self = this.nodeLookup.inverse().get(nodeIndex);
+    var self = this.nodeIdentifiers.get(nodeIndex);
     Module module =
         Modules.combine(
             new AbstractModule() {
@@ -144,9 +152,14 @@ public final class DeterministicNodes implements AutoCloseable {
               public void configure() {
                 install(
                     new EventLoggerModule(
-                        new EventLoggerConfig(k -> "Node" + nodeLookup.get(BFTNode.create(k)))));
+                        new EventLoggerConfig(k -> "Node" + addressBook.get(BFTNode.create(k)))));
                 bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
-                bind(Environment.class).toInstance(network.createSender(self));
+                install(
+                    new TestP2PModule.Builder()
+                        .withAllNodes(addressBook.keySet().stream().toList())
+                        .build());
+                bind(Environment.class)
+                    .toInstance(new ControlledSender(addressBook::get, network, self, nodeIndex));
                 bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
                 bind(ControlledTimeSupplier.class).toInstance(new ControlledTimeSupplier(time));
                 bind(TimeSupplier.class).to(ControlledTimeSupplier.class);
@@ -221,7 +234,7 @@ public final class DeterministicNodes implements AutoCloseable {
 
     int senderIndex = nextMsg.channelId().senderIndex();
     int receiverIndex = nextMsg.channelId().receiverIndex();
-    BFTNode sender = this.nodeLookup.inverse().get(senderIndex);
+    var sender = this.nodeIdentifiers.get(senderIndex);
 
     var injector = nodeInstances.get(receiverIndex);
 

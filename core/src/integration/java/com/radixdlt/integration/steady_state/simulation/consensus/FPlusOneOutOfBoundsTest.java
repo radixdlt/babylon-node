@@ -90,7 +90,7 @@ public class FPlusOneOutOfBoundsTest {
                   false,
                   SafetyRecoveryConfig.mocked(),
                   ConsensusConfig.of(TIMEOUT_MS),
-                  LedgerConfig.mocked()))
+                  LedgerConfig.mocked(3)))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(LIVENESS_MS, TimeUnit.MILLISECONDS));
@@ -100,7 +100,7 @@ public class FPlusOneOutOfBoundsTest {
   public void given_0_out_of_3_nodes_out_of_synchrony_bounds() {
     SimulationTest test =
         bftTestBuilder
-            .numNodes(3)
+            .numPhysicalNodes(3)
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed(LATENCY_MS))
             .build();
 
@@ -115,7 +115,7 @@ public class FPlusOneOutOfBoundsTest {
   public void given_1_out_of_3_nodes_out_of_synchrony_bounds() {
     SimulationTest test =
         bftTestBuilder
-            .numNodes(3)
+            .numPhysicalNodes(3)
             .networkModules(
                 NetworkOrdering.inOrder(), NetworkLatencies.oneOutOfBounds(LATENCY_MS, LIVENESS_MS))
             .build();

@@ -87,7 +87,7 @@ public class OneProposalTimeoutResponsiveTest {
   private void run(int numValidatorNodes, long numRounds, long dropPeriod) {
     var test =
         DeterministicTest.builder()
-            .numNodes(numValidatorNodes, 0)
+            .numPhysicalNodes(numValidatorNodes)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(dropSomeProposals(dropPeriod))
             .functionalNodeModule(
@@ -96,7 +96,8 @@ public class OneProposalTimeoutResponsiveTest {
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
+                        StateComputerConfig.mockedNoEpochs(
+                            numValidatorNodes, MockedMempoolConfig.noMempool()))));
 
     test.startAllNodes();
     test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(numRounds)));

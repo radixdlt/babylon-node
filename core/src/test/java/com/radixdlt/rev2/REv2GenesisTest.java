@@ -81,7 +81,7 @@ import org.junit.Test;
 public final class REv2GenesisTest {
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(1, 0)
+        .numPhysicalNodes(1)
         .messageSelector(firstSelector())
         .messageMutator(MessageMutator.dropTimeouts())
         .functionalNodeModule(

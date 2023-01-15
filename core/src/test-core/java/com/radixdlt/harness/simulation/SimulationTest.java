@@ -73,7 +73,7 @@ import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
+import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
@@ -99,8 +99,6 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.statecomputer.EpochMaxRound;
-import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
@@ -113,6 +111,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -149,9 +148,7 @@ public final class SimulationTest {
 
   public static class Builder {
     private ImmutableList<ECKeyPair> initialNodes = ImmutableList.of(ECKeyPair.generateNew());
-    private FunctionalRadixNodeModule functionalNodeModule =
-        new FunctionalRadixNodeModule(
-            false, SafetyRecoveryConfig.mocked(), ConsensusConfig.of(), LedgerConfig.mocked());
+    private FunctionalRadixNodeModule functionalNodeModule = null;
 
     private Module initialNodesModule;
     private final ImmutableList.Builder<Module> testModules = ImmutableList.builder();
@@ -163,15 +160,14 @@ public final class SimulationTest {
         addressBookNodes;
 
     private List<BFTNode> bftNodes;
-    private Function<Long, IntStream> epochToNodeIndexMapper;
 
     private Builder() {}
 
     public Builder addOverrideModuleToInitialNodes(
         Function<ImmutableList<ECKeyPair>, ImmutableList<ECDSASecp256k1PublicKey>> nodesSelector,
-        Function<List<BFTNode>, Module> overrideModule) {
+        Supplier<Module> overrideModule) {
       final var nodes = nodesSelector.apply(this.initialNodes);
-      nodes.forEach(node -> overrideModules.put(node, overrideModule.apply(this.bftNodes)));
+      nodes.forEach(node -> overrideModules.put(node, overrideModule.get()));
       return this;
     }
 
@@ -179,7 +175,7 @@ public final class SimulationTest {
       addOverrideModuleToInitialNodes(
           nodes ->
               nodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()),
-          nodes -> overrideModule);
+          () -> overrideModule);
       return this;
     }
 
@@ -212,7 +208,7 @@ public final class SimulationTest {
      * @param initialStakes iterator of nodes initial stakes; if initialStakes.length < numNodes the
      *     last element is repeated for the remaining nodes
      */
-    public Builder numNodes(int numNodes, Iterable<UInt256> initialStakes) {
+    public Builder numPhysicalNodes(int numNodes, Iterable<UInt256> initialStakes) {
       this.initialNodes =
           PrivateKeys.numeric(1).limit(numNodes).collect(ImmutableList.toImmutableList());
 
@@ -242,32 +238,8 @@ public final class SimulationTest {
       return this;
     }
 
-    public Builder numNodes(int numNodes) {
-      return numNodes(numNodes, ImmutableList.of(UInt256.ONE));
-    }
-
-    public Builder ledgerAndEpochs(
-        ConsensusConfig consensusConfig,
-        Round epochMaxRound,
-        Function<Long, IntStream> epochToNodeIndexMapper) {
-      this.functionalNodeModule =
-          new FunctionalRadixNodeModule(
-              true,
-              SafetyRecoveryConfig.mocked(),
-              consensusConfig,
-              LedgerConfig.stateComputerMockedSync(
-                  StateComputerConfig.mocked(
-                      new StateComputerConfig.MockedMempoolConfig.NoMempool())));
-      this.epochToNodeIndexMapper = epochToNodeIndexMapper;
-      this.modules.add(
-          new AbstractModule() {
-            @Override
-            protected void configure() {
-              bind(Round.class).annotatedWith(EpochMaxRound.class).toInstance(epochMaxRound);
-            }
-          });
-
-      return this;
+    public Builder numPhysicalNodes(int numNodes) {
+      return numPhysicalNodes(numNodes, ImmutableList.of(UInt256.ONE));
     }
 
     public Builder functionalNodeModule(FunctionalRadixNodeModule functionalNodeModule) {
@@ -275,15 +247,16 @@ public final class SimulationTest {
       return this;
     }
 
-    public Builder ledgerAndSync(ConsensusConfig consensusConfig, SyncRelayConfig syncRelayConfig) {
+    public Builder ledgerAndSync(
+        ConsensusConfig consensusConfig, SyncRelayConfig syncRelayConfig, int numValidators) {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               false,
               SafetyRecoveryConfig.mocked(),
               consensusConfig,
               LedgerConfig.stateComputerWithSyncRelay(
-                  StateComputerConfig.mocked(
-                      new StateComputerConfig.MockedMempoolConfig.NoMempool()),
+                  StateComputerConfig.mockedNoEpochs(
+                      numValidators, new StateComputerConfig.MockedMempoolConfig.NoMempool()),
                   syncRelayConfig));
       return this;
     }
@@ -299,35 +272,24 @@ public final class SimulationTest {
               SafetyRecoveryConfig.mocked(),
               consensusConfig,
               LedgerConfig.stateComputerWithSyncRelay(
-                  StateComputerConfig.mocked(
+                  StateComputerConfig.mockedWithEpochs(
+                      epochMaxRound,
+                      EpochNodeWeightMapping.constant(epochToNodeIndexMapper),
                       new StateComputerConfig.MockedMempoolConfig.NoMempool()),
                   syncRelayConfig));
-      this.epochToNodeIndexMapper = epochToNodeIndexMapper;
-      modules.add(
-          new AbstractModule() {
-            @Override
-            protected void configure() {
-              bind(Round.class).annotatedWith(EpochMaxRound.class).toInstance(epochMaxRound);
-            }
-          });
       return this;
     }
 
-    public Builder ledgerAndMempool(ConsensusConfig consensusConfig) {
+    public Builder ledgerAndMempool(ConsensusConfig consensusConfig, int numValidators) {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               false,
               SafetyRecoveryConfig.mocked(),
               consensusConfig,
               LedgerConfig.stateComputerNoSync(
-                  StateComputerConfig.mocked(
-                      new StateComputerConfig.MockedMempoolConfig.LocalOnly(10))));
+                  StateComputerConfig.mockedNoEpochs(
+                      numValidators, new StateComputerConfig.MockedMempoolConfig.LocalOnly(10))));
       this.modules.add(MempoolRelayConfig.of(10).asModule());
-      return this;
-    }
-
-    public Builder addNodeModule(Module module) {
-      this.modules.add(module);
       return this;
     }
 
@@ -408,21 +370,6 @@ public final class SimulationTest {
       // Functional
       modules.add(this.functionalNodeModule);
 
-      // Persistence
-      if (!this.functionalNodeModule.supportsREv2()) {
-        var initialVset = initialNodes.stream().map(e -> BFTNode.create(e.getPublicKey())).toList();
-        MockedConsensusRecoveryModule.Builder mockedConsensusRecoveryModuleBuilder;
-        if (this.epochToNodeIndexMapper != null) {
-          mockedConsensusRecoveryModuleBuilder = new MockedConsensusRecoveryModule.Builder(true);
-          mockedConsensusRecoveryModuleBuilder.withEpochNodeIndexesMapping(
-              this.epochToNodeIndexMapper);
-        } else {
-          mockedConsensusRecoveryModuleBuilder = new MockedConsensusRecoveryModule.Builder();
-        }
-        mockedConsensusRecoveryModuleBuilder.withNodes(initialVset);
-        modules.add(mockedConsensusRecoveryModuleBuilder.build());
-      }
-
       // Testing
       modules.add(new SimulationNodeEventsModule());
       testModules.add(
@@ -442,9 +389,6 @@ public final class SimulationTest {
 
       // Runners
       modules.add(new RxEnvironmentModule());
-      if (this.functionalNodeModule.supportsSync() && !this.functionalNodeModule.supportsREv2()) {
-        modules.add(new InMemoryCommittedReaderModule());
-      }
 
       return new SimulationTest(
           initialNodes,

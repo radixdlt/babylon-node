@@ -89,9 +89,9 @@ import org.junit.Test;
 public class MempoolSanityTest {
   private final Builder bftTestBuilder =
       SimulationTest.builder()
-          .numNodes(4)
+          .numPhysicalNodes(4)
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .ledgerAndMempool(ConsensusConfig.of(3000))
+          .ledgerAndMempool(ConsensusConfig.of(3000), 4)
           .addMempoolSubmissionsSteadyState(IncrementalBytes.class);
 
   /** TODO: This is more of a test for mempoolSubmissionSteadyState, should move somewhere else */

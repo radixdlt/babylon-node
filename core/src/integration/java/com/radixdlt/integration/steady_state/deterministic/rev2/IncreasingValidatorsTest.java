@@ -99,7 +99,7 @@ public final class IncreasingValidatorsTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(1, NUM_VALIDATORS)
+        .numPhysicalNodes(NUM_VALIDATORS)
         .messageSelector(firstSelector())
         .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
         .functionalNodeModule(
@@ -132,7 +132,7 @@ public final class IncreasingValidatorsTest {
 
         var txn =
             REv2TestTransactions.constructRegisterValidatorTransaction(
-                NetworkDefinition.INT_TEST_NET, 0, i, PrivateKeys.ofNumeric(i + 2));
+                NetworkDefinition.INT_TEST_NET, 0, i, PrivateKeys.ofNumeric(i + 1));
         mempoolDispatcher.dispatch(MempoolAdd.create(txn));
         test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
       }

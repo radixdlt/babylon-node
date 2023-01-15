@@ -112,7 +112,7 @@ public class REv2SyncTest {
 
   private DeterministicTest buildTest() {
     return DeterministicTest.builder()
-        .numNodes(1, 1)
+        .numPhysicalNodes(2)
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
