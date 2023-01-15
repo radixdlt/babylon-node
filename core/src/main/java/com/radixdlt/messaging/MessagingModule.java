@@ -271,7 +271,7 @@ public final class MessagingModule extends AbstractModule {
         } else if (nodeIdClass == NodeId.class && remoteEventClass == PeersResponse.class) {
           return messageCentralPeerDiscovery.peersResponses().map(m -> (RemoteEvent<N, T>) m);
         } else {
-          throw new IllegalStateException();
+          throw new MessageTransportNotSupported(nodeIdClass, remoteEventClass);
         }
       }
     };
