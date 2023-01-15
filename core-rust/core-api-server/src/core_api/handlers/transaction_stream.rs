@@ -21,20 +21,20 @@ use transaction::model::{
 };
 
 #[tracing::instrument(skip(state))]
-pub(crate) async fn handle_transaction_stream(
+pub(crate) async fn handle_stream_transactions(
     state: Extension<CoreApiState>,
-    request: Json<models::CommittedTransactionsRequest>,
-) -> Result<Json<models::CommittedTransactionsResponse>, RequestHandlingError> {
-    core_api_read_handler(state, request, handle_transaction_stream_internal)
+    request: Json<models::StreamTransactionsRequest>,
+) -> Result<Json<models::StreamTransactionsResponse>, RequestHandlingError> {
+    core_api_read_handler(state, request, handle_stream_transactions_internal)
 }
 
 const MAX_TXN_COUNT_PER_REQUEST: u16 = 10000;
 
 #[tracing::instrument(err(Debug), skip(state_manager))]
-fn handle_transaction_stream_internal(
+fn handle_stream_transactions_internal(
     state_manager: &ActualStateManager,
-    request: models::CommittedTransactionsRequest,
-) -> Result<models::CommittedTransactionsResponse, RequestHandlingError> {
+    request: models::StreamTransactionsRequest,
+) -> Result<models::StreamTransactionsResponse, RequestHandlingError> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
     let from_state_version: u64 = extract_api_state_version(request.from_state_version)
@@ -64,7 +64,7 @@ fn handle_transaction_stream_internal(
     let max_state_version = state_manager.store.max_state_version();
 
     if max_state_version < from_state_version {
-        return Ok(models::CommittedTransactionsResponse {
+        return Ok(models::StreamTransactionsResponse {
             from_state_version: to_api_state_version(from_state_version)?,
             count: 0,
             max_ledger_state_version: to_api_state_version(max_state_version)?,
@@ -139,7 +139,7 @@ fn handle_transaction_stream_internal(
             .map_err(|_| server_error("Unexpected error mapping small usize to i32"))?
     };
 
-    Ok(models::CommittedTransactionsResponse {
+    Ok(models::StreamTransactionsResponse {
         from_state_version: to_api_state_version(start_state_version)?,
         count,
         max_ledger_state_version: to_api_state_version(max_state_version)?,

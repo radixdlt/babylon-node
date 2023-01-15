@@ -7,17 +7,19 @@ use radix_engine::{
 
 use state_manager::jni::state_manager::ActualStateManager;
 
-pub(crate) async fn handle_v0_state_resource(
+pub(crate) async fn handle_state_resource(
     state: Extension<CoreApiState>,
-    request: Json<models::V0StateResourceRequest>,
-) -> Result<Json<models::V0StateResourceResponse>, RequestHandlingError> {
-    core_api_read_handler(state, request, handle_v0_state_resource_internal)
+    request: Json<models::StateResourceRequest>,
+) -> Result<Json<models::StateResourceResponse>, RequestHandlingError> {
+    core_api_read_handler(state, request, handle_state_resource_internal)
 }
 
-fn handle_v0_state_resource_internal(
+fn handle_state_resource_internal(
     state_manager: &ActualStateManager,
-    request: models::V0StateResourceRequest,
-) -> Result<models::V0StateResourceResponse, RequestHandlingError> {
+    request: models::StateResourceRequest,
+) -> Result<models::StateResourceResponse, RequestHandlingError> {
+    assert_matching_network(&request.network, &state_manager.network)?;
+
     let bech32_decoder = Bech32Decoder::new(&state_manager.network);
     let bech32_encoder = Bech32Encoder::new(&state_manager.network);
 
@@ -67,7 +69,7 @@ fn handle_v0_state_resource_internal(
         substate
     };
 
-    Ok(models::V0StateResourceResponse {
+    Ok(models::StateResourceResponse {
         manager: Some(to_api_resource_manager_substate(
             &bech32_encoder,
             &resource_manager,

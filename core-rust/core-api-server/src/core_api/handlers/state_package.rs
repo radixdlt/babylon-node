@@ -7,17 +7,19 @@ use radix_engine::types::{
 
 use state_manager::jni::state_manager::ActualStateManager;
 
-pub(crate) async fn handle_v0_state_package(
+pub(crate) async fn handle_state_package(
     state: Extension<CoreApiState>,
-    request: Json<models::V0StatePackageRequest>,
-) -> Result<Json<models::V0StatePackageResponse>, RequestHandlingError> {
-    core_api_read_handler(state, request, handle_v0_state_package_internal)
+    request: Json<models::StatePackageRequest>,
+) -> Result<Json<models::StatePackageResponse>, RequestHandlingError> {
+    core_api_read_handler(state, request, handle_state_package_internal)
 }
 
-fn handle_v0_state_package_internal(
+fn handle_state_package_internal(
     state_manager: &ActualStateManager,
-    request: models::V0StatePackageRequest,
-) -> Result<models::V0StatePackageResponse, RequestHandlingError> {
+    request: models::StatePackageRequest,
+) -> Result<models::StatePackageResponse, RequestHandlingError> {
+    assert_matching_network(&request.network, &state_manager.network)?;
+
     let bech32_encoder = Bech32Encoder::new(&state_manager.network);
     let bech32_decoder = Bech32Decoder::new(&state_manager.network);
 
@@ -74,7 +76,7 @@ fn handle_v0_state_package_internal(
         substate
     };
 
-    Ok(models::V0StatePackageResponse {
+    Ok(models::StatePackageResponse {
         info: Some(to_api_package_info_substate(
             &bech32_encoder,
             &package_info,

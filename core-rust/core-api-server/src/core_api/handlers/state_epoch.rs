@@ -4,16 +4,19 @@ use radix_engine::types::{EpochManagerOffset, GlobalAddress, SubstateOffset, EPO
 use state_manager::jni::state_manager::ActualStateManager;
 
 #[tracing::instrument(skip(state), err(Debug))]
-pub(crate) async fn handle_v0_state_epoch(
+pub(crate) async fn handle_state_epoch(
     state: Extension<CoreApiState>,
-) -> Result<Json<models::V0StateEpochResponse>, RequestHandlingError> {
-    core_api_read_handler(state, Json(()), handle_v0_state_epoch_internal)
+    request: Json<models::StateEpochRequest>,
+) -> Result<Json<models::StateEpochResponse>, RequestHandlingError> {
+    core_api_read_handler(state, request, handle_state_epoch_internal)
 }
 
-fn handle_v0_state_epoch_internal(
+fn handle_state_epoch_internal(
     state_manager: &ActualStateManager,
-    _request: (),
-) -> Result<models::V0StateEpochResponse, RequestHandlingError> {
+    request: models::StateEpochRequest,
+) -> Result<models::StateEpochResponse, RequestHandlingError> {
+    assert_matching_network(&request.network, &state_manager.network)?;
+
     let node_id = read_derefed_global_node_id(state_manager, GlobalAddress::System(EPOCH_MANAGER))?;
 
     let epoch_manager_substate = {
@@ -25,7 +28,7 @@ fn handle_v0_state_epoch_internal(
         substate
     };
 
-    Ok(models::V0StateEpochResponse {
+    Ok(models::StateEpochResponse {
         epoch: to_api_epoch(epoch_manager_substate.epoch)?,
     })
 }

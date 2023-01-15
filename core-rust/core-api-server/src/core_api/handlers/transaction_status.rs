@@ -10,20 +10,22 @@ use state_manager::mempool::pending_transaction_result_cache::PendingTransaction
 use state_manager::store::traits::*;
 
 #[tracing::instrument(err(Debug), skip(state))]
-pub(crate) async fn handle_v0_transaction_status(
+pub(crate) async fn handle_transaction_status(
     state: Extension<CoreApiState>,
-    request: Json<models::V0TransactionStatusRequest>,
-) -> Result<Json<models::V0TransactionStatusResponse>, RequestHandlingError> {
-    core_api_read_handler(state, request, handle_v0_transaction_status_internal)
+    request: Json<models::TransactionStatusRequest>,
+) -> Result<Json<models::TransactionStatusResponse>, RequestHandlingError> {
+    core_api_read_handler(state, request, handle_transaction_status_internal)
 }
 
-use models::v0_transaction_payload_status::Status as PayloadStatus;
-use models::v0_transaction_status_response::IntentStatus;
+use models::transaction_payload_status::Status as PayloadStatus;
+use models::transaction_status_response::IntentStatus;
 
-fn handle_v0_transaction_status_internal(
+fn handle_transaction_status_internal(
     state_manager: &ActualStateManager,
-    request: models::V0TransactionStatusRequest,
-) -> Result<models::V0TransactionStatusResponse, RequestHandlingError> {
+    request: models::TransactionStatusRequest,
+) -> Result<models::TransactionStatusResponse, RequestHandlingError> {
+    assert_matching_network(&request.network, &state_manager.network)?;
+
     let intent_hash = extract_intent_hash(request.intent_hash)
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
@@ -57,7 +59,7 @@ fn handle_v0_transaction_status_internal(
             ),
         };
 
-        let committed_payload = models::V0TransactionPayloadStatus {
+        let committed_payload = models::TransactionPayloadStatus {
             payload_hash: to_api_payload_hash(&payload_hash),
             status: payload_status,
             error_message,
@@ -68,7 +70,7 @@ fn handle_v0_transaction_status_internal(
             known_pending_payloads,
         ));
 
-        return Ok(models::V0TransactionStatusResponse {
+        return Ok(models::TransactionStatusResponse {
             intent_status,
             known_payloads,
         });
@@ -81,7 +83,7 @@ fn handle_v0_transaction_status_internal(
     if !mempool_payloads_hashes.is_empty() {
         let mempool_payloads = mempool_payloads_hashes
             .into_iter()
-            .map(|payload_hash| models::V0TransactionPayloadStatus {
+            .map(|payload_hash| models::TransactionPayloadStatus {
                 payload_hash: to_api_payload_hash(&payload_hash),
                 status: PayloadStatus::InMempool,
                 error_message: None,
@@ -93,8 +95,8 @@ fn handle_v0_transaction_status_internal(
             known_pending_payloads,
         ));
 
-        return Ok(models::V0TransactionStatusResponse {
-            intent_status: models::v0_transaction_status_response::IntentStatus::InMempool,
+        return Ok(models::TransactionStatusResponse {
+            intent_status: models::transaction_status_response::IntentStatus::InMempool,
             known_payloads,
         });
     }
@@ -106,12 +108,12 @@ fn handle_v0_transaction_status_internal(
         // We can't be more accurate at this level about the permanence of rejection.
         // Just because all known payloads are permanent rejections, doesn't mean that there isn't a possible payload
         // for this intent which could be committed. EG all known payloads could just have an invalid notary signature.
-        models::v0_transaction_status_response::IntentStatus::Rejected
+        models::transaction_status_response::IntentStatus::Rejected
     } else {
-        models::v0_transaction_status_response::IntentStatus::Unknown
+        models::transaction_status_response::IntentStatus::Unknown
     };
 
-    Ok(models::V0TransactionStatusResponse {
+    Ok(models::TransactionStatusResponse {
         intent_status,
         known_payloads,
     })
@@ -119,17 +121,17 @@ fn handle_v0_transaction_status_internal(
 
 fn map_rejected_payloads_due_to_known_commit(
     known_rejected_payloads: HashMap<UserPayloadHash, PendingTransactionRecord>,
-) -> Vec<models::V0TransactionPayloadStatus> {
+) -> Vec<models::TransactionPayloadStatus> {
     known_rejected_payloads
         .into_iter()
         .map(
             |(payload_hash, transaction_record)| match transaction_record.last_attempt.rejection {
-                Some(reason) => models::V0TransactionPayloadStatus {
+                Some(reason) => models::TransactionPayloadStatus {
                     payload_hash: to_api_payload_hash(&payload_hash),
                     status: PayloadStatus::PermanentlyRejected,
                     error_message: Some(reason.to_string()),
                 },
-                None => models::V0TransactionPayloadStatus {
+                None => models::TransactionPayloadStatus {
                     payload_hash: to_api_payload_hash(&payload_hash),
                     status: PayloadStatus::PermanentlyRejected,
                     error_message: Some(RejectionReason::IntentHashCommitted.to_string()),
@@ -141,12 +143,12 @@ fn map_rejected_payloads_due_to_known_commit(
 
 fn map_pending_payloads_not_in_mempool(
     known_rejected_payloads: HashMap<UserPayloadHash, PendingTransactionRecord>,
-) -> Vec<models::V0TransactionPayloadStatus> {
+) -> Vec<models::TransactionPayloadStatus> {
     known_rejected_payloads
         .into_iter()
         .filter_map(|(payload_hash, transaction_record)| {
             match &transaction_record.last_attempt.rejection {
-                Some(reason) => Some(models::V0TransactionPayloadStatus {
+                Some(reason) => Some(models::TransactionPayloadStatus {
                     payload_hash: to_api_payload_hash(&payload_hash),
                     status: if transaction_record
                         .last_attempt

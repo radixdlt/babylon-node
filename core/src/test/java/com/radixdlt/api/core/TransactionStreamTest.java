@@ -81,8 +81,8 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
 
       List<CommittedTransaction> alreadyPresentTransactions =
           getStreamApi()
-              .transactionStreamPost(
-                  new CommittedTransactionsRequest()
+              .streamTransactionsPost(
+                  new StreamTransactionsRequest()
                       .network(networkLogicalName)
                       .limit(200)
                       .fromStateVersion(1L))
@@ -105,8 +105,8 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
 
       var newTransactions =
           getStreamApi()
-              .transactionStreamPost(
-                  new CommittedTransactionsRequest()
+              .streamTransactionsPost(
+                  new StreamTransactionsRequest()
                       .network(networkLogicalName)
                       .limit(1000)
                       .fromStateVersion(1L))

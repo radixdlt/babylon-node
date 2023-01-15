@@ -4,17 +4,19 @@ use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
 
 #[tracing::instrument(skip(state), err(Debug))]
-pub(crate) async fn handle_v0_transaction_receipt(
+pub(crate) async fn handle_transaction_receipt(
     state: Extension<CoreApiState>,
-    request: Json<models::V0CommittedTransactionRequest>,
-) -> Result<Json<models::V0CommittedTransactionResponse>, RequestHandlingError> {
-    core_api_read_handler(state, request, handle_v0_transaction_receipt_internal)
+    request: Json<models::TransactionReceiptRequest>,
+) -> Result<Json<models::TransactionReceiptResponse>, RequestHandlingError> {
+    core_api_read_handler(state, request, handle_transaction_receipt_internal)
 }
 
-fn handle_v0_transaction_receipt_internal(
+fn handle_transaction_receipt_internal(
     state_manager: &ActualStateManager,
-    request: models::V0CommittedTransactionRequest,
-) -> Result<models::V0CommittedTransactionResponse, RequestHandlingError> {
+    request: models::TransactionReceiptRequest,
+) -> Result<models::TransactionReceiptResponse, RequestHandlingError> {
+    assert_matching_network(&request.network, &state_manager.network)?;
+
     let intent_hash = extract_intent_hash(request.intent_hash)
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
@@ -24,7 +26,7 @@ fn handle_v0_transaction_receipt_internal(
         .get_committed_transaction_by_identifier(&intent_hash);
 
     if let Some((ledger_transaction, receipt, identifiers)) = committed_option {
-        Ok(models::V0CommittedTransactionResponse {
+        Ok(models::TransactionReceiptResponse {
             committed: Box::new(to_api_committed_transaction(
                 network,
                 ledger_transaction,

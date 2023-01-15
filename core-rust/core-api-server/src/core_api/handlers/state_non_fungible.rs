@@ -5,20 +5,22 @@ use radix_engine::types::{
     ResourceManagerOffset, ResourceType, SubstateId, SubstateOffset,
 };
 
-use crate::core_api::models::V0StateNonFungibleResponse;
+use crate::core_api::models::StateNonFungibleResponse;
 use state_manager::jni::state_manager::ActualStateManager;
 
-pub(crate) async fn handle_v0_state_non_fungible(
+pub(crate) async fn handle_state_non_fungible(
     state: Extension<CoreApiState>,
-    request: Json<models::V0StateNonFungibleRequest>,
-) -> Result<Json<models::V0StateNonFungibleResponse>, RequestHandlingError> {
-    core_api_read_handler(state, request, handle_v0_state_non_fungible_internal)
+    request: Json<models::StateNonFungibleRequest>,
+) -> Result<Json<models::StateNonFungibleResponse>, RequestHandlingError> {
+    core_api_read_handler(state, request, handle_state_non_fungible_internal)
 }
 
-fn handle_v0_state_non_fungible_internal(
+fn handle_state_non_fungible_internal(
     state_manager: &ActualStateManager,
-    request: models::V0StateNonFungibleRequest,
-) -> Result<V0StateNonFungibleResponse, RequestHandlingError> {
+    request: models::StateNonFungibleRequest,
+) -> Result<StateNonFungibleResponse, RequestHandlingError> {
+    assert_matching_network(&request.network, &state_manager.network)?;
+
     let bech32_decoder = Bech32Decoder::new(&state_manager.network);
     let bech32_encoder = Bech32Encoder::new(&state_manager.network);
 
@@ -77,7 +79,7 @@ fn handle_v0_state_non_fungible_internal(
 
     let non_fungible_substate_id = SubstateId(non_fungible_node_id, non_fungible_substate_offset);
 
-    Ok(V0StateNonFungibleResponse {
+    Ok(StateNonFungibleResponse {
         non_fungible: Some(to_api_non_fungible_substate(
             &bech32_encoder,
             &non_fungible_substate_id,

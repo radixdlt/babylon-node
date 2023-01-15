@@ -4,16 +4,19 @@ use radix_engine::types::{ClockOffset, GlobalAddress, SubstateOffset, CLOCK};
 use state_manager::jni::state_manager::ActualStateManager;
 
 #[tracing::instrument(skip(state), err(Debug))]
-pub(crate) async fn handle_v0_state_clock(
+pub(crate) async fn handle_state_clock(
     state: Extension<CoreApiState>,
-) -> Result<Json<models::V0StateClockResponse>, RequestHandlingError> {
-    core_api_read_handler(state, Json(()), handle_v0_state_clock_internal)
+    request: Json<models::StateClockRequest>,
+) -> Result<Json<models::StateClockResponse>, RequestHandlingError> {
+    core_api_read_handler(state, request, handle_state_clock_internal)
 }
 
-fn handle_v0_state_clock_internal(
+fn handle_state_clock_internal(
     state_manager: &ActualStateManager,
-    _request: (),
-) -> Result<models::V0StateClockResponse, RequestHandlingError> {
+    request: models::StateClockRequest,
+) -> Result<models::StateClockResponse, RequestHandlingError> {
+    assert_matching_network(&request.network, &state_manager.network)?;
+
     let clock = read_derefed_global_node_id(state_manager, GlobalAddress::System(CLOCK))?;
     let rounded_to_minutes_substate = {
         let substate_offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
@@ -24,7 +27,7 @@ fn handle_v0_state_clock_internal(
         substate
     };
 
-    Ok(models::V0StateClockResponse {
+    Ok(models::StateClockResponse {
         current_minute: Some(to_api_clock_current_time_rounded_down_to_minutes_substate(
             &rounded_to_minutes_substate,
         )?),

@@ -7,17 +7,19 @@ use radix_engine::types::{
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::query::dump_component_state;
 
-pub(crate) async fn handle_v0_state_component(
+pub(crate) async fn handle_state_component(
     state: Extension<CoreApiState>,
-    request: Json<models::V0StateComponentRequest>,
-) -> Result<Json<models::V0StateComponentResponse>, RequestHandlingError> {
-    core_api_read_handler(state, request, handle_v0_state_component_internal)
+    request: Json<models::StateComponentRequest>,
+) -> Result<Json<models::StateComponentResponse>, RequestHandlingError> {
+    core_api_read_handler(state, request, handle_state_component_internal)
 }
 
-fn handle_v0_state_component_internal(
+fn handle_state_component_internal(
     state_manager: &ActualStateManager,
-    request: models::V0StateComponentRequest,
-) -> Result<models::V0StateComponentResponse, RequestHandlingError> {
+    request: models::StateComponentRequest,
+) -> Result<models::StateComponentResponse, RequestHandlingError> {
+    assert_matching_network(&request.network, &state_manager.network)?;
+
     let bech32_decoder = Bech32Decoder::new(&state_manager.network);
     let bech32_encoder = Bech32Encoder::new(&state_manager.network);
 
@@ -99,7 +101,7 @@ fn handle_v0_state_component_internal(
         .map(|(parent, node, depth)| map_to_descendent_id(parent, node, depth))
         .collect::<Result<Vec<_>, _>>()?;
 
-    Ok(models::V0StateComponentResponse {
+    Ok(models::StateComponentResponse {
         info: Some(to_api_component_info_substate(
             &bech32_encoder,
             &component_info,
@@ -132,8 +134,8 @@ fn map_to_descendent_id(
     parent: Option<SubstateId>,
     node: RENodeId,
     depth: u32,
-) -> Result<models::V0StateComponentDescendentId, MappingError> {
-    Ok(models::V0StateComponentDescendentId {
+) -> Result<models::StateComponentDescendentId, MappingError> {
+    Ok(models::StateComponentDescendentId {
         parent: Box::new(to_api_substate_id(parent.unwrap())?),
         entity: Box::new(to_api_entity_reference(node)?),
         depth: depth as i32, // Won't go over 100 due to component dumper max depth
