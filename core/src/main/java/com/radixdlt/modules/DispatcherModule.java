@@ -249,6 +249,7 @@ public class DispatcherModule extends AbstractModule {
   }
 
   private void configureP2p() {
+    // Local Dispatchers
     bind(new TypeLiteral<EventDispatcher<PeerEvent>>() {})
         .toProvider(Dispatchers.dispatcherProvider(PeerEvent.class))
         .in(Scopes.SINGLETON);
@@ -261,20 +262,22 @@ public class DispatcherModule extends AbstractModule {
     bind(new TypeLiteral<ScheduledEventDispatcher<PeerOutboundConnectionTimeout>>() {})
         .toProvider(Dispatchers.scheduledDispatcherProvider(PeerOutboundConnectionTimeout.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, Ping>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(BFTNode.class, Ping.class))
+    bind(new TypeLiteral<EventDispatcher<DiscoverPeers>>() {})
+        .toProvider(Dispatchers.dispatcherProvider(DiscoverPeers.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, Pong>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(BFTNode.class, Pong.class))
+
+    // Remote Dispatchers
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, Ping>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, Ping.class))
+        .in(Scopes.SINGLETON);
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, Pong>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, Pong.class))
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetPeers>>() {})
         .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, GetPeers.class))
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<RemoteEventDispatcher<NodeId, PeersResponse>>() {})
         .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, PeersResponse.class))
-        .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<EventDispatcher<DiscoverPeers>>() {})
-        .toProvider(Dispatchers.dispatcherProvider(DiscoverPeers.class))
         .in(Scopes.SINGLETON);
   }
 

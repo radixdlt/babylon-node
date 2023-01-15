@@ -205,14 +205,14 @@ public final class MessagingModule extends AbstractModule {
   private RxRemoteDispatcher<?, ?> pingDispatcher(
       MessageCentralPeerLiveness messageCentralPeerLiveness) {
     return RxRemoteDispatcher.create(
-        BFTNode.class, Ping.class, messageCentralPeerLiveness.pingDispatcher());
+        NodeId.class, Ping.class, messageCentralPeerLiveness.pingDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?, ?> pongDispatcher(
       MessageCentralPeerLiveness messageCentralPeerLiveness) {
     return RxRemoteDispatcher.create(
-        BFTNode.class, Pong.class, messageCentralPeerLiveness.pongDispatcher());
+        NodeId.class, Pong.class, messageCentralPeerLiveness.pongDispatcher());
   }
 
   @ProvidesIntoSet
@@ -286,10 +286,10 @@ public final class MessagingModule extends AbstractModule {
             MessageTransportType.create(BFTNode.class, LedgerStatusUpdate.class))) {
           return messageCentralLedgerSync.ledgerStatusUpdates().map(m -> (RemoteEvent<N, T>) m);
         } else if (messageTransportType.equals(
-            MessageTransportType.create(BFTNode.class, Ping.class))) {
+            MessageTransportType.create(NodeId.class, Ping.class))) {
           return messageCentralPeerLiveness.pings().map(m -> (RemoteEvent<N, T>) m);
         } else if (messageTransportType.equals(
-            MessageTransportType.create(BFTNode.class, Pong.class))) {
+            MessageTransportType.create(NodeId.class, Pong.class))) {
           return messageCentralPeerLiveness.pongs().map(m -> (RemoteEvent<N, T>) m);
         } else if (messageTransportType.equals(
             MessageTransportType.create(NodeId.class, GetPeers.class))) {

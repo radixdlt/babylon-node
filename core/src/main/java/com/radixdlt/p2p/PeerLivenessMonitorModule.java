@@ -69,7 +69,6 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
@@ -119,7 +118,7 @@ public final class PeerLivenessMonitorModule extends AbstractModule {
       PeerLivenessMonitor peerLivenessMonitor) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.P2P_NETWORK,
-        BFTNode.class,
+        NodeId.class,
         Ping.class,
         peerLivenessMonitor.pingRemoteEventProcessor());
   }
@@ -129,7 +128,7 @@ public final class PeerLivenessMonitorModule extends AbstractModule {
       PeerLivenessMonitor peerLivenessMonitor) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.P2P_NETWORK,
-        BFTNode.class,
+        NodeId.class,
         Pong.class,
         peerLivenessMonitor.pongRemoteEventProcessor());
   }

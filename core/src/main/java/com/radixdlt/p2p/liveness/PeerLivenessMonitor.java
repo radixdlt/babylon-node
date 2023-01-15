@@ -64,7 +64,6 @@
 
 package com.radixdlt.p2p.liveness;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -88,8 +87,8 @@ public final class PeerLivenessMonitor {
   private final P2PConfig config;
   private final PeersView peersView;
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
-  private final RemoteEventDispatcher<BFTNode, Ping> pingEventDispatcher;
-  private final RemoteEventDispatcher<BFTNode, Pong> pongEventDispatcher;
+  private final RemoteEventDispatcher<NodeId, Ping> pingEventDispatcher;
+  private final RemoteEventDispatcher<NodeId, Pong> pongEventDispatcher;
   private final ScheduledEventDispatcher<PeerPingTimeout> pingTimeoutEventDispatcher;
 
   private final Set<NodeId> waitingForPong = new HashSet<>();
@@ -99,8 +98,8 @@ public final class PeerLivenessMonitor {
       P2PConfig config,
       PeersView peersView,
       EventDispatcher<PeerEvent> peerEventDispatcher,
-      RemoteEventDispatcher<BFTNode, Ping> pingEventDispatcher,
-      RemoteEventDispatcher<BFTNode, Pong> pongEventDispatcher,
+      RemoteEventDispatcher<NodeId, Ping> pingEventDispatcher,
+      RemoteEventDispatcher<NodeId, Pong> pongEventDispatcher,
       ScheduledEventDispatcher<PeerPingTimeout> pingTimeoutEventDispatcher) {
     if (config.peerLivenessCheckInterval() <= config.pingTimeout()) {
       throw new IllegalArgumentException("pingTimeout must be smaller than livenessCheckInterval");
@@ -125,7 +124,7 @@ public final class PeerLivenessMonitor {
     }
 
     this.waitingForPong.add(nodeId);
-    this.pingEventDispatcher.dispatch(BFTNode.create(nodeId.getPublicKey()), Ping.create());
+    this.pingEventDispatcher.dispatch(nodeId, Ping.create());
     this.pingTimeoutEventDispatcher.dispatch(PeerPingTimeout.create(nodeId), config.pingTimeout());
   }
 
@@ -138,11 +137,11 @@ public final class PeerLivenessMonitor {
     };
   }
 
-  public RemoteEventProcessor<BFTNode, Ping> pingRemoteEventProcessor() {
+  public RemoteEventProcessor<NodeId, Ping> pingRemoteEventProcessor() {
     return (sender, ping) -> this.pongEventDispatcher.dispatch(sender, Pong.create());
   }
 
-  public RemoteEventProcessor<BFTNode, Pong> pongRemoteEventProcessor() {
-    return (sender, pong) -> this.waitingForPong.remove(NodeId.fromPublicKey(sender.getKey()));
+  public RemoteEventProcessor<NodeId, Pong> pongRemoteEventProcessor() {
+    return (sender, pong) -> this.waitingForPong.remove(sender);
   }
 }

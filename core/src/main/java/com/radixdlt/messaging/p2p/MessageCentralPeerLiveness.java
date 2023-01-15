@@ -64,7 +64,6 @@
 
 package com.radixdlt.messaging.p2p;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.messaging.core.MessageCentral;
@@ -87,43 +86,35 @@ public final class MessageCentralPeerLiveness {
     this.messageCentral = Objects.requireNonNull(messageCentral);
   }
 
-  public Flowable<RemoteEvent<BFTNode, Ping>> pings() {
+  public Flowable<RemoteEvent<NodeId, Ping>> pings() {
     return this.messageCentral
         .messagesOf(PeerPingMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(
-            m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
-              return RemoteEvent.create(node, Ping.create());
-            });
+        .map(m -> RemoteEvent.create(m.source(), Ping.create()));
   }
 
-  public Flowable<RemoteEvent<BFTNode, Pong>> pongs() {
+  public Flowable<RemoteEvent<NodeId, Pong>> pongs() {
     return this.messageCentral
         .messagesOf(PeerPongMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(
-            m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
-              return RemoteEvent.create(node, Pong.create());
-            });
+        .map(m -> RemoteEvent.create(m.source(), Pong.create()));
   }
 
-  public RemoteEventDispatcher<BFTNode, Ping> pingDispatcher() {
+  public RemoteEventDispatcher<NodeId, Ping> pingDispatcher() {
     return this::sendPing;
   }
 
-  private void sendPing(BFTNode node, Ping ping) {
+  private void sendPing(NodeId nodeId, Ping ping) {
     final var msg = new PeerPingMessage();
-    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+    this.messageCentral.send(nodeId, msg);
   }
 
-  public RemoteEventDispatcher<BFTNode, Pong> pongDispatcher() {
+  public RemoteEventDispatcher<NodeId, Pong> pongDispatcher() {
     return this::sendPong;
   }
 
-  private void sendPong(BFTNode node, Pong pong) {
+  private void sendPong(NodeId nodeId, Pong pong) {
     final var msg = new PeerPongMessage();
-    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+    this.messageCentral.send(nodeId, msg);
   }
 }
