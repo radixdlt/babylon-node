@@ -67,6 +67,7 @@ package com.radixdlt.environment.deterministic.network;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.*;
+import com.radixdlt.messaging.MessageTransportNotSupported;
 import com.radixdlt.p2p.NodeId;
 import java.util.function.Function;
 
@@ -136,13 +137,19 @@ public final class ControlledDispatcher implements Environment {
   @Override
   public <N, T> RemoteEventDispatcher<N, T> getRemoteDispatcher(
       MessageTransportType<N, T> messageTransportType) {
-    if (messageTransportType.getNodeIdType() != BFTNode.class) {
-      throw new IllegalStateException();
+    if (messageTransportType.getNodeIdType() != BFTNode.class
+        && messageTransportType.getNodeIdType() != NodeId.class) {
+      throw new MessageTransportNotSupported(messageTransportType);
     }
 
     return (node, e) -> {
-      ChannelId channelId =
-          ChannelId.of(this.senderIndex, this.bftAddressBook.apply((BFTNode) node));
+      final ChannelId channelId;
+      if (messageTransportType.getNodeIdType() == BFTNode.class) {
+        channelId = ChannelId.of(this.senderIndex, this.bftAddressBook.apply((BFTNode) node));
+      } else {
+        channelId = ChannelId.of(this.senderIndex, this.p2pAddressBook.apply((NodeId) node));
+      }
+
       handleMessage(new ControlledMessage(self, channelId, e, null, arrivalTime(channelId)));
     };
   }
