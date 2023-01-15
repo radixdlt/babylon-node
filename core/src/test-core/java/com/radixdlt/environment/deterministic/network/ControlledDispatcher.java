@@ -67,22 +67,26 @@ package com.radixdlt.environment.deterministic.network;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.*;
+import com.radixdlt.p2p.NodeId;
 import java.util.function.Function;
 
 /** A sender within a deterministic network. */
-public final class ControlledSender implements Environment {
+public final class ControlledDispatcher implements Environment {
   private final DeterministicNetwork network;
   private final BFTNode self;
   private final int senderIndex;
   private final ChannelId localChannel;
-  private final Function<BFTNode, Integer> addressBook;
+  private final Function<BFTNode, Integer> bftAddressBook;
+  private final Function<NodeId, Integer> p2pAddressBook;
 
-  public ControlledSender(
-      Function<BFTNode, Integer> addressBook,
+  public ControlledDispatcher(
+      Function<BFTNode, Integer> bftAddressBook,
+      Function<NodeId, Integer> p2pAddressBook,
       DeterministicNetwork network,
       BFTNode self,
       int senderIndex) {
-    this.addressBook = addressBook;
+    this.bftAddressBook = bftAddressBook;
+    this.p2pAddressBook = p2pAddressBook;
     this.network = network;
     this.self = self;
     this.senderIndex = senderIndex;
@@ -137,7 +141,8 @@ public final class ControlledSender implements Environment {
     }
 
     return (node, e) -> {
-      ChannelId channelId = ChannelId.of(this.senderIndex, this.addressBook.apply((BFTNode) node));
+      ChannelId channelId =
+          ChannelId.of(this.senderIndex, this.bftAddressBook.apply((BFTNode) node));
       handleMessage(new ControlledMessage(self, channelId, e, null, arrivalTime(channelId)));
     };
   }

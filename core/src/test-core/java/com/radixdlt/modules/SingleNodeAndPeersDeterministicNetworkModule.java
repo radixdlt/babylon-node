@@ -72,7 +72,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.deterministic.network.ControlledSender;
+import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -82,6 +82,7 @@ import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.List;
@@ -125,9 +126,18 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
 
   @Provides
   @Singleton
-  Environment environment(@Self BFTNode self, DeterministicNetwork network, PeersView peersView) {
-    var addressBook =
-        Stream.concat(Stream.of(self), peersView.peers().map(PeersView.PeerInfo::bftNode)).toList();
-    return new ControlledSender(addressBook::indexOf, network, self, 0);
+  Environment environment(
+      @Self BFTNode bftSelf,
+      @Self NodeId nodeId,
+      DeterministicNetwork network,
+      PeersView peersView) {
+    var bftAddressBook =
+        Stream.concat(Stream.of(bftSelf), peersView.peers().map(PeersView.PeerInfo::bftNode))
+            .toList();
+    var p2pAddressBook =
+        Stream.concat(Stream.of(nodeId), peersView.peers().map(PeersView.PeerInfo::getNodeId))
+            .toList();
+    return new ControlledDispatcher(
+        bftAddressBook::indexOf, p2pAddressBook::indexOf, network, bftSelf, 0);
   }
 }

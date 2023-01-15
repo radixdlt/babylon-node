@@ -73,13 +73,14 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
+import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
@@ -102,7 +103,8 @@ public final class DeterministicNodes implements AutoCloseable {
 
   // Nodes
   private final List<Injector> nodeInstances;
-  private final Map<BFTNode, Integer> addressBook;
+  private final Map<BFTNode, Integer> bftAddressBook;
+  private final Map<NodeId, Integer> p2pAddressBook;
   private final Map<Integer, BFTNode> nodeIdentifiers;
   private final Module baseModule;
   private final Module overrideModule;
@@ -115,8 +117,13 @@ public final class DeterministicNodes implements AutoCloseable {
     this.baseModule = baseModule;
     this.overrideModule = overrideModule;
     this.network = network;
-    this.addressBook =
+    this.bftAddressBook =
         Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of((int) index, node))
+            .collect(Collectors.toMap(Pair::getSecond, Pair::getFirst));
+    this.p2pAddressBook =
+        Streams.mapWithIndex(
+                nodes.stream(),
+                (node, index) -> Pair.of((int) index, NodeId.fromPublicKey(node.getKey())))
             .collect(Collectors.toMap(Pair::getSecond, Pair::getFirst));
     this.nodeIdentifiers =
         Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of((int) index, node))
@@ -152,14 +159,17 @@ public final class DeterministicNodes implements AutoCloseable {
               public void configure() {
                 install(
                     new EventLoggerModule(
-                        new EventLoggerConfig(k -> "Node" + addressBook.get(BFTNode.create(k)))));
+                        new EventLoggerConfig(
+                            k -> "Node" + bftAddressBook.get(BFTNode.create(k)))));
                 bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
                 install(
                     new TestP2PModule.Builder()
-                        .withAllNodes(addressBook.keySet().stream().toList())
+                        .withAllNodes(bftAddressBook.keySet().stream().toList())
                         .build());
                 bind(Environment.class)
-                    .toInstance(new ControlledSender(addressBook::get, network, self, nodeIndex));
+                    .toInstance(
+                        new ControlledDispatcher(
+                            bftAddressBook::get, p2pAddressBook::get, network, self, nodeIndex));
                 bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
                 bind(ControlledTimeSupplier.class).toInstance(new ControlledTimeSupplier(time));
                 bind(TimeSupplier.class).to(ControlledTimeSupplier.class);

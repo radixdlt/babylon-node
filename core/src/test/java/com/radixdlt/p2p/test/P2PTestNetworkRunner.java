@@ -77,7 +77,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.network.ControlledSender;
+import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -87,10 +87,7 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.p2p.P2PConfig;
-import com.radixdlt.p2p.P2PModule;
-import com.radixdlt.p2p.PeerManager;
-import com.radixdlt.p2p.RadixNodeUri;
+import com.radixdlt.p2p.*;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
@@ -128,8 +125,10 @@ public final class P2PTestNetworkRunner {
             .mapToObj(unused -> ECKeyPair.generateNew())
             .collect(ImmutableList.toImmutableList());
 
-    final var addressBook =
+    final var bftAddressBook =
         nodesKeys.stream().map(key -> BFTNode.create(key.getPublicKey())).toList();
+    final var p2pAddressBook =
+        nodesKeys.stream().map(key -> NodeId.fromPublicKey(key.getPublicKey())).toList();
     final var network =
         new DeterministicNetwork(MessageSelector.firstSelector(), MessageMutator.nothing());
 
@@ -142,7 +141,15 @@ public final class P2PTestNetworkRunner {
           RadixNodeUri.fromPubKeyAndAddress(
               1, nodeKey.getPublicKey(), "127.0.0.1", p2pConfig.listenPort() + i);
       final var injector =
-          createInjector(addressBook::indexOf, p2pNetwork, network, p2pConfig, nodeKey, uri, i);
+          createInjector(
+              bftAddressBook::indexOf,
+              p2pAddressBook::indexOf,
+              p2pNetwork,
+              network,
+              p2pConfig,
+              nodeKey,
+              uri,
+              i);
       builder.add(new TestNode(injector, uri, nodeKey));
     }
 
@@ -154,7 +161,8 @@ public final class P2PTestNetworkRunner {
   }
 
   private static Injector createInjector(
-      Function<BFTNode, Integer> addressBook,
+      Function<BFTNode, Integer> bftAddressBook,
+      Function<NodeId, Integer> p2pAddressBook,
       MockP2PNetwork p2pNetwork,
       DeterministicNetwork network,
       P2PConfig p2pConfig,
@@ -215,8 +223,9 @@ public final class P2PTestNetworkRunner {
             bind(ECKeyOps.class).toInstance(ECKeyOps.fromKeyPair(nodeKey));
             bind(Environment.class)
                 .toInstance(
-                    new ControlledSender(
-                        addressBook,
+                    new ControlledDispatcher(
+                        bftAddressBook,
+                        p2pAddressBook,
                         network,
                         BFTNode.create(nodeKey.getPublicKey()),
                         selfNodeIndex));
