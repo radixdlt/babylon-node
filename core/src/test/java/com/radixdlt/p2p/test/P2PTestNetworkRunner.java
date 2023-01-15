@@ -77,6 +77,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
+import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -101,6 +102,7 @@ import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.apache.commons.cli.ParseException;
 import org.json.JSONObject;
@@ -126,11 +128,10 @@ public final class P2PTestNetworkRunner {
             .mapToObj(unused -> ECKeyPair.generateNew())
             .collect(ImmutableList.toImmutableList());
 
+    final var addressBook =
+        nodesKeys.stream().map(key -> BFTNode.create(key.getPublicKey())).toList();
     final var network =
-        new DeterministicNetwork(
-            nodesKeys.stream().map(key -> BFTNode.create(key.getPublicKey())).toList(),
-            MessageSelector.firstSelector(),
-            MessageMutator.nothing());
+        new DeterministicNetwork(MessageSelector.firstSelector(), MessageMutator.nothing());
 
     final var p2pNetwork = new MockP2PNetwork();
 
@@ -140,7 +141,8 @@ public final class P2PTestNetworkRunner {
       final var uri =
           RadixNodeUri.fromPubKeyAndAddress(
               1, nodeKey.getPublicKey(), "127.0.0.1", p2pConfig.listenPort() + i);
-      final var injector = createInjector(p2pNetwork, network, p2pConfig, nodeKey, uri, i);
+      final var injector =
+          createInjector(addressBook::indexOf, p2pNetwork, network, p2pConfig, nodeKey, uri, i);
       builder.add(new TestNode(injector, uri, nodeKey));
     }
 
@@ -152,6 +154,7 @@ public final class P2PTestNetworkRunner {
   }
 
   private static Injector createInjector(
+      Function<BFTNode, Integer> addressBook,
       MockP2PNetwork p2pNetwork,
       DeterministicNetwork network,
       P2PConfig p2pConfig,
@@ -211,7 +214,12 @@ public final class P2PTestNetworkRunner {
                         .substring(0, 10));
             bind(ECKeyOps.class).toInstance(ECKeyOps.fromKeyPair(nodeKey));
             bind(Environment.class)
-                .toInstance(network.createSender(BFTNode.create(nodeKey.getPublicKey())));
+                .toInstance(
+                    new ControlledSender(
+                        addressBook,
+                        network,
+                        BFTNode.create(nodeKey.getPublicKey()),
+                        selfNodeIndex));
             bind(RuntimeProperties.class).toInstance(properties);
             bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
             bind(DeterministicProcessor.class);

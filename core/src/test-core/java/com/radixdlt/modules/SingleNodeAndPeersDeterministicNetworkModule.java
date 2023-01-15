@@ -72,6 +72,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
+import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -118,16 +119,15 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
 
   @Provides
   @Singleton
-  public DeterministicNetwork network(@Self BFTNode self, PeersView peersView) {
-    return new DeterministicNetwork(
-        Stream.concat(Stream.of(self), peersView.peers().map(PeersView.PeerInfo::bftNode)).toList(),
-        MessageSelector.firstSelector(),
-        MessageMutator.nothing());
+  public DeterministicNetwork network() {
+    return new DeterministicNetwork(MessageSelector.firstSelector(), MessageMutator.nothing());
   }
 
   @Provides
   @Singleton
-  Environment environment(@Self BFTNode self, DeterministicNetwork network) {
-    return network.createSender(self);
+  Environment environment(@Self BFTNode self, DeterministicNetwork network, PeersView peersView) {
+    var addressBook =
+        Stream.concat(Stream.of(self), peersView.peers().map(PeersView.PeerInfo::bftNode)).toList();
+    return new ControlledSender(addressBook::indexOf, network, self, 0);
   }
 }

@@ -89,7 +89,7 @@ public final class RandomVoteDropperTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(1, 20)
+        .numPhysicalNodes(20)
         .messageSelector(firstSelector())
         .messageMutator(voteDropper(0.2))
         .addMonitors(

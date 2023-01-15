@@ -115,7 +115,7 @@ public class FProposalsPerRoundDropperTest {
   public FProposalsPerRoundDropperTest(int numNodes) {
     bftTestBuilder =
         SimulationTest.builder()
-            .numNodes(numNodes)
+            .numPhysicalNodes(numNodes)
             .networkModules(
                 NetworkOrdering.inOrder(),
                 NetworkLatencies.fixed(10),
@@ -125,7 +125,7 @@ public class FProposalsPerRoundDropperTest {
                     false,
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(5000),
-                    LedgerConfig.mocked()))
+                    LedgerConfig.mocked(numNodes)))
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.vertexRequestRate(75), // Conservative check

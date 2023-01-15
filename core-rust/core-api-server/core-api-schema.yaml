@@ -1947,8 +1947,7 @@ components:
       type: string
       enum:
         - String
-        - U32
-        - U64
+        - Number
         - Bytes
         - UUID
     NonFungibleId:

@@ -67,10 +67,9 @@ use crate::transaction::UserTransactionValidator;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::types::{
-    scrypto, Categorize, ComponentAddress, Decimal, Decode, Encode, RADIX_TOKEN,
-};
+use radix_engine::types::{Categorize, ComponentAddress, Decimal, Decode, Encode, RADIX_TOKEN};
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::*;
 use std::collections::HashSet;
 
 use crate::jni::utils::*;
@@ -276,8 +275,7 @@ impl From<JavaPrepareRequest> for PrepareRequest {
     }
 }
 
-#[derive(Debug)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPrepareResult {
     pub committed: Vec<Vec<u8>>,
     pub rejected: Vec<(Vec<u8>, String)>,
@@ -307,8 +305,7 @@ impl From<JavaPrepareGenesisRequest> for PrepareGenesisRequest {
     }
 }
 
-#[derive(Debug)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPrepareGenesisResult {
     pub validator_set: Option<HashSet<EcdsaSecp256k1PublicKey>>,
 }

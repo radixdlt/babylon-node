@@ -94,7 +94,7 @@ public class ByzantineSyncTest {
   public ByzantineSyncTest() {
     this.bftTestBuilder =
         SimulationTest.builder()
-            .numNodes(5)
+            .numPhysicalNodes(5)
             .networkModules(
                 NetworkOrdering.inOrder(),
                 NetworkLatencies.fixed(10),
@@ -117,7 +117,7 @@ public class ByzantineSyncTest {
                         LedgerUpdate.class, reader.ledgerUpdateEventProcessor());
                   }
                 })
-            .ledgerAndSync(ConsensusConfig.of(3000), SyncRelayConfig.of(200L, 10, 1000L));
+            .ledgerAndSync(ConsensusConfig.of(3000), SyncRelayConfig.of(200L, 10, 1000L), 5);
   }
 
   @Test

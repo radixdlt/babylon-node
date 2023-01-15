@@ -93,7 +93,7 @@ public final class REv2ConsensusLedgerRecoveryTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(2, 0)
+        .numPhysicalNodes(2)
         .messageSelector(firstSelector())
         .messageMutator(MessageMutator.dropTimeouts())
         .functionalNodeModule(

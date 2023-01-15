@@ -99,7 +99,7 @@ public final class TransactionDBSizeStressTest {
 
   private DeterministicTest buildTest() {
     return DeterministicTest.builder()
-        .numNodes(1, 0)
+        .numPhysicalNodes(1)
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(

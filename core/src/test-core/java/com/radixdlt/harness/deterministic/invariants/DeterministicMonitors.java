@@ -72,12 +72,10 @@ import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.harness.invariants.Checkers;
-import java.util.function.Function;
 
 public final class DeterministicMonitors {
   private DeterministicMonitors() {
@@ -93,11 +91,10 @@ public final class DeterministicMonitors {
   public static Module byzantineBehaviorNotDetected() {
     return new AbstractModule() {
       @ProvidesIntoSet
-      private MessageMonitor byzantineDetection(Function<BFTNode, String> nodeToString) {
+      private MessageMonitor byzantineDetection() {
         return (m, t) -> {
           if (m.message() instanceof ConsensusByzantineEvent event) {
-            var nodeName = nodeToString.apply(event.getAuthor());
-            throw new ByzantineBehaviorDetected(nodeName, event);
+            throw new ByzantineBehaviorDetected(event.getAuthor().toString(), event);
           }
         };
       }

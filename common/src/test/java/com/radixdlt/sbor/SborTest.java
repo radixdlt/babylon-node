@@ -421,8 +421,7 @@ public class SborTest {
         new byte[] {
           0x5b, // Prefix Byte
           0x22, // Type == 0x22 - Enum
-          4, // Variant Name Length 4
-          'S', 'o', 'm', 'e', // Some
+          1, // discriminator
           1, // Enum variant length
           0x0C, // Stored type - 0x0C - String
           10, // Length of string
@@ -445,8 +444,7 @@ public class SborTest {
         new byte[] {
           0x5b, // Prefix Byte
           0x22, // Type == 0x22 - Enum
-          4, // Variant Name Length 4
-          'N', 'o', 'n', 'e', // None
+          0, // discriminator
           0, // Enum variant length
         },
         encoded);
@@ -463,29 +461,24 @@ public class SborTest {
     var successResult = Result.<String, Long>success("Some value");
     var successEncoded = BasicDefaultSbor.encode(successResult, resultTypeLiteral);
 
-    assertEquals(18, successEncoded.length);
+    assertEquals(16, successEncoded.length);
     assertEquals(0x5b, successEncoded[0]); // Prefix Byte
     assertEquals(0x22, successEncoded[1]); // Type == 0x22 - Enum
-    assertEquals(2, successEncoded[2]); // "Ok" length
-    assertEquals('O', successEncoded[3]);
-    assertEquals('k', successEncoded[4]);
-    assertEquals(1, successEncoded[5]); // Enum variant length of 1
-    assertEquals(0x0C, successEncoded[6]); // Value type - String
+    assertEquals(0, successEncoded[2]); // discriminator
+    assertEquals(1, successEncoded[3]); // Enum variant length of 1
+    assertEquals(0x0C, successEncoded[4]); // Value type - String
 
     var successDecoded = BasicDefaultSbor.decode(successEncoded, resultTypeLiteral);
     assertEquals(successResult, successDecoded);
 
     var errorResult = Result.<String, Long>error(123L);
     var errorEncoded = BasicDefaultSbor.encode(errorResult, resultTypeLiteral);
-    assertEquals(16, errorEncoded.length);
+    assertEquals(13, errorEncoded.length);
     assertEquals(0x5b, errorEncoded[0]); // Prefix Byte
     assertEquals(0x22, errorEncoded[1]); // Type == 0x22 - Enum
-    assertEquals(3, errorEncoded[2]); // "Err" length
-    assertEquals('E', errorEncoded[3]);
-    assertEquals('r', errorEncoded[4]);
-    assertEquals('r', errorEncoded[5]);
-    assertEquals(1, errorEncoded[6]); // Enum variant length of 1
-    assertEquals(0x05, errorEncoded[7]); // Value type - i64
+    assertEquals(1, errorEncoded[2]); // discriminator
+    assertEquals(1, errorEncoded[3]); // Enum variant length of 1
+    assertEquals(0x05, errorEncoded[4]); // Value type - i64
 
     var failureDecoded = BasicDefaultSbor.decode(errorEncoded, resultTypeLiteral);
     assertEquals(errorResult, failureDecoded);
@@ -499,15 +492,12 @@ public class SborTest {
     var leftEncoded = BasicDefaultSbor.encode(leftValue, eitherTypeLiteral);
 
     // NB - Left is "not-right", AKA failure
-    assertEquals(19, leftEncoded.length);
+    assertEquals(16, leftEncoded.length);
     assertEquals(0x5b, leftEncoded[0]); // Prefix Byte
     assertEquals(0x22, leftEncoded[1]); // Type == 0x22 - Enum
-    assertEquals(3, leftEncoded[2]); // "Err" length
-    assertEquals('E', leftEncoded[3]);
-    assertEquals('r', leftEncoded[4]);
-    assertEquals('r', leftEncoded[5]);
-    assertEquals(1, leftEncoded[6]); // Enum variant length of 1
-    assertEquals(0x0C, leftEncoded[7]); // Value type - String
+    assertEquals(1, leftEncoded[2]); // discriminator
+    assertEquals(1, leftEncoded[3]); // Enum variant length of 1
+    assertEquals(0x0C, leftEncoded[4]); // Value type - String
 
     var leftOut = BasicDefaultSbor.decode(leftEncoded, eitherTypeLiteral);
     assertEquals(leftValue, leftOut);
@@ -516,14 +506,12 @@ public class SborTest {
     var rightEncoded = BasicDefaultSbor.encode(rightValue, eitherTypeLiteral);
 
     // NB - Right is "right", AKA success
-    assertEquals(15, rightEncoded.length);
+    assertEquals(13, rightEncoded.length);
     assertEquals(0x5b, rightEncoded[0]); // Prefix Byte
     assertEquals(0x22, rightEncoded[1]); // Type == 0x22 - Enum
-    assertEquals(2, rightEncoded[2]); // "Ok" length
-    assertEquals('O', rightEncoded[3]);
-    assertEquals('k', rightEncoded[4]);
-    assertEquals(1, rightEncoded[5]); // Enum variant length of 1
-    assertEquals(0x05, rightEncoded[6]); // Value type - i64
+    assertEquals(0, rightEncoded[2]); // discriminator
+    assertEquals(1, rightEncoded[3]); // Enum variant length of 1
+    assertEquals(0x05, rightEncoded[4]); // Value type - i64
 
     var rightOut = BasicDefaultSbor.decode(rightEncoded, eitherTypeLiteral);
     assertEquals(rightValue, rightOut);
@@ -539,7 +527,7 @@ public class SborTest {
 
     var encoded1 = sborUsingWith.encode_payload(testValue, SimpleRecord.class);
 
-    assertEquals(45, encoded1.length);
+    assertEquals(38, encoded1.length);
     assertEquals(0x5b, encoded1[0]); // Prefix byte
     assertEquals(0x21, encoded1[1]); // Type == 0x21 - Struct
     assertEquals(0x04, encoded1[2]); // Field count - 4
@@ -576,8 +564,7 @@ public class SborTest {
         new byte[] {
           0x5b, // Prefix Byte
           34, // Enum Type
-          1, // String length 1
-          65, // "A"
+          0, // discriminator
           2, // Number of fields
           4, // Field 1 - Int Type
           4, 0, 0, 0, // Field 1 value
@@ -595,14 +582,10 @@ public class SborTest {
         new byte[] {
           0x5b, // Prefix Byte
           34, // Enum Type
-          1, // String length 1
-          66, // "B"
+          1, // discriminator
           1, // number of fields
           0x22, // Field 1 - Enum Type
-          3, // Variant name length
-          'E',
-          'r',
-          'r', // Variant name
+          1, // discriminator
           1, // Variant size
           0x05, // Field 1 - Either left is of long type
           5,

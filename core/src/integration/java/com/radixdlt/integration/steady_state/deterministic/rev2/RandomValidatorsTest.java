@@ -94,7 +94,7 @@ public final class RandomValidatorsTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(1, 50)
+        .numPhysicalNodes(50)
         .messageSelector(firstSelector())
         .addMonitors(
             byzantineBehaviorNotDetected(), consensusLiveness(3000), ledgerTransactionSafety())
@@ -129,7 +129,7 @@ public final class RandomValidatorsTest {
         for (int j = 0; j < 50; j++) {
           var mempoolDispatcher =
               test.getInstance(
-                  random.nextInt(0, 51),
+                  random.nextInt(0, 50),
                   Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
           var txn =
               random.nextBoolean()

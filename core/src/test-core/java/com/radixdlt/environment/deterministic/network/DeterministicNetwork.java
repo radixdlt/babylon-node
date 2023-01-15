@@ -64,15 +64,9 @@
 
 package com.radixdlt.environment.deterministic.network;
 
-import com.google.common.collect.ImmutableBiMap;
-import com.google.common.collect.Streams;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.harness.deterministic.invariants.MessageMonitor;
-import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -92,43 +86,26 @@ public final class DeterministicNetwork {
   private final MessageMutator messageMutator;
   private final MessageMonitor messageMonitor;
 
-  private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
-
   private long currentTime = 0L;
+  private long lastTimeLogged = 0L;
 
   /**
    * Create a BFT test network for deterministic tests.
    *
-   * @param nodes The nodes on the network
    * @param messageSelector A {@link MessageSelector} for choosing messages to process next
    * @param messageMutator A {@link MessageMutator} for mutating and queueing messages
    */
-  public DeterministicNetwork(
-      List<BFTNode> nodes, MessageSelector messageSelector, MessageMutator messageMutator) {
-    this(nodes, messageSelector, messageMutator, (m, t) -> {});
+  public DeterministicNetwork(MessageSelector messageSelector, MessageMutator messageMutator) {
+    this(messageSelector, messageMutator, (m, t) -> {});
   }
 
   public DeterministicNetwork(
-      List<BFTNode> nodes,
       MessageSelector messageSelector,
       MessageMutator messageMutator,
       MessageMonitor messageMonitor) {
     this.messageSelector = Objects.requireNonNull(messageSelector);
     this.messageMutator = Objects.requireNonNull(messageMutator);
-    this.nodeLookup =
-        Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of(node, (int) index))
-            .collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
     this.messageMonitor = Objects.requireNonNull(messageMonitor);
-
-    log.debug("Nodes {}", this.nodeLookup);
-  }
-
-  public ControlledSender createSender(BFTNode node) {
-    return new ControlledSender(this, node, this.lookup(node));
-  }
-
-  public ControlledSender createSender(int nodeIndex) {
-    return new ControlledSender(this, this.lookup(nodeIndex), nodeIndex);
   }
 
   // TODO: use better method than Timed to store time
@@ -163,6 +140,10 @@ public final class DeterministicNetwork {
                 });
     this.messageQueue.remove(controlledMessage);
     this.currentTime = Math.max(this.currentTime, controlledMessage.arrivalTime());
+    if ((this.currentTime / 1000) > (this.lastTimeLogged / 1000)) {
+      this.lastTimeLogged = this.currentTime;
+      log.info("Simulated Time: {}", this.currentTime);
+    }
 
     return new Timed<>(controlledMessage, this.currentTime, TimeUnit.MILLISECONDS);
   }
@@ -192,14 +173,6 @@ public final class DeterministicNetwork {
 
   public long currentTime() {
     return this.currentTime;
-  }
-
-  public int lookup(BFTNode node) {
-    return this.nodeLookup.get(node);
-  }
-
-  public BFTNode lookup(int nodeIndex) {
-    return this.nodeLookup.inverse().get(nodeIndex);
   }
 
   long delayForChannel(ChannelId channelId) {

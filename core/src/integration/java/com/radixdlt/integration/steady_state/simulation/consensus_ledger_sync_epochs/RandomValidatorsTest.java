@@ -96,7 +96,7 @@ public class RandomValidatorsTest {
               Round.of(3),
               goodRandomEpochToNodesMapper(),
               syncRelayConfig) // TODO: investigate why this fails with Round.of(10)
-          .numNodes(numNodes)
+          .numPhysicalNodes(numNodes)
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
