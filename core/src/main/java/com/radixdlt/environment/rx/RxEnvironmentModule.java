@@ -72,6 +72,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
@@ -113,7 +114,7 @@ public final class RxEnvironmentModule extends AbstractModule {
     bind(new TypeLiteral<Observable<BFTHighQCUpdate>>() {})
         .toProvider(new ObservableProvider<>(BFTHighQCUpdate.class));
 
-    Multibinder.newSetBinder(binder(), new TypeLiteral<RxRemoteDispatcher<?>>() {});
+    Multibinder.newSetBinder(binder(), new TypeLiteral<RxRemoteDispatcher<BFTNode, ?>>() {});
     Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnRunner<?>>() {});
     Multibinder.newSetBinder(binder(), new TypeLiteral<RemoteEventProcessorOnRunner<?, ?>>() {});
     Multibinder.newSetBinder(binder(), new TypeLiteral<ScheduledEventProducerOnRunner<?>>() {});
@@ -123,7 +124,7 @@ public final class RxEnvironmentModule extends AbstractModule {
   @Singleton
   private RxEnvironment rxEnvironment(
       ScheduledExecutorService ses,
-      Set<RxRemoteDispatcher<?>> dispatchers,
+      Set<RxRemoteDispatcher<BFTNode, ?>> dispatchers,
       @LocalEvents
           Set<Class<?>> localProcessedEventClasses // TODO: remove, infer from ProcessorOnRunners
       ) {

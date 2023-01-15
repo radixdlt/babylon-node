@@ -72,6 +72,7 @@ import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
@@ -127,102 +128,113 @@ public final class MessagingModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?> mempoolAddDispatcher(MessageCentralMempool messageCentralMempool) {
+  private RxRemoteDispatcher<BFTNode, ?> mempoolAddDispatcher(
+      MessageCentralMempool messageCentralMempool) {
     return RxRemoteDispatcher.create(
-        MempoolAdd.class, messageCentralMempool.mempoolAddRemoteEventDispatcher());
+        BFTNode.class, MempoolAdd.class, messageCentralMempool.mempoolAddRemoteEventDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?> proposalDispatcher(MessageCentralBFTNetwork bftNetwork) {
-    return RxRemoteDispatcher.create(Proposal.class, bftNetwork.proposalDispatcher());
+  private RxRemoteDispatcher<BFTNode, ?> proposalDispatcher(MessageCentralBFTNetwork bftNetwork) {
+    return RxRemoteDispatcher.create(
+        BFTNode.class, Proposal.class, bftNetwork.proposalDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?> voteDispatcher(MessageCentralBFTNetwork bftNetwork) {
-    return RxRemoteDispatcher.create(Vote.class, bftNetwork.voteDispatcher());
+  private RxRemoteDispatcher<BFTNode, ?> voteDispatcher(MessageCentralBFTNetwork bftNetwork) {
+    return RxRemoteDispatcher.create(BFTNode.class, Vote.class, bftNetwork.voteDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?> vertexRequestDispatcher(
+  private RxRemoteDispatcher<BFTNode, ?> vertexRequestDispatcher(
       MessageCentralValidatorSync messageCentralValidatorSync) {
     return RxRemoteDispatcher.create(
-        GetVerticesRequest.class, messageCentralValidatorSync.verticesRequestDispatcher());
+        BFTNode.class,
+        GetVerticesRequest.class,
+        messageCentralValidatorSync.verticesRequestDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?> vertexResponseDispatcher(
+  private RxRemoteDispatcher<BFTNode, ?> vertexResponseDispatcher(
       MessageCentralValidatorSync messageCentralValidatorSync) {
     return RxRemoteDispatcher.create(
-        GetVerticesResponse.class, messageCentralValidatorSync.verticesResponseDispatcher());
+        BFTNode.class,
+        GetVerticesResponse.class,
+        messageCentralValidatorSync.verticesResponseDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?> vertexErrorResponseDispatcher(
+  private RxRemoteDispatcher<BFTNode, ?> vertexErrorResponseDispatcher(
       MessageCentralValidatorSync messageCentralValidatorSync) {
     return RxRemoteDispatcher.create(
+        BFTNode.class,
         GetVerticesErrorResponse.class,
         messageCentralValidatorSync.verticesErrorResponseDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?> syncRequestDispatcher(
+  private RxRemoteDispatcher<BFTNode, ?> syncRequestDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        SyncRequest.class, messageCentralLedgerSync.syncRequestDispatcher());
+        BFTNode.class, SyncRequest.class, messageCentralLedgerSync.syncRequestDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?> syncResponseDispatcher(
+  private RxRemoteDispatcher<BFTNode, ?> syncResponseDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        SyncResponse.class, messageCentralLedgerSync.syncResponseDispatcher());
+        BFTNode.class, SyncResponse.class, messageCentralLedgerSync.syncResponseDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?> statusRequestDispatcher(
+  private RxRemoteDispatcher<BFTNode, ?> statusRequestDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        StatusRequest.class, messageCentralLedgerSync.statusRequestDispatcher());
+        BFTNode.class, StatusRequest.class, messageCentralLedgerSync.statusRequestDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?> statusResponseDispatcher(
+  private RxRemoteDispatcher<BFTNode, ?> statusResponseDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        StatusResponse.class, messageCentralLedgerSync.statusResponseDispatcher());
+        BFTNode.class, StatusResponse.class, messageCentralLedgerSync.statusResponseDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?> pingDispatcher(
+  private RxRemoteDispatcher<BFTNode, ?> pingDispatcher(
       MessageCentralPeerLiveness messageCentralPeerLiveness) {
-    return RxRemoteDispatcher.create(Ping.class, messageCentralPeerLiveness.pingDispatcher());
+    return RxRemoteDispatcher.create(
+        BFTNode.class, Ping.class, messageCentralPeerLiveness.pingDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?> pongDispatcher(
+  private RxRemoteDispatcher<BFTNode, ?> pongDispatcher(
       MessageCentralPeerLiveness messageCentralPeerLiveness) {
-    return RxRemoteDispatcher.create(Pong.class, messageCentralPeerLiveness.pongDispatcher());
+    return RxRemoteDispatcher.create(
+        BFTNode.class, Pong.class, messageCentralPeerLiveness.pongDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?> getPeersDispatcher(
+  private RxRemoteDispatcher<BFTNode, ?> getPeersDispatcher(
       MessageCentralPeerDiscovery messageCentralPeerDiscovery) {
     return RxRemoteDispatcher.create(
-        GetPeers.class, messageCentralPeerDiscovery.getPeersDispatcher());
+        BFTNode.class, GetPeers.class, messageCentralPeerDiscovery.getPeersDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?> peersResponseDispatcher(
+  private RxRemoteDispatcher<BFTNode, ?> peersResponseDispatcher(
       MessageCentralPeerDiscovery messageCentralPeerDiscovery) {
     return RxRemoteDispatcher.create(
-        PeersResponse.class, messageCentralPeerDiscovery.peersResponseDispatcher());
+        BFTNode.class, PeersResponse.class, messageCentralPeerDiscovery.peersResponseDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?> ledgerStatusUpdateDispatcher(
+  private RxRemoteDispatcher<BFTNode, ?> ledgerStatusUpdateDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        LedgerStatusUpdate.class, messageCentralLedgerSync.ledgerStatusUpdateDispatcher());
+        BFTNode.class,
+        LedgerStatusUpdate.class,
+        messageCentralLedgerSync.ledgerStatusUpdateDispatcher());
   }
 
   // TODO: Clean this up

@@ -86,13 +86,13 @@ public final class RxEnvironment implements Environment {
   private final Map<Class<?>, Subject<?>> subjects;
   private final Map<TypeLiteral<?>, Subject<?>> typeLiteralSubjects;
   private final ScheduledExecutorService executorService;
-  private final Map<Class<?>, RxRemoteDispatcher<?>> remoteDispatchers;
+  private final Map<Class<?>, RxRemoteDispatcher<BFTNode, ?>> remoteDispatchers;
 
   public RxEnvironment(
       Set<TypeLiteral<?>> localEventTypeLiterals,
       Set<Class<?>> localEventClasses,
       ScheduledExecutorService executorService,
-      Set<RxRemoteDispatcher<?>> remoteDispatchers) {
+      Set<RxRemoteDispatcher<BFTNode, ?>> remoteDispatchers) {
     this.typeLiteralSubjects =
         localEventTypeLiterals.stream()
             .collect(Collectors.toMap(c -> c, c -> ReplaySubject.createWithSize(5).toSerialized()));
