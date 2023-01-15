@@ -64,15 +64,13 @@
 
 package com.radixdlt.messaging;
 
-public final class MessageTransportNotSupported extends IllegalStateException {
-  private final Class<?> nodeIdClass;
-  private final Class<?> messageType;
+import com.radixdlt.environment.MessageTransportType;
 
-  public MessageTransportNotSupported(Class<?> nodeIdClass, Class<?> messageType) {
-    super(
-        String.format(
-            "Message transport not supported: id=%s message=%s", nodeIdClass, messageType));
-    this.nodeIdClass = nodeIdClass;
-    this.messageType = messageType;
+public final class MessageTransportNotSupported extends IllegalStateException {
+  private final MessageTransportType<?, ?> messageTransportType;
+
+  public MessageTransportNotSupported(MessageTransportType<?, ?> messageTransportType) {
+    super(String.format("Message transport not supported: %s", messageTransportType));
+    this.messageTransportType = messageTransportType;
   }
 }

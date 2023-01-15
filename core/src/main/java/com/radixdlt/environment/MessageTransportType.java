@@ -84,6 +84,10 @@ public final class MessageTransportType<N, T> {
     return nodeIdType;
   }
 
+  public Class<T> getMessageType() {
+    return messageType;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;

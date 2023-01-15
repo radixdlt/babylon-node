@@ -66,6 +66,7 @@ package com.radixdlt.harness.simulation.network;
 
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.environment.MessageTransportType;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
@@ -212,8 +213,11 @@ public class SimulationNetwork {
 
     @Override
     public <N, T> Flowable<RemoteEvent<N, T>> remoteEvents(
-        Class<N> nodeIdClass, Class<T> eventClass) {
-      return myMessages.flatMapMaybe(m -> m.remoteEvent(nodeIdClass, eventClass));
+        MessageTransportType<N, T> messageTransportType) {
+      return myMessages.flatMapMaybe(
+          m ->
+              m.remoteEvent(
+                  messageTransportType.getNodeIdType(), messageTransportType.getMessageType()));
     }
 
     public <T> RemoteEventDispatcher<BFTNode, T> remoteEventDispatcher(Class<T> eventClass) {

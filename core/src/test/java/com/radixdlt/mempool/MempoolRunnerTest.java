@@ -76,6 +76,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.MessageTransportType;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.environment.rx.RemoteEvent;
@@ -122,7 +123,7 @@ public final class MempoolRunnerTest {
                 new RxRemoteEnvironment() {
                   @Override
                   public <N, T> Flowable<RemoteEvent<N, T>> remoteEvents(
-                      Class<N> NodeIdClass, Class<T> remoteEventClass) {
+                      MessageTransportType<N, T> messageTransportType) {
                     return Flowable.never();
                   }
                 });

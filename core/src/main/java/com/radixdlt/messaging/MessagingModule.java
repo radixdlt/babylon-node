@@ -76,6 +76,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
+import com.radixdlt.environment.MessageTransportType;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
@@ -251,39 +252,53 @@ public final class MessagingModule extends AbstractModule {
     return new RxRemoteEnvironment() {
       @Override
       public <N, T> Flowable<RemoteEvent<N, T>> remoteEvents(
-          Class<N> nodeIdClass, Class<T> remoteEventClass) {
-        if (remoteEventClass == Vote.class) {
+          MessageTransportType<N, T> messageTransportType) {
+        if (messageTransportType.equals(MessageTransportType.create(BFTNode.class, Vote.class))) {
           return messageCentralBFT.remoteVotes().map(m -> (RemoteEvent<N, T>) m);
-        } else if (remoteEventClass == Proposal.class) {
+        } else if (messageTransportType.equals(
+            MessageTransportType.create(BFTNode.class, Proposal.class))) {
           return messageCentralBFT.remoteProposals().map(m -> (RemoteEvent<N, T>) m);
-        } else if (remoteEventClass == GetVerticesRequest.class) {
+        } else if (messageTransportType.equals(
+            MessageTransportType.create(BFTNode.class, GetVerticesRequest.class))) {
           return messageCentralBFTSync.requests().map(m -> (RemoteEvent<N, T>) m);
-        } else if (remoteEventClass == GetVerticesResponse.class) {
+        } else if (messageTransportType.equals(
+            MessageTransportType.create(BFTNode.class, GetVerticesResponse.class))) {
           return messageCentralBFTSync.responses().map(m -> (RemoteEvent<N, T>) m);
-        } else if (remoteEventClass == GetVerticesErrorResponse.class) {
+        } else if (messageTransportType.equals(
+            MessageTransportType.create(BFTNode.class, GetVerticesErrorResponse.class))) {
           return messageCentralBFTSync.errorResponses().map(m -> (RemoteEvent<N, T>) m);
-        } else if (remoteEventClass == MempoolAdd.class) {
+        } else if (messageTransportType.equals(
+            MessageTransportType.create(BFTNode.class, MempoolAdd.class))) {
           return messageCentralMempool.mempoolComands().map(m -> (RemoteEvent<N, T>) m);
-        } else if (remoteEventClass == SyncRequest.class) {
+        } else if (messageTransportType.equals(
+            MessageTransportType.create(BFTNode.class, SyncRequest.class))) {
           return messageCentralLedgerSync.syncRequests().map(m -> (RemoteEvent<N, T>) m);
-        } else if (remoteEventClass == SyncResponse.class) {
+        } else if (messageTransportType.equals(
+            MessageTransportType.create(BFTNode.class, SyncResponse.class))) {
           return messageCentralLedgerSync.syncResponses().map(m -> (RemoteEvent<N, T>) m);
-        } else if (remoteEventClass == StatusRequest.class) {
+        } else if (messageTransportType.equals(
+            MessageTransportType.create(BFTNode.class, StatusRequest.class))) {
           return messageCentralLedgerSync.statusRequests().map(m -> (RemoteEvent<N, T>) m);
-        } else if (remoteEventClass == StatusResponse.class) {
+        } else if (messageTransportType.equals(
+            MessageTransportType.create(BFTNode.class, StatusResponse.class))) {
           return messageCentralLedgerSync.statusResponses().map(m -> (RemoteEvent<N, T>) m);
-        } else if (remoteEventClass == LedgerStatusUpdate.class) {
+        } else if (messageTransportType.equals(
+            MessageTransportType.create(BFTNode.class, LedgerStatusUpdate.class))) {
           return messageCentralLedgerSync.ledgerStatusUpdates().map(m -> (RemoteEvent<N, T>) m);
-        } else if (remoteEventClass == Ping.class) {
+        } else if (messageTransportType.equals(
+            MessageTransportType.create(BFTNode.class, Ping.class))) {
           return messageCentralPeerLiveness.pings().map(m -> (RemoteEvent<N, T>) m);
-        } else if (remoteEventClass == Pong.class) {
+        } else if (messageTransportType.equals(
+            MessageTransportType.create(BFTNode.class, Pong.class))) {
           return messageCentralPeerLiveness.pongs().map(m -> (RemoteEvent<N, T>) m);
-        } else if (remoteEventClass == GetPeers.class) {
+        } else if (messageTransportType.equals(
+            MessageTransportType.create(BFTNode.class, GetPeers.class))) {
           return messageCentralPeerDiscovery.getPeersEvents().map(m -> (RemoteEvent<N, T>) m);
-        } else if (nodeIdClass == NodeId.class && remoteEventClass == PeersResponse.class) {
+        } else if (messageTransportType.equals(
+            MessageTransportType.create(NodeId.class, PeersResponse.class))) {
           return messageCentralPeerDiscovery.peersResponses().map(m -> (RemoteEvent<N, T>) m);
         } else {
-          throw new MessageTransportNotSupported(nodeIdClass, remoteEventClass);
+          throw new MessageTransportNotSupported(messageTransportType);
         }
       }
     };

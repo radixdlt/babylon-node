@@ -111,20 +111,18 @@ public final class RemoteEventProcessorOnRunner<N, T> {
     return runnerName;
   }
 
-  public <N, U> Optional<RemoteEventProcessor<N, U>> getProcessor(Class<N> n, Class<U> c) {
-    if (n.isAssignableFrom(nodeIdClass) && c.isAssignableFrom(eventClass)) {
+  public <N, U> Optional<RemoteEventProcessor<N, U>> getProcessor(
+      MessageTransportType<N, U> messageTransportType) {
+    if (messageTransportType.getNodeIdType().isAssignableFrom(nodeIdClass)
+        && messageTransportType.getMessageType().isAssignableFrom(eventClass)) {
       return Optional.of((RemoteEventProcessor<N, U>) processor);
     }
 
     return Optional.empty();
   }
 
-  public Class<N> getNodeIdClass() {
-    return nodeIdClass;
-  }
-
-  public Class<T> getEventClass() {
-    return eventClass;
+  public MessageTransportType<N, T> getMessageTransportType() {
+    return MessageTransportType.create(this.nodeIdClass, this.eventClass);
   }
 
   @Override

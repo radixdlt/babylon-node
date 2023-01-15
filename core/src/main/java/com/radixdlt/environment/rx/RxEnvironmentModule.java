@@ -75,17 +75,9 @@ import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.RemoteEventProcessorOnRunner;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.environment.ScheduledEventProducerOnRunner;
-import com.radixdlt.environment.StartProcessorOnRunner;
+import com.radixdlt.environment.*;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.modules.ModuleRunner;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
@@ -226,8 +218,7 @@ public final class RxEnvironmentModule extends AbstractModule {
   }
 
   private static <N, T> void addToBuilder(
-      Class<N> nodeIdClass,
-      Class<T> eventClass,
+      MessageTransportType<N, T> messageTransportType,
       RxRemoteEnvironment rxEnvironment,
       RemoteEventProcessorOnRunner<?, ?> processor,
       RxModuleRunnerImpl.Builder builder) {
@@ -235,17 +226,17 @@ public final class RxEnvironmentModule extends AbstractModule {
     if (processor.getRateLimitDelayMs() > 0) {
       events =
           rxEnvironment
-              .remoteEvents(nodeIdClass, eventClass)
+              .remoteEvents(messageTransportType)
               .onBackpressureBuffer(100, null, BackpressureOverflowStrategy.DROP_LATEST)
               .concatMap(
                   e ->
                       Flowable.timer(processor.getRateLimitDelayMs(), TimeUnit.MILLISECONDS)
                           .map(l -> e));
     } else {
-      events = rxEnvironment.remoteEvents(nodeIdClass, eventClass);
+      events = rxEnvironment.remoteEvents(messageTransportType);
     }
 
-    processor.getProcessor(nodeIdClass, eventClass).ifPresent(p -> builder.add(events, p));
+    processor.getProcessor(messageTransportType).ifPresent(p -> builder.add(events, p));
   }
 
   private static <T> void addToBuilder(
@@ -326,16 +317,13 @@ public final class RxEnvironmentModule extends AbstractModule {
     final var remoteEventClasses =
         allRemoteProcessors.stream()
             .filter(p -> p.getRunnerName().equals(runnerName))
-            .map(r -> Pair.of(r.getNodeIdClass(), r.getEventClass()))
+            .map(RemoteEventProcessorOnRunner::getMessageTransportType)
             .collect(Collectors.toSet());
     remoteEventClasses.forEach(
-        event ->
+        msgTransportType ->
             allRemoteProcessors.stream()
                 .filter(p -> p.getRunnerName().equals(runnerName))
-                .forEach(
-                    p ->
-                        addToBuilder(
-                            event.getFirst(), event.getSecond(), rxRemoteEnvironment, p, builder)));
+                .forEach(p -> addToBuilder(msgTransportType, rxRemoteEnvironment, p, builder)));
   }
 
   private void addProcessorsOnRunner(

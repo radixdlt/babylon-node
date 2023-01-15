@@ -69,6 +69,7 @@ import static org.mockito.Mockito.mock;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.environment.MessageTransportType;
 import com.radixdlt.environment.rx.RemoteEvent;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Map;
@@ -96,7 +97,7 @@ public class SimulationNetworkTest {
     TestObserver<RemoteEvent<BFTNode, GetVerticesRequest>> rpcRequestListener =
         network
             .getNetwork(node2)
-            .remoteEvents(BFTNode.class, GetVerticesRequest.class)
+            .remoteEvents(MessageTransportType.create(BFTNode.class, GetVerticesRequest.class))
             .toObservable()
             .test();
 
