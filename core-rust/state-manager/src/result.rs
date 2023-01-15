@@ -62,15 +62,14 @@
  * permissions under this License.
  */
 
-use radix_engine_interface::scrypto;
-use sbor::{Categorize, Decode, DecodeError, Encode, EncodeError};
+use radix_engine_interface::*;
+use sbor::{DecodeError, EncodeError};
 
 // System Errors.
 pub const ERRCODE_JNI: i16 = 0;
 pub const ERRCODE_SBOR: i16 = 1;
 
-#[derive(Debug)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct StateManagerError {
     error_code: i16,
     error_msg: String,

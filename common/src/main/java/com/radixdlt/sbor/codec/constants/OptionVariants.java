@@ -65,6 +65,6 @@
 package com.radixdlt.sbor.codec.constants;
 
 public class OptionVariants {
-  public static final String SOME = "Some";
-  public static final String NONE = "None";
+  public static final byte SOME = 0x1;
+  public static final byte NONE = 0x0;
 }

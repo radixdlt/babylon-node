@@ -84,11 +84,11 @@ public record OptionCodec<T>(Codec<T> innerTypeCodec) implements Codec<Option<T>
   public void encodeWithoutTypeId(EncoderApi encoder, Option<T> option) {
     option.apply(
         () -> {
-          encoder.writeString(OptionVariants.NONE);
+          encoder.writeByte(OptionVariants.NONE);
           encoder.writeSize(0);
         },
         value -> {
-          encoder.writeString(OptionVariants.SOME);
+          encoder.writeByte(OptionVariants.SOME);
           encoder.writeSize(1);
           encoder.encodeWithTypeId(value, innerTypeCodec);
         });
@@ -96,9 +96,9 @@ public record OptionCodec<T>(Codec<T> innerTypeCodec) implements Codec<Option<T>
 
   @Override
   public Option<T> decodeWithoutTypeId(DecoderApi decoder) {
-    var variantName = decoder.readString();
+    var variantByte = decoder.readByte();
 
-    return switch (variantName) {
+    return switch (variantByte) {
       case OptionVariants.NONE -> {
         decoder.expectSize(0);
         yield Option.NONE;
@@ -108,7 +108,7 @@ public record OptionCodec<T>(Codec<T> innerTypeCodec) implements Codec<Option<T>
         yield Option.some(decoder.decodeWithTypeId(innerTypeCodec));
       }
       default -> throw new SborDecodeException(
-          String.format("Unknown option variant %s", variantName));
+          String.format("Unknown option variant %s", variantByte));
     };
   }
 

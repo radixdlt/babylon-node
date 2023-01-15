@@ -85,12 +85,12 @@ public record EitherCodec<L, R>(Codec<L> leftType, Codec<R> rightType)
   public void encodeWithoutTypeId(EncoderApi encoder, Either<L, R> either) {
     either.apply(
         left -> {
-          encoder.writeString(ResultVariants.ERR);
+          encoder.writeByte(ResultVariants.ERR);
           encoder.writeSize(1);
           encoder.encodeWithTypeId(left, leftType);
         },
         right -> {
-          encoder.writeString(ResultVariants.OK);
+          encoder.writeByte(ResultVariants.OK);
           encoder.writeSize(1);
           encoder.encodeWithTypeId(right, rightType);
         });
@@ -98,9 +98,9 @@ public record EitherCodec<L, R>(Codec<L> leftType, Codec<R> rightType)
 
   @Override
   public Either<L, R> decodeWithoutTypeId(DecoderApi decoder) {
-    var variantName = decoder.readString();
+    var variantByte = decoder.readByte();
 
-    return switch (variantName) {
+    return switch (variantByte) {
       case ResultVariants.OK -> {
         decoder.expectSize(1);
         yield Either.right(decoder.decodeWithTypeId(rightType));
@@ -110,7 +110,7 @@ public record EitherCodec<L, R>(Codec<L> leftType, Codec<R> rightType)
         yield Either.left(decoder.decodeWithTypeId(leftType));
       }
       default -> throw new SborDecodeException(
-          String.format("Unknown result variant %s", variantName));
+          String.format("Unknown result variant %s", variantByte));
     };
   }
 
