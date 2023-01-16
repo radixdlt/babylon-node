@@ -70,6 +70,8 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
+use opentelemetry_otlp::WithExportConfig;
+use parking_lot::RwLock;
 use state_manager::jni::java_structure::JavaStructure;
 use state_manager::jni::state_manager::{ActualStateManager, JNIStateManager};
 use state_manager::jni::utils::*;
@@ -138,14 +140,13 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
 
     let bind_addr = format!("{}:{}", config.bind_interface, config.port);
     tokio_runtime.spawn(async move {
-        match std::env::var("JAEGER_AGENT_ENDPOINT") {
-            Ok(jaeger_agent_endpoint) => {
-                let tracer = opentelemetry_jaeger::new_agent_pipeline()
-                    .with_endpoint(jaeger_agent_endpoint)
-                    .with_auto_split_batch(true)
-                    .with_service_name("core_api")
-                    .install_batch(opentelemetry::runtime::Tokio)
-                    .unwrap();
+        let mut headers = std::collections::HashMap::new();
+        headers.insert("Authorization".into(), format!("Basic: eyJrIjoiMWYxMzIyZThlZTA5YmYyNWM0ZmMwYmE1ZTUzNTI0YmZhYTI2NWM1ZSIsIm4iOiJvcGVudGVsZW1ldHJ5LXRlc3Qta2V5LWRlbGV0ZW1lIiwiaWQiOjE1NDc2OX0="));
+        let tracer = opentelemetry_otlp::new_pipeline().tracing().with_exporter(opentelemetry_otlp::new_exporter().http().with_endpoint("https://otlp-gateway-prod-eu-west-0.grafana.net/otlp").with_headers(headers)).install_batch(opentelemetry::runtime::Tokio).unwrap();
+                // let tracer = opentelemetry_jaeger::new_collector_pipeline().with_reqwest().with_username("154769").with_endpoint("https://otlp-gateway-prod-eu-central-0.grafana.net/otlp").with_password("a6cf97964aec1b81dd833d904eaab1c4fe97125d")
+                //     .with_service_name("core_api")
+                //     .install_batch(opentelemetry::runtime::Tokio)
+                //     .unwrap();
 
                 let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer);
 
@@ -155,14 +156,16 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
                     .with(opentelemetry)
                     .with(tracing_subscriber::fmt::layer())
                     .try_init();
-            }
-            Err(_) => {
-                let _ = tracing_subscriber::registry()
-                    .with(tracing_subscriber::filter::LevelFilter::INFO)
-                    .with(tracing_subscriber::fmt::layer())
-                    .try_init();
-            }
-        }
+        // match std::env::var("JAEGER_AGENT_ENDPOINT") {
+        //     Ok(jaeger_agent_endpoint) => {
+        //     }
+        //     Err(_) => {
+        //         let _ = tracing_subscriber::registry()
+        //             .with(tracing_subscriber::filter::LevelFilter::INFO)
+        //             .with(tracing_subscriber::fmt::layer())
+        //             .try_init();
+        //     }
+        // }
 
         create_server(
             &bind_addr,

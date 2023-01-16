@@ -47,7 +47,7 @@ opentelemetry = { version = "0.18", default-features = false, features = [
   "rt-tokio",
   "trace",
 ] }
-opentelemetry-jaeger = { version = "0.17", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "*", default-features = false, features = ["trace", "http-proto"] }
 
 ### TYPES FOR THE SERVER
 # Axum - see https://docs.rs/axum/latest/axum/#required-dependencies
