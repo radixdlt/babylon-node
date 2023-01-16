@@ -2838,6 +2838,97 @@ components:
         duplicate:
           description: Is true if the transaction is a duplicate of an existing transaction in the mempool.
           type: boolean
+    TransactionSubmitErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+        - type: object
+          properties:
+            details:
+              $ref: "#/components/schemas/TransactionSubmitErrorDetails"
+    TransactionSubmitErrorDetailsType:
+      type: string
+      enum:
+        - MempoolFull
+        - Rejected
+    TransactionSubmitErrorDetails:
+      anyOf:
+        - $ref: '#/components/schemas/TransactionSubmitMempoolFullErrorDetails'
+        - $ref: '#/components/schemas/TransactionSubmitRejectedErrorDetails'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match TransactionSubmitErrorDetailsType
+          MempoolFull: '#/components/schemas/TransactionSubmitMempoolFullErrorDetails'
+          Rejected: '#/components/schemas/TransactionSubmitRejectedErrorDetails'
+    TransactionSubmitErrorDetailsBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/TransactionSubmitErrorDetailsType"
+    TransactionSubmitMempoolFullErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/TransactionSubmitErrorDetailsBase"
+        - type: object
+          required:
+            - mempool_capacity
+          properties:
+            mempool_capacity:
+              type: integer
+              format: int32
+              minimum: 0
+              maximum: 10000
+    TransactionSubmitRejectedErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/TransactionSubmitErrorDetailsBase"
+        - type: object
+          required:
+            - error_message
+            - is_fresh
+            - is_payload_rejection_permanent
+            - is_intent_rejection_permanent
+            - is_rejected_because_intent_already_committed
+          properties:
+            error_message:
+              type: string
+              description: An explanation of the error
+            is_fresh:
+              type: boolean
+              description: |
+                Whether (true) this rejected status has just been calculated fresh, or (false) the status is from the pending
+                transaction result cache.
+            is_payload_rejection_permanent:
+              type: boolean
+              description: |
+                Whether the rejection of this payload is known to be permanent.
+            is_intent_rejection_permanent:
+              type: boolean
+              description: |
+                Whether the rejection of this intent is known to be permanent - this is a stronger statement than the payload rejection
+                being permanent, as it implies any payloads containing the intent will also be permanently rejected.
+            is_rejected_because_intent_already_committed:
+              type: boolean
+              description: |
+                Whether the cached rejection of this intent is due to the intent already having been committed.
+                If so, see the /transaction/receipt endpoint for further information.
+            recalculation_due:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 100000000000000
+              description: |
+                An integer between `0` and `10^14`, marking the unix timestamp in milliseconds after which the node will consider recalculating the
+                validity of the transaction.
+                Only present if the rejection isn't permanent.
+            invalid_from_epoch:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description: |
+                An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be permanently rejected.
+                Only present if the rejection isn't permanent.
 ###################################
 # REQUEST: /transaction/status #
 ###################################
@@ -2855,17 +2946,34 @@ components:
       type: object
       required:
         - intent_status
+        - status_description
         - known_payloads
       properties:
         intent_status:
           type: string
-          description: The status of the transaction intent
+          description: |
+            The status of the transaction intent, as determined by the node.
+            FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction 
           enum:
             - CommittedSuccess
             - CommittedFailure
+            - PermanentRejection
             - InMempool
-            - Rejected
-            - Unknown
+            - NotSeen
+            - FateUncertain
+            - FateUncertainButLikelyRejection
+        status_description:
+          type: string
+          description: |
+            An explanation as to why the intent status is resolved as it is.
+        invalid_from_epoch:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: |
+            An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be permanently rejected.
+            Only present if the intent status is InMempool or Unknown and we know about a payload.
         known_payloads:
           type: array
           items:
@@ -2880,13 +2988,16 @@ components:
           $ref: "#/components/schemas/PayloadHash"
         status:
           type: string
-          description: The status of the transaction payload, as per this node
+          description: |
+            The status of the transaction payload, as per this node.
+            A NotInMempool status means that it wasn't rejected at last execution attempt, but it's not currently in the mempool either.
           enum:
             - CommittedSuccess
             - CommittedFailure
-            - InMempool
-            - TransientlyRejected
             - PermanentlyRejected
+            - TransientlyRejected
+            - InMempool
+            - NotInMempool
         error_message:
           description: An explanation for the error, if failed or rejected
           type: string

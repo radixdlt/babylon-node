@@ -122,6 +122,7 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location):
         fix_for_enum_not_implementing_default(file_path, "ValidatorTransaction")
         fix_for_enum_not_implementing_default(file_path, "AccessRuleReference")
         fix_for_enum_not_implementing_default(file_path, "LocalMethodReference")
+        fix_for_enum_not_implementing_default(file_path, "TransactionSubmitErrorDetails")
 
     logging.info("Successfully fixed up rust models.")
 
