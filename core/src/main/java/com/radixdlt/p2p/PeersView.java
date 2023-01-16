@@ -195,7 +195,7 @@ public interface PeersView {
 
   Stream<PeerInfo> peers();
 
-  default boolean hasPeer(BFTNode bftNode) {
-    return peers().anyMatch(peer -> peer.nodeId.getPublicKey().equals(bftNode.getKey()));
+  default boolean hasPeer(NodeId nodeId) {
+    return peers().anyMatch(peer -> peer.nodeId.equals(nodeId));
   }
 }

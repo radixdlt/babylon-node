@@ -85,15 +85,15 @@ public final class MessageCentralMempool {
     this.messageCentral = Objects.requireNonNull(messageCentral);
   }
 
-  public RemoteEventDispatcher<BFTNode, MempoolAdd> mempoolAddRemoteEventDispatcher() {
+  public RemoteEventDispatcher<NodeId, MempoolAdd> mempoolAddRemoteEventDispatcher() {
     return (receiver, msg) -> {
       MempoolAddMessage message = MempoolAddMessage.from(msg.transactions());
       this.send(message, receiver);
     };
   }
 
-  private void send(Message message, BFTNode recipient) {
-    this.messageCentral.send(NodeId.fromPublicKey(recipient.getKey()), message);
+  private void send(Message message, NodeId recipient) {
+    this.messageCentral.send(recipient, message);
   }
 
   public Flowable<RemoteEvent<BFTNode, MempoolAdd>> mempoolComands() {

@@ -80,6 +80,7 @@ import com.radixdlt.environment.*;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.TimeSupplier;
@@ -113,27 +114,9 @@ public class EpochsConsensusModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?, ?> remoteVoteProcessor(EpochManager epochManager) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.CONSENSUS,
-        BFTNode.class,
-        Vote.class,
-        (node, vote) -> epochManager.processConsensusEvent(vote));
-  }
-
-  @ProvidesIntoSet
   private EventProcessorOnRunner<?> localProposalProcessor(EpochManager epochManager) {
     return new EventProcessorOnRunner<>(
         Runners.CONSENSUS, Proposal.class, epochManager::processConsensusEvent);
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?, ?> remoteProposalProcessor(EpochManager epochManager) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.CONSENSUS,
-        BFTNode.class,
-        Proposal.class,
-        (node, proposal) -> epochManager.processConsensusEvent(proposal));
   }
 
   @ProvidesIntoSet
@@ -148,36 +131,6 @@ public class EpochsConsensusModule extends AbstractModule {
   private EventProcessorOnRunner<?> epochsLedgerUpdateEventProcessor(EpochManager epochManager) {
     return new EventProcessorOnRunner<>(
         Runners.CONSENSUS, LedgerUpdate.class, epochManager.epochsLedgerUpdateEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?, ?> localGetVerticesRequestRemoteEventProcessor(
-      EpochManager epochManager) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.CONSENSUS,
-        BFTNode.class,
-        GetVerticesRequest.class,
-        epochManager.bftSyncRequestProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?, ?> responseRemoteEventProcessor(
-      EpochManager epochManager) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.CONSENSUS,
-        BFTNode.class,
-        GetVerticesResponse.class,
-        epochManager.bftSyncResponseProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?, ?> errorResponseRemoteEventProcessor(
-      EpochManager epochManager) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.CONSENSUS,
-        BFTNode.class,
-        GetVerticesErrorResponse.class,
-        epochManager.bftSyncErrorResponseProcessor());
   }
 
   @ProvidesIntoSet
@@ -211,6 +164,54 @@ public class EpochsConsensusModule extends AbstractModule {
         Runners.CONSENSUS,
         EpochRoundLeaderFailure.class,
         epochManager.epochRoundLeaderFailureEventProcessor());
+  }
+
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?, ?> remoteVoteProcessor(EpochManager epochManager) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.CONSENSUS,
+        NodeId.class,
+        Vote.class,
+        (node, vote) -> epochManager.processConsensusEvent(vote));
+  }
+
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?, ?> remoteProposalProcessor(EpochManager epochManager) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.CONSENSUS,
+        NodeId.class,
+        Proposal.class,
+        (node, proposal) -> epochManager.processConsensusEvent(proposal));
+  }
+
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?, ?> getVerticesRequestRemoteEventProcessor(
+      EpochManager epochManager) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.CONSENSUS,
+        NodeId.class,
+        GetVerticesRequest.class,
+        epochManager.bftSyncRequestProcessor());
+  }
+
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?, ?> responseRemoteEventProcessor(
+      EpochManager epochManager) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.CONSENSUS,
+        NodeId.class,
+        GetVerticesResponse.class,
+        epochManager.bftSyncResponseProcessor());
+  }
+
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?, ?> errorResponseRemoteEventProcessor(
+      EpochManager epochManager) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.CONSENSUS,
+        NodeId.class,
+        GetVerticesErrorResponse.class,
+        epochManager.bftSyncErrorResponseProcessor());
   }
 
   @Provides
@@ -349,8 +350,8 @@ public class EpochsConsensusModule extends AbstractModule {
 
   @Provides
   private BFTSyncRequestProcessorFactory vertexStoreSyncVerticesRequestProcessorFactory(
-      RemoteEventDispatcher<BFTNode, GetVerticesErrorResponse> errorResponseDispatcher,
-      RemoteEventDispatcher<BFTNode, GetVerticesResponse> responseDispatcher,
+      RemoteEventDispatcher<NodeId, GetVerticesErrorResponse> errorResponseDispatcher,
+      RemoteEventDispatcher<NodeId, GetVerticesResponse> responseDispatcher,
       Metrics metrics) {
     return vertexStore ->
         new VertexStoreBFTSyncRequestProcessor(
@@ -359,7 +360,7 @@ public class EpochsConsensusModule extends AbstractModule {
 
   @Provides
   private BFTSyncFactory bftSyncFactory(
-      RemoteEventDispatcher<BFTNode, GetVerticesRequest> requestSender,
+      RemoteEventDispatcher<NodeId, GetVerticesRequest> requestSender,
       @Self BFTNode self,
       @GetVerticesRequestRateLimit RateLimiter syncRequestRateLimiter,
       EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,

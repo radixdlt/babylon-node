@@ -162,6 +162,9 @@ public final class DeterministicNodes implements AutoCloseable {
                         new EventLoggerConfig(
                             k -> "Node" + bftAddressBook.get(BFTNode.create(k)))));
                 bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
+                bind(NodeId.class)
+                    .annotatedWith(Self.class)
+                    .toInstance(NodeId.fromPublicKey(self.getKey()));
                 install(
                     new TestP2PModule.Builder()
                         .withAllNodes(bftAddressBook.keySet().stream().toList())
@@ -169,7 +172,11 @@ public final class DeterministicNodes implements AutoCloseable {
                 bind(Environment.class)
                     .toInstance(
                         new ControlledDispatcher(
-                            bftAddressBook::get, p2pAddressBook::get, network, self, nodeIndex));
+                            bftAddressBook::get,
+                            p2pAddressBook::get,
+                            network,
+                            NodeId.fromPublicKey(self.getKey()),
+                            nodeIndex));
                 bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
                 bind(ControlledTimeSupplier.class).toInstance(new ControlledTimeSupplier(time));
                 bind(TimeSupplier.class).to(ControlledTimeSupplier.class);
@@ -244,7 +251,7 @@ public final class DeterministicNodes implements AutoCloseable {
 
     int senderIndex = nextMsg.channelId().senderIndex();
     int receiverIndex = nextMsg.channelId().receiverIndex();
-    var sender = this.nodeIdentifiers.get(senderIndex);
+    var sender = NodeId.fromPublicKey(this.nodeIdentifiers.get(senderIndex).getKey());
 
     var injector = nodeInstances.get(receiverIndex);
 

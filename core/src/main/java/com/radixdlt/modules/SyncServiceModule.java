@@ -72,7 +72,6 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.*;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
@@ -119,7 +118,7 @@ public class SyncServiceModule extends AbstractModule {
       RemoteSyncService remoteSyncService) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.SYNC,
-        BFTNode.class,
+        NodeId.class,
         SyncRequest.class,
         remoteSyncService.syncRequestEventProcessor());
   }
@@ -129,7 +128,7 @@ public class SyncServiceModule extends AbstractModule {
       RemoteSyncService remoteSyncService) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.SYNC,
-        BFTNode.class,
+        NodeId.class,
         StatusRequest.class,
         remoteSyncService.statusRequestEventProcessor());
   }
@@ -145,10 +144,7 @@ public class SyncServiceModule extends AbstractModule {
   private InvalidSyncResponseHandler invalidSyncResponseHandler(
       Metrics metrics, PeerControl peerControl) {
     return (sender, resp) -> {
-      peerControl.banPeer(
-          NodeId.fromPublicKey(sender.getKey()),
-          Duration.ofMinutes(10),
-          "Received invalid sync response");
+      peerControl.banPeer(sender, Duration.ofMinutes(10), "Received invalid sync response");
       metrics.sync().invalidResponsesReceived().inc();
     };
   }

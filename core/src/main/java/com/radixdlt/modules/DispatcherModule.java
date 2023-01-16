@@ -167,15 +167,15 @@ public class DispatcherModule extends AbstractModule {
         .in(Scopes.SINGLETON);
 
     // BFT Sync
-    bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, GetVerticesResponse>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(BFTNode.class, GetVerticesResponse.class))
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesResponse>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, GetVerticesResponse.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, GetVerticesErrorResponse>>() {})
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesErrorResponse>>() {})
         .toProvider(
-            Dispatchers.remoteDispatcherProvider(BFTNode.class, GetVerticesErrorResponse.class))
+            Dispatchers.remoteDispatcherProvider(NodeId.class, GetVerticesErrorResponse.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, MempoolAdd>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(BFTNode.class, MempoolAdd.class))
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, MempoolAdd>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, MempoolAdd.class))
         .in(Scopes.SINGLETON);
 
     final var unexpecedEventKey = new TypeLiteral<EventProcessor<ConsensusByzantineEvent>>() {};
@@ -282,17 +282,17 @@ public class DispatcherModule extends AbstractModule {
   }
 
   private void configureSync() {
-    bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, StatusRequest>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(BFTNode.class, StatusRequest.class))
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, StatusRequest>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, StatusRequest.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, StatusResponse>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(BFTNode.class, StatusResponse.class))
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, StatusResponse>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, StatusResponse.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, SyncRequest>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(BFTNode.class, SyncRequest.class))
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, SyncRequest>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, SyncRequest.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, SyncResponse>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(BFTNode.class, SyncResponse.class))
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, SyncResponse>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, SyncResponse.class))
         .in(Scopes.SINGLETON);
 
     bind(new TypeLiteral<RemoteEventDispatcher<NodeId, LedgerStatusUpdate>>() {})
@@ -431,11 +431,11 @@ public class DispatcherModule extends AbstractModule {
   }
 
   @Provides
-  private RemoteEventDispatcher<BFTNode, GetVerticesRequest> verticesRequestDispatcher(
+  private RemoteEventDispatcher<NodeId, GetVerticesRequest> verticesRequestDispatcher(
       @ProcessOnDispatch Set<EventProcessor<GetVerticesRequest>> processors,
       Environment environment,
       Metrics metrics) {
-    var messageTransportType = MessageTransportType.create(BFTNode.class, GetVerticesRequest.class);
+    var messageTransportType = MessageTransportType.create(NodeId.class, GetVerticesRequest.class);
     var dispatcher = environment.getRemoteDispatcher(messageTransportType);
     return (node, request) -> {
       metrics.bft().sync().requestsSent().inc();

@@ -138,6 +138,6 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
         Stream.concat(Stream.of(nodeId), peersView.peers().map(PeersView.PeerInfo::getNodeId))
             .toList();
     return new ControlledDispatcher(
-        bftAddressBook::indexOf, p2pAddressBook::indexOf, network, bftSelf, 0);
+        bftAddressBook::indexOf, p2pAddressBook::indexOf, network, nodeId, 0);
   }
 }

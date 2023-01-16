@@ -80,6 +80,7 @@ import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.p2p.NodeId;
 
 /** Sets up processors for consensus which doesn't support epochs */
 public class NoEpochsConsensusModule extends AbstractModule {
@@ -110,7 +111,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
   private RemoteEventProcessorOnRunner<?, ?> remoteProposalProcessor(BFTEventProcessor processor) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.CONSENSUS,
-        BFTNode.class,
+        NodeId.class,
         Proposal.class,
         (node, proposal) -> processor.processProposal(proposal));
   }
@@ -123,7 +124,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
   @ProvidesIntoSet
   private RemoteEventProcessorOnRunner<?, ?> remoteVoteProcessor(BFTEventProcessor processor) {
     return new RemoteEventProcessorOnRunner<>(
-        Runners.CONSENSUS, BFTNode.class, Vote.class, (node, vote) -> processor.processVote(vote));
+        Runners.CONSENSUS, NodeId.class, Vote.class, (node, vote) -> processor.processVote(vote));
   }
 
   @ProvidesIntoSet
@@ -155,14 +156,14 @@ public class NoEpochsConsensusModule extends AbstractModule {
   @ProvidesIntoSet
   private RemoteEventProcessorOnRunner<?, ?> bftSyncResponseProcessor(BFTSync bftSync) {
     return new RemoteEventProcessorOnRunner<>(
-        Runners.CONSENSUS, BFTNode.class, GetVerticesResponse.class, bftSync.responseProcessor());
+        Runners.CONSENSUS, NodeId.class, GetVerticesResponse.class, bftSync.responseProcessor());
   }
 
   @ProvidesIntoSet
   private RemoteEventProcessorOnRunner<?, ?> bftSyncErrorResponseProcessor(BFTSync bftSync) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.CONSENSUS,
-        BFTNode.class,
+        NodeId.class,
         GetVerticesErrorResponse.class,
         bftSync.errorResponseProcessor());
   }
@@ -171,7 +172,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
   private RemoteEventProcessorOnRunner<?, ?> bftSyncRequestProcessor(
       VertexStoreBFTSyncRequestProcessor processor) {
     return new RemoteEventProcessorOnRunner<>(
-        Runners.CONSENSUS, BFTNode.class, GetVerticesRequest.class, processor);
+        Runners.CONSENSUS, NodeId.class, GetVerticesRequest.class, processor);
   }
 
   @ProvidesIntoSet

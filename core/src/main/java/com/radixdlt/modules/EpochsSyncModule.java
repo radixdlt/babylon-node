@@ -70,12 +70,12 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.*;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseHandler;
@@ -174,7 +174,7 @@ public class EpochsSyncModule extends AbstractModule {
       EpochsLocalSyncService epochsLocalSyncService) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.SYNC,
-        BFTNode.class,
+        NodeId.class,
         StatusResponse.class,
         epochsLocalSyncService.statusResponseEventProcessor());
   }
@@ -184,7 +184,7 @@ public class EpochsSyncModule extends AbstractModule {
       EpochsLocalSyncService epochsLocalSyncService) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.SYNC,
-        BFTNode.class,
+        NodeId.class,
         SyncResponse.class,
         epochsLocalSyncService.syncResponseEventProcessor());
   }
@@ -194,17 +194,17 @@ public class EpochsSyncModule extends AbstractModule {
       EpochsLocalSyncService epochsLocalSyncService) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.SYNC,
-        BFTNode.class,
+        NodeId.class,
         LedgerStatusUpdate.class,
         epochsLocalSyncService.ledgerStatusUpdateEventProcessor());
   }
 
   @Provides
   private LocalSyncServiceFactory localSyncServiceFactory(
-      RemoteEventDispatcher<BFTNode, StatusRequest> statusRequestDispatcher,
+      RemoteEventDispatcher<NodeId, StatusRequest> statusRequestDispatcher,
       ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout>
           syncCheckReceiveStatusTimeoutDispatcher,
-      RemoteEventDispatcher<BFTNode, SyncRequest> syncRequestDispatcher,
+      RemoteEventDispatcher<NodeId, SyncRequest> syncRequestDispatcher,
       ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher,
       ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher,
       SyncRelayConfig syncRelayConfig,

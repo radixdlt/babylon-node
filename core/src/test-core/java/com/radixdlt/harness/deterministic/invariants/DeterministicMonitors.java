@@ -83,8 +83,8 @@ public final class DeterministicMonitors {
   }
 
   public static class ByzantineBehaviorDetected extends IllegalStateException {
-    ByzantineBehaviorDetected(String nodeName, ConsensusByzantineEvent event) {
-      super("Byzantine Behavior detected on " + nodeName + ": " + event);
+    ByzantineBehaviorDetected(ConsensusByzantineEvent event) {
+      super("Byzantine Behavior detected: " + event);
     }
   }
 
@@ -94,7 +94,7 @@ public final class DeterministicMonitors {
       private MessageMonitor byzantineDetection() {
         return (m, t) -> {
           if (m.message() instanceof ConsensusByzantineEvent event) {
-            throw new ByzantineBehaviorDetected(event.getAuthor().toString(), event);
+            throw new ByzantineBehaviorDetected(event);
           }
         };
       }

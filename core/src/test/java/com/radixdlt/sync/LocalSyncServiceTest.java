@@ -74,7 +74,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
@@ -105,10 +105,10 @@ import org.junit.Test;
 
 public class LocalSyncServiceTest {
   private LocalSyncService localSyncService;
-  private RemoteEventDispatcher<BFTNode, StatusRequest> statusRequestDispatcher;
+  private RemoteEventDispatcher<NodeId, StatusRequest> statusRequestDispatcher;
   private ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout>
       syncCheckReceiveStatusTimeoutDispatcher;
-  private RemoteEventDispatcher<BFTNode, SyncRequest> syncRequestDispatcher;
+  private RemoteEventDispatcher<NodeId, SyncRequest> syncRequestDispatcher;
   private ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher;
   private ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher;
   private SyncRelayConfig syncRelayConfig;
@@ -196,7 +196,7 @@ public class LocalSyncServiceTest {
   public void when_status_response_received_at_non_sync_check__then_should_be_ignored() {
     final LedgerProof currentHeader = mock(LedgerProof.class);
     final LedgerProof statusHeader = mock(LedgerProof.class);
-    final BFTNode sender = createPeer();
+    final NodeId sender = createPeer();
 
     this.setupSyncServiceWithState(SyncState.IdleState.init(currentHeader));
     this.localSyncService
@@ -219,8 +219,8 @@ public class LocalSyncServiceTest {
   public void when_unexpected_status_response_received__then_should_be_ignored() {
     final LedgerProof currentHeader = mock(LedgerProof.class);
     final LedgerProof statusHeader = mock(LedgerProof.class);
-    final BFTNode expectedPeer = createPeer();
-    final BFTNode unexpectedPeer = createPeer();
+    final NodeId expectedPeer = createPeer();
+    final NodeId unexpectedPeer = createPeer();
 
     this.setupSyncServiceWithState(
         SyncState.SyncCheckState.init(currentHeader, ImmutableSet.of(expectedPeer)));
@@ -238,8 +238,8 @@ public class LocalSyncServiceTest {
   public void when_duplicate_status_response_received__then_should_be_ignored() {
     final LedgerProof currentHeader = mock(LedgerProof.class);
     final LedgerProof statusHeader = mock(LedgerProof.class);
-    final BFTNode expectedPeer = createPeer();
-    final BFTNode alreadyReceivedPeer = createPeer();
+    final NodeId expectedPeer = createPeer();
+    final NodeId alreadyReceivedPeer = createPeer();
 
     final var syncState =
         SyncState.SyncCheckState.init(currentHeader, ImmutableSet.of(expectedPeer))
@@ -262,9 +262,9 @@ public class LocalSyncServiceTest {
     final LedgerProof statusHeader1 = createHeaderAtStateVersion(2L);
     final LedgerProof statusHeader2 = createHeaderAtStateVersion(20L);
     final LedgerProof statusHeader3 = createHeaderAtStateVersion(15L);
-    final BFTNode waiting1 = createPeer();
-    final BFTNode waiting2 = createPeer();
-    final BFTNode waiting3 = createPeer();
+    final NodeId waiting1 = createPeer();
+    final NodeId waiting2 = createPeer();
+    final NodeId waiting3 = createPeer();
 
     final var syncState =
         SyncState.SyncCheckState.init(currentHeader, ImmutableSet.of(waiting1, waiting2, waiting3));
@@ -288,7 +288,7 @@ public class LocalSyncServiceTest {
   @Test
   public void when_status_timeout_with_no_responses__then_should_reschedule_another_check() {
     final LedgerProof currentHeader = createHeaderAtStateVersion(10L);
-    final BFTNode waiting1 = createPeer();
+    final NodeId waiting1 = createPeer();
     setupPeersView(waiting1);
 
     final var syncState = SyncState.SyncCheckState.init(currentHeader, ImmutableSet.of(waiting1));
@@ -383,8 +383,8 @@ public class LocalSyncServiceTest {
     final var currentHeader = createHeaderAtStateVersion(10L);
     final var targetHeader = createHeaderAtStateVersion(20L);
 
-    final var peer1 = mock(BFTNode.class);
-    final var peer2 = mock(BFTNode.class);
+    final var peer1 = mock(NodeId.class);
+    final var peer2 = mock(NodeId.class);
     when(peersView.peers()).thenAnswer(i -> Stream.of(peer1, peer2));
 
     final var originalCandidates = ImmutableList.of(peer1, peer2);
@@ -556,9 +556,9 @@ public class LocalSyncServiceTest {
     final var newTargetHeader = createHeaderAtStateVersion(22L);
     final var evenNewerTargetHeader = createHeaderAtStateVersion(23L);
 
-    final var peer1 = mock(BFTNode.class);
-    final var peer2 = mock(BFTNode.class);
-    final var peer3 = mock(BFTNode.class);
+    final var peer1 = mock(NodeId.class);
+    final var peer2 = mock(NodeId.class);
+    final var peer3 = mock(NodeId.class);
     setupPeersView(peer1, peer2, peer3);
 
     final var syncState =
@@ -673,7 +673,7 @@ public class LocalSyncServiceTest {
     return header;
   }
 
-  private void setupPeersView(BFTNode... bftNodes) {
+  private void setupPeersView(NodeId... nodes) {
     var peerChannelInfo =
         PeersView.PeerChannelInfo.create(
             Optional.empty(),
@@ -682,13 +682,12 @@ public class LocalSyncServiceTest {
             true,
             Set.of(LedgerSyncCapability.Builder.asDefault().build().toRemotePeerCapability()));
     var channels = ImmutableList.of(peerChannelInfo);
-    var peerInfoStream =
-        Stream.of(bftNodes).map(it -> PeerInfo.create(NodeId.fromPublicKey(it.getKey()), channels));
+    var peerInfoStream = Stream.of(nodes).map(it -> PeerInfo.create(it, channels));
     when(peersView.peers()).thenReturn(peerInfoStream);
-    Arrays.stream(bftNodes).forEach(peer -> when(peersView.hasPeer(peer)).thenReturn(true));
+    Arrays.stream(nodes).forEach(peer -> when(peersView.hasPeer(peer)).thenReturn(true));
   }
 
-  private BFTNode createPeer() {
-    return BFTNode.random();
+  private NodeId createPeer() {
+    return NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
   }
 }

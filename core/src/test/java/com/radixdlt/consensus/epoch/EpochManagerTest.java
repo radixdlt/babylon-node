@@ -100,6 +100,7 @@ import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.LedgerModule;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
@@ -134,7 +135,7 @@ public class EpochManagerTest {
   private StateComputer stateComputer =
       new StateComputer() {
         @Override
-        public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
+        public void addToMempool(MempoolAdd mempoolAdd, @Nullable NodeId origin) {
           // No-op
         }
 
@@ -210,11 +211,11 @@ public class EpochManagerTest {
         bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, Proposal>>() {})
             .toInstance(proposalDispatcher);
         bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, Vote>>() {}).toInstance(voteDispatcher);
-        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, GetVerticesRequest>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesRequest>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, GetVerticesResponse>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesResponse>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, GetVerticesErrorResponse>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesErrorResponse>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
         bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, LedgerStatusUpdate>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));

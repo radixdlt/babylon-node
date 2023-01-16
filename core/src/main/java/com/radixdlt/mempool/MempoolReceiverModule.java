@@ -68,13 +68,13 @@ import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.p2p.NodeId;
 
 public class MempoolReceiverModule extends AbstractModule {
   @Override
@@ -101,7 +101,7 @@ public class MempoolReceiverModule extends AbstractModule {
       StateComputerLedger stateComputerLedger, @MempoolThrottleMs long mempoolThrottleMs) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.MEMPOOL,
-        BFTNode.class,
+        NodeId.class,
         MempoolAdd.class,
         stateComputerLedger.mempoolAddRemoteEventProcessor(),
         mempoolThrottleMs);

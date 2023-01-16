@@ -69,7 +69,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -78,6 +77,7 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.p2p.capability.RemotePeerCapability;
@@ -114,16 +114,16 @@ public final class LocalSyncService {
   }
 
   public interface InvalidSyncResponseHandler {
-    void handleInvalidSyncResponse(BFTNode sender, SyncResponse syncResponse);
+    void handleInvalidSyncResponse(NodeId sender, SyncResponse syncResponse);
   }
 
   private static final Logger log = LogManager.getLogger();
 
   private final AtomicLong requestIdCounter = new AtomicLong();
-  private final RemoteEventDispatcher<BFTNode, StatusRequest> statusRequestDispatcher;
+  private final RemoteEventDispatcher<NodeId, StatusRequest> statusRequestDispatcher;
   private final ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout>
       syncCheckReceiveStatusTimeoutDispatcher;
-  private final RemoteEventDispatcher<BFTNode, SyncRequest> syncRequestDispatcher;
+  private final RemoteEventDispatcher<NodeId, SyncRequest> syncRequestDispatcher;
   private final ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher;
   private final ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher;
   private final SyncRelayConfig syncRelayConfig;
@@ -142,10 +142,10 @@ public final class LocalSyncService {
 
   @Inject
   public LocalSyncService(
-      RemoteEventDispatcher<BFTNode, StatusRequest> statusRequestDispatcher,
+      RemoteEventDispatcher<NodeId, StatusRequest> statusRequestDispatcher,
       ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout>
           syncCheckReceiveStatusTimeoutDispatcher,
-      RemoteEventDispatcher<BFTNode, SyncRequest> syncRequestDispatcher,
+      RemoteEventDispatcher<NodeId, SyncRequest> syncRequestDispatcher,
       ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher,
       ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher,
       SyncRelayConfig syncRelayConfig,
@@ -229,23 +229,40 @@ public final class LocalSyncService {
                     IdleState.class,
                     LocalSyncRequest.class,
                     state ->
-                        request ->
-                            this.startSync(state, request.getTargetNodes(), request.getTarget())))
+                        request -> {
+                          var bftNodes = request.getTargetNodes();
+                          var resolvedNodes =
+                              bftNodes.stream()
+                                  .map(b -> NodeId.fromPublicKey(b.getKey()))
+                                  .collect(ImmutableList.toImmutableList());
+                          return this.startSync(state, resolvedNodes, request.getTarget());
+                        }))
             .put(
                 handler(
                     SyncCheckState.class,
                     LocalSyncRequest.class,
                     state ->
-                        request ->
-                            this.startSync(state, request.getTargetNodes(), request.getTarget())))
+                        request -> {
+                          var bftNodes = request.getTargetNodes();
+                          var resolvedNodes =
+                              bftNodes.stream()
+                                  .map(b -> NodeId.fromPublicKey(b.getKey()))
+                                  .collect(ImmutableList.toImmutableList());
+                          return this.startSync(state, resolvedNodes, request.getTarget());
+                        }))
             .put(
                 handler(
                     SyncingState.class,
                     LocalSyncRequest.class,
                     state ->
-                        request ->
-                            this.updateTargetIfNeeded(
-                                state, request.getTargetNodes(), request.getTarget())))
+                        request -> {
+                          var bftNodes = request.getTargetNodes();
+                          var resolvedNodes =
+                              bftNodes.stream()
+                                  .map(b -> NodeId.fromPublicKey(b.getKey()))
+                                  .collect(ImmutableList.toImmutableList());
+                          return this.startSync(state, resolvedNodes, request.getTarget());
+                        }))
             .put(
                 remoteHandler(
                     IdleState.class,
@@ -272,7 +289,7 @@ public final class LocalSyncService {
   }
 
   private SyncState initSyncCheck(IdleState currentState) {
-    final ImmutableSet<BFTNode> peersToAsk = this.choosePeersForSyncCheck();
+    final ImmutableSet<NodeId> peersToAsk = this.choosePeersForSyncCheck();
 
     log.trace(
         "LocalSync: Initializing sync check, about to ask {} peers for their status",
@@ -285,7 +302,7 @@ public final class LocalSyncService {
     return SyncCheckState.init(currentState.getCurrentHeader(), peersToAsk);
   }
 
-  private ImmutableSet<BFTNode> choosePeersForSyncCheck() {
+  private ImmutableSet<NodeId> choosePeersForSyncCheck() {
     final var allPeers =
         this.peersView
             .peers()
@@ -294,7 +311,7 @@ public final class LocalSyncService {
     Collections.shuffle(allPeers);
     return allPeers.stream()
         .limit(this.syncRelayConfig.syncCheckMaxPeers())
-        .map(PeersView.PeerInfo::bftNode)
+        .map(PeersView.PeerInfo::getNodeId)
         .collect(ImmutableSet.toImmutableSet());
   }
 
@@ -306,7 +323,7 @@ public final class LocalSyncService {
   }
 
   private SyncState processStatusResponse(
-      SyncCheckState currentState, BFTNode peer, StatusResponse statusResponse) {
+      SyncCheckState currentState, NodeId peer, StatusResponse statusResponse) {
     log.trace("LocalSync: Received status response {} from peer {}", statusResponse, peer);
 
     if (!currentState.hasAskedPeer(peer)) {
@@ -379,7 +396,7 @@ public final class LocalSyncService {
   }
 
   private SyncState startSync(
-      SyncState currentState, ImmutableList<BFTNode> candidatePeers, LedgerProof targetHeader) {
+      SyncState currentState, ImmutableList<NodeId> candidatePeers, LedgerProof targetHeader) {
     log.trace(
         "LocalSync: Syncing to target header {}, got {} candidate peers",
         targetHeader,
@@ -415,7 +432,7 @@ public final class LocalSyncService {
             });
   }
 
-  private SyncState sendSyncRequest(SyncingState currentState, BFTNode peer) {
+  private SyncState sendSyncRequest(SyncingState currentState, NodeId peer) {
     log.trace("LocalSync: Sending sync request to {}", peer);
 
     final var currentHeader = currentState.getCurrentHeader();
@@ -436,7 +453,7 @@ public final class LocalSyncService {
   }
 
   private SyncState processSyncResponse(
-      SyncingState currentState, BFTNode sender, SyncResponse syncResponse) {
+      SyncingState currentState, NodeId sender, SyncResponse syncResponse) {
     log.trace("LocalSync: Received sync response from {}", sender);
 
     if (!currentState.waitingForResponseFrom(sender)) {
@@ -533,7 +550,7 @@ public final class LocalSyncService {
   }
 
   private SyncingState updateTargetIfNeeded(
-      SyncingState currentState, ImmutableList<BFTNode> peers, LedgerProof header) {
+      SyncingState currentState, ImmutableList<NodeId> peers, LedgerProof header) {
     final var isNewerState =
         accComparator.compare(
                 header.getAccumulatorState(), currentState.getTargetHeader().getAccumulatorState())
@@ -577,7 +594,7 @@ public final class LocalSyncService {
     return (event) -> this.processEvent(SyncCheckTrigger.class, event);
   }
 
-  public RemoteEventProcessor<BFTNode, StatusResponse> statusResponseEventProcessor() {
+  public RemoteEventProcessor<NodeId, StatusResponse> statusResponseEventProcessor() {
     return (peer, event) -> this.processRemoteEvent(StatusResponse.class, peer, event);
   }
 
@@ -586,11 +603,11 @@ public final class LocalSyncService {
     return (event) -> this.processEvent(SyncCheckReceiveStatusTimeout.class, event);
   }
 
-  public RemoteEventProcessor<BFTNode, SyncResponse> syncResponseEventProcessor() {
+  public RemoteEventProcessor<NodeId, SyncResponse> syncResponseEventProcessor() {
     return (peer, event) -> this.processRemoteEvent(SyncResponse.class, peer, event);
   }
 
-  public RemoteEventProcessor<BFTNode, LedgerStatusUpdate> ledgerStatusUpdateEventProcessor() {
+  public RemoteEventProcessor<NodeId, LedgerStatusUpdate> ledgerStatusUpdateEventProcessor() {
     return (peer, event) -> this.processRemoteEvent(LedgerStatusUpdate.class, peer, event);
   }
 
@@ -619,7 +636,7 @@ public final class LocalSyncService {
     }
   }
 
-  private <T> void processRemoteEvent(Class<T> eventClass, BFTNode peer, T event) {
+  private <T> void processRemoteEvent(Class<T> eventClass, NodeId peer, T event) {
     @SuppressWarnings("unchecked")
     final var maybeHandler =
         (Handler<Object, Object>) this.handlers.get(Pair.of(this.syncState.getClass(), eventClass));
@@ -636,20 +653,20 @@ public final class LocalSyncService {
   private <S, T> Map.Entry<Pair<Class<S>, Class<T>>, Handler<S, T>> remoteHandler(
       Class<S> stateClass,
       Class<T> eventClass,
-      Function<S, Function<BFTNode, Function<T, SyncState>>> fn) {
+      Function<S, Function<NodeId, Function<T, SyncState>>> fn) {
     return Map.entry(Pair.of(stateClass, eventClass), new Handler<>(new Object(), fn));
   }
 
   private static final class Handler<S, T> {
     private Function<S, Function<T, SyncState>> handleEvent;
-    private Function<S, Function<BFTNode, Function<T, SyncState>>> handleRemoteEvent;
+    private Function<S, Function<NodeId, Function<T, SyncState>>> handleRemoteEvent;
 
     Handler(Function<S, Function<T, SyncState>> fn) {
       this.handleEvent = fn;
     }
 
     /* need another param to be able to distinguish the methods after type erasure */
-    Handler(Object erasureFix, Function<S, Function<BFTNode, Function<T, SyncState>>> fn) {
+    Handler(Object erasureFix, Function<S, Function<NodeId, Function<T, SyncState>>> fn) {
       this.handleRemoteEvent = fn;
     }
 
@@ -657,7 +674,7 @@ public final class LocalSyncService {
       return this.handleEvent.apply(currentState).apply(event);
     }
 
-    SyncState handle(S currentState, BFTNode peer, T event) {
+    SyncState handle(S currentState, NodeId peer, T event) {
       return this.handleRemoteEvent.apply(currentState).apply(peer).apply(event);
     }
   }

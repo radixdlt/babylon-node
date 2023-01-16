@@ -65,11 +65,11 @@
 package com.radixdlt.sync.epochs;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
@@ -178,27 +178,27 @@ public class EpochsLocalSyncService {
     this.localSyncService.syncRequestTimeoutEventProcessor().process(syncRequestTimeout);
   }
 
-  public RemoteEventProcessor<BFTNode, StatusResponse> statusResponseEventProcessor() {
+  public RemoteEventProcessor<NodeId, StatusResponse> statusResponseEventProcessor() {
     return this::processStatusResponse;
   }
 
-  private void processStatusResponse(BFTNode sender, StatusResponse statusResponse) {
+  private void processStatusResponse(NodeId sender, StatusResponse statusResponse) {
     this.localSyncService.statusResponseEventProcessor().process(sender, statusResponse);
   }
 
-  public RemoteEventProcessor<BFTNode, SyncResponse> syncResponseEventProcessor() {
+  public RemoteEventProcessor<NodeId, SyncResponse> syncResponseEventProcessor() {
     return this::processSyncResponse;
   }
 
-  private void processSyncResponse(BFTNode sender, SyncResponse syncResponse) {
+  private void processSyncResponse(NodeId sender, SyncResponse syncResponse) {
     this.localSyncService.syncResponseEventProcessor().process(sender, syncResponse);
   }
 
-  public RemoteEventProcessor<BFTNode, LedgerStatusUpdate> ledgerStatusUpdateEventProcessor() {
+  public RemoteEventProcessor<NodeId, LedgerStatusUpdate> ledgerStatusUpdateEventProcessor() {
     return this::processLedgerStatusUpdate;
   }
 
-  private void processLedgerStatusUpdate(BFTNode sender, LedgerStatusUpdate ledgerStatusUpdate) {
+  private void processLedgerStatusUpdate(NodeId sender, LedgerStatusUpdate ledgerStatusUpdate) {
     this.localSyncService.ledgerStatusUpdateEventProcessor().process(sender, ledgerStatusUpdate);
   }
 }

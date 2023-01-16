@@ -67,7 +67,6 @@ package com.radixdlt.sync;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -91,8 +90,8 @@ public final class RemoteSyncService {
   private final PeersView peersView;
   private final LocalSyncService localSyncService; // TODO: consider removing this dependency
   private final TransactionsAndProofReader committedReader;
-  private final RemoteEventDispatcher<BFTNode, StatusResponse> statusResponseDispatcher;
-  private final RemoteEventDispatcher<BFTNode, SyncResponse> syncResponseDispatcher;
+  private final RemoteEventDispatcher<NodeId, StatusResponse> statusResponseDispatcher;
+  private final RemoteEventDispatcher<NodeId, SyncResponse> syncResponseDispatcher;
   private final RemoteEventDispatcher<NodeId, LedgerStatusUpdate> statusUpdateDispatcher;
   private final SyncRelayConfig syncRelayConfig;
   private final Metrics metrics;
@@ -106,8 +105,8 @@ public final class RemoteSyncService {
       PeersView peersView,
       LocalSyncService localSyncService,
       TransactionsAndProofReader committedReader,
-      RemoteEventDispatcher<BFTNode, StatusResponse> statusResponseDispatcher,
-      RemoteEventDispatcher<BFTNode, SyncResponse> syncResponseDispatcher,
+      RemoteEventDispatcher<NodeId, StatusResponse> statusResponseDispatcher,
+      RemoteEventDispatcher<NodeId, SyncResponse> syncResponseDispatcher,
       RemoteEventDispatcher<NodeId, LedgerStatusUpdate> statusUpdateDispatcher,
       SyncRelayConfig syncRelayConfig,
       Metrics metrics,
@@ -128,11 +127,11 @@ public final class RemoteSyncService {
     this.currentHeader = initialHeader;
   }
 
-  public RemoteEventProcessor<BFTNode, SyncRequest> syncRequestEventProcessor() {
+  public RemoteEventProcessor<NodeId, SyncRequest> syncRequestEventProcessor() {
     return this::processSyncRequest;
   }
 
-  private void processSyncRequest(BFTNode sender, SyncRequest syncRequest) {
+  private void processSyncRequest(NodeId sender, SyncRequest syncRequest) {
     final var remoteCurrentHeader = syncRequest.getHeader();
     final var transactionsWithProof = getTransactionsWithProofForSyncRequest(remoteCurrentHeader);
 
@@ -165,11 +164,11 @@ public final class RemoteSyncService {
     return committedReader.getTransactions(startHeader);
   }
 
-  public RemoteEventProcessor<BFTNode, StatusRequest> statusRequestEventProcessor() {
+  public RemoteEventProcessor<NodeId, StatusRequest> statusRequestEventProcessor() {
     return this::processStatusRequest;
   }
 
-  private void processStatusRequest(BFTNode sender, StatusRequest statusRequest) {
+  private void processStatusRequest(NodeId sender, StatusRequest statusRequest) {
     statusResponseDispatcher.dispatch(sender, StatusResponse.create(this.currentHeader));
   }
 

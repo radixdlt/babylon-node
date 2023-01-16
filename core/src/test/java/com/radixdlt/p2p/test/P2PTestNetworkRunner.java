@@ -214,6 +214,9 @@ public final class P2PTestNetworkRunner {
             bind(BFTNode.class)
                 .annotatedWith(Self.class)
                 .toInstance(BFTNode.create(nodeKey.getPublicKey()));
+            bind(NodeId.class)
+                .annotatedWith(Self.class)
+                .toInstance(NodeId.fromPublicKey(nodeKey.getPublicKey()));
             bind(String.class)
                 .annotatedWith(Self.class)
                 .toInstance(
@@ -227,7 +230,7 @@ public final class P2PTestNetworkRunner {
                         bftAddressBook,
                         p2pAddressBook,
                         network,
-                        BFTNode.create(nodeKey.getPublicKey()),
+                        NodeId.fromPublicKey(nodeKey.getPublicKey()),
                         selfNodeIndex));
             bind(RuntimeProperties.class).toInstance(properties);
             bind(Serialization.class).toInstance(DefaultSerialization.getInstance());

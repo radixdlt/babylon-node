@@ -74,7 +74,7 @@ import java.util.function.Function;
 /** A sender within a deterministic network. */
 public final class ControlledDispatcher implements Environment {
   private final DeterministicNetwork network;
-  private final BFTNode self;
+  private final NodeId self;
   private final int senderIndex;
   private final ChannelId localChannel;
   private final Function<BFTNode, Integer> bftAddressBook;
@@ -84,7 +84,7 @@ public final class ControlledDispatcher implements Environment {
       Function<BFTNode, Integer> bftAddressBook,
       Function<NodeId, Integer> p2pAddressBook,
       DeterministicNetwork network,
-      BFTNode self,
+      NodeId self,
       int senderIndex) {
     this.bftAddressBook = bftAddressBook;
     this.p2pAddressBook = p2pAddressBook;

@@ -67,15 +67,14 @@ package com.radixdlt.consensus;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.RoundDetails;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 
 public sealed interface ConsensusByzantineEvent {
-  BFTNode getAuthor();
 
-  record ConflictingGenesis(QuorumCertificate qc, BFTNode author)
+  record ConflictingGenesis(QuorumCertificate qc, NodeId author)
       implements ConsensusByzantineEvent {
-    @Override
-    public BFTNode getAuthor() {
+    public NodeId getAuthor() {
       return author;
     }
   }
@@ -83,7 +82,6 @@ public sealed interface ConsensusByzantineEvent {
   /** A Double vote which has detected. This is proof that there is byzantine node. */
   record DoubleVote(BFTNode author, PreviousVote previousVote, Vote vote, HashCode voteHash)
       implements ConsensusByzantineEvent {
-    @Override
     public BFTNode getAuthor() {
       return author;
     }
@@ -92,7 +90,6 @@ public sealed interface ConsensusByzantineEvent {
   record InvalidProposedTransaction(
       RoundDetails roundDetails, RawNotarizedTransaction notarizedTransaction, Exception e)
       implements ConsensusByzantineEvent {
-    @Override
     public BFTNode getAuthor() {
       return roundDetails.roundProposer();
     }

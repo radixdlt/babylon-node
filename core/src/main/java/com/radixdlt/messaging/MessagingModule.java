@@ -132,7 +132,7 @@ public final class MessagingModule extends AbstractModule {
   private RxRemoteDispatcher<?, ?> mempoolAddDispatcher(
       MessageCentralMempool messageCentralMempool) {
     return RxRemoteDispatcher.create(
-        BFTNode.class, MempoolAdd.class, messageCentralMempool.mempoolAddRemoteEventDispatcher());
+        NodeId.class, MempoolAdd.class, messageCentralMempool.mempoolAddRemoteEventDispatcher());
   }
 
   @ProvidesIntoSet
@@ -280,19 +280,19 @@ public final class MessagingModule extends AbstractModule {
             MessageTransportType.create(BFTNode.class, GetVerticesErrorResponse.class))) {
           return messageCentralBFTSync.errorResponses().map(m -> (RemoteEvent<N, T>) m);
         } else if (messageTransportType.equals(
-            MessageTransportType.create(BFTNode.class, MempoolAdd.class))) {
+            MessageTransportType.create(NodeId.class, MempoolAdd.class))) {
           return messageCentralMempool.mempoolComands().map(m -> (RemoteEvent<N, T>) m);
         } else if (messageTransportType.equals(
-            MessageTransportType.create(BFTNode.class, SyncRequest.class))) {
+            MessageTransportType.create(NodeId.class, SyncRequest.class))) {
           return messageCentralLedgerSync.syncRequests().map(m -> (RemoteEvent<N, T>) m);
         } else if (messageTransportType.equals(
-            MessageTransportType.create(BFTNode.class, SyncResponse.class))) {
+            MessageTransportType.create(NodeId.class, SyncResponse.class))) {
           return messageCentralLedgerSync.syncResponses().map(m -> (RemoteEvent<N, T>) m);
         } else if (messageTransportType.equals(
-            MessageTransportType.create(BFTNode.class, StatusRequest.class))) {
+            MessageTransportType.create(NodeId.class, StatusRequest.class))) {
           return messageCentralLedgerSync.statusRequests().map(m -> (RemoteEvent<N, T>) m);
         } else if (messageTransportType.equals(
-            MessageTransportType.create(BFTNode.class, StatusResponse.class))) {
+            MessageTransportType.create(NodeId.class, StatusResponse.class))) {
           return messageCentralLedgerSync.statusResponses().map(m -> (RemoteEvent<N, T>) m);
         } else if (messageTransportType.equals(
             MessageTransportType.create(NodeId.class, LedgerStatusUpdate.class))) {

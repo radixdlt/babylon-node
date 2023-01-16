@@ -68,8 +68,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
@@ -147,7 +147,7 @@ public class NoEpochsSyncModule extends AbstractModule {
       LocalSyncService localSyncService) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.SYNC,
-        BFTNode.class,
+        NodeId.class,
         StatusResponse.class,
         localSyncService.statusResponseEventProcessor());
   }
@@ -157,7 +157,7 @@ public class NoEpochsSyncModule extends AbstractModule {
       LocalSyncService localSyncService) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.SYNC,
-        BFTNode.class,
+        NodeId.class,
         SyncResponse.class,
         localSyncService.syncResponseEventProcessor());
   }
@@ -167,7 +167,7 @@ public class NoEpochsSyncModule extends AbstractModule {
       LocalSyncService localSyncService) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.SYNC,
-        BFTNode.class,
+        NodeId.class,
         LedgerStatusUpdate.class,
         localSyncService.ledgerStatusUpdateEventProcessor());
   }

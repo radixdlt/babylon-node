@@ -65,25 +65,29 @@
 package com.radixdlt.environment.deterministic;
 
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.MessageTransportType;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.StartProcessorOnRunner;
+import com.radixdlt.p2p.NodeId;
 import java.util.Objects;
 import java.util.Set;
 import javax.inject.Inject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class DeterministicProcessor {
-  private final BFTNode self;
+  private static final Logger log = LogManager.getLogger();
+
+  private final NodeId self;
   private final Set<StartProcessorOnRunner> startProcessors;
   private final Set<EventProcessorOnRunner<?>> processorOnRunners;
   private final Set<RemoteEventProcessorOnRunner<?, ?>> remoteProcessorOnRunners;
 
   @Inject
   public DeterministicProcessor(
-      @Self BFTNode self,
+      @Self NodeId self,
       Set<StartProcessorOnRunner> startProcessors,
       Set<EventProcessorOnRunner<?>> processorOnRunners,
       Set<RemoteEventProcessorOnRunner<?, ?>> remoteProcessorOnRunners) {
@@ -91,10 +95,6 @@ public final class DeterministicProcessor {
     this.startProcessors = Objects.requireNonNull(startProcessors);
     this.processorOnRunners = Objects.requireNonNull(processorOnRunners);
     this.remoteProcessorOnRunners = Objects.requireNonNull(remoteProcessorOnRunners);
-  }
-
-  public BFTNode self() {
-    return self;
   }
 
   public void start() {
@@ -119,15 +119,15 @@ public final class DeterministicProcessor {
 
   @SuppressWarnings("unchecked")
   private static <T> boolean tryExecute(
-      BFTNode origin, T event, RemoteEventProcessorOnRunner<?, ?> processor) {
+      NodeId origin, T event, RemoteEventProcessorOnRunner<?, ?> processor) {
     final var eventClass = (Class<T>) event.getClass();
-    final var messageTransportType = MessageTransportType.create(BFTNode.class, eventClass);
+    final var messageTransportType = MessageTransportType.create(NodeId.class, eventClass);
     final var maybeProcessor = processor.getProcessor(messageTransportType);
     maybeProcessor.ifPresent(p -> p.process(origin, event));
     return maybeProcessor.isPresent();
   }
 
-  public void handleMessage(BFTNode origin, Object message, TypeLiteral<?> msgType) {
+  public void handleMessage(NodeId origin, Object message, TypeLiteral<?> msgType) {
     boolean messageHandled = false;
     if (Objects.equals(self, origin)) {
       for (EventProcessorOnRunner<?> p : processorOnRunners) {
@@ -137,6 +137,10 @@ public final class DeterministicProcessor {
       for (RemoteEventProcessorOnRunner<?, ?> p : remoteProcessorOnRunners) {
         messageHandled = tryExecute(origin, message, p) || messageHandled;
       }
+    }
+
+    if (!messageHandled) {
+      log.warn("Message not handled: {}", message);
     }
   }
 }

@@ -88,50 +88,43 @@ public final class MessageCentralLedgerSync {
     this.messageCentral = Objects.requireNonNull(messageCentral);
   }
 
-  public Flowable<RemoteEvent<BFTNode, StatusRequest>> statusRequests() {
+  public Flowable<RemoteEvent<NodeId, StatusRequest>> statusRequests() {
     return this.messageCentral
         .messagesOf(StatusRequestMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(
-            m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
-              return RemoteEvent.create(node, StatusRequest.create());
-            });
+        .map(m -> RemoteEvent.create(m.source(), StatusRequest.create()));
   }
 
-  public Flowable<RemoteEvent<BFTNode, StatusResponse>> statusResponses() {
+  public Flowable<RemoteEvent<NodeId, StatusResponse>> statusResponses() {
     return this.messageCentral
         .messagesOf(StatusResponseMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
               final var msg = m.message();
-              return RemoteEvent.create(node, StatusResponse.create(msg.getHeader()));
+              return RemoteEvent.create(m.source(), StatusResponse.create(msg.getHeader()));
             });
   }
 
-  public Flowable<RemoteEvent<BFTNode, SyncRequest>> syncRequests() {
+  public Flowable<RemoteEvent<NodeId, SyncRequest>> syncRequests() {
     return this.messageCentral
         .messagesOf(SyncRequestMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
               final var msg = m.message();
-              return RemoteEvent.create(node, SyncRequest.create(msg.getCurrentHeader()));
+              return RemoteEvent.create(m.source(), SyncRequest.create(msg.getCurrentHeader()));
             });
   }
 
-  public Flowable<RemoteEvent<BFTNode, SyncResponse>> syncResponses() {
+  public Flowable<RemoteEvent<NodeId, SyncResponse>> syncResponses() {
     return this.messageCentral
         .messagesOf(SyncResponseMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
               final var msg = m.message();
-              return RemoteEvent.create(node, SyncResponse.create(msg.getTransactions()));
+              return RemoteEvent.create(m.source(), SyncResponse.create(msg.getTransactions()));
             });
   }
 
