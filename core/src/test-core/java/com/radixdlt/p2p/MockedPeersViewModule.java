@@ -68,7 +68,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
@@ -79,7 +78,7 @@ import java.util.Set;
 
 class MockedPeersViewModule extends AbstractModule {
   private ImmutableMap<ECDSASecp256k1PublicKey, ImmutableList<ECDSASecp256k1PublicKey>> peersByNode;
-  private List<BFTNode> allNodes;
+  private List<NodeId> allNodes;
 
   /**
    * @param peersByNodeOrNull - If passed a null map, then each node is assumed to have each other
@@ -91,18 +90,18 @@ class MockedPeersViewModule extends AbstractModule {
     this.peersByNode = Objects.requireNonNull(peersByNodeOrNull);
   }
 
-  public MockedPeersViewModule(List<BFTNode> allNodes) {
+  public MockedPeersViewModule(List<NodeId> allNodes) {
     this.allNodes = Objects.requireNonNull(allNodes);
   }
 
   @Provides
-  public PeersView peersView(@Self BFTNode self) {
+  public PeersView peersView(@Self NodeId self) {
     final var peersForNode =
-        peersByNode != null && peersByNode.containsKey(self.getKey())
+        peersByNode != null && peersByNode.containsKey(self.getPublicKey())
             ? peersByNode // Use a specific set of peers for the given node, if defined
-                .get(self.getKey())
+                .get(self.getPublicKey())
                 .stream()
-                .map(BFTNode::create)
+                .map(NodeId::fromPublicKey)
                 .collect(ImmutableList.toImmutableList())
             : allNodes; // Else return all the nodes in the network
 
@@ -118,7 +117,7 @@ class MockedPeersViewModule extends AbstractModule {
     final var peersForNodeWithoutSelf =
         peersForNode.stream()
             .filter(n -> !n.equals(self))
-            .map(it -> PeersView.PeerInfo.create(NodeId.fromPublicKey(it.getKey()), channels))
+            .map(it -> PeersView.PeerInfo.create(it, channels))
             .collect(ImmutableList.toImmutableList());
 
     // PeersView is a functional interface, so we're actually returning an implementation of

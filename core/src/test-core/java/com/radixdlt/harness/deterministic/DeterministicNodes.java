@@ -167,7 +167,7 @@ public final class DeterministicNodes implements AutoCloseable {
                     .toInstance(NodeId.fromPublicKey(self.getKey()));
                 install(
                     new TestP2PModule.Builder()
-                        .withAllNodes(bftAddressBook.keySet().stream().toList())
+                        .withAllNodes(p2pAddressBook.keySet().stream().toList())
                         .build());
                 bind(Environment.class)
                     .toInstance(
