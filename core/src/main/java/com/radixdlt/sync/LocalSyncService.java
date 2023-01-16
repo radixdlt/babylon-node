@@ -230,12 +230,8 @@ public final class LocalSyncService {
                     LocalSyncRequest.class,
                     state ->
                         request -> {
-                          var bftNodes = request.getTargetNodes();
-                          var resolvedNodes =
-                              bftNodes.stream()
-                                  .map(b -> NodeId.fromPublicKey(b.getKey()))
-                                  .collect(ImmutableList.toImmutableList());
-                          return this.startSync(state, resolvedNodes, request.getTarget());
+                          var targetNodes = request.getTargetNodes();
+                          return this.startSync(state, targetNodes, request.getTarget());
                         }))
             .put(
                 handler(
@@ -243,12 +239,8 @@ public final class LocalSyncService {
                     LocalSyncRequest.class,
                     state ->
                         request -> {
-                          var bftNodes = request.getTargetNodes();
-                          var resolvedNodes =
-                              bftNodes.stream()
-                                  .map(b -> NodeId.fromPublicKey(b.getKey()))
-                                  .collect(ImmutableList.toImmutableList());
-                          return this.startSync(state, resolvedNodes, request.getTarget());
+                          var targetNodes = request.getTargetNodes();
+                          return this.startSync(state, targetNodes, request.getTarget());
                         }))
             .put(
                 handler(
@@ -256,12 +248,8 @@ public final class LocalSyncService {
                     LocalSyncRequest.class,
                     state ->
                         request -> {
-                          var bftNodes = request.getTargetNodes();
-                          var resolvedNodes =
-                              bftNodes.stream()
-                                  .map(b -> NodeId.fromPublicKey(b.getKey()))
-                                  .collect(ImmutableList.toImmutableList());
-                          return this.startSync(state, resolvedNodes, request.getTarget());
+                          var targetNodes = request.getTargetNodes();
+                          return this.startSync(state, targetNodes, request.getTarget());
                         }))
             .put(
                 remoteHandler(

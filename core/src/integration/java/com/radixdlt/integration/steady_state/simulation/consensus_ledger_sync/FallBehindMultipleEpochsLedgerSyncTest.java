@@ -70,7 +70,6 @@ import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.harness.simulation.NetworkLatencies;
@@ -80,6 +79,7 @@ import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.time.Duration;
 import java.util.concurrent.Executors;
@@ -120,7 +120,7 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
     final var simulationTest = testBuilder.build();
 
     final var nodeUnderTestKey = simulationTest.getInitialNodes().get(NODE_UNDER_TEST_INDEX);
-    final var nodeUnderTest = BFTNode.create(nodeUnderTestKey.getPublicKey());
+    final var nodeUnderTest = NodeId.fromPublicKey(nodeUnderTestKey.getPublicKey());
 
     final var runningTest =
         simulationTest.run(

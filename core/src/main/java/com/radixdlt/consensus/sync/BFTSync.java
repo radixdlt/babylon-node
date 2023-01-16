@@ -491,7 +491,11 @@ public final class BFTSync implements BFTSyncer {
             return list;
           });
       var bftSigners = syncState.committedProof.getSignersWithout(self);
-      var localSyncRequest = new LocalSyncRequest(syncState.committedProof, bftSigners);
+      var nodeIds =
+          bftSigners.stream()
+              .map(n -> NodeId.fromPublicKey(n.getKey()))
+              .collect(ImmutableList.toImmutableList());
+      var localSyncRequest = new LocalSyncRequest(syncState.committedProof, nodeIds);
 
       localSyncRequestEventDispatcher.dispatch(localSyncRequest);
     }

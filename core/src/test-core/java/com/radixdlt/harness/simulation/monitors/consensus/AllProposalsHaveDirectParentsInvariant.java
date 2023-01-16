@@ -66,12 +66,12 @@ package com.radixdlt.harness.simulation.monitors.consensus;
 
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.MessageTransportType;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.p2p.NodeId;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
@@ -82,7 +82,7 @@ public class AllProposalsHaveDirectParentsInvariant implements TestInvariant {
 
   @Override
   public Observable<TestInvariantError> check(RunningNetwork network) {
-    var messageTransportType = MessageTransportType.create(BFTNode.class, ConsensusEvent.class);
+    var messageTransportType = MessageTransportType.create(NodeId.class, ConsensusEvent.class);
     var correctProposals =
         network.getNodes().stream()
             .map(network.getUnderlyingNetwork()::getNetwork)

@@ -65,21 +65,22 @@
 package com.radixdlt.harness.simulation.network;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.p2p.NodeId;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /** Drops one proposal per round */
 public class FProposalsPerRoundDropper implements Predicate<SimulationNetwork.MessageInTransit> {
-  private final ConcurrentHashMap<Round, Set<BFTNode>> proposalToDrop = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<Round, Set<NodeId>> proposalToDrop = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<Round, Integer> proposalCount = new ConcurrentHashMap<>();
   private final ImmutableList<BFTNode> validatorSet;
   private final Random random;
@@ -99,10 +100,9 @@ public class FProposalsPerRoundDropper implements Predicate<SimulationNetwork.Me
 
   @Override
   public boolean test(SimulationNetwork.MessageInTransit msg) {
-    if (msg.getContent() instanceof Proposal) {
-      final Proposal proposal = (Proposal) msg.getContent();
+    if (msg.getContent() instanceof final Proposal proposal) {
       final Round round = proposal.getVertex().getRound();
-      final Set<BFTNode> nodesToDrop =
+      final Set<NodeId> nodesToDrop =
           proposalToDrop.computeIfAbsent(
               round,
               v -> {
@@ -110,7 +110,9 @@ public class FProposalsPerRoundDropper implements Predicate<SimulationNetwork.Me
                 if (random != null) {
                   Collections.shuffle(nodes, random);
                 }
-                return ImmutableSet.copyOf(nodes.subList(0, faultySize));
+                return nodes.subList(0, faultySize).stream()
+                    .map(n -> NodeId.fromPublicKey(n.getKey()))
+                    .collect(Collectors.toSet());
               });
       if (proposalCount.merge(round, 1, Integer::sum).equals(validatorSet.size())) {
         proposalToDrop.remove(round);

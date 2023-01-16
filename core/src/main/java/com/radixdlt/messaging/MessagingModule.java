@@ -150,7 +150,7 @@ public final class MessagingModule extends AbstractModule {
   private RxRemoteDispatcher<?, ?> vertexRequestDispatcher(
       MessageCentralValidatorSync messageCentralValidatorSync) {
     return RxRemoteDispatcher.create(
-        BFTNode.class,
+        NodeId.class,
         GetVerticesRequest.class,
         messageCentralValidatorSync.verticesRequestDispatcher());
   }
@@ -159,7 +159,7 @@ public final class MessagingModule extends AbstractModule {
   private RxRemoteDispatcher<?, ?> vertexResponseDispatcher(
       MessageCentralValidatorSync messageCentralValidatorSync) {
     return RxRemoteDispatcher.create(
-        BFTNode.class,
+        NodeId.class,
         GetVerticesResponse.class,
         messageCentralValidatorSync.verticesResponseDispatcher());
   }
@@ -168,7 +168,7 @@ public final class MessagingModule extends AbstractModule {
   private RxRemoteDispatcher<?, ?> vertexErrorResponseDispatcher(
       MessageCentralValidatorSync messageCentralValidatorSync) {
     return RxRemoteDispatcher.create(
-        BFTNode.class,
+        NodeId.class,
         GetVerticesErrorResponse.class,
         messageCentralValidatorSync.verticesErrorResponseDispatcher());
   }
@@ -177,28 +177,28 @@ public final class MessagingModule extends AbstractModule {
   private RxRemoteDispatcher<?, ?> syncRequestDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        BFTNode.class, SyncRequest.class, messageCentralLedgerSync.syncRequestDispatcher());
+        NodeId.class, SyncRequest.class, messageCentralLedgerSync.syncRequestDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?, ?> syncResponseDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        BFTNode.class, SyncResponse.class, messageCentralLedgerSync.syncResponseDispatcher());
+        NodeId.class, SyncResponse.class, messageCentralLedgerSync.syncResponseDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?, ?> statusRequestDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        BFTNode.class, StatusRequest.class, messageCentralLedgerSync.statusRequestDispatcher());
+        NodeId.class, StatusRequest.class, messageCentralLedgerSync.statusRequestDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?, ?> statusResponseDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        BFTNode.class, StatusResponse.class, messageCentralLedgerSync.statusResponseDispatcher());
+        NodeId.class, StatusResponse.class, messageCentralLedgerSync.statusResponseDispatcher());
   }
 
   @ProvidesIntoSet
@@ -265,19 +265,19 @@ public final class MessagingModule extends AbstractModule {
       @Override
       public <N, T> Flowable<RemoteEvent<N, T>> remoteEvents(
           MessageTransportType<N, T> messageTransportType) {
-        if (messageTransportType.equals(MessageTransportType.create(BFTNode.class, Vote.class))) {
+        if (messageTransportType.equals(MessageTransportType.create(NodeId.class, Vote.class))) {
           return messageCentralBFT.remoteVotes().map(m -> (RemoteEvent<N, T>) m);
         } else if (messageTransportType.equals(
-            MessageTransportType.create(BFTNode.class, Proposal.class))) {
+            MessageTransportType.create(NodeId.class, Proposal.class))) {
           return messageCentralBFT.remoteProposals().map(m -> (RemoteEvent<N, T>) m);
         } else if (messageTransportType.equals(
-            MessageTransportType.create(BFTNode.class, GetVerticesRequest.class))) {
+            MessageTransportType.create(NodeId.class, GetVerticesRequest.class))) {
           return messageCentralBFTSync.requests().map(m -> (RemoteEvent<N, T>) m);
         } else if (messageTransportType.equals(
-            MessageTransportType.create(BFTNode.class, GetVerticesResponse.class))) {
+            MessageTransportType.create(NodeId.class, GetVerticesResponse.class))) {
           return messageCentralBFTSync.responses().map(m -> (RemoteEvent<N, T>) m);
         } else if (messageTransportType.equals(
-            MessageTransportType.create(BFTNode.class, GetVerticesErrorResponse.class))) {
+            MessageTransportType.create(NodeId.class, GetVerticesErrorResponse.class))) {
           return messageCentralBFTSync.errorResponses().map(m -> (RemoteEvent<N, T>) m);
         } else if (messageTransportType.equals(
             MessageTransportType.create(NodeId.class, MempoolAdd.class))) {

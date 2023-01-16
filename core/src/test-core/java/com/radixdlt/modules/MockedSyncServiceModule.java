@@ -72,7 +72,6 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.NextEpoch;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnDispatch;
@@ -83,6 +82,7 @@ import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
@@ -200,7 +200,7 @@ public class MockedSyncServiceModule extends AbstractModule {
       EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.SYNC,
-        BFTNode.class,
+        NodeId.class,
         LedgerStatusUpdate.class,
         (sender, ev) ->
             localSyncRequestEventDispatcher.dispatch(
@@ -263,6 +263,6 @@ public class MockedSyncServiceModule extends AbstractModule {
 
   private RemoteEventProcessorOnRunner<?, ?> noOpRemoteProcessor(Class<?> clazz) {
     return new RemoteEventProcessorOnRunner<>(
-        Runners.SYNC, BFTNode.class, clazz, (sender, ev) -> {});
+        Runners.SYNC, NodeId.class, clazz, (sender, ev) -> {});
   }
 }

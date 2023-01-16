@@ -78,6 +78,7 @@ import com.radixdlt.harness.simulation.network.FProposalsPerRoundDropper;
 import com.radixdlt.harness.simulation.network.MessageDropper;
 import com.radixdlt.harness.simulation.network.OneNodePerEpochLedgerStatusUpdateDropper;
 import com.radixdlt.harness.simulation.network.SimulationNetwork;
+import com.radixdlt.p2p.NodeId;
 import java.util.Random;
 import java.util.function.Predicate;
 
@@ -112,7 +113,8 @@ public final class NetworkDroppers {
             return false;
           }
 
-          if (!msg.getSender().equals(nodes.get(0)) && !msg.getReceiver().equals(nodes.get(0))) {
+          if (!msg.getSender().equals(NodeId.fromPublicKey(nodes.get(0).getKey()))
+              && !msg.getReceiver().equals(NodeId.fromPublicKey(nodes.get(0).getKey()))) {
             return false;
           }
 

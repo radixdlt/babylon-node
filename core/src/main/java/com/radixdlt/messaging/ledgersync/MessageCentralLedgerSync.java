@@ -64,7 +64,6 @@
 
 package com.radixdlt.messaging.ledgersync;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.messaging.core.MessageCentral;
@@ -139,40 +138,40 @@ public final class MessageCentralLedgerSync {
             });
   }
 
-  public RemoteEventDispatcher<BFTNode, SyncRequest> syncRequestDispatcher() {
+  public RemoteEventDispatcher<NodeId, SyncRequest> syncRequestDispatcher() {
     return this::sendSyncRequest;
   }
 
-  private void sendSyncRequest(BFTNode node, SyncRequest syncRequest) {
+  private void sendSyncRequest(NodeId nodeId, SyncRequest syncRequest) {
     final var msg = new SyncRequestMessage(syncRequest.getHeader());
-    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+    this.messageCentral.send(nodeId, msg);
   }
 
-  public RemoteEventDispatcher<BFTNode, SyncResponse> syncResponseDispatcher() {
+  public RemoteEventDispatcher<NodeId, SyncResponse> syncResponseDispatcher() {
     return this::sendSyncResponse;
   }
 
-  private void sendSyncResponse(BFTNode node, SyncResponse syncResponse) {
+  private void sendSyncResponse(NodeId nodeId, SyncResponse syncResponse) {
     final var msg = new SyncResponseMessage(syncResponse.getTransactionsWithProofDto());
-    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+    this.messageCentral.send(nodeId, msg);
   }
 
-  public RemoteEventDispatcher<BFTNode, StatusRequest> statusRequestDispatcher() {
+  public RemoteEventDispatcher<NodeId, StatusRequest> statusRequestDispatcher() {
     return this::sendStatusRequest;
   }
 
-  private void sendStatusRequest(BFTNode node, StatusRequest statusRequest) {
+  private void sendStatusRequest(NodeId nodeId, StatusRequest statusRequest) {
     final var msg = new StatusRequestMessage();
-    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+    this.messageCentral.send(nodeId, msg);
   }
 
-  public RemoteEventDispatcher<BFTNode, StatusResponse> statusResponseDispatcher() {
+  public RemoteEventDispatcher<NodeId, StatusResponse> statusResponseDispatcher() {
     return this::sendStatusResponse;
   }
 
-  private void sendStatusResponse(BFTNode node, StatusResponse statusResponse) {
+  private void sendStatusResponse(NodeId nodeId, StatusResponse statusResponse) {
     final var msg = new StatusResponseMessage(statusResponse.getHeader());
-    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+    this.messageCentral.send(nodeId, msg);
   }
 
   public RemoteEventDispatcher<NodeId, LedgerStatusUpdate> ledgerStatusUpdateDispatcher() {
