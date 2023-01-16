@@ -1,12 +1,12 @@
 use super::addressing::*;
 use crate::core_api::*;
+use radix_engine::model::Validator;
 use radix_engine::{
     fee::{FeeSummary, RoyaltyReceiver},
     ledger::OutputValue,
     types::{hash, scrypto_encode, Bech32Encoder, Decimal, GlobalAddress, RENodeId, SubstateId},
 };
 use std::collections::BTreeSet;
-use radix_engine::model::Validator;
 
 use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
 

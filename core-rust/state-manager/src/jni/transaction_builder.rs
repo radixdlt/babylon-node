@@ -77,8 +77,8 @@ use radix_engine::types::{
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::node::NetworkDefinition;
-use std::collections::BTreeSet;
 use radix_engine_interface::*;
+use std::collections::BTreeSet;
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
 };

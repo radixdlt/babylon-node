@@ -128,10 +128,10 @@ public final class DeterministicNodes implements AutoCloseable {
             .limit(nodeConfigs.size())
             .collect(Collectors.toList());
 
-      for (int nodeIndex = 0; nodeIndex < this.nodeInstances.size(); nodeIndex++) {
-          var nodeId = NodeId.fromPublicKey(this.nodeConfigs.get(nodeIndex).key());
-          this.addressBook.addressBook.put(nodeId, nodeIndex);
-      }
+    for (int nodeIndex = 0; nodeIndex < this.nodeInstances.size(); nodeIndex++) {
+      var nodeId = NodeId.fromPublicKey(this.nodeConfigs.get(nodeIndex).key());
+      this.addressBook.addressBook.put(nodeId, nodeIndex);
+    }
   }
 
   private static class ControlledTimeSupplier implements TimeSupplier {
@@ -176,10 +176,14 @@ public final class DeterministicNodes implements AutoCloseable {
               public void configure() {
                 install(
                     new EventLoggerModule(
-                        new EventLoggerConfig(k -> "Node" + addressBook.apply(NodeId.fromPublicKey(k)))));
+                        new EventLoggerConfig(
+                            k -> "Node" + addressBook.apply(NodeId.fromPublicKey(k)))));
                 bind(ECDSASecp256k1PublicKey.class)
                     .annotatedWith(Self.class)
                     .toInstance(config.key());
+                bind(NodeId.class)
+                    .annotatedWith(Self.class)
+                    .toInstance(NodeId.fromPublicKey(config.key()));
 
                 if (config.loadFromGenesis()) {
                   install(new BFTNodeFromGenesisModule());

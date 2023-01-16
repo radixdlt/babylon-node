@@ -67,8 +67,8 @@ use radix_engine::model::Validator;
 use radix_engine::types::{
     scrypto_encode, sha256_twice, Categorize, Decode, Encode, Hash, PublicKey,
 };
-use std::collections::BTreeSet;
 use radix_engine_interface::*;
+use std::collections::BTreeSet;
 use std::fmt;
 use transaction::model::{
     NotarizedTransaction, PreviewFlags, SignedTransactionIntent, TransactionIntent,

@@ -75,7 +75,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.sync.messages.remote.StatusResponse;
-import com.radixdlt.utils.PrivateKeys;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
