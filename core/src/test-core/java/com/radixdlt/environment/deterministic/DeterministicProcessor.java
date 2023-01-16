@@ -140,7 +140,7 @@ public final class DeterministicProcessor {
     }
 
     if (!messageHandled) {
-      log.warn("Message not handled: {}", message);
+      log.debug("Message not handled: {}", message);
     }
   }
 }

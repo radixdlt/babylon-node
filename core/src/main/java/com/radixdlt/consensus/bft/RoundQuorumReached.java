@@ -66,25 +66,16 @@ package com.radixdlt.consensus.bft;
 
 import java.util.Objects;
 
-/** A local event message indicating that a round quorum (either QC or TC) has been reached. */
-public final class RoundQuorumReached {
-
-  private final RoundVotingResult votingResult;
-
-  // the author of the last received message that lead to forming a quorum
-  private final BFTNode lastAuthor;
+/**
+ * A local event message indicating that a round quorum (either QC or TC) has been reached.
+ *
+ * @param lastAuthor the author of the last received message that lead to forming a quorum
+ */
+public record RoundQuorumReached(RoundVotingResult votingResult, BFTNode lastAuthor) {
 
   public RoundQuorumReached(RoundVotingResult votingResult, BFTNode lastAuthor) {
     this.votingResult = Objects.requireNonNull(votingResult);
     this.lastAuthor = Objects.requireNonNull(lastAuthor);
-  }
-
-  public BFTNode lastAuthor() {
-    return lastAuthor;
-  }
-
-  public RoundVotingResult votingResult() {
-    return votingResult;
   }
 
   @Override
@@ -101,7 +92,12 @@ public final class RoundQuorumReached {
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(votingResult, lastAuthor);
+  public String toString() {
+    return "RoundQuorumReached{"
+        + "votingResult="
+        + votingResult
+        + ", lastAuthor="
+        + lastAuthor
+        + '}';
   }
 }
