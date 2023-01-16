@@ -113,6 +113,27 @@ public final class VertexStoreState {
     this.vertices = vertices;
   }
 
+  public static VertexStoreState createNewForNextEpoch(LedgerProof epochProof, Hasher hasher) {
+    if (epochProof.getNextEpoch().isEmpty()) {
+      throw new IllegalArgumentException("Expected end of epoch proof");
+    }
+    final var nextEpoch = epochProof.getNextEpoch().get();
+    final var initialEpochVertex =
+        Vertex.createInitialEpochVertex(epochProof.getHeader()).withId(hasher);
+    final var nextLedgerHeader =
+        LedgerHeader.create(
+            nextEpoch.getEpoch(),
+            Round.genesis(),
+            epochProof.getAccumulatorState(),
+            epochProof.consensusParentRoundTimestamp(),
+            epochProof.proposerTimestamp());
+    final var initialEpochQC =
+        QuorumCertificate.createInitialEpochQC(initialEpochVertex, nextLedgerHeader);
+
+    return VertexStoreState.create(
+        HighQC.ofInitialEpochQc(initialEpochQC), initialEpochVertex, hasher);
+  }
+
   public static VertexStoreState create(HighQC highQC, VertexWithHash root, Hasher hasher) {
     return create(highQC, root, ImmutableList.of(), hasher);
   }

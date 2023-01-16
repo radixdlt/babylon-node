@@ -167,16 +167,7 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
 
   private static VertexStoreState genesisEpochProofToGenesisVertexStore(
       LedgerProof lastEpochProof, Hasher hasher) {
-    var genesisVertex = Vertex.createInitialEpochVertex(lastEpochProof.getHeader()).withId(hasher);
-    var nextLedgerHeader =
-        LedgerHeader.create(
-            lastEpochProof.getNextEpoch().orElseThrow().getEpoch(),
-            Round.genesis(),
-            lastEpochProof.getAccumulatorState(),
-            lastEpochProof.consensusParentRoundTimestamp(),
-            lastEpochProof.proposerTimestamp());
-    var initialEpochQC = QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
-    return VertexStoreState.create(HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher);
+    return VertexStoreState.createNewForNextEpoch(lastEpochProof, hasher);
   }
 
   @Provides

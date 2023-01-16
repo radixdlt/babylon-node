@@ -233,22 +233,9 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     final VertexStoreState postCommitVertexStoreState;
     if (proof.getNextEpoch().isPresent()) {
       final var nextEpoch = proof.getNextEpoch().get();
-      final var initialEpochVertex =
-          Vertex.createInitialEpochVertex(proof.getHeader()).withId(hasher);
-      final var nextLedgerHeader =
-          LedgerHeader.create(
-              nextEpoch.getEpoch(),
-              Round.genesis(),
-              proof.getAccumulatorState(),
-              proof.consensusParentRoundTimestamp(),
-              proof.proposerTimestamp());
-      final var initialEpochQC =
-          QuorumCertificate.createInitialEpochQC(initialEpochVertex, nextLedgerHeader);
 
       // Post commit vertex store is a fresh one
-      postCommitVertexStoreState =
-          VertexStoreState.create(
-              HighQC.ofInitialEpochQc(initialEpochQC), initialEpochVertex, hasher);
+      postCommitVertexStoreState = VertexStoreState.createNewForNextEpoch(proof, hasher);
 
       // Add an EpochChange tx output
       // TODO: Move vertex stuff somewhere else
