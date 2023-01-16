@@ -95,6 +95,7 @@ import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
@@ -116,10 +117,10 @@ public final class MempoolRunnerTest {
     return new AbstractModule() {
       @Override
       public void configure() {
-        bind(ECDSASecp256k1PublicKey.class)
-            .annotatedWith(Self.class)
-            .toInstance(PrivateKeys.ofNumeric(1).getPublicKey());
+        var key = PrivateKeys.ofNumeric(1).getPublicKey();
+        bind(ECDSASecp256k1PublicKey.class).annotatedWith(Self.class).toInstance(key);
         bind(String.class).annotatedWith(Self.class).toInstance("Self");
+        bind(NodeId.class).annotatedWith(Self.class).toInstance(NodeId.fromPublicKey(key));
         bind(LedgerProof.class).annotatedWith(LastProof.class).toInstance(mock(LedgerProof.class));
         bind(StateComputer.class).toInstance(stateComputer);
         bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
