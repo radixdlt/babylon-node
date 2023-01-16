@@ -64,7 +64,6 @@
 
 package com.radixdlt.messaging.mempool;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.mempool.MempoolAdd;
@@ -96,14 +95,10 @@ public final class MessageCentralMempool {
     this.messageCentral.send(recipient, message);
   }
 
-  public Flowable<RemoteEvent<BFTNode, MempoolAdd>> mempoolComands() {
+  public Flowable<RemoteEvent<NodeId, MempoolAdd>> mempoolComands() {
     return messageCentral
         .messagesOf(MempoolAddMessage.class)
-        .map(
-            msg -> {
-              final BFTNode node = BFTNode.create(msg.source().getPublicKey());
-              return RemoteEvent.create(node, MempoolAdd.create(msg.message().getTxns()));
-            })
+        .map(msg -> RemoteEvent.create(msg.source(), MempoolAdd.create(msg.message().getTxns())))
         .toFlowable(BackpressureStrategy.BUFFER);
   }
 }

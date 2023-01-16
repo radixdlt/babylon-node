@@ -172,7 +172,6 @@ public final class DeterministicNodes implements AutoCloseable {
                 bind(Environment.class)
                     .toInstance(
                         new ControlledDispatcher(
-                            bftAddressBook::get,
                             p2pAddressBook::get,
                             network,
                             NodeId.fromPublicKey(self.getKey()),

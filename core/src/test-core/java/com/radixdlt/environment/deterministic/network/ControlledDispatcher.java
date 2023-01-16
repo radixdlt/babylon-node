@@ -77,16 +77,13 @@ public final class ControlledDispatcher implements Environment {
   private final NodeId self;
   private final int senderIndex;
   private final ChannelId localChannel;
-  private final Function<BFTNode, Integer> bftAddressBook;
   private final Function<NodeId, Integer> p2pAddressBook;
 
   public ControlledDispatcher(
-      Function<BFTNode, Integer> bftAddressBook,
       Function<NodeId, Integer> p2pAddressBook,
       DeterministicNetwork network,
       NodeId self,
       int senderIndex) {
-    this.bftAddressBook = bftAddressBook;
     this.p2pAddressBook = p2pAddressBook;
     this.network = network;
     this.self = self;
@@ -145,7 +142,11 @@ public final class ControlledDispatcher implements Environment {
     return (node, e) -> {
       final ChannelId channelId;
       if (messageTransportType.getNodeIdType() == BFTNode.class) {
-        channelId = ChannelId.of(this.senderIndex, this.bftAddressBook.apply((BFTNode) node));
+        var bftNode = (BFTNode) node;
+        channelId =
+            ChannelId.of(
+                this.senderIndex,
+                this.p2pAddressBook.apply(NodeId.fromPublicKey(bftNode.getKey())));
       } else {
         channelId = ChannelId.of(this.senderIndex, this.p2pAddressBook.apply((NodeId) node));
       }

@@ -227,7 +227,6 @@ public final class P2PTestNetworkRunner {
             bind(Environment.class)
                 .toInstance(
                     new ControlledDispatcher(
-                        bftAddressBook,
                         p2pAddressBook,
                         network,
                         NodeId.fromPublicKey(nodeKey.getPublicKey()),

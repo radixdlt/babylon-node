@@ -65,7 +65,6 @@
 package com.radixdlt.p2p;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.p2p.capability.RemotePeerCapability;
 import java.util.Objects;
 import java.util.Optional;
@@ -76,11 +75,11 @@ import java.util.stream.Stream;
 public interface PeersView {
 
   final class PeerChannelInfo {
-    private Optional<RadixNodeUri> uri;
-    private String host;
-    private int port;
-    private boolean isOutbound;
-    private Set<RemotePeerCapability> capabilities;
+    private final Optional<RadixNodeUri> uri;
+    private final String host;
+    private final int port;
+    private final boolean isOutbound;
+    private final Set<RemotePeerCapability> capabilities;
 
     public static PeerChannelInfo create(
         Optional<RadixNodeUri> uri,
@@ -146,8 +145,8 @@ public interface PeersView {
   }
 
   final class PeerInfo {
-    private NodeId nodeId;
-    private ImmutableList<PeerChannelInfo> channels;
+    private final NodeId nodeId;
+    private final ImmutableList<PeerChannelInfo> channels;
 
     public static PeerInfo create(NodeId nodeId, ImmutableList<PeerChannelInfo> channels) {
       return new PeerInfo(nodeId, channels);
@@ -164,10 +163,6 @@ public interface PeersView {
 
     public ImmutableList<PeerChannelInfo> getChannels() {
       return channels;
-    }
-
-    public BFTNode bftNode() {
-      return BFTNode.create(nodeId.getPublicKey());
     }
 
     @Override
