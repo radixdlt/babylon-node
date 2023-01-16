@@ -70,7 +70,6 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.p2p.addressbook.AddressBookPersistence;
 import java.util.List;
@@ -109,7 +108,7 @@ public class TestP2PModule extends AbstractModule {
     private ImmutableMap<ECDSASecp256k1PublicKey, ImmutableList<ECDSASecp256k1PublicKey>>
         peersByNode;
     private List<NodeId> allNodes;
-    private PeerControl peerControl;
+    private final PeerControl peerControl;
 
     public Builder() {
       this.peerControl = new NoOpPeerControl();

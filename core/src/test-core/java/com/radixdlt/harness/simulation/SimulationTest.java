@@ -373,7 +373,10 @@ public final class SimulationTest {
       if (this.addressBookNodes != null) {
         mockedP2PModuleBuilder.withPeersByNode(this.addressBookNodes);
       } else {
-        mockedP2PModuleBuilder.withAllNodes(bftNodes);
+        mockedP2PModuleBuilder.withAllNodes(
+            bftNodes.stream()
+                .map(n -> NodeId.fromPublicKey(n.getKey()))
+                .collect(Collectors.toList()));
       }
       modules.add(mockedP2PModuleBuilder.build());
 
