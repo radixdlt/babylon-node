@@ -10,14 +10,14 @@ use state_manager::query::dump_component_state;
 pub(crate) async fn handle_state_component(
     state: Extension<CoreApiState>,
     request: Json<models::StateComponentRequest>,
-) -> Result<Json<models::StateComponentResponse>, RequestHandlingError> {
+) -> Result<Json<models::StateComponentResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_state_component_internal)
 }
 
 fn handle_state_component_internal(
     state_manager: &ActualStateManager,
     request: models::StateComponentRequest,
-) -> Result<models::StateComponentResponse, RequestHandlingError> {
+) -> Result<models::StateComponentResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
     let bech32_decoder = Bech32Decoder::new(&state_manager.network);

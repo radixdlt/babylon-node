@@ -6,13 +6,13 @@ use state_manager::jni::state_manager::ActualStateManager;
 #[tracing::instrument(err(Debug), skip(state))]
 pub(crate) async fn handle_status_network_configuration(
     state: Extension<CoreApiState>,
-) -> Result<Json<models::NetworkConfigurationResponse>, RequestHandlingError> {
+) -> Result<Json<models::NetworkConfigurationResponse>, ResponseError<()>> {
     core_api_handler_empty_request(state, handle_status_network_configuration_internal)
 }
 
 pub(crate) fn handle_status_network_configuration_internal(
     state_manager: &mut ActualStateManager,
-) -> Result<models::NetworkConfigurationResponse, RequestHandlingError> {
+) -> Result<models::NetworkConfigurationResponse, ResponseError<()>> {
     let network = state_manager.network.clone();
 
     let bech32_encoder = Bech32Encoder::new(&state_manager.network);

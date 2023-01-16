@@ -27,7 +27,7 @@ macro_rules! args_from_bytes_vec {
 pub(crate) async fn handle_transaction_callpreview(
     Extension(state): Extension<CoreApiState>,
     Json(request): Json<models::TransactionCallPreviewRequest>,
-) -> Result<Json<models::TransactionCallPreviewResponse>, RequestHandlingError> {
+) -> Result<Json<models::TransactionCallPreviewResponse>, ResponseError<()>> {
     let state_manager = state.state_manager.read();
     let bech32_decoder = Bech32Decoder::new(&state_manager.network);
     let bech32_encoder = Bech32Encoder::new(&state_manager.network);

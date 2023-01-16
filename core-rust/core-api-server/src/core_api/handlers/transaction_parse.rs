@@ -22,7 +22,7 @@ use super::{
 pub(crate) async fn handle_transaction_parse(
     state: Extension<CoreApiState>,
     request: Json<models::TransactionParseRequest>,
-) -> Result<Json<models::TransactionParseResponse>, RequestHandlingError> {
+) -> Result<Json<models::TransactionParseResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_transaction_parse_internal)
 }
 
@@ -35,7 +35,7 @@ pub struct ParseContext<'a> {
 fn handle_transaction_parse_internal(
     state_manager: &ActualStateManager,
     request: models::TransactionParseRequest,
-) -> Result<models::TransactionParseResponse, RequestHandlingError> {
+) -> Result<models::TransactionParseResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
     let bytes =
@@ -86,7 +86,7 @@ fn handle_transaction_parse_internal(
 fn attempt_parsing_as_any_payload_type_and_map_for_api(
     context: &ParseContext,
     bytes: &[u8],
-) -> Result<models::ParsedTransaction, RequestHandlingError> {
+) -> Result<models::ParsedTransaction, ResponseError<()>> {
     // Attempt 1 - Try parsing as NotarizedTransaction
     let notarized_parse_option = attempt_parsing_as_notarized_transaction(context, bytes);
 
@@ -177,7 +177,7 @@ fn attempt_parsing_as_notarized_transaction(
 fn to_api_parsed_notarized_transaction(
     context: &ParseContext,
     parsed: ParsedNotarizedTransaction,
-) -> Result<models::ParsedTransaction, RequestHandlingError> {
+) -> Result<models::ParsedTransaction, ResponseError<()>> {
     let model = match context.response_mode {
         ResponseMode::Basic => None,
         ResponseMode::Full => Some(Box::new(to_api_notarized_transaction(
@@ -192,7 +192,7 @@ fn to_api_parsed_notarized_transaction(
         .map(|error| {
             Box::new(models::ParsedNotarizedTransactionAllOfValidationError {
                 reason: format!("{:?}", error),
-                is_permanent: error.is_permanent(),
+                is_permanent: error.is_permanent_for_payload(),
             })
         });
 
@@ -215,7 +215,7 @@ fn attempt_parsing_as_signed_intent(bytes: &[u8]) -> Option<SignedTransactionInt
 fn to_api_parsed_signed_intent(
     context: &ParseContext,
     parsed: SignedTransactionIntent,
-) -> Result<models::ParsedTransaction, RequestHandlingError> {
+) -> Result<models::ParsedTransaction, ResponseError<()>> {
     let model = match context.response_mode {
         ResponseMode::Basic => None,
         ResponseMode::Full => Some(Box::new(to_api_signed_intent(
@@ -239,7 +239,7 @@ fn attempt_parsing_as_intent(bytes: &[u8]) -> Option<TransactionIntent> {
 fn to_api_parsed_intent(
     context: &ParseContext,
     parsed: TransactionIntent,
-) -> Result<models::ParsedTransaction, RequestHandlingError> {
+) -> Result<models::ParsedTransaction, ResponseError<()>> {
     let model = match context.response_mode {
         ResponseMode::Basic => None,
         ResponseMode::Full => Some(Box::new(to_api_intent(
@@ -262,7 +262,7 @@ fn attempt_parsing_as_manifest(bytes: &[u8]) -> Option<TransactionManifest> {
 fn to_api_parsed_manifest(
     context: &ParseContext,
     parsed: TransactionManifest,
-) -> Result<models::ParsedTransaction, RequestHandlingError> {
+) -> Result<models::ParsedTransaction, ResponseError<()>> {
     let model = match context.response_mode {
         ResponseMode::Basic => None,
         ResponseMode::Full => Some(Box::new(to_api_manifest(
@@ -280,7 +280,7 @@ fn attempt_parsing_as_ledger_transaction(bytes: &[u8]) -> Option<LedgerTransacti
 fn to_api_parsed_ledger_transaction(
     context: &ParseContext,
     parsed: LedgerTransaction,
-) -> Result<models::ParsedTransaction, RequestHandlingError> {
+) -> Result<models::ParsedTransaction, ResponseError<()>> {
     let model = match context.response_mode {
         ResponseMode::Basic => None,
         ResponseMode::Full => Some(Box::new(to_api_ledger_transaction(

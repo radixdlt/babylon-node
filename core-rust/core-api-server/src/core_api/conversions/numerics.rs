@@ -11,6 +11,7 @@ const MAX_API_EPOCH: u64 = 10000000000;
 const MAX_API_ROUND: u64 = 10000000000;
 const MAX_API_STATE_VERSION: u64 = 100000000000000;
 const MAX_API_SUBSTATE_VERSION: u64 = 100000000000000;
+const MAX_API_TIMESTAMP_MS: u128 = 100000000000000; // For comparison, current timestamp is 1673822843000 (about 1/100th the size)
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_epoch(epoch: u64) -> Result<i64, MappingError> {
@@ -75,6 +76,19 @@ pub fn to_api_u32_as_i64(input: u32) -> i64 {
 
 pub fn to_api_u64_as_string(input: u64) -> String {
     input.to_string()
+}
+
+pub fn to_api_unix_timestamp_ms(time: std::time::SystemTime) -> Result<i64, MappingError> {
+    let millis = time
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis();
+    if millis > MAX_API_TIMESTAMP_MS {
+        return Err(MappingError::IntegerError {
+            message: format!("Timestamp ms must be <= {}", MAX_API_TIMESTAMP_MS),
+        });
+    }
+    Ok(millis as i64)
 }
 
 pub fn extract_api_state_version(state_version: i64) -> Result<u64, ExtractionError> {
