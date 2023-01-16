@@ -121,10 +121,7 @@ public final class VertexStoreAdapter {
   public VertexStore.InsertQcResult insertQc(QuorumCertificate qc) {
     final var result = vertexStore.insertQc(qc);
     if (result instanceof VertexStore.InsertQcResult.Inserted inserted) {
-      // TODO: why is this if statement needed?
-      if (inserted.committedUpdate().isEmpty()) {
-        this.highQCUpdateDispatcher.dispatch(BFTHighQCUpdate.create(inserted.vertexStoreState()));
-      }
+      this.highQCUpdateDispatcher.dispatch(BFTHighQCUpdate.create(inserted.vertexStoreState()));
       inserted
           .committedUpdate()
           .onPresent(
