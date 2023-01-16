@@ -108,7 +108,7 @@ public class TestP2PModule extends AbstractModule {
   public static class Builder {
     private ImmutableMap<ECDSASecp256k1PublicKey, ImmutableList<ECDSASecp256k1PublicKey>>
         peersByNode;
-    private List<BFTNode> allNodes;
+    private List<NodeId> allNodes;
     private PeerControl peerControl;
 
     public Builder() {
@@ -121,7 +121,7 @@ public class TestP2PModule extends AbstractModule {
       return this;
     }
 
-    public Builder withAllNodes(List<BFTNode> allNodes) {
+    public Builder withAllNodes(List<NodeId> allNodes) {
       this.allNodes = allNodes;
       return this;
     }

@@ -67,24 +67,25 @@ package com.radixdlt.harness.simulation.network;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.environment.MessageTransportType;
 import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.p2p.NodeId;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
 public class SimulationNetworkTest {
-  private BFTNode node1;
-  private BFTNode node2;
+  private NodeId node1;
+  private NodeId node2;
   private SimulationNetwork.ChannelCommunication channelCommunication;
   private SimulationNetwork network;
 
   @Before
   public void setup() {
-    node1 = mock(BFTNode.class);
-    node2 = mock(BFTNode.class);
+    node1 = mock(NodeId.class);
+    node2 = mock(NodeId.class);
     this.channelCommunication = new InOrderChannels(msg -> 50, Map.of());
     this.network = new SimulationNetwork(channelCommunication);
   }
@@ -93,8 +94,12 @@ public class SimulationNetworkTest {
   public void when_send_get_vertex_request_to_another_node__then_should_receive_it() {
     HashCode vertexId = mock(HashCode.class);
 
-    TestObserver<RemoteEvent<GetVerticesRequest>> rpcRequestListener =
-        network.getNetwork(node2).remoteEvents(GetVerticesRequest.class).toObservable().test();
+    TestObserver<RemoteEvent<NodeId, GetVerticesRequest>> rpcRequestListener =
+        network
+            .getNetwork(node2)
+            .remoteEvents(MessageTransportType.create(NodeId.class, GetVerticesRequest.class))
+            .toObservable()
+            .test();
 
     network
         .getNetwork(node1)

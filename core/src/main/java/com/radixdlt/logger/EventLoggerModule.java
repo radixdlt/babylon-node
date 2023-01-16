@@ -108,7 +108,7 @@ public final class EventLoggerModule extends AbstractModule {
   EventProcessorOnDispatch<?> logByzantineEvents(Function<BFTNode, String> nodeString) {
     return new EventProcessorOnDispatch<>(
         ConsensusByzantineEvent.class,
-        event -> logger.warn("Byzantine Behavior detected from {}: {}", event.getAuthor(), event));
+        event -> logger.warn("Byzantine Behavior detected: {}", event));
   }
 
   @Provides

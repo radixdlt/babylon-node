@@ -87,7 +87,7 @@ public class BFTEventReducerTest {
   private BFTNode self = mock(BFTNode.class);
   private Hasher hasher = mock(Hasher.class);
   private Metrics metrics = new MetricsInitializer().initialize();
-  private RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
+  private RemoteEventDispatcher<BFTNode, Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
   private PendingVotes pendingVotes = mock(PendingVotes.class);
   private BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
   private VertexStoreAdapter vertexStore = mock(VertexStoreAdapter.class);

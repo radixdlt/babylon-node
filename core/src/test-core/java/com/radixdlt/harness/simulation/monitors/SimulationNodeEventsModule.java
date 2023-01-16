@@ -68,7 +68,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
@@ -76,40 +75,41 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.p2p.NodeId;
 
 /** Module which manages node testing events for simulation */
 public final class SimulationNodeEventsModule extends AbstractModule {
   @ProvidesIntoSet
   private EventProcessorOnDispatch<?> epochTimeoutProcessor(
-      @Self BFTNode node, NodeEvents nodeEvents) {
+      @Self NodeId node, NodeEvents nodeEvents) {
     return nodeEvents.processorOnDispatch(node, EpochLocalTimeoutOccurrence.class);
   }
 
   @ProcessOnDispatch
   @ProvidesIntoSet
   private EventProcessor<LocalTimeoutOccurrence> timeoutEventProcessor(
-      @Self BFTNode node, NodeEvents nodeEvents) {
+      @Self NodeId node, NodeEvents nodeEvents) {
     return nodeEvents.processor(node, LocalTimeoutOccurrence.class);
   }
 
   @ProvidesIntoSet
   @ProcessOnDispatch
   private EventProcessor<GetVerticesRequest> requestProcessor(
-      @Self BFTNode node, NodeEvents nodeEvents) {
+      @Self NodeId node, NodeEvents nodeEvents) {
     return nodeEvents.processor(node, GetVerticesRequest.class);
   }
 
   @ProvidesIntoSet
   @ProcessOnDispatch
   private EventProcessor<BFTCommittedUpdate> committedProcessor(
-      @Self BFTNode node, NodeEvents nodeEvents) {
+      @Self NodeId node, NodeEvents nodeEvents) {
     return nodeEvents.processor(node, BFTCommittedUpdate.class);
   }
 
   @ProvidesIntoSet
   @ProcessOnDispatch
   private EventProcessor<BFTHighQCUpdate> highQCProcessor(
-      @Self BFTNode node, NodeEvents nodeEvents) {
+      @Self NodeId node, NodeEvents nodeEvents) {
     return nodeEvents.processor(node, BFTHighQCUpdate.class);
   }
 }

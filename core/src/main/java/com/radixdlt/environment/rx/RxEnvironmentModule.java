@@ -75,14 +75,7 @@ import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.RemoteEventProcessorOnRunner;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.environment.ScheduledEventProducerOnRunner;
-import com.radixdlt.environment.StartProcessorOnRunner;
+import com.radixdlt.environment.*;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.utils.ThreadFactories;
@@ -112,9 +105,9 @@ public final class RxEnvironmentModule extends AbstractModule {
     bind(new TypeLiteral<Observable<BFTHighQCUpdate>>() {})
         .toProvider(new ObservableProvider<>(BFTHighQCUpdate.class));
 
-    Multibinder.newSetBinder(binder(), new TypeLiteral<RxRemoteDispatcher<?>>() {});
+    Multibinder.newSetBinder(binder(), new TypeLiteral<RxRemoteDispatcher<?, ?>>() {});
     Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnRunner<?>>() {});
-    Multibinder.newSetBinder(binder(), new TypeLiteral<RemoteEventProcessorOnRunner<?>>() {});
+    Multibinder.newSetBinder(binder(), new TypeLiteral<RemoteEventProcessorOnRunner<?, ?>>() {});
     Multibinder.newSetBinder(binder(), new TypeLiteral<ScheduledEventProducerOnRunner<?>>() {});
   }
 
@@ -122,7 +115,7 @@ public final class RxEnvironmentModule extends AbstractModule {
   @Singleton
   private RxEnvironment rxEnvironment(
       ScheduledExecutorService ses,
-      Set<RxRemoteDispatcher<?>> dispatchers,
+      Set<RxRemoteDispatcher<?, ?>> dispatchers,
       @LocalEvents
           Set<Class<?>> localProcessedEventClasses // TODO: remove, infer from ProcessorOnRunners
       ) {
@@ -140,7 +133,7 @@ public final class RxEnvironmentModule extends AbstractModule {
       @Self String name,
       Set<EventProcessorOnRunner<?>> processors,
       RxEnvironment rxEnvironment,
-      Set<RemoteEventProcessorOnRunner<?>> remoteProcessors,
+      Set<RemoteEventProcessorOnRunner<?, ?>> remoteProcessors,
       RxRemoteEnvironment rxRemoteEnvironment,
       Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers,
       Set<StartProcessorOnRunner> startProcessors) {
@@ -171,7 +164,7 @@ public final class RxEnvironmentModule extends AbstractModule {
       @Self String name,
       Set<EventProcessorOnRunner<?>> processors,
       RxEnvironment rxEnvironment,
-      Set<RemoteEventProcessorOnRunner<?>> remoteProcessors,
+      Set<RemoteEventProcessorOnRunner<?, ?>> remoteProcessors,
       RxRemoteEnvironment rxRemoteEnvironment,
       Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers,
       Set<StartProcessorOnRunner> startProcessors) {
@@ -191,7 +184,7 @@ public final class RxEnvironmentModule extends AbstractModule {
       @Self String name,
       Set<EventProcessorOnRunner<?>> processors,
       RxEnvironment rxEnvironment,
-      Set<RemoteEventProcessorOnRunner<?>> remoteProcessors,
+      Set<RemoteEventProcessorOnRunner<?, ?>> remoteProcessors,
       RxRemoteEnvironment rxRemoteEnvironment,
       Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers,
       Set<StartProcessorOnRunner> startProcessors) {
@@ -211,7 +204,7 @@ public final class RxEnvironmentModule extends AbstractModule {
       @Self String name,
       Set<EventProcessorOnRunner<?>> processors,
       RxEnvironment rxEnvironment,
-      Set<RemoteEventProcessorOnRunner<?>> remoteProcessors,
+      Set<RemoteEventProcessorOnRunner<?, ?>> remoteProcessors,
       RxRemoteEnvironment rxRemoteEnvironment,
       Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers,
       Set<StartProcessorOnRunner> startProcessors) {
@@ -224,26 +217,26 @@ public final class RxEnvironmentModule extends AbstractModule {
     return builder.build("P2PNetworkRunner " + name);
   }
 
-  private static <T> void addToBuilder(
-      Class<T> eventClass,
+  private static <N, T> void addToBuilder(
+      MessageTransportType<N, T> messageTransportType,
       RxRemoteEnvironment rxEnvironment,
-      RemoteEventProcessorOnRunner<?> processor,
+      RemoteEventProcessorOnRunner<?, ?> processor,
       RxModuleRunnerImpl.Builder builder) {
-    final Flowable<RemoteEvent<T>> events;
+    final Flowable<RemoteEvent<N, T>> events;
     if (processor.getRateLimitDelayMs() > 0) {
       events =
           rxEnvironment
-              .remoteEvents(eventClass)
+              .remoteEvents(messageTransportType)
               .onBackpressureBuffer(100, null, BackpressureOverflowStrategy.DROP_LATEST)
               .concatMap(
                   e ->
                       Flowable.timer(processor.getRateLimitDelayMs(), TimeUnit.MILLISECONDS)
                           .map(l -> e));
     } else {
-      events = rxEnvironment.remoteEvents(eventClass);
+      events = rxEnvironment.remoteEvents(messageTransportType);
     }
 
-    processor.getProcessor(eventClass).ifPresent(p -> builder.add(events, p));
+    processor.getProcessor(messageTransportType).ifPresent(p -> builder.add(events, p));
   }
 
   private static <T> void addToBuilder(
@@ -317,20 +310,20 @@ public final class RxEnvironmentModule extends AbstractModule {
   }
 
   private void addRemoteProcessorsOnRunner(
-      Set<RemoteEventProcessorOnRunner<?>> allRemoteProcessors,
+      Set<RemoteEventProcessorOnRunner<?, ?>> allRemoteProcessors,
       RxRemoteEnvironment rxRemoteEnvironment,
       String runnerName,
       RxModuleRunnerImpl.Builder builder) {
     final var remoteEventClasses =
         allRemoteProcessors.stream()
             .filter(p -> p.getRunnerName().equals(runnerName))
-            .map(RemoteEventProcessorOnRunner::getEventClass)
+            .map(RemoteEventProcessorOnRunner::getMessageTransportType)
             .collect(Collectors.toSet());
     remoteEventClasses.forEach(
-        eventClass ->
+        msgTransportType ->
             allRemoteProcessors.stream()
                 .filter(p -> p.getRunnerName().equals(runnerName))
-                .forEach(p -> addToBuilder(eventClass, rxRemoteEnvironment, p, builder)));
+                .forEach(p -> addToBuilder(msgTransportType, rxRemoteEnvironment, p, builder)));
   }
 
   private void addProcessorsOnRunner(

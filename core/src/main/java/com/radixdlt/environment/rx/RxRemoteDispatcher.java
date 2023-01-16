@@ -64,6 +64,7 @@
 
 package com.radixdlt.environment.rx;
 
+import com.radixdlt.environment.MessageTransportType;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import java.util.Objects;
 
@@ -72,26 +73,35 @@ import java.util.Objects;
  *
  * @param <T> the event class
  */
-public final class RxRemoteDispatcher<T> {
+public final class RxRemoteDispatcher<N, T> {
+  private final Class<N> nodeIdClass;
   private final Class<T> eventClass;
-  private final RemoteEventDispatcher<T> dispatcher;
+  private final RemoteEventDispatcher<N, T> dispatcher;
 
-  private RxRemoteDispatcher(Class<T> eventClass, RemoteEventDispatcher<T> dispatcher) {
+  private RxRemoteDispatcher(
+      Class<N> nodeIdClass, Class<T> eventClass, RemoteEventDispatcher<N, T> dispatcher) {
+    this.nodeIdClass = nodeIdClass;
     this.eventClass = eventClass;
     this.dispatcher = dispatcher;
+  }
+
+  public MessageTransportType<?, ?> messageTransportType() {
+    return MessageTransportType.create(nodeIdClass, eventClass);
   }
 
   public Class<T> eventClass() {
     return eventClass;
   }
 
-  public RemoteEventDispatcher<T> dispatcher() {
+  public RemoteEventDispatcher<N, T> dispatcher() {
     return dispatcher;
   }
 
-  public static <T> RxRemoteDispatcher<T> create(
-      Class<T> eventClass, RemoteEventDispatcher<T> dispatcher) {
+  public static <N, T> RxRemoteDispatcher<N, T> create(
+      Class<N> nodeIdClass, Class<T> eventClass, RemoteEventDispatcher<N, T> dispatcher) {
     return new RxRemoteDispatcher<>(
-        Objects.requireNonNull(eventClass), Objects.requireNonNull(dispatcher));
+        Objects.requireNonNull(nodeIdClass),
+        Objects.requireNonNull(eventClass),
+        Objects.requireNonNull(dispatcher));
   }
 }

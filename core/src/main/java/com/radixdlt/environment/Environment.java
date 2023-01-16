@@ -77,5 +77,6 @@ public interface Environment {
 
   <T> ScheduledEventDispatcher<T> getScheduledDispatcher(TypeLiteral<T> typeLiteral);
 
-  <T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass);
+  <N, T> RemoteEventDispatcher<N, T> getRemoteDispatcher(
+      MessageTransportType<N, T> messageTransportType);
 }

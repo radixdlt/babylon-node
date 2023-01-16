@@ -88,6 +88,7 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerEvent;
 import com.radixdlt.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
 import com.radixdlt.p2p.discovery.DiscoverPeers;
@@ -158,22 +159,23 @@ public class DispatcherModule extends AbstractModule {
         .in(Scopes.SINGLETON);
 
     // BFT
-    bind(new TypeLiteral<RemoteEventDispatcher<Proposal>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(Proposal.class))
+    bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, Proposal>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(BFTNode.class, Proposal.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(Vote.class))
+    bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, Vote>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(BFTNode.class, Vote.class))
         .in(Scopes.SINGLETON);
 
     // BFT Sync
-    bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesResponse>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(GetVerticesResponse.class))
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesResponse>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, GetVerticesResponse.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesErrorResponse>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(GetVerticesErrorResponse.class))
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesErrorResponse>>() {})
+        .toProvider(
+            Dispatchers.remoteDispatcherProvider(NodeId.class, GetVerticesErrorResponse.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<MempoolAdd>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(MempoolAdd.class))
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, MempoolAdd>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, MempoolAdd.class))
         .in(Scopes.SINGLETON);
 
     final var unexpecedEventKey = new TypeLiteral<EventProcessor<ConsensusByzantineEvent>>() {};
@@ -247,6 +249,7 @@ public class DispatcherModule extends AbstractModule {
   }
 
   private void configureP2p() {
+    // Local Dispatchers
     bind(new TypeLiteral<EventDispatcher<PeerEvent>>() {})
         .toProvider(Dispatchers.dispatcherProvider(PeerEvent.class))
         .in(Scopes.SINGLETON);
@@ -259,38 +262,44 @@ public class DispatcherModule extends AbstractModule {
     bind(new TypeLiteral<ScheduledEventDispatcher<PeerOutboundConnectionTimeout>>() {})
         .toProvider(Dispatchers.scheduledDispatcherProvider(PeerOutboundConnectionTimeout.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<Ping>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(Ping.class))
-        .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<Pong>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(Pong.class))
-        .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<GetPeers>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(GetPeers.class))
-        .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<PeersResponse>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(PeersResponse.class))
-        .in(Scopes.SINGLETON);
     bind(new TypeLiteral<EventDispatcher<DiscoverPeers>>() {})
         .toProvider(Dispatchers.dispatcherProvider(DiscoverPeers.class))
+        .in(Scopes.SINGLETON);
+
+    // Remote Dispatchers
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, Ping>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, Ping.class))
+        .in(Scopes.SINGLETON);
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, Pong>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, Pong.class))
+        .in(Scopes.SINGLETON);
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetPeers>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, GetPeers.class))
+        .in(Scopes.SINGLETON);
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, PeersResponse>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, PeersResponse.class))
         .in(Scopes.SINGLETON);
   }
 
   private void configureSync() {
-    bind(new TypeLiteral<RemoteEventDispatcher<StatusRequest>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(StatusRequest.class))
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, StatusRequest>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, StatusRequest.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<StatusResponse>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(StatusResponse.class))
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, StatusResponse>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, StatusResponse.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<SyncRequest>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(SyncRequest.class))
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, SyncRequest>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, SyncRequest.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<SyncResponse>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(SyncResponse.class))
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, SyncResponse>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, SyncResponse.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<LedgerStatusUpdate>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(LedgerStatusUpdate.class))
+
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, LedgerStatusUpdate>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, LedgerStatusUpdate.class))
+        .in(Scopes.SINGLETON);
+    bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, LedgerStatusUpdate>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(BFTNode.class, LedgerStatusUpdate.class))
         .in(Scopes.SINGLETON);
   }
 
@@ -422,11 +431,12 @@ public class DispatcherModule extends AbstractModule {
   }
 
   @Provides
-  private RemoteEventDispatcher<GetVerticesRequest> verticesRequestDispatcher(
+  private RemoteEventDispatcher<NodeId, GetVerticesRequest> verticesRequestDispatcher(
       @ProcessOnDispatch Set<EventProcessor<GetVerticesRequest>> processors,
       Environment environment,
       Metrics metrics) {
-    var dispatcher = environment.getRemoteDispatcher(GetVerticesRequest.class);
+    var messageTransportType = MessageTransportType.create(NodeId.class, GetVerticesRequest.class);
+    var dispatcher = environment.getRemoteDispatcher(messageTransportType);
     return (node, request) -> {
       metrics.bft().sync().requestsSent().inc();
       dispatcher.dispatch(node, request);

@@ -100,6 +100,7 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.DurationParser;
@@ -506,7 +507,7 @@ public final class SimulationTest {
    * @return test results
    */
   public RunningSimulationTest run(
-      Duration duration, ImmutableMap<BFTNode, ImmutableSet<String>> disabledModuleRunners) {
+      Duration duration, ImmutableMap<NodeId, ImmutableSet<String>> disabledModuleRunners) {
     Injector testInjector = Guice.createInjector(testModule);
     var runners =
         testInjector.getInstance(Key.get(new TypeLiteral<Set<SimulationNetworkActor>>() {}));

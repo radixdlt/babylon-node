@@ -66,30 +66,28 @@ package com.radixdlt.environment.deterministic.network;
 
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.environment.*;
+import com.radixdlt.messaging.MessageTransportNotSupported;
+import com.radixdlt.p2p.NodeId;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /** A sender within a deterministic network. */
-public final class ControlledSender implements Environment {
+public final class ControlledDispatcher implements Environment {
   private static final Logger log = LogManager.getLogger();
-
   private final DeterministicNetwork network;
-  private final BFTNode self;
+  private final NodeId self;
   private final int senderIndex;
   private final ChannelId localChannel;
-  private final Function<BFTNode, Integer> addressBook;
+  private final Function<NodeId, Integer> p2pAddressBook;
 
-  public ControlledSender(
-      Function<BFTNode, Integer> addressBook,
+  public ControlledDispatcher(
+      Function<NodeId, Integer> p2pAddressBook,
       DeterministicNetwork network,
-      BFTNode self,
+      NodeId self,
       int senderIndex) {
-    this.addressBook = addressBook;
+    this.p2pAddressBook = p2pAddressBook;
     this.network = network;
     this.self = self;
     this.senderIndex = senderIndex;
@@ -137,14 +135,28 @@ public final class ControlledSender implements Environment {
   }
 
   @Override
-  public <T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass) {
+  public <N, T> RemoteEventDispatcher<N, T> getRemoteDispatcher(
+      MessageTransportType<N, T> messageTransportType) {
+    if (messageTransportType.getNodeIdType() != BFTNode.class
+        && messageTransportType.getNodeIdType() != NodeId.class) {
+      throw new MessageTransportNotSupported(messageTransportType);
+    }
+
     return (node, e) -> {
-      var receiverIndex = this.addressBook.apply(node);
+      final Integer receiverIndex;
+      if (messageTransportType.getNodeIdType() == BFTNode.class) {
+        var bftNode = (BFTNode) node;
+        receiverIndex = this.p2pAddressBook.apply(NodeId.fromPublicKey(bftNode.getKey()));
+      } else {
+        receiverIndex = this.p2pAddressBook.apply((NodeId) node);
+      }
+
       if (receiverIndex == null) {
         log.warn("Could not resolve node {} to physical nodeIndex. Dropping msg: {}", node, e);
         return;
       }
-      ChannelId channelId = ChannelId.of(this.senderIndex, receiverIndex);
+
+      var channelId = ChannelId.of(this.senderIndex, receiverIndex);
       handleMessage(new ControlledMessage(self, channelId, e, null, arrivalTime(channelId)));
     };
   }

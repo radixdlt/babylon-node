@@ -94,7 +94,7 @@ public final class BFTBuilder {
   private BFTNode self;
 
   private RoundUpdate roundUpdate;
-  private RemoteEventDispatcher<Vote> voteDispatcher;
+  private RemoteEventDispatcher<BFTNode, Vote> voteDispatcher;
   private SafetyRules safetyRules;
 
   private TimeSupplier timeSupplier;
@@ -118,7 +118,7 @@ public final class BFTBuilder {
     return this;
   }
 
-  public BFTBuilder voteDispatcher(RemoteEventDispatcher<Vote> voteDispatcher) {
+  public BFTBuilder voteDispatcher(RemoteEventDispatcher<BFTNode, Vote> voteDispatcher) {
     this.voteDispatcher = voteDispatcher;
     return this;
   }

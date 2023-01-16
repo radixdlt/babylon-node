@@ -73,6 +73,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.utils.PrivateKeys;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -113,7 +114,7 @@ public class SyncStateTest {
 
   @Test
   public void sync_check_state_should_update_current_header() {
-    final var peer = mock(BFTNode.class);
+    final var peer = mock(NodeId.class);
 
     final var initialState =
         SyncState.SyncCheckState.init(mock(LedgerProof.class), ImmutableSet.of(peer));
@@ -126,7 +127,7 @@ public class SyncStateTest {
 
   @Test
   public void sync_check_state_should_add_status_response() {
-    final var peer = BFTNode.create(PrivateKeys.ofNumeric(1).getPublicKey());
+    final var peer = mock(NodeId.class);
 
     final var initialState =
         SyncState.SyncCheckState.init(mock(LedgerProof.class), ImmutableSet.of(peer));
@@ -138,7 +139,7 @@ public class SyncStateTest {
     assertEquals(1, newState.responses().size());
     assertTrue(newState.gotAllResponses());
 
-    final var otherPeer = BFTNode.create(PrivateKeys.ofNumeric(2).getPublicKey());
+    final var otherPeer = mock(NodeId.class);
     assertFalse(newState.hasAskedPeer(otherPeer));
   }
 
@@ -162,7 +163,7 @@ public class SyncStateTest {
 
     assertFalse(initialState.waitingForResponse());
 
-    final var peer = mock(BFTNode.class);
+    final var peer = mock(NodeId.class);
     final var newState = initialState.withPendingRequest(peer, 1L);
 
     assertTrue(newState.waitingForResponse());
@@ -180,8 +181,8 @@ public class SyncStateTest {
     // there's no next candidate peer
     assertTrue(initialState.fetchNextCandidatePeer().getSecond().isEmpty());
 
-    final var candidate1 = mock(BFTNode.class);
-    final var candidate2 = mock(BFTNode.class);
+    final var candidate1 = mock(NodeId.class);
+    final var candidate2 = mock(NodeId.class);
     final var stateWithCandidates =
         initialState.addCandidatePeers(ImmutableList.of(candidate1, candidate2));
 

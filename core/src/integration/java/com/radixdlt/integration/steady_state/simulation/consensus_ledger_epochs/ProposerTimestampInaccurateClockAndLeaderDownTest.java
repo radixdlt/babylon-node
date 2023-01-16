@@ -74,7 +74,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.environment.Runners;
@@ -90,6 +89,7 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent;
 import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.TimestampIssue;
 import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.Type;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.utils.TimeSupplier;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -136,13 +136,13 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
 
     // One node has an inaccurate clock: 10s rushing
     // A little "hack" with AtomicReference to get the lucky node's key out of the closure
-    final var rushingNode = new AtomicReference<BFTNode>();
+    final var rushingNode = new AtomicReference<NodeId>();
     builder.addOverrideModuleToInitialNodes(
         nodes -> {
           final var nodeWithInaccurateClock =
-              BFTNode.create(nodes.get(NODE_WITH_INACCURATE_CLOCK_INDEX).getPublicKey());
+              NodeId.fromPublicKey(nodes.get(NODE_WITH_INACCURATE_CLOCK_INDEX).getPublicKey());
           rushingNode.set(nodeWithInaccurateClock);
-          return ImmutableList.of(nodeWithInaccurateClock.getKey());
+          return ImmutableList.of(nodeWithInaccurateClock.getPublicKey());
         },
         () ->
             new AbstractModule() {
@@ -156,7 +156,7 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
 
     // Simulating a down node by disabling the consensus module runner
     final var downNodeKey = simulationTest.getInitialNodes().get(DOWN_NODE_INDEX);
-    final var downNode = BFTNode.create(downNodeKey.getPublicKey());
+    final var downNode = NodeId.fromPublicKey(downNodeKey.getPublicKey());
     final var runningTest =
         simulationTest.run(
             Duration.ofSeconds(15), ImmutableMap.of(downNode, ImmutableSet.of(Runners.CONSENSUS)));
@@ -166,8 +166,8 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
         runningTest.getNodeInjectors().get(0).getInstance(ProposerElection.class);
     final var firstLeader = proposerElection.getProposer(Round.of(1L));
     final var nextLeader = proposerElection.getProposer(Round.of(2L));
-    assertEquals(firstLeader, rushingNode.get());
-    assertEquals(nextLeader, downNode);
+    assertEquals(firstLeader.getKey(), rushingNode.get().getPublicKey());
+    assertEquals(nextLeader.getKey(), downNode.getPublicKey());
 
     final var results = runningTest.awaitCompletion();
 

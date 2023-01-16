@@ -102,8 +102,8 @@ public final class Pacemaker {
   private final PacemakerTimeoutCalculator timeoutCalculator;
   private final ProposalGenerator proposalGenerator;
   private final Hasher hasher;
-  private final RemoteEventDispatcher<Proposal> proposalDispatcher;
-  private final RemoteEventDispatcher<Vote> voteDispatcher;
+  private final RemoteEventDispatcher<BFTNode, Proposal> proposalDispatcher;
+  private final RemoteEventDispatcher<BFTNode, Vote> voteDispatcher;
   private final EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher;
   private final EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher;
   private final TimeSupplier timeSupplier;
@@ -126,8 +126,8 @@ public final class Pacemaker {
       ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
       PacemakerTimeoutCalculator timeoutCalculator,
       ProposalGenerator proposalGenerator,
-      RemoteEventDispatcher<Proposal> proposalDispatcher,
-      RemoteEventDispatcher<Vote> voteDispatcher,
+      RemoteEventDispatcher<BFTNode, Proposal> proposalDispatcher,
+      RemoteEventDispatcher<BFTNode, Vote> voteDispatcher,
       EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher,
       Hasher hasher,
       TimeSupplier timeSupplier,

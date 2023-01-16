@@ -91,14 +91,12 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.ZeroHasher;
+import com.radixdlt.utils.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -119,9 +117,9 @@ public class ConsensusModuleTest {
   private BFTConfiguration bftConfiguration;
 
   private ECKeyPair ecKeyPair;
-  private RemoteEventDispatcher<GetVerticesRequest> requestSender;
-  private RemoteEventDispatcher<GetVerticesResponse> responseSender;
-  private RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseSender;
+  private RemoteEventDispatcher<NodeId, GetVerticesRequest> requestSender;
+  private RemoteEventDispatcher<NodeId, GetVerticesResponse> responseSender;
+  private RemoteEventDispatcher<NodeId, GetVerticesErrorResponse> errorResponseSender;
 
   @Before
   public void setup() {
@@ -177,15 +175,15 @@ public class ConsensusModuleTest {
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<RoundLeaderFailure>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, Vote>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<Proposal>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, Proposal>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesRequest>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesRequest>>() {})
             .toInstance(requestSender);
-        bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesResponse>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesResponse>>() {})
             .toInstance(responseSender);
-        bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesErrorResponse>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesErrorResponse>>() {})
             .toInstance(errorResponseSender);
         bind(new TypeLiteral<EventDispatcher<NoVote>>() {})
             .toInstance(rmock(EventDispatcher.class));
@@ -270,7 +268,7 @@ public class ConsensusModuleTest {
     Pair<QuorumCertificate, VertexWithHash> nextVertex = createNextVertex(parent, validatorKeyPair);
     HighQC unsyncedHighQC =
         HighQC.from(nextVertex.getFirst(), nextVertex.getFirst(), Optional.empty());
-    bftSync.syncToQC(unsyncedHighQC, validatorBftNode);
+    bftSync.syncToQC(unsyncedHighQC, NodeId.fromPublicKey(validatorBftNode.getKey()));
     GetVerticesRequest request = new GetVerticesRequest(nextVertex.getSecond().hash(), 1);
     VertexRequestTimeout timeout = VertexRequestTimeout.create(request);
 
@@ -281,7 +279,7 @@ public class ConsensusModuleTest {
     // Assert
     verify(requestSender, times(2))
         .dispatch(
-            eq(validatorBftNode),
+            eq(NodeId.fromPublicKey(validatorBftNode.getKey())),
             argThat(
                 r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().hash())));
   }
@@ -289,31 +287,33 @@ public class ConsensusModuleTest {
   @Test
   public void on_synced_to_vertex_should_request_for_parent() {
     // Arrange
-    BFTNode bftNode = BFTNode.random();
+    var nodeId = NodeId.fromPublicKey(PrivateKeys.ofNumeric(1).getPublicKey());
     QuorumCertificate parent = vertexStore.highQC().highestQC();
     Pair<QuorumCertificate, VertexWithHash> nextVertex = createNextVertex(parent, validatorKeyPair);
     Pair<QuorumCertificate, VertexWithHash> nextNextVertex =
         createNextVertex(nextVertex.getFirst(), validatorKeyPair);
     HighQC unsyncedHighQC =
         HighQC.from(nextNextVertex.getFirst(), nextNextVertex.getFirst(), Optional.empty());
-    bftSync.syncToQC(unsyncedHighQC, bftNode);
+    bftSync.syncToQC(unsyncedHighQC, nodeId);
 
     // Act
     nothrowSleep(100); // FIXME: Remove when rate limit on send removed
     GetVerticesResponse response =
         new GetVerticesResponse(ImmutableList.of(nextNextVertex.getSecond()));
-    bftSync.responseProcessor().process(bftNode, response);
+    bftSync.responseProcessor().process(nodeId, response);
 
     // Assert
     verify(requestSender, times(1))
         .dispatch(
-            eq(bftNode),
+            eq(nodeId),
             argThat(
                 r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().hash())));
   }
 
   @Test
   public void bft_sync_should_sync_two_different_QCs_with_the_same_parent() {
+
+    var nodeId = NodeId.fromPublicKey(validatorBftNode.getKey());
     final var parentQc = vertexStore.highQC().highestQC();
     final var parentVertex = createNextVertex(parentQc, validatorKeyPair);
     final var proposedVertex1 =
@@ -331,19 +331,19 @@ public class ConsensusModuleTest {
     final var unsyncedHighQC2 =
         HighQC.from(proposedVertex2.getFirst(), proposedVertex2.getFirst(), Optional.empty());
 
-    bftSync.syncToQC(unsyncedHighQC1, validatorBftNode);
-    bftSync.syncToQC(unsyncedHighQC2, validatorBftNode);
+    bftSync.syncToQC(unsyncedHighQC1, nodeId);
+    bftSync.syncToQC(unsyncedHighQC2, nodeId);
 
     nothrowSleep(100);
     final var response1 = new GetVerticesResponse(ImmutableList.of(proposedVertex1.getSecond()));
-    bftSync.responseProcessor().process(validatorBftNode, response1);
+    bftSync.responseProcessor().process(nodeId, response1);
 
     final var response2 = new GetVerticesResponse(ImmutableList.of(proposedVertex2.getSecond()));
-    bftSync.responseProcessor().process(validatorBftNode, response2);
+    bftSync.responseProcessor().process(nodeId, response2);
 
     verify(requestSender, times(1))
         .dispatch(
-            eq(validatorBftNode),
+            eq(nodeId),
             argThat(
                 r ->
                     r.getCount() == 1
@@ -351,7 +351,7 @@ public class ConsensusModuleTest {
 
     verify(requestSender, times(1))
         .dispatch(
-            eq(validatorBftNode),
+            eq(nodeId),
             argThat(
                 r ->
                     r.getCount() == 1

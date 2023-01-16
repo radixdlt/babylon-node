@@ -88,6 +88,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import java.util.*;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -121,21 +122,21 @@ public final class EpochManager {
   private EventProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
   private BFTEventProcessor bftEventProcessor;
 
-  private Set<RemoteEventProcessor<GetVerticesRequest>> syncRequestProcessors;
-  private Set<RemoteEventProcessor<GetVerticesResponse>> syncResponseProcessors;
-  private Set<RemoteEventProcessor<GetVerticesErrorResponse>> syncErrorResponseProcessors;
+  private Set<RemoteEventProcessor<NodeId, GetVerticesRequest>> syncRequestProcessors;
+  private Set<RemoteEventProcessor<NodeId, GetVerticesResponse>> syncResponseProcessors;
+  private Set<RemoteEventProcessor<NodeId, GetVerticesErrorResponse>> syncErrorResponseProcessors;
 
   private Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors;
   private Set<EventProcessor<BFTRebuildUpdate>> bftRebuildProcessors;
 
-  private final RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher;
+  private final RemoteEventDispatcher<BFTNode, LedgerStatusUpdate> ledgerStatusUpdateDispatcher;
 
   private final PersistentSafetyStateStore persistentSafetyStateStore;
 
   @Inject
   public EpochManager(
       @Self BFTNode self,
-      RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
+      RemoteEventDispatcher<BFTNode, LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
       EpochChange lastEpochChange,
       PacemakerFactory pacemakerFactory,
       VertexStoreFactory vertexStoreFactory,
@@ -398,15 +399,15 @@ public final class EpochManager {
     };
   }
 
-  public RemoteEventProcessor<GetVerticesRequest> bftSyncRequestProcessor() {
+  public RemoteEventProcessor<NodeId, GetVerticesRequest> bftSyncRequestProcessor() {
     return (node, request) -> syncRequestProcessors.forEach(p -> p.process(node, request));
   }
 
-  public RemoteEventProcessor<GetVerticesResponse> bftSyncResponseProcessor() {
+  public RemoteEventProcessor<NodeId, GetVerticesResponse> bftSyncResponseProcessor() {
     return (node, resp) -> syncResponseProcessors.forEach(p -> p.process(node, resp));
   }
 
-  public RemoteEventProcessor<GetVerticesErrorResponse> bftSyncErrorResponseProcessor() {
+  public RemoteEventProcessor<NodeId, GetVerticesErrorResponse> bftSyncErrorResponseProcessor() {
     return (node, err) -> {
       if (log.isDebugEnabled()) {
         log.debug("SYNC_ERROR: Received GetVerticesErrorResponse {}", err);

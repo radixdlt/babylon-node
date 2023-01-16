@@ -65,6 +65,7 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.p2p.NodeId;
 import javax.annotation.Nullable;
 
 /**
@@ -87,5 +88,5 @@ public interface BFTSyncer {
    * @param author the original author of the qc
    * @return {@code SyncResult.SYNCED} if already synced
    */
-  SyncResult syncToQC(HighQC highQC, @Nullable BFTNode author);
+  SyncResult syncToQC(HighQC highQC, @Nullable NodeId author);
 }

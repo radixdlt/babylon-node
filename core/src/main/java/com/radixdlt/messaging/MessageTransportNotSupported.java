@@ -62,79 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.messaging.consensus;
+package com.radixdlt.messaging;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.messaging.core.Message;
-import com.radixdlt.messaging.core.MessageCentral;
-import com.radixdlt.messaging.core.MessageFromPeer;
-import com.radixdlt.p2p.NodeId;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
-import io.reactivex.rxjava3.core.Flowable;
-import java.util.Objects;
+import com.radixdlt.environment.MessageTransportType;
 
-/** BFT Network sending and receiving layer used on top of the MessageCentral layer. */
-public final class MessageCentralBFTNetwork {
-  private final MessageCentral messageCentral;
+public final class MessageTransportNotSupported extends IllegalStateException {
+  private final MessageTransportType<?, ?> messageTransportType;
 
-  @Inject
-  public MessageCentralBFTNetwork(MessageCentral messageCentral) {
-    this.messageCentral = Objects.requireNonNull(messageCentral);
-  }
-
-  // TODO: cleanup unnecessary code duplication and "fat" lambdas
-  public Flowable<RemoteEvent<NodeId, Vote>> remoteVotes() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Vote)
-        .map(
-            m -> {
-              final var msg = m.message();
-              var vote = (Vote) msg.getConsensusMessage();
-              return RemoteEvent.create(m.source(), vote);
-            });
-  }
-
-  public Flowable<RemoteEvent<NodeId, Proposal>> remoteProposals() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Proposal)
-        .map(
-            m -> {
-              final var msg = m.message();
-              var proposal = (Proposal) msg.getConsensusMessage();
-              return RemoteEvent.create(m.source(), proposal);
-            });
-  }
-
-  private Flowable<MessageFromPeer<ConsensusEventMessage>> remoteBftEvents() {
-    return this.messageCentral
-        .messagesOf(ConsensusEventMessage.class)
-        .toFlowable(BackpressureStrategy.BUFFER);
-  }
-
-  public RemoteEventDispatcher<BFTNode, Proposal> proposalDispatcher() {
-    return this::sendProposal;
-  }
-
-  private void sendProposal(BFTNode receiver, Proposal proposal) {
-    ConsensusEventMessage message = new ConsensusEventMessage(proposal);
-    send(message, receiver);
-  }
-
-  public RemoteEventDispatcher<BFTNode, Vote> voteDispatcher() {
-    return this::sendVote;
-  }
-
-  private void sendVote(BFTNode receiver, Vote vote) {
-    ConsensusEventMessage message = new ConsensusEventMessage(vote);
-    send(message, receiver);
-  }
-
-  private void send(Message message, BFTNode recipient) {
-    this.messageCentral.send(NodeId.fromPublicKey(recipient.getKey()), message);
+  public MessageTransportNotSupported(MessageTransportType<?, ?> messageTransportType) {
+    super(String.format("Message transport not supported: %s", messageTransportType));
+    this.messageTransportType = messageTransportType;
   }
 }

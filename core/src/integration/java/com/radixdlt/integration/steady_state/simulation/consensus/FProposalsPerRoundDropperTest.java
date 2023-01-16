@@ -83,6 +83,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
+import com.radixdlt.p2p.NodeId;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -144,7 +145,7 @@ public class FProposalsPerRoundDropperTest {
                 new AbstractModule() {
                   @Override
                   protected void configure() {
-                    bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesRequest>>() {})
+                    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesRequest>>() {})
                         .toInstance((node, request) -> {});
                   }
                 })

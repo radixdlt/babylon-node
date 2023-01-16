@@ -80,6 +80,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.TimeSupplier;
@@ -130,7 +131,7 @@ public final class ConsensusModule extends AbstractModule {
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteEventDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
-      RemoteEventDispatcher<Vote> voteDispatcher,
+      RemoteEventDispatcher<BFTNode, Vote> voteDispatcher,
       EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher,
       RoundUpdate roundUpdate) {
     return BFTBuilder.create()
@@ -170,8 +171,8 @@ public final class ConsensusModule extends AbstractModule {
       PacemakerTimeoutCalculator timeoutCalculator,
       ProposalGenerator proposalGenerator,
       Hasher hasher,
-      RemoteEventDispatcher<Proposal> proposalDispatcher,
-      RemoteEventDispatcher<Vote> voteDispatcher,
+      RemoteEventDispatcher<BFTNode, Proposal> proposalDispatcher,
+      RemoteEventDispatcher<BFTNode, Vote> voteDispatcher,
       EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher,
       TimeSupplier timeSupplier,
       RoundUpdate initialRoundUpdate,
@@ -202,7 +203,7 @@ public final class ConsensusModule extends AbstractModule {
       @GetVerticesRequestRateLimit RateLimiter syncRequestRateLimiter,
       VertexStoreAdapter vertexStore,
       PacemakerReducer pacemakerReducer,
-      RemoteEventDispatcher<GetVerticesRequest> requestSender,
+      RemoteEventDispatcher<NodeId, GetVerticesRequest> requestSender,
       EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
       ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
       EventDispatcher<ConsensusByzantineEvent> unexpectedEventEventDispatcher,

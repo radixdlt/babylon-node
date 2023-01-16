@@ -66,16 +66,16 @@ package com.radixdlt.sync.messages.local;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.p2p.NodeId;
 import java.util.Objects;
 
 /** A request to sync ledger to a given version. */
 public final class LocalSyncRequest {
 
   private final LedgerProof target;
-  private final ImmutableList<BFTNode> targetNodes;
+  private final ImmutableList<NodeId> targetNodes;
 
-  public LocalSyncRequest(LedgerProof target, ImmutableList<BFTNode> targetNodes) {
+  public LocalSyncRequest(LedgerProof target, ImmutableList<NodeId> targetNodes) {
     this.target = Objects.requireNonNull(target);
     this.targetNodes = Objects.requireNonNull(targetNodes);
   }
@@ -84,7 +84,7 @@ public final class LocalSyncRequest {
     return target;
   }
 
-  public ImmutableList<BFTNode> getTargetNodes() {
+  public ImmutableList<NodeId> getTargetNodes() {
     return targetNodes;
   }
 

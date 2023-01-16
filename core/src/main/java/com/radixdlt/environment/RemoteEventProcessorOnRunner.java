@@ -72,23 +72,29 @@ import java.util.Optional;
  *
  * @param <T> the class of the remote event
  */
-public final class RemoteEventProcessorOnRunner<T> {
+public final class RemoteEventProcessorOnRunner<N, T> {
   private final String runnerName;
   private final Class<T> eventClass;
-  private final RemoteEventProcessor<T> processor;
+  private final Class<N> nodeIdClass;
+  private final RemoteEventProcessor<N, T> processor;
   private final long rateLimitDelayMs;
 
   public RemoteEventProcessorOnRunner(
-      String runnerName, Class<T> eventClass, RemoteEventProcessor<T> processor) {
-    this(runnerName, eventClass, processor, 0);
+      String runnerName,
+      Class<N> nodeIdClass,
+      Class<T> eventClass,
+      RemoteEventProcessor<N, T> processor) {
+    this(runnerName, nodeIdClass, eventClass, processor, 0);
   }
 
   public RemoteEventProcessorOnRunner(
       String runnerName,
+      Class<N> nodeIdClass,
       Class<T> eventClass,
-      RemoteEventProcessor<T> processor,
+      RemoteEventProcessor<N, T> processor,
       long rateLimitDelayMs) {
     this.runnerName = Objects.requireNonNull(runnerName);
+    this.nodeIdClass = Objects.requireNonNull(nodeIdClass);
     this.eventClass = Objects.requireNonNull(eventClass);
     this.processor = Objects.requireNonNull(processor);
     if (rateLimitDelayMs < 0) {
@@ -105,16 +111,18 @@ public final class RemoteEventProcessorOnRunner<T> {
     return runnerName;
   }
 
-  public <U> Optional<RemoteEventProcessor<U>> getProcessor(Class<U> c) {
-    if (c.isAssignableFrom(eventClass)) {
-      return Optional.of((RemoteEventProcessor<U>) processor);
+  public <N, U> Optional<RemoteEventProcessor<N, U>> getProcessor(
+      MessageTransportType<N, U> messageTransportType) {
+    if (messageTransportType.getNodeIdType().isAssignableFrom(nodeIdClass)
+        && messageTransportType.getMessageType().isAssignableFrom(eventClass)) {
+      return Optional.of((RemoteEventProcessor<N, U>) processor);
     }
 
     return Optional.empty();
   }
 
-  public Class<T> getEventClass() {
-    return eventClass;
+  public MessageTransportType<N, T> getMessageTransportType() {
+    return MessageTransportType.create(this.nodeIdClass, this.eventClass);
   }
 
   @Override

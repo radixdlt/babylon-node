@@ -66,7 +66,6 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.inject.*;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
@@ -78,6 +77,7 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.targeted.mempool.SimpleMempool;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -121,7 +121,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
       Metrics metrics) {
     return new StateComputerLedger.StateComputer() {
       @Override
-      public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
+      public void addToMempool(MempoolAdd mempoolAdd, @Nullable NodeId origin) {
         mempoolAdd
             .transactions()
             .forEach(

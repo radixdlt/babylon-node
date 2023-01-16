@@ -66,7 +66,6 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.radixdlt.consensus.*;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VertexStoreState;
@@ -79,6 +78,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.RoundDetails;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -116,7 +116,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
   }
 
   @Override
-  public void addToMempool(MempoolAdd mempoolAdd, BFTNode origin) {}
+  public void addToMempool(MempoolAdd mempoolAdd, NodeId origin) {}
 
   @Override
   public List<RawNotarizedTransaction> getTransactionsForProposal(

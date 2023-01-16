@@ -97,8 +97,8 @@ public final class PacemakerGenerateProposalTest {
   private ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender;
   private PacemakerTimeoutCalculator timeoutCalculator;
   private ProposalGenerator proposalGenerator;
-  private RemoteEventDispatcher<Proposal> proposalDispatcher;
-  private RemoteEventDispatcher<Vote> voteDispatcher;
+  private RemoteEventDispatcher<BFTNode, Proposal> proposalDispatcher;
+  private RemoteEventDispatcher<BFTNode, Vote> voteDispatcher;
   private EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher;
   private Hasher hasher;
   private TimeSupplier timeSupplier;

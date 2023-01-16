@@ -114,17 +114,23 @@ public final class PeerLivenessMonitorModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> peerPingRemoteEventProcessor(
+  private RemoteEventProcessorOnRunner<?, ?> peerPingRemoteEventProcessor(
       PeerLivenessMonitor peerLivenessMonitor) {
     return new RemoteEventProcessorOnRunner<>(
-        Runners.P2P_NETWORK, Ping.class, peerLivenessMonitor.pingRemoteEventProcessor());
+        Runners.P2P_NETWORK,
+        NodeId.class,
+        Ping.class,
+        peerLivenessMonitor.pingRemoteEventProcessor());
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> pongPingRemoteEventProcessor(
+  private RemoteEventProcessorOnRunner<?, ?> pongPingRemoteEventProcessor(
       PeerLivenessMonitor peerLivenessMonitor) {
     return new RemoteEventProcessorOnRunner<>(
-        Runners.P2P_NETWORK, Pong.class, peerLivenessMonitor.pongRemoteEventProcessor());
+        Runners.P2P_NETWORK,
+        NodeId.class,
+        Pong.class,
+        peerLivenessMonitor.pongRemoteEventProcessor());
   }
 
   @ProvidesIntoSet
