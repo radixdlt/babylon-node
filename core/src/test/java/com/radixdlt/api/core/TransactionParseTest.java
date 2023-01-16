@@ -75,7 +75,7 @@ import org.junit.Test;
 public class TransactionParseTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_parse_rejected_transaction() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var ignored = buildRunningServerTest()) {
 
       var rawTransaction =
           REv2TestTransactions.validButRejectTransaction(0, 0).constructRawTransaction();

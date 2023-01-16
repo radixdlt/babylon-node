@@ -68,9 +68,7 @@ import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransac
 import static org.assertj.core.api.Assertions.*;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
-import com.radixdlt.api.core.generated.models.TransactionStatusRequest;
-import com.radixdlt.api.core.generated.models.TransactionStatusResponse;
-import com.radixdlt.api.core.generated.models.TransactionSubmitRequest;
+import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.rev2.REv2TestTransactions;
 import com.radixdlt.utils.Bytes;
 import org.junit.Test;
@@ -123,22 +121,33 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
 
   @Test
   public void test_valid_but_rejected_transaction_should_be_rejected() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var ignored = buildRunningServerTest()) {
       var rawTransaction =
           REv2TestTransactions.validButRejectTransaction(0, 0).constructRawTransaction();
 
-      // Submit transaction
-      assertThatThrownBy(
+      var response =
+          assertErrorResponseOfType(
               () ->
                   getTransactionApi()
                       .transactionSubmitPost(
                           new TransactionSubmitRequest()
                               .network(networkLogicalName)
                               .notarizedTransactionHex(
-                                  Bytes.toHexString(rawTransaction.getPayload()))))
-          .hasMessage(
-              "transactionSubmitPost call failed with: 400 - {\"code\":400,\"message\":\"Rejected:"
-                  + " SuccessButFeeLoanNotRepaid\"}");
+                                  Bytes.toHexString(rawTransaction.getPayload()))),
+              TransactionSubmitErrorResponse.class);
+
+      var details = response.getDetails();
+      assertThat(details).isNotNull();
+
+      var rejectedDetails = details.getTransactionSubmitRejectedErrorDetails();
+
+      assertThat(response.getCode()).isEqualTo(400);
+      assertThat(rejectedDetails).isNotNull();
+      assertThat(rejectedDetails.getIsPayloadRejectionPermanent()).isFalse();
+      assertThat(rejectedDetails.getIsIntentRejectionPermanent()).isFalse();
+      assertThat(rejectedDetails.getIsRejectedBecauseIntentAlreadyCommitted()).isFalse();
+      assertThat(rejectedDetails.getIsFresh()).isTrue();
+      assertThat(rejectedDetails.getErrorMessage()).isEqualTo("SuccessButFeeLoanNotRepaid");
     }
   }
 }
