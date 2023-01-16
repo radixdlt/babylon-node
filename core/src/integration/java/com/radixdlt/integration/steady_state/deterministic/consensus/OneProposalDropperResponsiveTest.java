@@ -88,7 +88,7 @@ public class OneProposalDropperResponsiveTest {
       int numValidatorNodes, Function<Round, Integer> nodeToDropFunction) {
     var test =
         DeterministicTest.builder()
-            .numNodes(numValidatorNodes, 0)
+            .numPhysicalNodes(numValidatorNodes)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(
                 MessageMutator.dropTimeouts()
@@ -99,7 +99,8 @@ public class OneProposalDropperResponsiveTest {
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerMockedSync(
-                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
+                        StateComputerConfig.mockedNoEpochs(
+                            numValidatorNodes, MockedMempoolConfig.noMempool()))));
 
     test.startAllNodes();
     test.runForCount(30_000);

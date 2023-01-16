@@ -73,12 +73,11 @@ use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::types::{
-    scrypto_decode, scrypto_encode, Decode, Encode, PublicKey, Signature, SignatureWithPublicKey,
-    TypeId,
+    scrypto_decode, scrypto_encode, PublicKey, Signature, SignatureWithPublicKey,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::node::NetworkDefinition;
-use radix_engine_interface::scrypto;
+use radix_engine_interface::*;
 use std::collections::HashSet;
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
@@ -144,8 +143,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createIntent
 
 // To ensure that any change to TransactionHeader is picked up as a compile error,
 // not an SBOR error
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 struct TransactionHeaderJava {
     pub version: u8,
     pub network_id: u8,
@@ -256,9 +254,7 @@ fn do_transaction_bytes_to_notarized_transaction_bytes(
 ) -> StateManagerResult<Option<Vec<u8>>> {
     let transaction: LedgerTransaction = scrypto_decode(&args)?;
     Ok(match transaction {
-        LedgerTransaction::User(notarized_transaction) => {
-            Some(scrypto_encode(&notarized_transaction.to_bytes())?)
-        }
+        LedgerTransaction::User(notarized_transaction) => Some(notarized_transaction.to_bytes()?),
         LedgerTransaction::Validator(..) => None,
         LedgerTransaction::System(..) => None,
     })

@@ -87,9 +87,6 @@ import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.modules.StateComputerConfig.*;
-import com.radixdlt.rev1.ReV1DispatcherModule;
-import com.radixdlt.rev1.mempool.ReV1MempoolRelayerModule;
-import com.radixdlt.rev1.modules.*;
 import com.radixdlt.rev2.modules.*;
 import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerModule;
@@ -97,6 +94,7 @@ import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
 import com.radixdlt.statecomputer.REv2StatelessComputerModule;
 import com.radixdlt.statecomputer.RandomTransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.SyncRelayConfig;
 
@@ -162,8 +160,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   }
 
   public sealed interface LedgerConfig {
-    static LedgerConfig mocked() {
-      return new MockedLedgerConfig();
+    static LedgerConfig mocked(int numValidators) {
+      return new MockedLedgerConfig(numValidators);
     }
 
     static LedgerConfig stateComputerNoSync(StateComputerConfig stateComputerConfig) {
@@ -187,13 +185,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
       return false;
     }
 
-    default boolean isREV1() {
-      if (this instanceof StateComputerLedgerConfig c) {
-        return c.config instanceof REv1StateComputerConfig;
-      }
-      return false;
-    }
-
     default boolean isREV2() {
       if (this instanceof StateComputerLedgerConfig c) {
         return c.config instanceof REv2StateComputerConfig;
@@ -202,7 +193,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     }
   }
 
-  public static final class MockedLedgerConfig implements LedgerConfig {}
+  public record MockedLedgerConfig(int numValidators) implements LedgerConfig {}
 
   public record StateComputerLedgerConfig(StateComputerConfig config, SyncConfig syncConfig)
       implements LedgerConfig {}
@@ -245,21 +236,18 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         LedgerConfig.stateComputerWithSyncRelay(stateComputerConfig, syncRelayConfig));
   }
 
-  public static FunctionalRadixNodeModule justLedger() {
+  public static FunctionalRadixNodeModule justLedgerWithNumValidators(int numValidators) {
     return new FunctionalRadixNodeModule(
         false,
         SafetyRecoveryConfig.mocked(),
         ConsensusConfig.of(),
         LedgerConfig.stateComputerNoSync(
-            StateComputerConfig.mocked(new MockedMempoolConfig.NoMempool())));
+            StateComputerConfig.mockedNoEpochs(
+                numValidators, new MockedMempoolConfig.NoMempool())));
   }
 
   public boolean supportsEpochs() {
     return epochs;
-  }
-
-  public boolean supportsREv1() {
-    return this.ledgerConfig.isREV1();
   }
 
   public boolean supportsREv2() {
@@ -290,9 +278,11 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
     // Ledger
     switch (this.ledgerConfig) {
-      case MockedLedgerConfig ignored -> {
+      case MockedLedgerConfig config -> {
         install(new MockedLedgerRecoveryModule());
         install(new MockedLedgerModule());
+
+        install(new MockedNoEpochsConsensusRecoveryModule(config.numValidators));
       }
       case StateComputerLedgerConfig stateComputerLedgerConfig -> {
         install(new LedgerModule());
@@ -315,7 +305,9 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         switch (stateComputerLedgerConfig.config) {
           case MockedStateComputerConfig c -> {
             install(new MockedLedgerRecoveryModule());
-            switch (c.mempoolType()) {
+            install(new InMemoryCommittedReaderModule());
+
+            switch (c.mempoolConfig()) {
               case MockedMempoolConfig.NoMempool ignored -> {
                 bind(ProposalGenerator.class).to(RandomTransactionGenerator.class);
                 if (!this.epochs) {
@@ -334,15 +326,19 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 install(new MockedMempoolStateComputerModule(relayed.mempoolSize()));
               }
             }
-          }
-          case REv1StateComputerConfig config -> {
-            install(new MempoolReceiverModule());
-            install(new ReV1MempoolRelayerModule(10000));
-            install(new RadixEngineStateComputerModule(config.mempoolSize()));
-            install(new RadixEngineModule());
-            install(new ReV1DispatcherModule());
-            install(new REv1LedgerRecoveryModule());
-            install(new REv1ConsensusRecoveryModule());
+
+            switch (c) {
+              case MockedStateComputerConfigNoEpochs noEpochs -> {
+                install(new MockedNoEpochsConsensusRecoveryModule(noEpochs.numValidators()));
+              }
+              case MockedStateComputerConfigWithEpochs withEpochs -> {
+                install(
+                    new MockedEpochsConsensusRecoveryModule(
+                        withEpochs.epochMaxRound(),
+                        withEpochs.mapping(),
+                        withEpochs.preGenesisAccumulatorHash()));
+              }
+            }
           }
           case REv2StateComputerConfig rev2Config -> {
             var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());

@@ -87,10 +87,6 @@ import com.radixdlt.keys.LocalSigner;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.rev1.LedgerAndBFTProof;
-import com.radixdlt.rev1.forks.InMemoryForksEpochStore;
-import com.radixdlt.store.InMemoryEngineStore;
-import com.radixdlt.store.InMemoryTransactionsAndProofReader;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
@@ -188,8 +184,6 @@ public class SimulationNodes {
     SimulationNetwork getUnderlyingNetwork();
 
     Map<BFTNode, Metrics> getMetrics();
-
-    void addOrOverrideNode(ECKeyPair key, Module extraModule);
 
     void runModule(BFTNode node, String name);
 
@@ -346,52 +340,6 @@ public class SimulationNodes {
           .getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}))
           .get(name)
           .start();
-    }
-
-    @Override
-    public void addOrOverrideNode(ECKeyPair key, Module extraModule) {
-      final var bftNode = BFTNode.create(key.getPublicKey());
-
-      final var existingNode = this.nodes.get(bftNode);
-      if (existingNode != null) {
-        stopNode(existingNode);
-
-        final var baseModule = createBFTModule(key);
-        final var module =
-            Modules.override(baseModule)
-                .with(
-                    new AbstractModule() {
-                      @Override
-                      protected void configure() {
-                        bind(new TypeLiteral<InMemoryEngineStore.Store<LedgerAndBFTProof>>() {})
-                            .toInstance(
-                                existingNode
-                                    .getInstance(
-                                        new Key<InMemoryEngineStore<LedgerAndBFTProof>>() {})
-                                    .getStore());
-                        bind(InMemoryTransactionsAndProofReader.Store.class)
-                            .toInstance(
-                                existingNode
-                                    .getInstance(InMemoryTransactionsAndProofReader.class)
-                                    .getStore());
-                        bind(InMemoryForksEpochStore.Store.class)
-                            .toInstance(
-                                existingNode.getInstance(InMemoryForksEpochStore.class).getStore());
-                      }
-                    },
-                    extraModule);
-        final var injector = Guice.createInjector(module);
-        this.nodes.put(bftNode, injector);
-        this.addObservables(bftNode, injector);
-        this.startRunners(bftNode, injector);
-      } else {
-        final var baseModule = createBFTModule(key);
-        final var module = Modules.override(baseModule).with(extraModule);
-        final var injector = Guice.createInjector(module);
-        this.nodes.put(bftNode, injector);
-        this.addObservables(bftNode, injector);
-        this.startRunners(bftNode, injector);
-      }
     }
 
     @Override

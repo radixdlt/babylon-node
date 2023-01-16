@@ -66,15 +66,7 @@ package com.radixdlt.integration.steady_state.deterministic.consensus;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
-import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimestampedECDSASignature;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.RoundUpdate;
@@ -102,7 +94,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 
     DeterministicManualExecutor executor =
         DeterministicTest.builder()
-            .numNodes(numValidatorNodes, 0, true)
+            .numPhysicalNodes(numValidatorNodes, true)
             .messageMutator(mutateProposalsBy(0))
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
@@ -110,7 +102,8 @@ public class DifferentTimestampsCauseTimeoutTest {
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))))
+                        StateComputerConfig.mockedNoEpochs(
+                            numValidatorNodes, MockedMempoolConfig.noMempool()))))
             .createExecutor();
 
     executor.start();
@@ -146,7 +139,7 @@ public class DifferentTimestampsCauseTimeoutTest {
                     bind(HashSigner.class).toInstance(h -> ECDSASecp256k1Signature.zeroSignature());
                   }
                 })
-            .numNodes(numValidatorNodes, 0, true)
+            .numPhysicalNodes(numValidatorNodes, true)
             .messageMutator(mutateProposalsBy(1))
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
@@ -154,7 +147,8 @@ public class DifferentTimestampsCauseTimeoutTest {
                     SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))))
+                        StateComputerConfig.mockedNoEpochs(
+                            numValidatorNodes, MockedMempoolConfig.noMempool()))))
             .createExecutor();
 
     executor.start();

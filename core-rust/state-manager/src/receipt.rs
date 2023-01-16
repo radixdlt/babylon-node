@@ -11,13 +11,11 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::{hash, scrypto_encode, Hash, Level, SubstateId};
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use radix_engine_interface::scrypto;
-use sbor::*;
+use radix_engine_interface::*;
 
 use crate::AccumulatorHash;
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct CommittedTransactionIdentifiers {
     pub state_version: u64,
     pub accumulator_hash: AccumulatorHash,
@@ -32,30 +30,26 @@ impl CommittedTransactionIdentifiers {
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum CommittedTransactionStatus {
     Success(Vec<Vec<u8>>),
     Failure(RuntimeError),
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct SubstateChanges {
     pub created: BTreeMap<SubstateId, OutputValue>,
     pub updated: BTreeMap<SubstateId, OutputValue>,
     pub deleted: BTreeMap<SubstateId, DeletedSubstateVersion>,
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct DeletedSubstateVersion {
     pub substate_hash: Hash,
     pub version: u32,
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum LedgerTransactionOutcome {
     Success(Vec<Vec<u8>>),
     Failure(RuntimeError),
@@ -72,8 +66,7 @@ impl From<TransactionOutcome> for LedgerTransactionOutcome {
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LedgerTransactionReceipt {
     pub outcome: LedgerTransactionOutcome,
     pub fee_summary: FeeSummary,

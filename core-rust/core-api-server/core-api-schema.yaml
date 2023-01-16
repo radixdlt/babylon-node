@@ -1947,8 +1947,7 @@ components:
       type: string
       enum:
         - String
-        - U32
-        - U64
+        - Number
         - Bytes
         - UUID
     NonFungibleId:
@@ -2189,7 +2188,8 @@ components:
         - ResourceManager
         - ResourceManagerVaultAccessRulesChain
         - EpochManager
-        - ValidatorSet
+        - CurrentValidatorSet
+        - PreparingValidatorSet
         - ClockCurrentMinute
         - KeyValueStoreEntry
         - NonFungibleStoreEntry
@@ -2302,13 +2302,10 @@ components:
         - $ref: '#/components/schemas/SubstateBase'
         - type: object
           required:
-            - xrd_amount
+            - vault_entity
           properties:
-            xrd_amount:
-              type: string
-              description: |
-                The string-encoded decimal representing the amount of XRD available for claim in the royalty accumulator.
-                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            vault_entity:
+              $ref: "#/components/schemas/EntityReference"
     PackageInfoSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
@@ -2349,13 +2346,10 @@ components:
         - $ref: '#/components/schemas/SubstateBase'
         - type: object
           required:
-            - xrd_amount
+            - vault_entity
           properties:
-            xrd_amount:
-              type: string
-              description: |
-                The string-encoded decimal representing the amount of XRD available for claim in the royalty accumulator.
-                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            vault_entity:
+              $ref: "#/components/schemas/EntityReference"
     ResourceManagerSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'

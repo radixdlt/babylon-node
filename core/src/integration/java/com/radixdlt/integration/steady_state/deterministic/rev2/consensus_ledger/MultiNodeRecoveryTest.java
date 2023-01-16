@@ -106,7 +106,7 @@ public final class MultiNodeRecoveryTest {
     return List.of(
         new Object[][] {
           {false, UInt64.fromNonNegativeLong(100000)},
-          {true, UInt64.fromNonNegativeLong(2)},
+          {true, UInt64.fromNonNegativeLong(10)},
           {true, UInt64.fromNonNegativeLong(100)},
         });
   }
@@ -126,7 +126,7 @@ public final class MultiNodeRecoveryTest {
 
   private DeterministicTest createTest(REv2DatabaseConfig databaseConfig) {
     return DeterministicTest.builder()
-        .numNodes(NUM_VALIDATORS, 0)
+        .numPhysicalNodes(NUM_VALIDATORS)
         .messageSelector(randomSelector(random))
         .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
         .functionalNodeModule(

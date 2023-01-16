@@ -72,6 +72,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
+import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -82,9 +83,6 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.PeersView;
-import com.radixdlt.rev1.modules.REv1PersistenceModule;
-import com.radixdlt.rev1.modules.RadixEngineStoreModule;
-import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.List;
 import java.util.stream.Stream;
@@ -93,19 +91,6 @@ import java.util.stream.Stream;
 public final class SingleNodeAndPeersDeterministicNetworkModule extends AbstractModule {
   private final ECKeyPair self;
   private final FunctionalRadixNodeModule radixNodeModule;
-
-  public static SingleNodeAndPeersDeterministicNetworkModule rev1(
-      ECKeyPair self, int maxMempoolSize, String databasePath) {
-    return new SingleNodeAndPeersDeterministicNetworkModule(
-        self,
-        new FunctionalRadixNodeModule(
-            true,
-            FunctionalRadixNodeModule.SafetyRecoveryConfig.berkeleyStore(databasePath),
-            FunctionalRadixNodeModule.ConsensusConfig.of(),
-            FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
-                StateComputerConfig.rev1(maxMempoolSize),
-                new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE))));
-  }
 
   public SingleNodeAndPeersDeterministicNetworkModule(
       ECKeyPair self, FunctionalRadixNodeModule radixNodeModule) {
@@ -125,10 +110,6 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
     install(new InMemoryBFTKeyModule(self));
     install(new CryptoModule());
     install(radixNodeModule);
-    if (radixNodeModule.supportsREv1()) {
-      install(new REv1PersistenceModule());
-      install(new RadixEngineStoreModule());
-    }
   }
 
   @Provides
@@ -138,16 +119,15 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
 
   @Provides
   @Singleton
-  public DeterministicNetwork network(@Self BFTNode self, PeersView peersView) {
-    return new DeterministicNetwork(
-        Stream.concat(Stream.of(self), peersView.peers().map(PeersView.PeerInfo::bftNode)).toList(),
-        MessageSelector.firstSelector(),
-        MessageMutator.nothing());
+  public DeterministicNetwork network() {
+    return new DeterministicNetwork(MessageSelector.firstSelector(), MessageMutator.nothing());
   }
 
   @Provides
   @Singleton
-  Environment environment(@Self BFTNode self, DeterministicNetwork network) {
-    return network.createSender(self);
+  Environment environment(@Self BFTNode self, DeterministicNetwork network, PeersView peersView) {
+    var addressBook =
+        Stream.concat(Stream.of(self), peersView.peers().map(PeersView.PeerInfo::bftNode)).toList();
+    return new ControlledSender(addressBook::indexOf, network, self, 0);
   }
 }

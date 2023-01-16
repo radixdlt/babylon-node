@@ -74,11 +74,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class EnumCodec<T> implements Codec<T> {
-  private final Map<String, EnumEntry<?>> entries;
-  private final Functions.Func1<T, String> mapEnumValueToKey;
+  private final Map<Byte, EnumEntry<?>> entries;
+  private final Functions.Func1<T, Byte> mapEnumValueToKey;
 
-  public EnumCodec(
-      Map<String, EnumEntry<?>> entries, Functions.Func1<T, String> mapEnumValueToKey) {
+  public EnumCodec(Map<Byte, EnumEntry<?>> entries, Functions.Func1<T, Byte> mapEnumValueToKey) {
     this.entries = entries;
     this.mapEnumValueToKey = mapEnumValueToKey;
   }
@@ -99,13 +98,13 @@ public class EnumCodec<T> implements Codec<T> {
           String.format("Enum entry enumKey %s not found in entries map", enumKey));
     }
 
-    encoder.writeString(enumKey);
+    encoder.writeByte(enumKey);
     ((EnumEntry<T>) enumEntry).encodeWithoutTypeId(encoder, value);
   }
 
   @SuppressWarnings("unchecked")
   public T decodeWithoutTypeId(DecoderApi decoder) {
-    var enumKey = decoder.readString();
+    var enumKey = decoder.readByte();
 
     var enumEntry = entries.get(enumKey);
 
@@ -125,11 +124,13 @@ public class EnumCodec<T> implements Codec<T> {
    * @param <T> The interface type, of which each FieldsCodec is a subclass
    */
   public static <T> EnumCodec<T> fromEntries(EnumEntry<?>... enumEntries) {
-    var enumEntryCodecMap = new HashMap<String, EnumEntry<?>>();
-    var inverseClassMap = new HashMap<Class<?>, String>();
-    for (var enumEntry : enumEntries) {
+    var enumEntryCodecMap = new HashMap<Byte, EnumEntry<?>>();
+    var inverseClassMap = new HashMap<Class<?>, Byte>();
+
+    for (int i = 0; i < enumEntries.length; i++) {
+      var enumEntry = enumEntries[i];
       var baseClass = enumEntry.getBaseClass();
-      var enumKey = baseClass.getSimpleName();
+      var enumKey = (byte) i;
       enumEntryCodecMap.put(enumKey, enumEntry);
       inverseClassMap.put(baseClass, enumKey);
     }

@@ -76,10 +76,9 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.RoundDetails;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.rev1.RoundDetails;
-import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -130,7 +129,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
-    var invalidTransactions = new HashMap<RawLedgerTransaction, Exception>();
+    var invalidTransactions = new HashMap<RawNotarizedTransaction, Exception>();
 
     for (var transaction : proposedTransactions) {
       var success = verifier.verify(transaction);
@@ -140,7 +139,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
                 transaction.INCORRECTInterpretDirectlyAsRawLedgerTransaction()));
       } else {
         invalidTransactions.put(
-            transaction.INCORRECTInterpretDirectlyAsRawLedgerTransaction(),
+            transaction.INCORRECTInterpretDirectlyAsRawNotarizedTransaction(),
             new StatelessTransactionException());
       }
     }

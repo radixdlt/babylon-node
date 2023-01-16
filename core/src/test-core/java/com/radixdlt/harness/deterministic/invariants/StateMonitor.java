@@ -68,5 +68,5 @@ import com.google.inject.Injector;
 import java.util.List;
 
 public interface StateMonitor {
-  void next(List<Injector> nodes);
+  void next(List<Injector> nodes, long time, int messageNum);
 }

@@ -103,7 +103,7 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
   public FullNodeSyncingWithAnotherFullNodeTest() {
     this.testBuilder =
         SimulationTest.builder()
-            .numNodes(4)
+            .numPhysicalNodes(4)
             .addressBook(
                 nodes -> {
                   final var validatorNodes =

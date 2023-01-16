@@ -190,7 +190,7 @@ public final class MultiNodeRebootTest {
     var databaseConfig = REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath());
     var builder =
         DeterministicTest.builder()
-            .numNodes(numValidators, 0)
+            .numPhysicalNodes(numValidators)
             .messageSelector(randomSelector(random))
             .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety());
 

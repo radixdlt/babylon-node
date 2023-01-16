@@ -67,5 +67,5 @@ package com.radixdlt.harness.deterministic.invariants;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 
 public interface MessageMonitor {
-  void next(ControlledMessage message);
+  void next(ControlledMessage message, long currentTime);
 }

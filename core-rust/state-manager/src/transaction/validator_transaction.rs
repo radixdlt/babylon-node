@@ -13,7 +13,7 @@ use transaction::model::{
     AuthZoneParams, Executable, ExecutionContext, FeePayment, Instruction, InstructionList,
 };
 
-#[derive(Debug, Copy, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub enum ValidatorTransaction {
     RoundUpdate {
         proposer_timestamp_ms: i64,
@@ -60,7 +60,7 @@ impl ValidatorTransaction {
     }
 }
 
-#[derive(Debug, Clone, TypeId, PartialEq, Eq)]
+#[derive(Debug, Clone, Categorize, PartialEq, Eq)]
 pub struct PreparedValidatorTransaction {
     hash: Hash,
     instructions: Vec<Instruction>,

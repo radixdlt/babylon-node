@@ -96,7 +96,7 @@ public abstract class DeterministicCoreApiTestBase {
   protected DeterministicTest buildRunningServerTest() {
     var test =
         DeterministicTest.builder()
-            .numNodes(1, 0)
+            .numPhysicalNodes(1)
             .messageSelector(firstSelector())
             .addModule(new CoreApiServerModule("127.0.0.1", coreApiPort))
             .addModule(

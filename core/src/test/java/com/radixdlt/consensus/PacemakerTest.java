@@ -83,11 +83,14 @@ import org.junit.Test;
 public final class PacemakerTest {
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(1, 0)
+        .numPhysicalNodes(1)
         .messageSelector(MessageSelector.firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
-                false, SafetyRecoveryConfig.mocked(), ConsensusConfig.of(), LedgerConfig.mocked()));
+                false,
+                SafetyRecoveryConfig.mocked(),
+                ConsensusConfig.of(),
+                LedgerConfig.mocked(1)));
   }
 
   @Test

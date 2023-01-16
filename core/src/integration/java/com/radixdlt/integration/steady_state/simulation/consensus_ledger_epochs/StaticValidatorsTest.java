@@ -66,12 +66,15 @@ package com.radixdlt.integration.steady_state.simulation.consensus_ledger_epochs
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.simulation.*;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.StateComputerConfig;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -82,7 +85,7 @@ public class StaticValidatorsTest {
   private final Builder bftTestBuilder =
       SimulationTest.builder()
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .numNodes(4)
+          .numPhysicalNodes(4)
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
@@ -95,8 +98,16 @@ public class StaticValidatorsTest {
       long epochRounds, long epochRoundsCheck) {
     SimulationTest bftTest =
         bftTestBuilder
-            .ledgerAndEpochs(
-                ConsensusConfig.of(1000), Round.of(epochRounds), e -> IntStream.range(0, 4))
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    true,
+                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(1000),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
+                        StateComputerConfig.mockedWithEpochs(
+                            Round.of(epochRounds),
+                            EpochNodeWeightMapping.constant(e -> IntStream.range(0, 4)),
+                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
             .addTestModules(ConsensusMonitors.epochMaxRound(Round.of(epochRoundsCheck)))
             .build();
 

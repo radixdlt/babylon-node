@@ -66,6 +66,7 @@ package com.radixdlt.integration.steady_state.simulation.consensus_ledger_epochs
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
@@ -73,7 +74,9 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.*;
+import com.radixdlt.modules.StateComputerConfig;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -101,9 +104,17 @@ public class MovingWindowValidatorsTest {
       given_correct_1_node_bft_with_4_total_nodes_with_changing_epochs_per_100_rounds__then_should_pass_bft_and_epoch_invariants() {
     SimulationTest bftTest =
         bftTestBuilder
-            .numNodes(4)
-            .ledgerAndEpochs(
-                ConsensusConfig.of(5000), Round.of(100), windowedEpochToNodesMapper(1, 4))
+            .numPhysicalNodes(4)
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    true,
+                    SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(5000),
+                    LedgerConfig.stateComputerMockedSync(
+                        StateComputerConfig.mockedWithEpochs(
+                            Round.of(100),
+                            EpochNodeWeightMapping.constant(windowedEpochToNodesMapper(1, 4)),
+                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
             .addTestModules(
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
                 ConsensusMonitors.epochMaxRound(Round.of(100)))
@@ -117,9 +128,17 @@ public class MovingWindowValidatorsTest {
       given_correct_3_node_bft_with_4_total_nodes_with_changing_epochs_per_100_rounds__then_should_pass_bft_and_epoch_invariants() {
     SimulationTest bftTest =
         bftTestBuilder
-            .numNodes(4)
-            .ledgerAndEpochs(
-                ConsensusConfig.of(1000), Round.of(100), windowedEpochToNodesMapper(3, 4))
+            .numPhysicalNodes(4)
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    true,
+                    SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(1000),
+                    LedgerConfig.stateComputerMockedSync(
+                        StateComputerConfig.mockedWithEpochs(
+                            Round.of(100),
+                            EpochNodeWeightMapping.constant(windowedEpochToNodesMapper(3, 4)),
+                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
             .addTestModules(
                 ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
                 ConsensusMonitors.epochMaxRound(Round.of(100)))
@@ -133,9 +152,17 @@ public class MovingWindowValidatorsTest {
       given_correct_25_node_bft_with_50_total_nodes_with_changing_epochs_per_100_rounds__then_should_pass_bft_and_epoch_invariants() {
     SimulationTest bftTest =
         bftTestBuilder
-            .numNodes(100)
-            .ledgerAndEpochs(
-                ConsensusConfig.of(5000), Round.of(100), windowedEpochToNodesMapper(25, 50))
+            .numPhysicalNodes(100)
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    true,
+                    SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(5000),
+                    LedgerConfig.stateComputerMockedSync(
+                        StateComputerConfig.mockedWithEpochs(
+                            Round.of(100),
+                            EpochNodeWeightMapping.constant(windowedEpochToNodesMapper(25, 50)),
+                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
             .addTestModules(
                 ConsensusMonitors.liveness(
                     5, TimeUnit.SECONDS), // High timeout to make Travis happy
@@ -151,9 +178,17 @@ public class MovingWindowValidatorsTest {
       given_correct_25_node_bft_with_50_total_nodes_with_changing_epochs_per_1_round__then_should_pass_bft_and_epoch_invariants() {
     SimulationTest bftTest =
         bftTestBuilder
-            .numNodes(100)
-            .ledgerAndEpochs(
-                ConsensusConfig.of(5000), Round.of(1), windowedEpochToNodesMapper(25, 50))
+            .numPhysicalNodes(100)
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    true,
+                    SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(5000),
+                    LedgerConfig.stateComputerMockedSync(
+                        StateComputerConfig.mockedWithEpochs(
+                            Round.of(1),
+                            EpochNodeWeightMapping.constant(windowedEpochToNodesMapper(25, 50)),
+                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
             .addTestModules(
                 ConsensusMonitors.epochMaxRound(Round.of(1)),
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS) // High timeout to make Travis happy

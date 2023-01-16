@@ -74,7 +74,6 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -90,12 +89,12 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
   public static class StateComputerResult {
     private final List<ExecutedTransaction> executedTransactions;
-    private final Map<RawLedgerTransaction, Exception> failedTransactions;
+    private final Map<RawNotarizedTransaction, Exception> failedTransactions;
     private final NextEpoch nextEpoch;
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
-        Map<RawLedgerTransaction, Exception> failedTransactions,
+        Map<RawNotarizedTransaction, Exception> failedTransactions,
         NextEpoch nextEpoch) {
       this.executedTransactions = Objects.requireNonNull(executedTransactions);
       this.failedTransactions = Objects.requireNonNull(failedTransactions);
@@ -104,7 +103,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
-        Map<RawLedgerTransaction, Exception> failedTransactions) {
+        Map<RawNotarizedTransaction, Exception> failedTransactions) {
       this(executedTransactions, failedTransactions, null);
     }
 
@@ -116,7 +115,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       return executedTransactions;
     }
 
-    public Map<RawLedgerTransaction, Exception> getFailedTransactions() {
+    public Map<RawNotarizedTransaction, Exception> getFailedTransactions() {
       return failedTransactions;
     }
   }
@@ -195,6 +194,11 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
   @Override
   public Optional<ExecutedVertex> prepare(
+      LinkedList<ExecutedVertex> previous, VertexWithHash vertexWithHash) {
+    return metrics.ledger().prepare().measure(() -> this.prepareInternal(previous, vertexWithHash));
+  }
+
+  private Optional<ExecutedVertex> prepareInternal(
       LinkedList<ExecutedVertex> previous, VertexWithHash vertexWithHash) {
     final var vertex = vertexWithHash.vertex();
     final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
@@ -280,12 +284,15 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       var proof = committedUpdate.vertexStoreState().getRootHeader();
       var transactionsWithProof = CommittedTransactionsWithProof.create(transactions, proof);
 
-      this.commit(transactionsWithProof, committedUpdate.vertexStoreState());
+      metrics
+          .ledger()
+          .commit()
+          .measure(() -> this.commit(transactionsWithProof, committedUpdate.vertexStoreState()));
     };
   }
 
   public EventProcessor<CommittedTransactionsWithProof> syncEventProcessor() {
-    return p -> this.commit(p, null);
+    return p -> metrics.ledger().commit().measure(() -> this.commit(p, null));
   }
 
   private void commit(

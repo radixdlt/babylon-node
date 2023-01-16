@@ -15,16 +15,15 @@
 pub struct PackageRoyaltyAccumulatorSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The string-encoded decimal representing the amount of XRD available for claim in the royalty accumulator. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
-    #[serde(rename = "xrd_amount")]
-    pub xrd_amount: String,
+    #[serde(rename = "vault_entity")]
+    pub vault_entity: Box<crate::core_api::generated::models::EntityReference>,
 }
 
 impl PackageRoyaltyAccumulatorSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, xrd_amount: String) -> PackageRoyaltyAccumulatorSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, vault_entity: crate::core_api::generated::models::EntityReference) -> PackageRoyaltyAccumulatorSubstate {
         PackageRoyaltyAccumulatorSubstate {
             substate_type,
-            xrd_amount,
+            vault_entity: Box::new(vault_entity),
         }
     }
 }

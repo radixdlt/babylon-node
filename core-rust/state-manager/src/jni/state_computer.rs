@@ -67,10 +67,9 @@ use crate::transaction::UserTransactionValidator;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::types::{
-    scrypto, ComponentAddress, Decimal, Decode, Encode, TypeId, RADIX_TOKEN,
-};
+use radix_engine::types::{Categorize, ComponentAddress, Decimal, Decode, Encode, RADIX_TOKEN};
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::*;
 use std::collections::HashSet;
 
 use crate::jni::utils::*;
@@ -224,7 +223,7 @@ fn do_get_epoch(state_manager: &ActualStateManager, _args: ()) -> u64 {
 
 pub fn export_extern_functions() {}
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug, Decode, Encode, Categorize)]
 pub struct JavaCommitRequest {
     pub transactions: Vec<JavaRawTransaction>,
     pub state_version: u64,
@@ -247,7 +246,7 @@ impl From<JavaCommitRequest> for CommitRequest {
     }
 }
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug, Decode, Encode, Categorize)]
 pub struct JavaPrepareRequest {
     pub already_prepared: Vec<JavaRawTransaction>,
     pub proposed: Vec<JavaRawTransaction>,
@@ -276,8 +275,7 @@ impl From<JavaPrepareRequest> for PrepareRequest {
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPrepareResult {
     pub committed: Vec<Vec<u8>>,
     pub rejected: Vec<(Vec<u8>, String)>,
@@ -294,7 +292,7 @@ impl From<PrepareResult> for JavaPrepareResult {
     }
 }
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug, Decode, Encode, Categorize)]
 pub struct JavaPrepareGenesisRequest {
     pub genesis: JavaRawTransaction,
 }
@@ -307,8 +305,7 @@ impl From<JavaPrepareGenesisRequest> for PrepareGenesisRequest {
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPrepareGenesisResult {
     pub validator_set: Option<HashSet<EcdsaSecp256k1PublicKey>>,
 }

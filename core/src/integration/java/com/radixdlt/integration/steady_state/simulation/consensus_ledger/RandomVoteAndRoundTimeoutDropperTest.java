@@ -86,12 +86,12 @@ import org.junit.Test;
 public class RandomVoteAndRoundTimeoutDropperTest {
   private final Builder bftTestBuilder =
       SimulationTest.builder()
-          .numNodes(4)
+          .numPhysicalNodes(4)
           .networkModules(
               NetworkOrdering.inOrder(),
               NetworkLatencies.fixed(),
               NetworkDroppers.randomVotesAndRoundTimeoutsDropped(0.4))
-          .functionalNodeModule(FunctionalRadixNodeModule.justLedger())
+          .functionalNodeModule(FunctionalRadixNodeModule.justLedgerWithNumValidators(4))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(20, TimeUnit.SECONDS),

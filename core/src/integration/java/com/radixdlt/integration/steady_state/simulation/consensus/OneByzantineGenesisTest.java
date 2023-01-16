@@ -67,7 +67,9 @@ package com.radixdlt.integration.steady_state.simulation.consensus;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
+import com.radixdlt.consensus.EpochNodeWeightMapping;
+import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.harness.simulation.Monitor;
 import com.radixdlt.harness.simulation.NetworkLatencies;
@@ -87,26 +89,26 @@ public class OneByzantineGenesisTest {
   SimulationTest.Builder bftTestBuilder =
       SimulationTest.builder()
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .functionalNodeModule(
-              new FunctionalRadixNodeModule(
-                  false,
-                  SafetyRecoveryConfig.mocked(),
-                  ConsensusConfig.of(1000),
-                  LedgerConfig.mocked()))
           .addTestModules(ConsensusMonitors.safety());
 
   @Test
   public void given_2_correct_bfts_and_1_byzantine__then_should_never_make_progress() {
     SimulationTest bftTest =
         bftTestBuilder
-            .numNodes(3)
+            .numPhysicalNodes(3)
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    false,
+                    SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(1000),
+                    LedgerConfig.mocked(3)))
             .addOverrideModuleToInitialNodes(
                 nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
-                nodes ->
-                    new MockedConsensusRecoveryModule.Builder()
-                        .withPreGenesisAccumulatorHash(HashUtils.random256())
-                        .withNodes(nodes)
-                        .build())
+                () ->
+                    new MockedEpochsConsensusRecoveryModule(
+                        Round.of(1000000),
+                        EpochNodeWeightMapping.constant(3, 1),
+                        HashUtils.random256()))
             .addTestModules(ConsensusMonitors.noneCommitted())
             .build();
 
@@ -118,7 +120,16 @@ public class OneByzantineGenesisTest {
   @Test
   public void given_3_correct_bfts__then_none_committed_invariant_should_fail() {
     SimulationTest bftTest =
-        bftTestBuilder.numNodes(3).addTestModules(ConsensusMonitors.noneCommitted()).build();
+        bftTestBuilder
+            .numPhysicalNodes(3)
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    false,
+                    SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(1000),
+                    LedgerConfig.mocked(3)))
+            .addTestModules(ConsensusMonitors.noneCommitted())
+            .build();
 
     final var checkResults = bftTest.run().awaitCompletion();
     assertThat(checkResults)
@@ -130,10 +141,18 @@ public class OneByzantineGenesisTest {
   public void given_3_correct_bfts_and_1_byzantine__then_should_make_progress() {
     SimulationTest bftTest =
         bftTestBuilder
-            .numNodes(4)
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    false,
+                    SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(1000),
+                    LedgerConfig.mocked(4)))
+            .numPhysicalNodes(4)
             .addOverrideModuleToInitialNodes(
                 nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
-                nodes -> new MockedConsensusRecoveryModule.Builder().withNodes(nodes).build())
+                () ->
+                    new MockedEpochsConsensusRecoveryModule(
+                        Round.of(10000000), EpochNodeWeightMapping.constant(4)))
             .addTestModules(ConsensusMonitors.liveness(5, TimeUnit.SECONDS))
             .build();
 

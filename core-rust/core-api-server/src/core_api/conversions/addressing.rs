@@ -4,9 +4,8 @@ use crate::core_api::*;
 
 use models::{EntityType, SubstateKeyType, SubstateType};
 use radix_engine::types::{
-    ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, NonFungibleIdType,
-    NonFungibleStoreOffset, PackageOffset, ResourceManagerOffset, SubstateOffset, SystemAddress,
-    VaultOffset,
+    ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, NonFungibleStoreOffset,
+    PackageOffset, ResourceManagerOffset, SubstateOffset, SystemAddress, VaultOffset,
 };
 use radix_engine::{
     model::GlobalAddressSubstate,
@@ -16,6 +15,7 @@ use radix_engine::{
         RENodeId, ResourceAddress, SubstateId,
     },
 };
+use radix_engine_interface::model::NonFungibleIdTypeId;
 
 pub fn to_api_global_entity_assignment(
     bech32_encoder: &Bech32Encoder,
@@ -336,9 +336,14 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                     EpochManagerOffset::EpochManager => {
                         (SubstateType::EpochManager, SubstateKeyType::EpochManager)
                     }
-                    EpochManagerOffset::ValidatorSet => {
-                        (SubstateType::EpochManager, SubstateKeyType::ValidatorSet)
-                    }
+                    EpochManagerOffset::CurrentValidatorSet => (
+                        SubstateType::EpochManager,
+                        SubstateKeyType::CurrentValidatorSet,
+                    ),
+                    EpochManagerOffset::PreparingValidatorSet => (
+                        SubstateType::EpochManager,
+                        SubstateKeyType::PreparingValidatorSet,
+                    ),
                 },
                 SubstateOffset::AccessRulesChain(offset) => match offset {
                     AccessRulesChainOffset::AccessRulesChain => (
@@ -446,7 +451,7 @@ pub fn extract_resource_address(
 }
 
 pub fn extract_non_fungible_id_from_simple_representation(
-    id_type: NonFungibleIdType,
+    id_type: NonFungibleIdTypeId,
     simple_rep: &str,
 ) -> Result<NonFungibleId, ExtractionError> {
     Ok(NonFungibleId::try_from_simple_string(id_type, simple_rep)?)

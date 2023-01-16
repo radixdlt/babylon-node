@@ -66,10 +66,7 @@ package com.radixdlt.rev2;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.crypto.PublicKey;
-import com.radixdlt.crypto.SignatureWithPublicKey;
+import com.radixdlt.crypto.*;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
@@ -134,7 +131,7 @@ public final class REv2TestTransactions {
                     CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
                     CALL_METHOD ComponentAddress("%s") "free";
                     TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
-                    CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AllowAll") Bucket("xrd");
+                    CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AccessRule::AllowAll") Bucket("xrd");
                     """,
         faucetAddress, faucetAddress, xrdAddress, accountPackageAddress);
   }
@@ -155,9 +152,37 @@ public final class REv2TestTransactions {
                         CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
                         CALL_METHOD ComponentAddress("%s") "withdraw_by_amount" Decimal("900") ResourceAddress("%s");
                         TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
-                        CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AllowAll") Bucket("xrd");
+                        CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AccessRule::AllowAll") Bucket("xrd");
                         """,
         fromAddress, fromAddress, xrdAddress, xrdAddress, accountPackageAddress);
+  }
+
+  public static String constructRegisterValidatorManifest(
+      NetworkDefinition networkDefinition, ECDSASecp256k1PublicKey key) {
+    final var addressing = Addressing.ofNetwork(networkDefinition);
+    final var faucetAddress =
+        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+
+    return String.format(
+        """
+                        CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
+                        REGISTER_VALIDATOR EcdsaSecp256k1PublicKey("%s");
+                        """,
+        faucetAddress, key.toHex());
+  }
+
+  public static String constructUnregisterValidatorManifest(
+      NetworkDefinition networkDefinition, ECDSASecp256k1PublicKey key) {
+    final var addressing = Addressing.ofNetwork(networkDefinition);
+    final var faucetAddress =
+        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+
+    return String.format(
+        """
+                            CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
+                            UNREGISTER_VALIDATOR EcdsaSecp256k1PublicKey("%s");
+                            """,
+        faucetAddress, key.toHex());
   }
 
   public static RawNotarizedTransaction constructNewAccountFromAccountTransaction(
@@ -204,6 +229,22 @@ public final class REv2TestTransactions {
             nonce,
             DEFAULT_NOTARY.getPublicKey().toPublicKey());
     return new NotarizedTransactionBuilder(intentBytes, DEFAULT_NOTARY, List.of());
+  }
+
+  public static RawNotarizedTransaction constructRegisterValidatorTransaction(
+      NetworkDefinition networkDefinition, long fromEpoch, long nonce, ECKeyPair keyPair) {
+    var manifest = constructRegisterValidatorManifest(networkDefinition, keyPair.getPublicKey());
+    var signatories = List.of(keyPair);
+    return constructRawTransaction(
+        networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
+  }
+
+  public static RawNotarizedTransaction constructUnregisterValidatorTransaction(
+      NetworkDefinition networkDefinition, long fromEpoch, long nonce, ECKeyPair keyPair) {
+    var manifest = constructUnregisterValidatorManifest(networkDefinition, keyPair.getPublicKey());
+    var signatories = List.of(keyPair);
+    return constructRawTransaction(
+        networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
   }
 
   public static RawNotarizedTransaction constructNewAccountTransaction(

@@ -64,7 +64,11 @@
 
 package com.radixdlt.modules;
 
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.EpochNodeWeightMapping;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.mempool.RustMempoolConfig;
@@ -78,12 +82,23 @@ import java.util.stream.Stream;
 
 /** Configuration options for the state computer */
 public sealed interface StateComputerConfig {
-  static StateComputerConfig mocked(MockedMempoolConfig mempoolType) {
-    return new MockedStateComputerConfig(mempoolType);
+  static StateComputerConfig mockedWithEpochs(
+      Round epochMaxRound, EpochNodeWeightMapping mapping, MockedMempoolConfig mempoolType) {
+    return new MockedStateComputerConfigWithEpochs(
+        epochMaxRound, mapping, HashUtils.zero256(), mempoolType);
   }
 
-  static StateComputerConfig rev1(int mempoolSize) {
-    return new REv1StateComputerConfig(mempoolSize);
+  static StateComputerConfig mockedWithEpochs(
+      Round epochMaxRound,
+      EpochNodeWeightMapping mapping,
+      HashCode preGenesisAccumulatorHash,
+      MockedMempoolConfig mempoolType) {
+    return new MockedStateComputerConfigWithEpochs(
+        epochMaxRound, mapping, preGenesisAccumulatorHash, mempoolType);
+  }
+
+  static StateComputerConfig mockedNoEpochs(int numValidators, MockedMempoolConfig mempoolType) {
+    return new MockedStateComputerConfigNoEpochs(numValidators, mempoolType);
   }
 
   static StateComputerConfig rev2(
@@ -116,10 +131,29 @@ public sealed interface StateComputerConfig {
     record Relayed(int mempoolSize) implements MockedMempoolConfig {}
   }
 
-  record MockedStateComputerConfig(MockedMempoolConfig mempoolType)
-      implements StateComputerConfig {}
+  sealed interface MockedStateComputerConfig extends StateComputerConfig {
+    MockedMempoolConfig mempoolConfig();
+  }
 
-  record REv1StateComputerConfig(int mempoolSize) implements StateComputerConfig {}
+  record MockedStateComputerConfigWithEpochs(
+      Round epochMaxRound,
+      EpochNodeWeightMapping mapping,
+      HashCode preGenesisAccumulatorHash,
+      MockedMempoolConfig mempoolType)
+      implements MockedStateComputerConfig {
+    @Override
+    public MockedMempoolConfig mempoolConfig() {
+      return mempoolType;
+    }
+  }
+
+  record MockedStateComputerConfigNoEpochs(int numValidators, MockedMempoolConfig mempoolType)
+      implements MockedStateComputerConfig {
+    @Override
+    public MockedMempoolConfig mempoolConfig() {
+      return mempoolType;
+    }
+  }
 
   record REv2StateComputerConfig(
       int networkId,
