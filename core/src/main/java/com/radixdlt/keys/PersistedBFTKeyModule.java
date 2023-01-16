@@ -73,6 +73,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.util.function.Function;
 
@@ -89,6 +90,12 @@ public final class PersistedBFTKeyModule extends AbstractModule {
     var nodeKeyPath = properties.get("node.key.path", "node.ks");
 
     return new PersistedBFTKeyManager(nodeKeyPath);
+  }
+
+  @Provides
+  @Self
+  NodeId nodeId(@Self BFTNode bftNode) {
+    return NodeId.fromPublicKey(bftNode.getKey());
   }
 
   @Provides

@@ -305,7 +305,7 @@ public class DispatcherModule extends AbstractModule {
 
   @Provides
   private EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher(
-      @Self BFTNode self,
+      @Self NodeId self,
       @ProcessOnDispatch Set<EventProcessor<LocalSyncRequest>> syncProcessors,
       Environment environment,
       Metrics metrics) {
