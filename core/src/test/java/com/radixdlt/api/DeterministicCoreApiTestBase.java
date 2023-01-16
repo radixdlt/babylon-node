@@ -144,11 +144,12 @@ public abstract class DeterministicCoreApiTestBase {
   }
 
   private static void ensureOpenApiModelsAreReady() {
-    // The generated Open API models are rubbish and requires that static initializers run on models before
-    // deserialization to work correctly... But that doesn't happen in eg models under the response model in
-    // assertErrorResponseOfType.
-    // As a workaround for now, let's go through all the types and explicitly ensure their static initializers run
-    // by using the Class.forName method.
+    /* The generated Open API models are rubbish and requires that static initializers run on models before
+     * deserialization to work correctly... But that doesn't happen in eg models under the response model in
+     * assertErrorResponseOfType.
+     * As a workaround for now, let's go through all the types and explicitly ensure their static initializers run
+     * by using the Class.forName method.
+     */
     try {
       ClassPath.from(ClassLoader.getSystemClassLoader()).getAllClasses().stream()
           .filter(clazz -> clazz.getPackageName().equals("com.radixdlt.api.core.generated.models"))
