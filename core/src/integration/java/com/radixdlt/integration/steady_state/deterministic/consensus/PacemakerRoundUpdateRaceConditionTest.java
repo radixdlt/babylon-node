@@ -141,7 +141,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
                             .map(BFTValidator::getNode)
                             .sorted(
                                 Comparator.comparing(
-                                    BFTNode::getKey, KeyComparator.instance().reversed()))
+                                    BFTValidatorId::getKey, KeyComparator.instance().reversed()))
                             .toList();
                     return round ->
                         sortedValidators.get(((int) round.number() - 1) % sortedValidators.size());

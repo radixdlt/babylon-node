@@ -102,7 +102,7 @@ import org.apache.logging.log4j.Logger;
 @NotThreadSafe
 public final class EpochManager {
   private static final Logger log = LogManager.getLogger();
-  private final BFTNode self;
+  private final BFTValidatorId self;
   private final PacemakerFactory pacemakerFactory;
   private final VertexStoreFactory vertexStoreFactory;
   private final BFTSyncRequestProcessorFactory bftSyncRequestProcessorFactory;
@@ -129,14 +129,14 @@ public final class EpochManager {
   private Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors;
   private Set<EventProcessor<BFTRebuildUpdate>> bftRebuildProcessors;
 
-  private final RemoteEventDispatcher<BFTNode, LedgerStatusUpdate> ledgerStatusUpdateDispatcher;
+  private final RemoteEventDispatcher<BFTValidatorId, LedgerStatusUpdate> ledgerStatusUpdateDispatcher;
 
   private final PersistentSafetyStateStore persistentSafetyStateStore;
 
   @Inject
   public EpochManager(
-      @Self BFTNode self,
-      RemoteEventDispatcher<BFTNode, LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
+      @Self BFTValidatorId self,
+      RemoteEventDispatcher<BFTValidatorId, LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
       EpochChange lastEpochChange,
       PacemakerFactory pacemakerFactory,
       VertexStoreFactory vertexStoreFactory,

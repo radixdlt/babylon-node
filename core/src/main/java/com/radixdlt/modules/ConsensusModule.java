@@ -118,7 +118,7 @@ public final class ConsensusModule extends AbstractModule {
   @Provides
   @Singleton
   public BFTEventProcessor bftEventProcessor(
-      @Self BFTNode self,
+      @Self BFTValidatorId self,
       BFTConfiguration config,
       Pacemaker pacemaker,
       VertexStoreAdapter vertexStore,
@@ -131,7 +131,7 @@ public final class ConsensusModule extends AbstractModule {
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteEventDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
-      RemoteEventDispatcher<BFTNode, Vote> voteDispatcher,
+      RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher,
       EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher,
       RoundUpdate roundUpdate) {
     return BFTBuilder.create()
@@ -162,7 +162,7 @@ public final class ConsensusModule extends AbstractModule {
   @Provides
   @Singleton
   private Pacemaker pacemaker(
-      @Self BFTNode self,
+      @Self BFTValidatorId self,
       SafetyRules safetyRules,
       BFTConfiguration configuration,
       VertexStoreAdapter vertexStore,
@@ -171,8 +171,8 @@ public final class ConsensusModule extends AbstractModule {
       PacemakerTimeoutCalculator timeoutCalculator,
       ProposalGenerator proposalGenerator,
       Hasher hasher,
-      RemoteEventDispatcher<BFTNode, Proposal> proposalDispatcher,
-      RemoteEventDispatcher<BFTNode, Vote> voteDispatcher,
+      RemoteEventDispatcher<BFTValidatorId, Proposal> proposalDispatcher,
+      RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher,
       EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher,
       TimeSupplier timeSupplier,
       RoundUpdate initialRoundUpdate,
@@ -199,7 +199,7 @@ public final class ConsensusModule extends AbstractModule {
   @Provides
   @Singleton
   private BFTSync bftSync(
-      @Self BFTNode self,
+      @Self BFTValidatorId self,
       @GetVerticesRequestRateLimit RateLimiter syncRequestRateLimiter,
       VertexStoreAdapter vertexStore,
       PacemakerReducer pacemakerReducer,

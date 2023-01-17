@@ -68,7 +68,7 @@ import com.google.common.collect.Streams;
 import com.google.inject.*;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.NodeAutoCloseable;
@@ -103,9 +103,9 @@ public final class DeterministicNodes implements AutoCloseable {
 
   // Nodes
   private final List<Injector> nodeInstances;
-  private final Map<BFTNode, Integer> bftAddressBook;
+  private final Map<BFTValidatorId, Integer> bftAddressBook;
   private final Map<NodeId, Integer> p2pAddressBook;
-  private final Map<Integer, BFTNode> nodeIdentifiers;
+  private final Map<Integer, BFTValidatorId> nodeIdentifiers;
   private final Module baseModule;
   private final Module overrideModule;
 
@@ -113,7 +113,7 @@ public final class DeterministicNodes implements AutoCloseable {
   private final DeterministicNetwork network;
 
   public DeterministicNodes(
-      List<BFTNode> nodes, DeterministicNetwork network, Module baseModule, Module overrideModule) {
+          List<BFTValidatorId> nodes, DeterministicNetwork network, Module baseModule, Module overrideModule) {
     this.baseModule = baseModule;
     this.overrideModule = overrideModule;
     this.network = network;
@@ -160,8 +160,8 @@ public final class DeterministicNodes implements AutoCloseable {
                 install(
                     new EventLoggerModule(
                         new EventLoggerConfig(
-                            k -> "Node" + bftAddressBook.get(BFTNode.create(k)))));
-                bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
+                            k -> "Node" + bftAddressBook.get(BFTValidatorId.create(k)))));
+                bind(BFTValidatorId.class).annotatedWith(Self.class).toInstance(self);
                 bind(NodeId.class)
                     .annotatedWith(Self.class)
                     .toInstance(NodeId.fromPublicKey(self.getKey()));

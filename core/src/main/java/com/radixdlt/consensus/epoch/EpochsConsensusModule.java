@@ -267,14 +267,14 @@ public class EpochsConsensusModule extends AbstractModule {
 
   @Provides
   private PacemakerFactory pacemakerFactory(
-      @Self BFTNode self,
+      @Self BFTValidatorId self,
       Metrics metrics,
       ProposalGenerator proposalGenerator,
       Hasher hasher,
       EventDispatcher<EpochLocalTimeoutOccurrence> timeoutEventDispatcher,
       ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>> localTimeoutSender,
-      RemoteEventDispatcher<BFTNode, Proposal> proposalDispatcher,
-      RemoteEventDispatcher<BFTNode, Vote> voteDispatcher,
+      RemoteEventDispatcher<BFTValidatorId, Proposal> proposalDispatcher,
+      RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher,
       EventDispatcher<EpochRoundLeaderFailure> roundLeaderFailureEventDispatcher,
       TimeSupplier timeSupplier) {
     return (validatorSet, vertexStore, timeoutCalculator, safetyRules, initialRoundUpdate, epoch) ->
@@ -309,7 +309,7 @@ public class EpochsConsensusModule extends AbstractModule {
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteEventDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
-      RemoteEventDispatcher<BFTNode, Vote> voteDispatcher,
+      RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher,
       EventDispatcher<EpochRoundLeaderFailure> roundLeaderFailureEventDispatcher) {
     return (self,
         pacemaker,
@@ -361,7 +361,7 @@ public class EpochsConsensusModule extends AbstractModule {
   @Provides
   private BFTSyncFactory bftSyncFactory(
       RemoteEventDispatcher<NodeId, GetVerticesRequest> requestSender,
-      @Self BFTNode self,
+      @Self BFTValidatorId self,
       @GetVerticesRequestRateLimit RateLimiter syncRequestRateLimiter,
       EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
       ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,

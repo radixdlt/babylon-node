@@ -70,7 +70,7 @@ import static org.mockito.Mockito.times;
 
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.environment.EventDispatcher;
@@ -86,9 +86,9 @@ public class PacemakerStateTest {
 
   @Before
   public void setUp() {
-    when(proposerElection.getProposer(any())).thenReturn(BFTNode.random());
+    when(proposerElection.getProposer(any())).thenReturn(BFTValidatorId.random());
     RoundUpdate roundUpdate =
-        RoundUpdate.create(Round.genesis(), mock(HighQC.class), BFTNode.random(), BFTNode.random());
+        RoundUpdate.create(Round.genesis(), mock(HighQC.class), BFTValidatorId.random(), BFTValidatorId.random());
     this.pacemakerState =
         new PacemakerState(roundUpdate, this.proposerElection, this.roundUpdateSender);
   }

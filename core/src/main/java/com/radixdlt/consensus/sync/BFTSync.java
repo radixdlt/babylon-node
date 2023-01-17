@@ -152,7 +152,7 @@ public final class BFTSync implements BFTSyncer {
           .reversed(); // Prioritise by highest round
 
   private static final Logger log = LogManager.getLogger();
-  private final BFTNode self;
+  private final BFTValidatorId self;
   private final VertexStoreAdapter vertexStore;
   private final Hasher hasher;
   private final SafetyRules safetyRules;
@@ -177,7 +177,7 @@ public final class BFTSync implements BFTSyncer {
   private final RateLimiter syncRequestRateLimiter;
 
   public BFTSync(
-      @Self BFTNode self,
+      @Self BFTValidatorId self,
       RateLimiter syncRequestRateLimiter,
       VertexStoreAdapter vertexStore,
       Hasher hasher,

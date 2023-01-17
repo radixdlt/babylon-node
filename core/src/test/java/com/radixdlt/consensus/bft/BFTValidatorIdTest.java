@@ -67,10 +67,10 @@ package com.radixdlt.consensus.bft;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-public class BFTNodeTest {
+public class BFTValidatorIdTest {
 
   @Test
   public void equalsContract() {
-    EqualsVerifier.forClass(BFTNode.class).withIgnoredFields("simpleName").verify();
+    EqualsVerifier.forClass(BFTValidatorId.class).withIgnoredFields("simpleName").verify();
   }
 }

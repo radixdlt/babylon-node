@@ -75,25 +75,25 @@ import java.util.Objects;
  * <p>TODO: turn this into an interface so that an ECPublicKey is not required TODO: Serialization
  * of BFT messages are currently what prevent this from happening
  */
-public final class BFTNode {
+public final class BFTValidatorId {
   private final ECDSASecp256k1PublicKey key;
   private final String simpleName;
 
-  private BFTNode(ECDSASecp256k1PublicKey key, String simpleName) {
+  private BFTValidatorId(ECDSASecp256k1PublicKey key, String simpleName) {
     this.key = Objects.requireNonNull(key);
     this.simpleName = Objects.requireNonNull(simpleName);
   }
 
-  public static BFTNode create(ECDSASecp256k1PublicKey key) {
+  public static BFTValidatorId create(ECDSASecp256k1PublicKey key) {
     var shortenedAddress = key.toHex().substring(0, 10);
-    return new BFTNode(key, shortenedAddress);
+    return new BFTValidatorId(key, shortenedAddress);
   }
 
-  public static BFTNode fromPublicKeyBytes(byte[] key) throws PublicKeyException {
+  public static BFTValidatorId fromPublicKeyBytes(byte[] key) throws PublicKeyException {
     return create(ECDSASecp256k1PublicKey.fromBytes(key));
   }
 
-  public static BFTNode random() {
+  public static BFTValidatorId random() {
     return create(ECKeyPair.generateNew().getPublicKey());
   }
 
@@ -108,12 +108,12 @@ public final class BFTNode {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof BFTNode)) {
+    if (!(o instanceof BFTValidatorId)) {
       return false;
     }
 
-    BFTNode bftNodeId = (BFTNode) o;
-    return Objects.equals(bftNodeId.key, this.key);
+    BFTValidatorId bftValidatorIdId = (BFTValidatorId) o;
+    return Objects.equals(bftValidatorIdId.key, this.key);
   }
 
   public String getSimpleName() {

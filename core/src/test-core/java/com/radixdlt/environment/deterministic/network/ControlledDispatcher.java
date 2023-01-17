@@ -65,7 +65,7 @@
 package com.radixdlt.environment.deterministic.network;
 
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.environment.*;
 import com.radixdlt.messaging.MessageTransportNotSupported;
 import com.radixdlt.p2p.NodeId;
@@ -134,15 +134,15 @@ public final class ControlledDispatcher implements Environment {
   @Override
   public <N, T> RemoteEventDispatcher<N, T> getRemoteDispatcher(
       MessageTransportType<N, T> messageTransportType) {
-    if (messageTransportType.getNodeIdType() != BFTNode.class
+    if (messageTransportType.getNodeIdType() != BFTValidatorId.class
         && messageTransportType.getNodeIdType() != NodeId.class) {
       throw new MessageTransportNotSupported(messageTransportType);
     }
 
     return (node, e) -> {
       final ChannelId channelId;
-      if (messageTransportType.getNodeIdType() == BFTNode.class) {
-        var bftNode = (BFTNode) node;
+      if (messageTransportType.getNodeIdType() == BFTValidatorId.class) {
+        var bftNode = (BFTValidatorId) node;
         channelId =
             ChannelId.of(
                 this.senderIndex,

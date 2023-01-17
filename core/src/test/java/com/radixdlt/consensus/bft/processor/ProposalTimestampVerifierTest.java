@@ -70,7 +70,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.radixdlt.consensus.*;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.RoundLeaderFailure;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.environment.EventDispatcher;
@@ -147,7 +147,7 @@ public class ProposalTimestampVerifierTest {
   }
 
   private Proposal createProposalWithTimestamps(long prevTimestamp, long currentTimestamp) {
-    final var author = mock(BFTNode.class);
+    final var author = mock(BFTValidatorId.class);
     final var proposal = mock(Proposal.class);
     when(proposal.getAuthor()).thenReturn(author);
     when(proposal.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));

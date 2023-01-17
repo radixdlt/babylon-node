@@ -64,7 +64,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.RoundQuorumReached;
@@ -83,7 +83,7 @@ public interface BFTFactory {
    * @return a new bft processor
    */
   BFTEventProcessor create(
-      BFTNode self,
+      BFTValidatorId self,
       Pacemaker pacemaker,
       VertexStoreAdapter vertexStore,
       BFTSyncer bftSyncer,

@@ -73,10 +73,10 @@ public final class RoundUpdate {
   private final Round currentRound;
   private final HighQC highQC;
 
-  private final BFTNode leader;
-  private final BFTNode nextLeader;
+  private final BFTValidatorId leader;
+  private final BFTValidatorId nextLeader;
 
-  private RoundUpdate(Round currentRound, HighQC highQC, BFTNode leader, BFTNode nextLeader) {
+  private RoundUpdate(Round currentRound, HighQC highQC, BFTValidatorId leader, BFTValidatorId nextLeader) {
     this.currentRound = currentRound;
     this.highQC = highQC;
     this.leader = leader;
@@ -84,7 +84,7 @@ public final class RoundUpdate {
   }
 
   public static RoundUpdate create(
-      Round currentRound, HighQC highQC, BFTNode leader, BFTNode nextLeader) {
+          Round currentRound, HighQC highQC, BFTValidatorId leader, BFTValidatorId nextLeader) {
     Objects.requireNonNull(currentRound);
     Objects.requireNonNull(highQC);
     Objects.requireNonNull(leader);
@@ -97,11 +97,11 @@ public final class RoundUpdate {
     return highQC;
   }
 
-  public BFTNode getLeader() {
+  public BFTValidatorId getLeader() {
     return leader;
   }
 
-  public BFTNode getNextLeader() {
+  public BFTValidatorId getNextLeader() {
     return nextLeader;
   }
 

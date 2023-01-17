@@ -72,14 +72,14 @@ public final class RoundQuorumReached {
   private final RoundVotingResult votingResult;
 
   // the author of the last received message that lead to forming a quorum
-  private final BFTNode lastAuthor;
+  private final BFTValidatorId lastAuthor;
 
-  public RoundQuorumReached(RoundVotingResult votingResult, BFTNode lastAuthor) {
+  public RoundQuorumReached(RoundVotingResult votingResult, BFTValidatorId lastAuthor) {
     this.votingResult = Objects.requireNonNull(votingResult);
     this.lastAuthor = Objects.requireNonNull(lastAuthor);
   }
 
-  public BFTNode lastAuthor() {
+  public BFTValidatorId lastAuthor() {
     return lastAuthor;
   }
 

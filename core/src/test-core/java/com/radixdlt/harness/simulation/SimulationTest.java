@@ -160,7 +160,7 @@ public final class SimulationTest {
     private ImmutableMap<ECDSASecp256k1PublicKey, ImmutableList<ECDSASecp256k1PublicKey>>
         addressBookNodes;
 
-    private List<BFTNode> bftNodes;
+    private List<BFTValidatorId> bftValidatorIds;
 
     private Builder() {}
 
@@ -221,10 +221,10 @@ public final class SimulationTest {
 
       final var bftNodes =
           initialStakesMap.keySet().stream()
-              .map(BFTNode::create)
+              .map(BFTValidatorId::create)
               .collect(ImmutableList.toImmutableList());
 
-      this.bftNodes = bftNodes;
+      this.bftValidatorIds = bftNodes;
 
       this.initialNodesModule =
           new AbstractModule() {
@@ -232,7 +232,7 @@ public final class SimulationTest {
             protected void configure() {
               // FIXME This list is injected in at least 2 places: NetworkDroppers and
               // NetworkLatencies. Maybe we could make this more explicit?
-              bind(new TypeLiteral<ImmutableList<BFTNode>>() {}).toInstance(bftNodes);
+              bind(new TypeLiteral<ImmutableList<BFTValidatorId>>() {}).toInstance(bftNodes);
             }
           };
 
@@ -364,7 +364,7 @@ public final class SimulationTest {
         mockedP2PModuleBuilder.withPeersByNode(this.addressBookNodes);
       } else {
         mockedP2PModuleBuilder.withAllNodes(
-            bftNodes.stream()
+            bftValidatorIds.stream()
                 .map(n -> NodeId.fromPublicKey(n.getKey()))
                 .collect(Collectors.toList()));
       }

@@ -71,7 +71,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.sync.messages.remote.StatusResponse;
@@ -101,7 +101,7 @@ public class SyncStateTest {
 
   @Test
   public void idle_state_should_update_current_header() {
-    final var peer = mock(BFTNode.class);
+    final var peer = mock(BFTValidatorId.class);
 
     final var initialState = SyncState.IdleState.init(mock(LedgerProof.class));
 

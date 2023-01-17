@@ -68,7 +68,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
@@ -114,7 +114,7 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
   }
 
   @Provides
-  public List<BFTNode> nodes(@Self BFTNode self) {
+  public List<BFTValidatorId> nodes(@Self BFTValidatorId self) {
     return List.of(self);
   }
 

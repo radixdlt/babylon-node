@@ -93,7 +93,7 @@ public final class BFTValidator {
   private final UInt256 power;
 
   // Public key for consensus
-  private final BFTNode node;
+  private final BFTValidatorId node;
 
   @JsonCreator
   private BFTValidator(
@@ -102,16 +102,16 @@ public final class BFTValidator {
     this(toBFTNode(requireNonNull(nodeKey)), power);
   }
 
-  private BFTValidator(BFTNode node, UInt256 power) {
+  private BFTValidator(BFTValidatorId node, UInt256 power) {
     this.node = requireNonNull(node);
     this.power = requireNonNull(power);
   }
 
-  public static BFTValidator from(BFTNode node, UInt256 power) {
+  public static BFTValidator from(BFTValidatorId node, UInt256 power) {
     return new BFTValidator(node, power);
   }
 
-  public BFTNode getNode() {
+  public BFTValidatorId getNode() {
     return node;
   }
 
@@ -125,13 +125,13 @@ public final class BFTValidator {
     return encodePublicKey(this.node);
   }
 
-  private static String encodePublicKey(BFTNode key) {
+  private static String encodePublicKey(BFTValidatorId key) {
     return Bytes.toHexString(key.getKey().getBytes());
   }
 
-  private static BFTNode toBFTNode(String str) {
+  private static BFTValidatorId toBFTNode(String str) {
     try {
-      return BFTNode.fromPublicKeyBytes(Bytes.fromHexString(str));
+      return BFTValidatorId.fromPublicKeyBytes(Bytes.fromHexString(str));
     } catch (PublicKeyException e) {
       throw new IllegalStateException("Error decoding public key", e);
     }

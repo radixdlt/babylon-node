@@ -68,7 +68,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
@@ -95,7 +95,7 @@ public final class BFTEventStatefulVerifierTest {
     this.bftEventStatefulVerifier.processLocalTimeout(
         ScheduledLocalTimeout.create(
             RoundUpdate.create(
-                Round.of(1), mock(HighQC.class), mock(BFTNode.class), mock(BFTNode.class)),
+                Round.of(1), mock(HighQC.class), mock(BFTValidatorId.class), mock(BFTValidatorId.class)),
             0L));
     verifyNoMoreInteractions(this.forwardTo);
   }

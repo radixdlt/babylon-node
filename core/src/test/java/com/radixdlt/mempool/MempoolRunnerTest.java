@@ -73,7 +73,7 @@ import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.MessageTransportType;
@@ -117,7 +117,7 @@ public final class MempoolRunnerTest {
       @Override
       public void configure() {
         var key = PrivateKeys.ofNumeric(1).getPublicKey();
-        bind(BFTNode.class).annotatedWith(Self.class).toInstance(BFTNode.create(key));
+        bind(BFTValidatorId.class).annotatedWith(Self.class).toInstance(BFTValidatorId.create(key));
         bind(NodeId.class).annotatedWith(Self.class).toInstance(NodeId.fromPublicKey(key));
         bind(LedgerProof.class).annotatedWith(LastProof.class).toInstance(mock(LedgerProof.class));
         bind(StateComputer.class).toInstance(stateComputer);

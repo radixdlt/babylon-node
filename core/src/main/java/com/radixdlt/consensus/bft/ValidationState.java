@@ -83,7 +83,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 public final class ValidationState {
 
   private final BFTValidatorSet validatorSet;
-  private final Map<BFTNode, TimestampedECDSASignature> signedNodes;
+  private final Map<BFTValidatorId, TimestampedECDSASignature> signedNodes;
   private transient UInt256 signedPower;
   private final transient UInt256 threshold;
 
@@ -108,7 +108,7 @@ public final class ValidationState {
    *
    * @param node the node who's signature is to be removed
    */
-  public void removeSignature(BFTNode node) {
+  public void removeSignature(BFTValidatorId node) {
     if (this.validatorSet.containsNode(node)) {
       this.signedNodes.computeIfPresent(
           node,
@@ -128,7 +128,7 @@ public final class ValidationState {
    * @param signature The signature to verify
    * @return whether the key was added or not
    */
-  public boolean addSignature(BFTNode node, long timestamp, ECDSASecp256k1Signature signature) {
+  public boolean addSignature(BFTValidatorId node, long timestamp, ECDSASecp256k1Signature signature) {
     if (validatorSet.containsNode(node) && !this.signedNodes.containsKey(node)) {
       this.signedNodes.computeIfAbsent(
           node,

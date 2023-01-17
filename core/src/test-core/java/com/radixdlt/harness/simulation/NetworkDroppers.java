@@ -70,7 +70,7 @@ import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
@@ -88,7 +88,7 @@ public final class NetworkDroppers {
     return new AbstractModule() {
       @ProvidesIntoSet
       Predicate<SimulationNetwork.MessageInTransit> dropper(
-          ImmutableList<BFTNode> nodes, Random random) {
+              ImmutableList<BFTValidatorId> nodes, Random random) {
         return new FProposalsPerRoundDropper(nodes, random);
       }
     };
@@ -98,7 +98,7 @@ public final class NetworkDroppers {
   public static Module fNodesAllReceivedProposalsDropped() {
     return new AbstractModule() {
       @ProvidesIntoSet
-      Predicate<SimulationNetwork.MessageInTransit> dropper(ImmutableList<BFTNode> nodes) {
+      Predicate<SimulationNetwork.MessageInTransit> dropper(ImmutableList<BFTValidatorId> nodes) {
         return new FProposalsPerRoundDropper(nodes);
       }
     };
@@ -107,7 +107,7 @@ public final class NetworkDroppers {
   public static Module dropAllMessagesForOneNode(long durationMillis, long timeBetweenMillis) {
     return new AbstractModule() {
       @ProvidesIntoSet
-      Predicate<SimulationNetwork.MessageInTransit> dropper(ImmutableList<BFTNode> nodes) {
+      Predicate<SimulationNetwork.MessageInTransit> dropper(ImmutableList<BFTValidatorId> nodes) {
         return msg -> {
           if (msg.getSender().equals(msg.getReceiver())) {
             return false;

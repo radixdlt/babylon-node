@@ -113,7 +113,7 @@ public class ConsensusModuleTest {
 
   private ECKeyPair validatorKeyPair;
 
-  private BFTNode validatorBftNode;
+  private BFTValidatorId validatorBftNode;
   private BFTConfiguration bftConfiguration;
 
   private ECKeyPair ecKeyPair;
@@ -131,7 +131,7 @@ public class ConsensusModuleTest {
         QuorumCertificate.createInitialEpochQC(
             genesisVertex, LedgerHeader.genesis(accumulatorState, null, 0, 0));
     this.validatorKeyPair = ECKeyPair.generateNew();
-    this.validatorBftNode = BFTNode.create(this.validatorKeyPair.getPublicKey());
+    this.validatorBftNode = BFTValidatorId.create(this.validatorKeyPair.getPublicKey());
     var validatorSet =
         BFTValidatorSet.from(Stream.of(BFTValidator.from(this.validatorBftNode, UInt256.ONE)));
     var vertexStoreState =
@@ -175,9 +175,9 @@ public class ConsensusModuleTest {
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<RoundLeaderFailure>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, Vote>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<BFTValidatorId, Vote>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, Proposal>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<BFTValidatorId, Proposal>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
         bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesRequest>>() {})
             .toInstance(requestSender);
@@ -219,14 +219,14 @@ public class ConsensusModuleTest {
       }
 
       @Provides
-      RoundUpdate initialRoundUpdate(@Self BFTNode node) {
+      RoundUpdate initialRoundUpdate(@Self BFTValidatorId node) {
         return RoundUpdate.create(Round.of(1), mock(HighQC.class), node, node);
       }
 
       @Provides
       @Self
-      private BFTNode bftNode() {
-        return BFTNode.create(ecKeyPair.getPublicKey());
+      private BFTValidatorId bftNode() {
+        return BFTValidatorId.create(ecKeyPair.getPublicKey());
       }
     };
   }
@@ -239,7 +239,7 @@ public class ConsensusModuleTest {
 
   private Pair<QuorumCertificate, VertexWithHash> createNextVertex(
       QuorumCertificate parent, ECKeyPair proposerKeyPair, RawNotarizedTransaction txn) {
-    final var proposerBftNode = BFTNode.create(proposerKeyPair.getPublicKey());
+    final var proposerBftNode = BFTValidatorId.create(proposerKeyPair.getPublicKey());
     var vertex =
         Vertex.create(parent, Round.of(1), List.of(txn), proposerBftNode, 0).withId(hasher);
     var next =

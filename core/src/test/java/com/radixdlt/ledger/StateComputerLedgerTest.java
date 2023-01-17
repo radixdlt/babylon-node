@@ -167,7 +167,7 @@ public class StateComputerLedgerTest {
             endOfEpoch
                 ? NextEpoch.create(
                     genesisEpoch + 1,
-                    ImmutableSet.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
+                    ImmutableSet.of(BFTValidator.from(BFTValidatorId.random(), UInt256.ONE)))
                 : null);
     this.genesisVertex = Vertex.createInitialEpochVertex(ledgerHeader).withId(hasher);
     this.initialEpochQC = QuorumCertificate.createInitialEpochQC(genesisVertex, ledgerHeader);
@@ -195,7 +195,7 @@ public class StateComputerLedgerTest {
     when(stateComputer.prepare(any(), any(), any()))
         .thenReturn(new StateComputerResult(ImmutableList.of(), ImmutableMap.of()));
     var proposedVertex =
-        Vertex.create(initialEpochQC, Round.of(1), List.of(), BFTNode.random(), 0L).withId(hasher);
+        Vertex.create(initialEpochQC, Round.of(1), List.of(), BFTValidatorId.random(), 0L).withId(hasher);
 
     // Act
     Optional<ExecutedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
@@ -219,7 +219,7 @@ public class StateComputerLedgerTest {
             new StateComputerResult(
                 ImmutableList.of(successfulNextTransaction), ImmutableMap.of()));
     var proposedVertex =
-        Vertex.create(initialEpochQC, Round.of(1), List.of(nextTransaction), BFTNode.random(), 0)
+        Vertex.create(initialEpochQC, Round.of(1), List.of(nextTransaction), BFTValidatorId.random(), 0)
             .withId(hasher);
 
     // Act
@@ -246,7 +246,7 @@ public class StateComputerLedgerTest {
 
     // Act
     var proposedVertex =
-        Vertex.create(initialEpochQC, Round.of(1), List.of(nextTransaction), BFTNode.random(), 0)
+        Vertex.create(initialEpochQC, Round.of(1), List.of(nextTransaction), BFTValidatorId.random(), 0)
             .withId(hasher);
     Optional<ExecutedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
 

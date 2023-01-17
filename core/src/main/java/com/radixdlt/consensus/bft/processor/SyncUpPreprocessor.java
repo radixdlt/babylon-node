@@ -71,7 +71,7 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
@@ -304,7 +304,7 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
     }
   }
 
-  private boolean syncUp(HighQC highQC, BFTNode author, Runnable whenSynced) {
+  private boolean syncUp(HighQC highQC, BFTValidatorId author, Runnable whenSynced) {
     var nodeId = author == null ? null : NodeId.fromPublicKey(author.getKey());
     SyncResult syncResult = this.bftSyncer.syncToQC(highQC, nodeId);
 

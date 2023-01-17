@@ -68,7 +68,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
@@ -204,7 +204,7 @@ public final class LedgerProof {
     return signatures;
   }
 
-  public ImmutableList<BFTNode> getSignersWithout(BFTNode remove) {
+  public ImmutableList<BFTValidatorId> getSignersWithout(BFTValidatorId remove) {
     return signatures.getSignatures().keySet().stream()
         .filter(n -> !n.equals(remove))
         .collect(ImmutableList.toImmutableList());

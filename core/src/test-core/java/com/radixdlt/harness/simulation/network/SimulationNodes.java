@@ -75,7 +75,7 @@ import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
@@ -130,8 +130,8 @@ public class SimulationNodes {
             new AbstractModule() {
               @Provides
               @Self
-              private BFTNode self() {
-                return BFTNode.create(self.getPublicKey());
+              private BFTValidatorId self() {
+                return BFTValidatorId.create(self.getPublicKey());
               }
 
               @Provides

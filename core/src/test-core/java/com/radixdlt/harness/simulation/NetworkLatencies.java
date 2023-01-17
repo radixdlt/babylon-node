@@ -71,7 +71,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.harness.simulation.network.LatencyProvider;
 import com.radixdlt.harness.simulation.network.RandomLatencyProvider;
@@ -111,7 +111,7 @@ public final class NetworkLatencies {
       @Provides
       @Singleton
       @LatencyProviderBase
-      LatencyProvider base(ImmutableList<BFTNode> nodes) {
+      LatencyProvider base(ImmutableList<BFTValidatorId> nodes) {
         return msg -> {
           if ((msg.getSender().equals(nodes.get(0)) || msg.getReceiver().equals(nodes.get(0)))
               && (msg.getContent() instanceof Proposal
@@ -131,8 +131,8 @@ public final class NetworkLatencies {
       @Provides
       @Singleton
       @LatencyProviderBase
-      LatencyProvider base(ImmutableList<BFTNode> nodes) {
-        Map<BFTNode, Integer> nodeLatencies =
+      LatencyProvider base(ImmutableList<BFTValidatorId> nodes) {
+        Map<BFTValidatorId, Integer> nodeLatencies =
             IntStream.range(0, nodes.size())
                 .boxed()
                 .collect(

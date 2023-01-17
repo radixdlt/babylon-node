@@ -64,7 +64,7 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
@@ -210,7 +210,7 @@ public final class WeightedRotatingLeaders implements ProposerElection {
   }
 
   @Override
-  public BFTNode getProposer(Round round) {
+  public BFTValidatorId getProposer(Round round) {
     nextLeaderComputer.computeToRound(round);
 
     // validator will only be null if the round supplied is before the cache

@@ -69,7 +69,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.messaging.core.MessageCentral;
@@ -92,7 +92,7 @@ public class MessageCentralBFTNetworkTest {
   public void when_send_vote__then_message_central_should_be_sent_vote_message() {
     Vote vote = mock(Vote.class);
     ECDSASecp256k1PublicKey leaderPk = ECKeyPair.generateNew().getPublicKey();
-    BFTNode leader = mock(BFTNode.class);
+    BFTValidatorId leader = mock(BFTValidatorId.class);
     when(leader.getKey()).thenReturn(leaderPk);
 
     network.voteDispatcher().dispatch(leader, vote);

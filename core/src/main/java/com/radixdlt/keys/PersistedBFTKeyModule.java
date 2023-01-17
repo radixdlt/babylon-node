@@ -68,7 +68,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyOps;
@@ -94,14 +94,14 @@ public final class PersistedBFTKeyModule extends AbstractModule {
 
   @Provides
   @Self
-  NodeId nodeId(@Self BFTNode bftNode) {
-    return NodeId.fromPublicKey(bftNode.getKey());
+  NodeId nodeId(@Self BFTValidatorId bftValidatorId) {
+    return NodeId.fromPublicKey(bftValidatorId.getKey());
   }
 
   @Provides
   @Self
-  ECDSASecp256k1PublicKey key(@Self BFTNode bftNode) {
-    return bftNode.getKey();
+  ECDSASecp256k1PublicKey key(@Self BFTValidatorId bftValidatorId) {
+    return bftValidatorId.getKey();
   }
 
   @Provides
@@ -111,7 +111,7 @@ public final class PersistedBFTKeyModule extends AbstractModule {
 
   @Provides
   @Self
-  BFTNode bftNode(PersistedBFTKeyManager bftKeyManager) {
+  BFTValidatorId bftNode(PersistedBFTKeyManager bftKeyManager) {
     return bftKeyManager.self();
   }
 

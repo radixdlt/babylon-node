@@ -69,7 +69,7 @@ import static java.util.Objects.requireNonNull;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.serialization.DsonOutput;
@@ -143,7 +143,7 @@ public final class Proposal implements ConsensusEvent {
   }
 
   @Override
-  public BFTNode getAuthor() {
+  public BFTValidatorId getAuthor() {
     return vertex.getProposer();
   }
 

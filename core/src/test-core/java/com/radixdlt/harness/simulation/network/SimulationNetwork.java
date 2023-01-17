@@ -65,7 +65,7 @@
 package com.radixdlt.harness.simulation.network;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.environment.MessageTransportType;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
@@ -223,7 +223,7 @@ public class SimulationNetwork {
                   messageTransportType.getNodeIdType(), messageTransportType.getMessageType()));
     }
 
-    public <T> RemoteEventDispatcher<BFTNode, T> bftRemoteEventDispatcher(Class<T> eventClass) {
+    public <T> RemoteEventDispatcher<BFTValidatorId, T> bftRemoteEventDispatcher(Class<T> eventClass) {
       return (n, m) -> this.sendRemoteEvent(NodeId.fromPublicKey(n.getKey()), m);
     }
 

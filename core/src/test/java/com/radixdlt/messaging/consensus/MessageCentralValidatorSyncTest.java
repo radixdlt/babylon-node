@@ -77,7 +77,7 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
@@ -96,14 +96,14 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class MessageCentralValidatorSyncTest {
-  private BFTNode self;
+  private BFTValidatorId self;
   private MessageCentral messageCentral;
   private MessageCentralValidatorSync sync;
   private Hasher hasher;
 
   @Before
   public void setUp() {
-    this.self = mock(BFTNode.class);
+    this.self = mock(BFTValidatorId.class);
     ECDSASecp256k1PublicKey pubKey = mock(ECDSASecp256k1PublicKey.class);
     when(self.getKey()).thenReturn(pubKey);
     this.messageCentral = MessageCentralMockProvider.get();

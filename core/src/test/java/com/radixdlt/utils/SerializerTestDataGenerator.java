@@ -68,7 +68,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.*;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
@@ -94,7 +94,7 @@ public class SerializerTestDataGenerator {
 
   public static Vote randomVote() {
     return new Vote(
-        BFTNode.random(),
+        BFTValidatorId.random(),
         randomVoteData(),
         Math.abs(random.nextLong()) + 1,
         randomECDSASignature(),
@@ -105,7 +105,7 @@ public class SerializerTestDataGenerator {
   public static Proposal randomProposal() {
     var qc = randomQC();
     var txn = RawNotarizedTransaction.create(new byte[] {0, 1, 2, 3});
-    var author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
+    var author = BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey());
     var vertex = Vertex.create(qc, randomRound(), List.of(txn), author, 0L);
     return new Proposal(vertex, qc, ECDSASecp256k1Signature.zeroSignature(), Optional.empty());
   }
@@ -128,13 +128,13 @@ public class SerializerTestDataGenerator {
             NextEpoch.create(
                 Math.abs(random.nextLong()) + 1,
                 ImmutableSet.of(
-                    BFTValidator.from(BFTNode.random(), UInt256.from(random.nextLong()))))));
+                    BFTValidator.from(BFTValidatorId.random(), UInt256.from(random.nextLong()))))));
   }
 
   public static TimestampedECDSASignatures randomTimestampedECDSASignatures() {
     return new TimestampedECDSASignatures(
-        ImmutableMap.<BFTNode, TimestampedECDSASignature>builder()
-            .put(BFTNode.random(), randomTimestampedECDSASignature())
+        ImmutableMap.<BFTValidatorId, TimestampedECDSASignature>builder()
+            .put(BFTValidatorId.random(), randomTimestampedECDSASignature())
             .build());
   }
 

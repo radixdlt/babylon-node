@@ -68,7 +68,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
@@ -246,7 +246,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 
   private TimestampedECDSASignatures mutateTimestampedSignatures(
       TimestampedECDSASignatures signatures, int destination) {
-    Map<BFTNode, TimestampedECDSASignature> sigs = signatures.getSignatures();
+    Map<BFTValidatorId, TimestampedECDSASignature> sigs = signatures.getSignatures();
     return new TimestampedECDSASignatures(
         sigs.entrySet().stream()
             .map(e -> Pair.of(e.getKey(), mutateTimestampedSignature(e.getValue(), destination)))

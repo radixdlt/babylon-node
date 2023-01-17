@@ -81,7 +81,7 @@ import java.util.stream.Stream;
  * <p>Note that this set will validate for set sizes less than 4, as long as all validators sign.
  */
 public final class BFTValidatorSet {
-  private final ImmutableBiMap<BFTNode, BFTValidator> validators;
+  private final ImmutableBiMap<BFTValidatorId, BFTValidator> validators;
 
   // Because we will base power on tokens and because tokens have a max limit
   // of 2^256 this should never overflow
@@ -138,20 +138,20 @@ public final class BFTValidatorSet {
     return ValidationState.forValidatorSet(this);
   }
 
-  public boolean containsNode(BFTNode node) {
+  public boolean containsNode(BFTValidatorId node) {
     return validators.containsKey(node);
   }
 
   public boolean containsNode(ECDSASecp256k1PublicKey publicKey) {
-    return containsNode(BFTNode.create(publicKey));
+    return containsNode(BFTValidatorId.create(publicKey));
   }
 
-  public UInt256 getPower(BFTNode node) {
+  public UInt256 getPower(BFTValidatorId node) {
     return validators.get(node).getPower();
   }
 
   public UInt256 getPower(ECDSASecp256k1PublicKey publicKey) {
-    return getPower(BFTNode.create(publicKey));
+    return getPower(BFTValidatorId.create(publicKey));
   }
 
   public UInt256 getTotalPower() {
@@ -162,11 +162,11 @@ public final class BFTValidatorSet {
     return validators.values();
   }
 
-  public ImmutableSet<BFTNode> nodes() {
+  public ImmutableSet<BFTValidatorId> nodes() {
     return validators.keySet();
   }
 
-  public ImmutableMap<BFTNode, BFTValidator> validatorsByKey() {
+  public ImmutableMap<BFTValidatorId, BFTValidator> validatorsByKey() {
     return validators;
   }
 

@@ -64,7 +64,7 @@
 
 package com.radixdlt.keys;
 
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.CryptoException;
@@ -113,8 +113,8 @@ public final class PersistedBFTKeyManager {
     return ecKeyPair.sign(hash);
   }
 
-  public BFTNode self() {
-    return BFTNode.create(ecKeyPair.getPublicKey());
+  public BFTValidatorId self() {
+    return BFTValidatorId.create(ecKeyPair.getPublicKey());
   }
 
   public ECKeyPair getKeyPair() {

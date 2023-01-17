@@ -67,7 +67,7 @@ package com.radixdlt.messaging.consensus;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.messaging.core.Message;
@@ -116,25 +116,25 @@ public final class MessageCentralBFTNetwork {
         .toFlowable(BackpressureStrategy.BUFFER);
   }
 
-  public RemoteEventDispatcher<BFTNode, Proposal> proposalDispatcher() {
+  public RemoteEventDispatcher<BFTValidatorId, Proposal> proposalDispatcher() {
     return this::sendProposal;
   }
 
-  private void sendProposal(BFTNode receiver, Proposal proposal) {
+  private void sendProposal(BFTValidatorId receiver, Proposal proposal) {
     ConsensusEventMessage message = new ConsensusEventMessage(proposal);
     send(message, receiver);
   }
 
-  public RemoteEventDispatcher<BFTNode, Vote> voteDispatcher() {
+  public RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher() {
     return this::sendVote;
   }
 
-  private void sendVote(BFTNode receiver, Vote vote) {
+  private void sendVote(BFTValidatorId receiver, Vote vote) {
     ConsensusEventMessage message = new ConsensusEventMessage(vote);
     send(message, receiver);
   }
 
-  private void send(Message message, BFTNode recipient) {
+  private void send(Message message, BFTValidatorId recipient) {
     this.messageCentral.send(NodeId.fromPublicKey(recipient.getKey()), message);
   }
 }

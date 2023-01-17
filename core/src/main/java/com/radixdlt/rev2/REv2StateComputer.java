@@ -214,7 +214,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                 next -> {
                   var validators =
                       next.validators().stream()
-                          .map(v -> BFTValidator.from(BFTNode.create(v), UInt256.ONE))
+                          .map(v -> BFTValidator.from(BFTValidatorId.create(v), UInt256.ONE))
                           .collect(ImmutableSet.toImmutableSet());
                   return NextEpoch.create(next.epoch().toNonNegativeLong().unwrap(), validators);
                 })
