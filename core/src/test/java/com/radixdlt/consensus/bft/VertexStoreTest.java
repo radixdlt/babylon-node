@@ -140,7 +140,7 @@ public class VertexStoreTest {
     this.rootQC = QuorumCertificate.createInitialEpochQC(genesisVertex, MOCKED_HEADER);
     this.underlyingVertexStore =
         VertexStoreJavaImpl.create(
-            VertexStoreState.create(HighQC.from(rootQC), genesisVertex, Optional.empty(), hasher),
+            VertexStoreState.create(HighQC.ofInitialEpochQc(rootQC), genesisVertex, hasher),
             ledger,
             hasher);
     this.vertexStoreAdapter =
@@ -271,9 +271,9 @@ public class VertexStoreTest {
             .getQCToParent();
 
     // Act
-    boolean success = vertexStoreAdapter.insertQc(qcForVertexG);
+    final var insertQcResult = vertexStoreAdapter.insertQc(qcForVertexG);
 
-    assertTrue(success);
+    assertTrue(insertQcResult instanceof VertexStore.InsertQcResult.Inserted);
     assertEquals(vertexStoreAdapter.getRoot().hash(), vertexD.hash());
     assertFalse(vertexStoreAdapter.containsVertex(vertexA.hash()));
     assertFalse(vertexStoreAdapter.containsVertex(vertexB.hash()));
@@ -311,10 +311,10 @@ public class VertexStoreTest {
 
     // Act
     QuorumCertificate qc = vertices.get(3).vertex().getQCToParent();
-    boolean success = vertexStoreAdapter.insertQc(qc);
+    final var insertQcResult = vertexStoreAdapter.insertQc(qc);
 
     // Assert
-    assertThat(success).isTrue();
+    assertTrue(insertQcResult instanceof VertexStore.InsertQcResult.Inserted);
     assertThat(vertexStoreAdapter.highQC().highestQC()).isEqualTo(qc);
     assertThat(vertexStoreAdapter.highQC().highestCommittedQC()).isEqualTo(qc);
     assertThat(vertexStoreAdapter.getVertices(vertices.get(2).hash(), 3))
@@ -342,28 +342,29 @@ public class VertexStoreTest {
   }
 
   @Test
-  public void adding_a_qc_which_has_not_been_inserted_should_return_false() {
+  public void adding_a_qc_which_needs_sync_should_return_a_matching_result() {
     // Arrange
     this.nextVertex.get();
 
     // Act
     QuorumCertificate qc = this.nextVertex.get().vertex().getQCToParent();
-    boolean success = vertexStoreAdapter.insertQc(qc);
+    final var insertQcResult = vertexStoreAdapter.insertQc(qc);
 
     // Assert
-    assertThat(success).isFalse();
+    assertTrue(insertQcResult instanceof VertexStore.InsertQcResult.VertexIsMissing);
   }
 
   @Test
   public void rebuilding_should_emit_updates() {
     // Arrange
     final var vertices = Stream.generate(this.nextVertex).limit(4).toList();
+
+    final var qc = vertices.get(3).vertex().getQCToParent();
     VertexStoreState vertexStoreState =
         VertexStoreState.create(
-            HighQC.from(vertices.get(3).vertex().getQCToParent()),
+            HighQC.from(qc, qc, vertexStoreAdapter.highQC().highestTC()),
             vertices.get(0),
             vertices.stream().skip(1).collect(ImmutableList.toImmutableList()),
-            vertexStoreAdapter.highQC().highestTC(),
             hasher);
 
     // Act

@@ -130,12 +130,16 @@ public final class HighQC {
   }
 
   /**
-   * Creates a {@link HighQC} from the a QC
+   * Creates a {@link HighQC} from a QC. The same QC becomes both highQC and highestCommittedQC.
    *
    * @param qc The qc
    * @return A new {@link HighQC}
    */
-  public static HighQC from(QuorumCertificate qc) {
+  public static HighQC ofInitialEpochQc(QuorumCertificate qc) {
+    if (!qc.getRound().isGenesis()) {
+      throw new IllegalArgumentException("Expected initial epoch QC");
+    }
+
     return HighQC.from(qc, qc, Optional.empty());
   }
 
@@ -157,12 +161,16 @@ public final class HighQC {
     return new HighQC(highestQC, highestCommittedQC, highestTC.orElse(null));
   }
 
-  public Optional<TimeoutCertificate> highestTC() {
-    return Optional.ofNullable(this.highestTC);
-  }
-
   public QuorumCertificate highestQC() {
     return this.highestQC;
+  }
+
+  public QuorumCertificate highestCommittedQC() {
+    return this.highestCommittedQC == null ? this.highestQC : this.highestCommittedQC;
+  }
+
+  public Optional<TimeoutCertificate> highestTC() {
+    return Optional.ofNullable(this.highestTC);
   }
 
   public Round getHighestRound() {
@@ -173,8 +181,16 @@ public final class HighQC {
     }
   }
 
-  public QuorumCertificate highestCommittedQC() {
-    return this.highestCommittedQC == null ? this.highestQC : this.highestCommittedQC;
+  public HighQC withHighestQC(QuorumCertificate qc) {
+    return HighQC.from(qc, highestCommittedQC(), highestTC());
+  }
+
+  public HighQC withHighestCommittedQC(QuorumCertificate highestCommittedQC) {
+    return HighQC.from(highestQC, highestCommittedQC, highestTC());
+  }
+
+  public HighQC withHighestTC(TimeoutCertificate tc) {
+    return HighQC.from(highestQC, highestCommittedQC(), Optional.of(tc));
   }
 
   @VisibleForTesting

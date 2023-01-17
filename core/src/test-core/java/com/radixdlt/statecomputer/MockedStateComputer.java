@@ -91,7 +91,6 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
@@ -145,11 +144,11 @@ public final class MockedStateComputer implements StateComputer {
                           header.getAccumulatorState(),
                           header.consensusParentRoundTimestamp(),
                           header.proposerTimestamp());
-                  QuorumCertificate genesisQC =
+                  QuorumCertificate initialEpochQC =
                       QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
                   final var initialState =
                       VertexStoreState.create(
-                          HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
+                          HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher);
                   var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
                   var proposerElection = new WeightedRotatingLeaders(validatorSet);
                   var bftConfiguration =

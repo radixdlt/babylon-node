@@ -99,7 +99,7 @@ public final class REv2LedgerRecoveryTest {
         new Object[] {90},
         new Object[] {100},
         new Object[] {500},
-        new Object[] {100});
+        new Object[] {1000});
   }
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
@@ -123,7 +123,7 @@ public final class REv2LedgerRecoveryTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
-                            1, UInt64.fromNonNegativeLong(10)),
+                            1, UInt64.fromNonNegativeLong(Long.MAX_VALUE)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                             new REV2TransactionGenerator(), 1)))));
