@@ -215,14 +215,8 @@ public final class BFTSync implements BFTSyncer {
 
       final var highQC =
           switch (roundQuorumReached.votingResult()) {
-            case FormedQC formedQc -> HighQC.from(
-                ((FormedQC) roundQuorumReached.votingResult()).getQC(),
-                this.vertexStore.highQC().highestCommittedQC(),
-                this.vertexStore.highQC().highestTC());
-            case FormedTC formedTc -> HighQC.from(
-                this.vertexStore.highQC().highestQC(),
-                this.vertexStore.highQC().highestCommittedQC(),
-                Optional.of(((FormedTC) roundQuorumReached.votingResult()).getTC()));
+            case FormedQC formedQc -> this.vertexStore.highQC().withHighestQC(formedQc.getQC());
+            case FormedTC formedTc -> this.vertexStore.highQC().withHighestTC(formedTc.getTC());
           };
 
       var nodeId = NodeId.fromPublicKey(roundQuorumReached.lastAuthor().getKey());
@@ -243,36 +237,49 @@ public final class BFTSync implements BFTSyncer {
       return SyncResult.INVALID;
     }
 
-    highQC.highestTC().ifPresent(vertexStore::insertTimeoutCertificate);
+    return switch (vertexStore.insertQc(qc)) {
+      case VertexStore.InsertQcResult.Inserted inserted -> {
+        // QC was inserted, try TC too (as it can be higher), and then process a new highQC
+        highQC.highestTC().map(vertexStore::insertTimeoutCertificate);
+        this.pacemakerReducer.processQC(vertexStore.highQC());
+        yield SyncResult.SYNCED;
+      }
+      case VertexStore.InsertQcResult.Ignored ignored -> {
+        // QC was ignored, try inserting TC and if that works process a new highQC
+        final var insertedTc =
+            highQC.highestTC().map(vertexStore::insertTimeoutCertificate).orElse(false);
 
-    if (vertexStore.insertQc(qc)) {
-      // TODO: check if already sent highest
-      // TODO: Move pacemaker outside of sync
-      this.pacemakerReducer.processQC(vertexStore.highQC());
-      return SyncResult.SYNCED;
-    }
+        if (insertedTc) {
+          this.pacemakerReducer.processQC(vertexStore.highQC());
+        }
+        yield SyncResult.SYNCED;
+      }
+      case VertexStore.InsertQcResult.VertexIsMissing vertexIsMissing -> {
+        // QC is missing some vertices, sync up
+        // TC (if present) is put aside for now (and reconsidered later, once QC is synced)
+        log.trace("SYNC_TO_QC: Need sync: {}", highQC);
 
-    // TODO: Check for other conflicting QCs which a bad validator set may have created
-    // Bad genesis qc, ignore...
-    if (qc.getRound().isGenesis()) {
-      this.unexpectedEventEventDispatcher.dispatch(
-          new ConsensusByzantineEvent.ConflictingGenesis(qc, author));
-      return SyncResult.INVALID;
-    }
+        // TODO: Check for other conflicting QCs which a bad validator set may have created
+        // Bad genesis QC, ignore...
+        if (qc.getRound().isGenesis()) {
+          this.unexpectedEventEventDispatcher.dispatch(
+              new ConsensusByzantineEvent.ConflictingGenesis(qc, author));
+          yield SyncResult.INVALID;
+        }
 
-    log.trace("SYNC_TO_QC: Need sync: {}", highQC);
+        if (syncing.containsKey(qc.getProposedHeader().getVertexId())) {
+          yield SyncResult.IN_PROGRESS;
+        }
 
-    if (syncing.containsKey(qc.getProposedHeader().getVertexId())) {
-      return SyncResult.IN_PROGRESS;
-    }
+        if (author == null) {
+          throw new IllegalStateException("Syncing required but author wasn't provided.");
+        }
 
-    if (author == null) {
-      throw new IllegalStateException("Syncing required but author wasn't provided.");
-    }
+        startSync(highQC, author);
 
-    startSync(highQC, author);
-
-    return SyncResult.IN_PROGRESS;
+        yield SyncResult.IN_PROGRESS;
+      }
+    };
   }
 
   private boolean requiresLedgerSync(SyncState syncState) {
@@ -320,7 +327,7 @@ public final class BFTSync implements BFTSyncer {
   private void doCommittedSync(SyncState syncState) {
     final var committedQCId =
         syncState.highQC().highestCommittedQC().getProposedHeader().getVertexId();
-    final var commitedRound = syncState.highQC().highestCommittedQC().getRound();
+    final var committedRound = syncState.highQC().highestCommittedQC().getRound();
 
     syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
     log.debug(
@@ -340,7 +347,7 @@ public final class BFTSync implements BFTSyncer {
             .collect(ImmutableList.toImmutableList());
 
     this.sendBFTSyncRequest(
-        "CommittedSync", commitedRound, committedQCId, 3, authors, syncState.localSyncId);
+        "CommittedSync", committedRound, committedQCId, 3, authors, syncState.localSyncId);
   }
 
   public EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor() {
@@ -446,12 +453,20 @@ public final class BFTSync implements BFTSyncer {
       syncState.fetched.sort(Comparator.comparing(v -> v.vertex().getRound()));
       ImmutableList<VertexWithHash> nonRootVertices =
           syncState.fetched.stream().skip(1).collect(ImmutableList.toImmutableList());
+
+      final var syncStateHighestCommittedQc = syncState.highQC().highestCommittedQC();
+      final var syncStateHighestTc = syncState.highQC.highestTC();
+      final var currentHighestTc = vertexStore.highQC().highestTC();
+      final var highestKnownTc =
+          Stream.of(currentHighestTc, syncStateHighestTc)
+              .flatMap(Optional::stream)
+              .max(Comparator.comparing(TimeoutCertificate::getRound));
+
       var vertexStoreState =
           VertexStoreState.create(
-              HighQC.from(syncState.highQC().highestCommittedQC()),
+              HighQC.from(syncStateHighestCommittedQc, syncStateHighestCommittedQc, highestKnownTc),
               syncState.fetched.get(0),
               nonRootVertices,
-              vertexStore.highQC().highestTC(),
               hasher);
       if (vertexStore.tryRebuild(vertexStoreState)) {
         // TODO: Move pacemaker outside of sync
