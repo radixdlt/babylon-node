@@ -6,9 +6,23 @@ use state_manager::transaction::UserTransactionValidator;
 use state_manager::{MempoolAddError, MempoolAddSource};
 use transaction::model::NotarizedTransaction;
 
-impl ErrorDetails for TransactionSubmitErrorDetails {}
+impl ErrorDetails for TransactionSubmitErrorDetails {
+    fn to_error_response(
+        details: Option<Self>,
+        code: i32,
+        message: String,
+        trace_id: Option<String>,
+    ) -> models::ErrorResponse {
+        models::ErrorResponse::TransactionSubmitErrorResponse {
+            code,
+            message,
+            trace_id,
+            details: details.map(Box::new),
+        }
+    }
+}
 
-// #[tracing::instrument(level = "debug", skip(state), err(Debug))]
+#[tracing::instrument(level = "debug", skip(state), err(Debug))]
 pub(crate) async fn handle_transaction_submit(
     Extension(state): Extension<CoreApiState>,
     Json(request): Json<models::TransactionSubmitRequest>,

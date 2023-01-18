@@ -5,28 +5,31 @@ use axum::{
 use hyper::StatusCode;
 use radix_engine_interface::node::NetworkDefinition;
 
+use super::models;
+
 /// A marker trait for custom error details
-pub trait ErrorDetails: serde::Serialize + std::fmt::Debug {}
+pub trait ErrorDetails: serde::Serialize + std::fmt::Debug + Sized {
+    fn to_error_response(
+        details: Option<Self>,
+        code: i32,
+        message: String,
+        trace_id: Option<String>,
+    ) -> models::ErrorResponse;
+}
 
-impl ErrorDetails for () {}
-
-/// Note - We create our own generic error response model instead of using
-/// the auto-generated ones, to enable us to genericize the error handling logic.
-/// We should ensure manually that the types match this model.
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize)]
-pub struct ErrorResponse<E: ErrorDetails> {
-    /// A numeric code corresponding to the given HTTP error code.
-    #[serde(rename = "code")]
-    pub code: i32,
-    /// A human-readable error message.
-    #[serde(rename = "message")]
-    pub message: String,
-    /// A GUID to be used when reporting errors, to allow correlation with the Core API's error logs, in the case where the Core API details are hidden.
-    #[serde(rename = "trace_id", skip_serializing_if = "Option::is_none")]
-    pub trace_id: Option<String>,
-    /// The details of the error, if present.
-    #[serde(rename = "details", skip_serializing_if = "Option::is_none")]
-    pub details: Option<E>,
+impl ErrorDetails for () {
+    fn to_error_response(
+        _details: Option<Self>,
+        code: i32,
+        message: String,
+        trace_id: Option<String>,
+    ) -> models::ErrorResponse {
+        models::ErrorResponse::BasicErrorResponse {
+            code,
+            message,
+            trace_id,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -42,12 +45,12 @@ pub struct LogTraceId(pub String);
 
 impl<E: ErrorDetails> IntoResponse for ResponseError<E> {
     fn into_response(self) -> Response {
-        let body = ErrorResponse::<E> {
-            code: self.status_code.as_u16() as i32,
-            message: self.public_error_message,
-            trace_id: self.trace.map(|x| x.0),
-            details: self.details,
-        };
+        let body = E::to_error_response(
+            self.details,
+            self.status_code.as_u16() as i32,
+            self.public_error_message,
+            self.trace.map(|x| x.0),
+        );
 
         (self.status_code, Json(body)).into_response()
     }

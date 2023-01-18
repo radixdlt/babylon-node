@@ -28,9 +28,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.BasicErrorResponse;
 import com.radixdlt.api.core.generated.models.ErrorResponse;
 import com.radixdlt.api.core.generated.models.ErrorResponseType;
-import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetails;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorResponse;
-import com.radixdlt.api.core.generated.models.TransactionSubmitErrorResponseAllOf;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -38,10 +36,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * TransactionSubmitErrorResponse
+ * BasicErrorResponse
  */
 @JsonPropertyOrder({
-  TransactionSubmitErrorResponse.JSON_PROPERTY_DETAILS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -54,41 +51,12 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = TransactionSubmitErrorResponse.class, name = "TransactionSubmit"),
 })
 
-public class TransactionSubmitErrorResponse extends ErrorResponse {
-  public static final String JSON_PROPERTY_DETAILS = "details";
-  private TransactionSubmitErrorDetails details;
-
-  public TransactionSubmitErrorResponse() { 
+public class BasicErrorResponse extends ErrorResponse {
+  public BasicErrorResponse() { 
   }
-
-  public TransactionSubmitErrorResponse details(TransactionSubmitErrorDetails details) {
-    this.details = details;
-    return this;
-  }
-
-   /**
-   * Get details
-   * @return details
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_DETAILS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public TransactionSubmitErrorDetails getDetails() {
-    return details;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_DETAILS)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setDetails(TransactionSubmitErrorDetails details) {
-    this.details = details;
-  }
-
 
   /**
-   * Return true if this TransactionSubmitErrorResponse object is equal to o.
+   * Return true if this BasicErrorResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -98,22 +66,19 @@ public class TransactionSubmitErrorResponse extends ErrorResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TransactionSubmitErrorResponse transactionSubmitErrorResponse = (TransactionSubmitErrorResponse) o;
-    return Objects.equals(this.details, transactionSubmitErrorResponse.details) &&
-        super.equals(o);
+    return super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(details, super.hashCode());
+    return Objects.hash(super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TransactionSubmitErrorResponse {\n");
+    sb.append("class BasicErrorResponse {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    details: ").append(toIndentedString(details)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -134,8 +99,8 @@ static {
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("Basic", BasicErrorResponse.class);
   mappings.put("TransactionSubmit", TransactionSubmitErrorResponse.class);
-  mappings.put("TransactionSubmitErrorResponse", TransactionSubmitErrorResponse.class);
-  JSON.registerDiscriminator(TransactionSubmitErrorResponse.class, "error_type", mappings);
+  mappings.put("BasicErrorResponse", BasicErrorResponse.class);
+  JSON.registerDiscriminator(BasicErrorResponse.class, "error_type", mappings);
 }
 }
 

@@ -12,7 +12,7 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct TransactionSubmitErrorResponse {
+pub struct BasicErrorResponse {
     #[serde(rename = "error_type")]
     pub error_type: crate::core_api::generated::models::ErrorResponseType,
     /// A numeric code corresponding to the given HTTP error code.
@@ -24,18 +24,15 @@ pub struct TransactionSubmitErrorResponse {
     /// A GUID to be used when reporting errors, to allow correlation with the Core API's error logs, in the case where the Core API details are hidden.
     #[serde(rename = "trace_id", skip_serializing_if = "Option::is_none")]
     pub trace_id: Option<String>,
-    #[serde(rename = "details", skip_serializing_if = "Option::is_none")]
-    pub details: Option<Box<crate::core_api::generated::models::TransactionSubmitErrorDetails>>,
 }
 
-impl TransactionSubmitErrorResponse {
-    pub fn new(error_type: crate::core_api::generated::models::ErrorResponseType, code: i32, message: String) -> TransactionSubmitErrorResponse {
-        TransactionSubmitErrorResponse {
+impl BasicErrorResponse {
+    pub fn new(error_type: crate::core_api::generated::models::ErrorResponseType, code: i32, message: String) -> BasicErrorResponse {
+        BasicErrorResponse {
             error_type,
             code,
             message,
             trace_id: None,
-            details: None,
         }
     }
 }
