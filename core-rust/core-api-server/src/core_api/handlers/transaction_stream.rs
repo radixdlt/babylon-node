@@ -77,25 +77,40 @@ fn handle_transaction_stream_internal(
     let mut txns = vec![];
     let mut state_version = from_state_version;
     while state_version <= up_to_state_version_inclusive {
-        let next_tid = state_manager
-            .store
-            .get_payload_hash(state_version)
-            .ok_or_else(|| {
-                server_error(format!(
-                    "A transaction id is missing at state version {}",
-                    state_version
-                ))
-            })?;
         let next_tx = state_manager
             .store
-            .get_committed_transaction(&next_tid)
+            .get_committed_transaction(state_version)
             .ok_or_else(|| {
                 server_error(format!(
                     "A transaction is missing at state version {}",
                     state_version
                 ))
             })?;
-        txns.push((next_tx, state_version));
+
+        let next_txn_receipt = state_manager
+            .store
+            .get_committed_transaction_receipt(state_version)
+            .ok_or_else(|| {
+                server_error(format!(
+                    "A transaction receipt is missing at state version {}",
+                    state_version
+                ))
+            })?;
+
+        let next_txn_identifiers = state_manager
+            .store
+            .get_committed_transaction_identifiers(state_version)
+            .ok_or_else(|| {
+                server_error(format!(
+                    "Transaction identifiers are missing at state version {}",
+                    state_version
+                ))
+            })?;
+
+        txns.push((
+            (next_tx, next_txn_receipt, next_txn_identifiers),
+            state_version,
+        ));
         state_version += 1;
     }
 

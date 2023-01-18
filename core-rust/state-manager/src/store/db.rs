@@ -97,7 +97,7 @@ pub enum DatabaseConfig {
 
 pub enum StateManagerDatabase {
     InMemory {
-        transactions_and_proofs: InMemoryStore,
+        in_memory_store: InMemoryStore,
         substates: SerializedInMemorySubstateStore,
         vertices: InMemoryVertexStore,
     },
@@ -109,7 +109,7 @@ impl StateManagerDatabase {
     pub fn from_config(config: DatabaseConfig) -> Self {
         match config {
             DatabaseConfig::InMemory => StateManagerDatabase::InMemory {
-                transactions_and_proofs: InMemoryStore::new(),
+                in_memory_store: InMemoryStore::new(),
                 substates: SerializedInMemorySubstateStore::new(),
                 vertices: InMemoryVertexStore::new(),
             },
@@ -134,7 +134,7 @@ impl ReadableSubstateStore for StateManagerDatabase {
 
 pub enum StateManagerCommitTransaction<'db> {
     InMemory {
-        transactions_and_proofs: &'db mut InMemoryStore,
+        in_memory_store: &'db mut InMemoryStore,
         substates: &'db mut SerializedInMemorySubstateStore,
         vertices: &'db mut InMemoryVertexStore,
     },
@@ -163,9 +163,8 @@ impl<'db> WriteableTransactionStore for StateManagerCommitTransaction<'db> {
     ) {
         match self {
             StateManagerCommitTransaction::InMemory {
-                transactions_and_proofs,
-                ..
-            } => transactions_and_proofs.insert_committed_transactions(transactions),
+                in_memory_store, ..
+            } => in_memory_store.insert_committed_transactions(transactions),
             StateManagerCommitTransaction::RocksDB(db_txn) => {
                 db_txn.insert_committed_transactions(transactions)
             }
@@ -174,37 +173,18 @@ impl<'db> WriteableTransactionStore for StateManagerCommitTransaction<'db> {
 }
 
 impl<'db> WriteableProofStore for StateManagerCommitTransaction<'db> {
-    fn insert_tids_and_proof(
+    fn insert_proof(
         &mut self,
         state_version: u64,
         epoch_boundary: Option<u64>,
-        ids: Vec<LedgerPayloadHash>,
         proof_bytes: Vec<u8>,
     ) {
         match self {
             StateManagerCommitTransaction::InMemory {
-                transactions_and_proofs,
-                ..
-            } => transactions_and_proofs.insert_tids_and_proof(
-                state_version,
-                epoch_boundary,
-                ids,
-                proof_bytes,
-            ),
+                in_memory_store, ..
+            } => in_memory_store.insert_proof(state_version, epoch_boundary, proof_bytes),
             StateManagerCommitTransaction::RocksDB(db_txn) => {
-                db_txn.insert_tids_and_proof(state_version, epoch_boundary, ids, proof_bytes)
-            }
-        }
-    }
-
-    fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<LedgerPayloadHash>) {
-        match self {
-            StateManagerCommitTransaction::InMemory {
-                transactions_and_proofs,
-                ..
-            } => transactions_and_proofs.insert_tids_without_proof(state_version, ids),
-            StateManagerCommitTransaction::RocksDB(db_txn) => {
-                db_txn.insert_tids_without_proof(state_version, ids)
+                db_txn.insert_proof(state_version, epoch_boundary, proof_bytes)
             }
         }
     }
@@ -251,11 +231,11 @@ impl<'db> CommitStore<'db> for StateManagerDatabase {
     fn create_db_transaction(&'db mut self) -> StateManagerCommitTransaction<'db> {
         match self {
             StateManagerDatabase::InMemory {
-                transactions_and_proofs,
+                in_memory_store,
                 substates,
                 vertices,
             } => StateManagerCommitTransaction::InMemory {
-                transactions_and_proofs,
+                in_memory_store,
                 substates,
                 vertices,
             },
@@ -270,59 +250,86 @@ impl<'db> CommitStore<'db> for StateManagerDatabase {
 
 impl QueryableTransactionStore for StateManagerDatabase {
     #[tracing::instrument(skip_all)]
-    fn get_committed_transaction(
-        &self,
-        payload_hash: &LedgerPayloadHash,
-    ) -> Option<(
-        LedgerTransaction,
-        LedgerTransactionReceipt,
-        CommittedTransactionIdentifiers,
-    )> {
+    fn get_committed_transaction(&self, state_version: u64) -> Option<LedgerTransaction> {
         match self {
             StateManagerDatabase::InMemory {
-                transactions_and_proofs,
-                ..
-            } => transactions_and_proofs.get_committed_transaction(payload_hash),
-            StateManagerDatabase::RocksDB(store) => store.get_committed_transaction(payload_hash),
+                in_memory_store, ..
+            } => in_memory_store.get_committed_transaction(state_version),
+            StateManagerDatabase::RocksDB(store) => store.get_committed_transaction(state_version),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
-}
 
-impl TransactionIndex<&UserPayloadHash> for StateManagerDatabase {
-    fn get_payload_hash(&self, identifier: &UserPayloadHash) -> Option<LedgerPayloadHash> {
+    #[tracing::instrument(skip_all)]
+    fn get_committed_transaction_receipt(
+        &self,
+        state_version: u64,
+    ) -> Option<LedgerTransactionReceipt> {
         match self {
             StateManagerDatabase::InMemory {
-                transactions_and_proofs,
-                ..
-            } => transactions_and_proofs.get_payload_hash(identifier),
-            StateManagerDatabase::RocksDB(store) => store.get_payload_hash(identifier),
+                in_memory_store, ..
+            } => in_memory_store.get_committed_transaction_receipt(state_version),
+            StateManagerDatabase::RocksDB(store) => {
+                store.get_committed_transaction_receipt(state_version)
+            }
+            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
+        }
+    }
+
+    #[tracing::instrument(skip_all)]
+    fn get_committed_transaction_identifiers(
+        &self,
+        state_version: u64,
+    ) -> Option<CommittedTransactionIdentifiers> {
+        match self {
+            StateManagerDatabase::InMemory {
+                in_memory_store, ..
+            } => in_memory_store.get_committed_transaction_identifiers(state_version),
+            StateManagerDatabase::RocksDB(store) => {
+                store.get_committed_transaction_identifiers(state_version)
+            }
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 }
 
 impl TransactionIndex<&IntentHash> for StateManagerDatabase {
-    fn get_payload_hash(&self, identifier: &IntentHash) -> Option<LedgerPayloadHash> {
+    fn get_txn_state_version_by_identifier(&self, identifier: &IntentHash) -> Option<u64> {
         match self {
             StateManagerDatabase::InMemory {
-                transactions_and_proofs,
-                ..
-            } => transactions_and_proofs.get_payload_hash(identifier),
-            StateManagerDatabase::RocksDB(store) => store.get_payload_hash(identifier),
+                in_memory_store, ..
+            } => in_memory_store.get_txn_state_version_by_identifier(identifier),
+            StateManagerDatabase::RocksDB(store) => {
+                store.get_txn_state_version_by_identifier(identifier)
+            }
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 }
 
-impl TransactionIndex<u64> for StateManagerDatabase {
-    fn get_payload_hash(&self, state_version: u64) -> Option<LedgerPayloadHash> {
+impl TransactionIndex<&UserPayloadHash> for StateManagerDatabase {
+    fn get_txn_state_version_by_identifier(&self, identifier: &UserPayloadHash) -> Option<u64> {
         match self {
             StateManagerDatabase::InMemory {
-                transactions_and_proofs,
-                ..
-            } => transactions_and_proofs.get_payload_hash(state_version),
-            StateManagerDatabase::RocksDB(store) => store.get_payload_hash(state_version),
+                in_memory_store, ..
+            } => in_memory_store.get_txn_state_version_by_identifier(identifier),
+            StateManagerDatabase::RocksDB(store) => {
+                store.get_txn_state_version_by_identifier(identifier)
+            }
+            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
+        }
+    }
+}
+
+impl TransactionIndex<&LedgerPayloadHash> for StateManagerDatabase {
+    fn get_txn_state_version_by_identifier(&self, identifier: &LedgerPayloadHash) -> Option<u64> {
+        match self {
+            StateManagerDatabase::InMemory {
+                in_memory_store, ..
+            } => in_memory_store.get_txn_state_version_by_identifier(identifier),
+            StateManagerDatabase::RocksDB(store) => {
+                store.get_txn_state_version_by_identifier(identifier)
+            }
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
@@ -332,21 +339,32 @@ impl QueryableProofStore for StateManagerDatabase {
     fn max_state_version(&self) -> u64 {
         match self {
             StateManagerDatabase::InMemory {
-                transactions_and_proofs,
-                ..
-            } => transactions_and_proofs.max_state_version(),
+                in_memory_store, ..
+            } => in_memory_store.max_state_version(),
             StateManagerDatabase::RocksDB(store) => store.max_state_version(),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 
-    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<LedgerPayloadHash>, Vec<u8>)> {
+    fn get_txns_and_proof(
+        &self,
+        start_state_version_inclusive: u64,
+        max_number_of_txns: u32,
+        max_payload_size_in_bytes: u32,
+    ) -> Option<(Vec<Vec<u8>>, Vec<u8>)> {
         match self {
             StateManagerDatabase::InMemory {
-                transactions_and_proofs,
-                ..
-            } => transactions_and_proofs.get_next_proof(state_version),
-            StateManagerDatabase::RocksDB(store) => store.get_next_proof(state_version),
+                in_memory_store, ..
+            } => in_memory_store.get_txns_and_proof(
+                start_state_version_inclusive,
+                max_number_of_txns,
+                max_payload_size_in_bytes,
+            ),
+            StateManagerDatabase::RocksDB(store) => store.get_txns_and_proof(
+                start_state_version_inclusive,
+                max_number_of_txns,
+                max_payload_size_in_bytes,
+            ),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
@@ -354,9 +372,8 @@ impl QueryableProofStore for StateManagerDatabase {
     fn get_epoch_proof(&self, epoch: u64) -> Option<Vec<u8>> {
         match self {
             StateManagerDatabase::InMemory {
-                transactions_and_proofs,
-                ..
-            } => transactions_and_proofs.get_epoch_proof(epoch),
+                in_memory_store, ..
+            } => in_memory_store.get_epoch_proof(epoch),
             StateManagerDatabase::RocksDB(store) => store.get_epoch_proof(epoch),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
@@ -365,9 +382,8 @@ impl QueryableProofStore for StateManagerDatabase {
     fn get_last_proof(&self) -> Option<Vec<u8>> {
         match self {
             StateManagerDatabase::InMemory {
-                transactions_and_proofs,
-                ..
-            } => transactions_and_proofs.get_last_proof(),
+                in_memory_store, ..
+            } => in_memory_store.get_last_proof(),
             StateManagerDatabase::RocksDB(store) => store.get_last_proof(),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }

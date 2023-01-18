@@ -1,6 +1,7 @@
 use crate::core_api::*;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::query::TransactionIdentifierLoader;
+use state_manager::store::traits::QueryableTransactionStore;
 use state_manager::CommittedTransactionIdentifiers;
 
 #[tracing::instrument(skip(state), err(Debug))]
@@ -23,7 +24,7 @@ pub(crate) fn handle_network_status_internal(
     Ok(models::NetworkStatusResponse {
         post_genesis_state_identifier: state_manager
             .store
-            .get_transaction_identifiers(1)
+            .get_committed_transaction_identifiers(1)
             .map(|identifiers| -> Result<_, MappingError> {
                 Ok(Box::new(to_api_committed_state_identifier(identifiers)?))
             })

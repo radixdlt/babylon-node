@@ -86,7 +86,7 @@ pub mod substate {
 
 pub mod transactions {
     use crate::transaction::LedgerTransaction;
-    use crate::{CommittedTransactionIdentifiers, LedgerPayloadHash, LedgerTransactionReceipt};
+    use crate::{CommittedTransactionIdentifiers, LedgerTransactionReceipt};
 
     pub trait WriteableTransactionStore {
         fn insert_committed_transactions(
@@ -100,55 +100,43 @@ pub mod transactions {
     }
 
     pub trait QueryableTransactionStore {
-        fn get_committed_transaction(
+        fn get_committed_transaction(&self, state_version: u64) -> Option<LedgerTransaction>;
+
+        fn get_committed_transaction_receipt(
             &self,
-            payload_hash: &LedgerPayloadHash,
-        ) -> Option<(
-            LedgerTransaction,
-            LedgerTransactionReceipt,
-            CommittedTransactionIdentifiers,
-        )>;
+            state_version: u64,
+        ) -> Option<LedgerTransactionReceipt>;
+
+        fn get_committed_transaction_identifiers(
+            &self,
+            state_version: u64,
+        ) -> Option<CommittedTransactionIdentifiers>;
     }
 
     pub trait TransactionIndex<T>: QueryableTransactionStore {
-        fn get_payload_hash(&self, identifier: T) -> Option<LedgerPayloadHash>;
-
-        fn get_committed_transaction_by_identifier(
-            &self,
-            identifier: T,
-        ) -> Option<(
-            LedgerTransaction,
-            LedgerTransactionReceipt,
-            CommittedTransactionIdentifiers,
-        )> {
-            let payload_hash = self.get_payload_hash(identifier)?;
-            let (transaction, receipt, identifiers) =
-                self.get_committed_transaction(&payload_hash).expect(
-                    "User payload hash was found for transaction, but payload couldn't be found",
-                );
-            Some((transaction, receipt, identifiers))
-        }
+        fn get_txn_state_version_by_identifier(&self, identifier: T) -> Option<u64>;
     }
 }
 
 pub mod proofs {
-    use crate::LedgerPayloadHash;
 
     pub trait WriteableProofStore {
-        fn insert_tids_and_proof(
+        fn insert_proof(
             &mut self,
             state_version: u64,
             epoch_boundary: Option<u64>,
-            payload_hashes: Vec<LedgerPayloadHash>,
             proof_bytes: Vec<u8>,
         );
-
-        fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<LedgerPayloadHash>);
     }
 
     pub trait QueryableProofStore {
         fn max_state_version(&self) -> u64;
-        fn get_next_proof(&self, state_version: u64) -> Option<(Vec<LedgerPayloadHash>, Vec<u8>)>;
+        fn get_txns_and_proof(
+            &self,
+            start_state_version_inclusive: u64,
+            max_number_of_txns: u32,
+            max_payload_size_in_bytes: u32,
+        ) -> Option<(Vec<Vec<u8>>, Vec<u8>)>;
         fn get_epoch_proof(&self, epoch: u64) -> Option<Vec<u8>>;
         fn get_last_proof(&self) -> Option<Vec<u8>>;
     }

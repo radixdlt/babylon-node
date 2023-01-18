@@ -66,7 +66,6 @@ package com.radixdlt.rev2;
 
 import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.serialization.DeserializeException;
@@ -74,7 +73,6 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawLedgerTransaction;
-import java.util.ArrayList;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -82,6 +80,9 @@ import org.apache.logging.log4j.Logger;
 public final class REv2TransactionsAndProofReader implements TransactionsAndProofReader {
 
   private static final Logger logger = LogManager.getLogger();
+
+  /* Maximum number of transactions to return in a single getTransactions response. */
+  private static final int MAX_TXNS_FOR_A_SINGLE_RESPONSE = 1000;
 
   /* Maximum transaction size (in terms of their total byte size) to return in a single getTransactions response.
    * See also MAX_PACKET_LENGTH in PeerChannelInitializer and OVERRIDE_MAX_PAYLOAD_SIZE for transaction size */
@@ -99,82 +100,28 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
 
   @Override
   public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
-    // TODO - It would likely be more efficient to move this down into the State Manager.
-    final var startStateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
+    final var startStateVersionInclusive =
+        start.getLedgerHeader().getAccumulatorState().getStateVersion() + 1;
 
-    var latestStateVersion = startStateVersion;
-    var maybeNextProof = getNextProof(startStateVersion);
-    var maybeLatestUsableProof = maybeNextProof;
-    var transactionsUpToLatestUsableProof = new ArrayList<RawLedgerTransaction>();
-    var totalTxnBytesSoFar = 0;
+    final var rawTxnsAndProofOpt =
+        transactionStore.getTxnsAndProof(
+            startStateVersionInclusive,
+            MAX_TXNS_FOR_A_SINGLE_RESPONSE,
+            MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE);
 
-    if (!maybeNextProof.isPresent()) {
-      // No transactions to ledger sync
-      return null;
-    }
-
-    top_level_while:
-    while (maybeNextProof.isPresent()) {
-      final var nextProofStateVersion = maybeNextProof.unwrap().getStateVersion();
-      // Using a separate list for next proof txns, in case we run out
-      // of space mid-proof and need to ignore the txns read so far
-      final var transactionsUpToNextProof = new ArrayList<RawLedgerTransaction>();
-      for (var i = latestStateVersion + 1; i <= nextProofStateVersion; i++) {
-        final var executedTxn = transactionStore.getTransactionAtStateVersion(i).unwrap();
-        totalTxnBytesSoFar += executedTxn.transactionBytes().length;
-        if (totalTxnBytesSoFar > MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE) {
-          // At this point we know that the additional transactions up to nextProof
-          // can't fit. Stop the processing and use the transactions up to latestUsableProof.
-          break top_level_while;
-        }
-
-        transactionsUpToNextProof.add(RawLedgerTransaction.create(executedTxn.transactionBytes()));
-      }
-
-      // All transactions up to the next proof could fit.
-      // Added them to the list and use a new latestUsableProof.
-      transactionsUpToLatestUsableProof.addAll(transactionsUpToNextProof);
-      maybeLatestUsableProof = maybeNextProof;
-
-      // New epoch proofs should always be returned
-      if (maybeLatestUsableProof.unwrap().getNextEpoch().isPresent()) {
-        break;
-      }
-
-      // Continue the loop: try fitting some more txns up to the next proof (if there is any)
-      latestStateVersion = nextProofStateVersion;
-      maybeNextProof = getNextProof(nextProofStateVersion);
-    }
-
-    if (maybeLatestUsableProof.isPresent() && !transactionsUpToLatestUsableProof.isEmpty()) {
-      return CommittedTransactionsWithProof.create(
-          transactionsUpToLatestUsableProof, maybeLatestUsableProof.unwrap());
-    } else {
-      // Once we fix block limits, this shouldn't be possible
-      logger.warn(
-          String.format(
-              "Unable to form a ledger sync response from version %s - there are more than %s bytes"
-                  + " of transactions between that version and the next proof at %s",
-              startStateVersion,
-              MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
-              maybeNextProof
-                  .map(p -> String.format("%s", p.getStateVersion()))
-                  .or(() -> "UNKNOWN")));
-      return null;
-    }
-  }
-
-  private Option<LedgerProof> getNextProof(long stateVersion) {
-    return this.transactionStore
-        .getNextProof(stateVersion)
+    return rawTxnsAndProofOpt
         .map(
-            rawProof -> {
+            rawTxnsAndProof -> {
               try {
-                return serialization.fromDson(rawProof.last(), LedgerProof.class);
+                final var proof = serialization.fromDson(rawTxnsAndProof.last(), LedgerProof.class);
+                final var txns =
+                    rawTxnsAndProof.first().stream().map(RawLedgerTransaction::create).toList();
+                return CommittedTransactionsWithProof.create(txns, proof);
               } catch (DeserializeException e) {
                 throw new RuntimeException(e);
               }
-            });
+            })
+        .or(() -> null);
   }
 
   @Override

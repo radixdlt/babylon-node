@@ -19,15 +19,30 @@ fn handle_v0_transaction_receipt_internal(
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
     let network = &state_manager.network;
-    let committed_option = state_manager
+    let txn_state_version_opt = state_manager
         .store
-        .get_committed_transaction_by_identifier(&intent_hash);
+        .get_txn_state_version_by_identifier(&intent_hash);
 
-    if let Some((ledger_transaction, receipt, identifiers)) = committed_option {
+    if let Some(txn_state_version) = txn_state_version_opt {
+        let txn = state_manager
+            .store
+            .get_committed_transaction(txn_state_version)
+            .expect("Txn is missing");
+
+        let receipt = state_manager
+            .store
+            .get_committed_transaction_receipt(txn_state_version)
+            .expect("Txn receipt is missing");
+
+        let identifiers = state_manager
+            .store
+            .get_committed_transaction_identifiers(txn_state_version)
+            .expect("Txn identifiers are missing");
+
         Ok(models::V0CommittedTransactionResponse {
             committed: Box::new(to_api_committed_transaction(
                 network,
-                ledger_transaction,
+                txn,
                 receipt,
                 identifiers,
             )?),
