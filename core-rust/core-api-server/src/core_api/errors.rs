@@ -69,7 +69,6 @@ pub(crate) fn assert_matching_network<E: ErrorDetails>(
     Ok(())
 }
 
-// TODO - Replace ErrorResponse "code" with making them an Enum with different structured errors
 // TODO - Add logging, metrics and tracing for all of these errors - require the error is passed in here
 pub(crate) fn client_error<E: ErrorDetails>(message: impl Into<String>) -> ResponseError<E> {
     ResponseError {
