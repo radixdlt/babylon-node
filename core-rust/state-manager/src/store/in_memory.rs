@@ -203,6 +203,30 @@ impl TransactionIndex<&LedgerPayloadHash> for InMemoryStore {
 }
 
 impl QueryableTransactionStore for InMemoryStore {
+    fn get_committed_transactions_bundles(
+        &self,
+        start_state_version_inclusive: u64,
+        limit: usize,
+    ) -> Vec<CommittedTransactionBundle> {
+        let mut res = Vec::new();
+
+        while res.len() < limit {
+            let next_state_version = start_state_version_inclusive + res.len() as u64;
+            res.push((
+                self.transactions.get(&next_state_version).unwrap().clone(),
+                self.transaction_receipts
+                    .get(&next_state_version)
+                    .unwrap()
+                    .clone(),
+                self.transaction_identifiers
+                    .get(&next_state_version)
+                    .unwrap()
+                    .clone(),
+            ));
+        }
+        res
+    }
+
     fn get_committed_transaction(&self, state_version: u64) -> Option<LedgerTransaction> {
         Some(self.transactions.get(&state_version)?.clone())
     }

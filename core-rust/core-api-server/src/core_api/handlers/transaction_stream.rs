@@ -12,7 +12,7 @@ use state_manager::{
     CommittedTransactionIdentifiers, IntentHash, LedgerTransactionReceipt, SignaturesHash,
     UserPayloadHash,
 };
-use std::cmp;
+
 use std::collections::HashMap;
 use transaction::manifest;
 use transaction::model::{
@@ -56,86 +56,25 @@ fn handle_transaction_stream_internal(
         )));
     }
 
-    let state_version_at_limit: u64 = from_state_version
-        .checked_add(limit)
-        .and_then(|v| v.checked_sub(1))
-        .ok_or_else(|| client_error("start_state_version + limit - 1 out of u64 bounds"))?;
-
     let max_state_version = state_manager.store.max_state_version();
 
-    if max_state_version < from_state_version {
-        return Ok(models::CommittedTransactionsResponse {
-            from_state_version: to_api_state_version(from_state_version)?,
-            count: 0,
-            max_ledger_state_version: to_api_state_version(max_state_version)?,
-            transactions: vec![],
-        });
-    }
-
-    let up_to_state_version_inclusive = cmp::min(state_version_at_limit, max_state_version);
-
-    let mut txns = vec![];
-    let mut state_version = from_state_version;
-    while state_version <= up_to_state_version_inclusive {
-        let next_tx = state_manager
-            .store
-            .get_committed_transaction(state_version)
-            .ok_or_else(|| {
-                server_error(format!(
-                    "A transaction is missing at state version {}",
-                    state_version
-                ))
-            })?;
-
-        let next_txn_receipt = state_manager
-            .store
-            .get_committed_transaction_receipt(state_version)
-            .ok_or_else(|| {
-                server_error(format!(
-                    "A transaction receipt is missing at state version {}",
-                    state_version
-                ))
-            })?;
-
-        let next_txn_identifiers = state_manager
-            .store
-            .get_committed_transaction_identifiers(state_version)
-            .ok_or_else(|| {
-                server_error(format!(
-                    "Transaction identifiers are missing at state version {}",
-                    state_version
-                ))
-            })?;
-
-        txns.push((
-            (next_tx, next_txn_receipt, next_txn_identifiers),
-            state_version,
-        ));
-        state_version += 1;
-    }
+    let txns = state_manager.store.get_committed_transactions_bundles(
+        from_state_version,
+        limit.try_into().expect("limit out of usize bounds"),
+    );
 
     let network = state_manager.network.clone();
 
     let api_txns = txns
         .into_iter()
-        .map(
-            |((ledger_transaction, receipt, identifiers), state_version)| {
-                if identifiers.state_version != state_version {
-                    Err(server_error(format!(
-                        "Loaded state version {} doesn't match its stored state version {}",
-                        state_version, identifiers.state_version
-                    )))?
-                }
-                let api_tx = to_api_committed_transaction(
-                    &network,
-                    ledger_transaction,
-                    receipt,
-                    identifiers,
-                )?;
-
-                Ok(api_tx)
-            },
-        )
+        .map(|(ledger_transaction, receipt, identifiers)| {
+            Ok(to_api_committed_transaction(
+                &network,
+                ledger_transaction,
+                receipt,
+                identifiers,
+            )?)
+        })
         .collect::<Result<Vec<models::CommittedTransaction>, RequestHandlingError>>()?;
 
     let start_state_version = if api_txns.is_empty() {

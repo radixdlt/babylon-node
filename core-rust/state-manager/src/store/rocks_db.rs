@@ -195,12 +195,8 @@ pub struct RocksDBCommitTransaction<'db> {
 }
 
 impl<'db> RocksDBCommitTransaction<'db> {
-    fn insert_transaction(
-        &mut self,
-        transaction: LedgerTransaction,
-        receipt: LedgerTransactionReceipt,
-        identifiers: CommittedTransactionIdentifiers,
-    ) {
+    fn insert_transaction(&mut self, transaction_bundle: CommittedTransactionBundle) {
+        let (transaction, receipt, identifiers) = transaction_bundle;
         let state_version = identifiers.state_version;
 
         // TEMPORARY until this is handled in the engine: we store both an intent lookup and the transaction itself
@@ -299,21 +295,21 @@ impl<'db> ReadableSubstateStore for RocksDBCommitTransaction<'db> {
 impl<'db> WriteableTransactionStore for RocksDBCommitTransaction<'db> {
     fn insert_committed_transactions(
         &mut self,
-        transactions: Vec<(
-            LedgerTransaction,
-            LedgerTransactionReceipt,
-            CommittedTransactionIdentifiers,
-        )>,
+        committed_transaction_bundles: Vec<CommittedTransactionBundle>,
     ) {
-        let first_txn_state_version = transactions.get(0).unwrap().2.state_version;
+        let first_txn_state_version = committed_transaction_bundles
+            .get(0)
+            .unwrap()
+            .2
+            .state_version;
         let max_state_version_in_db = self.max_state_version();
         if first_txn_state_version != max_state_version_in_db + 1 {
             panic!("Attempted to commit a txn batch that starts with state version {} but the latest state version in DB is {}",
                 first_txn_state_version, max_state_version_in_db);
         }
 
-        for (txn, receipt, identifiers) in transactions {
-            self.insert_transaction(txn, receipt, identifiers);
+        for committed_txn_bundle in committed_transaction_bundles {
+            self.insert_transaction(committed_txn_bundle);
         }
     }
 }
@@ -384,6 +380,87 @@ impl ReadableSubstateStore for RocksDBStore {
 }
 
 impl QueryableTransactionStore for RocksDBStore {
+    fn get_committed_transactions_bundles(
+        &self,
+        start_state_version_inclusive: u64,
+        limit: usize,
+    ) -> Vec<CommittedTransactionBundle> {
+        let start_state_version_bytes = start_state_version_inclusive.to_be_bytes();
+        let mut txns_iter = self.db.iterator_cf(
+            self.cf_handle(&TxnByStateVersion),
+            IteratorMode::From(&start_state_version_bytes, Direction::Forward),
+        );
+
+        let mut receipts_iter = self.db.iterator_cf(
+            self.cf_handle(&TxnReceiptByStateVersion),
+            IteratorMode::From(&start_state_version_bytes, Direction::Forward),
+        );
+
+        let mut accumulator_hashes_iter = self.db.iterator_cf(
+            self.cf_handle(&TxnAccumulatorHashByStateVersion),
+            IteratorMode::From(&start_state_version_bytes, Direction::Forward),
+        );
+
+        let mut res = Vec::new();
+
+        while res.len() < limit {
+            match txns_iter.next() {
+                Some(next_txn_result) => {
+                    let next_txn_kv = next_txn_result.unwrap();
+
+                    let next_txn_state_version =
+                        u64::from_be_bytes((*next_txn_kv.0).try_into().unwrap());
+
+                    let expected_state_version = start_state_version_inclusive + res.len() as u64;
+                    if expected_state_version != next_txn_state_version {
+                        panic!(
+                            "DB inconsistency! Missing txn at state version {}",
+                            expected_state_version
+                        );
+                    }
+
+                    let next_receipt_kv =
+                        receipts_iter.next().expect("Missing txn receipt").unwrap();
+                    let next_accumulator_hash_kv = accumulator_hashes_iter
+                        .next()
+                        .expect("Missing txn accumulator hash")
+                        .unwrap();
+
+                    let next_receipt_state_version =
+                        u64::from_be_bytes((*next_receipt_kv.0).try_into().unwrap());
+                    let next_accumulator_hash_state_version =
+                        u64::from_be_bytes((*next_accumulator_hash_kv.0).try_into().unwrap());
+
+                    if next_receipt_state_version != next_txn_state_version {
+                        panic!("DB inconsistency! Receipt state version ({}) doesn't match txn state version ({})",
+                            next_receipt_state_version, next_txn_state_version);
+                    }
+
+                    if next_accumulator_hash_state_version != next_txn_state_version {
+                        panic!("DB inconsistency! Accumulator hash state version ({}) doesn't match txn state version ({})",
+                           next_accumulator_hash_state_version, next_txn_state_version);
+                    }
+
+                    let next_txn = scrypto_decode(next_txn_kv.1.as_ref()).unwrap();
+                    let next_receipt = scrypto_decode(next_receipt_kv.1.as_ref()).unwrap();
+                    let next_accumulator_hash = AccumulatorHash::from_raw_bytes(
+                        (*next_accumulator_hash_kv.1).try_into().unwrap(),
+                    );
+                    let next_identifiers = CommittedTransactionIdentifiers {
+                        state_version: next_txn_state_version,
+                        accumulator_hash: next_accumulator_hash,
+                    };
+                    res.push((next_txn, next_receipt, next_identifiers));
+                }
+                None => {
+                    break;
+                }
+            }
+        }
+
+        res
+    }
+
     fn get_committed_transaction(&self, state_version: u64) -> Option<LedgerTransaction> {
         self.db
             .get_cf(

@@ -62,11 +62,19 @@
  * permissions under this License.
  */
 
+use crate::transaction::LedgerTransaction;
+use crate::{CommittedTransactionIdentifiers, LedgerTransactionReceipt};
 pub use commit::*;
 pub use proofs::*;
 pub use substate::*;
 pub use transactions::*;
 pub use vertex::*;
+
+pub type CommittedTransactionBundle = (
+    LedgerTransaction,
+    LedgerTransactionReceipt,
+    CommittedTransactionIdentifiers,
+);
 
 pub mod vertex {
     pub trait RecoverableVertexStore {
@@ -85,21 +93,24 @@ pub mod substate {
 }
 
 pub mod transactions {
+    use crate::store::traits::CommittedTransactionBundle;
     use crate::transaction::LedgerTransaction;
     use crate::{CommittedTransactionIdentifiers, LedgerTransactionReceipt};
 
     pub trait WriteableTransactionStore {
         fn insert_committed_transactions(
             &mut self,
-            transactions: Vec<(
-                LedgerTransaction,
-                LedgerTransactionReceipt,
-                CommittedTransactionIdentifiers,
-            )>,
+            committed_transaction_bundles: Vec<CommittedTransactionBundle>,
         );
     }
 
     pub trait QueryableTransactionStore {
+        fn get_committed_transactions_bundles(
+            &self,
+            start_state_version_inclusive: u64,
+            limit: usize,
+        ) -> Vec<CommittedTransactionBundle>;
+
         fn get_committed_transaction(&self, state_version: u64) -> Option<LedgerTransaction>;
 
         fn get_committed_transaction_receipt(
