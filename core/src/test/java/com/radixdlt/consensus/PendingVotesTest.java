@@ -290,7 +290,8 @@ public class PendingVotesTest {
     return vote;
   }
 
-  private Vote makeVoteWithoutSignatureFor(BFTValidatorId author, Round parentRound, HashCode vertexId) {
+  private Vote makeVoteWithoutSignatureFor(
+      BFTValidatorId author, Round parentRound, HashCode vertexId) {
     Vote vote = mock(Vote.class);
     BFTHeader proposed = new BFTHeader(parentRound.next(), vertexId, mock(LedgerHeader.class));
     BFTHeader parent = new BFTHeader(parentRound, HashUtils.random256(), mock(LedgerHeader.class));

@@ -88,7 +88,7 @@ public final class NetworkDroppers {
     return new AbstractModule() {
       @ProvidesIntoSet
       Predicate<SimulationNetwork.MessageInTransit> dropper(
-              ImmutableList<BFTValidatorId> nodes, Random random) {
+          ImmutableList<BFTValidatorId> nodes, Random random) {
         return new FProposalsPerRoundDropper(nodes, random);
       }
     };

@@ -122,21 +122,29 @@ public final class EpochManager {
   private EventProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
   private BFTEventProcessor bftEventProcessor;
 
-  private Set<RemoteEventProcessor<NodeId, GetVerticesRequest>> syncRequestProcessors;
-  private Set<RemoteEventProcessor<NodeId, GetVerticesResponse>> syncResponseProcessors;
-  private Set<RemoteEventProcessor<NodeId, GetVerticesErrorResponse>> syncErrorResponseProcessors;
+  private Set<RemoteEventProcessor<BFTValidatorId, GetVerticesRequest>> syncRequestProcessors;
+  private Set<RemoteEventProcessor<BFTValidatorId, GetVerticesResponse>> syncResponseProcessors;
+  private Set<RemoteEventProcessor<BFTValidatorId, GetVerticesErrorResponse>>
+      syncErrorResponseProcessors;
 
   private Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors;
   private Set<EventProcessor<BFTRebuildUpdate>> bftRebuildProcessors;
 
-  private final RemoteEventDispatcher<BFTValidatorId, LedgerStatusUpdate> ledgerStatusUpdateDispatcher;
+  private final RemoteEventDispatcher<BFTValidatorId, LedgerStatusUpdate>
+      ledgerStatusUpdateDispatcher;
 
+  private final RemoteEventDispatcher<NodeId, GetVerticesRequest> requestSender;
+  private final RemoteEventDispatcher<NodeId, GetVerticesErrorResponse> errorResponseDispatcher;
+  private final RemoteEventDispatcher<NodeId, GetVerticesResponse> responseDispatcher;
   private final PersistentSafetyStateStore persistentSafetyStateStore;
 
   @Inject
   public EpochManager(
       @Self BFTValidatorId self,
       RemoteEventDispatcher<BFTValidatorId, LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
+      RemoteEventDispatcher<NodeId, GetVerticesRequest> requestSender,
+      RemoteEventDispatcher<NodeId, GetVerticesErrorResponse> errorResponseDispatcher,
+      RemoteEventDispatcher<NodeId, GetVerticesResponse> responseDispatcher,
       EpochChange lastEpochChange,
       PacemakerFactory pacemakerFactory,
       VertexStoreFactory vertexStoreFactory,
@@ -152,6 +160,9 @@ public final class EpochManager {
       SafetyState safetyState,
       PersistentSafetyStateStore persistentSafetyStateStore) {
     this.ledgerStatusUpdateDispatcher = requireNonNull(ledgerStatusUpdateDispatcher);
+    this.requestSender = requireNonNull(requestSender);
+    this.errorResponseDispatcher = requireNonNull(errorResponseDispatcher);
+    this.responseDispatcher = requireNonNull(responseDispatcher);
     this.lastEpochChange = requireNonNull(lastEpochChange);
     this.self = requireNonNull(self);
     this.pacemakerFactory = requireNonNull(pacemakerFactory);
@@ -222,7 +233,15 @@ public final class EpochManager {
             initialRoundUpdate,
             nextEpoch);
     final var bftSync =
-        bftSyncFactory.create(safetyRules, vertexStore, pacemakerState, bftConfiguration);
+        bftSyncFactory.create(
+            (v, m) -> {
+              var nodeId = NodeId.fromPublicKey(v.getKey());
+              requestSender.dispatch(nodeId, m);
+            },
+            safetyRules,
+            vertexStore,
+            pacemakerState,
+            bftConfiguration);
 
     this.syncLedgerUpdateProcessor = bftSync.baseLedgerUpdateEventProcessor();
     this.syncTimeoutProcessor = bftSync.vertexRequestTimeoutEventProcessor();
@@ -239,9 +258,40 @@ public final class EpochManager {
             safetyRules,
             nextEpoch);
 
-    this.syncResponseProcessors = Set.of(bftSync.responseProcessor());
-    this.syncErrorResponseProcessors = Set.of(bftSync.errorResponseProcessor());
-    this.syncRequestProcessors = Set.of(bftSyncRequestProcessorFactory.create(vertexStore));
+    this.syncResponseProcessors =
+        Set.of(
+            (n, m) -> {
+              // TODO: Cleanup
+              var validator =
+                  bftConfiguration.getValidatorSet().getValidators().stream()
+                      .map(BFTValidator::getNode)
+                      .filter(v -> v.equals(n))
+                      .findFirst();
+              validator.ifPresent(id -> bftSync.responseProcessor().process(id, m));
+            });
+    this.syncErrorResponseProcessors =
+        Set.of(
+            (n, m) -> {
+              // TODO: Cleanup
+              var validator =
+                  bftConfiguration.getValidatorSet().getValidators().stream()
+                      .map(BFTValidator::getNode)
+                      .filter(v -> v.equals(n))
+                      .findFirst();
+              validator.ifPresent(id -> bftSync.errorResponseProcessor().process(id, m));
+            });
+    this.syncRequestProcessors =
+        Set.of(
+            bftSyncRequestProcessorFactory.create(
+                vertexStore,
+                (n, m) -> {
+                  var nodeId = NodeId.fromPublicKey(n.getKey());
+                  errorResponseDispatcher.dispatch(nodeId, m);
+                },
+                (n, m) -> {
+                  var nodeId = NodeId.fromPublicKey(n.getKey());
+                  responseDispatcher.dispatch(nodeId, m);
+                }));
     this.bftRebuildProcessors = Set.of(bftEventProcessor::processBFTRebuildUpdate);
     this.bftUpdateProcessors = Set.of(bftEventProcessor::processBFTUpdate);
   }
@@ -400,11 +450,38 @@ public final class EpochManager {
   }
 
   public RemoteEventProcessor<NodeId, GetVerticesRequest> bftSyncRequestProcessor() {
-    return (node, request) -> syncRequestProcessors.forEach(p -> p.process(node, request));
+    return (node, request) -> {
+      var validator =
+          this.lastEpochChange.getBFTConfiguration().getValidatorSet().getValidators().stream()
+              .map(BFTValidator::getNode)
+              .filter(v -> v.getKey().equals(node.getPublicKey()))
+              .findFirst();
+
+      validator.ifPresent(
+          id -> {
+            syncRequestProcessors.forEach(
+                p -> {
+                  p.process(id, request);
+                });
+          });
+    };
   }
 
   public RemoteEventProcessor<NodeId, GetVerticesResponse> bftSyncResponseProcessor() {
-    return (node, resp) -> syncResponseProcessors.forEach(p -> p.process(node, resp));
+    return (node, resp) -> {
+      var validator =
+          this.lastEpochChange.getBFTConfiguration().getValidatorSet().getValidators().stream()
+              .map(BFTValidator::getNode)
+              .filter(v -> v.getKey().equals(node.getPublicKey()))
+              .findFirst();
+      validator.ifPresent(
+          id -> {
+            syncResponseProcessors.forEach(
+                p -> {
+                  p.process(id, resp);
+                });
+          });
+    };
   }
 
   public RemoteEventProcessor<NodeId, GetVerticesErrorResponse> bftSyncErrorResponseProcessor() {
@@ -433,7 +510,18 @@ public final class EpochManager {
         }
       } else {
         // Current epoch
-        syncErrorResponseProcessors.forEach(p -> p.process(node, err));
+        var validator =
+            this.lastEpochChange.getBFTConfiguration().getValidatorSet().getValidators().stream()
+                .map(BFTValidator::getNode)
+                .filter(v -> v.getKey().equals(node.getPublicKey()))
+                .findFirst();
+        validator.ifPresent(
+            id -> {
+              syncErrorResponseProcessors.forEach(
+                  p -> {
+                    p.process(id, err);
+                  });
+            });
       }
     };
   }

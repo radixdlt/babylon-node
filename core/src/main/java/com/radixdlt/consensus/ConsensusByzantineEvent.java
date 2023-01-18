@@ -67,14 +67,13 @@ package com.radixdlt.consensus;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.ledger.RoundDetails;
-import com.radixdlt.p2p.NodeId;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 
 public sealed interface ConsensusByzantineEvent {
 
-  record ConflictingGenesis(QuorumCertificate qc, NodeId author)
+  record ConflictingGenesis(QuorumCertificate qc, BFTValidatorId author)
       implements ConsensusByzantineEvent {
-    public NodeId getAuthor() {
+    public BFTValidatorId getAuthor() {
       return author;
     }
   }

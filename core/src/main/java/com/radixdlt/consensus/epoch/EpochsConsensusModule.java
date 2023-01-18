@@ -350,17 +350,14 @@ public class EpochsConsensusModule extends AbstractModule {
 
   @Provides
   private BFTSyncRequestProcessorFactory vertexStoreSyncVerticesRequestProcessorFactory(
-      RemoteEventDispatcher<NodeId, GetVerticesErrorResponse> errorResponseDispatcher,
-      RemoteEventDispatcher<NodeId, GetVerticesResponse> responseDispatcher,
       Metrics metrics) {
-    return vertexStore ->
+    return (vertexStore, errorResponseDispatcher, responseDispatcher) ->
         new VertexStoreBFTSyncRequestProcessor(
             vertexStore, errorResponseDispatcher, responseDispatcher, metrics);
   }
 
   @Provides
   private BFTSyncFactory bftSyncFactory(
-      RemoteEventDispatcher<NodeId, GetVerticesRequest> requestSender,
       @Self BFTValidatorId self,
       @GetVerticesRequestRateLimit RateLimiter syncRequestRateLimiter,
       EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
@@ -370,7 +367,7 @@ public class EpochsConsensusModule extends AbstractModule {
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
       Metrics metrics,
       Hasher hasher) {
-    return (safetyRules, vertexStore, pacemakerState, configuration) ->
+    return (requestSender, safetyRules, vertexStore, pacemakerState, configuration) ->
         new BFTSync(
             self,
             syncRequestRateLimiter,

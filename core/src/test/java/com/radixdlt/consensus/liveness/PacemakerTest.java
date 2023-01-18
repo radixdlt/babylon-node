@@ -96,7 +96,8 @@ public class PacemakerTest {
   private SafetyRules safetyRules = mock(SafetyRules.class);
   private PacemakerTimeoutCalculator timeoutCalculator = mock(PacemakerTimeoutCalculator.class);
   private ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
-  private RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
+  private RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher =
+      rmock(RemoteEventDispatcher.class);
   private EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher =
       rmock(EventDispatcher.class);
   private RemoteEventDispatcher<BFTValidatorId, Proposal> proposalDispatcher =
@@ -116,7 +117,8 @@ public class PacemakerTest {
     when(highQC.highestCommittedQC()).thenReturn(committedQc);
 
     RoundUpdate initialRoundUpdate =
-        RoundUpdate.create(Round.of(0), highQC, mock(BFTValidatorId.class), mock(BFTValidatorId.class));
+        RoundUpdate.create(
+            Round.of(0), highQC, mock(BFTValidatorId.class), mock(BFTValidatorId.class));
 
     this.pacemaker =
         new Pacemaker(
@@ -150,7 +152,10 @@ public class PacemakerTest {
 
     RoundUpdate roundUpdate =
         RoundUpdate.create(
-            Round.of(0), mock(HighQC.class), mock(BFTValidatorId.class), mock(BFTValidatorId.class));
+            Round.of(0),
+            mock(HighQC.class),
+            mock(BFTValidatorId.class),
+            mock(BFTValidatorId.class));
     this.pacemaker.processLocalTimeout(ScheduledLocalTimeout.create(roundUpdate, 0L));
 
     verify(this.voteDispatcher, times(1)).dispatch(eq(validators), eq(lastVoteWithTimeout));
@@ -207,7 +212,8 @@ public class PacemakerTest {
 
     this.pacemaker.processLocalTimeout(
         ScheduledLocalTimeout.create(
-            RoundUpdate.create(Round.of(1), mock(HighQC.class), leader, BFTValidatorId.random()), 0L));
+            RoundUpdate.create(Round.of(1), mock(HighQC.class), leader, BFTValidatorId.random()),
+            0L));
 
     this.pacemaker.processBFTUpdate(bftInsertUpdate);
 

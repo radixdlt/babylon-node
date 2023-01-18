@@ -97,7 +97,6 @@ public final class ConsensusModule extends AbstractModule {
     bind(PacemakerReducer.class).to(PacemakerState.class);
     bind(ExponentialPacemakerTimeoutCalculator.class).in(Scopes.SINGLETON);
     bind(PacemakerTimeoutCalculator.class).to(ExponentialPacemakerTimeoutCalculator.class);
-    bind(VertexStoreBFTSyncRequestProcessor.class).in(Scopes.SINGLETON);
 
     var eventBinder =
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
@@ -107,6 +106,26 @@ public final class ConsensusModule extends AbstractModule {
     eventBinder.addBinding().toInstance(BFTInsertUpdate.class);
     eventBinder.addBinding().toInstance(Proposal.class);
     eventBinder.addBinding().toInstance(Vote.class);
+  }
+
+  @Provides
+  @Singleton
+  public VertexStoreBFTSyncRequestProcessor syncRequestProcessor(
+      VertexStoreAdapter vertexStore,
+      RemoteEventDispatcher<NodeId, GetVerticesErrorResponse> errorResponseDispatcher,
+      RemoteEventDispatcher<NodeId, GetVerticesResponse> responseDispatcher,
+      Metrics metrics) {
+    return new VertexStoreBFTSyncRequestProcessor(
+        vertexStore,
+        (n, m) -> {
+          var nodeId = NodeId.fromPublicKey(n.getKey());
+          errorResponseDispatcher.dispatch(nodeId, m);
+        },
+        (n, m) -> {
+          var nodeId = NodeId.fromPublicKey(n.getKey());
+          responseDispatcher.dispatch(nodeId, m);
+        },
+        metrics);
   }
 
   @Provides
@@ -221,7 +240,10 @@ public final class ConsensusModule extends AbstractModule {
         safetyRules,
         pacemakerReducer,
         Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
-        requestSender,
+        (n, m) -> {
+          var nodeId = NodeId.fromPublicKey(n.getKey());
+          requestSender.dispatch(nodeId, m);
+        },
         syncLedgerRequestSender,
         timeoutDispatcher,
         unexpectedEventEventDispatcher,

@@ -113,7 +113,10 @@ public final class DeterministicNodes implements AutoCloseable {
   private final DeterministicNetwork network;
 
   public DeterministicNodes(
-          List<BFTValidatorId> nodes, DeterministicNetwork network, Module baseModule, Module overrideModule) {
+      List<BFTValidatorId> nodes,
+      DeterministicNetwork network,
+      Module baseModule,
+      Module overrideModule) {
     this.baseModule = baseModule;
     this.overrideModule = overrideModule;
     this.network = network;

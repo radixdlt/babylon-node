@@ -247,7 +247,7 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
   }
 
   private boolean verifyHashSignature(
-          BFTValidatorId author, HashCode hash, ECDSASecp256k1Signature signature, Object what) {
+      BFTValidatorId author, HashCode hash, ECDSASecp256k1Signature signature, Object what) {
     boolean verified = this.verifier.verify(author.getKey(), hash, signature);
     if (!verified) {
       log.info("Ignoring invalid signature from {} for {}", author, what);
@@ -256,7 +256,7 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
   }
 
   private boolean verifyObjectSignature(
-          BFTValidatorId author, Object hashable, ECDSASecp256k1Signature signature, Object what) {
+      BFTValidatorId author, Object hashable, ECDSASecp256k1Signature signature, Object what) {
     return verifyHashSignature(author, this.hasher.hashDsonEncoded(hashable), signature, what);
   }
 }

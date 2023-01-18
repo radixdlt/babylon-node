@@ -128,7 +128,8 @@ public final class ValidationState {
    * @param signature The signature to verify
    * @return whether the key was added or not
    */
-  public boolean addSignature(BFTValidatorId node, long timestamp, ECDSASecp256k1Signature signature) {
+  public boolean addSignature(
+      BFTValidatorId node, long timestamp, ECDSASecp256k1Signature signature) {
     if (validatorSet.containsNode(node) && !this.signedNodes.containsKey(node)) {
       this.signedNodes.computeIfAbsent(
           node,

@@ -93,7 +93,8 @@ public final class RemoteSyncResponseSignaturesVerifier {
     var opaque = endHeader.getOpaque();
     var header = endHeader.getLedgerHeader();
     var signatures = endHeader.getSignatures().getSignatures();
-    for (Entry<BFTValidatorId, TimestampedECDSASignature> nodeAndSignature : signatures.entrySet()) {
+    for (Entry<BFTValidatorId, TimestampedECDSASignature> nodeAndSignature :
+        signatures.entrySet()) {
       var node = nodeAndSignature.getKey();
       var signature = nodeAndSignature.getValue();
       final var voteDataHash =

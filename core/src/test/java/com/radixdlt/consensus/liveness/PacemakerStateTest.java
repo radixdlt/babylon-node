@@ -88,7 +88,8 @@ public class PacemakerStateTest {
   public void setUp() {
     when(proposerElection.getProposer(any())).thenReturn(BFTValidatorId.random());
     RoundUpdate roundUpdate =
-        RoundUpdate.create(Round.genesis(), mock(HighQC.class), BFTValidatorId.random(), BFTValidatorId.random());
+        RoundUpdate.create(
+            Round.genesis(), mock(HighQC.class), BFTValidatorId.random(), BFTValidatorId.random());
     this.pacemakerState =
         new PacemakerState(roundUpdate, this.proposerElection, this.roundUpdateSender);
   }

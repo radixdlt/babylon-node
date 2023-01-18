@@ -162,7 +162,7 @@ public final class EventLoggerModule extends AbstractModule {
   @Singleton
   @SuppressWarnings("UnstableApiUsage")
   EventProcessorOnDispatch<?> ledgerUpdate(
-          @Self BFTValidatorId self, Function<ECDSASecp256k1PublicKey, String> nodeString) {
+      @Self BFTValidatorId self, Function<ECDSASecp256k1PublicKey, String> nodeString) {
     final var logLimiter = RateLimiter.create(1.0);
     return new EventProcessorOnDispatch<>(
         LedgerUpdate.class,
@@ -246,7 +246,7 @@ public final class EventLoggerModule extends AbstractModule {
   }
 
   private static void logValidatorEvents(
-          BFTValidatorId self, Function<ECDSASecp256k1PublicKey, String> nodeString, REEvent e) {
+      BFTValidatorId self, Function<ECDSASecp256k1PublicKey, String> nodeString, REEvent e) {
     if (e instanceof ValidatorBFTDataEvent event) {
       var level = event.missedProposals() > 0 ? WARN : INFO;
 

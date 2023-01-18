@@ -76,7 +76,8 @@ public final class RoundUpdate {
   private final BFTValidatorId leader;
   private final BFTValidatorId nextLeader;
 
-  private RoundUpdate(Round currentRound, HighQC highQC, BFTValidatorId leader, BFTValidatorId nextLeader) {
+  private RoundUpdate(
+      Round currentRound, HighQC highQC, BFTValidatorId leader, BFTValidatorId nextLeader) {
     this.currentRound = currentRound;
     this.highQC = highQC;
     this.leader = leader;
@@ -84,7 +85,7 @@ public final class RoundUpdate {
   }
 
   public static RoundUpdate create(
-          Round currentRound, HighQC highQC, BFTValidatorId leader, BFTValidatorId nextLeader) {
+      Round currentRound, HighQC highQC, BFTValidatorId leader, BFTValidatorId nextLeader) {
     Objects.requireNonNull(currentRound);
     Objects.requireNonNull(highQC);
     Objects.requireNonNull(leader);

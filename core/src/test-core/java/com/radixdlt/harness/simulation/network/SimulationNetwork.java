@@ -223,7 +223,8 @@ public class SimulationNetwork {
                   messageTransportType.getNodeIdType(), messageTransportType.getMessageType()));
     }
 
-    public <T> RemoteEventDispatcher<BFTValidatorId, T> bftRemoteEventDispatcher(Class<T> eventClass) {
+    public <T> RemoteEventDispatcher<BFTValidatorId, T> bftRemoteEventDispatcher(
+        Class<T> eventClass) {
       return (n, m) -> this.sendRemoteEvent(NodeId.fromPublicKey(n.getKey()), m);
     }
 

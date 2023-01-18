@@ -95,7 +95,10 @@ public final class BFTEventStatefulVerifierTest {
     this.bftEventStatefulVerifier.processLocalTimeout(
         ScheduledLocalTimeout.create(
             RoundUpdate.create(
-                Round.of(1), mock(HighQC.class), mock(BFTValidatorId.class), mock(BFTValidatorId.class)),
+                Round.of(1),
+                mock(HighQC.class),
+                mock(BFTValidatorId.class),
+                mock(BFTValidatorId.class)),
             0L));
     verifyNoMoreInteractions(this.forwardTo);
   }

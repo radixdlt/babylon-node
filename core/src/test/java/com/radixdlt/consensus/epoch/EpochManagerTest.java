@@ -130,7 +130,8 @@ public class EpochManagerTest {
   private EventDispatcher<LocalSyncRequest> syncLedgerRequestSender = rmock(EventDispatcher.class);
   private RemoteEventDispatcher<BFTValidatorId, Proposal> proposalDispatcher =
       rmock(RemoteEventDispatcher.class);
-  private RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
+  private RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher =
+      rmock(RemoteEventDispatcher.class);
   private Mempool mempool = mock(Mempool.class);
   private StateComputer stateComputer =
       new StateComputer() {
@@ -210,7 +211,8 @@ public class EpochManagerTest {
             .toInstance(rmock(ScheduledEventDispatcher.class));
         bind(new TypeLiteral<RemoteEventDispatcher<BFTValidatorId, Proposal>>() {})
             .toInstance(proposalDispatcher);
-        bind(new TypeLiteral<RemoteEventDispatcher<BFTValidatorId, Vote>>() {}).toInstance(voteDispatcher);
+        bind(new TypeLiteral<RemoteEventDispatcher<BFTValidatorId, Vote>>() {})
+            .toInstance(voteDispatcher);
         bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesRequest>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
         bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesResponse>>() {})
@@ -266,7 +268,7 @@ public class EpochManagerTest {
 
       @Provides
       BFTConfiguration bftConfiguration(
-              @Self BFTValidatorId self, Hasher hasher, BFTValidatorSet validatorSet) {
+          @Self BFTValidatorId self, Hasher hasher, BFTValidatorSet validatorSet) {
         var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
         var vertex =
             Vertex.createInitialEpochVertex(

@@ -299,7 +299,8 @@ public class DispatcherModule extends AbstractModule {
         .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, LedgerStatusUpdate.class))
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<RemoteEventDispatcher<BFTValidatorId, LedgerStatusUpdate>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(BFTValidatorId.class, LedgerStatusUpdate.class))
+        .toProvider(
+            Dispatchers.remoteDispatcherProvider(BFTValidatorId.class, LedgerStatusUpdate.class))
         .in(Scopes.SINGLETON);
   }
 

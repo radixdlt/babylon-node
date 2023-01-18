@@ -83,7 +83,8 @@ public final class MockedKeyModule extends AbstractModule {
   }
 
   @Provides
-  private HashSigner hashSigner(@Self BFTValidatorId node, Metrics metrics, HashFunction hashFunction) {
+  private HashSigner hashSigner(
+      @Self BFTValidatorId node, Metrics metrics, HashFunction hashFunction) {
     return h -> {
       var concat = new byte[64];
       System.arraycopy(h, 0, concat, 0, 32);

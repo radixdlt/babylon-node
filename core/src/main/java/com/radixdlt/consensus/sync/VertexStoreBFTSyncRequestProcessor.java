@@ -64,30 +64,29 @@
 
 package com.radixdlt.consensus.sync;
 
-import com.google.inject.Inject;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.VertexStoreAdapter;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.p2p.NodeId;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /** Processor of sync requests and responds with info from a VertexStore */
 public final class VertexStoreBFTSyncRequestProcessor
-    implements RemoteEventProcessor<NodeId, GetVerticesRequest> {
+    implements RemoteEventProcessor<BFTValidatorId, GetVerticesRequest> {
   private static final Logger log = LogManager.getLogger();
   private final VertexStoreAdapter vertexStore;
-  private final RemoteEventDispatcher<NodeId, GetVerticesErrorResponse> errorResponseDispatcher;
-  private final RemoteEventDispatcher<NodeId, GetVerticesResponse> responseDispatcher;
+  private final RemoteEventDispatcher<BFTValidatorId, GetVerticesErrorResponse>
+      errorResponseDispatcher;
+  private final RemoteEventDispatcher<BFTValidatorId, GetVerticesResponse> responseDispatcher;
   private final Metrics metrics;
 
-  @Inject
   public VertexStoreBFTSyncRequestProcessor(
       VertexStoreAdapter vertexStore,
-      RemoteEventDispatcher<NodeId, GetVerticesErrorResponse> errorResponseDispatcher,
-      RemoteEventDispatcher<NodeId, GetVerticesResponse> responseDispatcher,
+      RemoteEventDispatcher<BFTValidatorId, GetVerticesErrorResponse> errorResponseDispatcher,
+      RemoteEventDispatcher<BFTValidatorId, GetVerticesResponse> responseDispatcher,
       Metrics metrics) {
     this.vertexStore = Objects.requireNonNull(vertexStore);
     this.errorResponseDispatcher = Objects.requireNonNull(errorResponseDispatcher);
@@ -96,7 +95,7 @@ public final class VertexStoreBFTSyncRequestProcessor
   }
 
   @Override
-  public void process(NodeId sender, GetVerticesRequest request) {
+  public void process(BFTValidatorId sender, GetVerticesRequest request) {
     // TODO: Handle nodes trying to DDOS this endpoint
     metrics.bft().sync().requestsReceived().inc();
 
