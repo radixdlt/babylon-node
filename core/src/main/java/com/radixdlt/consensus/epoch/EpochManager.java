@@ -130,8 +130,7 @@ public final class EpochManager {
   private Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors;
   private Set<EventProcessor<BFTRebuildUpdate>> bftRebuildProcessors;
 
-  private final RemoteEventDispatcher<BFTValidatorId, LedgerStatusUpdate>
-      ledgerStatusUpdateDispatcher;
+  private final RemoteEventDispatcher<NodeId, LedgerStatusUpdate> ledgerStatusUpdateDispatcher;
 
   private final RemoteEventDispatcher<NodeId, GetVerticesRequest> requestSender;
   private final RemoteEventDispatcher<NodeId, GetVerticesErrorResponse> errorResponseDispatcher;
@@ -141,7 +140,7 @@ public final class EpochManager {
   @Inject
   public EpochManager(
       @Self BFTValidatorId self,
-      RemoteEventDispatcher<BFTValidatorId, LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
+      RemoteEventDispatcher<NodeId, LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
       RemoteEventDispatcher<NodeId, GetVerticesRequest> requestSender,
       RemoteEventDispatcher<NodeId, GetVerticesErrorResponse> errorResponseDispatcher,
       RemoteEventDispatcher<NodeId, GetVerticesResponse> responseDispatcher,
@@ -336,7 +335,8 @@ public final class EpochManager {
       final var ledgerStatusUpdate = LedgerStatusUpdate.create(epochChange.getGenesisHeader());
       for (var validator : currentAndNextValidators) {
         if (!validator.getNode().equals(self)) {
-          this.ledgerStatusUpdateDispatcher.dispatch(validator.getNode(), ledgerStatusUpdate);
+          var nodeId = NodeId.fromPublicKey(validator.getNode().getKey());
+          this.ledgerStatusUpdateDispatcher.dispatch(nodeId, ledgerStatusUpdate);
         }
       }
     }
@@ -456,14 +456,7 @@ public final class EpochManager {
               .map(BFTValidator::getNode)
               .filter(v -> v.getKey().equals(node.getPublicKey()))
               .findFirst();
-
-      validator.ifPresent(
-          id -> {
-            syncRequestProcessors.forEach(
-                p -> {
-                  p.process(id, request);
-                });
-          });
+      validator.ifPresent(id -> syncRequestProcessors.forEach(p -> p.process(id, request)));
     };
   }
 
@@ -474,13 +467,7 @@ public final class EpochManager {
               .map(BFTValidator::getNode)
               .filter(v -> v.getKey().equals(node.getPublicKey()))
               .findFirst();
-      validator.ifPresent(
-          id -> {
-            syncResponseProcessors.forEach(
-                p -> {
-                  p.process(id, resp);
-                });
-          });
+      validator.ifPresent(id -> syncResponseProcessors.forEach(p -> p.process(id, resp)));
     };
   }
 

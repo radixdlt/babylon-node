@@ -128,9 +128,9 @@ public class EpochManagerTest {
   private ScheduledEventDispatcher<GetVerticesRequest> timeoutScheduler =
       rmock(ScheduledEventDispatcher.class);
   private EventDispatcher<LocalSyncRequest> syncLedgerRequestSender = rmock(EventDispatcher.class);
-  private RemoteEventDispatcher<BFTValidatorId, Proposal> proposalDispatcher =
+  private RemoteEventDispatcher<NodeId, Proposal> proposalDispatcher =
       rmock(RemoteEventDispatcher.class);
-  private RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher =
+  private RemoteEventDispatcher<NodeId, Vote> voteDispatcher =
       rmock(RemoteEventDispatcher.class);
   private Mempool mempool = mock(Mempool.class);
   private StateComputer stateComputer =
@@ -209,9 +209,9 @@ public class EpochManagerTest {
             .toInstance(rmock(ScheduledEventDispatcher.class));
         bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() {})
             .toInstance(rmock(ScheduledEventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<BFTValidatorId, Proposal>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, Proposal>>() {})
             .toInstance(proposalDispatcher);
-        bind(new TypeLiteral<RemoteEventDispatcher<BFTValidatorId, Vote>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, Vote>>() {})
             .toInstance(voteDispatcher);
         bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesRequest>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
@@ -219,7 +219,7 @@ public class EpochManagerTest {
             .toInstance(rmock(RemoteEventDispatcher.class));
         bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesErrorResponse>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<BFTValidatorId, LedgerStatusUpdate>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, LedgerStatusUpdate>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
 
         bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
@@ -338,6 +338,6 @@ public class EpochManagerTest {
     // Assert
     verify(proposalDispatcher, never())
         .dispatch(any(Iterable.class), argThat(p -> p.getEpoch() == epochChange.getNextEpoch()));
-    verify(voteDispatcher, never()).dispatch(any(BFTValidatorId.class), any());
+    verify(voteDispatcher, never()).dispatch(any(NodeId.class), any());
   }
 }

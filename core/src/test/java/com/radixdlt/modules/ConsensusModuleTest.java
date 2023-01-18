@@ -175,9 +175,9 @@ public class ConsensusModuleTest {
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<RoundLeaderFailure>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<BFTValidatorId, Vote>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, Vote>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<BFTValidatorId, Proposal>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, Proposal>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
         bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesRequest>>() {})
             .toInstance(requestSender);

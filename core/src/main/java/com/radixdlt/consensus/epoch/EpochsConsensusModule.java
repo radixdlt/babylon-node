@@ -273,8 +273,8 @@ public class EpochsConsensusModule extends AbstractModule {
       Hasher hasher,
       EventDispatcher<EpochLocalTimeoutOccurrence> timeoutEventDispatcher,
       ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>> localTimeoutSender,
-      RemoteEventDispatcher<BFTValidatorId, Proposal> proposalDispatcher,
-      RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher,
+      RemoteEventDispatcher<NodeId, Proposal> proposalDispatcher,
+      RemoteEventDispatcher<NodeId, Vote> voteDispatcher,
       EventDispatcher<EpochRoundLeaderFailure> roundLeaderFailureEventDispatcher,
       TimeSupplier timeSupplier) {
     return (validatorSet, vertexStore, timeoutCalculator, safetyRules, initialRoundUpdate, epoch) ->
@@ -289,8 +289,14 @@ public class EpochsConsensusModule extends AbstractModule {
                 localTimeoutSender.dispatch(Epoched.from(epoch, scheduledTimeout), ms),
             timeoutCalculator,
             proposalGenerator,
-            proposalDispatcher,
-            voteDispatcher,
+            (n, m) -> {
+              var nodeId = NodeId.fromPublicKey(n.getKey());
+              proposalDispatcher.dispatch(nodeId, m);
+            },
+            (n, m) -> {
+              var nodeId = NodeId.fromPublicKey(n.getKey());
+              voteDispatcher.dispatch(nodeId, m);
+            },
             roundLeaderFailure ->
                 roundLeaderFailureEventDispatcher.dispatch(
                     new EpochRoundLeaderFailure(epoch, roundLeaderFailure)),
@@ -309,7 +315,7 @@ public class EpochsConsensusModule extends AbstractModule {
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteEventDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
-      RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher,
+      RemoteEventDispatcher<NodeId, Vote> voteDispatcher,
       EventDispatcher<EpochRoundLeaderFailure> roundLeaderFailureEventDispatcher) {
     return (self,
         pacemaker,
@@ -324,7 +330,11 @@ public class EpochsConsensusModule extends AbstractModule {
             .self(self)
             .hasher(hasher)
             .verifier(verifier)
-            .voteDispatcher(voteDispatcher)
+            .voteDispatcher(
+                (n, v) -> {
+                  var nodeId = NodeId.fromPublicKey(n.getKey());
+                  voteDispatcher.dispatch(nodeId, v);
+                })
             .roundLeaderFailureEventDispatcher(
                 roundLeaderFailure ->
                     roundLeaderFailureEventDispatcher.dispatch(

@@ -150,14 +150,18 @@ public final class ConsensusModule extends AbstractModule {
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteEventDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
-      RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher,
+      RemoteEventDispatcher<NodeId, Vote> voteDispatcher,
       EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher,
       RoundUpdate roundUpdate) {
     return BFTBuilder.create()
         .self(self)
         .hasher(hasher)
         .verifier(verifier)
-        .voteDispatcher(voteDispatcher)
+        .voteDispatcher(
+            (n, m) -> {
+              var nodeId = NodeId.fromPublicKey(n.getKey());
+              voteDispatcher.dispatch(nodeId, m);
+            })
         .roundLeaderFailureEventDispatcher(roundLeaderFailureEventDispatcher)
         .safetyRules(safetyRules)
         .pacemaker(pacemaker)
@@ -190,8 +194,8 @@ public final class ConsensusModule extends AbstractModule {
       PacemakerTimeoutCalculator timeoutCalculator,
       ProposalGenerator proposalGenerator,
       Hasher hasher,
-      RemoteEventDispatcher<BFTValidatorId, Proposal> proposalDispatcher,
-      RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher,
+      RemoteEventDispatcher<NodeId, Proposal> proposalDispatcher,
+      RemoteEventDispatcher<NodeId, Vote> voteDispatcher,
       EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher,
       TimeSupplier timeSupplier,
       RoundUpdate initialRoundUpdate,
@@ -206,8 +210,14 @@ public final class ConsensusModule extends AbstractModule {
         timeoutSender,
         timeoutCalculator,
         proposalGenerator,
-        proposalDispatcher,
-        voteDispatcher,
+        (n, m) -> {
+          var nodeId = NodeId.fromPublicKey(n.getKey());
+          proposalDispatcher.dispatch(nodeId, m);
+        },
+        (n, m) -> {
+          var nodeId = NodeId.fromPublicKey(n.getKey());
+          voteDispatcher.dispatch(nodeId, m);
+        },
         roundLeaderFailureEventDispatcher,
         hasher,
         timeSupplier,
