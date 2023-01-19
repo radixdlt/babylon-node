@@ -13,6 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ParsedLedgerTransaction {
+    #[serde(rename = "type")]
+    pub _type: crate::core_api::generated::models::ParsedTransactionType,
     #[serde(rename = "ledger_transaction", skip_serializing_if = "Option::is_none")]
     pub ledger_transaction: Option<Box<crate::core_api::generated::models::LedgerTransaction>>,
     #[serde(rename = "identifiers")]
@@ -20,8 +22,9 @@ pub struct ParsedLedgerTransaction {
 }
 
 impl ParsedLedgerTransaction {
-    pub fn new(identifiers: crate::core_api::generated::models::ParsedLedgerTransactionAllOfIdentifiers) -> ParsedLedgerTransaction {
+    pub fn new(_type: crate::core_api::generated::models::ParsedTransactionType, identifiers: crate::core_api::generated::models::ParsedLedgerTransactionAllOfIdentifiers) -> ParsedLedgerTransaction {
         ParsedLedgerTransaction {
+            _type,
             ledger_transaction: None,
             identifiers: Box::new(identifiers),
         }

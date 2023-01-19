@@ -13,13 +13,16 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ParsedTransactionManifest {
+    #[serde(rename = "type")]
+    pub _type: crate::core_api::generated::models::ParsedTransactionType,
     #[serde(rename = "manifest", skip_serializing_if = "Option::is_none")]
     pub manifest: Option<Box<crate::core_api::generated::models::TransactionManifest>>,
 }
 
 impl ParsedTransactionManifest {
-    pub fn new() -> ParsedTransactionManifest {
+    pub fn new(_type: crate::core_api::generated::models::ParsedTransactionType) -> ParsedTransactionManifest {
         ParsedTransactionManifest {
+            _type,
             manifest: None,
         }
     }

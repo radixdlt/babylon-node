@@ -13,6 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ParsedNotarizedTransaction {
+    #[serde(rename = "type")]
+    pub _type: crate::core_api::generated::models::ParsedTransactionType,
     #[serde(rename = "notarized_transaction", skip_serializing_if = "Option::is_none")]
     pub notarized_transaction: Option<Box<crate::core_api::generated::models::NotarizedTransaction>>,
     #[serde(rename = "identifiers")]
@@ -22,8 +24,9 @@ pub struct ParsedNotarizedTransaction {
 }
 
 impl ParsedNotarizedTransaction {
-    pub fn new(identifiers: crate::core_api::generated::models::ParsedNotarizedTransactionAllOfIdentifiers) -> ParsedNotarizedTransaction {
+    pub fn new(_type: crate::core_api::generated::models::ParsedTransactionType, identifiers: crate::core_api::generated::models::ParsedNotarizedTransactionAllOfIdentifiers) -> ParsedNotarizedTransaction {
         ParsedNotarizedTransaction {
+            _type,
             notarized_transaction: None,
             identifiers: Box::new(identifiers),
             validation_error: None,
