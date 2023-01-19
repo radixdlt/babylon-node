@@ -70,7 +70,6 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
@@ -109,22 +108,13 @@ public class NodeNetworkMessagesModule extends AbstractModule {
   private RxRemoteDispatcher<?, ?> proposalDispatcher(
       SimulationNetwork.SimulatedNetworkImpl network) {
     return RxRemoteDispatcher.create(
-        BFTValidatorId.class, Proposal.class, network.bftRemoteEventDispatcher(Proposal.class));
+        NodeId.class, Proposal.class, network.remoteEventDispatcher(Proposal.class));
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?, ?> voteDispatcher(SimulationNetwork.SimulatedNetworkImpl network) {
     return RxRemoteDispatcher.create(
-        BFTValidatorId.class, Vote.class, network.bftRemoteEventDispatcher(Vote.class));
-  }
-
-  @ProvidesIntoSet
-  private RxRemoteDispatcher<?, ?> bftLedgerStatusUpdateDispatcher(
-      SimulationNetwork.SimulatedNetworkImpl network) {
-    return RxRemoteDispatcher.create(
-        BFTValidatorId.class,
-        LedgerStatusUpdate.class,
-        network.bftRemoteEventDispatcher(LedgerStatusUpdate.class));
+        NodeId.class, Vote.class, network.remoteEventDispatcher(Vote.class));
   }
 
   @ProvidesIntoSet

@@ -137,13 +137,12 @@ public final class MessagingModule extends AbstractModule {
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?, ?> proposalDispatcher(MessageCentralBFTNetwork bftNetwork) {
-    return RxRemoteDispatcher.create(
-        BFTValidatorId.class, Proposal.class, bftNetwork.proposalDispatcher());
+    return RxRemoteDispatcher.create(NodeId.class, Proposal.class, bftNetwork.proposalDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?, ?> voteDispatcher(MessageCentralBFTNetwork bftNetwork) {
-    return RxRemoteDispatcher.create(BFTValidatorId.class, Vote.class, bftNetwork.voteDispatcher());
+    return RxRemoteDispatcher.create(NodeId.class, Vote.class, bftNetwork.voteDispatcher());
   }
 
   @ProvidesIntoSet

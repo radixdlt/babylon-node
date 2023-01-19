@@ -360,10 +360,21 @@ public class EpochsConsensusModule extends AbstractModule {
 
   @Provides
   private BFTSyncRequestProcessorFactory vertexStoreSyncVerticesRequestProcessorFactory(
+      RemoteEventDispatcher<NodeId, GetVerticesErrorResponse> errorResponseRemoteEventDispatcher,
+      RemoteEventDispatcher<NodeId, GetVerticesResponse> responseRemoteEventDispatcher,
       Metrics metrics) {
-    return (vertexStore, errorResponseDispatcher, responseDispatcher) ->
+    return (vertexStore) ->
         new VertexStoreBFTSyncRequestProcessor(
-            vertexStore, errorResponseDispatcher, responseDispatcher, metrics);
+            vertexStore,
+            (n, m) -> {
+              var nodeId = NodeId.fromPublicKey(n.getKey());
+              errorResponseRemoteEventDispatcher.dispatch(nodeId, m);
+            },
+            (n, m) -> {
+              var nodeId = NodeId.fromPublicKey(n.getKey());
+              responseRemoteEventDispatcher.dispatch(nodeId, m);
+            },
+            metrics);
   }
 
   @Provides
@@ -373,11 +384,12 @@ public class EpochsConsensusModule extends AbstractModule {
       EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
       ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
       EventDispatcher<ConsensusByzantineEvent> unexpectedEventEventDispatcher,
+      RemoteEventDispatcher<NodeId, GetVerticesRequest> verticesRequestRemoteEventDispatcher,
       Random random,
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
       Metrics metrics,
       Hasher hasher) {
-    return (requestSender, safetyRules, vertexStore, pacemakerState, configuration) ->
+    return (safetyRules, vertexStore, pacemakerState, configuration) ->
         new BFTSync(
             self,
             syncRequestRateLimiter,
@@ -386,7 +398,10 @@ public class EpochsConsensusModule extends AbstractModule {
             safetyRules,
             pacemakerState,
             Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
-            requestSender,
+            (n, m) -> {
+              var nodeId = NodeId.fromPublicKey(n.getKey());
+              verticesRequestRemoteEventDispatcher.dispatch(nodeId, m);
+            },
             syncLedgerRequestSender,
             timeoutDispatcher,
             unexpectedEventEventDispatcher,

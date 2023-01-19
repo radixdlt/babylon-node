@@ -95,7 +95,8 @@ public final class BFTValidatorSet {
     this.validators =
         validators
             .filter(v -> !v.getPower().isZero())
-            .collect(ImmutableBiMap.toImmutableBiMap(BFTValidator::getNode, Function.identity()));
+            .collect(
+                ImmutableBiMap.toImmutableBiMap(BFTValidator::getValidatorId, Function.identity()));
     this.totalPower =
         this.validators.values().stream()
             .map(BFTValidator::getPower)
@@ -191,7 +192,8 @@ public final class BFTValidatorSet {
   public String toString() {
     final StringJoiner joiner = new StringJoiner(",");
     for (BFTValidator validator : this.validators.values()) {
-      joiner.add(String.format("%s=%s", validator.getNode().getSimpleName(), validator.getPower()));
+      joiner.add(
+          String.format("%s=%s", validator.getValidatorId().getSimpleName(), validator.getPower()));
     }
     return String.format("%s[%s]", this.getClass().getSimpleName(), joiner.toString());
   }

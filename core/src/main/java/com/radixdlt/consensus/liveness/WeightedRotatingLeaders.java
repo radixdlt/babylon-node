@@ -106,7 +106,8 @@ public final class WeightedRotatingLeaders implements ProposerElection {
     this.validatorSet = validatorSet;
     this.weightsComparator =
         Comparator.comparing(Entry<BFTValidator, UInt384>::getValue)
-            .thenComparing(v -> v.getKey().getNode().getKey(), KeyComparator.instance().reversed());
+            .thenComparing(
+                v -> v.getKey().getValidatorId().getKey(), KeyComparator.instance().reversed());
     this.nextLeaderComputer =
         new CachingNextLeaderComputer(validatorSet, weightsComparator, cacheSize);
   }
@@ -218,12 +219,12 @@ public final class WeightedRotatingLeaders implements ProposerElection {
     BFTValidator validator = nextLeaderComputer.checkCacheForProposer(round);
     if (validator != null) {
       // dynamic program cache successful
-      return validator.getNode();
+      return validator.getValidatorId();
     } else {
       // cache doesn't have value, do the expensive operation
       CachingNextLeaderComputer computer =
           new CachingNextLeaderComputer(validatorSet, weightsComparator, 1);
-      return computer.resetToRound(round).getNode();
+      return computer.resetToRound(round).getValidatorId();
     }
   }
 

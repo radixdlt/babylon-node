@@ -130,8 +130,7 @@ public class EpochManagerTest {
   private EventDispatcher<LocalSyncRequest> syncLedgerRequestSender = rmock(EventDispatcher.class);
   private RemoteEventDispatcher<NodeId, Proposal> proposalDispatcher =
       rmock(RemoteEventDispatcher.class);
-  private RemoteEventDispatcher<NodeId, Vote> voteDispatcher =
-      rmock(RemoteEventDispatcher.class);
+  private RemoteEventDispatcher<NodeId, Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
   private Mempool mempool = mock(Mempool.class);
   private StateComputer stateComputer =
       new StateComputer() {
@@ -211,8 +210,7 @@ public class EpochManagerTest {
             .toInstance(rmock(ScheduledEventDispatcher.class));
         bind(new TypeLiteral<RemoteEventDispatcher<NodeId, Proposal>>() {})
             .toInstance(proposalDispatcher);
-        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, Vote>>() {})
-            .toInstance(voteDispatcher);
+        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, Vote>>() {}).toInstance(voteDispatcher);
         bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesRequest>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
         bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesResponse>>() {})

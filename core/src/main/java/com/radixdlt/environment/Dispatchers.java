@@ -67,9 +67,9 @@ package com.radixdlt.environment;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -143,7 +143,7 @@ public final class Dispatchers {
 
     @Inject private Metrics metrics;
 
-    @Inject @Self private BFTValidatorId self;
+    @Inject @Self private NodeId self;
 
     @Inject private Set<EventProcessorOnDispatch<?>> onDispatchProcessors;
 

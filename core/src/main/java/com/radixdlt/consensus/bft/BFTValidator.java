@@ -111,7 +111,7 @@ public final class BFTValidator {
     return new BFTValidator(node, power);
   }
 
-  public BFTValidatorId getNode() {
+  public BFTValidatorId getValidatorId() {
     return node;
   }
 

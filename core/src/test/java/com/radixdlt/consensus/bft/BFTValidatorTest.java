@@ -86,7 +86,7 @@ public class BFTValidatorTest {
 
   @Test
   public void testGetter() {
-    assertNotNull(create().getNode());
+    assertNotNull(create().getValidatorId());
   }
 
   private static BFTValidator create() {

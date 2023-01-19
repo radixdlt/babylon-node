@@ -98,7 +98,7 @@ public class WeightedRotatingLeadersTest {
             .map(node -> BFTValidator.from(node, UInt256.ONE))
             .sorted(
                 Comparator.comparing(
-                    v -> v.getNode().getKey(), KeyComparator.instance().reversed()))
+                    v -> v.getValidatorId().getKey(), KeyComparator.instance().reversed()))
             .collect(ImmutableList.toImmutableList());
 
     BFTValidatorSet validatorSet = BFTValidatorSet.from(validatorsInOrder);
@@ -119,7 +119,7 @@ public class WeightedRotatingLeadersTest {
           var expectedNodeForRound =
               validatorsInOrder
                   .get(validatorSetSize - (roundNumber % validatorSetSize) - 1)
-                  .getNode();
+                  .getValidatorId();
           assertThat(weightedRotatingLeaders.getProposer(Round.of(roundNumber)))
               .isEqualTo(expectedNodeForRound);
         }
@@ -196,7 +196,8 @@ public class WeightedRotatingLeadersTest {
             .collect(groupingBy(p -> p, collectingAndThen(counting(), UInt256::from)));
 
     Map<BFTValidatorId, UInt256> expected =
-        validatorsInOrder.stream().collect(toMap(BFTValidator::getNode, BFTValidator::getPower));
+        validatorsInOrder.stream()
+            .collect(toMap(BFTValidator::getValidatorId, BFTValidator::getPower));
 
     assertThat(proposerCounts).isEqualTo(expected);
   }

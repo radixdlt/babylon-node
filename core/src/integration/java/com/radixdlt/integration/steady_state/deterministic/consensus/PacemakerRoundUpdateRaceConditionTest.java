@@ -138,7 +138,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
                   public ProposerElection proposerElection(BFTValidatorSet validatorSet) {
                     final var sortedValidators =
                         validatorSet.getValidators().stream()
-                            .map(BFTValidator::getNode)
+                            .map(BFTValidator::getValidatorId)
                             .sorted(
                                 Comparator.comparing(
                                     BFTValidatorId::getKey, KeyComparator.instance().reversed()))
