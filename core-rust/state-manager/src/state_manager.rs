@@ -875,8 +875,8 @@ where
             payload_hashes,
             commit_request.proof,
         );
-        if let Some(vertex_store) = commit_request.vertex_store {
-            db_transaction.save_vertex_store(vertex_store);
+        if let Some(post_commit_vertex_store) = commit_request.post_commit_vertex_store {
+            db_transaction.save_vertex_store(post_commit_vertex_store);
         }
 
         db_transaction.commit();

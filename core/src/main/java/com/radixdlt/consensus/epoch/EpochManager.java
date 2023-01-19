@@ -102,7 +102,7 @@ import org.apache.logging.log4j.Logger;
 @NotThreadSafe
 public final class EpochManager {
   private static final Logger log = LogManager.getLogger();
-  private final BFTNode self;
+  private final BFTValidatorId self;
   private final PacemakerFactory pacemakerFactory;
   private final VertexStoreFactory vertexStoreFactory;
   private final BFTSyncRequestProcessorFactory bftSyncRequestProcessorFactory;
@@ -122,21 +122,23 @@ public final class EpochManager {
   private EventProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
   private BFTEventProcessor bftEventProcessor;
 
-  private Set<RemoteEventProcessor<NodeId, GetVerticesRequest>> syncRequestProcessors;
-  private Set<RemoteEventProcessor<NodeId, GetVerticesResponse>> syncResponseProcessors;
-  private Set<RemoteEventProcessor<NodeId, GetVerticesErrorResponse>> syncErrorResponseProcessors;
+  private Set<RemoteEventProcessor<BFTValidatorId, GetVerticesRequest>> syncRequestProcessors;
+  private Set<RemoteEventProcessor<BFTValidatorId, GetVerticesResponse>> syncResponseProcessors;
+  private Set<RemoteEventProcessor<BFTValidatorId, GetVerticesErrorResponse>>
+      syncErrorResponseProcessors;
 
   private Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors;
   private Set<EventProcessor<BFTRebuildUpdate>> bftRebuildProcessors;
 
-  private final RemoteEventDispatcher<BFTNode, LedgerStatusUpdate> ledgerStatusUpdateDispatcher;
-
+  private final RemoteEventDispatcher<NodeId, LedgerStatusUpdate> ledgerStatusUpdateDispatcher;
   private final PersistentSafetyStateStore persistentSafetyStateStore;
+
+  private final HashMap<NodeId, BFTValidatorId> reverseNodeIdToValidatorId = new HashMap<>();
 
   @Inject
   public EpochManager(
-      @Self BFTNode self,
-      RemoteEventDispatcher<BFTNode, LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
+      @Self BFTValidatorId self,
+      RemoteEventDispatcher<NodeId, LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
       EpochChange lastEpochChange,
       PacemakerFactory pacemakerFactory,
       VertexStoreFactory vertexStoreFactory,
@@ -185,6 +187,14 @@ public final class EpochManager {
       this.syncLedgerUpdateProcessor = update -> {};
       this.syncTimeoutProcessor = timeout -> {};
       return;
+    }
+
+    // TODO: Josh not convinced that node to validator resolving should occur in EpochManager
+    // TODO: or if it should even occur but this should be good enough for now.
+    this.reverseNodeIdToValidatorId.clear();
+    for (var validator : validatorSet.getValidators()) {
+      var nodeId = NodeId.fromPublicKey(validator.getValidatorId().getKey());
+      reverseNodeIdToValidatorId.put(nodeId, validator.getValidatorId());
     }
 
     final var nextEpoch = this.lastEpochChange.getNextEpoch();
@@ -241,6 +251,7 @@ public final class EpochManager {
 
     this.syncResponseProcessors = Set.of(bftSync.responseProcessor());
     this.syncErrorResponseProcessors = Set.of(bftSync.errorResponseProcessor());
+
     this.syncRequestProcessors = Set.of(bftSyncRequestProcessorFactory.create(vertexStore));
     this.bftRebuildProcessors = Set.of(bftEventProcessor::processBFTRebuildUpdate);
     this.bftUpdateProcessors = Set.of(bftEventProcessor::processBFTUpdate);
@@ -285,8 +296,9 @@ public final class EpochManager {
 
       final var ledgerStatusUpdate = LedgerStatusUpdate.create(epochChange.getGenesisHeader());
       for (var validator : currentAndNextValidators) {
-        if (!validator.getNode().equals(self)) {
-          this.ledgerStatusUpdateDispatcher.dispatch(validator.getNode(), ledgerStatusUpdate);
+        if (!validator.getValidatorId().equals(self)) {
+          var nodeId = NodeId.fromPublicKey(validator.getValidatorId().getKey());
+          this.ledgerStatusUpdateDispatcher.dispatch(nodeId, ledgerStatusUpdate);
         }
       }
     }
@@ -400,11 +412,21 @@ public final class EpochManager {
   }
 
   public RemoteEventProcessor<NodeId, GetVerticesRequest> bftSyncRequestProcessor() {
-    return (node, request) -> syncRequestProcessors.forEach(p -> p.process(node, request));
+    return (node, request) -> {
+      var validatorId = this.reverseNodeIdToValidatorId.get(node);
+      if (validatorId != null) {
+        syncRequestProcessors.forEach(p -> p.process(validatorId, request));
+      }
+    };
   }
 
   public RemoteEventProcessor<NodeId, GetVerticesResponse> bftSyncResponseProcessor() {
-    return (node, resp) -> syncResponseProcessors.forEach(p -> p.process(node, resp));
+    return (node, resp) -> {
+      var validatorId = this.reverseNodeIdToValidatorId.get(node);
+      if (validatorId != null) {
+        syncResponseProcessors.forEach(p -> p.process(validatorId, resp));
+      }
+    };
   }
 
   public RemoteEventProcessor<NodeId, GetVerticesErrorResponse> bftSyncErrorResponseProcessor() {
@@ -433,7 +455,10 @@ public final class EpochManager {
         }
       } else {
         // Current epoch
-        syncErrorResponseProcessors.forEach(p -> p.process(node, err));
+        var validatorId = this.reverseNodeIdToValidatorId.get(node);
+        if (validatorId != null) {
+          syncErrorResponseProcessors.forEach(p -> p.process(validatorId, err));
+        }
       }
     };
   }

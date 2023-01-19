@@ -94,7 +94,7 @@ public final class Pacemaker {
 
   private static final int PREVIOUS_ROUND_RUSHING_TIMESTAMP_LOG_THRESHOLD_MS = 1000;
 
-  private final BFTNode self;
+  private final BFTValidatorId self;
   private final BFTValidatorSet validatorSet;
   private final VertexStoreAdapter vertexStore;
   private final SafetyRules safetyRules;
@@ -102,8 +102,8 @@ public final class Pacemaker {
   private final PacemakerTimeoutCalculator timeoutCalculator;
   private final ProposalGenerator proposalGenerator;
   private final Hasher hasher;
-  private final RemoteEventDispatcher<BFTNode, Proposal> proposalDispatcher;
-  private final RemoteEventDispatcher<BFTNode, Vote> voteDispatcher;
+  private final RemoteEventDispatcher<BFTValidatorId, Proposal> proposalDispatcher;
+  private final RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher;
   private final EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher;
   private final EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher;
   private final TimeSupplier timeSupplier;
@@ -118,7 +118,7 @@ public final class Pacemaker {
   private Optional<HashCode> vertexIdForLeaderFailure = Optional.empty();
 
   public Pacemaker(
-      BFTNode self,
+      BFTValidatorId self,
       BFTValidatorSet validatorSet,
       VertexStoreAdapter vertexStore,
       SafetyRules safetyRules,
@@ -126,8 +126,8 @@ public final class Pacemaker {
       ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
       PacemakerTimeoutCalculator timeoutCalculator,
       ProposalGenerator proposalGenerator,
-      RemoteEventDispatcher<BFTNode, Proposal> proposalDispatcher,
-      RemoteEventDispatcher<BFTNode, Vote> voteDispatcher,
+      RemoteEventDispatcher<BFTValidatorId, Proposal> proposalDispatcher,
+      RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher,
       EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher,
       Hasher hasher,
       TimeSupplier timeSupplier,
@@ -298,7 +298,7 @@ public final class Pacemaker {
     rescheduleTimeout(scheduledTimeout);
   }
 
-  private void resendPreviousOrNewVoteWithTimeout(ImmutableSet<BFTNode> receivers) {
+  private void resendPreviousOrNewVoteWithTimeout(ImmutableSet<BFTValidatorId> receivers) {
     this.safetyRules
         .getLastVote(this.latestRoundUpdate.getCurrentRound())
         .map(this.safetyRules::timeoutVote)
@@ -330,7 +330,7 @@ public final class Pacemaker {
   }
 
   private void createTimeoutVertexAndSendVote(
-      RoundUpdate roundUpdate, ImmutableSet<BFTNode> receivers) {
+      RoundUpdate roundUpdate, ImmutableSet<BFTValidatorId> receivers) {
     if (this.vertexIdForLeaderFailure.isPresent()) {
       // The "leader failure" vertex for this round is already being inserted (or has already been
       // inserted)
@@ -372,7 +372,7 @@ public final class Pacemaker {
   }
 
   private void createAndSendTimeoutVote(
-      ExecutedVertex executedVertex, ImmutableSet<BFTNode> receivers) {
+      ExecutedVertex executedVertex, ImmutableSet<BFTValidatorId> receivers) {
     final var bftHeader =
         new BFTHeader(
             executedVertex.getRound(),

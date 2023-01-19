@@ -68,7 +68,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.serialization.DsonOutput;
@@ -99,7 +99,7 @@ public final class TimestampedECDSASignatures {
   @DsonOutput(DsonOutput.Output.ALL)
   private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-  private final Map<BFTNode, TimestampedECDSASignature> nodeToTimestampedSignature;
+  private final Map<BFTValidatorId, TimestampedECDSASignature> nodeToTimestampedSignature;
 
   @JsonCreator
   public static TimestampedECDSASignatures from(
@@ -114,11 +114,11 @@ public final class TimestampedECDSASignatures {
 
     var signaturesByNode =
         signatures == null
-            ? Map.<BFTNode, TimestampedECDSASignature>of()
+            ? Map.<BFTValidatorId, TimestampedECDSASignature>of()
             : signatures.entrySet().stream()
                 .collect(
                     Collectors.toMap(
-                        e -> BFTNode.fromSerializedString(e.getKey()), Map.Entry::getValue));
+                        e -> BFTValidatorId.fromSerializedString(e.getKey()), Map.Entry::getValue));
 
     return new TimestampedECDSASignatures(signaturesByNode);
   }
@@ -135,7 +135,7 @@ public final class TimestampedECDSASignatures {
    *     corresponding timestamps and {@link ECDSASecp256k1PublicKey}
    */
   public TimestampedECDSASignatures(
-      Map<BFTNode, TimestampedECDSASignature> nodeToTimestampAndSignature) {
+      Map<BFTValidatorId, TimestampedECDSASignature> nodeToTimestampAndSignature) {
     this.nodeToTimestampedSignature =
         nodeToTimestampAndSignature == null ? Map.of() : nodeToTimestampAndSignature;
     this.nodeToTimestampedSignature.forEach(
@@ -150,7 +150,7 @@ public final class TimestampedECDSASignatures {
    *
    * @return Signatures and timestamps for each public key
    */
-  public Map<BFTNode, TimestampedECDSASignature> getSignatures() {
+  public Map<BFTValidatorId, TimestampedECDSASignature> getSignatures() {
     return this.nodeToTimestampedSignature;
   }
 

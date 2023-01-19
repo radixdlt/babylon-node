@@ -90,16 +90,17 @@ public class PacemakerTest {
 
   private static final Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
 
-  private BFTNode self = mock(BFTNode.class);
+  private BFTValidatorId self = mock(BFTValidatorId.class);
   private BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
   private VertexStoreAdapter vertexStore = mock(VertexStoreAdapter.class);
   private SafetyRules safetyRules = mock(SafetyRules.class);
   private PacemakerTimeoutCalculator timeoutCalculator = mock(PacemakerTimeoutCalculator.class);
   private ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
-  private RemoteEventDispatcher<BFTNode, Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
+  private RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher =
+      rmock(RemoteEventDispatcher.class);
   private EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher =
       rmock(EventDispatcher.class);
-  private RemoteEventDispatcher<BFTNode, Proposal> proposalDispatcher =
+  private RemoteEventDispatcher<BFTValidatorId, Proposal> proposalDispatcher =
       rmock(RemoteEventDispatcher.class);
   private EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher = rmock(EventDispatcher.class);
   private ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender =
@@ -116,7 +117,8 @@ public class PacemakerTest {
     when(highQC.highestCommittedQC()).thenReturn(committedQc);
 
     RoundUpdate initialRoundUpdate =
-        RoundUpdate.create(Round.of(0), highQC, mock(BFTNode.class), mock(BFTNode.class));
+        RoundUpdate.create(
+            Round.of(0), highQC, mock(BFTValidatorId.class), mock(BFTValidatorId.class));
 
     this.pacemaker =
         new Pacemaker(
@@ -142,7 +144,7 @@ public class PacemakerTest {
     Round round = Round.of(0);
     Vote lastVote = mock(Vote.class);
     Vote lastVoteWithTimeout = mock(Vote.class);
-    ImmutableSet<BFTNode> validators = rmock(ImmutableSet.class);
+    ImmutableSet<BFTValidatorId> validators = rmock(ImmutableSet.class);
 
     when(this.safetyRules.getLastVote(round)).thenReturn(Optional.of(lastVote));
     when(this.safetyRules.timeoutVote(lastVote)).thenReturn(lastVoteWithTimeout);
@@ -150,7 +152,10 @@ public class PacemakerTest {
 
     RoundUpdate roundUpdate =
         RoundUpdate.create(
-            Round.of(0), mock(HighQC.class), mock(BFTNode.class), mock(BFTNode.class));
+            Round.of(0),
+            mock(HighQC.class),
+            mock(BFTValidatorId.class),
+            mock(BFTValidatorId.class));
     this.pacemaker.processLocalTimeout(ScheduledLocalTimeout.create(roundUpdate, 0L));
 
     verify(this.voteDispatcher, times(1)).dispatch(eq(validators), eq(lastVoteWithTimeout));
@@ -162,7 +167,7 @@ public class PacemakerTest {
 
   @Test
   public void when_local_timeout__then_send_empty_vote_if_no_previous() {
-    final var leader = BFTNode.random();
+    final var leader = BFTValidatorId.random();
     HighQC roundUpdateHighQc = mock(HighQC.class);
     QuorumCertificate committedQc = mock(QuorumCertificate.class);
     QuorumCertificate highestQc = mock(QuorumCertificate.class);
@@ -177,12 +182,12 @@ public class PacemakerTest {
     when(highestQc.getProposedHeader()).thenReturn(highestQcProposed);
     when(committedQc.getRound()).thenReturn(Round.of(0));
     RoundUpdate roundUpdate =
-        RoundUpdate.create(Round.of(1), roundUpdateHighQc, leader, mock(BFTNode.class));
+        RoundUpdate.create(Round.of(1), roundUpdateHighQc, leader, mock(BFTValidatorId.class));
     this.pacemaker.processRoundUpdate(roundUpdate);
     Round round = Round.of(1);
     Vote emptyVote = mock(Vote.class);
     Vote emptyVoteWithTimeout = mock(Vote.class);
-    ImmutableSet<BFTNode> validators = rmock(ImmutableSet.class);
+    ImmutableSet<BFTValidatorId> validators = rmock(ImmutableSet.class);
     BFTHeader bftHeader = mock(BFTHeader.class);
     HighQC highQC = mock(HighQC.class);
     BFTInsertUpdate bftInsertUpdate = mock(BFTInsertUpdate.class);
@@ -207,7 +212,8 @@ public class PacemakerTest {
 
     this.pacemaker.processLocalTimeout(
         ScheduledLocalTimeout.create(
-            RoundUpdate.create(Round.of(1), mock(HighQC.class), leader, BFTNode.random()), 0L));
+            RoundUpdate.create(Round.of(1), mock(HighQC.class), leader, BFTValidatorId.random()),
+            0L));
 
     this.pacemaker.processBFTUpdate(bftInsertUpdate);
 

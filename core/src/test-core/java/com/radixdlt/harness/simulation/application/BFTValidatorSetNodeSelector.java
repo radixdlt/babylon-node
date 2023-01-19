@@ -66,7 +66,7 @@ package com.radixdlt.harness.simulation.application;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.p2p.NodeId;
 import io.reactivex.rxjava3.core.Single;
@@ -79,7 +79,7 @@ public class BFTValidatorSetNodeSelector implements NodeSelector {
   @Override
   public Single<NodeId> nextNode(RunningNetwork network) {
     BFTConfiguration config = network.bftConfiguration();
-    ImmutableList<BFTNode> validators = config.getValidatorSet().nodes().asList();
+    ImmutableList<BFTValidatorId> validators = config.getValidatorSet().nodes().asList();
     int validatorSetSize = validators.size();
     var node = NodeId.fromPublicKey(validators.get(random.nextInt(validatorSetSize)).getKey());
     return Single.just(node);

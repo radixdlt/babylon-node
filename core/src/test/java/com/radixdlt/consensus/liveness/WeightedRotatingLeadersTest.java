@@ -71,8 +71,8 @@ import static java.util.stream.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECKeyPair;
@@ -94,11 +94,11 @@ public class WeightedRotatingLeadersTest {
     this.validatorsInOrder =
         Stream.generate(() -> ECKeyPair.generateNew().getPublicKey())
             .limit(validatorSetSize)
-            .map(BFTNode::create)
+            .map(BFTValidatorId::create)
             .map(node -> BFTValidator.from(node, UInt256.ONE))
             .sorted(
                 Comparator.comparing(
-                    v -> v.getNode().getKey(), KeyComparator.instance().reversed()))
+                    v -> v.getValidatorId().getKey(), KeyComparator.instance().reversed()))
             .collect(ImmutableList.toImmutableList());
 
     BFTValidatorSet validatorSet = BFTValidatorSet.from(validatorsInOrder);
@@ -119,7 +119,7 @@ public class WeightedRotatingLeadersTest {
           var expectedNodeForRound =
               validatorsInOrder
                   .get(validatorSetSize - (roundNumber % validatorSetSize) - 1)
-                  .getNode();
+                  .getValidatorId();
           assertThat(weightedRotatingLeaders.getProposer(Round.of(roundNumber)))
               .isEqualTo(expectedNodeForRound);
         }
@@ -136,7 +136,7 @@ public class WeightedRotatingLeadersTest {
         // 2 * sizeOfCache so cache eviction occurs
         final int roundsToTest = 2 * sizeOfCache;
 
-        BFTNode expectedNodeForRound0 = weightedRotatingLeaders.getProposer(Round.of(0));
+        BFTValidatorId expectedNodeForRound0 = weightedRotatingLeaders.getProposer(Round.of(0));
         for (Round round = Round.of(1);
             round.compareTo(Round.of(roundsToTest)) <= 0;
             round = round.next()) {
@@ -160,8 +160,8 @@ public class WeightedRotatingLeadersTest {
         for (int roundNumber = 0; roundNumber < roundsToTest; roundNumber++) {
           weightedRotatingLeaders2.getProposer(Round.of(roundNumber));
         }
-        BFTNode node1 = weightedRotatingLeaders.getProposer(Round.of(roundsToTest - 1));
-        BFTNode node2 = weightedRotatingLeaders2.getProposer(Round.of(roundsToTest - 1));
+        BFTValidatorId node1 = weightedRotatingLeaders.getProposer(Round.of(roundsToTest - 1));
+        BFTValidatorId node2 = weightedRotatingLeaders2.getProposer(Round.of(roundsToTest - 1));
         assertThat(node1).isEqualTo(node2);
       }
     }
@@ -183,20 +183,21 @@ public class WeightedRotatingLeadersTest {
     this.validatorsInOrder =
         fibonacci
             .get()
-            .mapToObj(p -> BFTValidator.from(BFTNode.random(), UInt256.from(p)))
+            .mapToObj(p -> BFTValidator.from(BFTValidatorId.random(), UInt256.from(p)))
             .collect(ImmutableList.toImmutableList());
 
     BFTValidatorSet validatorSet = BFTValidatorSet.from(validatorsInOrder);
     this.weightedRotatingLeaders = new WeightedRotatingLeaders(validatorSet, sizeOfCache);
 
-    Map<BFTNode, UInt256> proposerCounts =
+    Map<BFTValidatorId, UInt256> proposerCounts =
         Stream.iterate(Round.of(0), Round::next)
             .limit(sumOfPower)
             .map(this.weightedRotatingLeaders::getProposer)
             .collect(groupingBy(p -> p, collectingAndThen(counting(), UInt256::from)));
 
-    Map<BFTNode, UInt256> expected =
-        validatorsInOrder.stream().collect(toMap(BFTValidator::getNode, BFTValidator::getPower));
+    Map<BFTValidatorId, UInt256> expected =
+        validatorsInOrder.stream()
+            .collect(toMap(BFTValidator::getValidatorId, BFTValidator::getPower));
 
     assertThat(proposerCounts).isEqualTo(expected);
   }

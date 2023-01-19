@@ -423,7 +423,7 @@ pub struct CommitRequest {
     pub transaction_payloads: Vec<Vec<u8>>,
     pub proof_state_version: u64, // TODO: Use actual proof to get this info
     pub proof: Vec<u8>,
-    pub vertex_store: Option<Vec<u8>>,
+    pub post_commit_vertex_store: Option<Vec<u8>>,
 }
 
 #[derive(Debug, Decode, Encode, Categorize)]

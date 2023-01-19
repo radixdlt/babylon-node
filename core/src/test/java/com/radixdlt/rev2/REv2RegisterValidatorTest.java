@@ -72,8 +72,8 @@ import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransac
 import static com.radixdlt.harness.predicates.NodesPredicate.anyCommittedProof;
 
 import com.google.inject.*;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -159,7 +159,8 @@ public final class REv2RegisterValidatorTest {
                               e.getValidators()
                                   .contains(
                                       BFTValidator.from(
-                                          BFTNode.create(validatorAddress, TEST_KEY.getPublicKey()),
+                                          BFTValidatorId.create(
+                                              validatorAddress, TEST_KEY.getPublicKey()),
                                           UInt256.ONE)))
                       .orElse(false)),
           onlyConsensusEvents().or(onlyLocalMempoolAddEvents()));

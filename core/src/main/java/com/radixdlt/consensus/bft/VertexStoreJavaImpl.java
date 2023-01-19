@@ -87,7 +87,6 @@ import javax.annotation.concurrent.NotThreadSafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/** Manages the BFT Vertex chain. TODO: Move this logic into ledger package. */
 @NotThreadSafe
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class VertexStoreJavaImpl implements VertexStore {
@@ -101,36 +100,22 @@ public final class VertexStoreJavaImpl implements VertexStore {
 
   // These should never be null
   private VertexWithHash rootVertex;
-  private QuorumCertificate highestQC;
-  private QuorumCertificate highestCommittedQC;
-  private Optional<TimeoutCertificate> highestTC;
+  private HighQC highQC;
 
   private VertexStoreJavaImpl(
-      Ledger ledger,
-      Hasher hasher,
-      VertexWithHash rootVertex,
-      QuorumCertificate commitQC,
-      QuorumCertificate highestQC,
-      Optional<TimeoutCertificate> highestTC) {
+      Ledger ledger, Hasher hasher, VertexWithHash rootVertex, HighQC highQC) {
     this.ledger = Objects.requireNonNull(ledger);
     this.hasher = Objects.requireNonNull(hasher);
     this.rootVertex = Objects.requireNonNull(rootVertex);
-    this.highestQC = Objects.requireNonNull(highestQC);
-    this.highestCommittedQC = Objects.requireNonNull(commitQC);
+    this.highQC = Objects.requireNonNull(highQC);
     this.vertexChildren.put(rootVertex.hash(), new HashSet<>());
-    this.highestTC = Objects.requireNonNull(highestTC);
   }
 
   public static VertexStoreJavaImpl create(
       VertexStoreState vertexStoreState, Ledger ledger, Hasher hasher) {
     var vertexStore =
         new VertexStoreJavaImpl(
-            ledger,
-            hasher,
-            vertexStoreState.getRoot(),
-            vertexStoreState.getHighQC().highestCommittedQC(),
-            vertexStoreState.getHighQC().highestQC(),
-            vertexStoreState.getHighQC().highestTC());
+            ledger, hasher, vertexStoreState.getRoot(), vertexStoreState.getHighQC());
 
     for (var vertexWithHash : vertexStoreState.getVertices()) {
       var previous = vertexStore.getPathFromRoot(vertexWithHash.vertex().getParentVertexId());
@@ -161,10 +146,12 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return vertexStore;
   }
 
+  @Override
   public VertexWithHash getRoot() {
     return rootVertex;
   }
 
+  @Override
   public Option<VertexStoreState> tryRebuild(VertexStoreState vertexStoreState) {
     // FIXME: Currently this assumes vertexStoreState is a chain with no forks which is our only use
     // case at the moment.
@@ -181,8 +168,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     }
 
     this.rootVertex = vertexStoreState.getRoot();
-    this.highestCommittedQC = vertexStoreState.getHighQC().highestCommittedQC();
-    this.highestQC = vertexStoreState.getHighQC().highestQC();
+    this.highQC = vertexStoreState.getHighQC();
     this.vertices.clear();
     this.vertexChildren.clear();
     this.vertexChildren.put(rootVertex.hash(), new HashSet<>());
@@ -197,10 +183,12 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return Option.present(vertexStoreState);
   }
 
+  @Override
   public boolean containsVertex(HashCode vertexId) {
     return vertices.containsKey(vertexId) || rootVertex.hash().equals(vertexId);
   }
 
+  @Override
   public InsertQcResult insertQc(QuorumCertificate qc) {
     if (!this.containsVertex(qc.getProposedHeader().getVertexId())) {
       return new VertexStore.InsertQcResult.VertexIsMissing(); // false
@@ -213,14 +201,14 @@ public final class VertexStoreJavaImpl implements VertexStore {
     }
 
     // proposed vertex doesn't have any children
-    boolean isHighQC = qc.getRound().gt(highestQC.getRound());
+    boolean isHighQC = qc.getRound().gt(highQC.highestQC().getRound());
     boolean isAnythingCommitted = qc.getCommittedAndLedgerStateProof(hasher).isPresent();
     if (!isHighQC && !isAnythingCommitted) {
       return new VertexStore.InsertQcResult.Ignored();
     }
 
     if (isHighQC) {
-      highestQC = qc;
+      this.highQC = this.highQC.withHighestQC(qc);
     }
 
     final var committedUpdate =
@@ -247,33 +235,25 @@ public final class VertexStoreJavaImpl implements VertexStore {
     // TODO: store list dynamically rather than recomputing
     ImmutableList.Builder<VertexWithHash> verticesBuilder = ImmutableList.builder();
     getChildrenVerticesList(this.rootVertex, verticesBuilder);
-    return VertexStoreState.create(
-        this.highQC(), this.rootVertex, verticesBuilder.build(), this.highestTC, hasher);
+    return VertexStoreState.create(this.highQC(), this.rootVertex, verticesBuilder.build(), hasher);
   }
 
-  /**
-   * Inserts a timeout certificate into the store.
-   *
-   * @param timeoutCertificate the timeout certificate
-   */
-  public void insertTimeoutCertificate(TimeoutCertificate timeoutCertificate) {
-    if (this.highestTC.isEmpty()
-        || this.highestTC.get().getRound().lt(timeoutCertificate.getRound())) {
-      this.highestTC = Optional.of(timeoutCertificate);
+  @Override
+  public boolean insertTimeoutCertificate(TimeoutCertificate timeoutCertificate) {
+    if (timeoutCertificate.getRound().gt(highQC().getHighestRound())) {
+      this.highQC = this.highQC.withHighestTC(timeoutCertificate);
+      return true;
     }
+    return false;
   }
 
-  /**
-   * Returns the vertex with specified id or empty if not exists.
-   *
-   * @param vertexHash the id of a vertex
-   * @return the specified vertex or empty
-   */
   // TODO: reimplement in async way
+  @Override
   public Option<ExecutedVertex> getExecutedVertex(HashCode vertexHash) {
     return Option.option(vertices.get(vertexHash));
   }
 
+  @Override
   public InsertVertexChainResult insertVertexChain(VertexChain vertexChain) {
     final var bftInsertUpdates = new ArrayList<BFTInsertUpdate>();
     final var insertedQcs = new ArrayList<InsertQcResult.Inserted>();
@@ -296,11 +276,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return new InsertVertexChainResult(insertedQcs, bftInsertUpdates);
   }
 
-  /**
-   * Inserts a vertex and then attempts to create the next header.
-   *
-   * @param vertexWithHash vertex to insert
-   */
+  @Override
   public Option<BFTInsertUpdate> insertVertex(VertexWithHash vertexWithHash) {
     ExecutedVertex v = vertices.get(vertexWithHash.hash());
     if (v != null) {
@@ -368,7 +344,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     (i.e. the logic should be moved out of removeVertexAndPruneInternal). */
     final var prevRootVertex = this.rootVertex;
     this.rootVertex = tipVertex;
-    this.highestCommittedQC = commitQC;
+    this.highQC = this.highQC.withHighestCommittedQC(commitQC);
     final var path = ImmutableList.copyOf(getPathFromRoot(tipVertex.hash()));
     HashCode prev = null;
     for (int i = path.size() - 1; i >= 0; i--) {
@@ -380,6 +356,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return Optional.of(new CommittedUpdate(path));
   }
 
+  @Override
   public LinkedList<ExecutedVertex> getPathFromRoot(HashCode vertexId) {
     final LinkedList<ExecutedVertex> path = new LinkedList<>();
 
@@ -392,25 +369,12 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return path;
   }
 
-  /**
-   * Retrieves the highest QC and highest committed QC in the store.
-   *
-   * @return the highest QCs
-   */
+  @Override
   public HighQC highQC() {
-    return HighQC.from(this.highestQC, this.highestCommittedQC, this.highestTC);
+    return this.highQC;
   }
 
-  /**
-   * Retrieves list of vertices starting with the given vertexId and then proceeding to its
-   * ancestors.
-   *
-   * <p>if the store does not contain some vertex then will return an empty list.
-   *
-   * @param vertexHash the id of the vertex
-   * @param count the number of vertices to retrieve
-   * @return the list of vertices if all found, otherwise an empty list
-   */
+  @Override
   public Option<ImmutableList<VertexWithHash>> getVertices(HashCode vertexHash, int count) {
     HashCode nextId = vertexHash;
     ImmutableList.Builder<VertexWithHash> builder = ImmutableList.builderWithExpectedSize(count);

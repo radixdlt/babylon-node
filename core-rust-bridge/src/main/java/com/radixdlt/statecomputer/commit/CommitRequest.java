@@ -78,7 +78,7 @@ public record CommitRequest(
     List<RawLedgerTransaction> transactions,
     UInt64 stateVersion,
     byte[] proofBytes,
-    Option<byte[]> vertexStoreBytes) {
+    Option<byte[]> postCommitVertexStoreBytes) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         CommitRequest.class,
@@ -91,7 +91,10 @@ public record CommitRequest(
                 codecs.of(new TypeToken<>() {}),
                 (t, encoder) ->
                     encoder.encode(
-                        t.transactions, t.stateVersion, t.proofBytes, t.vertexStoreBytes)));
+                        t.transactions,
+                        t.stateVersion,
+                        t.proofBytes,
+                        t.postCommitVertexStoreBytes)));
   }
 
   @Override
@@ -102,12 +105,12 @@ public record CommitRequest(
     return Objects.equals(transactions, that.transactions)
         && Objects.equals(stateVersion, that.stateVersion)
         && Arrays.equals(proofBytes, that.proofBytes)
-        && Objects.equals(vertexStoreBytes, that.vertexStoreBytes);
+        && Objects.equals(postCommitVertexStoreBytes, that.postCommitVertexStoreBytes);
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(transactions, stateVersion, vertexStoreBytes);
+    int result = Objects.hash(transactions, stateVersion, postCommitVertexStoreBytes);
     result = 31 * result + Arrays.hashCode(proofBytes);
     return result;
   }
@@ -121,8 +124,8 @@ public record CommitRequest(
         + stateVersion
         + ", proofBytes="
         + Arrays.toString(proofBytes)
-        + ", vertexStoreBytes="
-        + vertexStoreBytes
+        + ", postCommitVertexStoreBytes="
+        + postCommitVertexStoreBytes
         + '}';
   }
 }

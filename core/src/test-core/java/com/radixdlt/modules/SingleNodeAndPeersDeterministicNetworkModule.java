@@ -68,7 +68,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
@@ -77,7 +77,7 @@ import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.keys.BFTNodeFromGenesisModule;
+import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
@@ -110,7 +110,7 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
 
     var addressing = Addressing.ofNetwork(Network.INTEGRATIONTESTNET);
     bind(Addressing.class).toInstance(addressing);
-    install(new BFTNodeFromGenesisModule());
+    install(new BFTValidatorIdFromGenesisModule());
     install(new EventLoggerModule(EventLoggerConfig.addressed(addressing)));
     install(new InMemoryBFTKeyModule(self));
     install(new CryptoModule());
@@ -125,7 +125,7 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
   }
 
   @Provides
-  public List<BFTNode> nodes(@Self BFTNode self) {
+  public List<BFTValidatorId> nodes(@Self BFTValidatorId self) {
     return List.of(self);
   }
 

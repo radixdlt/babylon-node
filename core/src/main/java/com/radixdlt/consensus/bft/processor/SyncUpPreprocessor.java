@@ -71,16 +71,15 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundLeaderFailure;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.p2p.NodeId;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -304,9 +303,8 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
     }
   }
 
-  private boolean syncUp(HighQC highQC, BFTNode author, Runnable whenSynced) {
-    var nodeId = author == null ? null : NodeId.fromPublicKey(author.getKey());
-    SyncResult syncResult = this.bftSyncer.syncToQC(highQC, nodeId);
+  private boolean syncUp(HighQC highQC, BFTValidatorId author, Runnable whenSynced) {
+    SyncResult syncResult = this.bftSyncer.syncToQC(highQC, author);
 
     // TODO: use switch expression and eliminate unnecessary default case
     switch (syncResult) {

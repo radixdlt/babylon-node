@@ -128,9 +128,9 @@ public class EpochManagerTest {
   private ScheduledEventDispatcher<GetVerticesRequest> timeoutScheduler =
       rmock(ScheduledEventDispatcher.class);
   private EventDispatcher<LocalSyncRequest> syncLedgerRequestSender = rmock(EventDispatcher.class);
-  private RemoteEventDispatcher<BFTNode, Proposal> proposalDispatcher =
+  private RemoteEventDispatcher<NodeId, Proposal> proposalDispatcher =
       rmock(RemoteEventDispatcher.class);
-  private RemoteEventDispatcher<BFTNode, Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
+  private RemoteEventDispatcher<NodeId, Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
   private Mempool mempool = mock(Mempool.class);
   private StateComputer stateComputer =
       new StateComputer() {
@@ -162,12 +162,12 @@ public class EpochManagerTest {
       };
 
   private Module getExternalModule() {
-    BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
+    BFTValidatorId self = BFTValidatorId.create(ecKeyPair.getPublicKey());
     return new AbstractModule() {
       @Override
       protected void configure() {
         bind(HashSigner.class).toInstance(ecKeyPair::sign);
-        bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
+        bind(BFTValidatorId.class).annotatedWith(Self.class).toInstance(self);
         bind(new TypeLiteral<EventDispatcher<LocalTimeoutOccurrence>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<BFTInsertUpdate>>() {})
@@ -208,16 +208,16 @@ public class EpochManagerTest {
             .toInstance(rmock(ScheduledEventDispatcher.class));
         bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() {})
             .toInstance(rmock(ScheduledEventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, Proposal>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, Proposal>>() {})
             .toInstance(proposalDispatcher);
-        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, Vote>>() {}).toInstance(voteDispatcher);
+        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, Vote>>() {}).toInstance(voteDispatcher);
         bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesRequest>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
         bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesResponse>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
         bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesErrorResponse>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, LedgerStatusUpdate>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, LedgerStatusUpdate>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
 
         bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
@@ -266,7 +266,7 @@ public class EpochManagerTest {
 
       @Provides
       BFTConfiguration bftConfiguration(
-          @Self BFTNode self, Hasher hasher, BFTValidatorSet validatorSet) {
+          @Self BFTValidatorId self, Hasher hasher, BFTValidatorSet validatorSet) {
         var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
         var vertex =
             Vertex.createInitialEpochVertex(
@@ -279,7 +279,7 @@ public class EpochManagerTest {
         return new BFTConfiguration(
             proposerElection,
             validatorSet,
-            VertexStoreState.create(HighQC.from(qc), vertex, Optional.empty(), hasher));
+            VertexStoreState.create(HighQC.ofInitialEpochQc(qc), vertex, hasher));
       }
     };
   }
@@ -300,7 +300,7 @@ public class EpochManagerTest {
     // Arrange
     epochManager.start();
     BFTValidatorSet nextValidatorSet =
-        BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
+        BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTValidatorId.random(), UInt256.ONE)));
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     LedgerHeader header = LedgerHeader.genesis(accumulatorState, nextValidatorSet, 0, 0);
     VertexWithHash verifiedGenesisVertex = Vertex.createInitialEpochVertex(header).withId(hasher);
@@ -311,14 +311,15 @@ public class EpochManagerTest {
             header.getAccumulatorState(),
             header.consensusParentRoundTimestamp(),
             header.proposerTimestamp());
-    var genesisQC = QuorumCertificate.createInitialEpochQC(verifiedGenesisVertex, nextLedgerHeader);
+    var initialEpochQC =
+        QuorumCertificate.createInitialEpochQC(verifiedGenesisVertex, nextLedgerHeader);
     var proposerElection = new WeightedRotatingLeaders(nextValidatorSet);
     var bftConfiguration =
         new BFTConfiguration(
             proposerElection,
             nextValidatorSet,
             VertexStoreState.create(
-                HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty(), hasher));
+                HighQC.ofInitialEpochQc(initialEpochQC), verifiedGenesisVertex, hasher));
     LedgerProof proof = mock(LedgerProof.class);
     when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);
     when(proof.getNextEpoch())
@@ -335,6 +336,6 @@ public class EpochManagerTest {
     // Assert
     verify(proposalDispatcher, never())
         .dispatch(any(Iterable.class), argThat(p -> p.getEpoch() == epochChange.getNextEpoch()));
-    verify(voteDispatcher, never()).dispatch(any(BFTNode.class), any());
+    verify(voteDispatcher, never()).dispatch(any(NodeId.class), any());
   }
 }

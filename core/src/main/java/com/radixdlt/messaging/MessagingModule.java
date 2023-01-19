@@ -72,7 +72,7 @@ import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
@@ -137,13 +137,12 @@ public final class MessagingModule extends AbstractModule {
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?, ?> proposalDispatcher(MessageCentralBFTNetwork bftNetwork) {
-    return RxRemoteDispatcher.create(
-        BFTNode.class, Proposal.class, bftNetwork.proposalDispatcher());
+    return RxRemoteDispatcher.create(NodeId.class, Proposal.class, bftNetwork.proposalDispatcher());
   }
 
   @ProvidesIntoSet
   private RxRemoteDispatcher<?, ?> voteDispatcher(MessageCentralBFTNetwork bftNetwork) {
-    return RxRemoteDispatcher.create(BFTNode.class, Vote.class, bftNetwork.voteDispatcher());
+    return RxRemoteDispatcher.create(NodeId.class, Vote.class, bftNetwork.voteDispatcher());
   }
 
   @ProvidesIntoSet
@@ -242,7 +241,7 @@ public final class MessagingModule extends AbstractModule {
   private RxRemoteDispatcher<?, ?> bftLedgerStatusUpdateDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        BFTNode.class,
+        BFTValidatorId.class,
         LedgerStatusUpdate.class,
         (n, m) -> {
           var nodeId = NodeId.fromPublicKey(n.getKey());

@@ -84,7 +84,7 @@ import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.monitors.SimulationNodeEventsModule;
 import com.radixdlt.harness.simulation.network.SimulationNetwork;
 import com.radixdlt.harness.simulation.network.SimulationNodes;
-import com.radixdlt.keys.BFTNodeFromGenesisModule;
+import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
 import com.radixdlt.ledger.MockedBFTNodeModule;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
@@ -162,7 +162,7 @@ public final class SimulationTest {
     private ImmutableMap<ECDSASecp256k1PublicKey, ImmutableList<ECDSASecp256k1PublicKey>>
         addressBookNodes;
 
-    private List<BFTNode> bftNodes;
+    private List<BFTValidatorId> bftValidatorIds;
 
     private Builder() {}
 
@@ -223,10 +223,10 @@ public final class SimulationTest {
 
       final var bftNodes =
           initialStakesMap.keySet().stream()
-              .map(BFTNode::create)
+              .map(BFTValidatorId::create)
               .collect(ImmutableList.toImmutableList());
 
-      this.bftNodes = bftNodes;
+      this.bftValidatorIds = bftNodes;
 
       this.initialNodesModule =
           new AbstractModule() {
@@ -234,7 +234,7 @@ public final class SimulationTest {
             protected void configure() {
               // FIXME This list is injected in at least 2 places: NetworkDroppers and
               // NetworkLatencies. Maybe we could make this more explicit?
-              bind(new TypeLiteral<ImmutableList<BFTNode>>() {}).toInstance(bftNodes);
+              bind(new TypeLiteral<ImmutableList<BFTValidatorId>>() {}).toInstance(bftNodes);
             }
           };
 
@@ -374,7 +374,7 @@ public final class SimulationTest {
         mockedP2PModuleBuilder.withPeersByNode(this.addressBookNodes);
       } else {
         mockedP2PModuleBuilder.withAllNodes(
-            bftNodes.stream()
+            bftValidatorIds.stream()
                 .map(n -> NodeId.fromPublicKey(n.getKey()))
                 .collect(Collectors.toList()));
       }
@@ -383,7 +383,7 @@ public final class SimulationTest {
       modules.add(new TestMessagingModule.Builder().withDefaultRateLimit().build());
       // Functional
       if (this.functionalNodeModule.supportsREv2()) {
-        modules.add(new BFTNodeFromGenesisModule());
+        modules.add(new BFTValidatorIdFromGenesisModule());
       } else {
         modules.add(new MockedBFTNodeModule());
       }

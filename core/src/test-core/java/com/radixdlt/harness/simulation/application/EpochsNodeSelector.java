@@ -65,7 +65,7 @@
 package com.radixdlt.harness.simulation.application;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.p2p.NodeId;
 import io.reactivex.rxjava3.core.Single;
@@ -81,7 +81,7 @@ public class EpochsNodeSelector implements NodeSelector {
         .latestEpochChanges()
         .map(
             e -> {
-              ImmutableList<BFTNode> validators =
+              ImmutableList<BFTValidatorId> validators =
                   e.getBFTConfiguration().getValidatorSet().nodes().asList();
               int validatorSetSize = validators.size();
               return NodeId.fromPublicKey(

@@ -91,10 +91,10 @@ public final class BFTBuilder {
   private EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher;
 
   // Instance specific objects
-  private BFTNode self;
+  private BFTValidatorId self;
 
   private RoundUpdate roundUpdate;
-  private RemoteEventDispatcher<BFTNode, Vote> voteDispatcher;
+  private RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher;
   private SafetyRules safetyRules;
 
   private TimeSupplier timeSupplier;
@@ -108,7 +108,7 @@ public final class BFTBuilder {
     return new BFTBuilder();
   }
 
-  public BFTBuilder self(BFTNode self) {
+  public BFTBuilder self(BFTValidatorId self) {
     this.self = self;
     return this;
   }
@@ -118,7 +118,7 @@ public final class BFTBuilder {
     return this;
   }
 
-  public BFTBuilder voteDispatcher(RemoteEventDispatcher<BFTNode, Vote> voteDispatcher) {
+  public BFTBuilder voteDispatcher(RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher) {
     this.voteDispatcher = voteDispatcher;
     return this;
   }

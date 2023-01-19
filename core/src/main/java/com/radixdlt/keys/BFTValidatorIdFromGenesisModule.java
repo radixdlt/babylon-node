@@ -62,99 +62,40 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.keys;
 
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.rev2.SystemAddress;
-import com.radixdlt.utils.Bytes;
-import java.util.Objects;
+import com.radixdlt.store.LastProof;
+import com.radixdlt.sync.TransactionsAndProofReader;
 
-/**
- * A node in a BFT network which can run BFT validation
- *
- * <p>TODO: turn this into an interface so that an ECPublicKey is not required TODO: Serialization
- * of BFT messages are currently what prevent this from happening
- */
-public final class BFTNode {
-  private final ECDSASecp256k1PublicKey key;
-  private final SystemAddress validatorAddress;
-  private final String simpleName;
+public final class BFTValidatorIdFromGenesisModule extends AbstractModule {
+  @Provides
+  @Singleton
+  @Self
+  private BFTValidatorId self(
+      @Self ECDSASecp256k1PublicKey key,
+      @LastProof LedgerProof ignored,
+      TransactionsAndProofReader transactionsAndProofReader) {
+    var genesisProof = transactionsAndProofReader.getEpochProof(1).orElseThrow();
+    var genesisValidatorSet = genesisProof.getNextValidatorSet().orElseThrow();
+    var potentialBFTValidators =
+        genesisValidatorSet.getValidators().stream()
+            .map(BFTValidator::getValidatorId)
+            .filter(node -> node.getKey().equals(key))
+            .toList();
 
-  private BFTNode(SystemAddress validatorAddress, ECDSASecp256k1PublicKey key, String simpleName) {
-    this.validatorAddress = validatorAddress;
-    this.key = Objects.requireNonNull(key);
-    this.simpleName = Objects.requireNonNull(simpleName);
-  }
-
-  public static BFTNode create(SystemAddress validatorAddress, ECDSASecp256k1PublicKey key) {
-    final String name;
-    if (validatorAddress == null) {
-      name = key.toHex().substring(0, 10);
-    } else {
-      name = validatorAddress.toHexString().substring(0, 6) + ":" + key.toHex().substring(0, 6);
-    }
-    return new BFTNode(validatorAddress, key, name);
-  }
-
-  public static BFTNode create(ECDSASecp256k1PublicKey key) {
-    var shortenedAddress = key.toHex().substring(0, 10);
-    return new BFTNode(null, key, shortenedAddress);
-  }
-
-  public static BFTNode fromSerializedString(String str) {
-    var strings = str.split(":");
-    if (strings.length != 2) {
-      throw new IllegalStateException("Error decoding node");
+    if (potentialBFTValidators.size() > 1) {
+      throw new IllegalStateException(
+          "Multiple nodes with the same key found in genesis. Cannot instantiate.");
     }
 
-    try {
-      var validatorAddress =
-          strings[0].length() == 0 ? null : SystemAddress.create(Bytes.fromHexString(strings[0]));
-      var key = ECDSASecp256k1PublicKey.fromBytes(Bytes.fromHexString(strings[1]));
-      return create(validatorAddress, key);
-    } catch (PublicKeyException e) {
-      throw new IllegalStateException("Error decoding public key", e);
-    }
-  }
-
-  public String toSerializedString() {
-    var addressString =
-        this.validatorAddress == null ? "" : Bytes.toHexString(this.validatorAddress.value());
-    var keyString = Bytes.toHexString(this.key.getCompressedBytes());
-    return addressString + ":" + keyString;
-  }
-
-  public static BFTNode random() {
-    return create(ECKeyPair.generateNew().getPublicKey());
-  }
-
-  public ECDSASecp256k1PublicKey getKey() {
-    return key;
-  }
-
-  public SystemAddress getValidatorAddress() {
-    return validatorAddress;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(key, validatorAddress);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof BFTNode bftNodeId)) {
-      return false;
-    }
-
-    return Objects.equals(bftNodeId.key, this.key)
-        && Objects.equals(bftNodeId.validatorAddress, this.validatorAddress);
-  }
-
-  @Override
-  public String toString() {
-    return simpleName;
+    return potentialBFTValidators.stream().findFirst().orElse(BFTValidatorId.create(key));
   }
 }

@@ -134,7 +134,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
     void commit(
         CommittedTransactionsWithProof committedTransactionsWithProof,
-        VertexStoreState vertexStoreState);
+        VertexStoreState preCommitVertexStoreState);
   }
 
   private final Comparator<LedgerProof> headerComparator;
@@ -298,7 +298,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
   private void commit(
       CommittedTransactionsWithProof committedTransactionsWithProof,
-      VertexStoreState vertexStoreState) {
+      VertexStoreState preCommitVertexStoreState) {
     synchronized (lock) {
       final LedgerProof nextHeader = committedTransactionsWithProof.getProof();
       if (headerComparator.compare(nextHeader, this.currentLedgerHeader) <= 0) {
@@ -318,7 +318,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       }
 
       var transactions = verifiedExtension.get();
-      if (vertexStoreState == null) {
+      if (preCommitVertexStoreState == null) {
         this.metrics.ledger().syncTransactionsProcessed().inc(transactions.size());
       } else {
         this.metrics.ledger().bftTransactionsProcessed().inc(transactions.size());
@@ -329,7 +329,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               transactions, committedTransactionsWithProof.getProof());
 
       // persist
-      this.stateComputer.commit(extensionToCommit, vertexStoreState);
+      this.stateComputer.commit(extensionToCommit, preCommitVertexStoreState);
 
       // TODO: move all of the following to post-persist event handling
       this.currentLedgerHeader = nextHeader;

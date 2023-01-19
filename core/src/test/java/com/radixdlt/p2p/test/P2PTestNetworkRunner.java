@@ -69,7 +69,7 @@ import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyOps;
@@ -126,7 +126,7 @@ public final class P2PTestNetworkRunner {
             .collect(ImmutableList.toImmutableList());
 
     final var bftAddressBook =
-        nodesKeys.stream().map(key -> BFTNode.create(key.getPublicKey())).toList();
+        nodesKeys.stream().map(key -> BFTValidatorId.create(key.getPublicKey())).toList();
     final var p2pAddressBook =
         nodesKeys.stream().map(key -> NodeId.fromPublicKey(key.getPublicKey())).toList();
     final var network =
@@ -161,7 +161,7 @@ public final class P2PTestNetworkRunner {
   }
 
   private static Injector createInjector(
-      Function<BFTNode, Integer> bftAddressBook,
+      Function<BFTValidatorId, Integer> bftAddressBook,
       Function<NodeId, Integer> p2pAddressBook,
       MockP2PNetwork p2pNetwork,
       DeterministicNetwork network,
@@ -211,9 +211,9 @@ public final class P2PTestNetworkRunner {
             bind(ECDSASecp256k1PublicKey.class)
                 .annotatedWith(Self.class)
                 .toInstance(nodeKey.getPublicKey());
-            bind(BFTNode.class)
+            bind(BFTValidatorId.class)
                 .annotatedWith(Self.class)
-                .toInstance(BFTNode.create(nodeKey.getPublicKey()));
+                .toInstance(BFTValidatorId.create(nodeKey.getPublicKey()));
             bind(NodeId.class)
                 .annotatedWith(Self.class)
                 .toInstance(NodeId.fromPublicKey(nodeKey.getPublicKey()));

@@ -67,7 +67,7 @@ package com.radixdlt.harness.simulation.network;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.p2p.NodeId;
 import java.util.Collections;
@@ -82,17 +82,17 @@ import java.util.stream.Collectors;
 public class FProposalsPerRoundDropper implements Predicate<SimulationNetwork.MessageInTransit> {
   private final ConcurrentHashMap<Round, Set<NodeId>> proposalToDrop = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<Round, Integer> proposalCount = new ConcurrentHashMap<>();
-  private final ImmutableList<BFTNode> validatorSet;
+  private final ImmutableList<BFTValidatorId> validatorSet;
   private final Random random;
   private final int faultySize;
 
-  public FProposalsPerRoundDropper(ImmutableList<BFTNode> validatorSet, Random random) {
+  public FProposalsPerRoundDropper(ImmutableList<BFTValidatorId> validatorSet, Random random) {
     this.validatorSet = validatorSet;
     this.random = random;
     this.faultySize = (validatorSet.size() - 1) / 3;
   }
 
-  public FProposalsPerRoundDropper(ImmutableList<BFTNode> validatorSet) {
+  public FProposalsPerRoundDropper(ImmutableList<BFTValidatorId> validatorSet) {
     this.validatorSet = validatorSet;
     this.random = null;
     this.faultySize = (validatorSet.size() - 1) / 3;
@@ -106,7 +106,7 @@ public class FProposalsPerRoundDropper implements Predicate<SimulationNetwork.Me
           proposalToDrop.computeIfAbsent(
               round,
               v -> {
-                final List<BFTNode> nodes = Lists.newArrayList(validatorSet);
+                final List<BFTValidatorId> nodes = Lists.newArrayList(validatorSet);
                 if (random != null) {
                   Collections.shuffle(nodes, random);
                 }

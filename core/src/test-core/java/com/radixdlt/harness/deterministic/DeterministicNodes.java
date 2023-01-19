@@ -68,7 +68,7 @@ import com.google.common.collect.Streams;
 import com.google.inject.*;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.Environment;
@@ -77,7 +77,7 @@ import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.keys.BFTNodeFromGenesisModule;
+import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.monitoring.Metrics;
@@ -186,11 +186,11 @@ public final class DeterministicNodes implements AutoCloseable {
                     .toInstance(NodeId.fromPublicKey(config.key()));
 
                 if (config.loadFromGenesis()) {
-                  install(new BFTNodeFromGenesisModule());
+                  install(new BFTValidatorIdFromGenesisModule());
                 } else {
-                  bind(BFTNode.class)
+                  bind(BFTValidatorId.class)
                       .annotatedWith(Self.class)
-                      .toInstance(BFTNode.create(config.validatorAddress(), config.key()));
+                      .toInstance(BFTValidatorId.create(config.validatorAddress(), config.key()));
                 }
 
                 install(

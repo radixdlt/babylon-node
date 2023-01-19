@@ -91,25 +91,25 @@ public final class BFTValidator {
   private final UInt256 power;
 
   // Public key for consensus
-  private final BFTNode node;
+  private final BFTValidatorId node;
 
   @JsonCreator
   private BFTValidator(
       @JsonProperty(value = "node", required = true) String node,
       @JsonProperty(value = "power", required = true) UInt256 power) {
-    this(BFTNode.fromSerializedString(node), power);
+    this(BFTValidatorId.fromSerializedString(node), power);
   }
 
-  private BFTValidator(BFTNode node, UInt256 power) {
+  private BFTValidator(BFTValidatorId node, UInt256 power) {
     this.node = requireNonNull(node);
     this.power = requireNonNull(power);
   }
 
-  public static BFTValidator from(BFTNode node, UInt256 power) {
+  public static BFTValidator from(BFTValidatorId node, UInt256 power) {
     return new BFTValidator(node, power);
   }
 
-  public BFTNode getNode() {
+  public BFTValidatorId getValidatorId() {
     return node;
   }
 
@@ -119,8 +119,8 @@ public final class BFTValidator {
 
   @JsonProperty("node")
   @DsonOutput(Output.ALL)
-  private String getSerializerNode() {
-    return node.toSerializedString();
+  private String getSerializerNodeKey() {
+    return this.node.toSerializedString();
   }
 
   @Override

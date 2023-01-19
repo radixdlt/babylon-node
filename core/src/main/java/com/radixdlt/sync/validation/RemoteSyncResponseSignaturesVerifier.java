@@ -68,7 +68,7 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.ConsensusHasher;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.TimestampedECDSASignature;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import java.util.Map.Entry;
@@ -93,7 +93,8 @@ public final class RemoteSyncResponseSignaturesVerifier {
     var opaque = endHeader.getOpaque();
     var header = endHeader.getLedgerHeader();
     var signatures = endHeader.getSignatures().getSignatures();
-    for (Entry<BFTNode, TimestampedECDSASignature> nodeAndSignature : signatures.entrySet()) {
+    for (Entry<BFTValidatorId, TimestampedECDSASignature> nodeAndSignature :
+        signatures.entrySet()) {
       var node = nodeAndSignature.getKey();
       var signature = nodeAndSignature.getValue();
       final var voteDataHash =

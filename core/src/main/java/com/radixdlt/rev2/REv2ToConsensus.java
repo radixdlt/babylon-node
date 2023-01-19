@@ -66,8 +66,8 @@ package com.radixdlt.rev2;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.NextEpoch;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.statecomputer.commit.Validator;
 import com.radixdlt.utils.UInt256;
@@ -79,7 +79,8 @@ public final class REv2ToConsensus {
   }
 
   public static BFTValidator validator(Validator validator) {
-    return BFTValidator.from(BFTNode.create(validator.address(), validator.key()), UInt256.ONE);
+    return BFTValidator.from(
+        BFTValidatorId.create(validator.address(), validator.key()), UInt256.ONE);
   }
 
   public static BFTValidatorSet validatorSet(Set<Validator> validators) {

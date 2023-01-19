@@ -91,12 +91,12 @@ import org.apache.logging.log4j.Logger;
 public final class BFTEventReducer implements BFTEventProcessor {
   private static final Logger log = LogManager.getLogger();
 
-  private final BFTNode self;
+  private final BFTValidatorId self;
   private final VertexStoreAdapter vertexStore;
   private final Pacemaker pacemaker;
   private final EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher;
   private final EventDispatcher<NoVote> noVoteDispatcher;
-  private final RemoteEventDispatcher<BFTNode, Vote> voteDispatcher;
+  private final RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher;
   private final Hasher hasher;
   private final Metrics metrics;
   private final SafetyRules safetyRules;
@@ -115,12 +115,12 @@ public final class BFTEventReducer implements BFTEventProcessor {
   private boolean hasLeaderFailedTheRound = false;
 
   public BFTEventReducer(
-      BFTNode self,
+      BFTValidatorId self,
       Pacemaker pacemaker,
       VertexStoreAdapter vertexStore,
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteDispatcher,
-      RemoteEventDispatcher<BFTNode, Vote> voteDispatcher,
+      RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher,
       Hasher hasher,
       Metrics metrics,
       SafetyRules safetyRules,
@@ -192,7 +192,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
     }
 
     // TODO: what if insertUpdate occurs before roundUpdate
-    final BFTNode nextLeader = this.latestRoundUpdate.getNextLeader();
+    final BFTValidatorId nextLeader = this.latestRoundUpdate.getNextLeader();
     final Optional<Vote> maybeVote =
         this.safetyRules.createVote(
             update.getInserted().getVertexWithHash(),

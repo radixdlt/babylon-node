@@ -159,11 +159,11 @@ public class DispatcherModule extends AbstractModule {
         .in(Scopes.SINGLETON);
 
     // BFT
-    bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, Proposal>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(BFTNode.class, Proposal.class))
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, Proposal>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, Proposal.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, Vote>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(BFTNode.class, Vote.class))
+    bind(new TypeLiteral<RemoteEventDispatcher<NodeId, Vote>>() {})
+        .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, Vote.class))
         .in(Scopes.SINGLETON);
 
     // BFT Sync
@@ -297,9 +297,6 @@ public class DispatcherModule extends AbstractModule {
 
     bind(new TypeLiteral<RemoteEventDispatcher<NodeId, LedgerStatusUpdate>>() {})
         .toProvider(Dispatchers.remoteDispatcherProvider(NodeId.class, LedgerStatusUpdate.class))
-        .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<RemoteEventDispatcher<BFTNode, LedgerStatusUpdate>>() {})
-        .toProvider(Dispatchers.remoteDispatcherProvider(BFTNode.class, LedgerStatusUpdate.class))
         .in(Scopes.SINGLETON);
   }
 
