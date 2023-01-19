@@ -116,10 +116,14 @@ public final class LedgerProof {
     this.signatures = Objects.requireNonNull(signatures);
   }
 
-  public static LedgerProof mock() {
-    var acc = new AccumulatorState(0, HashUtils.zero256());
-    var header = LedgerHeader.create(0, Round.genesis(), acc, 0, 0);
+  public static LedgerProof mockAtStateVersion(long stateVersion) {
+    final var acc = new AccumulatorState(stateVersion, HashUtils.zero256());
+    final var header = LedgerHeader.create(0, Round.genesis(), acc, 0, 0);
     return new LedgerProof(HashUtils.zero256(), header, new TimestampedECDSASignatures());
+  }
+
+  public static LedgerProof mock() {
+    return mockAtStateVersion(0L);
   }
 
   public static LedgerProof genesis(
