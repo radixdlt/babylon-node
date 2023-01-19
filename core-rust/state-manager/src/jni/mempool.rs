@@ -83,6 +83,7 @@ use crate::{mempool::*, LedgerPayloadHash, UserPayloadHash};
 //
 
 #[no_mangle]
+#[tracing::instrument(skip_all)]
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
     env: JNIEnv,
     _class: JClass,
@@ -112,6 +113,7 @@ fn do_add(
 }
 
 #[no_mangle]
+#[tracing::instrument(skip_all)]
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForProposal(
     env: JNIEnv,
     _class: JClass,
@@ -158,6 +160,7 @@ fn do_get_transactions_for_proposal(
 }
 
 #[no_mangle]
+#[tracing::instrument(skip_all)]
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_getCount(
     env: JNIEnv,
     _class: JClass,
@@ -173,6 +176,7 @@ fn do_get_count(state_manager: &ActualStateManager, _args: ()) -> i32 {
 }
 
 #[no_mangle]
+#[tracing::instrument(skip_all)]
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsToRelay(
     env: JNIEnv,
     _class: JClass,

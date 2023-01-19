@@ -207,6 +207,7 @@ impl SimpleMempool {
             .collect()
     }
 
+    #[tracing::instrument(skip_all)]
     pub fn transactions(&self) -> &HashMap<UserPayloadHash, MempoolData> {
         &self.data
     }

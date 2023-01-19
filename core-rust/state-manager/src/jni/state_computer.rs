@@ -82,6 +82,7 @@ use super::state_manager::ActualStateManager;
 //
 
 #[no_mangle]
+#[tracing::instrument(skip_all)]
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_verify(
     env: JNIEnv,
     _class: JClass,
@@ -108,6 +109,7 @@ fn do_verify(state_manager: &ActualStateManager, args: JavaRawTransaction) -> Re
 }
 
 #[no_mangle]
+#[tracing::instrument(skip_all)]
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_saveVertexStore(
     env: JNIEnv,
     _class: JClass,
@@ -124,6 +126,7 @@ fn do_save_vertex_store(state_manager: &ActualStateManager, args: Vec<u8>) {
 }
 
 #[no_mangle]
+#[tracing::instrument(skip_all)]
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepareGenesis(
     env: JNIEnv,
     _class: JClass,
@@ -133,7 +136,6 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepareGene
     jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_prepare_genesis)
 }
 
-#[tracing::instrument(skip_all)]
 fn do_prepare_genesis(
     state_manager: &ActualStateManager,
     prepare_request: JavaPrepareGenesisRequest,
@@ -142,6 +144,7 @@ fn do_prepare_genesis(
 }
 
 #[no_mangle]
+#[tracing::instrument(skip_all)]
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
     env: JNIEnv,
     _class: JClass,
@@ -151,7 +154,6 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
     jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_prepare)
 }
 
-#[tracing::instrument(skip_all)]
 fn do_prepare(
     state_manager: &ActualStateManager,
     prepare_request: JavaPrepareRequest,
@@ -160,6 +162,7 @@ fn do_prepare(
 }
 
 #[no_mangle]
+#[tracing::instrument(skip_all)]
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
     env: JNIEnv,
     _class: JClass,
@@ -169,7 +172,6 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
     jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_commit)
 }
 
-#[tracing::instrument(skip_all)]
 fn do_commit(
     state_manager: &ActualStateManager,
     args: JavaCommitRequest,
@@ -180,6 +182,7 @@ fn do_commit(
 }
 
 #[no_mangle]
+#[tracing::instrument(skip_all)]
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_componentXrdAmount(
     env: JNIEnv,
     _class: JClass,
@@ -217,6 +220,7 @@ fn get_validator_info(
 }
 
 #[no_mangle]
+#[tracing::instrument(skip_all)]
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_epoch(
     env: JNIEnv,
     _class: JClass,

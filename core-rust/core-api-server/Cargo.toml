@@ -47,7 +47,7 @@ opentelemetry = { version = "0.18", default-features = false, features = [
   "rt-tokio",
   "trace",
 ] }
-opentelemetry-otlp = { version = "*", default-features = false, features = ["trace", "http-proto"] }
+opentelemetry-otlp = { version = "*", features = ["grpc-sys"] }
 
 ### TYPES FOR THE SERVER
 # Axum - see https://docs.rs/axum/latest/axum/#required-dependencies

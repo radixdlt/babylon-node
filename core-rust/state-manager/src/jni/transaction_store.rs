@@ -90,6 +90,7 @@ pub enum TransactionOutcomeJava {
 }
 
 #[no_mangle]
+#[tracing::instrument(skip_all)]
 extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getTransactionAtStateVersion(
     env: JNIEnv,
     _class: JClass,
@@ -137,6 +138,7 @@ fn do_get_transaction_at_state_version(
 }
 
 #[no_mangle]
+#[tracing::instrument(skip_all)]
 extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getTxnsAndProof(
     env: JNIEnv,
     _class: JClass,
@@ -163,6 +165,7 @@ fn do_get_txns_and_proof(
 }
 
 #[no_mangle]
+#[tracing::instrument(skip_all)]
 extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getEpochProof(
     env: JNIEnv,
     _class: JClass,
@@ -178,6 +181,7 @@ fn do_get_epoch_proof(state_manager: &ActualStateManager, state_version: u64) ->
 }
 
 #[no_mangle]
+#[tracing::instrument(skip_all)]
 extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getLastProof(
     env: JNIEnv,
     _class: JClass,

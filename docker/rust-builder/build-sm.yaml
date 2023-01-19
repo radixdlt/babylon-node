@@ -9,5 +9,5 @@ services:
       target: mapped-volume-build
     volumes:
       - ../../core-rust:/app # Allow caching incremental compilation artifacts
-      - .cargo/registry:/usr/local/cargo/registry # Cache cargo downloads from the registry
-      - .cargo/git:/usr/local/cargo/git # Cache cargo git checkouts
+      - .cargo/registry:/root/.cargo/registry # Cache cargo downloads from the registry
+      - .cargo/git:/root/.cargo/git # Cache cargo git checkouts

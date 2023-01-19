@@ -70,8 +70,10 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
-use opentelemetry_otlp::WithExportConfig;
-use parking_lot::RwLock;
+use opentelemetry::sdk::trace::{ShouldSample};
+use opentelemetry::trace::{SamplingResult, TraceContextExt, TraceState};
+use opentelemetry_otlp::{WithExportConfig};
+
 use state_manager::jni::java_structure::JavaStructure;
 use state_manager::jni::state_manager::{ActualStateManager, JNIStateManager};
 use state_manager::jni::utils::*;
@@ -83,6 +85,47 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
 const POINTER_JNI_FIELD_NAME: &str = "rustCoreApiServerPointer";
+
+#[derive(Debug, Clone)]
+struct SpanSampler {}
+
+impl ShouldSample for SpanSampler {
+    fn should_sample(
+        &self,
+        parent_context: Option<&opentelemetry::Context>,
+        _trace_id: opentelemetry::trace::TraceId,
+        _name: &str,
+        _span_kind: &opentelemetry::trace::SpanKind,
+        attributes: &opentelemetry::trace::OrderMap<opentelemetry::Key, opentelemetry::Value>,
+        _links: &[opentelemetry::trace::Link],
+        _instrumentation_library: &opentelemetry::InstrumentationLibrary,
+    ) -> opentelemetry::trace::SamplingResult {
+        let busy_ns_key = opentelemetry::Key::from_static_str("busy_ns");
+        let busy = match attributes.get(&busy_ns_key) {
+            Some(opentelemetry::Value::I64(busy)) => *busy,
+            _ => 0_i64,
+        };
+
+        let idle_ns_key = opentelemetry::Key::from_static_str("idle_ns");
+        let idle = match attributes.get(&idle_ns_key) {
+            Some(opentelemetry::Value::I64(idle)) => *idle,
+            _ => 0_i64,
+        };
+
+        SamplingResult {
+            decision: if busy + idle > 100_000_000 {
+                opentelemetry::trace::SamplingDecision::RecordAndSample
+            } else {
+                opentelemetry::trace::SamplingDecision::RecordOnly
+            },
+            attributes: Vec::new(),
+            trace_state: match parent_context {
+                Some(ctx) => ctx.span().span_context().trace_state().clone(),
+                None => TraceState::default(),
+            },
+        }
+    }
+}
 
 pub struct RunningServer {
     pub tokio_runtime: TokioRuntime,
@@ -141,21 +184,28 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
     let bind_addr = format!("{}:{}", config.bind_interface, config.port);
     tokio_runtime.spawn(async move {
         let mut headers = std::collections::HashMap::new();
-        headers.insert("Authorization".into(), format!("Basic: eyJrIjoiMWYxMzIyZThlZTA5YmYyNWM0ZmMwYmE1ZTUzNTI0YmZhYTI2NWM1ZSIsIm4iOiJvcGVudGVsZW1ldHJ5LXRlc3Qta2V5LWRlbGV0ZW1lIiwiaWQiOjE1NDc2OX0="));
-        let tracer = opentelemetry_otlp::new_pipeline().tracing().with_exporter(opentelemetry_otlp::new_exporter().http().with_endpoint("https://otlp-gateway-prod-eu-west-0.grafana.net/otlp").with_headers(headers)).install_batch(opentelemetry::runtime::Tokio).unwrap();
-                // let tracer = opentelemetry_jaeger::new_collector_pipeline().with_reqwest().with_username("154769").with_endpoint("https://otlp-gateway-prod-eu-central-0.grafana.net/otlp").with_password("a6cf97964aec1b81dd833d904eaab1c4fe97125d")
-                //     .with_service_name("core_api")
-                //     .install_batch(opentelemetry::runtime::Tokio)
-                //     .unwrap();
+        headers.insert("Authorization".into(), format!("Basic MzYzMzM3OmV5SnJJam9pTVdZeE16SXlaVGhsWlRBNVltWXlOV00wWm1Nd1ltRTFaVFV6TlRJMFltWmhZVEkyTldNMVpTSXNJbTRpT2lKdmNHVnVkR1ZzWlcxbGRISjVMWFJsYzNRdGEyVjVMV1JsYkdWMFpXMWxJaXdpYVdRaU9qRTFORGMyT1gwPQ=="));
+        let otlp_exporter = opentelemetry_otlp::new_exporter()
+            .grpcio()
+            .with_endpoint("tempo-eu-west-0.grafana.net:443")
+            .with_headers(headers)
+            .with_tls(true);
+        let tracer = opentelemetry_otlp::new_pipeline()
+            .tracing()
+            .with_exporter(otlp_exporter)
+            // .with_trace_config(trace::config().with_sampler(SpanSampler {}))
+            .install_batch(opentelemetry::runtime::Tokio)
+            .unwrap();
 
-                let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+        //     .with_service_name("core_api")
+        let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer);
 
-                // Trying to initialize a global logger here, and carry on if this fails.
-                let _ = tracing_subscriber::registry()
-                    .with(tracing_subscriber::filter::LevelFilter::INFO)
-                    .with(opentelemetry)
-                    .with(tracing_subscriber::fmt::layer())
-                    .try_init();
+        // Trying to initialize a global logger here, and carry on if this fails.
+        let _ = tracing_subscriber::registry()
+            .with(tracing_subscriber::filter::LevelFilter::INFO)
+            .with(opentelemetry)
+            .with(tracing_subscriber::fmt::layer())
+            .try_init();
         // match std::env::var("JAEGER_AGENT_ENDPOINT") {
         //     Ok(jaeger_agent_endpoint) => {
         //     }

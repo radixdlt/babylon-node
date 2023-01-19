@@ -62,9 +62,11 @@
  * permissions under this License.
  */
 
+
 use jni::JNIEnv;
 use jni::{objects::JObject, sys::jbyteArray};
 use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
+
 
 use crate::jni::state_manager::ActualStateManager;
 use crate::result::{StateManagerError, StateManagerResult, ERRCODE_JNI};
@@ -105,7 +107,6 @@ pub fn jni_static_sbor_call<
     jni_slice_to_jbytearray(&env, &response_result.to_java().unwrap())
 }
 
-#[tracing::instrument(skip_all)]
 fn jni_static_sbor_call_inner<Args: JavaStructure, Response: JavaStructure>(
     env: &JNIEnv,
     request_payload: jbyteArray,
@@ -165,9 +166,8 @@ fn jni_state_manager_sbor_read_call_inner<Args: JavaStructure, Response: JavaStr
 ) -> StateManagerResult<Response> {
     let vec_payload = jni_jbytearray_to_vector(env, request_payload)?;
     let args = Args::from_java(&vec_payload)?;
-
     let state_manager = JNIStateManager::get_state_manager(env, j_state_manager);
 
-    let response = method(&state_manager, args);
+    let response = { method(&state_manager, args) };
     Ok(response)
 }

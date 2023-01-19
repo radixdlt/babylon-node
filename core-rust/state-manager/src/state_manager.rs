@@ -493,6 +493,7 @@ where
         }
     }
 
+    #[tracing::instrument(skip_all)]
     pub fn get_relay_transactions(
         &self,
         max_num_txns: u64,
