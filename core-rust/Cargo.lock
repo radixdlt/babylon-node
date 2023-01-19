@@ -124,6 +124,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
+name = "bitmaps"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "031043d04099746d8db04daf1fa424b2bc8bd69d92b25962dcde24da39ab64a2"
+dependencies = [
+ "typenum",
+]
+
+[[package]]
 name = "block-buffer"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -305,8 +314,7 @@ dependencies = [
 [[package]]
 name = "const-sha1"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb58b6451e8c2a812ad979ed1d83378caa5e927eef2622017a45f251457c2c9d"
+source = "git+https://github.com/radixdlt/const-sha1#5e9ae2a99e9c76e85aa67f42e4b62e7f7ce8dad4"
 
 [[package]]
 name = "core-api-server"
@@ -503,7 +511,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "907076dfda823b0b36d2a1bb5f90c96660a5bbcd7729e10727f07858f22c4edc"
 dependencies = [
  "cfg-if",
- "hashbrown",
+ "hashbrown 0.12.3",
  "lock_api",
  "once_cell",
  "parking_lot_core",
@@ -724,6 +732,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 
 [[package]]
+name = "hashbrown"
+version = "0.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43a3c133739dddd0d2990f9a4bdf8eb4b21ef50e4851ca85ab661199821d510e"
+
+[[package]]
 name = "heck"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -841,14 +855,36 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 
 [[package]]
+name = "im"
+version = "15.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0acd33ff0285af998aaf9b57342af478078f53492322fafc47450e09397e0e9"
+dependencies = [
+ "bitmaps",
+ "rand_core 0.6.4",
+ "rand_xoshiro",
+ "sized-chunks",
+ "typenum",
+ "version_check",
+]
+
+[[package]]
 name = "indexmap"
 version = "1.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1885e79c1fc4b10f0e172c475f458b7f7b93061064d98c3293e98c5ba0c8b399"
 dependencies = [
  "autocfg",
- "hashbrown",
+ "hashbrown 0.12.3",
  "serde",
+]
+
+[[package]]
+name = "indexmap"
+version = "2.0.0-pre"
+source = "git+https://github.com/bluss/indexmap?rev=eedabaca9f84e520eab01325b305c08f3773e66c#eedabaca9f84e520eab01325b305c08f3773e66c"
+dependencies = [
+ "hashbrown 0.13.2",
 ]
 
 [[package]]
@@ -1086,7 +1122,7 @@ dependencies = [
 [[package]]
 name = "native-sdk"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-9055c6#9055c688ce529abd6b0b554ba21e24882444b6da"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-94f624#94f624663d3f445d42e2931d328feb636166d309"
 dependencies = [
  "radix-engine-derive",
  "radix-engine-interface",
@@ -1223,7 +1259,7 @@ dependencies = [
  "fnv",
  "futures-channel",
  "futures-util",
- "indexmap",
+ "indexmap 1.9.2",
  "js-sys",
  "once_cell",
  "pin-project-lite",
@@ -1404,18 +1440,19 @@ dependencies = [
 [[package]]
 name = "radix-engine"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-9055c6#9055c688ce529abd6b0b554ba21e24882444b6da"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-94f624#94f624663d3f445d42e2931d328feb636166d309"
 dependencies = [
  "bitflags",
  "colored",
  "hex",
- "indexmap",
+ "im",
  "moka",
  "native-sdk",
  "parity-wasm",
  "radix-engine-constants",
  "radix-engine-interface",
  "sbor",
+ "slotmap",
  "transaction",
  "utils",
  "wasm-instrument",
@@ -1426,12 +1463,12 @@ dependencies = [
 [[package]]
 name = "radix-engine-constants"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-9055c6#9055c688ce529abd6b0b554ba21e24882444b6da"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-94f624#94f624663d3f445d42e2931d328feb636166d309"
 
 [[package]]
 name = "radix-engine-derive"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-9055c6#9055c688ce529abd6b0b554ba21e24882444b6da"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-94f624#94f624663d3f445d42e2931d328feb636166d309"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1442,7 +1479,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-interface"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-9055c6#9055c688ce529abd6b0b554ba21e24882444b6da"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-94f624#94f624663d3f445d42e2931d328feb636166d309"
 dependencies = [
  "bech32",
  "bnum",
@@ -1465,7 +1502,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-stores"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-9055c6#9055c688ce529abd6b0b554ba21e24882444b6da"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-94f624#94f624663d3f445d42e2931d328feb636166d309"
 dependencies = [
  "radix-engine",
  "radix-engine-interface",
@@ -1541,6 +1578,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ca3129af7b92a17112d59ad498c6f81eaf463253766b90396d39ea7a39d6613c"
 dependencies = [
  "rand_core 0.5.1",
+]
+
+[[package]]
+name = "rand_xoshiro"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f97cdb2a36ed4183de61b2f824cc45c9f1037f28afe0a322e9fff4c108b5aaa"
+dependencies = [
+ "rand_core 0.6.4",
 ]
 
 [[package]]
@@ -1625,9 +1671,10 @@ dependencies = [
 [[package]]
 name = "sbor"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-9055c6#9055c688ce529abd6b0b554ba21e24882444b6da"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-94f624#94f624663d3f445d42e2931d328feb636166d309"
 dependencies = [
- "indexmap",
+ "const-sha1",
+ "indexmap 2.0.0-pre",
  "sbor-derive",
  "serde",
 ]
@@ -1635,7 +1682,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-9055c6#9055c688ce529abd6b0b554ba21e24882444b6da"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-94f624#94f624663d3f445d42e2931d328feb636166d309"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -1644,7 +1691,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive-common"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-9055c6#9055c688ce529abd6b0b554ba21e24882444b6da"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-94f624#94f624663d3f445d42e2931d328feb636166d309"
 dependencies = [
  "const-sha1",
  "proc-macro2",
@@ -1676,7 +1723,7 @@ checksum = "9c8132065adcfd6e02db789d9285a0deb2f3fcb04002865ab67d5fb103533898"
 [[package]]
 name = "scrypto-abi"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-9055c6#9055c688ce529abd6b0b554ba21e24882444b6da"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-94f624#94f624663d3f445d42e2931d328feb636166d309"
 dependencies = [
  "sbor",
  "serde",
@@ -1761,7 +1808,7 @@ dependencies = [
  "base64",
  "chrono",
  "hex",
- "indexmap",
+ "indexmap 1.9.2",
  "serde",
  "serde_json",
  "serde_with_macros",
@@ -1836,6 +1883,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "74233d3b3b2f6d4b006dc19dee745e73e2a6bfb6f93607cd3b02bd5b00797d7c"
 
 [[package]]
+name = "sized-chunks"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16d69225bde7a69b235da73377861095455d298f2b970996eec25ddbb42b3d1e"
+dependencies = [
+ "bitmaps",
+ "typenum",
+]
+
+[[package]]
 name = "skeptic"
 version = "0.13.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1857,6 +1914,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4614a76b2a8be0058caa9dbbaf66d988527d86d003c11a94fbd335d7661edcef"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "slotmap"
+version = "1.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e1e08e261d0e8f5c43123b7adf3e4ca1690d655377ac93a03b2c9d3e98de1342"
+dependencies = [
+ "version_check",
 ]
 
 [[package]]
@@ -2215,7 +2281,7 @@ dependencies = [
 [[package]]
 name = "transaction"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-9055c6#9055c688ce529abd6b0b554ba21e24882444b6da"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-94f624#94f624663d3f445d42e2931d328feb636166d309"
 dependencies = [
  "ed25519-dalek",
  "hex",
@@ -2275,7 +2341,7 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 [[package]]
 name = "utils"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-9055c6#9055c688ce529abd6b0b554ba21e24882444b6da"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-94f624#94f624663d3f445d42e2931d328feb636166d309"
 dependencies = [
  "sbor",
  "serde",

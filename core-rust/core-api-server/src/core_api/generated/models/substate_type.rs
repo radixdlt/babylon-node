@@ -36,6 +36,8 @@ pub enum SubstateType {
     ResourceManager,
     #[serde(rename = "EpochManager")]
     EpochManager,
+    #[serde(rename = "Validator")]
+    Validator,
     #[serde(rename = "ValidatorSet")]
     ValidatorSet,
     #[serde(rename = "ClockCurrentMinute")]
@@ -64,6 +66,7 @@ impl ToString for SubstateType {
             Self::PackageRoyaltyAccumulator => String::from("PackageRoyaltyAccumulator"),
             Self::ResourceManager => String::from("ResourceManager"),
             Self::EpochManager => String::from("EpochManager"),
+            Self::Validator => String::from("Validator"),
             Self::ValidatorSet => String::from("ValidatorSet"),
             Self::ClockCurrentMinute => String::from("ClockCurrentMinute"),
             Self::KeyValueStoreEntry => String::from("KeyValueStoreEntry"),

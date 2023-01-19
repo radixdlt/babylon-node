@@ -1128,7 +1128,7 @@ components:
         validators:
           type: array
           items:
-            $ref: "#/components/schemas/EcdsaSecp256k1PublicKey"
+            $ref: "#/components/schemas/ActiveValidator"
     NewSubstateVersion:
       type: object
       required:
@@ -1955,15 +1955,14 @@ components:
       required:
         - simple_rep
         - id_type
-        - sbor_hex
+        - sbor_data
       properties:
         simple_rep:
           $ref: '#/components/schemas/NonFungibleIdSimpleRepresentation'
         id_type:
           $ref: '#/components/schemas/NonFungibleIdType'
-        sbor_hex:
-          type: string
-          description: The hex-encoded SBOR-encoded bytes of its non-fungible id
+        sbor_data:
+          $ref: '#/components/schemas/SborData'
     NonFungibleIdSimpleRepresentation:
       type: string
       description: |
@@ -2103,6 +2102,7 @@ components:
         - Global
         - NonFungibleStore
         - Clock
+        - Validator
     Substate:
       anyOf:
         - $ref: '#/components/schemas/MetadataSubstate'
@@ -2122,6 +2122,7 @@ components:
         - $ref: '#/components/schemas/KeyValueStoreEntrySubstate'
         - $ref: '#/components/schemas/VaultSubstate'
         - $ref: '#/components/schemas/NonFungibleStoreEntrySubstate'
+        - $ref: '#/components/schemas/ValidatorSubstate'
       discriminator:
         propertyName: substate_type
         mapping:
@@ -2143,6 +2144,7 @@ components:
           KeyValueStoreEntry: '#/components/schemas/KeyValueStoreEntrySubstate'
           Vault: '#/components/schemas/VaultSubstate'
           NonFungibleStoreEntry: '#/components/schemas/NonFungibleStoreEntrySubstate'
+          Validator: '#/components/schemas/ValidatorSubstate'
     SubstateType:
       type: string
       enum:
@@ -2160,6 +2162,7 @@ components:
         - PackageRoyaltyAccumulator
         - ResourceManager
         - EpochManager
+        - Validator
         - ValidatorSet
         - ClockCurrentMinute
         - KeyValueStoreEntry
@@ -2194,6 +2197,7 @@ components:
         - KeyValueStoreEntry
         - NonFungibleStoreEntry
         - Vault
+        - Validator
     SubstateBase:
       type: object
       required:
@@ -2379,10 +2383,13 @@ components:
         - $ref: '#/components/schemas/SubstateBase'
         - type: object
           required:
+            - address
             - epoch
             - round
             - rounds_per_epoch
           properties:
+            address:
+              $ref: '#/components/schemas/ComponentAddress'
             epoch:
               type: integer
               format: int64
@@ -2412,13 +2419,23 @@ components:
             validator_set:
               type: array
               items:
-                $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
+                $ref: '#/components/schemas/ActiveValidator'
             epoch:
               type: integer
               format: int64
               minimum: 0
               maximum: 10000000000
               description: An integer between `0` and `10^10`, marking the epoch the validator set is a part of
+    ActiveValidator:
+      type: object
+      required:
+        - address
+        - key
+      properties:
+        address:
+          $ref: '#/components/schemas/ComponentAddress'
+        key:
+          $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
     ClockCurrentMinuteSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
@@ -2494,6 +2511,21 @@ components:
           type: string
           description: |
             The hex-encoded raw bytes of the mutadata data of the NF.
+    ValidatorSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - epoch_manager_address
+            - validator_address
+            - key
+          properties:
+            epoch_manager_address:
+              $ref: "#/components/schemas/ComponentAddress"
+            validator_address:
+              $ref: "#/components/schemas/ComponentAddress"
+            key:
+              $ref: "#/components/schemas/EcdsaSecp256k1PublicKey"
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################
@@ -2572,6 +2604,7 @@ components:
             - EddsaEd25519VirtualAccountComponent
             - EpochManager
             - Clock
+            - Validator
         hrp_prefix:
           type: string
         entity_type:

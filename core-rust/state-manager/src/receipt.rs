@@ -1,16 +1,15 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 
 use radix_engine::engine::RuntimeError;
 use radix_engine::fee::FeeSummary;
 use radix_engine::ledger::OutputValue;
-use radix_engine::model::ResourceChange;
+use radix_engine::model::{ResourceChange, Validator};
 use radix_engine::state_manager::StateDiff;
 use radix_engine::transaction::{
     CommitResult, EntityChanges, TransactionOutcome,
     TransactionReceipt as EngineTransactionReceipt, TransactionResult,
 };
 use radix_engine::types::{hash, scrypto_encode, Hash, Level, SubstateId};
-use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::*;
 
 use crate::AccumulatorHash;
@@ -74,7 +73,7 @@ pub struct LedgerTransactionReceipt {
     pub substate_changes: SubstateChanges,
     pub entity_changes: EntityChanges,
     pub resource_changes: Vec<ResourceChange>,
-    pub next_epoch: Option<(HashSet<EcdsaSecp256k1PublicKey>, u64)>,
+    pub next_epoch: Option<(BTreeSet<Validator>, u64)>,
 }
 
 impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {

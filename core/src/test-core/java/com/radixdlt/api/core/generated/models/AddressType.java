@@ -58,7 +58,9 @@ public class AddressType {
     
     EPOCHMANAGER("EpochManager"),
     
-    CLOCK("Clock");
+    CLOCK("Clock"),
+    
+    VALIDATOR("Validator");
 
     private String value;
 

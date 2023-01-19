@@ -56,6 +56,8 @@ pub enum Subtype {
     EpochManager,
     #[serde(rename = "Clock")]
     Clock,
+    #[serde(rename = "Validator")]
+    Validator,
 }
 
 impl Default for Subtype {

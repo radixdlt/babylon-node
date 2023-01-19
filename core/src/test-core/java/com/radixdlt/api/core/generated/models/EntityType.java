@@ -44,7 +44,9 @@ public enum EntityType {
   
   NONFUNGIBLESTORE("NonFungibleStore"),
   
-  CLOCK("Clock");
+  CLOCK("Clock"),
+  
+  VALIDATOR("Validator");
 
   private String value;
 

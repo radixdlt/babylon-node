@@ -14,7 +14,8 @@ fn handle_v0_state_epoch_internal(
     state_manager: &ActualStateManager,
     _request: (),
 ) -> Result<models::V0StateEpochResponse, RequestHandlingError> {
-    let node_id = read_derefed_global_node_id(state_manager, GlobalAddress::System(EPOCH_MANAGER))?;
+    let node_id =
+        read_derefed_global_node_id(state_manager, GlobalAddress::Component(EPOCH_MANAGER))?;
 
     let epoch_manager_substate = {
         let substate_offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);

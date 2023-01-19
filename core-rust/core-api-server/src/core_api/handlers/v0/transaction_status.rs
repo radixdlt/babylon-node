@@ -28,7 +28,8 @@ fn handle_v0_transaction_status_internal(
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
     let committed_option = state_manager
-        .store
+        .staged_store
+        .root
         .get_committed_transaction_by_identifier(&intent_hash);
 
     let mut known_pending_payloads = state_manager

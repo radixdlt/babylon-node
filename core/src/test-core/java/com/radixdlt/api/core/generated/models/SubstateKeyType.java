@@ -65,7 +65,9 @@ public enum SubstateKeyType {
   
   NONFUNGIBLESTOREENTRY("NonFungibleStoreEntry"),
   
-  VAULT("Vault");
+  VAULT("Vault"),
+  
+  VALIDATOR("Validator");
 
   private String value;
 

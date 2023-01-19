@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EcdsaSecp256k1PublicKey;
+import com.radixdlt.api.core.generated.models.ActiveValidator;
 import com.radixdlt.api.core.generated.models.SubstateBase;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.ValidatorSetSubstateAllOf;
@@ -47,7 +47,7 @@ public class ValidatorSetSubstate {
   private SubstateType substateType;
 
   public static final String JSON_PROPERTY_VALIDATOR_SET = "validator_set";
-  private List<EcdsaSecp256k1PublicKey> validatorSet = new ArrayList<>();
+  private List<ActiveValidator> validatorSet = new ArrayList<>();
 
   public static final String JSON_PROPERTY_EPOCH = "epoch";
   private Long epoch;
@@ -81,12 +81,12 @@ public class ValidatorSetSubstate {
   }
 
 
-  public ValidatorSetSubstate validatorSet(List<EcdsaSecp256k1PublicKey> validatorSet) {
+  public ValidatorSetSubstate validatorSet(List<ActiveValidator> validatorSet) {
     this.validatorSet = validatorSet;
     return this;
   }
 
-  public ValidatorSetSubstate addValidatorSetItem(EcdsaSecp256k1PublicKey validatorSetItem) {
+  public ValidatorSetSubstate addValidatorSetItem(ActiveValidator validatorSetItem) {
     this.validatorSet.add(validatorSetItem);
     return this;
   }
@@ -100,14 +100,14 @@ public class ValidatorSetSubstate {
   @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<EcdsaSecp256k1PublicKey> getValidatorSet() {
+  public List<ActiveValidator> getValidatorSet() {
     return validatorSet;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidatorSet(List<EcdsaSecp256k1PublicKey> validatorSet) {
+  public void setValidatorSet(List<ActiveValidator> validatorSet) {
     this.validatorSet = validatorSet;
   }
 

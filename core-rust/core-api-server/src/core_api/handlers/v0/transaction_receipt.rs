@@ -20,7 +20,8 @@ fn handle_v0_transaction_receipt_internal(
 
     let network = &state_manager.network;
     let committed_option = state_manager
-        .store
+        .staged_store
+        .root
         .get_committed_transaction_by_identifier(&intent_hash);
 
     if let Some((ledger_transaction, receipt, identifiers)) = committed_option {

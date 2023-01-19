@@ -10,17 +10,15 @@ use radix_engine::model::{
     EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate,
     NonFungible, NonFungibleSubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate,
     PackageRoyaltyConfigSubstate, PersistedSubstate, Resource, ResourceManagerSubstate,
-    ValidatorSetSubstate, VaultSubstate,
+    ValidatorSetSubstate, ValidatorSubstate, VaultSubstate,
 };
 use radix_engine::types::{
     scrypto_encode, AccessRule, AccessRuleEntry, AccessRuleKey, AccessRuleNode, AccessRules,
-    Bech32Encoder, Decimal, GlobalOffset, KeyValueStoreOffset, NonFungibleId,
+    Bech32Encoder, Decimal, GlobalOffset, KeyValueStoreOffset, NonFungibleId, NonFungibleIdTypeId,
     NonFungibleStoreOffset, ProofRule, RENodeId, ResourceAddress, ResourceType, RoyaltyConfig,
     SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
     SubstateId, SubstateOffset,
 };
-use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use radix_engine_interface::model::NonFungibleIdTypeId;
 
 use super::MappingError;
 
@@ -66,10 +64,7 @@ pub fn to_api_substate(
             to_api_package_royalty_accumulator_substate(substate)?
         }
         PersistedSubstate::EpochManager(epoch_manager) => {
-            to_api_epoch_manager_substate(epoch_manager)?
-        }
-        PersistedSubstate::ValidatorSet(validator_set) => {
-            to_api_validator_set_substate(validator_set)?
+            to_api_epoch_manager_substate(bech32_encoder, epoch_manager)?
         }
         PersistedSubstate::CurrentTimeRoundedToMinutes(substate) => {
             to_api_clock_current_time_rounded_down_to_minutes_substate(substate)?
@@ -84,6 +79,12 @@ pub fn to_api_substate(
         }
         PersistedSubstate::NonFungible(non_fungible_wrapper) => {
             to_api_non_fungible_substate(bech32_encoder, substate_id, non_fungible_wrapper)?
+        }
+        PersistedSubstate::Validator(validator) => {
+            to_api_validator_substate(bech32_encoder, substate_id, validator)?
+        }
+        PersistedSubstate::ValidatorSet(validator_set) => {
+            to_api_validator_set_substate(bech32_encoder, substate_id, validator_set)?
         }
     })
 }
@@ -459,7 +460,10 @@ pub fn to_api_dynamic_resource_descriptor(
             models::DynamicResourceDescriptor::NonFungibleDynamicResourceDescriptor {
                 resource_address: bech32_encoder
                     .encode_resource_address_to_string(&nf.resource_address()),
-                non_fungible_id: Box::new(to_api_non_fungible_id(nf.non_fungible_id())),
+                non_fungible_id: Box::new(to_api_non_fungible_id(
+                    bech32_encoder,
+                    nf.non_fungible_id(),
+                )?),
             }
         }
         SoftResourceOrNonFungible::StaticResource(resource) => {
@@ -475,21 +479,21 @@ pub fn to_api_dynamic_resource_descriptor(
     })
 }
 
-pub fn to_api_ecdsa_secp256k1_public_key(
-    key: &EcdsaSecp256k1PublicKey,
-) -> models::EcdsaSecp256k1PublicKey {
-    models::EcdsaSecp256k1PublicKey {
-        key_type: models::PublicKeyType::EcdsaSecp256k1,
-        key_hex: to_hex(key.0),
-    }
-}
-
-pub fn to_api_non_fungible_id(non_fungible_id: &NonFungibleId) -> models::NonFungibleId {
-    models::NonFungibleId {
+pub fn to_api_non_fungible_id(
+    bech32_encoder: &Bech32Encoder,
+    non_fungible_id: &NonFungibleId,
+) -> Result<models::NonFungibleId, MappingError> {
+    Ok(models::NonFungibleId {
         simple_rep: non_fungible_id.to_simple_string(),
         id_type: to_api_fungible_id_type(&non_fungible_id.id_type()),
-        sbor_hex: to_hex(scrypto_encode(non_fungible_id).unwrap()),
-    }
+        sbor_data: Box::new(scrypto_bytes_to_api_sbor_data(
+            bech32_encoder,
+            &scrypto_encode(non_fungible_id).map_err(|err| MappingError::SborEncodeError {
+                encode_error: err,
+                message: "Could not encode NonFungibleId".to_string(),
+            })?,
+        )?),
+    })
 }
 
 pub fn to_api_schema_path(
@@ -537,7 +541,7 @@ fn scrypto_value_to_api_data_struct(
     Ok(models::DataStruct {
         struct_data: Box::new(scrypto_value_to_api_sbor_data(
             bech32_encoder,
-            scrypto_value.as_slice(),
+            &scrypto_value.to_vec(),
             scrypto_value.as_value(),
         )?),
         owned_entities: entities.owned_entities,
@@ -567,9 +571,7 @@ fn extract_entities(
 
     let owned_entities = struct_scrypto_value
         .owned_node_ids()
-        .map_err(|_| MappingError::InvalidComponentStateEntities {
-            message: "Could not read owned nodes".to_owned(),
-        })?
+        .unwrap()
         .into_iter()
         .map(|node_id| -> Result<models::EntityReference, MappingError> {
             Ok(MappedEntityId::try_from(node_id)?.into())
@@ -690,37 +692,23 @@ pub fn to_api_package_royalty_accumulator_substate(
     })
 }
 
-pub fn to_api_validator_set_substate(
-    substate: &ValidatorSetSubstate,
-) -> Result<models::Substate, MappingError> {
-    let ValidatorSetSubstate {
-        validator_set,
-        epoch,
-    } = substate;
-
-    let validator_set = validator_set
-        .iter()
-        .map(to_api_ecdsa_secp256k1_public_key)
-        .collect();
-    Ok(models::Substate::ValidatorSetSubstate {
-        validator_set,
-        epoch: to_api_epoch(*epoch)?,
-    })
-}
-
 pub fn to_api_epoch_manager_substate(
+    bech32_encoder: &Bech32Encoder,
     substate: &EpochManagerSubstate,
 ) -> Result<models::Substate, MappingError> {
+    // Use compiler to unpack to ensure we map all fields
     let EpochManagerSubstate {
-        epoch,
-        round,
+        address,
         rounds_per_epoch,
+        round,
+        epoch,
     } = substate;
 
     Ok(models::Substate::EpochManagerSubstate {
+        address: bech32_encoder.encode_component_address_to_string(address),
         epoch: to_api_epoch(*epoch)?,
-        round: to_api_round(*round)?,
-        rounds_per_epoch: to_api_round(*rounds_per_epoch)?,
+        round: (*round) as i64,
+        rounds_per_epoch: (*rounds_per_epoch) as i64,
     })
 }
 
@@ -781,7 +769,10 @@ fn to_api_non_fungible_resource_amount(
     _id_type: &NonFungibleIdTypeId,
     ids: &BTreeSet<NonFungibleId>,
 ) -> Result<models::ResourceAmount, MappingError> {
-    let non_fungible_ids = ids.iter().map(to_api_non_fungible_id).collect();
+    let non_fungible_ids = ids
+        .iter()
+        .map(|non_fungible_id| to_api_non_fungible_id(bech32_encoder, non_fungible_id))
+        .collect::<Result<_, _>>()?;
     Ok(models::ResourceAmount::NonFungibleResourceAmount {
         resource_address: bech32_encoder.encode_resource_address_to_string(resource_address),
         non_fungible_ids,
@@ -811,7 +802,7 @@ pub fn to_api_non_fungible_substate(
 
     Ok(match non_fungible_option {
         Some(non_fungible) => models::Substate::NonFungibleStoreEntrySubstate {
-            non_fungible_id: Box::new(to_api_non_fungible_id(nf_id)),
+            non_fungible_id: Box::new(to_api_non_fungible_id(bech32_encoder, nf_id)?),
             non_fungible_data: Some(Box::new(to_api_non_fungible_data(
                 bech32_encoder,
                 non_fungible,
@@ -819,7 +810,7 @@ pub fn to_api_non_fungible_substate(
             is_deleted: false,
         },
         None => models::Substate::NonFungibleStoreEntrySubstate {
-            non_fungible_id: Box::new(to_api_non_fungible_id(nf_id)),
+            non_fungible_id: Box::new(to_api_non_fungible_id(bech32_encoder, nf_id)?),
             non_fungible_data: None,
             is_deleted: true,
         },
@@ -888,4 +879,43 @@ fn to_api_data_struct(
             bytes: data.to_vec(),
         })?;
     scrypto_value_to_api_data_struct(bech32_encoder, scrypto_value)
+}
+
+fn to_api_validator_substate(
+    bech32_encoder: &Bech32Encoder,
+    _substate_id: &SubstateId,
+    validator: &ValidatorSubstate,
+) -> Result<models::Substate, MappingError> {
+    let ValidatorSubstate {
+        manager,
+        address,
+        key,
+    } = validator;
+
+    Ok(models::Substate::ValidatorSubstate {
+        epoch_manager_address: bech32_encoder.encode_component_address_to_string(manager),
+        validator_address: bech32_encoder.encode_component_address_to_string(address),
+        key: Box::new(to_api_ecdsasecp256k1_public_key(*key)),
+    })
+}
+
+fn to_api_validator_set_substate(
+    bech32_encoder: &Bech32Encoder,
+    _substate_id: &SubstateId,
+    validator_set: &ValidatorSetSubstate,
+) -> Result<models::Substate, MappingError> {
+    let ValidatorSetSubstate {
+        validator_set,
+        epoch,
+    } = validator_set;
+
+    Ok(models::Substate::ValidatorSetSubstate {
+        validator_set: validator_set
+            .iter()
+            .map(|validator| {
+                to_api_active_validator(bech32_encoder, validator.address, validator.key)
+            })
+            .collect::<Result<_, _>>()?,
+        epoch: (*epoch) as i64,
+    })
 }

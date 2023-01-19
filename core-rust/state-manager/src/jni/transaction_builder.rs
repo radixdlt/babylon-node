@@ -78,7 +78,7 @@ use radix_engine::types::{
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::node::NetworkDefinition;
 use radix_engine_interface::*;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
 };
@@ -112,7 +112,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createGenesi
 }
 
 fn do_create_genesis_ledger_transaction(
-    (validator_set, initial_epoch, rounds_per_epoch): (HashSet<EcdsaSecp256k1PublicKey>, u64, u64),
+    (validator_set, initial_epoch, rounds_per_epoch): (BTreeSet<EcdsaSecp256k1PublicKey>, u64, u64),
 ) -> Vec<u8> {
     create_genesis_ledger_transaction_bytes(validator_set, initial_epoch, rounds_per_epoch)
 }

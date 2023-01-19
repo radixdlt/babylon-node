@@ -14,7 +14,7 @@ fn handle_v0_state_clock_internal(
     state_manager: &ActualStateManager,
     _request: (),
 ) -> Result<models::V0StateClockResponse, RequestHandlingError> {
-    let clock = read_derefed_global_node_id(state_manager, GlobalAddress::System(CLOCK))?;
+    let clock = read_derefed_global_node_id(state_manager, GlobalAddress::Component(CLOCK))?;
     let rounded_to_minutes_substate = {
         let substate_offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
         let loaded_substate = read_known_substate(state_manager, clock, &substate_offset)?;

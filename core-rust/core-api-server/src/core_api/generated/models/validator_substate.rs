@@ -12,31 +12,26 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct EpochManagerSubstate {
+pub struct ValidatorSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
     /// The Bech32m-encoded human readable version of the component address
-    #[serde(rename = "address")]
-    pub address: String,
-    /// An integer between `0` and `10^10`, marking the current epoch
-    #[serde(rename = "epoch")]
-    pub epoch: i64,
-    /// An integer between `0` and `10^10`, marking the current round in an epoch
-    #[serde(rename = "round")]
-    pub round: i64,
-    /// An integer between `0` and `10^10`, specifying the number of rounds per epoch
-    #[serde(rename = "rounds_per_epoch")]
-    pub rounds_per_epoch: i64,
+    #[serde(rename = "epoch_manager_address")]
+    pub epoch_manager_address: String,
+    /// The Bech32m-encoded human readable version of the component address
+    #[serde(rename = "validator_address")]
+    pub validator_address: String,
+    #[serde(rename = "key")]
+    pub key: Box<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
 }
 
-impl EpochManagerSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, address: String, epoch: i64, round: i64, rounds_per_epoch: i64) -> EpochManagerSubstate {
-        EpochManagerSubstate {
+impl ValidatorSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, epoch_manager_address: String, validator_address: String, key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey) -> ValidatorSubstate {
+        ValidatorSubstate {
             substate_type,
-            address,
-            epoch,
-            round,
-            rounds_per_epoch,
+            epoch_manager_address,
+            validator_address,
+            key: Box::new(key),
         }
     }
 }

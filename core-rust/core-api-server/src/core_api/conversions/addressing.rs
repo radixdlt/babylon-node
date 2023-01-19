@@ -5,7 +5,7 @@ use crate::core_api::*;
 use models::{EntityType, SubstateKeyType, SubstateType};
 use radix_engine::types::{
     ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, NonFungibleStoreOffset,
-    PackageOffset, ResourceManagerOffset, SubstateOffset, SystemAddress, VaultOffset,
+    PackageOffset, ResourceManagerOffset, SubstateOffset, ValidatorOffset, VaultOffset,
 };
 use radix_engine::{
     model::GlobalAddressSubstate,
@@ -46,7 +46,6 @@ pub fn encode_to_bech32m_string(
         GlobalAddress::Component(addr) => bech32_encoder.encode_component_address_to_string(addr),
         GlobalAddress::Package(addr) => bech32_encoder.encode_package_address_to_string(addr),
         GlobalAddress::Resource(addr) => bech32_encoder.encode_resource_address_to_string(addr),
-        GlobalAddress::System(addr) => bech32_encoder.encode_system_address_to_string(addr),
     }
 }
 
@@ -55,8 +54,6 @@ pub fn get_entity_type_from_global_address(global_address: &GlobalAddress) -> mo
         GlobalAddress::Component(_) => models::EntityType::Component,
         GlobalAddress::Package(_) => models::EntityType::Package,
         GlobalAddress::Resource(_) => models::EntityType::ResourceManager,
-        GlobalAddress::System(SystemAddress::EpochManager(_)) => models::EntityType::EpochManager,
-        GlobalAddress::System(SystemAddress::Clock(_)) => models::EntityType::Clock,
     }
 }
 
@@ -109,6 +106,7 @@ impl TryFrom<RENodeId> for MappedEntityId {
             RENodeId::KeyValueStore(_) => EntityType::KeyValueStore,
             RENodeId::NonFungibleStore(_) => EntityType::NonFungibleStore,
             RENodeId::Vault(_) => EntityType::Vault,
+            RENodeId::Validator(_) => EntityType::Validator,
             RENodeId::Bucket(_) => return Err(transient_renode_error("Bucket")),
             RENodeId::Proof(_) => return Err(transient_renode_error("Proof")),
             RENodeId::Worktop => return Err(transient_renode_error("Worktop")),
@@ -190,7 +188,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
 
     // In the below, we nest match statements to ensure we get as much help from the compiler as possible to ensure
     //   we capture all possible substate types at compile time...
-    // We can't capture new offset types under an RENode though - check nodes.rs after each merge to check we're not missing any
+    // We can't capture new offset types under an RENode though - check node.rs in radixdlt-scrypto after each merge to check we're not missing any
     let (entity_type, substate_type_key) = match &substate_id {
         SubstateId(RENodeId::Global(_), offset) => {
             let substate_type_key = match offset {
@@ -375,6 +373,18 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::Clock, substate_type_key)
         }
 
+        SubstateId(RENodeId::Validator(_), offset) => {
+            let substate_type_key = match offset {
+                SubstateOffset::Validator(offset) => match offset {
+                    ValidatorOffset::Validator => {
+                        (SubstateType::Validator, SubstateKeyType::Validator)
+                    }
+                },
+                _ => return Err(unknown_substate_error("Validator", &substate_id)),
+            };
+            (EntityType::Validator, substate_type_key)
+        }
+
         // TRANSIENT SUBSTATES
         SubstateId(RENodeId::Bucket(..), _) => {
             return Err(transient_substate_error("Bucket", &substate_id))
@@ -478,6 +488,5 @@ pub fn global_address_to_vec(global_address: &GlobalAddress) -> Vec<u8> {
         GlobalAddress::Package(package_addr) => package_addr.to_vec(),
         GlobalAddress::Resource(resource_addr) => resource_addr.to_vec(),
         GlobalAddress::Component(component_addr) => component_addr.to_vec(),
-        GlobalAddress::System(system_addr) => system_addr.to_vec(),
     }
 }

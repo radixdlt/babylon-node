@@ -18,17 +18,16 @@ pub struct NonFungibleId {
     pub simple_rep: String,
     #[serde(rename = "id_type")]
     pub id_type: crate::core_api::generated::models::NonFungibleIdType,
-    /// The hex-encoded SBOR-encoded bytes of its non-fungible id
-    #[serde(rename = "sbor_hex")]
-    pub sbor_hex: String,
+    #[serde(rename = "sbor_data")]
+    pub sbor_data: Box<crate::core_api::generated::models::SborData>,
 }
 
 impl NonFungibleId {
-    pub fn new(simple_rep: String, id_type: crate::core_api::generated::models::NonFungibleIdType, sbor_hex: String) -> NonFungibleId {
+    pub fn new(simple_rep: String, id_type: crate::core_api::generated::models::NonFungibleIdType, sbor_data: crate::core_api::generated::models::SborData) -> NonFungibleId {
         NonFungibleId {
             simple_rep,
             id_type,
-            sbor_hex,
+            sbor_data: Box::new(sbor_data),
         }
     }
 }

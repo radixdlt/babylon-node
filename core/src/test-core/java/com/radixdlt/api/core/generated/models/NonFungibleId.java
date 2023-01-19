@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.NonFungibleIdType;
+import com.radixdlt.api.core.generated.models.SborData;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,7 +35,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   NonFungibleId.JSON_PROPERTY_SIMPLE_REP,
   NonFungibleId.JSON_PROPERTY_ID_TYPE,
-  NonFungibleId.JSON_PROPERTY_SBOR_HEX
+  NonFungibleId.JSON_PROPERTY_SBOR_DATA
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class NonFungibleId {
@@ -44,8 +45,8 @@ public class NonFungibleId {
   public static final String JSON_PROPERTY_ID_TYPE = "id_type";
   private NonFungibleIdType idType;
 
-  public static final String JSON_PROPERTY_SBOR_HEX = "sbor_hex";
-  private String sborHex;
+  public static final String JSON_PROPERTY_SBOR_DATA = "sbor_data";
+  private SborData sborData;
 
   public NonFungibleId() { 
   }
@@ -102,29 +103,29 @@ public class NonFungibleId {
   }
 
 
-  public NonFungibleId sborHex(String sborHex) {
-    this.sborHex = sborHex;
+  public NonFungibleId sborData(SborData sborData) {
+    this.sborData = sborData;
     return this;
   }
 
    /**
-   * The hex-encoded SBOR-encoded bytes of its non-fungible id
-   * @return sborHex
+   * Get sborData
+   * @return sborData
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded SBOR-encoded bytes of its non-fungible id")
-  @JsonProperty(JSON_PROPERTY_SBOR_HEX)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_SBOR_DATA)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getSborHex() {
-    return sborHex;
+  public SborData getSborData() {
+    return sborData;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SBOR_HEX)
+  @JsonProperty(JSON_PROPERTY_SBOR_DATA)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSborHex(String sborHex) {
-    this.sborHex = sborHex;
+  public void setSborData(SborData sborData) {
+    this.sborData = sborData;
   }
 
 
@@ -142,12 +143,12 @@ public class NonFungibleId {
     NonFungibleId nonFungibleId = (NonFungibleId) o;
     return Objects.equals(this.simpleRep, nonFungibleId.simpleRep) &&
         Objects.equals(this.idType, nonFungibleId.idType) &&
-        Objects.equals(this.sborHex, nonFungibleId.sborHex);
+        Objects.equals(this.sborData, nonFungibleId.sborData);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(simpleRep, idType, sborHex);
+    return Objects.hash(simpleRep, idType, sborData);
   }
 
   @Override
@@ -156,7 +157,7 @@ public class NonFungibleId {
     sb.append("class NonFungibleId {\n");
     sb.append("    simpleRep: ").append(toIndentedString(simpleRep)).append("\n");
     sb.append("    idType: ").append(toIndentedString(idType)).append("\n");
-    sb.append("    sborHex: ").append(toIndentedString(sborHex)).append("\n");
+    sb.append("    sborData: ").append(toIndentedString(sborData)).append("\n");
     sb.append("}");
     return sb.toString();
   }

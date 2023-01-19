@@ -3,10 +3,14 @@ use crate::core_api::*;
 use radix_engine::{
     fee::{FeeSummary, RoyaltyReceiver},
     ledger::OutputValue,
-    types::{hash, scrypto_encode, Bech32Encoder, Decimal, GlobalAddress, RENodeId, SubstateId},
+    model::Validator,
+    types::{
+        hash, scrypto_encode, Bech32Encoder, ComponentAddress, Decimal, GlobalAddress, RENodeId,
+        SubstateId,
+    },
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
 
@@ -79,7 +83,7 @@ pub fn to_api_receipt(
     };
 
     let next_epoch = if let Some(next_epoch) = receipt.next_epoch {
-        Some(Box::new(to_api_next_epoch(next_epoch)?))
+        Some(Box::new(to_api_next_epoch(bech32_encoder, next_epoch)?))
     } else {
         None
     };
@@ -132,19 +136,32 @@ pub fn to_api_deleted_substate(
     })
 }
 
-#[tracing::instrument(skip_all)]
-pub fn to_api_next_epoch(
-    next_epoch: (HashSet<EcdsaSecp256k1PublicKey>, u64),
-) -> Result<models::NextEpoch, MappingError> {
-    let mut validators = Vec::new();
-    for key in next_epoch.0 {
-        let api_key = to_api_ecdsa_secp256k1_public_key(&key);
-        validators.push(api_key);
-    }
+// #[tracing::instrument(skip_all)]
+pub fn to_api_active_validator(
+    bech32_encoder: &Bech32Encoder,
+    address: ComponentAddress,
+    key: EcdsaSecp256k1PublicKey,
+) -> Result<models::ActiveValidator, MappingError> {
+    Ok(models::ActiveValidator {
+        address: bech32_encoder.encode_component_address_to_string(&address),
+        key: Box::new(to_api_ecdsasecp256k1_public_key(key)),
+    })
+}
 
+// #[tracing::instrument(skip_all)]
+pub fn to_api_next_epoch(
+    bech32_encoder: &Bech32Encoder,
+    next_epoch: (BTreeSet<Validator>, u64),
+) -> Result<models::NextEpoch, MappingError> {
     let next_epoch = models::NextEpoch {
         epoch: to_api_epoch(next_epoch.1)?,
-        validators,
+        validators: next_epoch
+            .0
+            .into_iter()
+            .map(|validator| {
+                to_api_active_validator(bech32_encoder, validator.address, validator.key).unwrap()
+            })
+            .collect(),
     };
 
     Ok(next_epoch)

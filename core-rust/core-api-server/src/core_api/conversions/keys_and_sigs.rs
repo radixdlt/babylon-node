@@ -5,6 +5,15 @@ use radix_engine::types::{
 
 use crate::core_api::*;
 
+pub fn to_api_ecdsasecp256k1_public_key(
+    public_key: EcdsaSecp256k1PublicKey,
+) -> models::EcdsaSecp256k1PublicKey {
+    models::EcdsaSecp256k1PublicKey {
+        key_type: models::PublicKeyType::EcdsaSecp256k1,
+        key_hex: to_hex(public_key.to_vec()),
+    }
+}
+
 pub fn to_api_public_key(public_key: &PublicKey) -> models::PublicKey {
     match public_key {
         PublicKey::EcdsaSecp256k1(key) => models::PublicKey::EcdsaSecp256k1PublicKey {
