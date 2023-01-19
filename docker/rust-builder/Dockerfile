@@ -13,6 +13,7 @@ RUN apt-get update; apt-get upgrade -y && \
   pkg-config
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh; sh rustup.sh -y --target aarch64-unknown-linux-gnu x86_64-unknown-linux-gnu
+RUN $HOME/.cargo/bin/cargo install sccache
 
 # This mapped-volume-build is used in development, via the build-sm.yaml docker compose.
 # By using mounts, this allows artifact caching. The whole core-rust directory is mounted, and run is called.
@@ -21,6 +22,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh; sh r
 FROM base as mapped-volume-build
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
+ENV RUSTC_WRAPPER=/root/.cargo/bin/sccache
 
 CMD $HOME/.cargo/bin/cargo build --target=$TARGET --profile=$RUST_PROFILE
 
@@ -30,9 +32,9 @@ FROM base as cache-packages
 ARG TARGET
 ARG RUST_PROFILE
 
-ENV PATH="$HOME/.cargo/bin:$PATH"
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
+ENV RUSTC_WRAPPER=/root/.cargo/bin/sccache
 
 # First - we build a dummy rust file, to cache the compilation of all our dependencies in a Docker layer
 RUN USER=root $HOME/.cargo/bin/cargo new dummy
@@ -54,6 +56,11 @@ RUN $HOME/.cargo/bin/cargo build --target=$TARGET --profile=$RUST_PROFILE
 RUN rm -rf /app/dummy/*
 
 FROM cache-packages as prod-build
+
+ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
+ENV RUSTC_WRAPPER=/root/.cargo/bin/sccache
+
 WORKDIR /app
 # Now - we copy in everything, and do the actual build
 COPY core-rust ./
