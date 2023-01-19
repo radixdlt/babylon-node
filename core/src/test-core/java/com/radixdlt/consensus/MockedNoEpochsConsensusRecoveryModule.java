@@ -75,7 +75,6 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
-import java.util.Optional;
 
 public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule {
   private final int numValidators;
@@ -119,11 +118,12 @@ public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule 
             proof.getAccumulatorState(),
             proof.consensusParentRoundTimestamp(),
             proof.proposerTimestamp());
-    var genesisQC = QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
+    final var initialEpochQC =
+        QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
     var proposerElection = new WeightedRotatingLeaders(validatorSet);
     return new BFTConfiguration(
         proposerElection,
         validatorSet,
-        VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher));
+        VertexStoreState.create(HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher));
   }
 }

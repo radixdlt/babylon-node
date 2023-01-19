@@ -228,7 +228,7 @@ pub struct JavaCommitRequest {
     pub transactions: Vec<JavaRawTransaction>,
     pub state_version: u64,
     pub proof: Vec<u8>,
-    pub vertex_store: Option<Vec<u8>>,
+    pub post_commit_vertex_store: Option<Vec<u8>>,
 }
 
 impl From<JavaCommitRequest> for CommitRequest {
@@ -241,7 +241,7 @@ impl From<JavaCommitRequest> for CommitRequest {
                 .collect(),
             proof_state_version: commit_request.state_version,
             proof: commit_request.proof,
-            vertex_store: commit_request.vertex_store,
+            post_commit_vertex_store: commit_request.post_commit_vertex_store,
         }
     }
 }

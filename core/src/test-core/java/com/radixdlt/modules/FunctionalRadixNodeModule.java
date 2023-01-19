@@ -97,7 +97,6 @@ import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.SyncRelayConfig;
-import java.util.Optional;
 
 /** Manages the functional components of a node */
 public final class FunctionalRadixNodeModule extends AbstractModule {
@@ -376,14 +375,14 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                               proof.getAccumulatorState(),
                               proof.consensusParentRoundTimestamp(),
                               proof.proposerTimestamp());
-                      var genesisQC =
+                      var initialEpochQC =
                           QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
                       var proposerElection = new WeightedRotatingLeaders(validatorSet);
                       return new BFTConfiguration(
                           proposerElection,
                           validatorSet,
                           VertexStoreState.create(
-                              HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher));
+                              HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher));
                     }
                   });
             } else {

@@ -79,7 +79,6 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.statecomputer.EpochMaxRound;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.utils.PrivateKeys;
-import java.util.Optional;
 import java.util.function.Function;
 
 /** Starting configuration for simulation/deterministic steady state tests. */
@@ -153,11 +152,12 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
             proof.getAccumulatorState(),
             proof.consensusParentRoundTimestamp(),
             proof.proposerTimestamp());
-    var genesisQC = QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
+    final var initialEpochQC =
+        QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
     var proposerElection = new WeightedRotatingLeaders(validatorSet);
     return new BFTConfiguration(
         proposerElection,
         validatorSet,
-        VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher));
+        VertexStoreState.create(HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher));
   }
 }

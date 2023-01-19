@@ -276,7 +276,7 @@ public class EpochManagerTest {
         return new BFTConfiguration(
             proposerElection,
             validatorSet,
-            VertexStoreState.create(HighQC.from(qc), vertex, Optional.empty(), hasher));
+            VertexStoreState.create(HighQC.ofInitialEpochQc(qc), vertex, hasher));
       }
     };
   }
@@ -308,14 +308,15 @@ public class EpochManagerTest {
             header.getAccumulatorState(),
             header.consensusParentRoundTimestamp(),
             header.proposerTimestamp());
-    var genesisQC = QuorumCertificate.createInitialEpochQC(verifiedGenesisVertex, nextLedgerHeader);
+    var initialEpochQC =
+        QuorumCertificate.createInitialEpochQC(verifiedGenesisVertex, nextLedgerHeader);
     var proposerElection = new WeightedRotatingLeaders(nextValidatorSet);
     var bftConfiguration =
         new BFTConfiguration(
             proposerElection,
             nextValidatorSet,
             VertexStoreState.create(
-                HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty(), hasher));
+                HighQC.ofInitialEpochQc(initialEpochQC), verifiedGenesisVertex, hasher));
     LedgerProof proof = mock(LedgerProof.class);
     when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);
     when(proof.getNextEpoch())
