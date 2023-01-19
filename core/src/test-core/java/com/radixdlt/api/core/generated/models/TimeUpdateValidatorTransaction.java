@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.Instant;
 import com.radixdlt.api.core.generated.models.TimeUpdateValidatorTransactionAllOf;
 import com.radixdlt.api.core.generated.models.ValidatorTransactionBase;
 import com.radixdlt.api.core.generated.models.ValidatorTransactionType;
@@ -35,7 +36,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   TimeUpdateValidatorTransaction.JSON_PROPERTY_TYPE,
-  TimeUpdateValidatorTransaction.JSON_PROPERTY_PROPOSER_TIMESTAMP_MS,
+  TimeUpdateValidatorTransaction.JSON_PROPERTY_PROPOSER_TIMESTAMP,
   TimeUpdateValidatorTransaction.JSON_PROPERTY_CONSENSUS_EPOCH,
   TimeUpdateValidatorTransaction.JSON_PROPERTY_ROUND_IN_EPOCH
 })
@@ -44,8 +45,8 @@ public class TimeUpdateValidatorTransaction {
   public static final String JSON_PROPERTY_TYPE = "type";
   private ValidatorTransactionType type;
 
-  public static final String JSON_PROPERTY_PROPOSER_TIMESTAMP_MS = "proposer_timestamp_ms";
-  private Long proposerTimestampMs;
+  public static final String JSON_PROPERTY_PROPOSER_TIMESTAMP = "proposer_timestamp";
+  private Instant proposerTimestamp;
 
   public static final String JSON_PROPERTY_CONSENSUS_EPOCH = "consensus_epoch";
   private Long consensusEpoch;
@@ -82,31 +83,29 @@ public class TimeUpdateValidatorTransaction {
   }
 
 
-  public TimeUpdateValidatorTransaction proposerTimestampMs(Long proposerTimestampMs) {
-    this.proposerTimestampMs = proposerTimestampMs;
+  public TimeUpdateValidatorTransaction proposerTimestamp(Instant proposerTimestamp) {
+    this.proposerTimestamp = proposerTimestamp;
     return this;
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^14&#x60;, marking the round proposer&#39;s unix timestamp in ms
-   * minimum: 0
-   * maximum: 100000000000000
-   * @return proposerTimestampMs
+   * Get proposerTimestamp
+   * @return proposerTimestamp
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^14`, marking the round proposer's unix timestamp in ms")
-  @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP_MS)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getProposerTimestampMs() {
-    return proposerTimestampMs;
+  public Instant getProposerTimestamp() {
+    return proposerTimestamp;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP_MS)
+  @JsonProperty(JSON_PROPERTY_PROPOSER_TIMESTAMP)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setProposerTimestampMs(Long proposerTimestampMs) {
-    this.proposerTimestampMs = proposerTimestampMs;
+  public void setProposerTimestamp(Instant proposerTimestamp) {
+    this.proposerTimestamp = proposerTimestamp;
   }
 
 
@@ -179,14 +178,14 @@ public class TimeUpdateValidatorTransaction {
     }
     TimeUpdateValidatorTransaction timeUpdateValidatorTransaction = (TimeUpdateValidatorTransaction) o;
     return Objects.equals(this.type, timeUpdateValidatorTransaction.type) &&
-        Objects.equals(this.proposerTimestampMs, timeUpdateValidatorTransaction.proposerTimestampMs) &&
+        Objects.equals(this.proposerTimestamp, timeUpdateValidatorTransaction.proposerTimestamp) &&
         Objects.equals(this.consensusEpoch, timeUpdateValidatorTransaction.consensusEpoch) &&
         Objects.equals(this.roundInEpoch, timeUpdateValidatorTransaction.roundInEpoch);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, proposerTimestampMs, consensusEpoch, roundInEpoch);
+    return Objects.hash(type, proposerTimestamp, consensusEpoch, roundInEpoch);
   }
 
   @Override
@@ -194,7 +193,7 @@ public class TimeUpdateValidatorTransaction {
     StringBuilder sb = new StringBuilder();
     sb.append("class TimeUpdateValidatorTransaction {\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
-    sb.append("    proposerTimestampMs: ").append(toIndentedString(proposerTimestampMs)).append("\n");
+    sb.append("    proposerTimestamp: ").append(toIndentedString(proposerTimestamp)).append("\n");
     sb.append("    consensusEpoch: ").append(toIndentedString(consensusEpoch)).append("\n");
     sb.append("    roundInEpoch: ").append(toIndentedString(roundInEpoch)).append("\n");
     sb.append("}");

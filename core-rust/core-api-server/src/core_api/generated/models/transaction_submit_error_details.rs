@@ -35,9 +35,8 @@ pub enum TransactionSubmitErrorDetails {
         /// Whether the cached rejection of this intent is due to the intent already having been committed. If so, see the /transaction/receipt endpoint for further information. 
         #[serde(rename = "is_rejected_because_intent_already_committed")]
         is_rejected_because_intent_already_committed: bool,
-        /// An integer between `0` and `10^14`, marking the unix timestamp in milliseconds after which the node will consider recalculating the validity of the transaction. Only present if the rejection isn't permanent. 
         #[serde(rename = "recalculation_due", skip_serializing_if = "Option::is_none")]
-        recalculation_due: Option<i64>,
+        recalculation_due: Option<Box<crate::core_api::generated::models::Instant>>,
         /// An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be permanently rejected. Only present if the rejection isn't permanent. 
         #[serde(rename = "invalid_from_epoch", skip_serializing_if = "Option::is_none")]
         invalid_from_epoch: Option<i64>,

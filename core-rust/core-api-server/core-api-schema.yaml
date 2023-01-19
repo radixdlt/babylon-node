@@ -1204,6 +1204,23 @@ components:
     PackageAddress:
       type: string
       description: The Bech32m-encoded human readable version of the package address
+    Instant:
+      type: object
+      required:
+        - unix_timestamp_ms
+        - date_time
+      properties:
+        unix_timestamp_ms:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000000
+          description: An integer between `0` and `10^14`, marking the unix timestamp in ms.
+        date_time:
+          type: string
+          description: |
+            The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use "Z" denoting UTC and include milliseconds.
+            EG: `2023-01-26T18:30:09.453Z`.
     ResourceChange:
       type: object
       required:
@@ -2401,14 +2418,11 @@ components:
         - $ref: '#/components/schemas/SubstateBase'
         - type: object
           required:
-            - timestamp_ms_rounded_down_to_minute
+            - timestamp_rounded_down_to_minute
           properties:
-            timestamp_ms_rounded_down_to_minute:
-              type: integer
-              format: int64
-              minimum: 0
-              maximum: 100000000000000
-              description: An integer between `0` and `10^14`, marking the ledger unix timestamp in ms (rounded down to the current minute)
+            timestamp_rounded_down_to_minute:
+              $ref: '#/components/schemas/Instant'
+              description: The latest round proposer's timestamp (rounded down to the current minute).
     KeyValueStoreEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
@@ -2932,13 +2946,9 @@ components:
                 Whether the cached rejection of this intent is due to the intent already having been committed.
                 If so, see the /transaction/receipt endpoint for further information.
             recalculation_due:
-              type: integer
-              format: int64
-              minimum: 0
-              maximum: 100000000000000
+              $ref: "#/components/schemas/Instant"
               description: |
-                An integer between `0` and `10^14`, marking the unix timestamp in milliseconds after which the node will consider recalculating the
-                validity of the transaction.
+                The time after which the node will consider recalculating the validity of the transaction.
                 Only present if the rejection isn't permanent.
             invalid_from_epoch:
               type: integer
@@ -3365,16 +3375,13 @@ components:
         - $ref: "#/components/schemas/ValidatorTransactionBase"
         - type: object
           required:
-            - proposer_timestamp_ms
+            - proposer_timestamp
             - consensus_epoch
             - round_in_epoch
           properties:
-            proposer_timestamp_ms:
-              type: integer
-              format: int64
-              minimum: 0
-              maximum: 100000000000000
-              description: An integer between `0` and `10^14`, marking the round proposer's unix timestamp in ms
+            proposer_timestamp:
+              $ref: '#/components/schemas/Instant'
+              description: The round proposer's timestamp.
             consensus_epoch:
               type: integer
               format: int64

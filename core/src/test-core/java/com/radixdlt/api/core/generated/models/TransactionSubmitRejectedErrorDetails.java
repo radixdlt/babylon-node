@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.Instant;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetailsBase;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetailsType;
 import com.radixdlt.api.core.generated.models.TransactionSubmitRejectedErrorDetailsAllOf;
@@ -64,7 +65,7 @@ public class TransactionSubmitRejectedErrorDetails {
   private Boolean isRejectedBecauseIntentAlreadyCommitted;
 
   public static final String JSON_PROPERTY_RECALCULATION_DUE = "recalculation_due";
-  private Long recalculationDue;
+  private Instant recalculationDue;
 
   public static final String JSON_PROPERTY_INVALID_FROM_EPOCH = "invalid_from_epoch";
   private Long invalidFromEpoch;
@@ -228,30 +229,28 @@ public class TransactionSubmitRejectedErrorDetails {
   }
 
 
-  public TransactionSubmitRejectedErrorDetails recalculationDue(Long recalculationDue) {
+  public TransactionSubmitRejectedErrorDetails recalculationDue(Instant recalculationDue) {
     this.recalculationDue = recalculationDue;
     return this;
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^14&#x60;, marking the unix timestamp in milliseconds after which the node will consider recalculating the validity of the transaction. Only present if the rejection isn&#39;t permanent. 
-   * minimum: 0
-   * maximum: 100000000000000
+   * Get recalculationDue
    * @return recalculationDue
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "An integer between `0` and `10^14`, marking the unix timestamp in milliseconds after which the node will consider recalculating the validity of the transaction. Only present if the rejection isn't permanent. ")
+  @ApiModelProperty(value = "")
   @JsonProperty(JSON_PROPERTY_RECALCULATION_DUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Long getRecalculationDue() {
+  public Instant getRecalculationDue() {
     return recalculationDue;
   }
 
 
   @JsonProperty(JSON_PROPERTY_RECALCULATION_DUE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setRecalculationDue(Long recalculationDue) {
+  public void setRecalculationDue(Instant recalculationDue) {
     this.recalculationDue = recalculationDue;
   }
 

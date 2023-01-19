@@ -15,16 +15,15 @@
 pub struct ClockCurrentMinuteSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// An integer between `0` and `10^14`, marking the ledger unix timestamp in ms (rounded down to the current minute)
-    #[serde(rename = "timestamp_ms_rounded_down_to_minute")]
-    pub timestamp_ms_rounded_down_to_minute: i64,
+    #[serde(rename = "timestamp_rounded_down_to_minute")]
+    pub timestamp_rounded_down_to_minute: Box<crate::core_api::generated::models::Instant>,
 }
 
 impl ClockCurrentMinuteSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, timestamp_ms_rounded_down_to_minute: i64) -> ClockCurrentMinuteSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, timestamp_rounded_down_to_minute: crate::core_api::generated::models::Instant) -> ClockCurrentMinuteSubstate {
         ClockCurrentMinuteSubstate {
             substate_type,
-            timestamp_ms_rounded_down_to_minute,
+            timestamp_rounded_down_to_minute: Box::new(timestamp_rounded_down_to_minute),
         }
     }
 }

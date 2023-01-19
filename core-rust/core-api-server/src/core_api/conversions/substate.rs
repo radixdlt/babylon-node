@@ -733,7 +733,9 @@ pub fn to_api_clock_current_time_rounded_down_to_minutes_substate(
     } = substate;
 
     Ok(models::Substate::ClockCurrentMinuteSubstate {
-        timestamp_ms_rounded_down_to_minute: *current_time_rounded_to_minutes_ms,
+        timestamp_rounded_down_to_minute: Box::new(to_api_instant_from_safe_timestamp(
+            *current_time_rounded_to_minutes_ms,
+        )?),
     })
 }
 

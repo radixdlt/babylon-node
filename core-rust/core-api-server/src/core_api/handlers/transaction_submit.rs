@@ -59,11 +59,13 @@ pub(crate) async fn handle_transaction_submit(
                     .is_rejected_because_intent_already_committed(),
                 recalculation_due: match rejection.recalculation_due {
                     state_manager::RecalculationDue::Never => None,
-                    state_manager::RecalculationDue::From(time) => {
-                        Some(to_api_unix_timestamp_ms(time)?)
-                    }
+                    state_manager::RecalculationDue::From(time) => Some(Box::new(
+                        to_api_instant_from_safe_timestamp(to_unix_timestamp_ms(time)?)?,
+                    )),
                     state_manager::RecalculationDue::Whenever => {
-                        Some(to_api_unix_timestamp_ms(std::time::SystemTime::now())?)
+                        Some(Box::new(to_api_instant_from_safe_timestamp(
+                            to_unix_timestamp_ms(std::time::SystemTime::now())?,
+                        )?))
                     }
                 },
                 invalid_from_epoch: if rejection.is_permanent_for_payload() {

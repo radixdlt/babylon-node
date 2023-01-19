@@ -40,6 +40,7 @@ import com.radixdlt.api.core.generated.models.EntityReference;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
 import com.radixdlt.api.core.generated.models.GlobalAddressSubstate;
 import com.radixdlt.api.core.generated.models.GlobalEntityAssignment;
+import com.radixdlt.api.core.generated.models.Instant;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.MetadataSubstate;
 import com.radixdlt.api.core.generated.models.MetadataSubstateAllOfMetadata;

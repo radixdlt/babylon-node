@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstateAllOf;
+import com.radixdlt.api.core.generated.models.Instant;
 import com.radixdlt.api.core.generated.models.SubstateBase;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import io.swagger.annotations.ApiModel;
@@ -35,15 +36,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   ClockCurrentMinuteSubstate.JSON_PROPERTY_SUBSTATE_TYPE,
-  ClockCurrentMinuteSubstate.JSON_PROPERTY_TIMESTAMP_MS_ROUNDED_DOWN_TO_MINUTE
+  ClockCurrentMinuteSubstate.JSON_PROPERTY_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ClockCurrentMinuteSubstate {
   public static final String JSON_PROPERTY_SUBSTATE_TYPE = "substate_type";
   private SubstateType substateType;
 
-  public static final String JSON_PROPERTY_TIMESTAMP_MS_ROUNDED_DOWN_TO_MINUTE = "timestamp_ms_rounded_down_to_minute";
-  private Long timestampMsRoundedDownToMinute;
+  public static final String JSON_PROPERTY_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE = "timestamp_rounded_down_to_minute";
+  private Instant timestampRoundedDownToMinute;
 
   public ClockCurrentMinuteSubstate() { 
   }
@@ -74,31 +75,29 @@ public class ClockCurrentMinuteSubstate {
   }
 
 
-  public ClockCurrentMinuteSubstate timestampMsRoundedDownToMinute(Long timestampMsRoundedDownToMinute) {
-    this.timestampMsRoundedDownToMinute = timestampMsRoundedDownToMinute;
+  public ClockCurrentMinuteSubstate timestampRoundedDownToMinute(Instant timestampRoundedDownToMinute) {
+    this.timestampRoundedDownToMinute = timestampRoundedDownToMinute;
     return this;
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^14&#x60;, marking the ledger unix timestamp in ms (rounded down to the current minute)
-   * minimum: 0
-   * maximum: 100000000000000
-   * @return timestampMsRoundedDownToMinute
+   * Get timestampRoundedDownToMinute
+   * @return timestampRoundedDownToMinute
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^14`, marking the ledger unix timestamp in ms (rounded down to the current minute)")
-  @JsonProperty(JSON_PROPERTY_TIMESTAMP_MS_ROUNDED_DOWN_TO_MINUTE)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getTimestampMsRoundedDownToMinute() {
-    return timestampMsRoundedDownToMinute;
+  public Instant getTimestampRoundedDownToMinute() {
+    return timestampRoundedDownToMinute;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TIMESTAMP_MS_ROUNDED_DOWN_TO_MINUTE)
+  @JsonProperty(JSON_PROPERTY_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTimestampMsRoundedDownToMinute(Long timestampMsRoundedDownToMinute) {
-    this.timestampMsRoundedDownToMinute = timestampMsRoundedDownToMinute;
+  public void setTimestampRoundedDownToMinute(Instant timestampRoundedDownToMinute) {
+    this.timestampRoundedDownToMinute = timestampRoundedDownToMinute;
   }
 
 
@@ -115,12 +114,12 @@ public class ClockCurrentMinuteSubstate {
     }
     ClockCurrentMinuteSubstate clockCurrentMinuteSubstate = (ClockCurrentMinuteSubstate) o;
     return Objects.equals(this.substateType, clockCurrentMinuteSubstate.substateType) &&
-        Objects.equals(this.timestampMsRoundedDownToMinute, clockCurrentMinuteSubstate.timestampMsRoundedDownToMinute);
+        Objects.equals(this.timestampRoundedDownToMinute, clockCurrentMinuteSubstate.timestampRoundedDownToMinute);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(substateType, timestampMsRoundedDownToMinute);
+    return Objects.hash(substateType, timestampRoundedDownToMinute);
   }
 
   @Override
@@ -128,7 +127,7 @@ public class ClockCurrentMinuteSubstate {
     StringBuilder sb = new StringBuilder();
     sb.append("class ClockCurrentMinuteSubstate {\n");
     sb.append("    substateType: ").append(toIndentedString(substateType)).append("\n");
-    sb.append("    timestampMsRoundedDownToMinute: ").append(toIndentedString(timestampMsRoundedDownToMinute)).append("\n");
+    sb.append("    timestampRoundedDownToMinute: ").append(toIndentedString(timestampRoundedDownToMinute)).append("\n");
     sb.append("}");
     return sb.toString();
   }
