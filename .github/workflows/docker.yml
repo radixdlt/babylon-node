@@ -63,6 +63,8 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
       - name: configure-docker
         run: |
             gcloud auth configure-docker -q
