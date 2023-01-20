@@ -58,7 +58,7 @@ fn handle_transaction_stream_internal(
 
     let max_state_version = state_manager.store.max_state_version();
 
-    let txns = state_manager.store.get_committed_transactions_bundles(
+    let txns = state_manager.store.get_committed_transaction_bundles(
         from_state_version,
         limit.try_into().expect("limit out of usize bounds"),
     );

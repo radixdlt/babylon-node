@@ -250,7 +250,7 @@ impl<'db> CommitStore<'db> for StateManagerDatabase {
 
 impl QueryableTransactionStore for StateManagerDatabase {
     #[tracing::instrument(skip_all)]
-    fn get_committed_transactions_bundles(
+    fn get_committed_transaction_bundles(
         &self,
         start_state_version_inclusive: u64,
         limit: usize,
@@ -259,9 +259,9 @@ impl QueryableTransactionStore for StateManagerDatabase {
             StateManagerDatabase::InMemory {
                 in_memory_store, ..
             } => in_memory_store
-                .get_committed_transactions_bundles(start_state_version_inclusive, limit),
+                .get_committed_transaction_bundles(start_state_version_inclusive, limit),
             StateManagerDatabase::RocksDB(store) => {
-                store.get_committed_transactions_bundles(start_state_version_inclusive, limit)
+                store.get_committed_transaction_bundles(start_state_version_inclusive, limit)
             }
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }

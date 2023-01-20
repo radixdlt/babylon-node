@@ -380,7 +380,7 @@ impl ReadableSubstateStore for RocksDBStore {
 }
 
 impl QueryableTransactionStore for RocksDBStore {
-    fn get_committed_transactions_bundles(
+    fn get_committed_transaction_bundles(
         &self,
         start_state_version_inclusive: u64,
         limit: usize,
