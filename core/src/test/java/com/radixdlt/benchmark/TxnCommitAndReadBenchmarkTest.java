@@ -87,7 +87,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTestBase {
@@ -97,7 +96,6 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
   private static final int NUM_COMMITS = 1000;
 
   @Test
-  @Ignore("this benchmark test is meant to be run manually")
   public void test_txn_commit_and_read_time() throws Exception {
     try (var test = buildRunningServerTest()) {
       final var stateComputer = test.getInstance(0, RustStateComputer.class);
@@ -137,6 +135,7 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
     final var api = getStreamApi();
     long totalTxnsRead = 0;
     long stateVersion = 1;
+    long totalResponsesReceived = 0;
     while (true) {
       final var resp =
           api.transactionStreamPost(
@@ -144,6 +143,7 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
                   .network(networkLogicalName)
                   .limit(batchSize)
                   .fromStateVersion(stateVersion));
+      totalResponsesReceived += 1;
 
       if (resp.getTransactions().isEmpty()) {
         break;
@@ -157,9 +157,10 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
     }
 
     log.info(
-        "It took {} ms to read all ({}) txns through the core API",
+        "It took {} ms to read all ({}) txns through the core API. Received {} responses.",
         stopwatch.elapsed().toMillis(),
-        totalTxnsRead);
+        totalTxnsRead,
+        totalResponsesReceived);
   }
 
   private void readAllTxnsThroughLedgerSync(DeterministicTest test) {
@@ -167,9 +168,11 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
     final var txnReader = test.getInstance(0, REv2TransactionsAndProofReader.class);
 
     long totalTxnsRead = 0;
+    long totalTxnReaderCalls = 0;
     DtoLedgerProof proof = LedgerProof.mockAtStateVersion(1L).toDto();
     while (true) {
       var res = txnReader.getTransactions(proof);
+      totalTxnReaderCalls += 1;
       if (res == null) {
         break;
       }
@@ -178,9 +181,11 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
     }
 
     log.info(
-        "It took {} ms to read all ({}) txns through the txn reader (ledger sync)",
+        "It took {} ms to read all ({}) txns through the txn reader (ledger sync). Made {} calls to"
+            + " txn reader.",
         stopwatch.elapsed().toMillis(),
-        totalTxnsRead);
+        totalTxnsRead,
+        totalTxnReaderCalls);
   }
 
   private List<RawLedgerTransaction> createUniqueTransactions(int numTransactions) {
