@@ -321,6 +321,7 @@ name = "core-api-server"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "chrono",
  "futures",
  "hex",
  "hyper",

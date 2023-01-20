@@ -4,7 +4,7 @@ use crate::core_api::*;
 pub(crate) async fn handle_mempool_list(
     Extension(state): Extension<CoreApiState>,
     Json(request): Json<models::MempoolListRequest>,
-) -> Result<Json<models::MempoolListResponse>, RequestHandlingError> {
+) -> Result<Json<models::MempoolListResponse>, ResponseError<()>> {
     let state_manager = state.state_manager.read();
     assert_matching_network(&request.network, &state_manager.network)?;
 

@@ -75,9 +75,9 @@ use radix_engine::types::{Categorize, Decode, Encode};
 use state_manager::jni::state_manager::ActualStateManager;
 use tower_http::limit::RequestBodyLimitLayer;
 
-use super::{handlers::*, not_found_error, RequestHandlingError};
+use super::{handlers::*, not_found_error, ResponseError};
 
-use handle_network_configuration as handle_provide_info_at_root_path;
+use handle_status_network_configuration as handle_provide_info_at_root_path;
 
 #[derive(Clone)]
 pub(crate) struct CoreApiState {
@@ -102,13 +102,16 @@ pub async fn create_server<F>(
     let router = Router::new()
         // This only adds a route for /core, /core/ doesn't seem possible using /nest
         .route("/", get(handle_provide_info_at_root_path))
+        // Status Sub-API
         .route(
             "/status/network-configuration",
-            post(handle_network_configuration),
+            post(handle_status_network_configuration),
         )
-        .route("/status/network-status", post(handle_network_status))
+        .route("/status/network-status", post(handle_status_network_status))
+        // Mempool Sub-API
         .route("/mempool/list", post(handle_mempool_list))
         .route("/mempool/transaction", post(handle_mempool_transaction))
+        // Transaction Sub-API
         .route(
             "/transaction/parse",
             post(handle_transaction_parse)
@@ -121,6 +124,8 @@ pub async fn create_server<F>(
                 .layer(DefaultBodyLimit::disable())
                 .layer(RequestBodyLimitLayer::new(LARGE_REQUEST_MAX_BYTES)),
         )
+        .route("/transaction/status", post(handle_transaction_status))
+        .route("/transaction/receipt", post(handle_transaction_receipt))
         .route(
             "/transaction/preview",
             post(handle_transaction_preview)
@@ -131,30 +136,15 @@ pub async fn create_server<F>(
             "/transaction/call-preview",
             post(handle_transaction_callpreview),
         )
-        .route("/transaction/stream", post(handle_transaction_stream))
-        .route("/v0", get(handle_provide_info_at_root_path))
-        .route("/v0/", get(handle_provide_info_at_root_path))
-        .route(
-            "/v0/status/network-configuration",
-            post(handle_network_configuration),
-        )
-        .route(
-            "/v0/transaction/submit",
-            post(handle_v0_transaction_submit)
-                .layer(DefaultBodyLimit::disable())
-                .layer(RequestBodyLimitLayer::new(LARGE_REQUEST_MAX_BYTES)),
-        )
-        .route("/v0/transaction/status", post(handle_v0_transaction_status))
-        .route(
-            "/v0/transaction/receipt",
-            post(handle_v0_transaction_receipt),
-        )
-        .route("/v0/state/epoch", post(handle_v0_state_epoch))
-        .route("/v0/state/clock", post(handle_v0_state_clock))
-        .route("/v0/state/component", post(handle_v0_state_component))
-        .route("/v0/state/package", post(handle_v0_state_package))
-        .route("/v0/state/resource", post(handle_v0_state_resource))
-        .route("/v0/state/non-fungible", post(handle_v0_state_non_fungible))
+        // Stream Sub-API
+        .route("/stream/transactions", post(handle_stream_transactions))
+        // State Sub-API
+        .route("/state/epoch", post(handle_state_epoch))
+        .route("/state/clock", post(handle_state_clock))
+        .route("/state/component", post(handle_state_component))
+        .route("/state/package", post(handle_state_package))
+        .route("/state/resource", post(handle_state_resource))
+        .route("/state/non-fungible", post(handle_state_non_fungible))
         .layer(Extension(core_api_state));
 
     let prefixed_router = Router::new()
@@ -171,7 +161,7 @@ pub async fn create_server<F>(
 }
 
 #[tracing::instrument(err(Debug))]
-pub(crate) async fn handle_no_core_path() -> Result<(), RequestHandlingError> {
+pub(crate) async fn handle_no_core_path() -> Result<(), ResponseError<()>> {
     Err(not_found_error("Try /core"))
 }
 

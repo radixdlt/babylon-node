@@ -5,13 +5,13 @@ use state_manager::{jni::state_manager::ActualStateManager, query::StateManagerS
 
 use super::{
     get_entity_type_from_global_address, not_found_error, CoreApiState, Extension, Json,
-    MappingError, RequestHandlingError,
+    MappingError, ResponseError,
 };
 
 pub(crate) fn core_api_handler_empty_request<Response>(
     Extension(state): Extension<CoreApiState>,
-    method: impl FnOnce(&mut ActualStateManager) -> Result<Response, RequestHandlingError>,
-) -> Result<Json<Response>, RequestHandlingError> {
+    method: impl FnOnce(&mut ActualStateManager) -> Result<Response, ResponseError<()>>,
+) -> Result<Json<Response>, ResponseError<()>> {
     let mut state_manager = state.state_manager.write();
 
     method(&mut state_manager).map(Json)
@@ -21,8 +21,8 @@ pub(crate) fn core_api_handler_empty_request<Response>(
 pub(crate) fn core_api_read_handler<Request, Response>(
     Extension(state): Extension<CoreApiState>,
     Json(request_body): Json<Request>,
-    method: impl FnOnce(&ActualStateManager, Request) -> Result<Response, RequestHandlingError>,
-) -> Result<Json<Response>, RequestHandlingError> {
+    method: impl FnOnce(&ActualStateManager, Request) -> Result<Response, ResponseError<()>>,
+) -> Result<Json<Response>, ResponseError<()>> {
     let state_manager = state.state_manager.read();
 
     method(&state_manager, request_body).map(Json)
@@ -32,7 +32,7 @@ pub(crate) fn core_api_read_handler<Request, Response>(
 pub(crate) fn read_derefed_global_node_id(
     state_manager: &ActualStateManager,
     global_address: GlobalAddress,
-) -> Result<RENodeId, RequestHandlingError> {
+) -> Result<RENodeId, ResponseError<()>> {
     state_manager
         .staged_store
         .root
@@ -50,7 +50,7 @@ pub(crate) fn read_known_substate(
     state_manager: &ActualStateManager,
     renode_id: RENodeId,
     substate_offset: &SubstateOffset,
-) -> Result<PersistedSubstate, RequestHandlingError> {
+) -> Result<PersistedSubstate, ResponseError<()>> {
     let substate_id = SubstateId(renode_id, substate_offset.clone());
     let output_value = state_manager
         .staged_store
@@ -66,7 +66,7 @@ pub(crate) fn read_known_substate(
 }
 
 #[tracing::instrument(skip_all)]
-pub(crate) fn wrong_substate_type(substate_offset: SubstateOffset) -> RequestHandlingError {
+pub(crate) fn wrong_substate_type(substate_offset: SubstateOffset) -> ResponseError<()> {
     MappingError::MismatchedSubstateId {
         message: format!("{:?} not of expected type", substate_offset),
     }
