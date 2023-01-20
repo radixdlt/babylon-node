@@ -139,7 +139,8 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       var details = response.getDetails();
       assertThat(details).isNotNull();
 
-      var rejectedDetails = details.getTransactionSubmitRejectedErrorDetails();
+      assertThat(details).isInstanceOfAny(TransactionSubmitRejectedErrorDetails.class);
+      var rejectedDetails = (TransactionSubmitRejectedErrorDetails) details;
 
       assertThat(response.getCode()).isEqualTo(400);
       assertThat(rejectedDetails).isNotNull();
