@@ -1957,6 +1957,7 @@ dependencies = [
  "radix-engine-stores",
  "rocksdb",
  "sbor",
+ "slotmap",
  "tracing",
  "transaction",
  "utils",

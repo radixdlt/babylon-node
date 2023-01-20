@@ -62,23 +62,22 @@
  * permissions under this License.
  */
 
-extern crate core;
+package com.radixdlt.rev2;
 
-mod execution_cache;
-pub mod jni;
-pub mod mempool;
-mod metrics;
-pub mod query;
-mod receipt;
-mod result;
-mod state_manager;
-pub mod store;
-pub mod transaction;
-mod types;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-pub use crate::mempool::*;
-pub use crate::metrics::*;
-pub use crate::pending_transaction_result_cache::*;
-pub use crate::receipt::*;
-pub use crate::state_manager::*;
-pub use crate::types::*;
+public record Validator(ComponentAddress address, ECDSASecp256k1PublicKey key) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        Validator.class,
+        codecs ->
+            StructCodec.with(
+                Validator::new,
+                codecs.of(new TypeToken<>() {}),
+                codecs.of(new TypeToken<>() {}),
+                (t, encoder) -> encoder.encode(t.address, t.key)));
+  }
+}

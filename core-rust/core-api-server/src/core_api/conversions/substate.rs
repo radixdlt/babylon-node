@@ -571,7 +571,9 @@ fn extract_entities(
 
     let owned_entities = struct_scrypto_value
         .owned_node_ids()
-        .unwrap()
+        .map_err(|_| MappingError::UnsupportedSubstatePersisted {
+            message: "Could not encode owned entities to re node ids".to_string(),
+        })?
         .into_iter()
         .map(|node_id| -> Result<models::EntityReference, MappingError> {
             Ok(MappedEntityId::try_from(node_id)?.into())

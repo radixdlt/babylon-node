@@ -119,6 +119,7 @@ public final class StateManagerSbor {
     RawLedgerTransaction.registerCodec(codecMap);
     RawNotarizedTransaction.registerCodec(codecMap);
     TransactionStatus.registerCodec(codecMap);
+    Validator.registerCodec(codecMap);
     Decimal.registerCodec(codecMap);
     LogLevel.registerCodec(codecMap);
     ComponentAddress.registerCodec(codecMap);

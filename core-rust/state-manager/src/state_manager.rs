@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use crate::execution_cache::ExecutionCache;
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::query::*;
 use crate::store::traits::*;
@@ -83,9 +84,7 @@ use ::transaction::signing::EcdsaSecp256k1PrivateKey;
 use ::transaction::validation::{TestIntentHashManager, ValidationConfig};
 use prometheus::Registry;
 use radix_engine::engine::ScryptoInterpreter;
-use radix_engine::state_manager::{
-    ExecutionCache, StagedSubstateStoreKey, StagedSubstateStoreManager,
-};
+use radix_engine::state_manager::{StagedSubstateStoreKey, StagedSubstateStoreManager};
 use radix_engine::transaction::{
     execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
     PreviewResult, TransactionOutcome, TransactionReceipt, TransactionResult,
@@ -133,7 +132,7 @@ pub struct StateManager<S: ReadableSubstateStore> {
 
 impl<S> StateManager<S>
 where
-    S: ReadableSubstateStore + QueryableProofStore + TransactionIndex<u64>,
+    S: ReadableSubstateStore + QueryableAccumulatorHash,
 {
     pub fn new(
         network: NetworkDefinition,
@@ -155,10 +154,7 @@ where
         let prometheus_registry = Registry::new();
         metrics.register_with(&prometheus_registry);
 
-        let accumulator_hash = store
-            .get_top_of_ledger_transaction_identifiers()
-            .unwrap()
-            .accumulator_hash;
+        let accumulator_hash = store.get_top_accumulator_hash();
 
         StateManager {
             network,
@@ -531,13 +527,7 @@ where
             .validate_and_create_executable(&parsed_transaction)
             .expect("Failed to validate genesis");
 
-        let current_top_of_ledger = self
-            .staged_store
-            .root
-            .get_top_of_ledger_transaction_identifiers()
-            .unwrap(); // Genesis must have happened to be here
-
-        let parent_accumulator_hash = current_top_of_ledger.accumulator_hash;
+        let parent_accumulator_hash = AccumulatorHash::pre_genesis();
 
         let (_, receipt) = self.execute_with_cache(
             &parent_accumulator_hash,
