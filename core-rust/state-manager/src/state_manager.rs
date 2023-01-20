@@ -97,7 +97,7 @@ use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
 use radix_engine_interface::node::NetworkDefinition;
 use std::collections::HashMap;
 use std::convert::TryInto;
-use std::time::{Instant, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::{info, warn};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
@@ -321,20 +321,18 @@ where
             .check_add_would_be_possible(&unvalidated_transaction.user_payload_hash())?;
 
         let (record, was_cached) = self.check_for_rejection_with_caching(&unvalidated_transaction);
-        let last_attempt = &record.last_attempt;
+        let accept_into_mempool = record.should_accept_into_mempool(was_cached);
 
-        match &last_attempt.rejection {
+        if accept_into_mempool.is_ok() {
             // Note - we purposefully don't save a validated transaction in the mempool:
             // * Currently (Nov 2022) static validation isn't sufficiently static, as it includes EG epoch validation
             // * Moreover, the engine expects the validated transaction to be presently valid, else panics
             // * Once epoch validation is moved to the executor, we can persist validated transactions in the mempool
-            None => self.mempool.add_transaction(unvalidated_transaction.into()),
-            Some(reason) => Err(MempoolAddError::Rejected(MempoolAddRejection {
-                reason: reason.clone(),
-                against_state: last_attempt.against_state.clone(),
-                was_cached,
-            })),
+            self.mempool
+                .add_transaction(unvalidated_transaction.into())?;
         }
+
+        accept_into_mempool.map_err(MempoolAddError::Rejected)
     }
 
     /// Reads the transaction rejection status from the cache, else calculates it fresh, by
@@ -348,13 +346,14 @@ where
         &mut self,
         transaction: &NotarizedTransaction,
     ) -> (PendingTransactionRecord, bool) {
-        let current_time = Instant::now();
+        let current_time = SystemTime::now();
         let intent_hash = transaction.intent_hash();
         let payload_hash = transaction.user_payload_hash();
+        let invalid_from_epoch = transaction.signed_intent.intent.header.end_epoch_exclusive;
 
         let record_option = self
             .pending_transaction_result_cache
-            .get_pending_transaction_record(&intent_hash, &payload_hash);
+            .get_pending_transaction_record(&intent_hash, &payload_hash, invalid_from_epoch);
 
         if let Some(record) = record_option {
             if !record.should_recalculate(current_time) {
@@ -386,13 +385,14 @@ where
             },
             timestamp: current_time,
         };
+        let invalid_from_epoch = transaction.signed_intent.intent.header.end_epoch_exclusive;
         self.pending_transaction_result_cache
-            .track_transaction_result(intent_hash, payload_hash, attempt);
+            .track_transaction_result(intent_hash, payload_hash, invalid_from_epoch, attempt);
 
         // Unwrap allowed as we've just put it in the cache, and unless the cache has size 0 it must be there
         (
             self.pending_transaction_result_cache
-                .get_pending_transaction_record(&intent_hash, &payload_hash)
+                .get_pending_transaction_record(&intent_hash, &payload_hash, invalid_from_epoch)
                 .unwrap(),
             false,
         )
@@ -445,7 +445,7 @@ where
         for data in mempool_txns.values() {
             let (record, was_cached) =
                 self.check_for_rejection_with_caching(&data.transaction.payload);
-            if !was_cached && record.last_attempt.rejection.is_some() {
+            if !was_cached && record.latest_attempt.rejection.is_some() {
                 txns_to_remove.push((data.transaction.intent_hash, data.transaction.payload_hash));
             }
         }
@@ -612,7 +612,7 @@ where
 
         let mut rejected_payloads = Vec::new();
 
-        let pending_transaction_timestamp = Instant::now();
+        let pending_transaction_timestamp = SystemTime::now();
         let mut pending_transaction_results = Vec::new();
 
         // Don't process any additional transactions if next epoch has occurred
@@ -631,6 +631,7 @@ where
 
                 let intent_hash = parsed.intent_hash();
                 let user_payload_hash = parsed.user_payload_hash();
+                let invalid_at_epoch = parsed.signed_intent.intent.header.end_epoch_exclusive;
                 if let Some(state) = already_committed_or_prepared_intent_hashes.get(&intent_hash) {
                     rejected_payloads.push((
                         proposed_payload,
@@ -642,6 +643,7 @@ where
                     pending_transaction_results.push((
                         intent_hash,
                         user_payload_hash,
+                        invalid_at_epoch,
                         Some(RejectionReason::IntentHashCommitted),
                     ));
                     continue;
@@ -658,6 +660,7 @@ where
                         pending_transaction_results.push((
                             intent_hash,
                             user_payload_hash,
+                            invalid_at_epoch,
                             Some(RejectionReason::ValidationError(error)),
                         ));
                         continue;
@@ -677,7 +680,12 @@ where
                         already_committed_or_prepared_intent_hashes
                             .insert(intent_hash, AlreadyPreparedTransaction::Proposed);
                         committed.push(LedgerTransaction::User(parsed).create_payload().unwrap());
-                        pending_transaction_results.push((intent_hash, user_payload_hash, None));
+                        pending_transaction_results.push((
+                            intent_hash,
+                            user_payload_hash,
+                            invalid_at_epoch,
+                            None,
+                        ));
 
                         if let Some(e) = result.next_epoch {
                             next_epoch = Some(NextEpoch {
@@ -692,6 +700,7 @@ where
                         pending_transaction_results.push((
                             intent_hash,
                             user_payload_hash,
+                            invalid_at_epoch,
                             Some(RejectionReason::FromExecution(Box::new(
                                 reject_result.error,
                             ))),
@@ -707,7 +716,9 @@ where
             }
         }
 
-        for (intent_hash, user_payload_hash, rejection_option) in pending_transaction_results {
+        for (intent_hash, user_payload_hash, invalid_at_epoch, rejection_option) in
+            pending_transaction_results
+        {
             if rejection_option.is_some() {
                 // Removing transactions rejected during prepare from the mempool is a bit of overkill:
                 // just because transactions were rejected in this history doesn't mean this history will be committed.
@@ -732,7 +743,12 @@ where
                 timestamp: pending_transaction_timestamp,
             };
             self.pending_transaction_result_cache
-                .track_transaction_result(intent_hash, user_payload_hash, attempt);
+                .track_transaction_result(
+                    intent_hash,
+                    user_payload_hash,
+                    invalid_at_epoch,
+                    attempt,
+                );
         }
 
         PrepareResult {
@@ -899,7 +915,7 @@ where
 
         self.pending_transaction_result_cache
             .track_committed_transactions(
-                Instant::now(),
+                SystemTime::now(),
                 commit_request_start_state_version,
                 intent_hashes,
             );

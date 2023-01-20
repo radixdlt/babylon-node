@@ -167,7 +167,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/status/network-status":
     post:
       summary: Get Network Status
@@ -192,7 +192,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
 ###################
 # Mempool Sub-API #
 ###################
@@ -220,7 +220,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/mempool/transaction":
     post:
       summary: Get Mempool Transaction
@@ -245,13 +245,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
 #######################
 # Transaction Sub-API #
 #######################
@@ -279,13 +279,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/transaction/submit":
     post:
       summary: Transaction Submit
@@ -311,13 +311,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/TransactionSubmitErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/TransactionSubmitErrorResponse"
   "/transaction/status":
     post:
       summary: Get Transaction Status
@@ -346,13 +346,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/transaction/receipt":
     post:
       summary: Get Transaction Receipt
@@ -378,19 +378,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '404':
           description: Committed transaction not found response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/transaction/call-preview":
     post:
       summary: Scrypto Call Preview
@@ -424,13 +424,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/transaction/preview":
     post:
       summary: Transaction Preview
@@ -456,13 +456,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
 ##################
 # Stream Sub-API #
 ##################
@@ -491,13 +491,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
 #################
 # State Sub-API #
 #################
@@ -526,13 +526,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/state/clock":
     post:
       summary: Get Clock Details
@@ -558,13 +558,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/state/component":
     post:
       summary: Get Component Details
@@ -591,19 +591,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '404':
           description: Not found error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/state/resource":
     post:
       summary: Get Resource Details
@@ -629,19 +629,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '404':
           description: Not found error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/state/non-fungible":
     post:
       summary: Get Non-Fungible Details
@@ -667,19 +667,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '404':
           description: Not found error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/state/package":
     post:
       summary: Get Package Details
@@ -705,19 +705,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '404':
           description: Not found error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
 #############################################################################################
 components:
   schemas:
@@ -926,12 +926,27 @@ components:
       minLength: 64
       maxLength: 64
       description: The hex-encoded ledger-wrapped transaction hash. This is known as the Ledger Hash. This hash is `SHA256(SHA256(ledger_transaction_bytes))`
+    ErrorResponseType:
+      type: string
+      enum:
+        - Basic
+        - TransactionSubmit
     ErrorResponse:
       type: object
+      discriminator:
+        propertyName: error_type
+        mapping:
+          # The discriminator values on the left side need to match ErrorResponseType
+          # NOTE: To ease 
+          Basic: "#/components/schemas/BasicErrorResponse"
+          TransactionSubmit: "#/components/schemas/TransactionSubmitErrorResponse"
       required:
+        - error_type
         - code
         - message
       properties:
+        error_type:
+          $ref: "#/components/schemas/ErrorResponseType"
         code:
           type: integer
           description: A numeric code corresponding to the given HTTP error code.
@@ -941,6 +956,10 @@ components:
         trace_id:
           description: A GUID to be used when reporting errors, to allow correlation with the Core API's error logs, in the case where the Core API details are hidden.
           type: string
+    BasicErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+        - type: object
 ######################################
 # GENERAL / SHARED MODELS - Receipts #
 ######################################
@@ -1185,6 +1204,23 @@ components:
     PackageAddress:
       type: string
       description: The Bech32m-encoded human readable version of the package address
+    Instant:
+      type: object
+      required:
+        - unix_timestamp_ms
+        - date_time
+      properties:
+        unix_timestamp_ms:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000000
+          description: An integer between `0` and `10^14`, marking the unix timestamp in ms.
+        date_time:
+          type: string
+          description: |
+            The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use "Z" denoting UTC and include milliseconds.
+            EG: `2023-01-26T18:30:09.453Z`.
     ResourceChange:
       type: object
       required:
@@ -1401,25 +1437,21 @@ components:
         - NativeMethod
         - ScryptoMethod
     LocalMethodReference:
-      anyOf:
-        - $ref: '#/components/schemas/LocalNativeMethodReference'
-        - $ref: '#/components/schemas/LocalScryptoMethodReference'
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match LocalMethodReferenceType options above
-          NativeMethod: '#/components/schemas/LocalNativeMethodReference'
-          ScryptoMethod: '#/components/schemas/LocalScryptoMethodReference'
-    LocalMethodReferenceBase:
       type: object
       required:
         - type
       properties:
         type:
           $ref: '#/components/schemas/LocalMethodReferenceType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match LocalMethodReferenceType options above
+          NativeMethod: '#/components/schemas/LocalNativeMethodReference'
+          ScryptoMethod: '#/components/schemas/LocalScryptoMethodReference'
     LocalNativeMethodReference:
       allOf:
-        - $ref: '#/components/schemas/LocalMethodReferenceBase'
+        - $ref: '#/components/schemas/LocalMethodReference'
         - type: object
           required:
             - name
@@ -1428,7 +1460,7 @@ components:
               type: string
     LocalScryptoMethodReference:
       allOf:
-        - $ref: '#/components/schemas/LocalMethodReferenceBase'
+        - $ref: '#/components/schemas/LocalMethodReference'
         - type: object
           required:
             - name
@@ -1441,25 +1473,21 @@ components:
         - Group
         - Rule
     AccessRuleReference:
-      anyOf:
-        - $ref: '#/components/schemas/GroupAccessRuleReference'
-        - $ref: '#/components/schemas/RuleAccessRuleReference'
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match AccessRuleReferenceType options above
-          Group: '#/components/schemas/GroupAccessRuleReference'
-          Rule: '#/components/schemas/RuleAccessRuleReference'
-    AccessRuleReferenceBase:
       type: object
       required:
         - type
       properties:
         type:
           $ref: '#/components/schemas/AccessRuleReferenceType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match AccessRuleReferenceType options above
+          Group: '#/components/schemas/GroupAccessRuleReference'
+          Rule: '#/components/schemas/RuleAccessRuleReference'
     GroupAccessRuleReference:
       allOf:
-        - $ref: '#/components/schemas/AccessRuleReferenceBase'
+        - $ref: '#/components/schemas/AccessRuleReference'
         - type: object
           required:
             - group_name
@@ -1468,7 +1496,7 @@ components:
               type: string
     RuleAccessRuleReference:
       allOf:
-        - $ref: '#/components/schemas/AccessRuleReferenceBase'
+        - $ref: '#/components/schemas/AccessRuleReference'
         - type: object
           required:
             - access_rule
@@ -1492,10 +1520,12 @@ components:
         - AllowAll
         - DenyAll
     AccessRule:
-      anyOf:
-        - $ref: '#/components/schemas/ProtectedAccessRule'
-        - $ref: '#/components/schemas/AllowAllAccessRule'
-        - $ref: '#/components/schemas/DenyAllAccessRule'
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/AccessRuleType'
       discriminator:
         propertyName: type
         mapping:
@@ -1503,16 +1533,9 @@ components:
           Protected: '#/components/schemas/ProtectedAccessRule'
           AllowAll: '#/components/schemas/AllowAllAccessRule'
           DenyAll: '#/components/schemas/DenyAllAccessRule'
-    AccessRuleBase:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          $ref: '#/components/schemas/AccessRuleType'
     ProtectedAccessRule:
       allOf:
-        - $ref: '#/components/schemas/AccessRuleBase'
+        - $ref: '#/components/schemas/AccessRule'
         - type: object
           required:
             - access_rule
@@ -1521,11 +1544,11 @@ components:
               $ref: '#/components/schemas/AccessRuleNode'
     AllowAllAccessRule:
       allOf:
-        - $ref: '#/components/schemas/AccessRuleBase'
+        - $ref: '#/components/schemas/AccessRule'
         - type: object
     DenyAllAccessRule:
       allOf:
-        - $ref: '#/components/schemas/AccessRuleBase'
+        - $ref: '#/components/schemas/AccessRule'
         - type: object
     AccessRuleNodeType:
       type: string
@@ -1534,10 +1557,12 @@ components:
         - AnyOf
         - AllOf
     AccessRuleNode:
-      anyOf:
-        - $ref: '#/components/schemas/ProofAccessRuleNode'
-        - $ref: '#/components/schemas/AnyOfAccessRuleNode'
-        - $ref: '#/components/schemas/AllOfAccessRuleNode'
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/AccessRuleNodeType'
       discriminator:
         propertyName: type
         mapping:
@@ -1545,16 +1570,9 @@ components:
           ProofRule: '#/components/schemas/ProofAccessRuleNode'
           AnyOf: '#/components/schemas/AnyOfAccessRuleNode'
           AllOf: '#/components/schemas/AllOfAccessRuleNode'
-    AccessRuleNodeBase:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          $ref: '#/components/schemas/AccessRuleNodeType'
     ProofAccessRuleNode:
       allOf:
-        - $ref: '#/components/schemas/AccessRuleNodeBase'
+        - $ref: '#/components/schemas/AccessRuleNode'
         - type: object
           required:
             - proof_rule
@@ -1563,7 +1581,7 @@ components:
               $ref: '#/components/schemas/ProofRule'
     AnyOfAccessRuleNode:
       allOf:
-        - $ref: '#/components/schemas/AccessRuleNodeBase'
+        - $ref: '#/components/schemas/AccessRuleNode'
         - type: object
           required:
             - access_rules
@@ -1574,7 +1592,7 @@ components:
                 $ref: '#/components/schemas/AccessRuleNode'
     AllOfAccessRuleNode:
       allOf:
-        - $ref: '#/components/schemas/AccessRuleNodeBase'
+        - $ref: '#/components/schemas/AccessRuleNode'
         - type: object
           required:
             - access_rules
@@ -1592,12 +1610,12 @@ components:
         - AnyOf
         - CountOf
     ProofRule:
-      anyOf:
-        - $ref: '#/components/schemas/RequireProofRule'
-        - $ref: '#/components/schemas/AmountOfProofRule'
-        - $ref: '#/components/schemas/AllOfProofRule'
-        - $ref: '#/components/schemas/AnyOfProofRule'
-        - $ref: '#/components/schemas/CountOfProofRule'
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/ProofRuleType'
       discriminator:
         propertyName: type
         mapping:
@@ -1607,16 +1625,9 @@ components:
           AllOf: '#/components/schemas/AllOfProofRule'
           AnyOf: '#/components/schemas/AnyOfProofRule'
           CountOf: '#/components/schemas/CountOfProofRule'
-    ProofRuleBase:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          $ref: '#/components/schemas/ProofRuleType'
     RequireProofRule:
       allOf:
-        - $ref: '#/components/schemas/ProofRuleBase'
+        - $ref: '#/components/schemas/ProofRule'
         - type: object
           required:
             - resource
@@ -1625,7 +1636,7 @@ components:
               $ref: '#/components/schemas/DynamicResourceDescriptor'
     AmountOfProofRule:
       allOf:
-        - $ref: '#/components/schemas/ProofRuleBase'
+        - $ref: '#/components/schemas/ProofRule'
         - type: object
           required:
             - amount
@@ -1637,7 +1648,7 @@ components:
               $ref: '#/components/schemas/DynamicResourceDescriptor'
     AllOfProofRule:
       allOf:
-        - $ref: '#/components/schemas/ProofRuleBase'
+        - $ref: '#/components/schemas/ProofRule'
         - type: object
           required:
             - list
@@ -1646,7 +1657,7 @@ components:
               $ref: '#/components/schemas/DynamicResourceDescriptorList'
     AnyOfProofRule:
       allOf:
-        - $ref: '#/components/schemas/ProofRuleBase'
+        - $ref: '#/components/schemas/ProofRule'
         - type: object
           required:
             - list
@@ -1655,7 +1666,7 @@ components:
               $ref: '#/components/schemas/DynamicResourceDescriptorList'
     CountOfProofRule:
       allOf:
-        - $ref: '#/components/schemas/ProofRuleBase'
+        - $ref: '#/components/schemas/ProofRule'
         - type: object
           required:
             - count
@@ -1671,25 +1682,21 @@ components:
         - Amount
         - SchemaPath
     DynamicAmount:
-      anyOf:
-        - $ref: '#/components/schemas/AmountDynamicAmount'
-        - $ref: '#/components/schemas/SchemaPathDynamicAmount'
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match DynamicAmountType options above
-          Amount: '#/components/schemas/AmountDynamicAmount'
-          SchemaPath: '#/components/schemas/SchemaPathDynamicAmount'
-    DynamicAmountBase:
       type: object
       required:
         - type
       properties:
         type:
           $ref: '#/components/schemas/DynamicAmountType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match DynamicAmountType options above
+          Amount: '#/components/schemas/AmountDynamicAmount'
+          SchemaPath: '#/components/schemas/SchemaPathDynamicAmount'
     AmountDynamicAmount:
       allOf:
-        - $ref: '#/components/schemas/DynamicAmountBase'
+        - $ref: '#/components/schemas/DynamicAmount'
         - type: object
           required:
             - amount
@@ -1701,7 +1708,7 @@ components:
                 A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
     SchemaPathDynamicAmount:
       allOf:
-        - $ref: '#/components/schemas/DynamicAmountBase'
+        - $ref: '#/components/schemas/DynamicAmount'
         - type: object
           required:
             - schema_path
@@ -1714,25 +1721,21 @@ components:
         - Count
         - SchemaPath
     DynamicCount:
-      anyOf:
-        - $ref: '#/components/schemas/CountDynamicCount'
-        - $ref: '#/components/schemas/SchemaPathDynamicCount'
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match DynamicCountType options above
-          Count: '#/components/schemas/CountDynamicCount'
-          SchemaPath: '#/components/schemas/SchemaPathDynamicCount'
-    DynamicCountBase:
       type: object
       required:
         - type
       properties:
         type:
           $ref: '#/components/schemas/DynamicCountType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match DynamicCountType options above
+          Count: '#/components/schemas/CountDynamicCount'
+          SchemaPath: '#/components/schemas/SchemaPathDynamicCount'
     CountDynamicCount:
       allOf:
-        - $ref: '#/components/schemas/DynamicCountBase'
+        - $ref: '#/components/schemas/DynamicCount'
         - type: object
           required:
             - count
@@ -1743,7 +1746,7 @@ components:
               maximum: 255
     SchemaPathDynamicCount:
       allOf:
-        - $ref: '#/components/schemas/DynamicCountBase'
+        - $ref: '#/components/schemas/DynamicCount'
         - type: object
           required:
             - schema_path
@@ -1756,25 +1759,21 @@ components:
         - List
         - SchemaPath
     DynamicResourceDescriptorList:
-      anyOf:
-        - $ref: '#/components/schemas/ListDynamicResourceDescriptorList'
-        - $ref: '#/components/schemas/SchemaPathDynamicResourceDescriptorList'
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match DynamicResourceDescriptorListType options above
-          List: '#/components/schemas/ListDynamicResourceDescriptorList'
-          SchemaPath: '#/components/schemas/SchemaPathDynamicResourceDescriptorList'
-    DynamicResourceDescriptorListBase:
       type: object
       required:
         - type
       properties:
         type:
           $ref: '#/components/schemas/DynamicResourceDescriptorListType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match DynamicResourceDescriptorListType options above
+          List: '#/components/schemas/ListDynamicResourceDescriptorList'
+          SchemaPath: '#/components/schemas/SchemaPathDynamicResourceDescriptorList'
     ListDynamicResourceDescriptorList:
       allOf:
-        - $ref: '#/components/schemas/DynamicResourceDescriptorListBase'
+        - $ref: '#/components/schemas/DynamicResourceDescriptorList'
         - type: object
           required:
             - resources
@@ -1785,7 +1784,7 @@ components:
                 $ref: '#/components/schemas/DynamicResourceDescriptor'
     SchemaPathDynamicResourceDescriptorList:
       allOf:
-        - $ref: '#/components/schemas/DynamicResourceDescriptorListBase'
+        - $ref: '#/components/schemas/DynamicResourceDescriptorList'
         - type: object
           required:
             - schema_path
@@ -1798,10 +1797,12 @@ components:
         - NonFungible
         - Resource
     DynamicResourceDescriptor:
-      anyOf:
-        - $ref: '#/components/schemas/NonFungibleDynamicResourceDescriptor'
-        - $ref: '#/components/schemas/ResourceDynamicResourceDescriptor'
-        - $ref: '#/components/schemas/SchemaPathDynamicResourceDescriptor'
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/DynamicResourceDescriptorType'
       discriminator:
         propertyName: type
         mapping:
@@ -1809,16 +1810,9 @@ components:
           NonFungible: '#/components/schemas/NonFungibleDynamicResourceDescriptor'
           Resource: '#/components/schemas/ResourceDynamicResourceDescriptor'
           SchemaPath: '#/components/schemas/SchemaPathDynamicResourceDescriptor'
-    DynamicResourceDescriptorBase:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          $ref: '#/components/schemas/DynamicResourceDescriptorType'
     NonFungibleDynamicResourceDescriptor:
       allOf:
-        - $ref: '#/components/schemas/DynamicResourceDescriptorBase'
+        - $ref: '#/components/schemas/DynamicResourceDescriptor'
         - type: object
           required:
             - resource_address
@@ -1830,7 +1824,7 @@ components:
               $ref: '#/components/schemas/NonFungibleId'
     ResourceDynamicResourceDescriptor:
       allOf:
-        - $ref: '#/components/schemas/DynamicResourceDescriptorBase'
+        - $ref: '#/components/schemas/DynamicResourceDescriptor'
         - type: object
           required:
             - resource_address
@@ -1839,7 +1833,7 @@ components:
               $ref: '#/components/schemas/ResourceAddress'
     SchemaPathDynamicResourceDescriptor:
       allOf:
-        - $ref: '#/components/schemas/DynamicResourceDescriptorBase'
+        - $ref: '#/components/schemas/DynamicResourceDescriptor'
         - type: object
           required:
             - schema_path
@@ -1856,25 +1850,21 @@ components:
         - Index
         - Field
     SchemaSubpath:
-      anyOf:
-        - $ref: '#/components/schemas/IndexSchemaSubpath'
-        - $ref: '#/components/schemas/FieldSchemaSubpath'
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match SchemaSubpathType options above
-          Index: '#/components/schemas/IndexSchemaSubpath'
-          Field: '#/components/schemas/FieldSchemaSubpath'
-    SchemaSubpathBase:
       type: object
       required:
         - type
       properties:
         type:
           $ref: '#/components/schemas/SchemaSubpathType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match SchemaSubpathType options above
+          Index: '#/components/schemas/IndexSchemaSubpath'
+          Field: '#/components/schemas/FieldSchemaSubpath'
     IndexSchemaSubpath:
       allOf:
-        - $ref: '#/components/schemas/SchemaSubpathBase'
+        - $ref: '#/components/schemas/SchemaSubpath'
         - type: object
           required:
             - index
@@ -1884,7 +1874,7 @@ components:
               description: A decimal-string-encoded integer between 0 and 2^64 - 1, which captures the index of the schema sub-path
     FieldSchemaSubpath:
       allOf:
-        - $ref: '#/components/schemas/SchemaSubpathBase'
+        - $ref: '#/components/schemas/SchemaSubpath'
         - type: object
           required:
             - field
@@ -1929,16 +1919,6 @@ components:
         A non-fungible resource has a fixed `NonFungibleIdType`, so this representation uniquely identifies this non-fungible
         under the given resource address.
     ResourceAmount:
-      oneOf:
-        - $ref: '#/components/schemas/FungibleResourceAmount'
-        - $ref: '#/components/schemas/NonFungibleResourceAmount'
-      discriminator:
-        propertyName: resource_type
-        mapping:
-          # NOTE: These need to match ResourceType options
-          Fungible: '#/components/schemas/FungibleResourceAmount'
-          NonFungible: '#/components/schemas/NonFungibleResourceAmount'
-    ResourceAmountBase:
       type: object
       required:
         - resource_type
@@ -1948,9 +1928,15 @@ components:
           $ref: '#/components/schemas/ResourceType'
         resource_address:
           $ref: '#/components/schemas/ResourceAddress'
+      discriminator:
+        propertyName: resource_type
+        mapping:
+          # NOTE: These need to match ResourceType options
+          Fungible: '#/components/schemas/FungibleResourceAmount'
+          NonFungible: '#/components/schemas/NonFungibleResourceAmount'
     FungibleResourceAmount:
       allOf:
-        - $ref: '#/components/schemas/ResourceAmountBase'
+        - $ref: '#/components/schemas/ResourceAmount'
         - type: object
           required:
             - amount
@@ -1962,7 +1948,7 @@ components:
                 A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
     NonFungibleResourceAmount:
       allOf:
-        - $ref: '#/components/schemas/ResourceAmountBase'
+        - $ref: '#/components/schemas/ResourceAmount'
         - type: object
           required:
             - non_fungible_ids
@@ -2061,24 +2047,12 @@ components:
         - NonFungibleStore
         - Clock
     Substate:
-      anyOf:
-        - $ref: '#/components/schemas/MetadataSubstate'
-        - $ref: '#/components/schemas/AccessRulesChainSubstate'
-        - $ref: '#/components/schemas/GlobalAddressSubstate'
-        - $ref: '#/components/schemas/ComponentInfoSubstate'
-        - $ref: '#/components/schemas/ComponentStateSubstate'
-        - $ref: '#/components/schemas/ComponentRoyaltyConfigSubstate'
-        - $ref: '#/components/schemas/ComponentRoyaltyAccumulatorSubstate'
-        - $ref: '#/components/schemas/PackageInfoSubstate'
-        - $ref: '#/components/schemas/PackageRoyaltyConfigSubstate'
-        - $ref: '#/components/schemas/PackageRoyaltyAccumulatorSubstate'
-        - $ref: '#/components/schemas/ResourceManagerSubstate'
-        - $ref: '#/components/schemas/EpochManagerSubstate'
-        - $ref: '#/components/schemas/ValidatorSetSubstate'
-        - $ref: '#/components/schemas/ClockCurrentMinuteSubstate'
-        - $ref: '#/components/schemas/KeyValueStoreEntrySubstate'
-        - $ref: '#/components/schemas/VaultSubstate'
-        - $ref: '#/components/schemas/NonFungibleStoreEntrySubstate'
+      type: object
+      required:
+        - substate_type
+      properties:
+        substate_type:
+          $ref: '#/components/schemas/SubstateType'
       discriminator:
         propertyName: substate_type
         mapping:
@@ -2151,17 +2125,10 @@ components:
         - KeyValueStoreEntry
         - NonFungibleStoreEntry
         - Vault
-    SubstateBase:
-      type: object
-      required:
-        - substate_type
-      properties:
-        substate_type:
-          $ref: '#/components/schemas/SubstateType'
 ### COMMON SUBSTATES
     AccessRulesChainSubstate:
       allOf:
-        - $ref: '#/components/schemas/SubstateBase'
+        - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - chain
@@ -2174,7 +2141,7 @@ components:
                 $ref: '#/components/schemas/AccessRules'
     MetadataSubstate:
       allOf:
-        - $ref: '#/components/schemas/SubstateBase'
+        - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - metadata
@@ -2194,7 +2161,7 @@ components:
 ### SPECIFIC SUBSTATES
     GlobalAddressSubstate:
       allOf:
-        - $ref: '#/components/schemas/SubstateBase'
+        - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - target_entity
@@ -2226,7 +2193,7 @@ components:
           description: The Bech32m-encoded human readable version of the assigned global address
     ComponentInfoSubstate:
       allOf:
-        - $ref: '#/components/schemas/SubstateBase'
+        - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - package_address
@@ -2238,7 +2205,7 @@ components:
               type: string
     ComponentStateSubstate:
       allOf:
-        - $ref: '#/components/schemas/SubstateBase'
+        - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - data_struct
@@ -2247,7 +2214,7 @@ components:
               $ref: '#/components/schemas/DataStruct'
     ComponentRoyaltyConfigSubstate:
       allOf:
-        - $ref: '#/components/schemas/SubstateBase'
+        - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - royalty_config
@@ -2256,7 +2223,7 @@ components:
               $ref: '#/components/schemas/RoyaltyConfig'
     ComponentRoyaltyAccumulatorSubstate:
       allOf:
-        - $ref: '#/components/schemas/SubstateBase'
+        - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - vault_entity
@@ -2265,7 +2232,7 @@ components:
               $ref: "#/components/schemas/EntityReference"
     PackageInfoSubstate:
       allOf:
-        - $ref: '#/components/schemas/SubstateBase'
+        - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - code_hex
@@ -2289,7 +2256,7 @@ components:
           description: The abi data
     PackageRoyaltyConfigSubstate:
       allOf:
-        - $ref: '#/components/schemas/SubstateBase'
+        - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - blueprint_royalties
@@ -2300,7 +2267,7 @@ components:
                 $ref: '#/components/schemas/BlueprintRoyaltyConfig'
     PackageRoyaltyAccumulatorSubstate:
       allOf:
-        - $ref: '#/components/schemas/SubstateBase'
+        - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - vault_entity
@@ -2309,7 +2276,7 @@ components:
               $ref: "#/components/schemas/EntityReference"
     ResourceManagerSubstate:
       allOf:
-        - $ref: '#/components/schemas/SubstateBase'
+        - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - resource_type
@@ -2333,7 +2300,7 @@ components:
               $ref: '#/components/schemas/EntityReference'
     EpochManagerSubstate:
       allOf:
-        - $ref: '#/components/schemas/SubstateBase'
+        - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - epoch
@@ -2360,7 +2327,7 @@ components:
               description: An integer between `0` and `10^10`, specifying the number of rounds per epoch
     ValidatorSetSubstate:
       allOf:
-        - $ref: '#/components/schemas/SubstateBase'
+        - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - validator_set
@@ -2378,20 +2345,17 @@ components:
               description: An integer between `0` and `10^10`, marking the epoch the validator set is a part of
     ClockCurrentMinuteSubstate:
       allOf:
-        - $ref: '#/components/schemas/SubstateBase'
+        - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - timestamp_ms_rounded_down_to_minute
+            - timestamp_rounded_down_to_minute
           properties:
-            timestamp_ms_rounded_down_to_minute:
-              type: integer
-              format: int64
-              minimum: 0
-              maximum: 100000000000000
-              description: An integer between `0` and `10^14`, marking the ledger unix timestamp in ms (rounded down to the current minute)
+            timestamp_rounded_down_to_minute:
+              $ref: '#/components/schemas/Instant'
+              description: The latest round proposer's timestamp (rounded down to the current minute).
     KeyValueStoreEntrySubstate:
       allOf:
-        - $ref: '#/components/schemas/SubstateBase'
+        - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - key_hex
@@ -2406,7 +2370,7 @@ components:
               $ref: '#/components/schemas/DataStruct'
     VaultSubstate:
       allOf:
-        - $ref: '#/components/schemas/SubstateBase'
+        - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - resource_amount
@@ -2415,7 +2379,7 @@ components:
               $ref: '#/components/schemas/ResourceAmount'
     NonFungibleStoreEntrySubstate:
       allOf:
-        - $ref: '#/components/schemas/SubstateBase'
+        - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - non_fungible_id
@@ -2684,12 +2648,12 @@ components:
         - TransactionManifest
         - LedgerTransaction
     ParsedTransaction:
-      oneOf:
-        - $ref: '#/components/schemas/ParsedNotarizedTransaction'
-        - $ref: '#/components/schemas/ParsedSignedTransactionIntent'
-        - $ref: '#/components/schemas/ParsedTransactionIntent'
-        - $ref: '#/components/schemas/ParsedTransactionManifest'
-        - $ref: '#/components/schemas/ParsedLedgerTransaction'
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/ParsedTransactionType"
       discriminator:
         propertyName: type
         mapping:
@@ -2699,16 +2663,9 @@ components:
           TransactionIntent: '#/components/schemas/ParsedTransactionIntent'
           TransactionManifest: '#/components/schemas/ParsedTransactionManifest'
           LedgerTransaction: '#/components/schemas/ParsedLedgerTransaction'
-    ParsedTransactionBase:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          $ref: "#/components/schemas/ParsedTransactionType"
     ParsedNotarizedTransaction:
       allOf:
-        - $ref: "#/components/schemas/ParsedTransactionType"
+        - $ref: "#/components/schemas/ParsedTransaction"
         - type: object
           required:
             - identifiers
@@ -2753,7 +2710,7 @@ components:
                     This relates to whether the transaction would be rejected permanently or temporarily if submitted.
     ParsedSignedTransactionIntent:
       allOf:
-        - $ref: "#/components/schemas/ParsedTransactionType"
+        - $ref: "#/components/schemas/ParsedTransaction"
         - type: object
           required:
             - identifiers
@@ -2772,7 +2729,7 @@ components:
                   $ref: "#/components/schemas/SignaturesHash"
     ParsedTransactionIntent:
       allOf:
-        - $ref: "#/components/schemas/ParsedTransactionType"
+        - $ref: "#/components/schemas/ParsedTransaction"
         - type: object
           required:
             - identifiers
@@ -2788,14 +2745,14 @@ components:
                   $ref: "#/components/schemas/IntentHash"
     ParsedTransactionManifest:
       allOf:
-        - $ref: "#/components/schemas/ParsedTransactionType"
+        - $ref: "#/components/schemas/ParsedTransaction"
         - type: object
           properties:
             manifest:
               $ref: "#/components/schemas/TransactionManifest"
     ParsedLedgerTransaction:
       allOf:
-        - $ref: "#/components/schemas/ParsedTransactionType"
+        - $ref: "#/components/schemas/ParsedTransaction"
         - type: object
           required:
             - identifiers
@@ -2837,6 +2794,89 @@ components:
         duplicate:
           description: Is true if the transaction is a duplicate of an existing transaction in the mempool.
           type: boolean
+    TransactionSubmitErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+        - type: object
+          properties:
+            details:
+              $ref: "#/components/schemas/TransactionSubmitErrorDetails"
+    TransactionSubmitErrorDetailsType:
+      type: string
+      enum:
+        - MempoolFull
+        - Rejected
+    TransactionSubmitErrorDetails:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/TransactionSubmitErrorDetailsType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match TransactionSubmitErrorDetailsType
+          MempoolFull: '#/components/schemas/TransactionSubmitMempoolFullErrorDetails'
+          Rejected: '#/components/schemas/TransactionSubmitRejectedErrorDetails'
+    TransactionSubmitMempoolFullErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/TransactionSubmitErrorDetails"
+        - type: object
+          required:
+            - mempool_capacity
+          properties:
+            mempool_capacity:
+              type: integer
+              format: int32
+              minimum: 0
+              maximum: 10000
+    TransactionSubmitRejectedErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/TransactionSubmitErrorDetails"
+        - type: object
+          required:
+            - error_message
+            - is_fresh
+            - is_payload_rejection_permanent
+            - is_intent_rejection_permanent
+            - is_rejected_because_intent_already_committed
+          properties:
+            error_message:
+              type: string
+              description: An explanation of the error
+            is_fresh:
+              type: boolean
+              description: |
+                Whether (true) this rejected status has just been calculated fresh, or (false) the status is from the pending
+                transaction result cache.
+            is_payload_rejection_permanent:
+              type: boolean
+              description: |
+                Whether the rejection of this payload is known to be permanent.
+            is_intent_rejection_permanent:
+              type: boolean
+              description: |
+                Whether the rejection of this intent is known to be permanent - this is a stronger statement than the payload rejection
+                being permanent, as it implies any payloads containing the intent will also be permanently rejected.
+            is_rejected_because_intent_already_committed:
+              type: boolean
+              description: |
+                Whether the cached rejection of this intent is due to the intent already having been committed.
+                If so, see the /transaction/receipt endpoint for further information.
+            recalculation_due:
+              $ref: "#/components/schemas/Instant"
+              description: |
+                The time after which the node will consider recalculating the validity of the transaction.
+                Only present if the rejection isn't permanent.
+            invalid_from_epoch:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description: |
+                An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be permanently rejected.
+                Only present if the rejection isn't permanent.
 ###################################
 # REQUEST: /transaction/status #
 ###################################
@@ -2854,17 +2894,34 @@ components:
       type: object
       required:
         - intent_status
+        - status_description
         - known_payloads
       properties:
         intent_status:
           type: string
-          description: The status of the transaction intent
+          description: |
+            The status of the transaction intent, as determined by the node.
+            FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction 
           enum:
             - CommittedSuccess
             - CommittedFailure
+            - PermanentRejection
             - InMempool
-            - Rejected
-            - Unknown
+            - NotSeen
+            - FateUncertain
+            - FateUncertainButLikelyRejection
+        status_description:
+          type: string
+          description: |
+            An explanation as to why the intent status is resolved as it is.
+        invalid_from_epoch:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: |
+            An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be permanently rejected.
+            Only present if the intent status is InMempool or Unknown and we know about a payload.
         known_payloads:
           type: array
           items:
@@ -2879,13 +2936,16 @@ components:
           $ref: "#/components/schemas/PayloadHash"
         status:
           type: string
-          description: The status of the transaction payload, as per this node
+          description: |
+            The status of the transaction payload, as per this node.
+            A NotInMempool status means that it wasn't rejected at last execution attempt, but it's not currently in the mempool either.
           enum:
             - CommittedSuccess
             - CommittedFailure
-            - InMempool
-            - TransientlyRejected
             - PermanentlyRejected
+            - TransientlyRejected
+            - InMempool
+            - NotInMempool
         error_message:
           description: An explanation for the error, if failed or rejected
           type: string
@@ -3142,18 +3202,6 @@ components:
         - Validator
         - System
     LedgerTransaction:
-      oneOf:
-        - $ref: '#/components/schemas/UserLedgerTransaction'
-        - $ref: '#/components/schemas/ValidatorLedgerTransaction'
-        - $ref: '#/components/schemas/SystemLedgerTransaction'
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match LedgerTransactionType
-          User: '#/components/schemas/UserLedgerTransaction'
-          Validator: '#/components/schemas/ValidatorLedgerTransaction'
-          System: '#/components/schemas/SystemLedgerTransaction'
-    LedgerTransactionBase:
       type: object
       required:
         - type
@@ -3164,9 +3212,16 @@ components:
         payload_hex:
           type: string
           description: The hex-encoded full ledger transaction payload
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match LedgerTransactionType
+          User: '#/components/schemas/UserLedgerTransaction'
+          Validator: '#/components/schemas/ValidatorLedgerTransaction'
+          System: '#/components/schemas/SystemLedgerTransaction'
     UserLedgerTransaction:
       allOf:
-        - $ref: "#/components/schemas/LedgerTransactionBase"
+        - $ref: "#/components/schemas/LedgerTransaction"
         - type: object
           required:
             - notarized_transaction
@@ -3175,7 +3230,7 @@ components:
               $ref: "#/components/schemas/NotarizedTransaction"
     ValidatorLedgerTransaction:
       allOf:
-        - $ref: "#/components/schemas/LedgerTransactionBase"
+        - $ref: "#/components/schemas/LedgerTransaction"
         - type: object
           required:
             - validator_transaction
@@ -3184,7 +3239,7 @@ components:
               $ref: "#/components/schemas/ValidatorTransaction"
     SystemLedgerTransaction:
       allOf:
-        - $ref: "#/components/schemas/LedgerTransactionBase"
+        - $ref: "#/components/schemas/LedgerTransaction"
         - type: object
           required:
             - system_transaction
@@ -3198,25 +3253,21 @@ components:
         - EpochUpdate
         - TimeUpdate
     ValidatorTransaction:
-      oneOf:
-        - $ref: '#/components/schemas/EpochUpdateValidatorTransaction'
-        - $ref: '#/components/schemas/TimeUpdateValidatorTransaction'
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match ValidatorTransactionType
-          EpochUpdate: '#/components/schemas/EpochUpdateValidatorTransaction'
-          TimeUpdate: '#/components/schemas/TimeUpdateValidatorTransaction'
-    ValidatorTransactionBase:
       type: object
       required:
         - type
       properties:
         type:
           $ref: "#/components/schemas/ValidatorTransactionType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match ValidatorTransactionType
+          EpochUpdate: '#/components/schemas/EpochUpdateValidatorTransaction'
+          TimeUpdate: '#/components/schemas/TimeUpdateValidatorTransaction'
     EpochUpdateValidatorTransaction:
       allOf:
-        - $ref: "#/components/schemas/ValidatorTransactionBase"
+        - $ref: "#/components/schemas/ValidatorTransaction"
         - type: object
           required:
             - scrypto_epoch
@@ -3231,19 +3282,16 @@ components:
                 Note that currently this is not the same as `consensus_epoch`, but eventually will be.
     TimeUpdateValidatorTransaction:
       allOf:
-        - $ref: "#/components/schemas/ValidatorTransactionBase"
+        - $ref: "#/components/schemas/ValidatorTransaction"
         - type: object
           required:
-            - proposer_timestamp_ms
+            - proposer_timestamp
             - consensus_epoch
             - round_in_epoch
           properties:
-            proposer_timestamp_ms:
-              type: integer
-              format: int64
-              minimum: 0
-              maximum: 100000000000000
-              description: An integer between `0` and `10^14`, marking the round proposer's unix timestamp in ms
+            proposer_timestamp:
+              $ref: '#/components/schemas/Instant'
+              description: The round proposer's timestamp.
             consensus_epoch:
               type: integer
               format: int64

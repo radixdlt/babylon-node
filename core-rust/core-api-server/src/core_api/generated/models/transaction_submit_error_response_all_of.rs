@@ -12,15 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct AccessRuleBase {
-    #[serde(rename = "type")]
-    pub _type: crate::core_api::generated::models::AccessRuleType,
+pub struct TransactionSubmitErrorResponseAllOf {
+    #[serde(rename = "details", skip_serializing_if = "Option::is_none")]
+    pub details: Option<Box<crate::core_api::generated::models::TransactionSubmitErrorDetails>>,
 }
 
-impl AccessRuleBase {
-    pub fn new(_type: crate::core_api::generated::models::AccessRuleType) -> AccessRuleBase {
-        AccessRuleBase {
-            _type,
+impl TransactionSubmitErrorResponseAllOf {
+    pub fn new() -> TransactionSubmitErrorResponseAllOf {
+        TransactionSubmitErrorResponseAllOf {
+            details: None,
         }
     }
 }

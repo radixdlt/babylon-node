@@ -24,7 +24,7 @@ use transaction::model::{
 pub(crate) async fn handle_stream_transactions(
     state: Extension<CoreApiState>,
     request: Json<models::StreamTransactionsRequest>,
-) -> Result<Json<models::StreamTransactionsResponse>, RequestHandlingError> {
+) -> Result<Json<models::StreamTransactionsResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_stream_transactions_internal)
 }
 
@@ -34,7 +34,7 @@ const MAX_TXN_COUNT_PER_REQUEST: u16 = 10000;
 fn handle_stream_transactions_internal(
     state_manager: &ActualStateManager,
     request: models::StreamTransactionsRequest,
-) -> Result<models::StreamTransactionsResponse, RequestHandlingError> {
+) -> Result<models::StreamTransactionsResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
     let from_state_version: u64 = extract_api_state_version(request.from_state_version)
@@ -121,7 +121,7 @@ fn handle_stream_transactions_internal(
                 Ok(api_tx)
             },
         )
-        .collect::<Result<Vec<models::CommittedTransaction>, RequestHandlingError>>()?;
+        .collect::<Result<Vec<models::CommittedTransaction>, ResponseError<()>>>()?;
 
     let start_state_version = if api_txns.is_empty() {
         0
@@ -301,7 +301,9 @@ pub fn to_api_validator_transaction(
             consensus_epoch,
             round_in_epoch,
         } => models::ValidatorTransaction::TimeUpdateValidatorTransaction {
-            proposer_timestamp_ms: *proposer_timestamp_ms,
+            proposer_timestamp: Box::new(to_api_instant_from_safe_timestamp(
+                *proposer_timestamp_ms,
+            )?),
             consensus_epoch: to_api_epoch(*consensus_epoch)?,
             round_in_epoch: to_api_round(*round_in_epoch)?,
         },

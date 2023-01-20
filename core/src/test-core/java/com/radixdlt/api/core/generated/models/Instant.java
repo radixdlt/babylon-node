@@ -22,84 +22,85 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ResourceType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * ResourceAmountBase
+ * Instant
  */
 @JsonPropertyOrder({
-  ResourceAmountBase.JSON_PROPERTY_RESOURCE_TYPE,
-  ResourceAmountBase.JSON_PROPERTY_RESOURCE_ADDRESS
+  Instant.JSON_PROPERTY_UNIX_TIMESTAMP_MS,
+  Instant.JSON_PROPERTY_DATE_TIME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class ResourceAmountBase {
-  public static final String JSON_PROPERTY_RESOURCE_TYPE = "resource_type";
-  private ResourceType resourceType;
+public class Instant {
+  public static final String JSON_PROPERTY_UNIX_TIMESTAMP_MS = "unix_timestamp_ms";
+  private Long unixTimestampMs;
 
-  public static final String JSON_PROPERTY_RESOURCE_ADDRESS = "resource_address";
-  private String resourceAddress;
+  public static final String JSON_PROPERTY_DATE_TIME = "date_time";
+  private String dateTime;
 
-  public ResourceAmountBase() { 
+  public Instant() { 
   }
 
-  public ResourceAmountBase resourceType(ResourceType resourceType) {
-    this.resourceType = resourceType;
+  public Instant unixTimestampMs(Long unixTimestampMs) {
+    this.unixTimestampMs = unixTimestampMs;
     return this;
   }
 
    /**
-   * Get resourceType
-   * @return resourceType
+   * An integer between &#x60;0&#x60; and &#x60;10^14&#x60;, marking the unix timestamp in ms.
+   * minimum: 0
+   * maximum: 100000000000000
+   * @return unixTimestampMs
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_RESOURCE_TYPE)
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10^14`, marking the unix timestamp in ms.")
+  @JsonProperty(JSON_PROPERTY_UNIX_TIMESTAMP_MS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ResourceType getResourceType() {
-    return resourceType;
+  public Long getUnixTimestampMs() {
+    return unixTimestampMs;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RESOURCE_TYPE)
+  @JsonProperty(JSON_PROPERTY_UNIX_TIMESTAMP_MS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResourceType(ResourceType resourceType) {
-    this.resourceType = resourceType;
+  public void setUnixTimestampMs(Long unixTimestampMs) {
+    this.unixTimestampMs = unixTimestampMs;
   }
 
 
-  public ResourceAmountBase resourceAddress(String resourceAddress) {
-    this.resourceAddress = resourceAddress;
+  public Instant dateTime(String dateTime) {
+    this.dateTime = dateTime;
     return this;
   }
 
    /**
-   * The Bech32m-encoded human readable version of the resource address
-   * @return resourceAddress
+   * The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \&quot;Z\&quot; denoting UTC and include milliseconds. EG: &#x60;2023-01-26T18:30:09.453Z&#x60;. 
+   * @return dateTime
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
-  @JsonProperty(JSON_PROPERTY_RESOURCE_ADDRESS)
+  @ApiModelProperty(required = true, value = "The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use \"Z\" denoting UTC and include milliseconds. EG: `2023-01-26T18:30:09.453Z`. ")
+  @JsonProperty(JSON_PROPERTY_DATE_TIME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getResourceAddress() {
-    return resourceAddress;
+  public String getDateTime() {
+    return dateTime;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RESOURCE_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_DATE_TIME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResourceAddress(String resourceAddress) {
-    this.resourceAddress = resourceAddress;
+  public void setDateTime(String dateTime) {
+    this.dateTime = dateTime;
   }
 
 
   /**
-   * Return true if this ResourceAmountBase object is equal to o.
+   * Return true if this Instant object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -109,22 +110,22 @@ public class ResourceAmountBase {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ResourceAmountBase resourceAmountBase = (ResourceAmountBase) o;
-    return Objects.equals(this.resourceType, resourceAmountBase.resourceType) &&
-        Objects.equals(this.resourceAddress, resourceAmountBase.resourceAddress);
+    Instant instant = (Instant) o;
+    return Objects.equals(this.unixTimestampMs, instant.unixTimestampMs) &&
+        Objects.equals(this.dateTime, instant.dateTime);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resourceType, resourceAddress);
+    return Objects.hash(unixTimestampMs, dateTime);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ResourceAmountBase {\n");
-    sb.append("    resourceType: ").append(toIndentedString(resourceType)).append("\n");
-    sb.append("    resourceAddress: ").append(toIndentedString(resourceAddress)).append("\n");
+    sb.append("class Instant {\n");
+    sb.append("    unixTimestampMs: ").append(toIndentedString(unixTimestampMs)).append("\n");
+    sb.append("    dateTime: ").append(toIndentedString(dateTime)).append("\n");
     sb.append("}");
     return sb.toString();
   }

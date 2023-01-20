@@ -10,28 +10,37 @@
 
 
 
-
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ErrorResponse {
-    /// A numeric code corresponding to the given HTTP error code.
-    #[serde(rename = "code")]
-    pub code: i32,
-    /// A human-readable error message.
-    #[serde(rename = "message")]
-    pub message: String,
-    /// A GUID to be used when reporting errors, to allow correlation with the Core API's error logs, in the case where the Core API details are hidden.
-    #[serde(rename = "trace_id", skip_serializing_if = "Option::is_none")]
-    pub trace_id: Option<String>,
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "error_type")]
+pub enum ErrorResponse {
+    #[serde(rename="Basic")]
+    BasicErrorResponse {
+        /// A numeric code corresponding to the given HTTP error code.
+        #[serde(rename = "code")]
+        code: i32,
+        /// A human-readable error message.
+        #[serde(rename = "message")]
+        message: String,
+        /// A GUID to be used when reporting errors, to allow correlation with the Core API's error logs, in the case where the Core API details are hidden.
+        #[serde(rename = "trace_id", skip_serializing_if = "Option::is_none")]
+        trace_id: Option<String>,
+    },
+    #[serde(rename="TransactionSubmit")]
+    TransactionSubmitErrorResponse {
+        /// A numeric code corresponding to the given HTTP error code.
+        #[serde(rename = "code")]
+        code: i32,
+        /// A human-readable error message.
+        #[serde(rename = "message")]
+        message: String,
+        /// A GUID to be used when reporting errors, to allow correlation with the Core API's error logs, in the case where the Core API details are hidden.
+        #[serde(rename = "trace_id", skip_serializing_if = "Option::is_none")]
+        trace_id: Option<String>,
+        #[serde(rename = "details", skip_serializing_if = "Option::is_none")]
+        details: Option<Box<crate::core_api::generated::models::TransactionSubmitErrorDetails>>,
+    },
 }
 
-impl ErrorResponse {
-    pub fn new(code: i32, message: String) -> ErrorResponse {
-        ErrorResponse {
-            code,
-            message,
-            trace_id: None,
-        }
-    }
-}
+
 
 

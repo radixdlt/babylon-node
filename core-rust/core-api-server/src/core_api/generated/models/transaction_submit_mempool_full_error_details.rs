@@ -12,15 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ValidatorTransactionBase {
+pub struct TransactionSubmitMempoolFullErrorDetails {
     #[serde(rename = "type")]
-    pub _type: crate::core_api::generated::models::ValidatorTransactionType,
+    pub _type: crate::core_api::generated::models::TransactionSubmitErrorDetailsType,
+    #[serde(rename = "mempool_capacity")]
+    pub mempool_capacity: i32,
 }
 
-impl ValidatorTransactionBase {
-    pub fn new(_type: crate::core_api::generated::models::ValidatorTransactionType) -> ValidatorTransactionBase {
-        ValidatorTransactionBase {
+impl TransactionSubmitMempoolFullErrorDetails {
+    pub fn new(_type: crate::core_api::generated::models::TransactionSubmitErrorDetailsType, mempool_capacity: i32) -> TransactionSubmitMempoolFullErrorDetails {
+        TransactionSubmitMempoolFullErrorDetails {
             _type,
+            mempool_capacity,
         }
     }
 }

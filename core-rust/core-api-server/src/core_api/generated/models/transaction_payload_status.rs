@@ -16,7 +16,7 @@ pub struct TransactionPayloadStatus {
     /// The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is `SHA256(SHA256(compiled_notarized_transaction))`
     #[serde(rename = "payload_hash")]
     pub payload_hash: String,
-    /// The status of the transaction payload, as per this node
+    /// The status of the transaction payload, as per this node. A NotInMempool status means that it wasn't rejected at last execution attempt, but it's not currently in the mempool either. 
     #[serde(rename = "status")]
     pub status: Status,
     /// An explanation for the error, if failed or rejected
@@ -34,19 +34,21 @@ impl TransactionPayloadStatus {
     }
 }
 
-/// The status of the transaction payload, as per this node
+/// The status of the transaction payload, as per this node. A NotInMempool status means that it wasn't rejected at last execution attempt, but it's not currently in the mempool either. 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum Status {
     #[serde(rename = "CommittedSuccess")]
     CommittedSuccess,
     #[serde(rename = "CommittedFailure")]
     CommittedFailure,
-    #[serde(rename = "InMempool")]
-    InMempool,
-    #[serde(rename = "TransientlyRejected")]
-    TransientlyRejected,
     #[serde(rename = "PermanentlyRejected")]
     PermanentlyRejected,
+    #[serde(rename = "TransientlyRejected")]
+    TransientlyRejected,
+    #[serde(rename = "InMempool")]
+    InMempool,
+    #[serde(rename = "NotInMempool")]
+    NotInMempool,
 }
 
 impl Default for Status {

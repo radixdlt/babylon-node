@@ -22,54 +22,54 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ProofRuleType;
+import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetails;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * ProofRuleBase
+ * TransactionSubmitErrorResponseAllOf
  */
 @JsonPropertyOrder({
-  ProofRuleBase.JSON_PROPERTY_TYPE
+  TransactionSubmitErrorResponseAllOf.JSON_PROPERTY_DETAILS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class ProofRuleBase {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private ProofRuleType type;
+public class TransactionSubmitErrorResponseAllOf {
+  public static final String JSON_PROPERTY_DETAILS = "details";
+  private TransactionSubmitErrorDetails details;
 
-  public ProofRuleBase() { 
+  public TransactionSubmitErrorResponseAllOf() { 
   }
 
-  public ProofRuleBase type(ProofRuleType type) {
-    this.type = type;
+  public TransactionSubmitErrorResponseAllOf details(TransactionSubmitErrorDetails details) {
+    this.details = details;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get details
+   * @return details
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_DETAILS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public ProofRuleType getType() {
-    return type;
+  public TransactionSubmitErrorDetails getDetails() {
+    return details;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(ProofRuleType type) {
-    this.type = type;
+  @JsonProperty(JSON_PROPERTY_DETAILS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setDetails(TransactionSubmitErrorDetails details) {
+    this.details = details;
   }
 
 
   /**
-   * Return true if this ProofRuleBase object is equal to o.
+   * Return true if this TransactionSubmitErrorResponse_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,20 +79,20 @@ public class ProofRuleBase {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ProofRuleBase proofRuleBase = (ProofRuleBase) o;
-    return Objects.equals(this.type, proofRuleBase.type);
+    TransactionSubmitErrorResponseAllOf transactionSubmitErrorResponseAllOf = (TransactionSubmitErrorResponseAllOf) o;
+    return Objects.equals(this.details, transactionSubmitErrorResponseAllOf.details);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(details);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ProofRuleBase {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("class TransactionSubmitErrorResponseAllOf {\n");
+    sb.append("    details: ").append(toIndentedString(details)).append("\n");
     sb.append("}");
     return sb.toString();
   }

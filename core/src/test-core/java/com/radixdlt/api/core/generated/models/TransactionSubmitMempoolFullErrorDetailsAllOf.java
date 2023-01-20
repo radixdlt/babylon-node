@@ -22,54 +22,55 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.DynamicResourceDescriptorType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * DynamicResourceDescriptorBase
+ * TransactionSubmitMempoolFullErrorDetailsAllOf
  */
 @JsonPropertyOrder({
-  DynamicResourceDescriptorBase.JSON_PROPERTY_TYPE
+  TransactionSubmitMempoolFullErrorDetailsAllOf.JSON_PROPERTY_MEMPOOL_CAPACITY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class DynamicResourceDescriptorBase {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private DynamicResourceDescriptorType type;
+public class TransactionSubmitMempoolFullErrorDetailsAllOf {
+  public static final String JSON_PROPERTY_MEMPOOL_CAPACITY = "mempool_capacity";
+  private Integer mempoolCapacity;
 
-  public DynamicResourceDescriptorBase() { 
+  public TransactionSubmitMempoolFullErrorDetailsAllOf() { 
   }
 
-  public DynamicResourceDescriptorBase type(DynamicResourceDescriptorType type) {
-    this.type = type;
+  public TransactionSubmitMempoolFullErrorDetailsAllOf mempoolCapacity(Integer mempoolCapacity) {
+    this.mempoolCapacity = mempoolCapacity;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get mempoolCapacity
+   * minimum: 0
+   * maximum: 10000
+   * @return mempoolCapacity
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_MEMPOOL_CAPACITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public DynamicResourceDescriptorType getType() {
-    return type;
+  public Integer getMempoolCapacity() {
+    return mempoolCapacity;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_MEMPOOL_CAPACITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(DynamicResourceDescriptorType type) {
-    this.type = type;
+  public void setMempoolCapacity(Integer mempoolCapacity) {
+    this.mempoolCapacity = mempoolCapacity;
   }
 
 
   /**
-   * Return true if this DynamicResourceDescriptorBase object is equal to o.
+   * Return true if this TransactionSubmitMempoolFullErrorDetails_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,20 +80,20 @@ public class DynamicResourceDescriptorBase {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    DynamicResourceDescriptorBase dynamicResourceDescriptorBase = (DynamicResourceDescriptorBase) o;
-    return Objects.equals(this.type, dynamicResourceDescriptorBase.type);
+    TransactionSubmitMempoolFullErrorDetailsAllOf transactionSubmitMempoolFullErrorDetailsAllOf = (TransactionSubmitMempoolFullErrorDetailsAllOf) o;
+    return Objects.equals(this.mempoolCapacity, transactionSubmitMempoolFullErrorDetailsAllOf.mempoolCapacity);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(mempoolCapacity);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class DynamicResourceDescriptorBase {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("class TransactionSubmitMempoolFullErrorDetailsAllOf {\n");
+    sb.append("    mempoolCapacity: ").append(toIndentedString(mempoolCapacity)).append("\n");
     sb.append("}");
     return sb.toString();
   }

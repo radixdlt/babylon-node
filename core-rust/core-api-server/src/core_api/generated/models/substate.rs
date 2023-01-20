@@ -21,9 +21,8 @@ pub enum Substate {
     },
     #[serde(rename="ClockCurrentMinute")]
     ClockCurrentMinuteSubstate {
-        /// An integer between `0` and `10^14`, marking the ledger unix timestamp in ms (rounded down to the current minute)
-        #[serde(rename = "timestamp_ms_rounded_down_to_minute")]
-        timestamp_ms_rounded_down_to_minute: i64,
+        #[serde(rename = "timestamp_rounded_down_to_minute")]
+        timestamp_rounded_down_to_minute: Box<crate::core_api::generated::models::Instant>,
     },
     #[serde(rename="ComponentInfo")]
     ComponentInfoSubstate {

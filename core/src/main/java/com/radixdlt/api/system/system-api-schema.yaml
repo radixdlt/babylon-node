@@ -1,9 +1,24 @@
 openapi: 3.0.0
 info:
-  version: '1.0.0'
-  title: 'Radix System API'
+  version: '0.1.0'
+  title: 'Babylon System API'
+  license:
+    name: The Radix License, Version 1.0
+    url: https://www.radixfoundation.org/licenses/license-v1
+  x-logo:
+    url: https://docs.radixdlt.com/main/_images/radix-logo-banner.png
+    href: https://docs.radixdlt.com
+  description: |
+    This API is exposed by the Babylon Radix node to give clients access to information about the node itself,
+    its configuration, status and subsystems.
+
+    It is intended for use by node-runners on a private network, and is not intended to be exposed publicly.
+    Heavy load may impact the node's function.
+
+    If you require queries against ledger state, you may also wish to consider using the
+    [Core API or Gateway API instead](https://docs-babylon.radixdlt.com/main/apis/api-specification.html).
 servers:
-  - url: 'localhost:3333/system'
+  - url: 'localhost:3334/system'
 paths:
   /version:
     get:
@@ -79,22 +94,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemAddressBookResponse'
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-  /prometheus/metrics:
-    get:
-      summary: 'Get Prometheus Metrics'
-      responses:
-        '200':
-          description: 'Prometheus Metrics'
-          content:
-            text/plain:
-              schema:
-                type: string
         default:
           description: Unexpected error
           content:
@@ -389,9 +388,9 @@ components:
       properties:
         sync_status:
           $ref: "#/components/schemas/SyncStatus"
-          description: Information on how synced the node is to the rest of the network.
     SyncStatus:
       type: object
+      description: Information on how synced the node is to the rest of the network.
       required:
         - current_state_version
         - target_state_version

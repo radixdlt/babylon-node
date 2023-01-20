@@ -13,35 +13,47 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TransactionStatusResponse {
-    /// The status of the transaction intent
+    /// The status of the transaction intent, as determined by the node. FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction  
     #[serde(rename = "intent_status")]
     pub intent_status: IntentStatus,
+    /// An explanation as to why the intent status is resolved as it is. 
+    #[serde(rename = "status_description")]
+    pub status_description: String,
+    /// An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be permanently rejected. Only present if the intent status is InMempool or Unknown and we know about a payload. 
+    #[serde(rename = "invalid_from_epoch", skip_serializing_if = "Option::is_none")]
+    pub invalid_from_epoch: Option<i64>,
     #[serde(rename = "known_payloads")]
     pub known_payloads: Vec<crate::core_api::generated::models::TransactionPayloadStatus>,
 }
 
 impl TransactionStatusResponse {
-    pub fn new(intent_status: IntentStatus, known_payloads: Vec<crate::core_api::generated::models::TransactionPayloadStatus>) -> TransactionStatusResponse {
+    pub fn new(intent_status: IntentStatus, status_description: String, known_payloads: Vec<crate::core_api::generated::models::TransactionPayloadStatus>) -> TransactionStatusResponse {
         TransactionStatusResponse {
             intent_status,
+            status_description,
+            invalid_from_epoch: None,
             known_payloads,
         }
     }
 }
 
-/// The status of the transaction intent
+/// The status of the transaction intent, as determined by the node. FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction  
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum IntentStatus {
     #[serde(rename = "CommittedSuccess")]
     CommittedSuccess,
     #[serde(rename = "CommittedFailure")]
     CommittedFailure,
+    #[serde(rename = "PermanentRejection")]
+    PermanentRejection,
     #[serde(rename = "InMempool")]
     InMempool,
-    #[serde(rename = "Rejected")]
-    Rejected,
-    #[serde(rename = "Unknown")]
-    Unknown,
+    #[serde(rename = "NotSeen")]
+    NotSeen,
+    #[serde(rename = "FateUncertain")]
+    FateUncertain,
+    #[serde(rename = "FateUncertainButLikelyRejection")]
+    FateUncertainButLikelyRejection,
 }
 
 impl Default for IntentStatus {

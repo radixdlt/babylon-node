@@ -12,15 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct DynamicCountBase {
-    #[serde(rename = "type")]
-    pub _type: crate::core_api::generated::models::DynamicCountType,
+pub struct TransactionSubmitMempoolFullErrorDetailsAllOf {
+    #[serde(rename = "mempool_capacity")]
+    pub mempool_capacity: i32,
 }
 
-impl DynamicCountBase {
-    pub fn new(_type: crate::core_api::generated::models::DynamicCountType) -> DynamicCountBase {
-        DynamicCountBase {
-            _type,
+impl TransactionSubmitMempoolFullErrorDetailsAllOf {
+    pub fn new(mempool_capacity: i32) -> TransactionSubmitMempoolFullErrorDetailsAllOf {
+        TransactionSubmitMempoolFullErrorDetailsAllOf {
+            mempool_capacity,
         }
     }
 }

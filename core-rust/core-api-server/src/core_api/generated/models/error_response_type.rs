@@ -9,20 +9,31 @@
  */
 
 
+/// 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
+pub enum ErrorResponseType {
+    #[serde(rename = "Basic")]
+    Basic,
+    #[serde(rename = "TransactionSubmit")]
+    TransactionSubmit,
 
-
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct SchemaSubpathBase {
-    #[serde(rename = "type")]
-    pub _type: crate::core_api::generated::models::SchemaSubpathType,
 }
 
-impl SchemaSubpathBase {
-    pub fn new(_type: crate::core_api::generated::models::SchemaSubpathType) -> SchemaSubpathBase {
-        SchemaSubpathBase {
-            _type,
+impl ToString for ErrorResponseType {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Basic => String::from("Basic"),
+            Self::TransactionSubmit => String::from("TransactionSubmit"),
         }
     }
 }
+
+impl Default for ErrorResponseType {
+    fn default() -> ErrorResponseType {
+        Self::Basic
+    }
+}
+
+
 
 

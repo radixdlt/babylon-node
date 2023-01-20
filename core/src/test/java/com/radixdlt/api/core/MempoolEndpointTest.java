@@ -122,16 +122,26 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
           .isEmpty();
 
       assertThatThrownBy(
+          () ->
+              getMempoolApi()
+                  .mempoolTransactionPost(
+                      new MempoolTransactionRequest()
+                          .network(networkLogicalName)
+                          .payloadHash(Bytes.toHexString(payloadHash.asBytes()))));
+
+      var errorResponse =
+          assertErrorResponseOfType(
               () ->
                   getMempoolApi()
                       .mempoolTransactionPost(
                           new MempoolTransactionRequest()
                               .network(networkLogicalName)
-                              .payloadHash(Bytes.toHexString(payloadHash.asBytes()))))
-          .hasMessage(
-              "mempoolTransactionPost call failed with: 404 -"
-                  + " {\"code\":404,\"message\":\"Transaction with given payload hash is not in the"
-                  + " mempool\"}");
+                              .payloadHash(Bytes.toHexString(payloadHash.asBytes()))),
+              BasicErrorResponse.class);
+
+      assertThat(errorResponse.getCode()).isEqualTo(404);
+      assertThat(errorResponse.getMessage())
+          .isEqualTo("Transaction with given payload hash is not in the mempool");
     }
   }
 }
