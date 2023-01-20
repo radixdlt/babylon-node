@@ -12,9 +12,9 @@
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type")]
-pub enum TransactionCallPreviewRequestTarget {
-    #[serde(rename="function")]
-    BlueprintFunctionIdentifier {
+pub enum TargetIdentifier {
+    #[serde(rename="Function")]
+    BlueprintFunctionTargetIdentifier {
         /// The Bech32m-encoded human readable version of the package address
         #[serde(rename = "package_address")]
         package_address: String,
@@ -23,8 +23,8 @@ pub enum TransactionCallPreviewRequestTarget {
         #[serde(rename = "function_name")]
         function_name: String,
     },
-    #[serde(rename="method")]
-    ComponentMethodIdentifier {
+    #[serde(rename="Method")]
+    ComponentMethodTargetIdentifier {
         /// The Bech32m-encoded human readable version of the component address
         #[serde(rename = "component_address")]
         component_address: String,

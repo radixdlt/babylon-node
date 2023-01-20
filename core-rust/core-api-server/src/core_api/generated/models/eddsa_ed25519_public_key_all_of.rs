@@ -12,22 +12,16 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct BlueprintFunctionIdentifier {
-    /// The Bech32m-encoded human readable version of the package address
-    #[serde(rename = "package_address")]
-    pub package_address: String,
-    #[serde(rename = "blueprint_name")]
-    pub blueprint_name: String,
-    #[serde(rename = "function_name")]
-    pub function_name: String,
+pub struct EddsaEd25519PublicKeyAllOf {
+    /// The hex-encoded compressed EdDSA Ed25519 public key (32 bytes)
+    #[serde(rename = "key_hex")]
+    pub key_hex: String,
 }
 
-impl BlueprintFunctionIdentifier {
-    pub fn new(package_address: String, blueprint_name: String, function_name: String) -> BlueprintFunctionIdentifier {
-        BlueprintFunctionIdentifier {
-            package_address,
-            blueprint_name,
-            function_name,
+impl EddsaEd25519PublicKeyAllOf {
+    pub fn new(key_hex: String) -> EddsaEd25519PublicKeyAllOf {
+        EddsaEd25519PublicKeyAllOf {
+            key_hex,
         }
     }
 }
