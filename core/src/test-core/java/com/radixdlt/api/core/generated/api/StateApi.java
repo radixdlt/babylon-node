@@ -17,7 +17,7 @@ import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.client.ApiResponse;
 import com.radixdlt.api.core.generated.client.Pair;
 
-import com.radixdlt.api.core.generated.models.ErrorResponse;
+import com.radixdlt.api.core.generated.models.BasicErrorResponse;
 import com.radixdlt.api.core.generated.models.StateClockRequest;
 import com.radixdlt.api.core.generated.models.StateClockResponse;
 import com.radixdlt.api.core.generated.models.StateComponentRequest;

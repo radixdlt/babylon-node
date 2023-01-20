@@ -167,7 +167,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/status/network-status":
     post:
       summary: Get Network Status
@@ -192,7 +192,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
 ###################
 # Mempool Sub-API #
 ###################
@@ -220,7 +220,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/mempool/transaction":
     post:
       summary: Get Mempool Transaction
@@ -245,13 +245,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
 #######################
 # Transaction Sub-API #
 #######################
@@ -279,13 +279,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/transaction/submit":
     post:
       summary: Transaction Submit
@@ -311,13 +311,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/TransactionSubmitErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/TransactionSubmitErrorResponse"
   "/transaction/status":
     post:
       summary: Get Transaction Status
@@ -346,13 +346,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/transaction/receipt":
     post:
       summary: Get Transaction Receipt
@@ -378,19 +378,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '404':
           description: Committed transaction not found response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/transaction/call-preview":
     post:
       summary: Scrypto Call Preview
@@ -424,13 +424,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/transaction/preview":
     post:
       summary: Transaction Preview
@@ -456,13 +456,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
 ##################
 # Stream Sub-API #
 ##################
@@ -491,13 +491,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
 #################
 # State Sub-API #
 #################
@@ -526,13 +526,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/state/clock":
     post:
       summary: Get Clock Details
@@ -558,13 +558,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/state/component":
     post:
       summary: Get Component Details
@@ -591,19 +591,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '404':
           description: Not found error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/state/resource":
     post:
       summary: Get Resource Details
@@ -629,19 +629,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '404':
           description: Not found error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/state/non-fungible":
     post:
       summary: Get Non-Fungible Details
@@ -667,19 +667,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '404':
           description: Not found error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/state/package":
     post:
       summary: Get Package Details
@@ -705,19 +705,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '404':
           description: Not found error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/BasicErrorResponse"
 #############################################################################################
 components:
   schemas:

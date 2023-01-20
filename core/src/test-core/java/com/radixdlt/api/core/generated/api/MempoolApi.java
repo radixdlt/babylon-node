@@ -17,7 +17,7 @@ import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.client.ApiResponse;
 import com.radixdlt.api.core.generated.client.Pair;
 
-import com.radixdlt.api.core.generated.models.ErrorResponse;
+import com.radixdlt.api.core.generated.models.BasicErrorResponse;
 import com.radixdlt.api.core.generated.models.MempoolListRequest;
 import com.radixdlt.api.core.generated.models.MempoolListResponse;
 import com.radixdlt.api.core.generated.models.MempoolTransactionRequest;
