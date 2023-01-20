@@ -66,7 +66,7 @@ package com.radixdlt.benchmark;
 
 import com.google.common.base.Stopwatch;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
-import com.radixdlt.api.core.generated.models.CommittedTransactionsRequest;
+import com.radixdlt.api.core.generated.models.StreamTransactionsRequest;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -138,8 +138,8 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
     long totalResponsesReceived = 0;
     while (true) {
       final var resp =
-          api.transactionStreamPost(
-              new CommittedTransactionsRequest()
+          api.streamTransactionsPost(
+              new StreamTransactionsRequest()
                   .network(networkLogicalName)
                   .limit(batchSize)
                   .fromStateVersion(stateVersion));

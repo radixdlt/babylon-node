@@ -43,7 +43,7 @@ openapi: 3.1.0
 # => Hex-encoded hashes should end _hash
 # => Hex-encoded bytes/payload should end _hex and not include _bytes
 info:
-  version: '0.1.0'
+  version: '0.2.0'
   title: 'Babylon Core API'
   license:
     name: The Radix License, Version 1.0
@@ -65,7 +65,6 @@ x-tagGroups:
     tags:
       - SubAPIs
       - Concepts
-      - V0
   - name: Endpoints
     tags:
       - Status
@@ -80,10 +79,10 @@ tags:
     description: |
       The API is split into 5 sub apis:
       - **Status** (`/status/*`) - For status and configuration details for the node / engine.
-      - **Transaction** (`/transaction/*` and `/v0/transaction/*`) - For transaction construction, preview, submission, and monitoring the status of an individual transaction.
+      - **Transaction** (`/transaction/*`) - For transaction construction, preview, submission, and monitoring the status of an individual transaction.
       - **Mempool** (`/mempool/*`) - For information on the contents of the node's mempool.
-      - **Current State** (`/state/*` and `/v0/state/*`) - For reading the state of entities. At present, we only support reading details from the top of the currently committed ledger.
-      - **Stream** (`/transaction/stream`) - For reading the committed transactions.
+      - **Current State** (`/state/*`) - For reading the state of entities. At present, we only support reading details from the top of the currently committed ledger.
+      - **Stream** (`/stream/*`) - For reading the committed transactions.
   - name: Concepts
     x-displayName: Concepts
     x-traitTag: true # Don't display endpoints under this tag
@@ -146,13 +145,10 @@ tags:
   - name: Stream
     x-displayName: Stream Endpoints
     description: To query the transaction stream of the ledger.
-  - name: V0
-    x-displayName: V0 Gateway
-    x-traitTag: true # Don't display endpoints under this tag
-    description: |
-      Endpoints that start with `/v0` formed part of the V0 Gateway. They do not require a network to be specified on the request.
-      These endpoints will be merged into the rest of the Core API shortly after Betanet launch.
 paths:
+##################
+# Status Sub-API #
+##################
   "/status/network-configuration":
     post:
       summary: Get Network Configuration
@@ -197,6 +193,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+###################
+# Mempool Sub-API #
+###################
   "/mempool/list":
     post:
       summary: Get Mempool List
@@ -253,6 +252,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+#######################
+# Transaction Sub-API #
+#######################
   "/transaction/parse":
     post:
       summary: Parse Transaction Payload
@@ -306,6 +308,79 @@ paths:
                 $ref: "#/components/schemas/TransactionSubmitResponse"
         '400':
           description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/transaction/status":
+    post:
+      summary: Get Transaction Status
+      description: |
+        Shares the node's knowledge of any payloads associated with the given intent hash.
+        Generally there will be a single payload for a given intent, but it's theoretically possible there may be multiple.
+        This knowledge is summarised into a status for the intent. This summarised status in the response is likely sufficient
+        for most clients.
+      tags:
+        - Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionStatusRequest"
+      responses:
+        '200':
+          description: Transaction status response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionStatusResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/transaction/receipt":
+    post:
+      summary: Get Transaction Receipt
+      description: |
+        Gets the transaction receipt for a committed transaction.
+      tags:
+        - Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionReceiptRequest"
+      responses:
+        '200':
+          description: Committed transaction found response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionReceiptResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '404':
+          description: Committed transaction not found response
           content:
             application/json:
               schema:
@@ -388,7 +463,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  "/transaction/stream":
+##################
+# Stream Sub-API #
+##################
+  "/stream/transactions":
     post:
       summary: Get Committed Transactions
       description: |
@@ -400,14 +478,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CommittedTransactionsRequest"
+              $ref: "#/components/schemas/StreamTransactionsRequest"
       responses:
         '200':
           description: Committed transactions response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CommittedTransactionsResponse"
+                $ref: "#/components/schemas/StreamTransactionsResponse"
         '400':
           description: Client error
           content:
@@ -420,151 +498,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-####################
-# v0 API Responses #
-####################
-  "/v0/status/network-configuration":
-    post:
-      summary: Get Network Configuration (V0)
-      description: Returns the network configuration.
-      tags: # Not in the Status tag group to avoid duplication of endpoints
-        - V0
-      responses:
-        '200':
-          description: Network Configuration
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NetworkConfigurationResponse"
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-  "/v0/transaction/submit":
-    post:
-      summary: Transaction Submit (V0)
-      description: |
-        Submits a notarized transaction to the network. Returns whether the transaction submission was already included in the node's mempool.
-        This will be removed when V0 endpoints are merged into the main API.
-      tags: # Purposefully does not include the Transaction tag to avoid confusion with the other Transaction endpoint
-        - V0
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/V0TransactionSubmitRequest"
-      responses:
-        '200':
-          description: Transaction submit response
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/V0TransactionSubmitResponse"
-        '400':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-  "/v0/transaction/status":
-    post:
-      summary: Get Transaction Status
-      description: |
-        Shares the node's knowledge of any payloads associated with the given intent hash.
-        Generally there will be a single payload for a given intent, but it's theoretically possible there may be multiple.
-        This knowledge is summarised into a status for the intent. This summarised status in the response is likely sufficient
-        for most clients.
-      tags:
-        - Transaction
-        - V0
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/V0TransactionStatusRequest"
-      responses:
-        '200':
-          description: Transaction status response
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/V0TransactionStatusResponse"
-        '400':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-  "/v0/transaction/receipt":
-    post:
-      summary: Get Transaction Receipt
-      description: |
-        Gets the transaction receipt for a committed transaction.
-      tags:
-        - Transaction
-        - V0
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/V0CommittedTransactionRequest"
-      responses:
-        '200':
-          description: Committed transaction found response
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/V0CommittedTransactionResponse"
-        '400':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        '404':
-          description: Committed transaction not found response
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-  "/v0/state/epoch":
+#################
+# State Sub-API #
+#################
+  "/state/epoch":
     post:
       summary: Get Epoch Details
       description: |
         Reads the epoch manager's substate/s from the top of the current ledger.
       tags:
         - State
-        - V0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StateEpochRequest"
       responses:
         '200':
           description: Current state response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/V0StateEpochResponse"
+                $ref: "#/components/schemas/StateEpochResponse"
         '400':
           description: Client error
           content:
@@ -577,21 +533,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  "/v0/state/clock":
+  "/state/clock":
     post:
       summary: Get Clock Details
       description: |
         Reads the clock's substate/s from the top of the current ledger.
       tags:
         - State
-        - V0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StateClockRequest"
       responses:
         '200':
           description: Current state response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/V0StateClockResponse"
+                $ref: "#/components/schemas/StateClockResponse"
         '400':
           description: Client error
           content:
@@ -604,7 +565,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  "/v0/state/component":
+  "/state/component":
     post:
       summary: Get Component Details
       description: |
@@ -612,20 +573,19 @@ paths:
         Also recursively extracts vault balance totals from the component's entity subtree.
       tags:
         - State
-        - V0
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/V0StateComponentRequest"
+              $ref: "#/components/schemas/StateComponentRequest"
       responses:
         '200':
           description: Current state response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/V0StateComponentResponse"
+                $ref: "#/components/schemas/StateComponentResponse"
         '400':
           description: Client error
           content:
@@ -644,27 +604,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  "/v0/state/resource":
+  "/state/resource":
     post:
       summary: Get Resource Details
       description: |
         Reads the resource manager's substate/s from the top of the current ledger.
       tags:
         - State
-        - V0
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/V0StateResourceRequest"
+              $ref: "#/components/schemas/StateResourceRequest"
       responses:
         '200':
           description: Current state response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/V0StateResourceResponse"
+                $ref: "#/components/schemas/StateResourceResponse"
         '400':
           description: Client error
           content:
@@ -683,27 +642,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  "/v0/state/non-fungible":
+  "/state/non-fungible":
     post:
       summary: Get Non-Fungible Details
       description: |
         Reads the data associated with a single Non-Fungible Unit under a Non-Fungible Resource.
       tags:
         - State
-        - V0
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/V0StateNonFungibleRequest"
+              $ref: "#/components/schemas/StateNonFungibleRequest"
       responses:
         '200':
           description: Current state response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/V0StateNonFungibleResponse"
+                $ref: "#/components/schemas/StateNonFungibleResponse"
         '400':
           description: Client error
           content:
@@ -722,27 +680,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  "/v0/state/package":
+  "/state/package":
     post:
       summary: Get Package Details
       description: |
         Reads the package's substate/s from the top of the current ledger.
       tags:
         - State
-        - V0
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/V0StatePackageRequest"
+              $ref: "#/components/schemas/StatePackageRequest"
       responses:
         '200':
           description: Current state response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/V0StatePackageResponse"
+                $ref: "#/components/schemas/StatePackageResponse"
         '400':
           description: Client error
           content:
@@ -2880,15 +2837,90 @@ components:
         duplicate:
           description: Is true if the transaction is a duplicate of an existing transaction in the mempool.
           type: boolean
+###################################
+# REQUEST: /transaction/status #
+###################################
+    TransactionStatusRequest:
+      type: object
+      required:
+        - network
+        - intent_hash
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        intent_hash:
+          $ref: "#/components/schemas/IntentHash"
+    TransactionStatusResponse:
+      type: object
+      required:
+        - intent_status
+        - known_payloads
+      properties:
+        intent_status:
+          type: string
+          description: The status of the transaction intent
+          enum:
+            - CommittedSuccess
+            - CommittedFailure
+            - InMempool
+            - Rejected
+            - Unknown
+        known_payloads:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransactionPayloadStatus"
+    TransactionPayloadStatus:
+      type: object
+      required:
+        - payload_hash
+        - status
+      properties:
+        payload_hash:
+          $ref: "#/components/schemas/PayloadHash"
+        status:
+          type: string
+          description: The status of the transaction payload, as per this node
+          enum:
+            - CommittedSuccess
+            - CommittedFailure
+            - InMempool
+            - TransientlyRejected
+            - PermanentlyRejected
+        error_message:
+          description: An explanation for the error, if failed or rejected
+          type: string
+####################################
+# REQUEST: /transaction/receipt #
+####################################
+    TransactionReceiptRequest:
+      type: object
+      required:
+        - network
+        - intent_hash
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        intent_hash:
+          $ref: "#/components/schemas/IntentHash"
+    TransactionReceiptResponse:
+      type: object
+      required:
+        - committed
+      properties:
+        committed:
+          $ref: "#/components/schemas/CommittedTransaction"
 #####################################
 # REQUEST: /transaction/callpreview #
 #####################################
     TransactionCallPreviewRequest:
       type: object
       required:
-       - target
-       - arguments
+        - network
+        - target
+        - arguments
       properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
         target:
           oneOf:
             - $ref: '#/components/schemas/ComponentMethodIdentifier'
@@ -3022,9 +3054,9 @@ components:
               message:
                 type: string
 #################################
-# REQUEST: /transactions/stream #
+# REQUEST: /stream/transactions #
 #################################
-    CommittedTransactionsRequest:
+    StreamTransactionsRequest:
       description: |
         A request to retrieve a sublist of committed transactions from the ledger.
       type: object
@@ -3044,7 +3076,7 @@ components:
         limit:
           description: The maximum number of transactions that will be returned.
           type: integer
-    CommittedTransactionsResponse:
+    StreamTransactionsResponse:
       type: object
       required:
         - from_state_version
@@ -3234,98 +3266,17 @@ components:
         payload_hex:
           type: string
           description: The hex-encoded system transaction payload
-############################################################################################################
-# V0
-###################################
-# REQUEST: /v0/transaction/submit #
-################################### 
-    V0TransactionSubmitRequest:
-      type: object
-      required:
-        - notarized_transaction_hex
-      properties:
-        notarized_transaction_hex:
-          description: A hex-encoded, compiled notarized transaction.
-          type: string
-    V0TransactionSubmitResponse:
-      type: object
-      required:
-        - duplicate
-      properties:
-        duplicate:
-          description: Is true if the transaction is a duplicate of an existing transaction in the mempool.
-          type: boolean
-###################################
-# REQUEST: /v0/transaction/status #
-###################################
-    V0TransactionStatusRequest:
-      type: object
-      required:
-        - intent_hash
-      properties:
-        intent_hash:
-          $ref: "#/components/schemas/IntentHash"
-    V0TransactionStatusResponse:
-      type: object
-      required:
-        - intent_status
-        - known_payloads
-      properties:
-        intent_status:
-          type: string
-          description: The status of the transaction intent
-          enum:
-            - CommittedSuccess
-            - CommittedFailure
-            - InMempool
-            - Rejected
-            - Unknown
-        known_payloads:
-          type: array
-          items:
-            $ref: "#/components/schemas/V0TransactionPayloadStatus"
-    V0TransactionPayloadStatus:
-      type: object
-      required:
-        - payload_hash
-        - status
-      properties:
-        payload_hash:
-          $ref: "#/components/schemas/PayloadHash"
-        status:
-          type: string
-          description: The status of the transaction payload, as per this node
-          enum:
-            - CommittedSuccess
-            - CommittedFailure
-            - InMempool
-            - TransientlyRejected
-            - PermanentlyRejected
-        error_message:
-          description: An explanation for the error, if failed or rejected
-          type: string
-####################################
-# REQUEST: /v0/transaction/receipt #
-####################################
-    V0CommittedTransactionRequest:
-      type: object
-      required:
-        - intent_hash
-      properties:
-        intent_hash:
-          $ref: "#/components/schemas/IntentHash"
-    V0CommittedTransactionResponse:
-      type: object
-      required:
-        - committed
-      properties:
-        committed:
-          $ref: "#/components/schemas/CommittedTransaction"
 ############################
-# REQUEST: /v0/state/epoch #
+# REQUEST: /state/epoch #
 ############################
-    # No request body required
-    V0StateEpochResponse:
+    StateEpochRequest:
+      type: object
+      required:
+        - network
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+    StateEpochResponse:
       type: object
       required:
         - epoch
@@ -3337,10 +3288,16 @@ components:
           maximum: 10000000000
           description: An integer between `0` and `10^10`, marking the current epoch
 ############################
-# REQUEST: /v0/state/clock #
+# REQUEST: /state/clock #
 ############################
-    # No request body required
-    V0StateClockResponse:
+    StateClockRequest:
+      type: object
+      required:
+        - network
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+    StateClockResponse:
       type: object
       required:
         - current_minute
@@ -3348,17 +3305,20 @@ components:
         current_minute:
           $ref: "#/components/schemas/Substate"
 ################################
-# REQUEST: /v0/state/component #
+# REQUEST: /state/component #
 ################################
-    V0StateComponentRequest:
+    StateComponentRequest:
       type: object
       required:
+        - network
         - component_address
       properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
         component_address:
           type: string
           description: The Bech32m-encoded human readable version of the component's global address
-    V0StateComponentResponse:
+    StateComponentResponse:
       type: object
       required:
         - info
@@ -3391,8 +3351,8 @@ components:
           type: array
           description: Any descendent nodes owned directly or indirectly by the component
           items:
-            $ref: "#/components/schemas/V0StateComponentDescendentId"
-    V0StateComponentDescendentId:
+            $ref: "#/components/schemas/StateComponentDescendentId"
+    StateComponentDescendentId:
       type: object
       required:
         - parent
@@ -3410,17 +3370,20 @@ components:
           minimum: 0
           maximum: 100
 ###############################
-# REQUEST: /v0/state/resource #
+# REQUEST: /state/resource #
 ###############################
-    V0StateResourceRequest:
+    StateResourceRequest:
       type: object
       required:
+        - network
         - resource_address
       properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
         resource_address:
           type: string
           description: The Bech32m-encoded human readable version of the resource's global address
-    V0StateResourceResponse:
+    StateResourceResponse:
       type: object
       required:
         - manager
@@ -3437,20 +3400,23 @@ components:
         vault_access_rules:
           $ref: "#/components/schemas/Substate"
 ###################################
-# REQUEST: /v0/state/non-fungible #
+# REQUEST: /state/non-fungible #
 ###################################
-    V0StateNonFungibleRequest:
+    StateNonFungibleRequest:
       type: object
       required:
+        - network
         - resource_address
         - non_fungible_id
       properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
         resource_address:
           type: string
           description: The Bech32m-encoded human readable version of the resource's global address
         non_fungible_id:
           $ref: '#/components/schemas/NonFungibleIdSimpleRepresentation'
-    V0StateNonFungibleResponse:
+    StateNonFungibleResponse:
       type: object
       required:
         - non_fungible
@@ -3458,17 +3424,20 @@ components:
         non_fungible:
           $ref: "#/components/schemas/Substate"
 ##############################
-# REQUEST: /v0/state/package #
+# REQUEST: /state/package #
 ##############################
-    V0StatePackageRequest:
+    StatePackageRequest:
       type: object
       required:
+        - network
         - package_address
       properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
         package_address:
           type: string
           description: The Bech32m-encoded human readable version of the package's global address
-    V0StatePackageResponse:
+    StatePackageResponse:
       type: object
       required:
         - info

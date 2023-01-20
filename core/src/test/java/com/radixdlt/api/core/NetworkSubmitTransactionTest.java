@@ -68,9 +68,9 @@ import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransac
 import static org.assertj.core.api.Assertions.*;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.TransactionStatusRequest;
+import com.radixdlt.api.core.generated.models.TransactionStatusResponse;
 import com.radixdlt.api.core.generated.models.TransactionSubmitRequest;
-import com.radixdlt.api.core.generated.models.V0TransactionStatusRequest;
-import com.radixdlt.api.core.generated.models.V0TransactionStatusResponse;
 import com.radixdlt.rev2.REv2TestTransactions;
 import com.radixdlt.utils.Bytes;
 import org.junit.Test;
@@ -97,11 +97,13 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       // Check that it's in mempool
       var statusResponse1 =
           getTransactionApi()
-              .v0TransactionStatusPost(
-                  new V0TransactionStatusRequest().intentHash(Bytes.toHexString(intentHash)));
+              .transactionStatusPost(
+                  new TransactionStatusRequest()
+                      .network(networkLogicalName)
+                      .intentHash(Bytes.toHexString(intentHash)));
 
       assertThat(statusResponse1.getIntentStatus())
-          .isEqualTo(V0TransactionStatusResponse.IntentStatusEnum.INMEMPOOL);
+          .isEqualTo(TransactionStatusResponse.IntentStatusEnum.INMEMPOOL);
 
       // Now we run consensus
       test.runUntilState(allCommittedTransaction(rawTransaction), 1000);
@@ -109,11 +111,13 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       // Check the status response again
       var statusResponse2 =
           getTransactionApi()
-              .v0TransactionStatusPost(
-                  new V0TransactionStatusRequest().intentHash(Bytes.toHexString(intentHash)));
+              .transactionStatusPost(
+                  new TransactionStatusRequest()
+                      .network(networkLogicalName)
+                      .intentHash(Bytes.toHexString(intentHash)));
 
       assertThat(statusResponse2.getIntentStatus())
-          .isEqualTo(V0TransactionStatusResponse.IntentStatusEnum.COMMITTEDSUCCESS);
+          .isEqualTo(TransactionStatusResponse.IntentStatusEnum.COMMITTEDSUCCESS);
     }
   }
 
