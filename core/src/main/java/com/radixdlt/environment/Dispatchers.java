@@ -137,8 +137,8 @@ public final class Dispatchers {
     }
   }
 
-  private static final class RemoteDispatcherProvider<N, T>
-      implements Provider<RemoteEventDispatcher<N, T>> {
+  private static final class RemoteDispatcherProvider<T>
+      implements Provider<RemoteEventDispatcher<NodeId, T>> {
     @Inject private Provider<Environment> environmentProvider;
 
     @Inject private Metrics metrics;
@@ -147,20 +147,19 @@ public final class Dispatchers {
 
     @Inject private Set<EventProcessorOnDispatch<?>> onDispatchProcessors;
 
-    private final MessageTransportType<N, T> messageTransportType;
+    private final Class<T> messageType;
 
-    RemoteDispatcherProvider(MessageTransportType<N, T> messageTransportType) {
-      this.messageTransportType = messageTransportType;
+    RemoteDispatcherProvider(Class<T> messageType) {
+      this.messageType = messageType;
     }
 
     @Override
-    public RemoteEventDispatcher<N, T> get() {
-      var remoteDispatcher = environmentProvider.get().getRemoteDispatcher(messageTransportType);
-      var localDispatcher =
-          environmentProvider.get().getDispatcher(messageTransportType.getMessageType());
+    public RemoteEventDispatcher<NodeId, T> get() {
+      var remoteDispatcher = environmentProvider.get().getRemoteDispatcher(messageType);
+      var localDispatcher = environmentProvider.get().getDispatcher(messageType);
       final Set<EventProcessor<T>> onDispatch =
           onDispatchProcessors.stream()
-              .flatMap(p -> p.getProcessor(messageTransportType.getMessageType()).stream())
+              .flatMap(p -> p.getProcessor(messageType).stream())
               .collect(Collectors.toSet());
       return (node, e) -> {
         if (node.equals(self)) {
@@ -191,14 +190,9 @@ public final class Dispatchers {
     return new ScheduledDispatcherProvider<>(t);
   }
 
-  public static <N, T> Provider<RemoteEventDispatcher<N, T>> remoteDispatcherProvider(
-      MessageTransportType<N, T> messageTransportType) {
-    return new RemoteDispatcherProvider<>(messageTransportType);
-  }
-
-  public static <N, T> Provider<RemoteEventDispatcher<N, T>> remoteDispatcherProvider(
-      Class<N> nodeIdType, Class<T> messageType) {
-    return new RemoteDispatcherProvider<>(MessageTransportType.create(nodeIdType, messageType));
+  public static <T> Provider<RemoteEventDispatcher<NodeId, T>> remoteDispatcherProvider(
+      Class<T> messageType) {
+    return new RemoteDispatcherProvider<>(messageType);
   }
 
   /**

@@ -64,6 +64,7 @@
 
 package com.radixdlt.environment;
 
+import com.radixdlt.p2p.NodeId;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -111,18 +112,16 @@ public final class RemoteEventProcessorOnRunner<N, T> {
     return runnerName;
   }
 
-  public <N, U> Optional<RemoteEventProcessor<N, U>> getProcessor(
-      MessageTransportType<N, U> messageTransportType) {
-    if (messageTransportType.getNodeIdType().isAssignableFrom(nodeIdClass)
-        && messageTransportType.getMessageType().isAssignableFrom(eventClass)) {
-      return Optional.of((RemoteEventProcessor<N, U>) processor);
+  public <U> Optional<RemoteEventProcessor<NodeId, U>> getProcessor(Class<U> messageType) {
+    if (messageType.isAssignableFrom(eventClass)) {
+      return Optional.of((RemoteEventProcessor<NodeId, U>) processor);
     }
 
     return Optional.empty();
   }
 
-  public MessageTransportType<N, T> getMessageTransportType() {
-    return MessageTransportType.create(this.nodeIdClass, this.eventClass);
+  public Class<T> getMessageType() {
+    return this.eventClass;
   }
 
   @Override

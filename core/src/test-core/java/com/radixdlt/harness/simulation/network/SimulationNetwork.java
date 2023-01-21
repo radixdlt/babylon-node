@@ -65,7 +65,6 @@
 package com.radixdlt.harness.simulation.network;
 
 import com.google.inject.Inject;
-import com.radixdlt.environment.MessageTransportType;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
@@ -119,12 +118,9 @@ public class SimulationNetwork {
       return Maybe.empty();
     }
 
-    public <N, T> Maybe<RemoteEvent<N, T>> remoteEvent(Class<N> nodeIdClass, Class<T> eventClass) {
+    public <N, T> Maybe<RemoteEvent<NodeId, T>> remoteEvent(Class<T> eventClass) {
       if (!sender.equals(receiver) && eventClass.isInstance(content)) {
-        if (nodeIdClass != NodeId.class) {
-          throw new IllegalStateException();
-        }
-        return Maybe.just(RemoteEvent.create(nodeIdClass.cast(sender), eventClass.cast(content)));
+        return Maybe.just(RemoteEvent.create(sender, eventClass.cast(content)));
       }
 
       return Maybe.empty();
@@ -214,12 +210,8 @@ public class SimulationNetwork {
     }
 
     @Override
-    public <N, T> Flowable<RemoteEvent<N, T>> remoteEvents(
-        MessageTransportType<N, T> messageTransportType) {
-      return myMessages.flatMapMaybe(
-          m ->
-              m.remoteEvent(
-                  messageTransportType.getNodeIdType(), messageTransportType.getMessageType()));
+    public <T> Flowable<RemoteEvent<NodeId, T>> remoteEvents(Class<T> messageType) {
+      return myMessages.flatMapMaybe(m -> m.remoteEvent(messageType));
     }
 
     public <T> RemoteEventDispatcher<NodeId, T> remoteEventDispatcher(Class<T> eventClass) {

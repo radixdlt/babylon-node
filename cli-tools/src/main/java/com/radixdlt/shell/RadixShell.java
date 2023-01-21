@@ -317,11 +317,10 @@ public final class RadixShell {
 
     public <T> Disposable onRemoteEvent(
         Class<T> eventClass, Consumer<RemoteEvent<NodeId, T>> consumer) {
-      final var messageTransportType = MessageTransportType.create(NodeId.class, eventClass);
       final var disposable =
           injector
               .getInstance(RxRemoteEnvironment.class)
-              .remoteEvents(messageTransportType)
+              .remoteEvents(eventClass)
               .subscribe(consumer::accept);
 
       remoteEventConsumers.add(disposable);
@@ -336,9 +335,7 @@ public final class RadixShell {
     @SuppressWarnings("unchecked")
     public <T> void dispatchRemote(NodeId receiver, T t) {
       ((RemoteEventDispatcher<NodeId, T>)
-              injector
-                  .getInstance(Environment.class)
-                  .getRemoteDispatcher(MessageTransportType.create(NodeId.class, t.getClass())))
+              injector.getInstance(Environment.class).getRemoteDispatcher(t.getClass()))
           .dispatch(receiver, t);
     }
 

@@ -64,10 +64,10 @@
 
 package com.radixdlt.environment.rx;
 
-import com.radixdlt.environment.MessageTransportType;
+import com.radixdlt.p2p.NodeId;
 import io.reactivex.rxjava3.core.Flowable;
 
 /** Provides remote events */
 public interface RxRemoteEnvironment {
-  <N, T> Flowable<RemoteEvent<N, T>> remoteEvents(MessageTransportType<N, T> messageTransportType);
+  <T> Flowable<RemoteEvent<NodeId, T>> remoteEvents(Class<T> eventType);
 }

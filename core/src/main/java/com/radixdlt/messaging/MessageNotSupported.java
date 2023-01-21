@@ -62,53 +62,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.environment;
+package com.radixdlt.messaging;
 
-import java.util.Objects;
+public final class MessageNotSupported extends IllegalStateException {
+  private final Class<?> messageType;
 
-public final class MessageTransportType<N, T> {
-  private final Class<N> nodeIdType;
-  private final Class<T> messageType;
-
-  private MessageTransportType(Class<N> nodeIdType, Class<T> messageType) {
-    this.nodeIdType = Objects.requireNonNull(nodeIdType);
-    this.messageType = Objects.requireNonNull(messageType);
-  }
-
-  public static <N, T> MessageTransportType<N, T> create(
-      Class<N> nodeIdType, Class<T> messageType) {
-    return new MessageTransportType<>(nodeIdType, messageType);
-  }
-
-  public Class<N> getNodeIdType() {
-    return nodeIdType;
-  }
-
-  public Class<T> getMessageType() {
-    return messageType;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    MessageTransportType<?, ?> that = (MessageTransportType<?, ?>) o;
-    return Objects.equals(nodeIdType, that.nodeIdType)
-        && Objects.equals(messageType, that.messageType);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(nodeIdType, messageType);
-  }
-
-  @Override
-  public String toString() {
-    return "MessageTransportType{"
-        + "nodeIdType="
-        + nodeIdType
-        + ", messageType="
-        + messageType
-        + '}';
+  public MessageNotSupported(Class<?> messageType) {
+    super(String.format("Message transport not supported: %s", messageType));
+    this.messageType = messageType;
   }
 }

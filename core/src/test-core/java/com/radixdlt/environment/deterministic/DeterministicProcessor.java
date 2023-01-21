@@ -67,7 +67,6 @@ package com.radixdlt.environment.deterministic;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.MessageTransportType;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.p2p.NodeId;
@@ -121,8 +120,7 @@ public final class DeterministicProcessor {
   private static <T> boolean tryExecute(
       NodeId origin, T event, RemoteEventProcessorOnRunner<?, ?> processor) {
     final var eventClass = (Class<T>) event.getClass();
-    final var messageTransportType = MessageTransportType.create(NodeId.class, eventClass);
-    final var maybeProcessor = processor.getProcessor(messageTransportType);
+    final var maybeProcessor = processor.getProcessor(eventClass);
     maybeProcessor.ifPresent(p -> p.process(origin, event));
     return maybeProcessor.isPresent();
   }
