@@ -156,10 +156,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
   @ProvidesIntoSet
   private RemoteEventProcessorOnRunner<?, ?> bftSyncResponseProcessor(BFTSync bftSync) {
     return new RemoteEventProcessorOnRunner<>(
-        Runners.CONSENSUS,
-        NodeId.class,
-        GetVerticesResponse.class,
-        (n, m) -> bftSync.responseProcessor().process(BFTValidatorId.create(n.getPublicKey()), m));
+        Runners.CONSENSUS, NodeId.class, GetVerticesResponse.class, bftSync.responseProcessor());
   }
 
   @ProvidesIntoSet
@@ -168,20 +165,14 @@ public class NoEpochsConsensusModule extends AbstractModule {
         Runners.CONSENSUS,
         NodeId.class,
         GetVerticesErrorResponse.class,
-        (n, m) ->
-            bftSync.errorResponseProcessor().process(BFTValidatorId.create(n.getPublicKey()), m));
+        bftSync.errorResponseProcessor());
   }
 
   @ProvidesIntoSet
   private RemoteEventProcessorOnRunner<?, ?> bftSyncRequestProcessor(
       VertexStoreBFTSyncRequestProcessor processor) {
     return new RemoteEventProcessorOnRunner<>(
-        Runners.CONSENSUS,
-        NodeId.class,
-        GetVerticesRequest.class,
-        (n, m) -> {
-          processor.process(BFTValidatorId.create(n.getPublicKey()), m);
-        });
+        Runners.CONSENSUS, NodeId.class, GetVerticesRequest.class, processor);
   }
 
   @ProvidesIntoSet

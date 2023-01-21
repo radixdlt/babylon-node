@@ -268,7 +268,7 @@ public class ConsensusModuleTest {
     Pair<QuorumCertificate, VertexWithHash> nextVertex = createNextVertex(parent, validatorKeyPair);
     HighQC unsyncedHighQC =
         HighQC.from(nextVertex.getFirst(), nextVertex.getFirst(), Optional.empty());
-    bftSync.syncToQC(unsyncedHighQC, validatorId);
+    bftSync.syncToQC(unsyncedHighQC, NodeId.fromPublicKey(validatorId.getKey()));
     GetVerticesRequest request = new GetVerticesRequest(nextVertex.getSecond().hash(), 1);
     VertexRequestTimeout timeout = VertexRequestTimeout.create(request);
 
@@ -287,7 +287,7 @@ public class ConsensusModuleTest {
   @Test
   public void on_synced_to_vertex_should_request_for_parent() {
     // Arrange
-    var nodeId = BFTValidatorId.create(PrivateKeys.ofNumeric(1).getPublicKey());
+    var nodeId = NodeId.fromPublicKey(PrivateKeys.ofNumeric(1).getPublicKey());
     QuorumCertificate parent = vertexStore.highQC().highestQC();
     Pair<QuorumCertificate, VertexWithHash> nextVertex = createNextVertex(parent, validatorKeyPair);
     Pair<QuorumCertificate, VertexWithHash> nextNextVertex =
@@ -305,7 +305,7 @@ public class ConsensusModuleTest {
     // Assert
     verify(requestSender, times(1))
         .dispatch(
-            eq(NodeId.fromPublicKey(nodeId.getKey())),
+            eq(nodeId),
             argThat(
                 r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().hash())));
   }
@@ -313,7 +313,7 @@ public class ConsensusModuleTest {
   @Test
   public void bft_sync_should_sync_two_different_QCs_with_the_same_parent() {
 
-    var nodeId = BFTValidatorId.create(validatorId.getKey());
+    var nodeId = NodeId.fromPublicKey(validatorId.getKey());
     final var parentQc = vertexStore.highQC().highestQC();
     final var parentVertex = createNextVertex(parentQc, validatorKeyPair);
     final var proposedVertex1 =
@@ -343,7 +343,7 @@ public class ConsensusModuleTest {
 
     verify(requestSender, times(1))
         .dispatch(
-            eq(NodeId.fromPublicKey(nodeId.getKey())),
+            eq(nodeId),
             argThat(
                 r ->
                     r.getCount() == 1
@@ -351,7 +351,7 @@ public class ConsensusModuleTest {
 
     verify(requestSender, times(1))
         .dispatch(
-            eq(NodeId.fromPublicKey(nodeId.getKey())),
+            eq(nodeId),
             argThat(
                 r ->
                     r.getCount() == 1

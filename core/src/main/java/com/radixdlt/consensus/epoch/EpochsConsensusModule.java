@@ -366,14 +366,8 @@ public class EpochsConsensusModule extends AbstractModule {
     return (vertexStore) ->
         new VertexStoreBFTSyncRequestProcessor(
             vertexStore,
-            (n, m) -> {
-              var nodeId = NodeId.fromPublicKey(n.getKey());
-              errorResponseRemoteEventDispatcher.dispatch(nodeId, m);
-            },
-            (n, m) -> {
-              var nodeId = NodeId.fromPublicKey(n.getKey());
-              responseRemoteEventDispatcher.dispatch(nodeId, m);
-            },
+            errorResponseRemoteEventDispatcher,
+            responseRemoteEventDispatcher,
             metrics);
   }
 
@@ -398,10 +392,7 @@ public class EpochsConsensusModule extends AbstractModule {
             safetyRules,
             pacemakerState,
             Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
-            (n, m) -> {
-              var nodeId = NodeId.fromPublicKey(n.getKey());
-              verticesRequestRemoteEventDispatcher.dispatch(nodeId, m);
-            },
+            verticesRequestRemoteEventDispatcher,
             syncLedgerRequestSender,
             timeoutDispatcher,
             unexpectedEventEventDispatcher,

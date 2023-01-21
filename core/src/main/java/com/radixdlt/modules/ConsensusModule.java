@@ -116,16 +116,7 @@ public final class ConsensusModule extends AbstractModule {
       RemoteEventDispatcher<NodeId, GetVerticesResponse> responseDispatcher,
       Metrics metrics) {
     return new VertexStoreBFTSyncRequestProcessor(
-        vertexStore,
-        (n, m) -> {
-          var nodeId = NodeId.fromPublicKey(n.getKey());
-          errorResponseDispatcher.dispatch(nodeId, m);
-        },
-        (n, m) -> {
-          var nodeId = NodeId.fromPublicKey(n.getKey());
-          responseDispatcher.dispatch(nodeId, m);
-        },
-        metrics);
+        vertexStore, errorResponseDispatcher, responseDispatcher, metrics);
   }
 
   @Provides
@@ -250,10 +241,7 @@ public final class ConsensusModule extends AbstractModule {
         safetyRules,
         pacemakerReducer,
         Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
-        (n, m) -> {
-          var nodeId = NodeId.fromPublicKey(n.getKey());
-          requestSender.dispatch(nodeId, m);
-        },
+        requestSender,
         syncLedgerRequestSender,
         timeoutDispatcher,
         unexpectedEventEventDispatcher,
