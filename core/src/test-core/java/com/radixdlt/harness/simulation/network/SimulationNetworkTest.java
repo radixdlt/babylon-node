@@ -68,7 +68,6 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.environment.MessageTransportType;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.p2p.NodeId;
 import io.reactivex.rxjava3.observers.TestObserver;
@@ -95,11 +94,7 @@ public class SimulationNetworkTest {
     HashCode vertexId = mock(HashCode.class);
 
     TestObserver<RemoteEvent<NodeId, GetVerticesRequest>> rpcRequestListener =
-        network
-            .getNetwork(node2)
-            .remoteEvents(MessageTransportType.create(NodeId.class, GetVerticesRequest.class))
-            .toObservable()
-            .test();
+        network.getNetwork(node2).remoteEvents(GetVerticesRequest.class).toObservable().test();
 
     network
         .getNetwork(node1)

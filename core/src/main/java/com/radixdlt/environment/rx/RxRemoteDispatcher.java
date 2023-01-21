@@ -64,8 +64,8 @@
 
 package com.radixdlt.environment.rx;
 
-import com.radixdlt.environment.MessageTransportType;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.p2p.NodeId;
 import java.util.Objects;
 
 /**
@@ -73,35 +73,26 @@ import java.util.Objects;
  *
  * @param <T> the event class
  */
-public final class RxRemoteDispatcher<N, T> {
-  private final Class<N> nodeIdClass;
+public final class RxRemoteDispatcher<T> {
   private final Class<T> eventClass;
-  private final RemoteEventDispatcher<N, T> dispatcher;
+  private final RemoteEventDispatcher<NodeId, T> dispatcher;
 
-  private RxRemoteDispatcher(
-      Class<N> nodeIdClass, Class<T> eventClass, RemoteEventDispatcher<N, T> dispatcher) {
-    this.nodeIdClass = nodeIdClass;
+  private RxRemoteDispatcher(Class<T> eventClass, RemoteEventDispatcher<NodeId, T> dispatcher) {
     this.eventClass = eventClass;
     this.dispatcher = dispatcher;
-  }
-
-  public MessageTransportType<?, ?> messageTransportType() {
-    return MessageTransportType.create(nodeIdClass, eventClass);
   }
 
   public Class<T> eventClass() {
     return eventClass;
   }
 
-  public RemoteEventDispatcher<N, T> dispatcher() {
+  public RemoteEventDispatcher<NodeId, T> dispatcher() {
     return dispatcher;
   }
 
-  public static <N, T> RxRemoteDispatcher<N, T> create(
-      Class<N> nodeIdClass, Class<T> eventClass, RemoteEventDispatcher<N, T> dispatcher) {
+  public static <T> RxRemoteDispatcher<T> create(
+      Class<T> eventClass, RemoteEventDispatcher<NodeId, T> dispatcher) {
     return new RxRemoteDispatcher<>(
-        Objects.requireNonNull(nodeIdClass),
-        Objects.requireNonNull(eventClass),
-        Objects.requireNonNull(dispatcher));
+        Objects.requireNonNull(eventClass), Objects.requireNonNull(dispatcher));
   }
 }

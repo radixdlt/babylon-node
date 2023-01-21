@@ -72,11 +72,9 @@ import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.environment.MessageTransportType;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
@@ -129,124 +127,102 @@ public final class MessagingModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?, ?> mempoolAddDispatcher(
-      MessageCentralMempool messageCentralMempool) {
+  private RxRemoteDispatcher<?> mempoolAddDispatcher(MessageCentralMempool messageCentralMempool) {
     return RxRemoteDispatcher.create(
-        NodeId.class, MempoolAdd.class, messageCentralMempool.mempoolAddRemoteEventDispatcher());
+        MempoolAdd.class, messageCentralMempool.mempoolAddRemoteEventDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?, ?> proposalDispatcher(MessageCentralBFTNetwork bftNetwork) {
-    return RxRemoteDispatcher.create(NodeId.class, Proposal.class, bftNetwork.proposalDispatcher());
+  private RxRemoteDispatcher<?> proposalDispatcher(MessageCentralBFTNetwork bftNetwork) {
+    return RxRemoteDispatcher.create(Proposal.class, bftNetwork.proposalDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?, ?> voteDispatcher(MessageCentralBFTNetwork bftNetwork) {
-    return RxRemoteDispatcher.create(NodeId.class, Vote.class, bftNetwork.voteDispatcher());
+  private RxRemoteDispatcher<?> voteDispatcher(MessageCentralBFTNetwork bftNetwork) {
+    return RxRemoteDispatcher.create(Vote.class, bftNetwork.voteDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?, ?> vertexRequestDispatcher(
+  private RxRemoteDispatcher<?> vertexRequestDispatcher(
       MessageCentralValidatorSync messageCentralValidatorSync) {
     return RxRemoteDispatcher.create(
-        NodeId.class,
-        GetVerticesRequest.class,
-        messageCentralValidatorSync.verticesRequestDispatcher());
+        GetVerticesRequest.class, messageCentralValidatorSync.verticesRequestDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?, ?> vertexResponseDispatcher(
+  private RxRemoteDispatcher<?> vertexResponseDispatcher(
       MessageCentralValidatorSync messageCentralValidatorSync) {
     return RxRemoteDispatcher.create(
-        NodeId.class,
-        GetVerticesResponse.class,
-        messageCentralValidatorSync.verticesResponseDispatcher());
+        GetVerticesResponse.class, messageCentralValidatorSync.verticesResponseDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?, ?> vertexErrorResponseDispatcher(
+  private RxRemoteDispatcher<?> vertexErrorResponseDispatcher(
       MessageCentralValidatorSync messageCentralValidatorSync) {
     return RxRemoteDispatcher.create(
-        NodeId.class,
         GetVerticesErrorResponse.class,
         messageCentralValidatorSync.verticesErrorResponseDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?, ?> syncRequestDispatcher(
+  private RxRemoteDispatcher<?> syncRequestDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        NodeId.class, SyncRequest.class, messageCentralLedgerSync.syncRequestDispatcher());
+        SyncRequest.class, messageCentralLedgerSync.syncRequestDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?, ?> syncResponseDispatcher(
+  private RxRemoteDispatcher<?> syncResponseDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        NodeId.class, SyncResponse.class, messageCentralLedgerSync.syncResponseDispatcher());
+        SyncResponse.class, messageCentralLedgerSync.syncResponseDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?, ?> statusRequestDispatcher(
+  private RxRemoteDispatcher<?> statusRequestDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        NodeId.class, StatusRequest.class, messageCentralLedgerSync.statusRequestDispatcher());
+        StatusRequest.class, messageCentralLedgerSync.statusRequestDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?, ?> statusResponseDispatcher(
+  private RxRemoteDispatcher<?> statusResponseDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        NodeId.class, StatusResponse.class, messageCentralLedgerSync.statusResponseDispatcher());
+        StatusResponse.class, messageCentralLedgerSync.statusResponseDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?, ?> pingDispatcher(
+  private RxRemoteDispatcher<?> pingDispatcher(
       MessageCentralPeerLiveness messageCentralPeerLiveness) {
-    return RxRemoteDispatcher.create(
-        NodeId.class, Ping.class, messageCentralPeerLiveness.pingDispatcher());
+    return RxRemoteDispatcher.create(Ping.class, messageCentralPeerLiveness.pingDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?, ?> pongDispatcher(
+  private RxRemoteDispatcher<?> pongDispatcher(
       MessageCentralPeerLiveness messageCentralPeerLiveness) {
-    return RxRemoteDispatcher.create(
-        NodeId.class, Pong.class, messageCentralPeerLiveness.pongDispatcher());
+    return RxRemoteDispatcher.create(Pong.class, messageCentralPeerLiveness.pongDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?, ?> getPeersDispatcher(
+  private RxRemoteDispatcher<?> getPeersDispatcher(
       MessageCentralPeerDiscovery messageCentralPeerDiscovery) {
     return RxRemoteDispatcher.create(
-        NodeId.class, GetPeers.class, messageCentralPeerDiscovery.getPeersDispatcher());
+        GetPeers.class, messageCentralPeerDiscovery.getPeersDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?, ?> peersResponseDispatcher(
+  private RxRemoteDispatcher<?> peersResponseDispatcher(
       MessageCentralPeerDiscovery messageCentralPeerDiscovery) {
     return RxRemoteDispatcher.create(
-        NodeId.class, PeersResponse.class, messageCentralPeerDiscovery.peersResponseDispatcher());
+        PeersResponse.class, messageCentralPeerDiscovery.peersResponseDispatcher());
   }
 
   @ProvidesIntoSet
-  private RxRemoteDispatcher<?, ?> ledgerStatusUpdateDispatcher(
+  private RxRemoteDispatcher<?> ledgerStatusUpdateDispatcher(
       MessageCentralLedgerSync messageCentralLedgerSync) {
     return RxRemoteDispatcher.create(
-        NodeId.class,
-        LedgerStatusUpdate.class,
-        messageCentralLedgerSync.ledgerStatusUpdateDispatcher());
-  }
-
-  @ProvidesIntoSet
-  private RxRemoteDispatcher<?, ?> bftLedgerStatusUpdateDispatcher(
-      MessageCentralLedgerSync messageCentralLedgerSync) {
-    return RxRemoteDispatcher.create(
-        BFTValidatorId.class,
-        LedgerStatusUpdate.class,
-        (n, m) -> {
-          var nodeId = NodeId.fromPublicKey(n.getKey());
-          messageCentralLedgerSync.ledgerStatusUpdateDispatcher().dispatch(nodeId, m);
-        });
+        LedgerStatusUpdate.class, messageCentralLedgerSync.ledgerStatusUpdateDispatcher());
   }
 
   // TODO: Clean this up
@@ -262,54 +238,41 @@ public final class MessagingModule extends AbstractModule {
       MessageCentralPeerDiscovery messageCentralPeerDiscovery) {
     return new RxRemoteEnvironment() {
       @Override
-      public <N, T> Flowable<RemoteEvent<N, T>> remoteEvents(
-          MessageTransportType<N, T> messageTransportType) {
-        if (messageTransportType.equals(MessageTransportType.create(NodeId.class, Vote.class))) {
-          return messageCentralBFT.remoteVotes().map(m -> (RemoteEvent<N, T>) m);
-        } else if (messageTransportType.equals(
-            MessageTransportType.create(NodeId.class, Proposal.class))) {
-          return messageCentralBFT.remoteProposals().map(m -> (RemoteEvent<N, T>) m);
-        } else if (messageTransportType.equals(
-            MessageTransportType.create(NodeId.class, GetVerticesRequest.class))) {
-          return messageCentralBFTSync.requests().map(m -> (RemoteEvent<N, T>) m);
-        } else if (messageTransportType.equals(
-            MessageTransportType.create(NodeId.class, GetVerticesResponse.class))) {
-          return messageCentralBFTSync.responses().map(m -> (RemoteEvent<N, T>) m);
-        } else if (messageTransportType.equals(
-            MessageTransportType.create(NodeId.class, GetVerticesErrorResponse.class))) {
-          return messageCentralBFTSync.errorResponses().map(m -> (RemoteEvent<N, T>) m);
-        } else if (messageTransportType.equals(
-            MessageTransportType.create(NodeId.class, MempoolAdd.class))) {
-          return messageCentralMempool.mempoolComands().map(m -> (RemoteEvent<N, T>) m);
-        } else if (messageTransportType.equals(
-            MessageTransportType.create(NodeId.class, SyncRequest.class))) {
-          return messageCentralLedgerSync.syncRequests().map(m -> (RemoteEvent<N, T>) m);
-        } else if (messageTransportType.equals(
-            MessageTransportType.create(NodeId.class, SyncResponse.class))) {
-          return messageCentralLedgerSync.syncResponses().map(m -> (RemoteEvent<N, T>) m);
-        } else if (messageTransportType.equals(
-            MessageTransportType.create(NodeId.class, StatusRequest.class))) {
-          return messageCentralLedgerSync.statusRequests().map(m -> (RemoteEvent<N, T>) m);
-        } else if (messageTransportType.equals(
-            MessageTransportType.create(NodeId.class, StatusResponse.class))) {
-          return messageCentralLedgerSync.statusResponses().map(m -> (RemoteEvent<N, T>) m);
-        } else if (messageTransportType.equals(
-            MessageTransportType.create(NodeId.class, LedgerStatusUpdate.class))) {
-          return messageCentralLedgerSync.ledgerStatusUpdates().map(m -> (RemoteEvent<N, T>) m);
-        } else if (messageTransportType.equals(
-            MessageTransportType.create(NodeId.class, Ping.class))) {
-          return messageCentralPeerLiveness.pings().map(m -> (RemoteEvent<N, T>) m);
-        } else if (messageTransportType.equals(
-            MessageTransportType.create(NodeId.class, Pong.class))) {
-          return messageCentralPeerLiveness.pongs().map(m -> (RemoteEvent<N, T>) m);
-        } else if (messageTransportType.equals(
-            MessageTransportType.create(NodeId.class, GetPeers.class))) {
-          return messageCentralPeerDiscovery.getPeersEvents().map(m -> (RemoteEvent<N, T>) m);
-        } else if (messageTransportType.equals(
-            MessageTransportType.create(NodeId.class, PeersResponse.class))) {
-          return messageCentralPeerDiscovery.peersResponses().map(m -> (RemoteEvent<N, T>) m);
+      public <T> Flowable<RemoteEvent<NodeId, T>> remoteEvents(Class<T> messageType) {
+        if (messageType.equals(Vote.class)) {
+          return messageCentralBFT.remoteVotes().map(m -> (RemoteEvent<NodeId, T>) m);
+        } else if (messageType.equals(Proposal.class)) {
+          return messageCentralBFT.remoteProposals().map(m -> (RemoteEvent<NodeId, T>) m);
+        } else if (messageType.equals(GetVerticesRequest.class)) {
+          return messageCentralBFTSync.requests().map(m -> (RemoteEvent<NodeId, T>) m);
+        } else if (messageType.equals(GetVerticesResponse.class)) {
+          return messageCentralBFTSync.responses().map(m -> (RemoteEvent<NodeId, T>) m);
+        } else if (messageType.equals(GetVerticesErrorResponse.class)) {
+          return messageCentralBFTSync.errorResponses().map(m -> (RemoteEvent<NodeId, T>) m);
+        } else if (messageType.equals(MempoolAdd.class)) {
+          return messageCentralMempool.mempoolComands().map(m -> (RemoteEvent<NodeId, T>) m);
+        } else if (messageType.equals(SyncRequest.class)) {
+          return messageCentralLedgerSync.syncRequests().map(m -> (RemoteEvent<NodeId, T>) m);
+        } else if (messageType.equals(SyncResponse.class)) {
+          return messageCentralLedgerSync.syncResponses().map(m -> (RemoteEvent<NodeId, T>) m);
+        } else if (messageType.equals(StatusRequest.class)) {
+          return messageCentralLedgerSync.statusRequests().map(m -> (RemoteEvent<NodeId, T>) m);
+        } else if (messageType.equals(StatusResponse.class)) {
+          return messageCentralLedgerSync.statusResponses().map(m -> (RemoteEvent<NodeId, T>) m);
+        } else if (messageType.equals(LedgerStatusUpdate.class)) {
+          return messageCentralLedgerSync
+              .ledgerStatusUpdates()
+              .map(m -> (RemoteEvent<NodeId, T>) m);
+        } else if (messageType.equals(Ping.class)) {
+          return messageCentralPeerLiveness.pings().map(m -> (RemoteEvent<NodeId, T>) m);
+        } else if (messageType.equals(Pong.class)) {
+          return messageCentralPeerLiveness.pongs().map(m -> (RemoteEvent<NodeId, T>) m);
+        } else if (messageType.equals(GetPeers.class)) {
+          return messageCentralPeerDiscovery.getPeersEvents().map(m -> (RemoteEvent<NodeId, T>) m);
+        } else if (messageType.equals(PeersResponse.class)) {
+          return messageCentralPeerDiscovery.peersResponses().map(m -> (RemoteEvent<NodeId, T>) m);
         } else {
-          throw new MessageTransportNotSupported(messageTransportType);
+          throw new MessageNotSupported(messageType);
         }
       }
     };

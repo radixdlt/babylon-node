@@ -66,6 +66,7 @@ package com.radixdlt.environment.rx;
 
 import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.*;
+import com.radixdlt.p2p.NodeId;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -83,13 +84,13 @@ public final class RxEnvironment implements Environment {
   private final Map<TypeLiteral<?>, Subject<?>> typeLiteralSubjects;
   private final ScheduledExecutorService executorService;
 
-  private final Map<MessageTransportType<?, ?>, RxRemoteDispatcher<?, ?>> remoteDispatchers;
+  private final Map<Class<?>, RxRemoteDispatcher<?>> remoteDispatchers;
 
   public RxEnvironment(
       Set<TypeLiteral<?>> localEventTypeLiterals,
       Set<Class<?>> localEventClasses,
       ScheduledExecutorService executorService,
-      Set<RxRemoteDispatcher<?, ?>> remoteDispatchers) {
+      Set<RxRemoteDispatcher<?>> remoteDispatchers) {
     this.typeLiteralSubjects =
         localEventTypeLiterals.stream()
             .collect(Collectors.toMap(c -> c, c -> ReplaySubject.createWithSize(5).toSerialized()));
@@ -99,7 +100,7 @@ public final class RxEnvironment implements Environment {
     this.executorService = Objects.requireNonNull(executorService);
     this.remoteDispatchers =
         remoteDispatchers.stream()
-            .collect(Collectors.toMap(RxRemoteDispatcher::messageTransportType, d -> d));
+            .collect(Collectors.toMap(RxRemoteDispatcher::eventClass, d -> d));
   }
 
   private <T> Optional<Subject<T>> getSubject(TypeLiteral<T> t) {
@@ -138,15 +139,14 @@ public final class RxEnvironment implements Environment {
   }
 
   @Override
-  public <N, T> RemoteEventDispatcher<N, T> getRemoteDispatcher(
-      MessageTransportType<N, T> messageTransportType) {
-    if (!remoteDispatchers.containsKey(messageTransportType)) {
-      throw new IllegalStateException("No dispatcher for " + messageTransportType);
+  public <T> RemoteEventDispatcher<NodeId, T> getRemoteDispatcher(Class<T> messageType) {
+    if (!remoteDispatchers.containsKey(messageType)) {
+      throw new IllegalStateException("No dispatcher for " + messageType);
     }
 
     @SuppressWarnings("unchecked")
-    final RemoteEventDispatcher<N, T> dispatcher =
-        (RemoteEventDispatcher<N, T>) remoteDispatchers.get(messageTransportType).dispatcher();
+    final RemoteEventDispatcher<NodeId, T> dispatcher =
+        (RemoteEventDispatcher<NodeId, T>) remoteDispatchers.get(messageType).dispatcher();
     return dispatcher;
   }
 

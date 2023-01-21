@@ -65,9 +65,7 @@
 package com.radixdlt.environment.deterministic.network;
 
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.environment.*;
-import com.radixdlt.messaging.MessageTransportNotSupported;
 import com.radixdlt.p2p.NodeId;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
@@ -135,22 +133,9 @@ public final class ControlledDispatcher implements Environment {
   }
 
   @Override
-  public <N, T> RemoteEventDispatcher<N, T> getRemoteDispatcher(
-      MessageTransportType<N, T> messageTransportType) {
-    if (messageTransportType.getNodeIdType() != BFTValidatorId.class
-        && messageTransportType.getNodeIdType() != NodeId.class) {
-      throw new MessageTransportNotSupported(messageTransportType);
-    }
-
+  public <T> RemoteEventDispatcher<NodeId, T> getRemoteDispatcher(Class<T> messageType) {
     return (node, e) -> {
-      final Integer receiverIndex;
-      if (messageTransportType.getNodeIdType() == BFTValidatorId.class) {
-        var bftNode = (BFTValidatorId) node;
-        receiverIndex = this.p2pAddressBook.apply(NodeId.fromPublicKey(bftNode.getKey()));
-      } else {
-        receiverIndex = this.p2pAddressBook.apply((NodeId) node);
-      }
-
+      var receiverIndex = this.p2pAddressBook.apply(NodeId.fromPublicKey(node.getPublicKey()));
       if (receiverIndex == null) {
         log.warn("Could not resolve node {} to physical nodeIndex. Dropping msg: {}", node, e);
         return;

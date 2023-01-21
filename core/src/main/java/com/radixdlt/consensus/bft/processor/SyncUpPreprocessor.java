@@ -74,12 +74,12 @@ import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
-import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundLeaderFailure;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -265,7 +265,7 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
       log.trace("Vote: PreProcessing {}", vote);
       return syncUp(
           vote.highQC(),
-          vote.getAuthor(),
+          NodeId.fromPublicKey(vote.getAuthor().getKey()),
           () -> processOnCurrentRoundOrCache(vote, forwardTo::processVote));
     } else {
       log.trace("Vote: Ignoring for past round {}, current round is {}", vote, currentRound);
@@ -279,7 +279,7 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
       log.trace("Proposal: PreProcessing {}", proposal);
       return syncUp(
           proposal.highQC(),
-          proposal.getAuthor(),
+          NodeId.fromPublicKey(proposal.getAuthor().getKey()),
           () -> processOnCurrentRoundOrCache(proposal, forwardTo::processProposal));
     } else {
       log.trace(
@@ -303,7 +303,7 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
     }
   }
 
-  private boolean syncUp(HighQC highQC, BFTValidatorId author, Runnable whenSynced) {
+  private boolean syncUp(HighQC highQC, NodeId author, Runnable whenSynced) {
     SyncResult syncResult = this.bftSyncer.syncToQC(highQC, author);
 
     // TODO: use switch expression and eliminate unnecessary default case

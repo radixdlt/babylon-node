@@ -122,10 +122,9 @@ public final class EpochManager {
   private EventProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
   private BFTEventProcessor bftEventProcessor;
 
-  private Set<RemoteEventProcessor<BFTValidatorId, GetVerticesRequest>> syncRequestProcessors;
-  private Set<RemoteEventProcessor<BFTValidatorId, GetVerticesResponse>> syncResponseProcessors;
-  private Set<RemoteEventProcessor<BFTValidatorId, GetVerticesErrorResponse>>
-      syncErrorResponseProcessors;
+  private Set<RemoteEventProcessor<NodeId, GetVerticesRequest>> syncRequestProcessors;
+  private Set<RemoteEventProcessor<NodeId, GetVerticesResponse>> syncResponseProcessors;
+  private Set<RemoteEventProcessor<NodeId, GetVerticesErrorResponse>> syncErrorResponseProcessors;
 
   private Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors;
   private Set<EventProcessor<BFTRebuildUpdate>> bftRebuildProcessors;
@@ -133,7 +132,7 @@ public final class EpochManager {
   private final RemoteEventDispatcher<NodeId, LedgerStatusUpdate> ledgerStatusUpdateDispatcher;
   private final PersistentSafetyStateStore persistentSafetyStateStore;
 
-  private final HashMap<NodeId, BFTValidatorId> reverseNodeIdToValidatorId = new HashMap<>();
+  private final HashSet<NodeId> validatorNodeIds = new HashSet<>();
 
   @Inject
   public EpochManager(
@@ -189,12 +188,11 @@ public final class EpochManager {
       return;
     }
 
-    // TODO: Josh not convinced that node to validator resolving should occur in EpochManager
-    // TODO: or if it should even occur but this should be good enough for now.
-    this.reverseNodeIdToValidatorId.clear();
+    // TODO: Move this filterign into a separate network module
+    this.validatorNodeIds.clear();
     for (var validator : validatorSet.getValidators()) {
       var nodeId = NodeId.fromPublicKey(validator.getValidatorId().getKey());
-      reverseNodeIdToValidatorId.put(nodeId, validator.getValidatorId());
+      validatorNodeIds.add(nodeId);
     }
 
     final var nextEpoch = this.lastEpochChange.getNextEpoch();
@@ -412,25 +410,23 @@ public final class EpochManager {
   }
 
   public RemoteEventProcessor<NodeId, GetVerticesRequest> bftSyncRequestProcessor() {
-    return (node, request) -> {
-      var validatorId = this.reverseNodeIdToValidatorId.get(node);
-      if (validatorId != null) {
-        syncRequestProcessors.forEach(p -> p.process(validatorId, request));
+    return (nodeId, request) -> {
+      if (this.validatorNodeIds.contains(nodeId)) {
+        syncRequestProcessors.forEach(p -> p.process(nodeId, request));
       }
     };
   }
 
   public RemoteEventProcessor<NodeId, GetVerticesResponse> bftSyncResponseProcessor() {
-    return (node, resp) -> {
-      var validatorId = this.reverseNodeIdToValidatorId.get(node);
-      if (validatorId != null) {
-        syncResponseProcessors.forEach(p -> p.process(validatorId, resp));
+    return (nodeId, resp) -> {
+      if (this.validatorNodeIds.contains(nodeId)) {
+        syncResponseProcessors.forEach(p -> p.process(nodeId, resp));
       }
     };
   }
 
   public RemoteEventProcessor<NodeId, GetVerticesErrorResponse> bftSyncErrorResponseProcessor() {
-    return (node, err) -> {
+    return (nodeId, err) -> {
       if (log.isDebugEnabled()) {
         log.debug("SYNC_ERROR: Received GetVerticesErrorResponse {}", err);
       }
@@ -455,9 +451,8 @@ public final class EpochManager {
         }
       } else {
         // Current epoch
-        var validatorId = this.reverseNodeIdToValidatorId.get(node);
-        if (validatorId != null) {
-          syncErrorResponseProcessors.forEach(p -> p.process(validatorId, err));
+        if (this.validatorNodeIds.contains(nodeId)) {
+          syncErrorResponseProcessors.forEach(p -> p.process(nodeId, err));
         }
       }
     };
