@@ -66,11 +66,11 @@ pub fn to_api_global_entity_assignment(
         target_entity_id_hex: to_hex(target_entity.entity_id_bytes),
         global_entity_id_hex: to_hex(global_entity_id_bytes),
         global_address_hex: to_hex(global_address_to_vec(global_address)),
-        global_address: encode_to_bech32m_string(context, global_address),
+        global_address: to_api_global_address(context, global_address),
     })
 }
 
-pub fn encode_to_bech32m_string(
+pub fn to_api_global_address(
     context: &MappingContext,
     global_address: &GlobalAddress,
 ) -> String {
@@ -447,7 +447,7 @@ pub fn to_global_entity_reference(
     models::GlobalEntityReference {
         entity_type: get_entity_type_from_global_address(global_address),
         global_address_hex: to_hex(global_address_to_vec(global_address)),
-        global_address: encode_to_bech32m_string(context, global_address),
+        global_address: to_api_global_address(context, global_address),
     }
 }
 
