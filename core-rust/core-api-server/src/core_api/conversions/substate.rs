@@ -14,10 +14,9 @@ use radix_engine::model::{
 };
 use radix_engine::types::{
     scrypto_encode, AccessRule, AccessRuleEntry, AccessRuleKey, AccessRuleNode, AccessRules,
-    Bech32Encoder, Decimal, GlobalOffset, KeyValueStoreOffset, NonFungibleId,
-    NonFungibleStoreOffset, ProofRule, RENodeId, ResourceAddress, ResourceType, RoyaltyConfig,
-    SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
-    SubstateId, SubstateOffset,
+    Decimal, GlobalOffset, KeyValueStoreOffset, NonFungibleId, NonFungibleStoreOffset, ProofRule,
+    RENodeId, ResourceAddress, ResourceType, RoyaltyConfig, SoftCount, SoftDecimal, SoftResource,
+    SoftResourceOrNonFungible, SoftResourceOrNonFungibleList, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::model::NonFungibleIdTypeId;
@@ -25,42 +24,38 @@ use radix_engine_interface::model::NonFungibleIdTypeId;
 use super::MappingError;
 
 pub fn to_api_substate(
+    context: &MappingContext,
     substate_id: &SubstateId,
     substate: &PersistedSubstate,
-    bech32_encoder: &Bech32Encoder,
 ) -> Result<models::Substate, MappingError> {
     Ok(match substate {
         // Shared
         PersistedSubstate::AccessRulesChain(substate) => {
-            to_api_access_rules_chain_substate(bech32_encoder, substate)?
+            to_api_access_rules_chain_substate(context, substate)?
         }
-        PersistedSubstate::Metadata(substate) => {
-            to_api_metadata_substate(bech32_encoder, substate)?
-        }
+        PersistedSubstate::Metadata(substate) => to_api_metadata_substate(context, substate)?,
         // Specific
         PersistedSubstate::Global(global) => {
-            to_api_global_address_substate(bech32_encoder, substate_id, global)?
+            to_api_global_address_substate(context, substate_id, global)?
         }
         PersistedSubstate::ComponentInfo(component_info) => {
-            to_api_component_info_substate(bech32_encoder, component_info)?
+            to_api_component_info_substate(context, component_info)?
         }
         PersistedSubstate::ComponentState(component_state) => {
-            to_api_component_state_substate(bech32_encoder, component_state)?
+            to_api_component_state_substate(context, component_state)?
         }
         PersistedSubstate::ComponentRoyaltyConfig(substate) => {
-            to_api_component_royalty_config_substate(bech32_encoder, substate)?
+            to_api_component_royalty_config_substate(context, substate)?
         }
         PersistedSubstate::ComponentRoyaltyAccumulator(substate) => {
             to_api_component_royalty_accumulator_substate(substate)?
         }
         PersistedSubstate::ResourceManager(resource_manager) => {
-            to_api_resource_manager_substate(bech32_encoder, resource_manager)?
+            to_api_resource_manager_substate(context, resource_manager)?
         }
-        PersistedSubstate::PackageInfo(package) => {
-            to_api_package_info_substate(bech32_encoder, package)?
-        }
+        PersistedSubstate::PackageInfo(package) => to_api_package_info_substate(context, package)?,
         PersistedSubstate::PackageRoyaltyConfig(substate) => {
-            to_api_package_royalty_config_substate(bech32_encoder, substate)?
+            to_api_package_royalty_config_substate(context, substate)?
         }
         PersistedSubstate::PackageRoyaltyAccumulator(substate) => {
             to_api_package_royalty_accumulator_substate(substate)?
@@ -74,22 +69,18 @@ pub fn to_api_substate(
         PersistedSubstate::CurrentTimeRoundedToMinutes(substate) => {
             to_api_clock_current_time_rounded_down_to_minutes_substate(substate)?
         }
-        PersistedSubstate::Vault(vault) => to_api_vault_substate(bech32_encoder, vault)?,
+        PersistedSubstate::Vault(vault) => to_api_vault_substate(context, vault)?,
         PersistedSubstate::KeyValueStoreEntry(kv_store_entry_wrapper) => {
-            to_api_key_value_story_entry_substate(
-                bech32_encoder,
-                substate_id,
-                kv_store_entry_wrapper,
-            )?
+            to_api_key_value_story_entry_substate(context, substate_id, kv_store_entry_wrapper)?
         }
         PersistedSubstate::NonFungible(non_fungible_wrapper) => {
-            to_api_non_fungible_substate(bech32_encoder, substate_id, non_fungible_wrapper)?
+            to_api_non_fungible_substate(context, substate_id, non_fungible_wrapper)?
         }
     })
 }
 
 pub fn to_api_access_rules_chain_substate(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     substate: &AccessRulesChainSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
@@ -98,13 +89,13 @@ pub fn to_api_access_rules_chain_substate(
     Ok(models::Substate::AccessRulesChainSubstate {
         chain: access_rules_chain
             .iter()
-            .map(|access_rules| to_api_access_rules(bech32_encoder, access_rules))
+            .map(|access_rules| to_api_access_rules(context, access_rules))
             .collect::<Result<_, _>>()?,
     })
 }
 
 pub fn to_api_metadata_substate(
-    _bech32_encoder: &Bech32Encoder,
+    _context: &MappingContext,
     substate: &MetadataSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
@@ -122,7 +113,7 @@ pub fn to_api_metadata_substate(
 }
 
 fn to_api_global_address_substate(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     substate_id: &SubstateId,
     substate: &GlobalAddressSubstate,
 ) -> Result<models::Substate, MappingError> {
@@ -140,7 +131,7 @@ fn to_api_global_address_substate(
 
     Ok(models::Substate::GlobalAddressSubstate {
         target_entity: Box::new(to_api_global_entity_assignment(
-            bech32_encoder,
+            context,
             substate_id,
             global_address,
             substate,
@@ -149,7 +140,7 @@ fn to_api_global_address_substate(
 }
 
 pub fn to_api_resource_manager_substate(
-    _bech32_encoder: &Bech32Encoder,
+    _context: &MappingContext,
     resource_manager: &ResourceManagerSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
@@ -191,7 +182,7 @@ pub fn to_api_fungible_id_type(id_type: &NonFungibleIdTypeId) -> models::NonFung
 }
 
 pub fn to_api_component_info_substate(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     substate: &ComponentInfoSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
@@ -201,58 +192,58 @@ pub fn to_api_component_info_substate(
     } = substate;
 
     Ok(models::Substate::ComponentInfoSubstate {
-        package_address: bech32_encoder.encode_package_address_to_string(package_address),
+        package_address: to_api_package_address(context, package_address),
         blueprint_name: blueprint_name.to_string(),
     })
 }
 
 pub fn to_api_access_rules(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     access_rules: &AccessRules,
 ) -> Result<models::AccessRules, MappingError> {
     Ok(models::AccessRules {
         method_auth: access_rules
             .get_all_method_auth()
             .iter()
-            .map(|(key, entry)| to_api_method_auth_entry(bech32_encoder, key, entry))
+            .map(|(key, entry)| to_api_method_auth_entry(context, key, entry))
             .collect::<Result<_, _>>()?,
         grouped_auth: access_rules
             .get_all_grouped_auth()
             .iter()
-            .map(|(key, rule)| to_api_grouped_auth_entry(bech32_encoder, key, rule))
+            .map(|(key, rule)| to_api_grouped_auth_entry(context, key, rule))
             .collect::<Result<_, _>>()?,
         default_auth: Some(to_api_dynamic_access_rule(
-            bech32_encoder,
+            context,
             access_rules.get_default_auth(),
         )?),
         method_auth_mutability: access_rules
             .get_all_method_auth_mutability()
             .iter()
             .map(|(key, access_rule)| {
-                to_api_method_auth_mutability_entry(bech32_encoder, key, access_rule)
+                to_api_method_auth_mutability_entry(context, key, access_rule)
             })
             .collect::<Result<_, _>>()?,
         grouped_auth_mutability: access_rules
             .get_all_grouped_auth_mutability()
             .iter()
-            .map(|(key, rule)| to_api_grouped_auth_entry(bech32_encoder, key, rule))
+            .map(|(key, rule)| to_api_grouped_auth_entry(context, key, rule))
             .collect::<Result<_, _>>()?,
         default_auth_mutability: Some(to_api_dynamic_access_rule(
-            bech32_encoder,
+            context,
             access_rules.get_default_auth_mutability(),
         )?),
     })
 }
 
 pub fn to_api_method_auth_entry(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     key: &AccessRuleKey,
     entry: &AccessRuleEntry,
 ) -> Result<models::MethodAuthEntry, MappingError> {
     let access_rule_reference = match entry {
         AccessRuleEntry::AccessRule(access_rule) => {
             models::AccessRuleReference::RuleAccessRuleReference {
-                access_rule: Box::new(to_api_dynamic_access_rule(bech32_encoder, access_rule)?),
+                access_rule: Box::new(to_api_dynamic_access_rule(context, access_rule)?),
             }
         }
         AccessRuleEntry::Group(group_name) => {
@@ -268,13 +259,13 @@ pub fn to_api_method_auth_entry(
 }
 
 pub fn to_api_method_auth_mutability_entry(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     key: &AccessRuleKey,
     access_rule: &AccessRule,
 ) -> Result<models::MethodAuthMutabilityEntry, MappingError> {
     Ok(models::MethodAuthMutabilityEntry {
         method: Some(to_api_local_method_reference(key)),
-        access_rule: Some(to_api_dynamic_access_rule(bech32_encoder, access_rule)?),
+        access_rule: Some(to_api_dynamic_access_rule(context, access_rule)?),
     })
 }
 
@@ -292,26 +283,23 @@ pub fn to_api_local_method_reference(key: &AccessRuleKey) -> models::LocalMethod
 }
 
 pub fn to_api_grouped_auth_entry(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     group_name: &str,
     access_rule: &AccessRule,
 ) -> Result<models::GroupedAuthEntry, MappingError> {
     Ok(models::GroupedAuthEntry {
         group_name: group_name.to_string(),
-        access_rule: Some(to_api_dynamic_access_rule(bech32_encoder, access_rule)?),
+        access_rule: Some(to_api_dynamic_access_rule(context, access_rule)?),
     })
 }
 
 pub fn to_api_dynamic_access_rule(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     access_rule: &AccessRule,
 ) -> Result<models::AccessRule, MappingError> {
     Ok(match access_rule {
         AccessRule::Protected(access_rule_node) => models::AccessRule::ProtectedAccessRule {
-            access_rule: Box::new(to_api_dynamic_access_rule_node(
-                bech32_encoder,
-                access_rule_node,
-            )?),
+            access_rule: Box::new(to_api_dynamic_access_rule_node(context, access_rule_node)?),
         },
         AccessRule::AllowAll => models::AccessRule::AllowAllAccessRule {},
         AccessRule::DenyAll => models::AccessRule::DenyAllAccessRule {},
@@ -319,64 +307,51 @@ pub fn to_api_dynamic_access_rule(
 }
 
 pub fn to_api_dynamic_access_rule_node(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     access_rule: &AccessRuleNode,
 ) -> Result<models::AccessRuleNode, MappingError> {
     Ok(match access_rule {
         AccessRuleNode::ProofRule(proof_rule) => models::AccessRuleNode::ProofAccessRuleNode {
-            proof_rule: Box::new(to_api_dynamic_proof_rule(bech32_encoder, proof_rule)?),
+            proof_rule: Box::new(to_api_dynamic_proof_rule(context, proof_rule)?),
         },
         AccessRuleNode::AnyOf(access_rules) => models::AccessRuleNode::AnyOfAccessRuleNode {
             access_rules: access_rules
                 .iter()
-                .map(|ar| to_api_dynamic_access_rule_node(bech32_encoder, ar))
+                .map(|ar| to_api_dynamic_access_rule_node(context, ar))
                 .collect::<Result<_, _>>()?,
         },
         AccessRuleNode::AllOf(access_rules) => models::AccessRuleNode::AllOfAccessRuleNode {
             access_rules: access_rules
                 .iter()
-                .map(|ar| to_api_dynamic_access_rule_node(bech32_encoder, ar))
+                .map(|ar| to_api_dynamic_access_rule_node(context, ar))
                 .collect::<Result<_, _>>()?,
         },
     })
 }
 
 pub fn to_api_dynamic_proof_rule(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     proof_rule: &ProofRule,
 ) -> Result<models::ProofRule, MappingError> {
     Ok(match proof_rule {
         ProofRule::Require(resource) => models::ProofRule::RequireProofRule {
-            resource: Box::new(to_api_dynamic_resource_descriptor(
-                bech32_encoder,
-                resource,
-            )?),
+            resource: Box::new(to_api_dynamic_resource_descriptor(context, resource)?),
         },
         ProofRule::AmountOf(amount, resource) => models::ProofRule::AmountOfProofRule {
             amount: Box::new(to_api_dynamic_amount_from_soft_decimal(amount)?),
             resource: Box::new(to_api_dynamic_resource_descriptor_from_resource(
-                bech32_encoder,
-                resource,
+                context, resource,
             )?),
         },
         ProofRule::AllOf(resources) => models::ProofRule::AllOfProofRule {
-            list: Box::new(to_api_dynamic_resource_descriptor_list(
-                bech32_encoder,
-                resources,
-            )?),
+            list: Box::new(to_api_dynamic_resource_descriptor_list(context, resources)?),
         },
         ProofRule::AnyOf(resources) => models::ProofRule::AnyOfProofRule {
-            list: Box::new(to_api_dynamic_resource_descriptor_list(
-                bech32_encoder,
-                resources,
-            )?),
+            list: Box::new(to_api_dynamic_resource_descriptor_list(context, resources)?),
         },
         ProofRule::CountOf(count, resources) => models::ProofRule::CountOfProofRule {
             count: Box::new(to_api_dynamic_count_from_soft_count(count)?),
-            list: Box::new(to_api_dynamic_resource_descriptor_list(
-                bech32_encoder,
-                resources,
-            )?),
+            list: Box::new(to_api_dynamic_resource_descriptor_list(context, resources)?),
         },
     })
 }
@@ -412,7 +387,7 @@ pub fn to_api_dynamic_count_from_soft_count(
 }
 
 pub fn to_api_dynamic_resource_descriptor_list(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     resource_list: &SoftResourceOrNonFungibleList,
 ) -> Result<models::DynamicResourceDescriptorList, MappingError> {
     Ok(match resource_list {
@@ -420,7 +395,7 @@ pub fn to_api_dynamic_resource_descriptor_list(
             models::DynamicResourceDescriptorList::ListDynamicResourceDescriptorList {
                 resources: resources
                     .iter()
-                    .map(|r| to_api_dynamic_resource_descriptor(bech32_encoder, r))
+                    .map(|r| to_api_dynamic_resource_descriptor(context, r))
                     .collect::<Result<_, _>>()?,
             }
         }
@@ -433,13 +408,13 @@ pub fn to_api_dynamic_resource_descriptor_list(
 }
 
 pub fn to_api_dynamic_resource_descriptor_from_resource(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     resource: &SoftResource,
 ) -> Result<models::DynamicResourceDescriptor, MappingError> {
     Ok(match resource {
         SoftResource::Static(resource) => {
             models::DynamicResourceDescriptor::ResourceDynamicResourceDescriptor {
-                resource_address: bech32_encoder.encode_resource_address_to_string(resource),
+                resource_address: to_api_resource_address(context, resource),
             }
         }
         SoftResource::Dynamic(schema_path) => {
@@ -451,20 +426,19 @@ pub fn to_api_dynamic_resource_descriptor_from_resource(
 }
 
 pub fn to_api_dynamic_resource_descriptor(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     resource: &SoftResourceOrNonFungible,
 ) -> Result<models::DynamicResourceDescriptor, MappingError> {
     Ok(match resource {
         SoftResourceOrNonFungible::StaticNonFungible(nf) => {
             models::DynamicResourceDescriptor::NonFungibleDynamicResourceDescriptor {
-                resource_address: bech32_encoder
-                    .encode_resource_address_to_string(&nf.resource_address()),
+                resource_address: to_api_resource_address(context, &nf.resource_address()),
                 non_fungible_id: Box::new(to_api_non_fungible_id(nf.non_fungible_id())),
             }
         }
         SoftResourceOrNonFungible::StaticResource(resource) => {
             models::DynamicResourceDescriptor::ResourceDynamicResourceDescriptor {
-                resource_address: bech32_encoder.encode_resource_address_to_string(resource),
+                resource_address: to_api_resource_address(context, resource),
             }
         }
         SoftResourceOrNonFungible::Dynamic(schema_path) => {
@@ -521,22 +495,22 @@ pub fn to_api_schema_subpath(
 }
 
 pub fn to_api_component_state_substate(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     component_state: &ComponentStateSubstate,
 ) -> Result<models::Substate, MappingError> {
     Ok(models::Substate::ComponentStateSubstate {
-        data_struct: Box::new(to_api_data_struct(bech32_encoder, &component_state.raw)?),
+        data_struct: Box::new(to_api_data_struct(context, &component_state.raw)?),
     })
 }
 
 fn scrypto_value_to_api_data_struct(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     scrypto_value: IndexedScryptoValue,
 ) -> Result<models::DataStruct, MappingError> {
-    let entities = extract_entities(bech32_encoder, &scrypto_value)?;
+    let entities = extract_entities(context, &scrypto_value)?;
     Ok(models::DataStruct {
         struct_data: Box::new(scrypto_value_to_api_sbor_data(
-            bech32_encoder,
+            context,
             scrypto_value.as_slice(),
             scrypto_value.as_value(),
         )?),
@@ -551,7 +525,7 @@ struct Entities {
 }
 
 fn extract_entities(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     struct_scrypto_value: &IndexedScryptoValue,
 ) -> Result<Entities, MappingError> {
     if !struct_scrypto_value.buckets().is_empty() {
@@ -579,7 +553,7 @@ fn extract_entities(
     let referenced_entities = struct_scrypto_value
         .global_references()
         .into_iter()
-        .map(|addr| to_global_entity_reference(bech32_encoder, &addr))
+        .map(|addr| to_global_entity_reference(context, &addr))
         .collect::<Vec<_>>();
 
     Ok(Entities {
@@ -589,7 +563,7 @@ fn extract_entities(
 }
 
 pub fn to_api_component_royalty_config_substate(
-    _bech32_encoder: &Bech32Encoder,
+    _context: &MappingContext,
     substate: &ComponentRoyaltyConfigSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
@@ -625,12 +599,14 @@ pub fn to_api_component_royalty_accumulator_substate(
     let ComponentRoyaltyAccumulatorSubstate { royalty } = substate;
 
     Ok(models::Substate::ComponentRoyaltyAccumulatorSubstate {
-        vault_entity: Box::new(to_entity_reference(RENodeId::Vault(royalty.vault_id()))?),
+        vault_entity: Box::new(to_api_entity_reference(RENodeId::Vault(
+            royalty.vault_id(),
+        ))?),
     })
 }
 
 pub fn to_api_package_info_substate(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     substate: &PackageInfoSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
@@ -649,7 +625,7 @@ pub fn to_api_package_info_substate(
                     //       we should probably at some point also map this to something more human-intelligible.
                     //       But let's wait till SBOR schema changes have finalized first.
                     abi: Box::new(scrypto_bytes_to_api_sbor_data(
-                        bech32_encoder,
+                        context,
                         &scrypto_encode(abi).unwrap(),
                     )?),
                 };
@@ -660,7 +636,7 @@ pub fn to_api_package_info_substate(
 }
 
 pub fn to_api_package_royalty_config_substate(
-    _bech32_encoder: &Bech32Encoder,
+    _context: &MappingContext,
     substate: &PackageRoyaltyConfigSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
@@ -686,7 +662,9 @@ pub fn to_api_package_royalty_accumulator_substate(
     let PackageRoyaltyAccumulatorSubstate { royalty } = substate;
 
     Ok(models::Substate::PackageRoyaltyAccumulatorSubstate {
-        vault_entity: Box::new(to_entity_reference(RENodeId::Vault(royalty.vault_id()))?),
+        vault_entity: Box::new(to_api_entity_reference(RENodeId::Vault(
+            royalty.vault_id(),
+        ))?),
     })
 }
 
@@ -740,16 +718,16 @@ pub fn to_api_clock_current_time_rounded_down_to_minutes_substate(
 }
 
 pub fn to_api_vault_substate(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     vault: &VaultSubstate,
 ) -> Result<models::Substate, MappingError> {
     Ok(models::Substate::VaultSubstate {
-        resource_amount: Box::new(to_api_resource_amount(bech32_encoder, &vault.0)?),
+        resource_amount: Box::new(to_api_resource_amount(context, &vault.0)?),
     })
 }
 
 fn to_api_resource_amount(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     resource: &Resource,
 ) -> Result<models::ResourceAmount, MappingError> {
     Ok(match resource {
@@ -757,41 +735,41 @@ fn to_api_resource_amount(
             ref resource_address,
             divisibility: _,
             amount,
-        } => to_api_fungible_resource_amount(bech32_encoder, resource_address, amount)?,
+        } => to_api_fungible_resource_amount(context, resource_address, amount)?,
         Resource::NonFungible {
             ref resource_address,
             id_type,
             ids,
-        } => to_api_non_fungible_resource_amount(bech32_encoder, resource_address, id_type, ids)?,
+        } => to_api_non_fungible_resource_amount(context, resource_address, id_type, ids)?,
     })
 }
 
 fn to_api_fungible_resource_amount(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     resource_address: &ResourceAddress,
     amount: &Decimal,
 ) -> Result<models::ResourceAmount, MappingError> {
     Ok(models::ResourceAmount::FungibleResourceAmount {
-        resource_address: bech32_encoder.encode_resource_address_to_string(resource_address),
+        resource_address: to_api_resource_address(context, resource_address),
         amount: to_api_decimal(amount),
     })
 }
 
 fn to_api_non_fungible_resource_amount(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     resource_address: &ResourceAddress,
     _id_type: &NonFungibleIdTypeId,
     ids: &BTreeSet<NonFungibleId>,
 ) -> Result<models::ResourceAmount, MappingError> {
     let non_fungible_ids = ids.iter().map(to_api_non_fungible_id).collect();
     Ok(models::ResourceAmount::NonFungibleResourceAmount {
-        resource_address: bech32_encoder.encode_resource_address_to_string(resource_address),
+        resource_address: to_api_resource_address(context, resource_address),
         non_fungible_ids,
     })
 }
 
 pub fn to_api_non_fungible_substate(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     substate_id: &SubstateId,
     substate: &NonFungibleSubstate,
 ) -> Result<models::Substate, MappingError> {
@@ -814,10 +792,7 @@ pub fn to_api_non_fungible_substate(
     Ok(match non_fungible_option {
         Some(non_fungible) => models::Substate::NonFungibleStoreEntrySubstate {
             non_fungible_id: Box::new(to_api_non_fungible_id(nf_id)),
-            non_fungible_data: Some(Box::new(to_api_non_fungible_data(
-                bech32_encoder,
-                non_fungible,
-            )?)),
+            non_fungible_data: Some(Box::new(to_api_non_fungible_data(context, non_fungible)?)),
             is_deleted: false,
         },
         None => models::Substate::NonFungibleStoreEntrySubstate {
@@ -829,7 +804,7 @@ pub fn to_api_non_fungible_substate(
 }
 
 fn to_api_non_fungible_data(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     non_fungible: &NonFungible,
 ) -> Result<models::NonFungibleData, MappingError> {
     // NOTE - There's currently no schema / validation of non-fungible id data at the moment
@@ -838,8 +813,8 @@ fn to_api_non_fungible_data(
     // also provide the raw hex bytes for the cases where it's not
     let immutable_data = non_fungible.immutable_data();
     let mutable_data = non_fungible.mutable_data();
-    let immutable_data_sbor_option = to_api_data_struct(bech32_encoder, &immutable_data).ok();
-    let mutable_data_sbor_option = to_api_data_struct(bech32_encoder, &mutable_data).ok();
+    let immutable_data_sbor_option = to_api_data_struct(context, &immutable_data).ok();
+    let mutable_data_sbor_option = to_api_data_struct(context, &mutable_data).ok();
     Ok(models::NonFungibleData {
         immutable_data: immutable_data_sbor_option.map(Box::new),
         immutable_data_raw_hex: to_hex(&immutable_data),
@@ -849,7 +824,7 @@ fn to_api_non_fungible_data(
 }
 
 fn to_api_key_value_story_entry_substate(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     substate_id: &SubstateId,
     key_value_store_entry: &KeyValueStoreEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
@@ -870,7 +845,7 @@ fn to_api_key_value_story_entry_substate(
         Some(data) => models::Substate::KeyValueStoreEntrySubstate {
             key_hex: to_hex(key),
             is_deleted: false,
-            data_struct: Some(Box::new(to_api_data_struct(bech32_encoder, data)?)),
+            data_struct: Some(Box::new(to_api_data_struct(context, data)?)),
         },
         None => models::Substate::KeyValueStoreEntrySubstate {
             key_hex: to_hex(key),
@@ -881,7 +856,7 @@ fn to_api_key_value_story_entry_substate(
 }
 
 fn to_api_data_struct(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     data: &[u8],
 ) -> Result<models::DataStruct, MappingError> {
     let scrypto_value =
@@ -889,5 +864,5 @@ fn to_api_data_struct(
             decode_error: err,
             bytes: data.to_vec(),
         })?;
-    scrypto_value_to_api_data_struct(bech32_encoder, scrypto_value)
+    scrypto_value_to_api_data_struct(context, scrypto_value)
 }

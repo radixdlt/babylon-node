@@ -1,8 +1,7 @@
 use crate::core_api::*;
 use radix_engine::model::PersistedSubstate;
 use radix_engine::types::{
-    AccessRulesChainOffset, Bech32Decoder, Bech32Encoder, GlobalAddress, MetadataOffset,
-    PackageOffset, SubstateOffset,
+    AccessRulesChainOffset, GlobalAddress, MetadataOffset, PackageOffset, SubstateOffset,
 };
 
 use state_manager::jni::state_manager::ActualStateManager;
@@ -19,11 +18,9 @@ fn handle_state_package_internal(
     request: models::StatePackageRequest,
 ) -> Result<models::StatePackageResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
+    let extraction_context = ExtractionContext::new(&state_manager.network);
 
-    let bech32_encoder = Bech32Encoder::new(&state_manager.network);
-    let bech32_decoder = Bech32Decoder::new(&state_manager.network);
-
-    let package_address = extract_package_address(&bech32_decoder, &request.package_address)
+    let package_address = extract_package_address(&extraction_context, &request.package_address)
         .map_err(|err| err.into_response_error("package_address"))?;
 
     let package_node_id =
@@ -76,24 +73,26 @@ fn handle_state_package_internal(
         substate
     };
 
+    let mapping_context = MappingContext::new(&state_manager.network);
+
     Ok(models::StatePackageResponse {
         info: Some(to_api_package_info_substate(
-            &bech32_encoder,
+            &mapping_context,
             &package_info,
         )?),
         royalty_config: Some(to_api_package_royalty_config_substate(
-            &bech32_encoder,
+            &mapping_context,
             &package_royalty_config,
         )?),
         royalty_accumulator: Some(to_api_package_royalty_accumulator_substate(
             &package_royalty_accumulator,
         )?),
         metadata: Some(to_api_metadata_substate(
-            &bech32_encoder,
+            &mapping_context,
             &package_metadata,
         )?),
         access_rules: Some(to_api_access_rules_chain_substate(
-            &bech32_encoder,
+            &mapping_context,
             &package_access_rules,
         )?),
     })

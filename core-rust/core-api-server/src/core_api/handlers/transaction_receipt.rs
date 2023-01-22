@@ -17,10 +17,12 @@ fn handle_transaction_receipt_internal(
 ) -> Result<models::TransactionReceiptResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
+    let mapping_context = MappingContext::new(&state_manager.network);
+
     let intent_hash = extract_intent_hash(request.intent_hash)
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
-    let network = &state_manager.network;
+    let _network = &state_manager.network;
     let committed_option = state_manager
         .store
         .get_committed_transaction_by_identifier(&intent_hash);
@@ -28,7 +30,7 @@ fn handle_transaction_receipt_internal(
     if let Some((ledger_transaction, receipt, identifiers)) = committed_option {
         Ok(models::TransactionReceiptResponse {
             committed: Box::new(to_api_committed_transaction(
-                network,
+                &mapping_context,
                 ledger_transaction,
                 receipt,
                 identifiers,
