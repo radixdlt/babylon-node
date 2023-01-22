@@ -28,15 +28,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * BlueprintFunctionIdentifier
+ * BlueprintFunctionTargetIdentifierAllOf
  */
 @JsonPropertyOrder({
-  BlueprintFunctionIdentifier.JSON_PROPERTY_PACKAGE_ADDRESS,
-  BlueprintFunctionIdentifier.JSON_PROPERTY_BLUEPRINT_NAME,
-  BlueprintFunctionIdentifier.JSON_PROPERTY_FUNCTION_NAME
+  BlueprintFunctionTargetIdentifierAllOf.JSON_PROPERTY_PACKAGE_ADDRESS,
+  BlueprintFunctionTargetIdentifierAllOf.JSON_PROPERTY_BLUEPRINT_NAME,
+  BlueprintFunctionTargetIdentifierAllOf.JSON_PROPERTY_FUNCTION_NAME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class BlueprintFunctionIdentifier {
+public class BlueprintFunctionTargetIdentifierAllOf {
   public static final String JSON_PROPERTY_PACKAGE_ADDRESS = "package_address";
   private String packageAddress;
 
@@ -46,10 +46,10 @@ public class BlueprintFunctionIdentifier {
   public static final String JSON_PROPERTY_FUNCTION_NAME = "function_name";
   private String functionName;
 
-  public BlueprintFunctionIdentifier() { 
+  public BlueprintFunctionTargetIdentifierAllOf() { 
   }
 
-  public BlueprintFunctionIdentifier packageAddress(String packageAddress) {
+  public BlueprintFunctionTargetIdentifierAllOf packageAddress(String packageAddress) {
     this.packageAddress = packageAddress;
     return this;
   }
@@ -75,7 +75,7 @@ public class BlueprintFunctionIdentifier {
   }
 
 
-  public BlueprintFunctionIdentifier blueprintName(String blueprintName) {
+  public BlueprintFunctionTargetIdentifierAllOf blueprintName(String blueprintName) {
     this.blueprintName = blueprintName;
     return this;
   }
@@ -101,7 +101,7 @@ public class BlueprintFunctionIdentifier {
   }
 
 
-  public BlueprintFunctionIdentifier functionName(String functionName) {
+  public BlueprintFunctionTargetIdentifierAllOf functionName(String functionName) {
     this.functionName = functionName;
     return this;
   }
@@ -128,7 +128,7 @@ public class BlueprintFunctionIdentifier {
 
 
   /**
-   * Return true if this BlueprintFunctionIdentifier object is equal to o.
+   * Return true if this BlueprintFunctionTargetIdentifier_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -138,10 +138,10 @@ public class BlueprintFunctionIdentifier {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    BlueprintFunctionIdentifier blueprintFunctionIdentifier = (BlueprintFunctionIdentifier) o;
-    return Objects.equals(this.packageAddress, blueprintFunctionIdentifier.packageAddress) &&
-        Objects.equals(this.blueprintName, blueprintFunctionIdentifier.blueprintName) &&
-        Objects.equals(this.functionName, blueprintFunctionIdentifier.functionName);
+    BlueprintFunctionTargetIdentifierAllOf blueprintFunctionTargetIdentifierAllOf = (BlueprintFunctionTargetIdentifierAllOf) o;
+    return Objects.equals(this.packageAddress, blueprintFunctionTargetIdentifierAllOf.packageAddress) &&
+        Objects.equals(this.blueprintName, blueprintFunctionTargetIdentifierAllOf.blueprintName) &&
+        Objects.equals(this.functionName, blueprintFunctionTargetIdentifierAllOf.functionName);
   }
 
   @Override
@@ -152,7 +152,7 @@ public class BlueprintFunctionIdentifier {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class BlueprintFunctionIdentifier {\n");
+    sb.append("class BlueprintFunctionTargetIdentifierAllOf {\n");
     sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
     sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
     sb.append("    functionName: ").append(toIndentedString(functionName)).append("\n");

@@ -12,7 +12,7 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ComponentMethodIdentifier {
+pub struct ComponentMethodTargetIdentifierAllOf {
     /// The Bech32m-encoded human readable version of the component address
     #[serde(rename = "component_address")]
     pub component_address: String,
@@ -20,9 +20,9 @@ pub struct ComponentMethodIdentifier {
     pub method_name: String,
 }
 
-impl ComponentMethodIdentifier {
-    pub fn new(component_address: String, method_name: String) -> ComponentMethodIdentifier {
-        ComponentMethodIdentifier {
+impl ComponentMethodTargetIdentifierAllOf {
+    pub fn new(component_address: String, method_name: String) -> ComponentMethodTargetIdentifierAllOf {
+        ComponentMethodTargetIdentifierAllOf {
             component_address,
             method_name,
         }

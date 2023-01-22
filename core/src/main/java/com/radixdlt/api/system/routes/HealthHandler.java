@@ -68,6 +68,7 @@ import com.google.inject.Inject;
 import com.radixdlt.api.system.SystemGetJsonHandler;
 import com.radixdlt.api.system.generated.models.HealthResponse;
 import com.radixdlt.api.system.health.HealthInfoService;
+import java.util.List;
 
 public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
   private final HealthInfoService healthInfoService;
@@ -89,6 +90,10 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
           case OUT_OF_SYNC -> HealthResponse.StatusEnum.OUT_OF_SYNC;
         };
 
-    return new HealthResponse().status(status).currentForkName("SomeForkName");
+    return new HealthResponse()
+        .status(status)
+        .currentForkName("SomeForkName")
+        .forkVoteStatus(HealthResponse.ForkVoteStatusEnum.NO_ACTION_NEEDED)
+        .unknownReportedForks(List.of());
   }
 }
