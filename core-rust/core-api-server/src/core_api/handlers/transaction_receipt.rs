@@ -7,14 +7,14 @@ use state_manager::store::traits::*;
 pub(crate) async fn handle_transaction_receipt(
     state: Extension<CoreApiState>,
     request: Json<models::TransactionReceiptRequest>,
-) -> Result<Json<models::TransactionReceiptResponse>, RequestHandlingError> {
+) -> Result<Json<models::TransactionReceiptResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_transaction_receipt_internal)
 }
 
 fn handle_transaction_receipt_internal(
     state_manager: &ActualStateManager,
     request: models::TransactionReceiptRequest,
-) -> Result<models::TransactionReceiptResponse, RequestHandlingError> {
+) -> Result<models::TransactionReceiptResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
     let intent_hash = extract_intent_hash(request.intent_hash)

@@ -73,7 +73,7 @@ import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.Runners;
@@ -93,8 +93,10 @@ import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.core.Flowable;
 import java.util.Comparator;
@@ -113,7 +115,9 @@ public final class MempoolRunnerTest {
     return new AbstractModule() {
       @Override
       public void configure() {
-        bind(BFTNode.class).annotatedWith(Self.class).toInstance(BFTNode.random());
+        var key = PrivateKeys.ofNumeric(1).getPublicKey();
+        bind(BFTValidatorId.class).annotatedWith(Self.class).toInstance(BFTValidatorId.create(key));
+        bind(NodeId.class).annotatedWith(Self.class).toInstance(NodeId.fromPublicKey(key));
         bind(LedgerProof.class).annotatedWith(LastProof.class).toInstance(mock(LedgerProof.class));
         bind(StateComputer.class).toInstance(stateComputer);
         bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
@@ -121,7 +125,7 @@ public final class MempoolRunnerTest {
             .toInstance(
                 new RxRemoteEnvironment() {
                   @Override
-                  public <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> remoteEventClass) {
+                  public <T> Flowable<RemoteEvent<NodeId, T>> remoteEvents(Class<T> messageType) {
                     return Flowable.never();
                   }
                 });

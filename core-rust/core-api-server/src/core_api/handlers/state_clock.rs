@@ -7,14 +7,14 @@ use state_manager::jni::state_manager::ActualStateManager;
 pub(crate) async fn handle_state_clock(
     state: Extension<CoreApiState>,
     request: Json<models::StateClockRequest>,
-) -> Result<Json<models::StateClockResponse>, RequestHandlingError> {
+) -> Result<Json<models::StateClockResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_state_clock_internal)
 }
 
 fn handle_state_clock_internal(
     state_manager: &ActualStateManager,
     request: models::StateClockRequest,
-) -> Result<models::StateClockResponse, RequestHandlingError> {
+) -> Result<models::StateClockResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
     let clock = read_derefed_global_node_id(state_manager, GlobalAddress::System(CLOCK))?;

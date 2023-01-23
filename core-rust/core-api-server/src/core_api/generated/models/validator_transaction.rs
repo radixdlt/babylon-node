@@ -21,9 +21,8 @@ pub enum ValidatorTransaction {
     },
     #[serde(rename="TimeUpdate")]
     TimeUpdateValidatorTransaction {
-        /// An integer between `0` and `10^14`, marking the round proposer's unix timestamp in ms
-        #[serde(rename = "proposer_timestamp_ms")]
-        proposer_timestamp_ms: i64,
+        #[serde(rename = "proposer_timestamp")]
+        proposer_timestamp: Box<crate::core_api::generated::models::Instant>,
         /// An integer between `0` and `10^10`, marking the consensus epoch. Note that currently this is not the same as `scrypto_epoch`, but eventually will be. 
         #[serde(rename = "consensus_epoch")]
         consensus_epoch: i64,

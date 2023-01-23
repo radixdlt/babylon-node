@@ -117,7 +117,7 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
                         .map(
                             niw ->
                                 BFTValidator.from(
-                                    BFTNode.create(
+                                    BFTValidatorId.create(
                                         PrivateKeys.ofNumeric(niw.index() + 1).getPublicKey()),
                                     niw.weight()))));
   }
@@ -127,8 +127,8 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
       BFTConfiguration configuration, ProposerElection proposerElection) {
     HighQC highQC = configuration.getVertexStoreState().getHighQC();
     Round round = highQC.highestQC().getRound().next();
-    final BFTNode leader = proposerElection.getProposer(round);
-    final BFTNode nextLeader = proposerElection.getProposer(round.next());
+    final BFTValidatorId leader = proposerElection.getProposer(round);
+    final BFTValidatorId nextLeader = proposerElection.getProposer(round.next());
 
     return RoundUpdate.create(round, highQC, leader, nextLeader);
   }

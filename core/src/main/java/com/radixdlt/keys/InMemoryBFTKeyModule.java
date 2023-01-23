@@ -67,7 +67,7 @@ package com.radixdlt.keys;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
@@ -100,8 +100,8 @@ public final class InMemoryBFTKeyModule extends AbstractModule {
 
   @Provides
   @Self
-  public BFTNode node() {
-    return BFTNode.create(keyPair.getPublicKey());
+  public BFTValidatorId node() {
+    return BFTValidatorId.create(keyPair.getPublicKey());
   }
 
   @Provides

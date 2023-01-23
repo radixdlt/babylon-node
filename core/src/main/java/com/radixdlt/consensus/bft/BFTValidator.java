@@ -93,45 +93,45 @@ public final class BFTValidator {
   private final UInt256 power;
 
   // Public key for consensus
-  private final BFTNode node;
+  private final BFTValidatorId validatorId;
 
   @JsonCreator
   private BFTValidator(
-      @JsonProperty(value = "node", required = true) String nodeKey,
+      @JsonProperty(value = "id", required = true) String validatorId,
       @JsonProperty(value = "power", required = true) UInt256 power) {
-    this(toBFTNode(requireNonNull(nodeKey)), power);
+    this(toBFTValidatorId(requireNonNull(validatorId)), power);
   }
 
-  private BFTValidator(BFTNode node, UInt256 power) {
-    this.node = requireNonNull(node);
+  private BFTValidator(BFTValidatorId validatorId, UInt256 power) {
+    this.validatorId = requireNonNull(validatorId);
     this.power = requireNonNull(power);
   }
 
-  public static BFTValidator from(BFTNode node, UInt256 power) {
-    return new BFTValidator(node, power);
+  public static BFTValidator from(BFTValidatorId validatorId, UInt256 power) {
+    return new BFTValidator(validatorId, power);
   }
 
-  public BFTNode getNode() {
-    return node;
+  public BFTValidatorId getValidatorId() {
+    return validatorId;
   }
 
   public UInt256 getPower() {
     return power;
   }
 
-  @JsonProperty("node")
+  @JsonProperty("id")
   @DsonOutput(Output.ALL)
-  private String getSerializerNodeKey() {
-    return encodePublicKey(this.node);
+  private String getSerializerValidatorId() {
+    return encodePublicKey(this.validatorId);
   }
 
-  private static String encodePublicKey(BFTNode key) {
+  private static String encodePublicKey(BFTValidatorId key) {
     return Bytes.toHexString(key.getKey().getBytes());
   }
 
-  private static BFTNode toBFTNode(String str) {
+  private static BFTValidatorId toBFTValidatorId(String str) {
     try {
-      return BFTNode.fromPublicKeyBytes(Bytes.fromHexString(str));
+      return BFTValidatorId.fromPublicKeyBytes(Bytes.fromHexString(str));
     } catch (PublicKeyException e) {
       throw new IllegalStateException("Error decoding public key", e);
     }
@@ -139,7 +139,7 @@ public final class BFTValidator {
 
   @Override
   public int hashCode() {
-    return Objects.hash(this.node, this.power);
+    return Objects.hash(this.validatorId, this.power);
   }
 
   @Override
@@ -149,13 +149,14 @@ public final class BFTValidator {
     }
 
     return (obj instanceof BFTValidator other)
-        && Objects.equals(this.node, other.node)
+        && Objects.equals(this.validatorId, other.validatorId)
         && Objects.equals(this.power, other.power);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "%s{node=%s power=%s}", getClass().getSimpleName(), this.node.getSimpleName(), this.power);
+        "%s{id=%s power=%s}",
+        getClass().getSimpleName(), this.validatorId.getShortenedName(), this.power);
   }
 }

@@ -67,7 +67,6 @@ package com.radixdlt.messaging.consensus;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.messaging.core.Message;
@@ -88,27 +87,25 @@ public final class MessageCentralBFTNetwork {
   }
 
   // TODO: cleanup unnecessary code duplication and "fat" lambdas
-  public Flowable<RemoteEvent<Vote>> remoteVotes() {
+  public Flowable<RemoteEvent<NodeId, Vote>> remoteVotes() {
     return remoteBftEvents()
         .filter(m -> m.message().getConsensusMessage() instanceof Vote)
         .map(
             m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
               final var msg = m.message();
               var vote = (Vote) msg.getConsensusMessage();
-              return RemoteEvent.create(node, vote);
+              return RemoteEvent.create(m.source(), vote);
             });
   }
 
-  public Flowable<RemoteEvent<Proposal>> remoteProposals() {
+  public Flowable<RemoteEvent<NodeId, Proposal>> remoteProposals() {
     return remoteBftEvents()
         .filter(m -> m.message().getConsensusMessage() instanceof Proposal)
         .map(
             m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
               final var msg = m.message();
               var proposal = (Proposal) msg.getConsensusMessage();
-              return RemoteEvent.create(node, proposal);
+              return RemoteEvent.create(m.source(), proposal);
             });
   }
 
@@ -118,25 +115,25 @@ public final class MessageCentralBFTNetwork {
         .toFlowable(BackpressureStrategy.BUFFER);
   }
 
-  public RemoteEventDispatcher<Proposal> proposalDispatcher() {
+  public RemoteEventDispatcher<NodeId, Proposal> proposalDispatcher() {
     return this::sendProposal;
   }
 
-  private void sendProposal(BFTNode receiver, Proposal proposal) {
+  private void sendProposal(NodeId receiver, Proposal proposal) {
     ConsensusEventMessage message = new ConsensusEventMessage(proposal);
     send(message, receiver);
   }
 
-  public RemoteEventDispatcher<Vote> voteDispatcher() {
+  public RemoteEventDispatcher<NodeId, Vote> voteDispatcher() {
     return this::sendVote;
   }
 
-  private void sendVote(BFTNode receiver, Vote vote) {
+  private void sendVote(NodeId receiver, Vote vote) {
     ConsensusEventMessage message = new ConsensusEventMessage(vote);
     send(message, receiver);
   }
 
-  private void send(Message message, BFTNode recipient) {
-    this.messageCentral.send(NodeId.fromPublicKey(recipient.getKey()), message);
+  private void send(Message message, NodeId recipient) {
+    this.messageCentral.send(recipient, message);
   }
 }

@@ -35,23 +35,29 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   TransactionStatusResponse.JSON_PROPERTY_INTENT_STATUS,
+  TransactionStatusResponse.JSON_PROPERTY_STATUS_DESCRIPTION,
+  TransactionStatusResponse.JSON_PROPERTY_INVALID_FROM_EPOCH,
   TransactionStatusResponse.JSON_PROPERTY_KNOWN_PAYLOADS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TransactionStatusResponse {
   /**
-   * The status of the transaction intent
+   * The status of the transaction intent, as determined by the node. FateUncertain or FateUncertainButLikelyRejection mean that it&#39;s still possible that a payload containing the transaction  
    */
   public enum IntentStatusEnum {
     COMMITTEDSUCCESS("CommittedSuccess"),
     
     COMMITTEDFAILURE("CommittedFailure"),
     
+    PERMANENTREJECTION("PermanentRejection"),
+    
     INMEMPOOL("InMempool"),
     
-    REJECTED("Rejected"),
+    NOTSEEN("NotSeen"),
     
-    UNKNOWN("Unknown");
+    FATEUNCERTAIN("FateUncertain"),
+    
+    FATEUNCERTAINBUTLIKELYREJECTION("FateUncertainButLikelyRejection");
 
     private String value;
 
@@ -83,6 +89,12 @@ public class TransactionStatusResponse {
   public static final String JSON_PROPERTY_INTENT_STATUS = "intent_status";
   private IntentStatusEnum intentStatus;
 
+  public static final String JSON_PROPERTY_STATUS_DESCRIPTION = "status_description";
+  private String statusDescription;
+
+  public static final String JSON_PROPERTY_INVALID_FROM_EPOCH = "invalid_from_epoch";
+  private Long invalidFromEpoch;
+
   public static final String JSON_PROPERTY_KNOWN_PAYLOADS = "known_payloads";
   private List<TransactionPayloadStatus> knownPayloads = new ArrayList<>();
 
@@ -95,11 +107,11 @@ public class TransactionStatusResponse {
   }
 
    /**
-   * The status of the transaction intent
+   * The status of the transaction intent, as determined by the node. FateUncertain or FateUncertainButLikelyRejection mean that it&#39;s still possible that a payload containing the transaction  
    * @return intentStatus
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The status of the transaction intent")
+  @ApiModelProperty(required = true, value = "The status of the transaction intent, as determined by the node. FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction  ")
   @JsonProperty(JSON_PROPERTY_INTENT_STATUS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -112,6 +124,60 @@ public class TransactionStatusResponse {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setIntentStatus(IntentStatusEnum intentStatus) {
     this.intentStatus = intentStatus;
+  }
+
+
+  public TransactionStatusResponse statusDescription(String statusDescription) {
+    this.statusDescription = statusDescription;
+    return this;
+  }
+
+   /**
+   * An explanation as to why the intent status is resolved as it is. 
+   * @return statusDescription
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "An explanation as to why the intent status is resolved as it is. ")
+  @JsonProperty(JSON_PROPERTY_STATUS_DESCRIPTION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getStatusDescription() {
+    return statusDescription;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_STATUS_DESCRIPTION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setStatusDescription(String statusDescription) {
+    this.statusDescription = statusDescription;
+  }
+
+
+  public TransactionStatusResponse invalidFromEpoch(Long invalidFromEpoch) {
+    this.invalidFromEpoch = invalidFromEpoch;
+    return this;
+  }
+
+   /**
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the epoch from which the transaction will no longer be valid, and be permanently rejected. Only present if the intent status is InMempool or Unknown and we know about a payload. 
+   * minimum: 0
+   * maximum: 10000000000
+   * @return invalidFromEpoch
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be permanently rejected. Only present if the intent status is InMempool or Unknown and we know about a payload. ")
+  @JsonProperty(JSON_PROPERTY_INVALID_FROM_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Long getInvalidFromEpoch() {
+    return invalidFromEpoch;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_INVALID_FROM_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setInvalidFromEpoch(Long invalidFromEpoch) {
+    this.invalidFromEpoch = invalidFromEpoch;
   }
 
 
@@ -159,12 +225,14 @@ public class TransactionStatusResponse {
     }
     TransactionStatusResponse transactionStatusResponse = (TransactionStatusResponse) o;
     return Objects.equals(this.intentStatus, transactionStatusResponse.intentStatus) &&
+        Objects.equals(this.statusDescription, transactionStatusResponse.statusDescription) &&
+        Objects.equals(this.invalidFromEpoch, transactionStatusResponse.invalidFromEpoch) &&
         Objects.equals(this.knownPayloads, transactionStatusResponse.knownPayloads);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(intentStatus, knownPayloads);
+    return Objects.hash(intentStatus, statusDescription, invalidFromEpoch, knownPayloads);
   }
 
   @Override
@@ -172,6 +240,8 @@ public class TransactionStatusResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionStatusResponse {\n");
     sb.append("    intentStatus: ").append(toIndentedString(intentStatus)).append("\n");
+    sb.append("    statusDescription: ").append(toIndentedString(statusDescription)).append("\n");
+    sb.append("    invalidFromEpoch: ").append(toIndentedString(invalidFromEpoch)).append("\n");
     sb.append("    knownPayloads: ").append(toIndentedString(knownPayloads)).append("\n");
     sb.append("}");
     return sb.toString();

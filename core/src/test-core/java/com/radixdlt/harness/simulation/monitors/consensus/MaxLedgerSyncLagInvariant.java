@@ -64,9 +64,9 @@
 
 package com.radixdlt.harness.simulation.monitors.consensus;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 
@@ -83,7 +83,7 @@ public final class MaxLedgerSyncLagInvariant implements TestInvariant {
   }
 
   private TestInvariantError tooMuchlagError(
-      long maxStateVersion, BFTNode node, long nodeStateVersion) {
+      long maxStateVersion, NodeId node, long nodeStateVersion) {
     return new TestInvariantError(
         String.format(
             "Node %s ledger sync lag (%s) at version %s exceeded maximum" + " of %s state versions",

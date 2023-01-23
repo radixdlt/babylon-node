@@ -1,7 +1,8 @@
 use crate::core_api::*;
 use models::{
+    target_identifier::TargetIdentifier,
     transaction_call_preview_response::TransactionCallPreviewResponse,
-    transaction_status::TransactionStatus, TransactionCallPreviewRequestTarget,
+    transaction_status::TransactionStatus,
 };
 use radix_engine::{
     transaction::{PreviewError, TransactionOutcome, TransactionResult},
@@ -27,7 +28,7 @@ macro_rules! args_from_bytes_vec {
 pub(crate) async fn handle_transaction_callpreview(
     Extension(state): Extension<CoreApiState>,
     Json(request): Json<models::TransactionCallPreviewRequest>,
-) -> Result<Json<models::TransactionCallPreviewResponse>, RequestHandlingError> {
+) -> Result<Json<models::TransactionCallPreviewResponse>, ResponseError<()>> {
     let state_manager = state.state_manager.read();
     let bech32_decoder = Bech32Decoder::new(&state_manager.network);
     let bech32_encoder = Bech32Encoder::new(&state_manager.network);
@@ -44,7 +45,7 @@ pub(crate) async fn handle_transaction_callpreview(
         .ok_or_else(|| client_error("Missing target from request".to_string()))?;
 
     let requested_call = match call_target {
-        TransactionCallPreviewRequestTarget::BlueprintFunctionIdentifier {
+        TargetIdentifier::BlueprintFunctionTargetIdentifier {
             package_address,
             blueprint_name,
             function_name,
@@ -60,7 +61,7 @@ pub(crate) async fn handle_transaction_callpreview(
                 args: args_from_bytes_vec!(args),
             }
         }
-        TransactionCallPreviewRequestTarget::ComponentMethodIdentifier {
+        TargetIdentifier::ComponentMethodTargetIdentifier {
             component_address,
             method_name,
         } => {

@@ -64,25 +64,25 @@
 
 package com.radixdlt.sync.messages.local;
 
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.p2p.NodeId;
 import java.util.Objects;
 
 /** A message indicating a timeout on receiving a SyncResponse message. */
 public final class SyncRequestTimeout {
 
-  private final BFTNode peer;
+  private final NodeId peer;
   private final long requestId;
 
-  public static SyncRequestTimeout create(BFTNode peer, long requestId) {
+  public static SyncRequestTimeout create(NodeId peer, long requestId) {
     return new SyncRequestTimeout(peer, requestId);
   }
 
-  private SyncRequestTimeout(BFTNode peer, long requestId) {
+  private SyncRequestTimeout(NodeId peer, long requestId) {
     this.peer = peer;
     this.requestId = requestId;
   }
 
-  public BFTNode getPeer() {
+  public NodeId getPeer() {
     return peer;
   }
 

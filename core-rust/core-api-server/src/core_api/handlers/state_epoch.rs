@@ -7,14 +7,14 @@ use state_manager::jni::state_manager::ActualStateManager;
 pub(crate) async fn handle_state_epoch(
     state: Extension<CoreApiState>,
     request: Json<models::StateEpochRequest>,
-) -> Result<Json<models::StateEpochResponse>, RequestHandlingError> {
+) -> Result<Json<models::StateEpochResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_state_epoch_internal)
 }
 
 fn handle_state_epoch_internal(
     state_manager: &ActualStateManager,
     request: models::StateEpochRequest,
-) -> Result<models::StateEpochResponse, RequestHandlingError> {
+) -> Result<models::StateEpochResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
     let node_id = read_derefed_global_node_id(state_manager, GlobalAddress::System(EPOCH_MANAGER))?;

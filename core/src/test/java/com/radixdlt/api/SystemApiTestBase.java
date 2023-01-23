@@ -82,6 +82,7 @@ import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.TestP2PModule;
@@ -144,6 +145,9 @@ public abstract class SystemApiTestBase {
                         "localhost",
                         23456);
                 bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
+                bind(NodeId.class)
+                    .annotatedWith(Self.class)
+                    .toInstance(NodeId.fromPublicKey(TEST_KEY.getPublicKey()));
                 var runtimeProperties = mock(RuntimeProperties.class);
                 bind(RuntimeProperties.class).toInstance(runtimeProperties);
               }

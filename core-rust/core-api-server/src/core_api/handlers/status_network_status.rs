@@ -8,14 +8,14 @@ use state_manager::CommittedTransactionIdentifiers;
 pub(crate) async fn handle_status_network_status(
     state: Extension<CoreApiState>,
     request: Json<models::NetworkStatusRequest>,
-) -> Result<Json<models::NetworkStatusResponse>, RequestHandlingError> {
+) -> Result<Json<models::NetworkStatusResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_status_network_status_internal)
 }
 
 pub(crate) fn handle_status_network_status_internal(
     state_manager: &ActualStateManager,
     request: models::NetworkStatusRequest,
-) -> Result<models::NetworkStatusResponse, RequestHandlingError> {
+) -> Result<models::NetworkStatusResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
     let pre_genesis =

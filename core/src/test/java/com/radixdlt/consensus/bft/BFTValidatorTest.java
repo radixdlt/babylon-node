@@ -86,10 +86,10 @@ public class BFTValidatorTest {
 
   @Test
   public void testGetter() {
-    assertNotNull(create().getNode());
+    assertNotNull(create().getValidatorId());
   }
 
   private static BFTValidator create() {
-    return BFTValidator.from(mock(BFTNode.class), UInt256.ONE);
+    return BFTValidator.from(mock(BFTValidatorId.class), UInt256.ONE);
   }
 }

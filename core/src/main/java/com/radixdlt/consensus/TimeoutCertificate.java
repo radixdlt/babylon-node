@@ -67,7 +67,7 @@ package com.radixdlt.consensus;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -128,7 +128,7 @@ public final class TimeoutCertificate {
     return signatures;
   }
 
-  public Stream<BFTNode> getSigners() {
+  public Stream<BFTValidatorId> getSigners() {
     return signatures.getSignatures().keySet().stream();
   }
 

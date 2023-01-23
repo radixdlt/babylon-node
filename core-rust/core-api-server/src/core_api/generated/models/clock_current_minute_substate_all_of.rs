@@ -13,15 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ClockCurrentMinuteSubstateAllOf {
-    /// An integer between `0` and `10^14`, marking the ledger unix timestamp in ms (rounded down to the current minute)
-    #[serde(rename = "timestamp_ms_rounded_down_to_minute")]
-    pub timestamp_ms_rounded_down_to_minute: i64,
+    #[serde(rename = "timestamp_rounded_down_to_minute")]
+    pub timestamp_rounded_down_to_minute: Box<crate::core_api::generated::models::Instant>,
 }
 
 impl ClockCurrentMinuteSubstateAllOf {
-    pub fn new(timestamp_ms_rounded_down_to_minute: i64) -> ClockCurrentMinuteSubstateAllOf {
+    pub fn new(timestamp_rounded_down_to_minute: crate::core_api::generated::models::Instant) -> ClockCurrentMinuteSubstateAllOf {
         ClockCurrentMinuteSubstateAllOf {
-            timestamp_ms_rounded_down_to_minute,
+            timestamp_rounded_down_to_minute: Box::new(timestamp_rounded_down_to_minute),
         }
     }
 }

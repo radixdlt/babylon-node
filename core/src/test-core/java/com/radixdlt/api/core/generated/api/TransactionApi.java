@@ -17,7 +17,7 @@ import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.client.ApiResponse;
 import com.radixdlt.api.core.generated.client.Pair;
 
-import com.radixdlt.api.core.generated.models.ErrorResponse;
+import com.radixdlt.api.core.generated.models.BasicErrorResponse;
 import com.radixdlt.api.core.generated.models.TransactionCallPreviewRequest;
 import com.radixdlt.api.core.generated.models.TransactionCallPreviewResponse;
 import com.radixdlt.api.core.generated.models.TransactionParseRequest;
@@ -28,6 +28,7 @@ import com.radixdlt.api.core.generated.models.TransactionReceiptRequest;
 import com.radixdlt.api.core.generated.models.TransactionReceiptResponse;
 import com.radixdlt.api.core.generated.models.TransactionStatusRequest;
 import com.radixdlt.api.core.generated.models.TransactionStatusResponse;
+import com.radixdlt.api.core.generated.models.TransactionSubmitErrorResponse;
 import com.radixdlt.api.core.generated.models.TransactionSubmitRequest;
 import com.radixdlt.api.core.generated.models.TransactionSubmitResponse;
 

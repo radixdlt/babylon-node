@@ -112,12 +112,8 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
                       .fromStateVersion(1L))
               .getTransactions();
 
-      assertThat(
-              newTransactions
-                  .get(newTransactions.size() - 1)
-                  .getLedgerTransaction()
-                  .getUserLedgerTransaction())
-          .isInstanceOf(UserLedgerTransaction.class);
+      var lastTransaction = newTransactions.get(newTransactions.size() - 1).getLedgerTransaction();
+      assertThat(lastTransaction).isInstanceOf(UserLedgerTransaction.class);
     }
   }
 }

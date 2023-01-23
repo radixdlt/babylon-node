@@ -13,9 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TimeUpdateValidatorTransactionAllOf {
-    /// An integer between `0` and `10^14`, marking the round proposer's unix timestamp in ms
-    #[serde(rename = "proposer_timestamp_ms")]
-    pub proposer_timestamp_ms: i64,
+    #[serde(rename = "proposer_timestamp")]
+    pub proposer_timestamp: Box<crate::core_api::generated::models::Instant>,
     /// An integer between `0` and `10^10`, marking the consensus epoch. Note that currently this is not the same as `scrypto_epoch`, but eventually will be. 
     #[serde(rename = "consensus_epoch")]
     pub consensus_epoch: i64,
@@ -25,9 +24,9 @@ pub struct TimeUpdateValidatorTransactionAllOf {
 }
 
 impl TimeUpdateValidatorTransactionAllOf {
-    pub fn new(proposer_timestamp_ms: i64, consensus_epoch: i64, round_in_epoch: i64) -> TimeUpdateValidatorTransactionAllOf {
+    pub fn new(proposer_timestamp: crate::core_api::generated::models::Instant, consensus_epoch: i64, round_in_epoch: i64) -> TimeUpdateValidatorTransactionAllOf {
         TimeUpdateValidatorTransactionAllOf {
-            proposer_timestamp_ms,
+            proposer_timestamp: Box::new(proposer_timestamp),
             consensus_epoch,
             round_in_epoch,
         }

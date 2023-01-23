@@ -69,7 +69,7 @@ import com.google.common.collect.Maps;
 import com.google.common.hash.HashCode;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.VoteProcessingResult;
@@ -95,7 +95,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 public final class PendingVotes {
   private final Map<HashCode, ValidationState> voteState = Maps.newHashMap();
   private final Map<HashCode, ValidationState> timeoutVoteState = Maps.newHashMap();
-  private final Map<BFTNode, PreviousVote> previousVotes = Maps.newHashMap();
+  private final Map<BFTValidatorId, PreviousVote> previousVotes = Maps.newHashMap();
   private final Hasher hasher;
   private final EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher;
 
@@ -114,7 +114,7 @@ public final class PendingVotes {
    * @return The result of vote processing
    */
   public VoteProcessingResult insertVote(Vote vote, BFTValidatorSet validatorSet) {
-    final BFTNode node = vote.getAuthor();
+    final BFTValidatorId node = vote.getAuthor();
     final VoteData voteData = vote.getVoteData();
     final HashCode voteDataHash = this.hasher.hashDsonEncoded(voteData);
 
@@ -135,7 +135,7 @@ public final class PendingVotes {
   private Optional<QuorumCertificate> processVoteForQC(Vote vote, BFTValidatorSet validatorSet) {
     final VoteData voteData = vote.getVoteData();
     final HashCode voteDataHash = this.hasher.hashDsonEncoded(voteData);
-    final BFTNode node = vote.getAuthor();
+    final BFTValidatorId node = vote.getAuthor();
 
     final ValidationState validationState =
         this.voteState.computeIfAbsent(voteDataHash, k -> validatorSet.newValidationState());
@@ -159,7 +159,7 @@ public final class PendingVotes {
 
     final VoteTimeout voteTimeout = VoteTimeout.of(vote);
     final HashCode voteTimeoutHash = this.hasher.hashDsonEncoded(voteTimeout);
-    final BFTNode node = vote.getAuthor();
+    final BFTValidatorId node = vote.getAuthor();
 
     final ValidationState validationState =
         this.timeoutVoteState.computeIfAbsent(
@@ -179,7 +179,7 @@ public final class PendingVotes {
 
   // TODO: Need to rethink whether we should be removing previous signature
   // TODO: Could be causing quorum formation to slow down
-  private boolean replacePreviousVote(BFTNode author, Vote vote, HashCode voteHash) {
+  private boolean replacePreviousVote(BFTValidatorId author, Vote vote, HashCode voteHash) {
     final PreviousVote thisVote =
         new PreviousVote(vote.getRound(), vote.getEpoch(), voteHash, vote.isTimeout());
     final PreviousVote previousVote = this.previousVotes.put(author, thisVote);

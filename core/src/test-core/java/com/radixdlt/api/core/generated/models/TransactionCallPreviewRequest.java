@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.TransactionCallPreviewRequestTarget;
+import com.radixdlt.api.core.generated.models.TargetIdentifier;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -44,7 +44,7 @@ public class TransactionCallPreviewRequest {
   private String network;
 
   public static final String JSON_PROPERTY_TARGET = "target";
-  private TransactionCallPreviewRequestTarget target;
+  private TargetIdentifier target;
 
   public static final String JSON_PROPERTY_ARGUMENTS = "arguments";
   private List<String> arguments = new ArrayList<>();
@@ -78,7 +78,7 @@ public class TransactionCallPreviewRequest {
   }
 
 
-  public TransactionCallPreviewRequest target(TransactionCallPreviewRequestTarget target) {
+  public TransactionCallPreviewRequest target(TargetIdentifier target) {
     this.target = target;
     return this;
   }
@@ -92,14 +92,14 @@ public class TransactionCallPreviewRequest {
   @JsonProperty(JSON_PROPERTY_TARGET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TransactionCallPreviewRequestTarget getTarget() {
+  public TargetIdentifier getTarget() {
     return target;
   }
 
 
   @JsonProperty(JSON_PROPERTY_TARGET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTarget(TransactionCallPreviewRequestTarget target) {
+  public void setTarget(TargetIdentifier target) {
     this.target = target;
   }
 

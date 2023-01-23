@@ -11,14 +11,14 @@ use state_manager::jni::state_manager::ActualStateManager;
 pub(crate) async fn handle_state_non_fungible(
     state: Extension<CoreApiState>,
     request: Json<models::StateNonFungibleRequest>,
-) -> Result<Json<models::StateNonFungibleResponse>, RequestHandlingError> {
+) -> Result<Json<models::StateNonFungibleResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_state_non_fungible_internal)
 }
 
 fn handle_state_non_fungible_internal(
     state_manager: &ActualStateManager,
     request: models::StateNonFungibleRequest,
-) -> Result<StateNonFungibleResponse, RequestHandlingError> {
+) -> Result<StateNonFungibleResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
     let bech32_decoder = Bech32Decoder::new(&state_manager.network);

@@ -10,14 +10,14 @@ use state_manager::jni::state_manager::ActualStateManager;
 pub(crate) async fn handle_state_resource(
     state: Extension<CoreApiState>,
     request: Json<models::StateResourceRequest>,
-) -> Result<Json<models::StateResourceResponse>, RequestHandlingError> {
+) -> Result<Json<models::StateResourceResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_state_resource_internal)
 }
 
 fn handle_state_resource_internal(
     state_manager: &ActualStateManager,
     request: models::StateResourceRequest,
-) -> Result<models::StateResourceResponse, RequestHandlingError> {
+) -> Result<models::StateResourceResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
     let bech32_decoder = Bech32Decoder::new(&state_manager.network);

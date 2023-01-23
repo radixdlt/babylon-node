@@ -98,7 +98,33 @@ pub enum MempoolAddError {
 pub struct MempoolAddRejection {
     pub reason: RejectionReason,
     pub against_state: AtState,
+    pub recalculation_due: RecalculationDue,
     pub was_cached: bool,
+    /// The epoch when the payload will definitely be permanently rejected
+    pub invalid_from_epoch: u64,
+}
+
+impl MempoolAddRejection {
+    pub fn is_permanent_for_payload(&self) -> bool {
+        match self.against_state {
+            AtState::Committed { .. } => self.reason.is_permanent_for_payload(),
+            AtState::PendingPreparingVertices { .. } => false,
+        }
+    }
+
+    pub fn is_permanent_for_intent(&self) -> bool {
+        match self.against_state {
+            AtState::Committed { .. } => self.reason.is_permanent_for_intent(),
+            AtState::PendingPreparingVertices { .. } => false,
+        }
+    }
+
+    pub fn is_rejected_because_intent_already_committed(&self) -> bool {
+        match self.against_state {
+            AtState::Committed { .. } => self.reason.is_rejected_because_intent_already_committed(),
+            AtState::PendingPreparingVertices { .. } => false,
+        }
+    }
 }
 
 impl MetricLabel for MempoolAddError {

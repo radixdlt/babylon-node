@@ -68,7 +68,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -101,7 +101,7 @@ public final class TimestampedECDSASignatures {
   @DsonOutput(DsonOutput.Output.ALL)
   private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-  private final Map<BFTNode, TimestampedECDSASignature> nodeToTimestampedSignature;
+  private final Map<BFTValidatorId, TimestampedECDSASignature> nodeToTimestampedSignature;
 
   @JsonCreator
   public static TimestampedECDSASignatures from(
@@ -116,7 +116,7 @@ public final class TimestampedECDSASignatures {
 
     var signaturesByNode =
         signatures == null
-            ? Map.<BFTNode, TimestampedECDSASignature>of()
+            ? Map.<BFTValidatorId, TimestampedECDSASignature>of()
             : signatures.entrySet().stream()
                 .collect(Collectors.toMap(e -> toBFTNode(e.getKey()), Map.Entry::getValue));
 
@@ -135,7 +135,7 @@ public final class TimestampedECDSASignatures {
    *     corresponding timestamps and {@link ECDSASecp256k1PublicKey}
    */
   public TimestampedECDSASignatures(
-      Map<BFTNode, TimestampedECDSASignature> nodeToTimestampAndSignature) {
+      Map<BFTValidatorId, TimestampedECDSASignature> nodeToTimestampAndSignature) {
     this.nodeToTimestampedSignature =
         nodeToTimestampAndSignature == null ? Map.of() : nodeToTimestampAndSignature;
     this.nodeToTimestampedSignature.forEach(
@@ -150,7 +150,7 @@ public final class TimestampedECDSASignatures {
    *
    * @return Signatures and timestamps for each public key
    */
-  public Map<BFTNode, TimestampedECDSASignature> getSignatures() {
+  public Map<BFTValidatorId, TimestampedECDSASignature> getSignatures() {
     return this.nodeToTimestampedSignature;
   }
 
@@ -228,13 +228,13 @@ public final class TimestampedECDSASignatures {
     return null;
   }
 
-  private static String encodePublicKey(BFTNode key) {
+  private static String encodePublicKey(BFTValidatorId key) {
     return Bytes.toHexString(key.getKey().getBytes());
   }
 
-  private static BFTNode toBFTNode(String str) {
+  private static BFTValidatorId toBFTNode(String str) {
     try {
-      return BFTNode.fromPublicKeyBytes(Bytes.fromHexString(str));
+      return BFTValidatorId.fromPublicKeyBytes(Bytes.fromHexString(str));
     } catch (PublicKeyException e) {
       throw new IllegalStateException("Error decoding public key", e);
     }

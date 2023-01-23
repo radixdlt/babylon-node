@@ -64,7 +64,6 @@
 
 package com.radixdlt.messaging.ledgersync;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.messaging.core.MessageCentral;
@@ -88,107 +87,99 @@ public final class MessageCentralLedgerSync {
     this.messageCentral = Objects.requireNonNull(messageCentral);
   }
 
-  public Flowable<RemoteEvent<StatusRequest>> statusRequests() {
+  public Flowable<RemoteEvent<NodeId, StatusRequest>> statusRequests() {
     return this.messageCentral
         .messagesOf(StatusRequestMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(
-            m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
-              return RemoteEvent.create(node, StatusRequest.create());
-            });
+        .map(m -> RemoteEvent.create(m.source(), StatusRequest.create()));
   }
 
-  public Flowable<RemoteEvent<StatusResponse>> statusResponses() {
+  public Flowable<RemoteEvent<NodeId, StatusResponse>> statusResponses() {
     return this.messageCentral
         .messagesOf(StatusResponseMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
               final var msg = m.message();
-              return RemoteEvent.create(node, StatusResponse.create(msg.getHeader()));
+              return RemoteEvent.create(m.source(), StatusResponse.create(msg.getHeader()));
             });
   }
 
-  public Flowable<RemoteEvent<SyncRequest>> syncRequests() {
+  public Flowable<RemoteEvent<NodeId, SyncRequest>> syncRequests() {
     return this.messageCentral
         .messagesOf(SyncRequestMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
               final var msg = m.message();
-              return RemoteEvent.create(node, SyncRequest.create(msg.getCurrentHeader()));
+              return RemoteEvent.create(m.source(), SyncRequest.create(msg.getCurrentHeader()));
             });
   }
 
-  public Flowable<RemoteEvent<SyncResponse>> syncResponses() {
+  public Flowable<RemoteEvent<NodeId, SyncResponse>> syncResponses() {
     return this.messageCentral
         .messagesOf(SyncResponseMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
               final var msg = m.message();
-              return RemoteEvent.create(node, SyncResponse.create(msg.getTransactions()));
+              return RemoteEvent.create(m.source(), SyncResponse.create(msg.getTransactions()));
             });
   }
 
-  public Flowable<RemoteEvent<LedgerStatusUpdate>> ledgerStatusUpdates() {
+  public Flowable<RemoteEvent<NodeId, LedgerStatusUpdate>> ledgerStatusUpdates() {
     return this.messageCentral
         .messagesOf(LedgerStatusUpdateMessage.class)
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
               final var header = m.message().getHeader();
-              return RemoteEvent.create(node, LedgerStatusUpdate.create(header));
+              return RemoteEvent.create(m.source(), LedgerStatusUpdate.create(header));
             });
   }
 
-  public RemoteEventDispatcher<SyncRequest> syncRequestDispatcher() {
+  public RemoteEventDispatcher<NodeId, SyncRequest> syncRequestDispatcher() {
     return this::sendSyncRequest;
   }
 
-  private void sendSyncRequest(BFTNode node, SyncRequest syncRequest) {
+  private void sendSyncRequest(NodeId nodeId, SyncRequest syncRequest) {
     final var msg = new SyncRequestMessage(syncRequest.getHeader());
-    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+    this.messageCentral.send(nodeId, msg);
   }
 
-  public RemoteEventDispatcher<SyncResponse> syncResponseDispatcher() {
+  public RemoteEventDispatcher<NodeId, SyncResponse> syncResponseDispatcher() {
     return this::sendSyncResponse;
   }
 
-  private void sendSyncResponse(BFTNode node, SyncResponse syncResponse) {
+  private void sendSyncResponse(NodeId nodeId, SyncResponse syncResponse) {
     final var msg = new SyncResponseMessage(syncResponse.getTransactionsWithProofDto());
-    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+    this.messageCentral.send(nodeId, msg);
   }
 
-  public RemoteEventDispatcher<StatusRequest> statusRequestDispatcher() {
+  public RemoteEventDispatcher<NodeId, StatusRequest> statusRequestDispatcher() {
     return this::sendStatusRequest;
   }
 
-  private void sendStatusRequest(BFTNode node, StatusRequest statusRequest) {
+  private void sendStatusRequest(NodeId nodeId, StatusRequest statusRequest) {
     final var msg = new StatusRequestMessage();
-    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+    this.messageCentral.send(nodeId, msg);
   }
 
-  public RemoteEventDispatcher<StatusResponse> statusResponseDispatcher() {
+  public RemoteEventDispatcher<NodeId, StatusResponse> statusResponseDispatcher() {
     return this::sendStatusResponse;
   }
 
-  private void sendStatusResponse(BFTNode node, StatusResponse statusResponse) {
+  private void sendStatusResponse(NodeId nodeId, StatusResponse statusResponse) {
     final var msg = new StatusResponseMessage(statusResponse.getHeader());
-    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+    this.messageCentral.send(nodeId, msg);
   }
 
-  public RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher() {
+  public RemoteEventDispatcher<NodeId, LedgerStatusUpdate> ledgerStatusUpdateDispatcher() {
     return this::sendLedgerStatusUpdate;
   }
 
-  private void sendLedgerStatusUpdate(BFTNode node, LedgerStatusUpdate ledgerStatusUpdate) {
+  private void sendLedgerStatusUpdate(NodeId nodeId, LedgerStatusUpdate ledgerStatusUpdate) {
     final var msg = new LedgerStatusUpdateMessage(ledgerStatusUpdate.getHeader());
-    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+    this.messageCentral.send(nodeId, msg);
   }
 }

@@ -41,18 +41,20 @@ public class TransactionPayloadStatus {
   private String payloadHash;
 
   /**
-   * The status of the transaction payload, as per this node
+   * The status of the transaction payload, as per this node. A NotInMempool status means that it wasn&#39;t rejected at last execution attempt, but it&#39;s not currently in the mempool either. 
    */
   public enum StatusEnum {
     COMMITTEDSUCCESS("CommittedSuccess"),
     
     COMMITTEDFAILURE("CommittedFailure"),
     
-    INMEMPOOL("InMempool"),
+    PERMANENTLYREJECTED("PermanentlyRejected"),
     
     TRANSIENTLYREJECTED("TransientlyRejected"),
     
-    PERMANENTLYREJECTED("PermanentlyRejected");
+    INMEMPOOL("InMempool"),
+    
+    NOTINMEMPOOL("NotInMempool");
 
     private String value;
 
@@ -122,11 +124,11 @@ public class TransactionPayloadStatus {
   }
 
    /**
-   * The status of the transaction payload, as per this node
+   * The status of the transaction payload, as per this node. A NotInMempool status means that it wasn&#39;t rejected at last execution attempt, but it&#39;s not currently in the mempool either. 
    * @return status
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The status of the transaction payload, as per this node")
+  @ApiModelProperty(required = true, value = "The status of the transaction payload, as per this node. A NotInMempool status means that it wasn't rejected at last execution attempt, but it's not currently in the mempool either. ")
   @JsonProperty(JSON_PROPERTY_STATUS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
