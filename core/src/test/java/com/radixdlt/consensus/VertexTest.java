@@ -68,7 +68,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
@@ -95,7 +95,7 @@ public class VertexTest {
 
     this.qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
     this.testObject =
-        Vertex.create(this.qc, baseRound.next().next(), List.of(), BFTNode.random(), 0);
+        Vertex.create(this.qc, baseRound.next().next(), List.of(), BFTValidatorId.random(), 0);
   }
 
   @Test

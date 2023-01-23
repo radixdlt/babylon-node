@@ -64,6 +64,7 @@
 
 package com.radixdlt.environment;
 
+import com.radixdlt.p2p.NodeId;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -72,23 +73,29 @@ import java.util.Optional;
  *
  * @param <T> the class of the remote event
  */
-public final class RemoteEventProcessorOnRunner<T> {
+public final class RemoteEventProcessorOnRunner<N, T> {
   private final String runnerName;
   private final Class<T> eventClass;
-  private final RemoteEventProcessor<T> processor;
+  private final Class<N> nodeIdClass;
+  private final RemoteEventProcessor<N, T> processor;
   private final long rateLimitDelayMs;
 
   public RemoteEventProcessorOnRunner(
-      String runnerName, Class<T> eventClass, RemoteEventProcessor<T> processor) {
-    this(runnerName, eventClass, processor, 0);
+      String runnerName,
+      Class<N> nodeIdClass,
+      Class<T> eventClass,
+      RemoteEventProcessor<N, T> processor) {
+    this(runnerName, nodeIdClass, eventClass, processor, 0);
   }
 
   public RemoteEventProcessorOnRunner(
       String runnerName,
+      Class<N> nodeIdClass,
       Class<T> eventClass,
-      RemoteEventProcessor<T> processor,
+      RemoteEventProcessor<N, T> processor,
       long rateLimitDelayMs) {
     this.runnerName = Objects.requireNonNull(runnerName);
+    this.nodeIdClass = Objects.requireNonNull(nodeIdClass);
     this.eventClass = Objects.requireNonNull(eventClass);
     this.processor = Objects.requireNonNull(processor);
     if (rateLimitDelayMs < 0) {
@@ -105,16 +112,16 @@ public final class RemoteEventProcessorOnRunner<T> {
     return runnerName;
   }
 
-  public <U> Optional<RemoteEventProcessor<U>> getProcessor(Class<U> c) {
-    if (c.isAssignableFrom(eventClass)) {
-      return Optional.of((RemoteEventProcessor<U>) processor);
+  public <U> Optional<RemoteEventProcessor<NodeId, U>> getProcessor(Class<U> messageType) {
+    if (messageType.isAssignableFrom(eventClass)) {
+      return Optional.of((RemoteEventProcessor<NodeId, U>) processor);
     }
 
     return Optional.empty();
   }
 
-  public Class<T> getEventClass() {
-    return eventClass;
+  public Class<T> getMessageType() {
+    return this.eventClass;
   }
 
   @Override

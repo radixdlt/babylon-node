@@ -65,7 +65,7 @@
 package com.radixdlt.monitoring;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.monitoring.Metrics.Config;
@@ -76,7 +76,7 @@ import java.util.Collection;
 public final class MetricInstaller {
 
   /** An own node, for exposing the {@link Config#key()} information. */
-  private final BFTNode self;
+  private final BFTValidatorId self;
 
   /** A source of "system" getters to be exposed as gauges. */
   private final InMemorySystemInfo inMemorySystemInfo;
@@ -86,7 +86,7 @@ public final class MetricInstaller {
 
   @Inject
   public MetricInstaller(
-      final @Self BFTNode self,
+      final @Self BFTValidatorId self,
       final InMemorySystemInfo inMemorySystemInfo,
       final PeersView peersView) {
     this.self = self;

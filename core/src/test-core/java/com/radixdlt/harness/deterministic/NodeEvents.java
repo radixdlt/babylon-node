@@ -65,9 +65,9 @@
 package com.radixdlt.harness.deterministic;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnDispatch;
+import com.radixdlt.p2p.NodeId;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -77,9 +77,9 @@ import java.util.function.BiConsumer;
 public final class NodeEvents {
   public static class NodeEventProcessor<T> {
     private final Class<T> eventClass;
-    private final BiConsumer<BFTNode, T> processor;
+    private final BiConsumer<NodeId, T> processor;
 
-    public NodeEventProcessor(Class<T> eventClass, BiConsumer<BFTNode, T> processor) {
+    public NodeEventProcessor(Class<T> eventClass, BiConsumer<NodeId, T> processor) {
       this.eventClass = eventClass;
       this.processor = processor;
     }
@@ -88,7 +88,7 @@ public final class NodeEvents {
       return eventClass;
     }
 
-    private void process(BFTNode node, Object event) {
+    private void process(NodeId node, Object event) {
       this.processor.accept(node, eventClass.cast(event));
     }
   }
@@ -100,11 +100,11 @@ public final class NodeEvents {
     this.processors = Objects.requireNonNull(processors);
   }
 
-  public <T> EventProcessor<T> processor(BFTNode node, Class<T> eventClass) {
+  public <T> EventProcessor<T> processor(NodeId node, Class<T> eventClass) {
     return t -> processors.get(eventClass).forEach(c -> c.process(node, t));
   }
 
-  public <T> EventProcessorOnDispatch<T> processorOnDispatch(BFTNode node, Class<T> eventClass) {
+  public <T> EventProcessorOnDispatch<T> processorOnDispatch(NodeId node, Class<T> eventClass) {
     return new EventProcessorOnDispatch<>(eventClass, processor(node, eventClass));
   }
 }

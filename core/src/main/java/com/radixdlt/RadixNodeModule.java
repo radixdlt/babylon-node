@@ -220,14 +220,14 @@ public final class RadixNodeModule extends AbstractModule {
                 pubKeyBytes -> {
                   log.info("Initial vset validator: {}", pubKeyBytes);
                   try {
-                    return BFTNode.create(ECDSASecp256k1PublicKey.fromHex(pubKeyBytes));
+                    return BFTValidatorId.create(ECDSASecp256k1PublicKey.fromHex(pubKeyBytes));
                   } catch (PublicKeyException e) {
                     throw new RuntimeException(e);
                   }
                 })
             .toList();
 
-    var validatorSet = initialVset.stream().map(BFTNode::getKey).collect(Collectors.toSet());
+    var validatorSet = initialVset.stream().map(BFTValidatorId::getKey).collect(Collectors.toSet());
     var genesis =
         TransactionBuilder.createGenesis(
             validatorSet,

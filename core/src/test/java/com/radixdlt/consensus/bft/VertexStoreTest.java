@@ -182,7 +182,7 @@ public class VertexStoreTest {
                       qc,
                       round,
                       List.of(RawNotarizedTransaction.create(new byte[0])),
-                      BFTNode.random(),
+                      BFTValidatorId.random(),
                       0)
                   .withId(hasher);
           lastParentHeader.set(new BFTHeader(round, vertex.hash(), MOCKED_HEADER));
@@ -293,7 +293,7 @@ public class VertexStoreTest {
     }
     final var round = parent.getRound().next();
     return Vertex.create(
-            qc, round, List.of(RawNotarizedTransaction.create(tx)), BFTNode.random(), 0)
+            qc, round, List.of(RawNotarizedTransaction.create(tx)), BFTValidatorId.random(), 0)
         .withId(hasher);
   }
 

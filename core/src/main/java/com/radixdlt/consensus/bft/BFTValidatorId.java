@@ -62,68 +62,65 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.exception.PublicKeyException;
+import java.util.Objects;
 
-public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule {
-  private final int numValidators;
+/**
+ * A node in a BFT network which can run BFT validation
+ *
+ * <p>TODO: turn this into an interface so that an ECPublicKey is not required TODO: Serialization
+ * of BFT messages are currently what prevent this from happening
+ */
+public final class BFTValidatorId {
+  private final ECDSASecp256k1PublicKey key;
+  private final String shortenedName;
 
-  public MockedNoEpochsConsensusRecoveryModule(int numValidators) {
-    this.numValidators = numValidators;
+  private BFTValidatorId(ECDSASecp256k1PublicKey key, String shortenedName) {
+    this.key = Objects.requireNonNull(key);
+    this.shortenedName = Objects.requireNonNull(shortenedName);
   }
 
-  @Provides
-  private RoundUpdate initialRoundUpdate(
-      BFTConfiguration configuration, ProposerElection proposerElection) {
-    HighQC highQC = configuration.getVertexStoreState().getHighQC();
-    Round round = highQC.getHighestRound().next();
-    final BFTValidatorId leader = proposerElection.getProposer(round);
-    final BFTValidatorId nextLeader = proposerElection.getProposer(round.next());
-
-    return RoundUpdate.create(round, highQC, leader, nextLeader);
+  public static BFTValidatorId create(ECDSASecp256k1PublicKey key) {
+    var shortenedAddress = key.toHex().substring(0, 10);
+    return new BFTValidatorId(key, shortenedAddress);
   }
 
-  @Provides
-  private BFTValidatorSet validatorSet() {
-    var validators =
-        PrivateKeys.numeric(1)
-            .limit(numValidators)
-            .map(k -> BFTValidatorId.create(k.getPublicKey()))
-            .map(n -> BFTValidator.from(n, UInt256.ONE));
-    return BFTValidatorSet.from(validators);
+  public static BFTValidatorId fromPublicKeyBytes(byte[] key) throws PublicKeyException {
+    return create(ECDSASecp256k1PublicKey.fromBytes(key));
   }
 
-  @Provides
-  private BFTConfiguration configuration(
-      @LastEpochProof LedgerProof proof, BFTValidatorSet validatorSet, Hasher hasher) {
-    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    VertexWithHash genesisVertex =
-        Vertex.createInitialEpochVertex(LedgerHeader.genesis(accumulatorState, validatorSet, 0, 0))
-            .withId(hasher);
-    LedgerHeader nextLedgerHeader =
-        LedgerHeader.create(
-            proof.getNextEpoch().orElseThrow().getEpoch(),
-            Round.genesis(),
-            proof.getAccumulatorState(),
-            proof.consensusParentRoundTimestamp(),
-            proof.proposerTimestamp());
-    final var initialEpochQC =
-        QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
-    var proposerElection = new WeightedRotatingLeaders(validatorSet);
-    return new BFTConfiguration(
-        proposerElection,
-        validatorSet,
-        VertexStoreState.create(HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher));
+  public static BFTValidatorId random() {
+    return create(ECKeyPair.generateNew().getPublicKey());
+  }
+
+  public ECDSASecp256k1PublicKey getKey() {
+    return key;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(key);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof BFTValidatorId validatorId)) {
+      return false;
+    }
+
+    return Objects.equals(validatorId.key, this.key);
+  }
+
+  public String getShortenedName() {
+    return shortenedName;
+  }
+
+  @Override
+  public String toString() {
+    return shortenedName;
   }
 }

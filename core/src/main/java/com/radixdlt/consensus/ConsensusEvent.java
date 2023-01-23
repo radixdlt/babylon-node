@@ -64,7 +64,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 
 /** A consensus event which requires syncing to be effectively processed */
@@ -89,7 +89,7 @@ public sealed interface ConsensusEvent permits Proposal, Vote {
    *
    * @return the node author
    */
-  BFTNode getAuthor();
+  BFTValidatorId getAuthor();
 
   /**
    * Retrieves the {@link HighQC} associated with the event.

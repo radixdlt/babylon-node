@@ -111,17 +111,21 @@ public final class PeerDiscoveryModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> getPeersRemoteEventProcessor(
-      PeerDiscovery peerDiscovery) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.P2P_NETWORK, GetPeers.class, peerDiscovery.getPeersRemoteEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> peersResponseRemoteEventProcessor(
+  private RemoteEventProcessorOnRunner<?, ?> getPeersRemoteEventProcessor(
       PeerDiscovery peerDiscovery) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.P2P_NETWORK,
+        NodeId.class,
+        GetPeers.class,
+        peerDiscovery.getPeersRemoteEventProcessor());
+  }
+
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?, ?> peersResponseRemoteEventProcessor(
+      PeerDiscovery peerDiscovery) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.P2P_NETWORK,
+        NodeId.class,
         PeersResponse.class,
         peerDiscovery.peersResponseRemoteEventProcessor());
   }

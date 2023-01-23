@@ -80,7 +80,7 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
@@ -112,7 +112,7 @@ public class SafetyRulesTest {
 
     this.safetyRules =
         new SafetyRules(
-            mock(BFTNode.class),
+            mock(BFTValidatorId.class),
             safetyState,
             mock(PersistentSafetyStateStore.class),
             hasher,
@@ -152,7 +152,7 @@ public class SafetyRulesTest {
 
     final var safetyRules =
         new SafetyRules(
-            BFTNode.random(),
+            BFTValidatorId.random(),
             new SafetyState(Round.of(2), Optional.of(lastVote)),
             mock(PersistentSafetyStateStore.class),
             hasher,

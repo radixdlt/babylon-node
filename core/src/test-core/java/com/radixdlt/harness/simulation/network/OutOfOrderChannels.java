@@ -65,7 +65,7 @@
 package com.radixdlt.harness.simulation.network;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.p2p.NodeId;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Map;
@@ -95,7 +95,7 @@ public class OutOfOrderChannels implements SimulationNetwork.ChannelCommunicatio
 
   @Override
   public Observable<SimulationNetwork.MessageInTransit> transform(
-      BFTNode sender, BFTNode receiver, Observable<SimulationNetwork.MessageInTransit> messages) {
+      NodeId sender, NodeId receiver, Observable<SimulationNetwork.MessageInTransit> messages) {
     return messages
         .map(msg -> msg.delayed(latencyProvider.nextLatency(msg)))
         .filter(msg -> msg.getDelay() >= 0)

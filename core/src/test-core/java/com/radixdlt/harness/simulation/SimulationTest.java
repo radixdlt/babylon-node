@@ -98,6 +98,7 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.DurationParser;
@@ -159,7 +160,7 @@ public final class SimulationTest {
     private ImmutableMap<ECDSASecp256k1PublicKey, ImmutableList<ECDSASecp256k1PublicKey>>
         addressBookNodes;
 
-    private List<BFTNode> bftNodes;
+    private List<BFTValidatorId> bftValidatorIds;
 
     private Builder() {}
 
@@ -220,10 +221,10 @@ public final class SimulationTest {
 
       final var bftNodes =
           initialStakesMap.keySet().stream()
-              .map(BFTNode::create)
+              .map(BFTValidatorId::create)
               .collect(ImmutableList.toImmutableList());
 
-      this.bftNodes = bftNodes;
+      this.bftValidatorIds = bftNodes;
 
       this.initialNodesModule =
           new AbstractModule() {
@@ -231,7 +232,7 @@ public final class SimulationTest {
             protected void configure() {
               // FIXME This list is injected in at least 2 places: NetworkDroppers and
               // NetworkLatencies. Maybe we could make this more explicit?
-              bind(new TypeLiteral<ImmutableList<BFTNode>>() {}).toInstance(bftNodes);
+              bind(new TypeLiteral<ImmutableList<BFTValidatorId>>() {}).toInstance(bftNodes);
             }
           };
 
@@ -362,7 +363,10 @@ public final class SimulationTest {
       if (this.addressBookNodes != null) {
         mockedP2PModuleBuilder.withPeersByNode(this.addressBookNodes);
       } else {
-        mockedP2PModuleBuilder.withAllNodes(bftNodes);
+        mockedP2PModuleBuilder.withAllNodes(
+            bftValidatorIds.stream()
+                .map(n -> NodeId.fromPublicKey(n.getKey()))
+                .collect(Collectors.toList()));
       }
       modules.add(mockedP2PModuleBuilder.build());
 
@@ -491,7 +495,7 @@ public final class SimulationTest {
    * @return test results
    */
   public RunningSimulationTest run(
-      Duration duration, ImmutableMap<BFTNode, ImmutableSet<String>> disabledModuleRunners) {
+      Duration duration, ImmutableMap<NodeId, ImmutableSet<String>> disabledModuleRunners) {
     Injector testInjector = Guice.createInjector(testModule);
     var runners =
         testInjector.getInstance(Key.get(new TypeLiteral<Set<SimulationNetworkActor>>() {}));

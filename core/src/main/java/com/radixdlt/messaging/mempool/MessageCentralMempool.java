@@ -64,7 +64,6 @@
 
 package com.radixdlt.messaging.mempool;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.mempool.MempoolAdd;
@@ -85,25 +84,21 @@ public final class MessageCentralMempool {
     this.messageCentral = Objects.requireNonNull(messageCentral);
   }
 
-  public RemoteEventDispatcher<MempoolAdd> mempoolAddRemoteEventDispatcher() {
+  public RemoteEventDispatcher<NodeId, MempoolAdd> mempoolAddRemoteEventDispatcher() {
     return (receiver, msg) -> {
       MempoolAddMessage message = MempoolAddMessage.from(msg.transactions());
       this.send(message, receiver);
     };
   }
 
-  private void send(Message message, BFTNode recipient) {
-    this.messageCentral.send(NodeId.fromPublicKey(recipient.getKey()), message);
+  private void send(Message message, NodeId recipient) {
+    this.messageCentral.send(recipient, message);
   }
 
-  public Flowable<RemoteEvent<MempoolAdd>> mempoolComands() {
+  public Flowable<RemoteEvent<NodeId, MempoolAdd>> mempoolComands() {
     return messageCentral
         .messagesOf(MempoolAddMessage.class)
-        .map(
-            msg -> {
-              final BFTNode node = BFTNode.create(msg.source().getPublicKey());
-              return RemoteEvent.create(node, MempoolAdd.create(msg.message().getTxns()));
-            })
+        .map(msg -> RemoteEvent.create(msg.source(), MempoolAdd.create(msg.message().getTxns())))
         .toFlowable(BackpressureStrategy.BUFFER);
   }
 }

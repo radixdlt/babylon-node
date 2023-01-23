@@ -109,7 +109,7 @@ public final class DeterministicTest implements AutoCloseable {
   private int numMessagesProcessed = 0;
 
   private DeterministicTest(
-      ImmutableList<BFTNode> nodes,
+      ImmutableList<BFTValidatorId> nodes,
       MessageSelector messageSelector,
       MessageMutator messageMutator,
       MessageMonitor messageMonitor,
@@ -127,8 +127,8 @@ public final class DeterministicTest implements AutoCloseable {
   }
 
   public static class Builder {
-    private ImmutableList<BFTNode> nodes =
-        ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
+    private ImmutableList<BFTValidatorId> nodes =
+        ImmutableList.of(BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey()));
     private MessageSelector messageSelector = MessageSelector.firstSelector();
     private MessageMutator messageMutator = MessageMutator.nothing();
     private Module overrideModule = null;
@@ -149,7 +149,7 @@ public final class DeterministicTest implements AutoCloseable {
         keys = keys.sorted(KeyComparator.instance());
       }
 
-      this.nodes = keys.map(BFTNode::create).collect(ImmutableList.toImmutableList());
+      this.nodes = keys.map(BFTValidatorId::create).collect(ImmutableList.toImmutableList());
       return this;
     }
 

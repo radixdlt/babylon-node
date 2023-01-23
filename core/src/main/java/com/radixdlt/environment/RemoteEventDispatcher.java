@@ -64,17 +64,15 @@
 
 package com.radixdlt.environment;
 
-import com.radixdlt.consensus.bft.BFTNode;
-
 /**
  * Attempts to dispatch an event to a remote node.
  *
  * @param <T> the event class
  */
-public interface RemoteEventDispatcher<T> {
-  void dispatch(BFTNode receiver, T t);
+public interface RemoteEventDispatcher<N, T> {
+  void dispatch(N receiver, T t);
 
-  default void dispatch(Iterable<BFTNode> receivers, T t) {
+  default void dispatch(Iterable<N> receivers, T t) {
     receivers.forEach(r -> dispatch(r, t));
   }
 }

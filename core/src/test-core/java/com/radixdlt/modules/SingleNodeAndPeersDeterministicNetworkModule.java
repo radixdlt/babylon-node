@@ -68,11 +68,11 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.deterministic.network.ControlledSender;
+import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -82,6 +82,7 @@ import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.List;
@@ -113,7 +114,7 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
   }
 
   @Provides
-  public List<BFTNode> nodes(@Self BFTNode self) {
+  public List<BFTValidatorId> nodes(@Self BFTValidatorId self) {
     return List.of(self);
   }
 
@@ -125,9 +126,10 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
 
   @Provides
   @Singleton
-  Environment environment(@Self BFTNode self, DeterministicNetwork network, PeersView peersView) {
-    var addressBook =
-        Stream.concat(Stream.of(self), peersView.peers().map(PeersView.PeerInfo::bftNode)).toList();
-    return new ControlledSender(addressBook::indexOf, network, self, 0);
+  Environment environment(@Self NodeId nodeId, DeterministicNetwork network, PeersView peersView) {
+    var p2pAddressBook =
+        Stream.concat(Stream.of(nodeId), peersView.peers().map(PeersView.PeerInfo::getNodeId))
+            .toList();
+    return new ControlledDispatcher(p2pAddressBook::indexOf, network, nodeId, 0);
   }
 }
