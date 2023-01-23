@@ -709,8 +709,8 @@ pub fn to_api_epoch_manager_substate(
     Ok(models::Substate::EpochManagerSubstate {
         address: bech32_encoder.encode_component_address_to_string(address),
         epoch: to_api_epoch(*epoch)?,
-        round: (*round) as i64,
-        rounds_per_epoch: (*rounds_per_epoch) as i64,
+        round: to_api_round(*round)?,
+        rounds_per_epoch: to_api_round(*rounds_per_epoch)?,
     })
 }
 

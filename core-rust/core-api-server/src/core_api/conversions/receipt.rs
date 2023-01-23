@@ -136,7 +136,7 @@ pub fn to_api_deleted_substate(
     })
 }
 
-// #[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all)]
 pub fn to_api_active_validator(
     bech32_encoder: &Bech32Encoder,
     address: ComponentAddress,
@@ -148,7 +148,7 @@ pub fn to_api_active_validator(
     })
 }
 
-// #[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all)]
 pub fn to_api_next_epoch(
     bech32_encoder: &Bech32Encoder,
     next_epoch: (BTreeSet<Validator>, u64),

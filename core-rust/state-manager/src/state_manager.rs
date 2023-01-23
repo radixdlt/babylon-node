@@ -235,6 +235,9 @@ where
 
         match self.execution_cache.get(&new_accumulator_hash) {
             None => {
+                // This should be unreachable code. Failing to meet this indicates either one of:
+                // 1. Unproper usage inside StateManager or
+                // 2. Incorrect pregenesis hash
                 let parent_key = self
                     .execution_cache
                     .get(parent_accumulator_hash)

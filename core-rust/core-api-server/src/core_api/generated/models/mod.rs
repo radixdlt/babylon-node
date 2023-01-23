@@ -384,8 +384,6 @@ pub mod stream_transactions_response;
 pub use self::stream_transactions_response::StreamTransactionsResponse;
 pub mod substate;
 pub use self::substate::Substate;
-pub mod substate_base;
-pub use self::substate_base::SubstateBase;
 pub mod substate_id;
 pub use self::substate_id::SubstateId;
 pub mod substate_key_type;

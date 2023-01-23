@@ -96,6 +96,7 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = ValidatorSubstate.class, name = "Validator"),
   @JsonSubTypes.Type(value = ValidatorSetSubstate.class, name = "ValidatorSet"),
   @JsonSubTypes.Type(value = ValidatorSetSubstate.class, name = "ValidatorSetSubstate"),
+  @JsonSubTypes.Type(value = ValidatorSubstate.class, name = "ValidatorSubstate"),
   @JsonSubTypes.Type(value = VaultSubstate.class, name = "Vault"),
   @JsonSubTypes.Type(value = VaultSubstate.class, name = "VaultSubstate"),
 })
@@ -209,6 +210,7 @@ static {
   mappings.put("Validator", ValidatorSubstate.class);
   mappings.put("ValidatorSet", ValidatorSetSubstate.class);
   mappings.put("ValidatorSetSubstate", ValidatorSetSubstate.class);
+  mappings.put("ValidatorSubstate", ValidatorSubstate.class);
   mappings.put("Vault", VaultSubstate.class);
   mappings.put("VaultSubstate", VaultSubstate.class);
   mappings.put("Substate", Substate.class);

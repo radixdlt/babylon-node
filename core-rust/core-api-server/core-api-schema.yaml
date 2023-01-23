@@ -2128,13 +2128,6 @@ components:
         - NonFungibleStoreEntry
         - Vault
         - Validator
-    SubstateBase:
-      type: object
-      required:
-        - substate_type
-      properties:
-        substate_type:
-          $ref: '#/components/schemas/SubstateType'
 ### COMMON SUBSTATES
     AccessRulesChainSubstate:
       allOf:
@@ -2440,7 +2433,7 @@ components:
             The hex-encoded raw bytes of the mutadata data of the NF.
     ValidatorSubstate:
       allOf:
-        - $ref: '#/components/schemas/SubstateBase'
+        - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - epoch_manager_address
