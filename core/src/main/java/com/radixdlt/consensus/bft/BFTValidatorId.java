@@ -80,13 +80,13 @@ import java.util.Objects;
 public final class BFTValidatorId {
   private final ECDSASecp256k1PublicKey key;
   private final SystemAddress validatorAddress;
-  private final String simpleName;
+  private final String shortenedName;
 
   private BFTValidatorId(
-      SystemAddress validatorAddress, ECDSASecp256k1PublicKey key, String simpleName) {
+      SystemAddress validatorAddress, ECDSASecp256k1PublicKey key, String shortenedName) {
     this.validatorAddress = validatorAddress;
     this.key = Objects.requireNonNull(key);
-    this.simpleName = Objects.requireNonNull(simpleName);
+    this.shortenedName = Objects.requireNonNull(shortenedName);
   }
 
   public static BFTValidatorId create(SystemAddress validatorAddress, ECDSASecp256k1PublicKey key) {
@@ -154,6 +154,6 @@ public final class BFTValidatorId {
 
   @Override
   public String toString() {
-    return simpleName;
+    return shortenedName;
   }
 }

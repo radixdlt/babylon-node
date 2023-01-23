@@ -71,6 +71,6 @@ public class BFTValidatorIdTest {
 
   @Test
   public void equalsContract() {
-    EqualsVerifier.forClass(BFTValidatorId.class).withIgnoredFields("simpleName").verify();
+    EqualsVerifier.forClass(BFTValidatorId.class).withIgnoredFields("shortenedName").verify();
   }
 }
