@@ -29,6 +29,7 @@ CMD $HOME/.cargo/bin/cargo build --target=$TARGET --profile=$RUST_PROFILE
 # On CI we use docker build instead of docker compose.
 # The mapped-volume-build stage is skipped, and the following stages are run, with sub-stages cached for future runs.
 FROM base as cache-packages
+WORKDIR /app
 ARG TARGET
 ARG RUST_PROFILE
 
@@ -37,23 +38,20 @@ ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
 ENV RUSTC_WRAPPER=/root/.cargo/bin/sccache
 
 # First - we build a dummy rust file, to cache the compilation of all our dependencies in a Docker layer
-RUN USER=root $HOME/.cargo/bin/cargo new dummy
-RUN USER=root mkdir -p ./dummy/state-manager/src
-RUN USER=root mkdir -p ./dummy/core-rust/src
-RUN USER=root mkdir -p ./dummy/core-api-server/src
-RUN USER=root touch ./dummy/state-manager/src/lib.rs
-RUN USER=root touch ./dummy/core-rust/src/lib.rs
-RUN USER=root touch ./dummy/core-api-server/src/lib.rs
-COPY core-rust/Cargo.toml ./dummy
-COPY core-rust/Cargo.lock ./dummy
-COPY core-rust/core-rust/Cargo.toml ./dummy/core-rust
-COPY core-rust/state-manager/Cargo.toml ./dummy/state-manager
-COPY core-rust/core-api-server/Cargo.toml ./dummy/core-api-server
+RUN USER=root $HOME/.cargo/bin/cargo init --lib --name dummy --vcs none .
+RUN USER=root mkdir -p ./state-manager/src
+RUN USER=root mkdir -p ./core-rust/src
+RUN USER=root mkdir -p ./core-api-server/src
+RUN USER=root touch ./state-manager/src/lib.rs
+RUN USER=root touch ./core-rust/src/lib.rs
+RUN USER=root touch ./core-api-server/src/lib.rs
+COPY core-rust/Cargo.toml ./
+COPY core-rust/Cargo.lock ./
+COPY core-rust/core-rust/Cargo.toml ./core-rust
+COPY core-rust/state-manager/Cargo.toml ./state-manager
+COPY core-rust/core-api-server/Cargo.toml ./core-api-server
 
-RUN mv ./dummy/src/main.rs ./dummy/src/lib.rs
-WORKDIR /app/dummy
 RUN $HOME/.cargo/bin/cargo build --target=$TARGET --profile=$RUST_PROFILE
-RUN rm -rf /app/dummy/*
 
 FROM cache-packages as prod-build
 
@@ -63,6 +61,8 @@ ENV RUSTC_WRAPPER=/root/.cargo/bin/sccache
 
 WORKDIR /app
 # Now - we copy in everything, and do the actual build
+
+RUN rm -rf state-manager core-rust core-api-server
 COPY core-rust ./
 
 RUN $HOME/.cargo/bin/cargo build --target=$TARGET --profile=$RUST_PROFILE
