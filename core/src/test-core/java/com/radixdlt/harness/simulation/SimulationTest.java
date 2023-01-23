@@ -351,14 +351,6 @@ public final class SimulationTest {
               bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
               bind(NodeEvents.class).toInstance(nodeEvents);
             }
-
-            @Provides
-            @Self
-            String name(
-                Function<ECDSASecp256k1PublicKey, String> nodeToString,
-                @Self ECDSASecp256k1PublicKey key) {
-              return nodeToString.apply(key);
-            }
           });
       modules.add(new MockedSystemModule());
       modules.add(new MockedKeyModule());

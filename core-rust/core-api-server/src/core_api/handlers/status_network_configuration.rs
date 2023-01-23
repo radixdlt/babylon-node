@@ -44,7 +44,7 @@ pub(crate) fn handle_status_network_configuration_internal(
     })
 }
 
-const ALL_ENTITY_TYPES: [EntityType; 8] = [
+const ALL_ENTITY_TYPES: [EntityType; 9] = [
     EntityType::Resource,
     EntityType::Package,
     EntityType::NormalComponent,
@@ -52,6 +52,7 @@ const ALL_ENTITY_TYPES: [EntityType; 8] = [
     EntityType::EcdsaSecp256k1VirtualAccountComponent,
     EntityType::EddsaEd25519VirtualAccountComponent,
     EntityType::EpochManager,
+    EntityType::Validator,
     EntityType::Clock,
 ];
 

@@ -93,15 +93,22 @@ import org.apache.logging.log4j.Logger;
 
 public final class EventLoggerModule extends AbstractModule {
   private static final Logger logger = LogManager.getLogger();
-  private final Function<ECDSASecp256k1PublicKey, String> nodeToString;
+  private final Function<ECDSASecp256k1PublicKey, String> nodeKeyToString;
 
   public EventLoggerModule(EventLoggerConfig config) {
-    this.nodeToString = config.nodeToString();
+    this.nodeKeyToString = config.nodeKeyToString();
   }
 
   protected void configure() {
     bind(new TypeLiteral<Function<ECDSASecp256k1PublicKey, String>>() {})
-        .toInstance(this.nodeToString);
+        .toInstance(this.nodeKeyToString);
+  }
+
+  @Provides
+  @Self
+  String name(
+      Function<ECDSASecp256k1PublicKey, String> nodeToString, @Self ECDSASecp256k1PublicKey key) {
+    return nodeToString.apply(key);
   }
 
   @ProvidesIntoSet

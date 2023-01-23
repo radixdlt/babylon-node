@@ -127,11 +127,11 @@ pub enum Substate {
     #[serde(rename="Validator")]
     ValidatorSubstate {
         /// The Bech32m-encoded human readable version of the system address
-        #[serde(rename = "manager")]
-        manager: String,
+        #[serde(rename = "epoch_manager_address")]
+        epoch_manager_address: String,
         /// The Bech32m-encoded human readable version of the system address
-        #[serde(rename = "address")]
-        address: String,
+        #[serde(rename = "validator_address")]
+        validator_address: String,
         #[serde(rename = "key")]
         key: Box<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
     },

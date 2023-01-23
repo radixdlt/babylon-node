@@ -62,76 +62,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.keys;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
-import com.radixdlt.keys.InMemoryBFTKeyModule;
-import com.radixdlt.logger.EventLoggerConfig;
-import com.radixdlt.logger.EventLoggerModule;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.NodeId;
-import com.radixdlt.p2p.PeersView;
-import com.radixdlt.utils.TimeSupplier;
-import java.util.List;
-import java.util.stream.Stream;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.rev2.SystemAddress;
+import java.util.Optional;
 
-/** Module which injects a full one node network */
-public final class SingleNodeAndPeersDeterministicNetworkModule extends AbstractModule {
-  private final ECKeyPair self;
-  private final FunctionalRadixNodeModule radixNodeModule;
-
-  public SingleNodeAndPeersDeterministicNetworkModule(
-      ECKeyPair self, FunctionalRadixNodeModule radixNodeModule) {
-    this.self = self;
-    this.radixNodeModule = radixNodeModule;
-  }
-
-  @Override
-  protected void configure() {
-    // System
-    bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
-    bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-
-    var addressing = Addressing.ofNetwork(Network.INTEGRATIONTESTNET);
-    bind(Addressing.class).toInstance(addressing);
-    install(new BFTValidatorIdFromGenesisModule());
-    install(new EventLoggerModule(EventLoggerConfig.addressed(addressing)));
-    install(new InMemoryBFTKeyModule(self));
-    install(new CryptoModule());
-    install(radixNodeModule);
-  }
-
+public final class BFTValidatorIdModule extends AbstractModule {
   @Provides
-  public List<BFTValidatorId> nodes(@Self BFTValidatorId self) {
-    return List.of(self);
-  }
-
-  @Provides
-  @Singleton
-  public DeterministicNetwork network() {
-    return new DeterministicNetwork(MessageSelector.firstSelector(), MessageMutator.nothing());
-  }
-
-  @Provides
-  @Singleton
-  Environment environment(@Self NodeId nodeId, DeterministicNetwork network, PeersView peersView) {
-    var p2pAddressBook =
-        Stream.concat(Stream.of(nodeId), peersView.peers().map(PeersView.PeerInfo::getNodeId))
-            .toList();
-    return new ControlledDispatcher(p2pAddressBook::indexOf, network, nodeId, 0);
+  @Self
+  public BFTValidatorId validatorId(
+      @Self Optional<SystemAddress> validatorAddress, @Self ECDSASecp256k1PublicKey key) {
+    return BFTValidatorId.create(validatorAddress.orElse(null), key);
   }
 }

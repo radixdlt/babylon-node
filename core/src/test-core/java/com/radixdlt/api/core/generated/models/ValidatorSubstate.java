@@ -57,8 +57,8 @@ import com.radixdlt.api.core.generated.client.JSON;
  * ValidatorSubstate
  */
 @JsonPropertyOrder({
-  ValidatorSubstate.JSON_PROPERTY_MANAGER,
-  ValidatorSubstate.JSON_PROPERTY_ADDRESS,
+  ValidatorSubstate.JSON_PROPERTY_EPOCH_MANAGER_ADDRESS,
+  ValidatorSubstate.JSON_PROPERTY_VALIDATOR_ADDRESS,
   ValidatorSubstate.JSON_PROPERTY_KEY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -89,11 +89,11 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class ValidatorSubstate extends Substate {
-  public static final String JSON_PROPERTY_MANAGER = "manager";
-  private String manager;
+  public static final String JSON_PROPERTY_EPOCH_MANAGER_ADDRESS = "epoch_manager_address";
+  private String epochManagerAddress;
 
-  public static final String JSON_PROPERTY_ADDRESS = "address";
-  private String address;
+  public static final String JSON_PROPERTY_VALIDATOR_ADDRESS = "validator_address";
+  private String validatorAddress;
 
   public static final String JSON_PROPERTY_KEY = "key";
   private EcdsaSecp256k1PublicKey key;
@@ -101,55 +101,55 @@ public class ValidatorSubstate extends Substate {
   public ValidatorSubstate() { 
   }
 
-  public ValidatorSubstate manager(String manager) {
-    this.manager = manager;
+  public ValidatorSubstate epochManagerAddress(String epochManagerAddress) {
+    this.epochManagerAddress = epochManagerAddress;
     return this;
   }
 
    /**
    * The Bech32m-encoded human readable version of the system address
-   * @return manager
+   * @return epochManagerAddress
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the system address")
-  @JsonProperty(JSON_PROPERTY_MANAGER)
+  @JsonProperty(JSON_PROPERTY_EPOCH_MANAGER_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getManager() {
-    return manager;
+  public String getEpochManagerAddress() {
+    return epochManagerAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MANAGER)
+  @JsonProperty(JSON_PROPERTY_EPOCH_MANAGER_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setManager(String manager) {
-    this.manager = manager;
+  public void setEpochManagerAddress(String epochManagerAddress) {
+    this.epochManagerAddress = epochManagerAddress;
   }
 
 
-  public ValidatorSubstate address(String address) {
-    this.address = address;
+  public ValidatorSubstate validatorAddress(String validatorAddress) {
+    this.validatorAddress = validatorAddress;
     return this;
   }
 
    /**
    * The Bech32m-encoded human readable version of the system address
-   * @return address
+   * @return validatorAddress
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the system address")
-  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getAddress() {
-    return address;
+  public String getValidatorAddress() {
+    return validatorAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAddress(String address) {
-    this.address = address;
+  public void setValidatorAddress(String validatorAddress) {
+    this.validatorAddress = validatorAddress;
   }
 
 
@@ -191,15 +191,15 @@ public class ValidatorSubstate extends Substate {
       return false;
     }
     ValidatorSubstate validatorSubstate = (ValidatorSubstate) o;
-    return Objects.equals(this.manager, validatorSubstate.manager) &&
-        Objects.equals(this.address, validatorSubstate.address) &&
+    return Objects.equals(this.epochManagerAddress, validatorSubstate.epochManagerAddress) &&
+        Objects.equals(this.validatorAddress, validatorSubstate.validatorAddress) &&
         Objects.equals(this.key, validatorSubstate.key) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(manager, address, key, super.hashCode());
+    return Objects.hash(epochManagerAddress, validatorAddress, key, super.hashCode());
   }
 
   @Override
@@ -207,8 +207,8 @@ public class ValidatorSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class ValidatorSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    manager: ").append(toIndentedString(manager)).append("\n");
-    sb.append("    address: ").append(toIndentedString(address)).append("\n");
+    sb.append("    epochManagerAddress: ").append(toIndentedString(epochManagerAddress)).append("\n");
+    sb.append("    validatorAddress: ").append(toIndentedString(validatorAddress)).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("}");
     return sb.toString();

@@ -728,8 +728,6 @@ pub fn to_api_validator_substate(
     bech32_encoder: &Bech32Encoder,
     substate: &ValidatorSubstate,
 ) -> Result<models::Substate, MappingError> {
-    // Use compiler to unpack to ensure we map all fields
-    // TODO: convert validator_set
     let ValidatorSubstate {
         manager,
         address,
@@ -737,8 +735,8 @@ pub fn to_api_validator_substate(
     } = substate;
 
     Ok(models::Substate::ValidatorSubstate {
-        manager: bech32_encoder.encode_system_address_to_string(manager),
-        address: bech32_encoder.encode_system_address_to_string(address),
+        epoch_manager_address: bech32_encoder.encode_system_address_to_string(manager),
+        validator_address: bech32_encoder.encode_system_address_to_string(address),
         key: Box::new(to_api_ecdsa_secp256k1_public_key(key)),
     })
 }

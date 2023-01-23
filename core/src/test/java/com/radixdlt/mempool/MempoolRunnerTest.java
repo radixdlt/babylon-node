@@ -118,7 +118,6 @@ public final class MempoolRunnerTest {
       public void configure() {
         var key = PrivateKeys.ofNumeric(1).getPublicKey();
         bind(ECDSASecp256k1PublicKey.class).annotatedWith(Self.class).toInstance(key);
-        bind(String.class).annotatedWith(Self.class).toInstance("Self");
         bind(NodeId.class).annotatedWith(Self.class).toInstance(NodeId.fromPublicKey(key));
         bind(LedgerProof.class).annotatedWith(LastProof.class).toInstance(mock(LedgerProof.class));
         bind(StateComputer.class).toInstance(stateComputer);

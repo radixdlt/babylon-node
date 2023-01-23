@@ -14,20 +14,20 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ValidatorSubstateAllOf {
     /// The Bech32m-encoded human readable version of the system address
-    #[serde(rename = "manager")]
-    pub manager: String,
+    #[serde(rename = "epoch_manager_address")]
+    pub epoch_manager_address: String,
     /// The Bech32m-encoded human readable version of the system address
-    #[serde(rename = "address")]
-    pub address: String,
+    #[serde(rename = "validator_address")]
+    pub validator_address: String,
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
 }
 
 impl ValidatorSubstateAllOf {
-    pub fn new(manager: String, address: String, key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey) -> ValidatorSubstateAllOf {
+    pub fn new(epoch_manager_address: String, validator_address: String, key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey) -> ValidatorSubstateAllOf {
         ValidatorSubstateAllOf {
-            manager,
-            address,
+            epoch_manager_address,
+            validator_address,
             key: Box::new(key),
         }
     }

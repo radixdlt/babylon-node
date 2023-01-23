@@ -68,16 +68,31 @@ import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.rev2.SystemAddress;
 import com.radixdlt.utils.PrivateKeys;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
+/**
+ * A node configuration used for testing.
+ *
+ * @param key a non-null public key used for validation and P2P
+ * @param validatorAddress a nullable validator address
+ * @param loadFromGenesis if true, loads the validatorAddress in genesis which maps to the key,
+ *     otherwise uses the provided validatorAddress
+ */
 public record PhysicalNodeConfig(
-    ECDSASecp256k1PublicKey key, SystemAddress validatorAddress, boolean loadFromGenesis) {
-  public static PhysicalNodeConfig createBasic(ECDSASecp256k1PublicKey key) {
-    return new PhysicalNodeConfig(key, null, false);
-  }
+    ECDSASecp256k1PublicKey key,
+    @Nullable SystemAddress validatorAddress,
+    boolean loadFromGenesis) {
 
   public static List<PhysicalNodeConfig> createBasicBatch(int numPhysicalNodes) {
     return createBatch(numPhysicalNodes, false);
+  }
+
+  public static List<PhysicalNodeConfig> createBasicBatchWithOrder(
+      int numPhysicalNodes, Comparator<ECDSASecp256k1PublicKey> comparator) {
+    return createSortedBatch(numPhysicalNodes, comparator, false);
   }
 
   public static PhysicalNodeConfig create(
@@ -87,10 +102,22 @@ public record PhysicalNodeConfig(
 
   public static List<PhysicalNodeConfig> createBatch(
       int numPhysicalNodes, boolean loadFromGenesis) {
-    return PrivateKeys.numeric(1)
+    return createBatchStream(loadFromGenesis).limit(numPhysicalNodes).toList();
+  }
+
+  public static List<PhysicalNodeConfig> createSortedBatch(
+      int numPhysicalNodes,
+      Comparator<ECDSASecp256k1PublicKey> comparator,
+      boolean loadFromGenesis) {
+    return createBatchStream(loadFromGenesis)
         .limit(numPhysicalNodes)
-        .map(ECKeyPair::getPublicKey)
-        .map(k -> new PhysicalNodeConfig(k, null, loadFromGenesis))
+        .sorted(Comparator.comparing(PhysicalNodeConfig::key, comparator))
         .toList();
+  }
+
+  public static Stream<PhysicalNodeConfig> createBatchStream(boolean loadFromGenesis) {
+    return PrivateKeys.numeric(1)
+        .map(ECKeyPair::getPublicKey)
+        .map(k -> new PhysicalNodeConfig(k, null, loadFromGenesis));
   }
 }

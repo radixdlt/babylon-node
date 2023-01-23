@@ -67,8 +67,8 @@ package com.radixdlt.harness.deterministic;
 import com.google.common.collect.Streams;
 import com.google.inject.*;
 import com.google.inject.Module;
+import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.util.Modules;
-import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.Environment;
@@ -78,12 +78,14 @@ import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
+import com.radixdlt.keys.BFTValidatorIdModule;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.TestP2PModule;
+import com.radixdlt.rev2.SystemAddress;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -188,9 +190,13 @@ public final class DeterministicNodes implements AutoCloseable {
                 if (config.loadFromGenesis()) {
                   install(new BFTValidatorIdFromGenesisModule());
                 } else {
-                  bind(BFTValidatorId.class)
-                      .annotatedWith(Self.class)
-                      .toInstance(BFTValidatorId.create(config.validatorAddress(), config.key()));
+                  var binder =
+                      OptionalBinder.newOptionalBinder(
+                          binder(), Key.get(SystemAddress.class, Self.class));
+                  if (config.validatorAddress() != null) {
+                    binder.setBinding().toInstance(config.validatorAddress());
+                  }
+                  install(new BFTValidatorIdModule());
                 }
 
                 install(
@@ -200,14 +206,6 @@ public final class DeterministicNodes implements AutoCloseable {
                 bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
                 bind(ControlledTimeSupplier.class).toInstance(new ControlledTimeSupplier(time));
                 bind(TimeSupplier.class).to(ControlledTimeSupplier.class);
-              }
-
-              @Provides
-              @Self
-              String name(
-                  Function<ECDSASecp256k1PublicKey, String> nodeToString,
-                  @Self ECDSASecp256k1PublicKey key) {
-                return nodeToString.apply(key);
               }
 
               @Provides

@@ -16,21 +16,21 @@ pub struct ValidatorSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
     /// The Bech32m-encoded human readable version of the system address
-    #[serde(rename = "manager")]
-    pub manager: String,
+    #[serde(rename = "epoch_manager_address")]
+    pub epoch_manager_address: String,
     /// The Bech32m-encoded human readable version of the system address
-    #[serde(rename = "address")]
-    pub address: String,
+    #[serde(rename = "validator_address")]
+    pub validator_address: String,
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
 }
 
 impl ValidatorSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, manager: String, address: String, key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey) -> ValidatorSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, epoch_manager_address: String, validator_address: String, key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey) -> ValidatorSubstate {
         ValidatorSubstate {
             substate_type,
-            manager,
-            address,
+            epoch_manager_address,
+            validator_address,
             key: Box::new(key),
         }
     }

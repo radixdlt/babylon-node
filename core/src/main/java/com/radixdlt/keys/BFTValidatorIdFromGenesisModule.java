@@ -81,7 +81,10 @@ public final class BFTValidatorIdFromGenesisModule extends AbstractModule {
   @Self
   private BFTValidatorId self(
       @Self ECDSASecp256k1PublicKey key,
-      @LastProof LedgerProof ignored,
+      @LastProof
+          LedgerProof
+              ignored, // This is included as a hack to ensure that genesis exists in the proof
+      // reader
       TransactionsAndProofReader transactionsAndProofReader) {
     var genesisProof = transactionsAndProofReader.getEpochProof(1).orElseThrow();
     var genesisValidatorSet = genesisProof.getNextValidatorSet().orElseThrow();

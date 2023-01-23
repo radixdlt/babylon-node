@@ -2027,6 +2027,7 @@ components:
           $ref: '#/components/schemas/SystemAddress'
         key:
           $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
+#######################################
 # GENERAL / SHARED MODELS - substates #
 #######################################
     EntityType:
@@ -2350,13 +2351,13 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - manager
-            - address
+            - epoch_manager_address
+            - validator_address
             - key
           properties:
-            manager:
+            epoch_manager_address:
               $ref: '#/components/schemas/SystemAddress'
-            address:
+            validator_address:
               $ref: '#/components/schemas/SystemAddress'
             key:
               $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'

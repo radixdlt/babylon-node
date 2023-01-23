@@ -104,6 +104,9 @@ public final class BFTValidatorId {
     return new BFTValidatorId(null, key, shortenedAddress);
   }
 
+  // This method is only used in deserialization methods so should be okay
+  // to throw exceptions.
+  // TODO: Need a better serialization mechanism for BFTValidatorId
   public static BFTValidatorId fromSerializedString(String str) {
     var strings = str.split(":");
     if (strings.length != 2) {
