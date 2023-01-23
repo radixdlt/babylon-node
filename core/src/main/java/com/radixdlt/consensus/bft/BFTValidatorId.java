@@ -77,11 +77,11 @@ import java.util.Objects;
  */
 public final class BFTValidatorId {
   private final ECDSASecp256k1PublicKey key;
-  private final String simpleName;
+  private final String shortenedName;
 
-  private BFTValidatorId(ECDSASecp256k1PublicKey key, String simpleName) {
+  private BFTValidatorId(ECDSASecp256k1PublicKey key, String shortenedName) {
     this.key = Objects.requireNonNull(key);
-    this.simpleName = Objects.requireNonNull(simpleName);
+    this.shortenedName = Objects.requireNonNull(shortenedName);
   }
 
   public static BFTValidatorId create(ECDSASecp256k1PublicKey key) {
@@ -108,20 +108,19 @@ public final class BFTValidatorId {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof BFTValidatorId)) {
+    if (!(o instanceof BFTValidatorId validatorId)) {
       return false;
     }
 
-    BFTValidatorId bftValidatorIdId = (BFTValidatorId) o;
-    return Objects.equals(bftValidatorIdId.key, this.key);
+    return Objects.equals(validatorId.key, this.key);
   }
 
-  public String getSimpleName() {
-    return simpleName;
+  public String getShortenedName() {
+    return shortenedName;
   }
 
   @Override
   public String toString() {
-    return simpleName;
+    return shortenedName;
   }
 }

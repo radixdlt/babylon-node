@@ -334,7 +334,7 @@ public final class EpochManager {
     if (consensusEvent.getEpoch() > this.currentEpoch()) {
       log.debug(
           "{}: CONSENSUS_EVENT: Received higher epoch event: {} current epoch: {}",
-          this.self::getSimpleName,
+          this.self::getShortenedName,
           () -> consensusEvent,
           this::currentEpoch);
 
@@ -351,7 +351,7 @@ public final class EpochManager {
     if (consensusEvent.getEpoch() < this.currentEpoch()) {
       log.debug(
           "{}: CONSENSUS_EVENT: Ignoring lower epoch event: {} current epoch: {}",
-          this.self::getSimpleName,
+          this.self::getShortenedName,
           () -> consensusEvent,
           this::currentEpoch);
       return;

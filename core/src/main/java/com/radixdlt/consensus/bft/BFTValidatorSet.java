@@ -193,7 +193,8 @@ public final class BFTValidatorSet {
     final StringJoiner joiner = new StringJoiner(",");
     for (BFTValidator validator : this.validators.values()) {
       joiner.add(
-          String.format("%s=%s", validator.getValidatorId().getSimpleName(), validator.getPower()));
+          String.format(
+              "%s=%s", validator.getValidatorId().getShortenedName(), validator.getPower()));
     }
     return String.format("%s[%s]", this.getClass().getSimpleName(), joiner.toString());
   }
