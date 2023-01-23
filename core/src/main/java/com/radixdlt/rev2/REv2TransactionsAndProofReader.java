@@ -74,13 +74,8 @@ import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.Optional;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public final class REv2TransactionsAndProofReader implements TransactionsAndProofReader {
-
-  private static final Logger logger = LogManager.getLogger();
-
   /* Maximum number of transactions to return in a single getTransactions response. */
   private static final int MAX_TXNS_FOR_A_SINGLE_RESPONSE = 1000;
 
