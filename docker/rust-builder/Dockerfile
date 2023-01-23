@@ -65,7 +65,7 @@ WORKDIR /app
 RUN rm -rf state-manager core-rust core-api-server
 COPY core-rust ./
 
-RUN $HOME/.cargo/bin/cargo build --target=$TARGET --profile=$RUST_PROFILE
+RUN find . -name '*.rs' | xargs touch; $HOME/.cargo/bin/cargo build --target=$TARGET --profile=$RUST_PROFILE
 RUN cp -R target/$TARGET/release/libcorerust.so /
 RUN rm -rf /app
 
