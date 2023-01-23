@@ -62,15 +62,91 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.environment.deterministic.network;
 
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.environment.*;
+import com.radixdlt.p2p.NodeId;
+import java.util.function.Function;
 
-public class BFTNodeTest {
+/** A sender within a deterministic network. */
+public final class ControlledDispatcher implements Environment {
+  private final DeterministicNetwork network;
+  private final NodeId self;
+  private final int senderIndex;
+  private final ChannelId localChannel;
+  private final Function<NodeId, Integer> p2pAddressBook;
 
-  @Test
-  public void equalsContract() {
-    EqualsVerifier.forClass(BFTNode.class).withIgnoredFields("simpleName").verify();
+  public ControlledDispatcher(
+      Function<NodeId, Integer> p2pAddressBook,
+      DeterministicNetwork network,
+      NodeId self,
+      int senderIndex) {
+    this.p2pAddressBook = p2pAddressBook;
+    this.network = network;
+    this.self = self;
+    this.senderIndex = senderIndex;
+    this.localChannel = ChannelId.of(this.senderIndex, this.senderIndex);
+  }
+
+  private static long addTimeNoOverflow(long a, long b) {
+    var sum = a + b;
+    if (sum < 0) {
+      return Long.MAX_VALUE;
+    }
+
+    return sum;
+  }
+
+  @Override
+  public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
+    return e ->
+        handleMessage(
+            new ControlledMessage(
+                self, this.localChannel, e, null, arrivalTime(this.localChannel)));
+  }
+
+  @Override
+  public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass) {
+    return (t, milliseconds) -> {
+      long arrivalTime = addTimeNoOverflow(arrivalTime(this.localChannel), milliseconds);
+      var msg = new ControlledMessage(self, this.localChannel, t, null, arrivalTime);
+      handleMessage(msg);
+    };
+  }
+
+  @Override
+  public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(TypeLiteral<T> typeLiteral) {
+    return (t, milliseconds) -> {
+      var msg =
+          new ControlledMessage(
+              self,
+              this.localChannel,
+              t,
+              typeLiteral,
+              addTimeNoOverflow(arrivalTime(this.localChannel), milliseconds));
+      handleMessage(msg);
+    };
+  }
+
+  @Override
+  public <T> RemoteEventDispatcher<NodeId, T> getRemoteDispatcher(Class<T> messageType) {
+    return (node, e) -> {
+      var channelId =
+          ChannelId.of(
+              this.senderIndex,
+              this.p2pAddressBook.apply(NodeId.fromPublicKey(node.getPublicKey())));
+
+      handleMessage(new ControlledMessage(self, channelId, e, null, arrivalTime(channelId)));
+    };
+  }
+
+  private void handleMessage(ControlledMessage controlledMessage) {
+    this.network.handleMessage(controlledMessage);
+  }
+
+  private long arrivalTime(ChannelId channelId) {
+    long delay = this.network.delayForChannel(channelId);
+    return addTimeNoOverflow(this.network.currentTime(), delay);
   }
 }

@@ -66,12 +66,12 @@ package com.radixdlt.harness.deterministic;
 
 import com.google.inject.AbstractModule;
 import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.deterministic.network.ControlledSender;
+import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
 
 public final class DeterministicEnvironmentModule extends AbstractModule {
-  private final ControlledSender controlledSender;
+  private final ControlledDispatcher controlledSender;
 
-  public DeterministicEnvironmentModule(ControlledSender controlledSender) {
+  public DeterministicEnvironmentModule(ControlledDispatcher controlledSender) {
     this.controlledSender = controlledSender;
   }
 

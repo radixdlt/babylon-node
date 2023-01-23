@@ -152,7 +152,7 @@ public final class RxModuleRunnerImpl implements ModuleRunner {
       return this;
     }
 
-    public <T> Builder add(Flowable<RemoteEvent<T>> o, RemoteEventProcessor<T> p) {
+    public <N, T> Builder add(Flowable<RemoteEvent<N, T>> o, RemoteEventProcessor<N, T> p) {
       subscriptionsBuilder.add(new Subscription<>(o.toObservable(), p::process));
       return this;
     }

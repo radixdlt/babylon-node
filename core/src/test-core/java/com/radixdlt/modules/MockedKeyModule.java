@@ -68,7 +68,7 @@ import com.google.common.hash.HashFunction;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.monitoring.Metrics;
@@ -78,12 +78,13 @@ import java.util.function.Function;
 public final class MockedKeyModule extends AbstractModule {
   @Provides
   @Self
-  String name(Function<BFTNode, String> nodeToString, @Self BFTNode self) {
+  String name(Function<BFTValidatorId, String> nodeToString, @Self BFTValidatorId self) {
     return nodeToString.apply(self);
   }
 
   @Provides
-  private HashSigner hashSigner(@Self BFTNode node, Metrics metrics, HashFunction hashFunction) {
+  private HashSigner hashSigner(
+      @Self BFTValidatorId node, Metrics metrics, HashFunction hashFunction) {
     return h -> {
       var concat = new byte[64];
       System.arraycopy(h, 0, concat, 0, 32);

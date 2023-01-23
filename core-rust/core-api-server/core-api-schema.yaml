@@ -1243,38 +1243,18 @@ components:
 #################################################
 # GENERAL / SHARED MODELS - keys and signatures #
 #################################################
-    BlueprintFunctionIdentifier:
-      type: object
-      required:
-        - package_address
-        - blueprint_name
-        - function_name
-      properties:
-        package_address:
-          $ref: "#/components/schemas/PackageAddress"
-        blueprint_name:
-          type: string
-        function_name:
-          type: string
-    ComponentMethodIdentifier:
-      type: object
-      required:
-        - component_address
-        - method_name
-      properties:
-        component_address:
-          $ref: "#/components/schemas/ComponentAddress"
-        method_name:
-          type: string
     PublicKeyType:
       type: string
       enum:
         - EcdsaSecp256k1
         - EddsaEd25519
     PublicKey:
-      oneOf:
-        - $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
-        - $ref: '#/components/schemas/EddsaEd25519PublicKey'
+      type: object
+      required:
+        - key_type
+      properties:
+        key_type:
+          $ref: "#/components/schemas/PublicKeyType"
       discriminator:
         propertyName: key_type
         mapping:
@@ -1282,35 +1262,36 @@ components:
           EcdsaSecp256k1: '#/components/schemas/EcdsaSecp256k1PublicKey'
           EddsaEd25519: '#/components/schemas/EddsaEd25519PublicKey'
     EcdsaSecp256k1PublicKey:
-      type: object
-      required:
-        - key_type
-        - key_hex
-      properties:
-        key_type:
-          $ref: '#/components/schemas/PublicKeyType'
-        key_hex:
-          type: string
-          minLength: 66
-          maxLength: 66
-          description: The hex-encoded compressed ECDSA Secp256k1 public key (33 bytes)
+      allOf:
+        - $ref: "#/components/schemas/PublicKey"
+        - type: object
+          required:
+            - key_hex
+          properties:
+            key_hex:
+              type: string
+              minLength: 66
+              maxLength: 66
+              description: The hex-encoded compressed ECDSA Secp256k1 public key (33 bytes)
     EddsaEd25519PublicKey:
+      allOf:
+        - $ref: "#/components/schemas/PublicKey"
+        - type: object
+          required:
+            - key_hex
+          properties:
+            key_hex:
+              type: string
+              minLength: 64
+              maxLength: 64
+              description: The hex-encoded compressed EdDSA Ed25519 public key (32 bytes)
+    Signature:
       type: object
       required:
         - key_type
-        - key_hex
       properties:
         key_type:
-          $ref: '#/components/schemas/PublicKeyType'
-        key_hex:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: The hex-encoded compressed EdDSA Ed25519 public key (32 bytes)
-    Signature:
-      oneOf:
-        - $ref: '#/components/schemas/EcdsaSecp256k1Signature'
-        - $ref: '#/components/schemas/EddsaEd25519Signature'
+          $ref: "#/components/schemas/PublicKeyType"
       discriminator:
         propertyName: key_type
         mapping:
@@ -1318,35 +1299,36 @@ components:
           EcdsaSecp256k1: '#/components/schemas/EcdsaSecp256k1Signature'
           EddsaEd25519: '#/components/schemas/EddsaEd25519Signature'
     EcdsaSecp256k1Signature:
-      type: object
-      required:
-        - key_type
-        - signature_hex
-      properties:
-        key_type:
-          $ref: '#/components/schemas/PublicKeyType'
-        signature_hex:
-          type: string
-          minLength: 130
-          maxLength: 130
-          description: A hex-encoded recoverable ECDSA Secp256k1 signature (65 bytes). The first byte is the recovery id, the remaining 64 bytes are the compact signature, ie `CONCAT(R, s)` where `R` and `s` are each 32-bytes in padded big-endian format.
+      allOf:
+        - $ref: "#/components/schemas/Signature"
+        - type: object
+          required:
+            - signature_hex
+          properties:
+            signature_hex:
+              type: string
+              minLength: 130
+              maxLength: 130
+              description: A hex-encoded recoverable ECDSA Secp256k1 signature (65 bytes). The first byte is the recovery id, the remaining 64 bytes are the compact signature, ie `CONCAT(R, s)` where `R` and `s` are each 32-bytes in padded big-endian format.
     EddsaEd25519Signature:
+      allOf:
+        - $ref: "#/components/schemas/Signature"
+        - type: object
+          required:
+            - signature_hex
+          properties:
+            signature_hex:
+              type: string
+              minLength: 128
+              maxLength: 128
+              description: A hex-encoded EdDSA Ed25519 signature (64 bytes). This is `CONCAT(R, s)` where `R` and `s` are each 32-bytes in padded big-endian format.
+    SignatureWithPublicKey:
       type: object
       required:
         - key_type
-        - signature_hex
       properties:
         key_type:
-          $ref: '#/components/schemas/PublicKeyType'
-        signature_hex:
-          type: string
-          minLength: 128
-          maxLength: 128
-          description: A hex-encoded EdDSA Ed25519 signature (64 bytes). This is `CONCAT(R, s)` where `R` and `s` are each 32-bytes in padded big-endian format.
-    SignatureWithPublicKey:
-      oneOf:
-        - $ref: '#/components/schemas/EcdsaSecp256k1SignatureWithPublicKey'
-        - $ref: '#/components/schemas/EddsaEd25519SignatureWithPublicKey'
+          $ref: "#/components/schemas/PublicKeyType"
       discriminator:
         propertyName: key_type
         mapping:
@@ -1354,30 +1336,28 @@ components:
           EcdsaSecp256k1: '#/components/schemas/EcdsaSecp256k1SignatureWithPublicKey'
           EddsaEd25519: '#/components/schemas/EddsaEd25519SignatureWithPublicKey'
     EcdsaSecp256k1SignatureWithPublicKey:
-      type: object
-      required:
-        - key_type
-        - recoverable_signature
-      description: Because ECDSA has recoverable signatures, this only includes a signature
-      properties:
-        key_type:
-          $ref: '#/components/schemas/PublicKeyType'
-        recoverable_signature:
-          $ref: '#/components/schemas/EcdsaSecp256k1Signature'
+      allOf:
+        - $ref: "#/components/schemas/SignatureWithPublicKey"
+        - type: object
+          required:
+            - recoverable_signature
+          description: Because ECDSA has recoverable signatures, this only includes a signature
+          properties:
+            recoverable_signature:
+              $ref: '#/components/schemas/EcdsaSecp256k1Signature'
     EddsaEd25519SignatureWithPublicKey:
-      type: object
-      required:
-        - key_type
-        - public_key
-        - signature
-      description: The EDDSA public key and signature 
-      properties:
-        key_type:
-          $ref: '#/components/schemas/PublicKeyType'
-        public_key:
-          $ref: '#/components/schemas/EddsaEd25519PublicKey'
-        signature:
-          $ref: '#/components/schemas/EddsaEd25519Signature'
+      allOf:
+        - $ref: "#/components/schemas/SignatureWithPublicKey"
+        - type: object
+          required:
+            - public_key
+            - signature
+          description: The EdDSA public key and signature 
+          properties:
+            public_key:
+              $ref: '#/components/schemas/EddsaEd25519PublicKey'
+            signature:
+              $ref: '#/components/schemas/EddsaEd25519Signature'
 ################################################
 # GENERAL / SHARED MODELS - Dynamic auth rules #
 ################################################
@@ -3014,20 +2994,57 @@ components:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         target:
-          oneOf:
-            - $ref: '#/components/schemas/ComponentMethodIdentifier'
-            - $ref: '#/components/schemas/BlueprintFunctionIdentifier'
-          discriminator:
-            propertyName: type
-            mapping:
-              method: '#/components/schemas/ComponentMethodIdentifier'
-              function: '#/components/schemas/BlueprintFunctionIdentifier'
+          $ref: "#/components/schemas/TargetIdentifier"
         arguments:
           type: array
           description: Argument list
           items:
             type: string
             description: SBOR-encoded argument, formatted as a hex-string
+    TargetIdentifierType:
+      type: string
+      enum:
+        - Method
+        - Function
+    TargetIdentifier:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/TargetIdentifierType'
+      discriminator:
+        propertyName: type
+        mapping:
+          Method: '#/components/schemas/ComponentMethodTargetIdentifier'
+          Function: '#/components/schemas/BlueprintFunctionTargetIdentifier'
+    ComponentMethodTargetIdentifier:
+      allOf:
+        - $ref: '#/components/schemas/TargetIdentifier'
+        - type: object
+          required:
+            - component_address
+            - method_name
+          properties:
+            component_address:
+              $ref: "#/components/schemas/ComponentAddress"
+            method_name:
+              type: string
+    BlueprintFunctionTargetIdentifier:
+      allOf:
+        - $ref: '#/components/schemas/TargetIdentifier'
+        - type: object
+          required:
+            - package_address
+            - blueprint_name
+            - function_name
+          properties:
+            package_address:
+              $ref: "#/components/schemas/PackageAddress"
+            blueprint_name:
+              type: string
+            function_name:
+              type: string
     TransactionCallPreviewResponse:
       type: object
       required:

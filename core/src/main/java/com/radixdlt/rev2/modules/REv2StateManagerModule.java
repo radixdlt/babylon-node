@@ -141,7 +141,7 @@ public final class REv2StateManagerModule extends AbstractModule {
           new AbstractModule() {
             @Provides
             @Singleton
-            private StateManager stateManager(@Self BFTNode node) {
+            private StateManager stateManager(@Self BFTValidatorId node) {
               var network = Network.ofId(networkId).orElseThrow();
               final REv2DatabaseConfig databaseConfigToUse;
               var databasePath = rocksDB.databasePath() + node.toString();

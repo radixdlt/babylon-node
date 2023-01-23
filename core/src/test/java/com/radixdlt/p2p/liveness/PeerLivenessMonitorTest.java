@@ -76,7 +76,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -101,8 +100,8 @@ public class PeerLivenessMonitorTest {
   private P2PConfig p2PConfig;
   private PeersView peersView;
   private EventDispatcher<PeerEvent> peerEventDispatcher;
-  private RemoteEventDispatcher<Ping> pingEventDispatcher;
-  private RemoteEventDispatcher<Pong> pongEventDispatcher;
+  private RemoteEventDispatcher<NodeId, Ping> pingEventDispatcher;
+  private RemoteEventDispatcher<NodeId, Pong> pongEventDispatcher;
   private ScheduledEventDispatcher<PeerPingTimeout> pingTimeoutEventDispatcher;
 
   private PeerLivenessMonitor sut;
@@ -129,7 +128,7 @@ public class PeerLivenessMonitorTest {
 
   @Test
   public void should_ping_peer_when_triggered_and_setup_a_timeout_and_emit_an_event_when_timeout() {
-    final var peer1 = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
+    final var peer1 = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
     when(peersView.peers()).thenReturn(getPeerInfoStream(peer1));
 
     this.sut.peersLivenessCheckTriggerEventProcessor().process(PeersLivenessCheckTrigger.create());
@@ -137,23 +136,19 @@ public class PeerLivenessMonitorTest {
     verify(pingEventDispatcher, times(1)).dispatch(eq(peer1), any());
     verify(pingTimeoutEventDispatcher, times(1)).dispatch(any(), anyLong());
 
-    this.sut
-        .pingTimeoutEventProcessor()
-        .process(PeerPingTimeout.create(NodeId.fromPublicKey(peer1.getKey())));
+    this.sut.pingTimeoutEventProcessor().process(PeerPingTimeout.create(peer1));
 
     verify(peerEventDispatcher, times(1))
         .dispatch(
             argThat(
                 arg ->
                     arg instanceof PeerLostLiveness
-                        && ((PeerLostLiveness) arg)
-                            .nodeId()
-                            .equals(NodeId.fromPublicKey(peer1.getKey()))));
+                        && ((PeerLostLiveness) arg).nodeId().equals(peer1)));
   }
 
   @Test
   public void should_ignore_obsolete_timeout() {
-    final var peer1 = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
+    final var peer1 = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
     when(peersView.peers()).thenReturn(getPeerInfoStream(peer1));
 
     this.sut.peersLivenessCheckTriggerEventProcessor().process(PeersLivenessCheckTrigger.create());
@@ -162,21 +157,19 @@ public class PeerLivenessMonitorTest {
     verify(pingTimeoutEventDispatcher, times(1)).dispatch(any(), anyLong());
 
     this.sut.pongRemoteEventProcessor().process(peer1, Pong.create());
-    this.sut
-        .pingTimeoutEventProcessor()
-        .process(PeerPingTimeout.create(NodeId.fromPublicKey(peer1.getKey())));
+    this.sut.pingTimeoutEventProcessor().process(PeerPingTimeout.create(peer1));
 
     verifyNoInteractions(peerEventDispatcher);
   }
 
   @Test
   public void should_respond_with_pong_to_ping() {
-    final var peer1 = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
+    final var peer1 = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
     this.sut.pingRemoteEventProcessor().process(peer1, Ping.create());
     verify(pongEventDispatcher, times(1)).dispatch(eq(peer1), any());
   }
 
-  private Stream<PeersView.PeerInfo> getPeerInfoStream(BFTNode peer) {
+  private Stream<PeersView.PeerInfo> getPeerInfoStream(NodeId peer) {
     var peerChannelInfo =
         PeersView.PeerChannelInfo.create(
             Optional.empty(),
@@ -185,6 +178,6 @@ public class PeerLivenessMonitorTest {
             true,
             Set.of(LedgerSyncCapability.Builder.asDefault().build().toRemotePeerCapability()));
     var channels = ImmutableList.of(peerChannelInfo);
-    return Stream.of(PeersView.PeerInfo.create(NodeId.fromPublicKey(peer.getKey()), channels));
+    return Stream.of(PeersView.PeerInfo.create(peer, channels));
   }
 }

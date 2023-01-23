@@ -84,10 +84,11 @@ import org.junit.Test;
 
 public class BFTEventReducerTest {
 
-  private BFTNode self = mock(BFTNode.class);
+  private BFTValidatorId self = mock(BFTValidatorId.class);
   private Hasher hasher = mock(Hasher.class);
   private Metrics metrics = new MetricsInitializer().initialize();
-  private RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
+  private RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher =
+      rmock(RemoteEventDispatcher.class);
   private PendingVotes pendingVotes = mock(PendingVotes.class);
   private BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
   private VertexStoreAdapter vertexStore = mock(VertexStoreAdapter.class);
@@ -122,7 +123,7 @@ public class BFTEventReducerTest {
     BFTInsertUpdate update = mock(BFTInsertUpdate.class);
     BFTHeader header = mock(BFTHeader.class);
     this.bftEventReducer.processRoundUpdate(
-        RoundUpdate.create(Round.of(3), mock(HighQC.class), mock(BFTNode.class), this.self));
+        RoundUpdate.create(Round.of(3), mock(HighQC.class), mock(BFTValidatorId.class), this.self));
     verify(this.pacemaker, times(1)).processRoundUpdate(any());
 
     when(update.getHeader()).thenReturn(header);
@@ -140,7 +141,7 @@ public class BFTEventReducerTest {
     when(header.getRound()).thenReturn(Round.of(3));
 
     RoundUpdate roundUpdate =
-        RoundUpdate.create(Round.of(3), mock(HighQC.class), mock(BFTNode.class), this.self);
+        RoundUpdate.create(Round.of(3), mock(HighQC.class), mock(BFTValidatorId.class), this.self);
     this.bftEventReducer.processRoundUpdate(roundUpdate);
     verify(this.pacemaker, times(1)).processRoundUpdate(any());
 
@@ -161,7 +162,7 @@ public class BFTEventReducerTest {
     when(header.getRound()).thenReturn(Round.of(3));
 
     RoundUpdate roundUpdate =
-        RoundUpdate.create(Round.of(3), mock(HighQC.class), mock(BFTNode.class), this.self);
+        RoundUpdate.create(Round.of(3), mock(HighQC.class), mock(BFTValidatorId.class), this.self);
     this.bftEventReducer.processRoundUpdate(roundUpdate);
     verify(this.pacemaker, times(1)).processRoundUpdate(any());
 
@@ -174,7 +175,7 @@ public class BFTEventReducerTest {
 
   @Test
   public void when_process_vote_with_quorum__then_processed() {
-    BFTNode author = mock(BFTNode.class);
+    BFTValidatorId author = mock(BFTValidatorId.class);
     Vote vote = mock(Vote.class);
     when(vote.getAuthor()).thenReturn(author);
 
@@ -189,7 +190,7 @@ public class BFTEventReducerTest {
 
     // Move to round 1
     this.bftEventReducer.processRoundUpdate(
-        RoundUpdate.create(Round.of(1), highQc, mock(BFTNode.class), this.self));
+        RoundUpdate.create(Round.of(1), highQc, mock(BFTValidatorId.class), this.self));
 
     this.bftEventReducer.processVote(vote);
 

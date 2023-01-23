@@ -64,7 +64,7 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import java.util.Objects;
 
@@ -84,11 +84,11 @@ public final class LocalTimeoutOccurrence {
     return scheduledLocalTimeout.round();
   }
 
-  public BFTNode getLeader() {
+  public BFTValidatorId getLeader() {
     return scheduledLocalTimeout.roundUpdate().getLeader();
   }
 
-  public BFTNode getNextLeader() {
+  public BFTValidatorId getNextLeader() {
     return scheduledLocalTimeout.roundUpdate().getNextLeader();
   }
 

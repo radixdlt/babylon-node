@@ -72,7 +72,7 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.api.CoreApiServer;
 import com.radixdlt.api.prometheus.PrometheusApi;
 import com.radixdlt.api.system.SystemApi;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
 import com.radixdlt.environment.Runners;
@@ -193,7 +193,7 @@ public final class RadixNodeApplication {
     final var consensusRunner = moduleRunners.get(Runners.CONSENSUS);
     consensusRunner.start();
 
-    final BFTNode self = injector.getInstance(Key.get(BFTNode.class, Self.class));
+    final BFTValidatorId self = injector.getInstance(Key.get(BFTValidatorId.class, Self.class));
 
     Duration startTime = startTimer.elapsed();
     var metrics = injector.getInstance(Metrics.class);
@@ -206,7 +206,7 @@ public final class RadixNodeApplication {
 
   private static void shutdown(Injector injector) {
     // using System.out.println as logger no longer works reliably in a shutdown hook
-    final var self = injector.getInstance(Key.get(BFTNode.class, Self.class));
+    final var self = injector.getInstance(Key.get(BFTValidatorId.class, Self.class));
     System.out.println("Node " + self + " is shutting down...");
 
     injector

@@ -17,14 +17,14 @@ pub struct TransactionCallPreviewRequest {
     #[serde(rename = "network")]
     pub network: String,
     #[serde(rename = "target")]
-    pub target: Option<crate::core_api::generated::models::TransactionCallPreviewRequestTarget>, // Using Option permits Default trait; Will always be Some in normal use
+    pub target: Option<crate::core_api::generated::models::TargetIdentifier>, // Using Option permits Default trait; Will always be Some in normal use
     /// Argument list
     #[serde(rename = "arguments")]
     pub arguments: Vec<String>,
 }
 
 impl TransactionCallPreviewRequest {
-    pub fn new(network: String, target: crate::core_api::generated::models::TransactionCallPreviewRequestTarget, arguments: Vec<String>) -> TransactionCallPreviewRequest {
+    pub fn new(network: String, target: crate::core_api::generated::models::TargetIdentifier, arguments: Vec<String>) -> TransactionCallPreviewRequest {
         TransactionCallPreviewRequest {
             network,
             target: Option::Some(target),

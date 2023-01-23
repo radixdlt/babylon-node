@@ -75,6 +75,7 @@ import org.junit.Test;
 
 public class TransactionParseTest extends DeterministicCoreApiTestBase {
   @Test
+  @SuppressWarnings("try")
   public void test_parse_rejected_transaction() throws Exception {
     try (var ignored = buildRunningServerTest()) {
 

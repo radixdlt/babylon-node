@@ -69,13 +69,13 @@ import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Key;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.test.DeterministicP2PNetworkTest;
+import com.radixdlt.utils.PrivateKeys;
 import java.util.Set;
 import org.junit.Test;
 
@@ -109,7 +109,7 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
   public void when_unexpected_response_then_ban_peer() throws Exception {
     setupTestRunner(1, defaultProperties());
 
-    final var unexpectedSender = BFTNode.random();
+    final var unexpectedSender = NodeId.fromPublicKey(PrivateKeys.ofNumeric(1).getPublicKey());
     final var peersResponse =
         PeersResponse.create(
             ImmutableSet.of(
@@ -126,11 +126,6 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
 
     processAll();
 
-    assertTrue(
-        testNetworkRunner
-            .addressBook(0)
-            .findById(NodeId.fromPublicKey(unexpectedSender.getKey()))
-            .get()
-            .isBanned());
+    assertTrue(testNetworkRunner.addressBook(0).findById(unexpectedSender).get().isBanned());
   }
 }

@@ -77,7 +77,7 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
@@ -89,20 +89,21 @@ import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.messaging.core.MessageCentral;
 import com.radixdlt.messaging.core.MessageCentralMockProvider;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.RandomHasher;
 import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Before;
 import org.junit.Test;
 
 public class MessageCentralValidatorSyncTest {
-  private BFTNode self;
+  private BFTValidatorId self;
   private MessageCentral messageCentral;
   private MessageCentralValidatorSync sync;
   private Hasher hasher;
 
   @Before
   public void setUp() {
-    this.self = mock(BFTNode.class);
+    this.self = mock(BFTValidatorId.class);
     ECDSASecp256k1PublicKey pubKey = mock(ECDSASecp256k1PublicKey.class);
     when(self.getKey()).thenReturn(pubKey);
     this.messageCentral = MessageCentralMockProvider.get();
@@ -115,12 +116,9 @@ public class MessageCentralValidatorSyncTest {
     VertexWithHash vertex = mock(VertexWithHash.class);
     when(vertex.vertex()).thenReturn(mock(Vertex.class));
     ImmutableList<VertexWithHash> vertices = ImmutableList.of(vertex);
+    var nodeId = NodeId.fromPublicKey(PrivateKeys.ofNumeric(1).getPublicKey());
 
-    BFTNode node = mock(BFTNode.class);
-    ECDSASecp256k1PublicKey ecPublicKey = mock(ECDSASecp256k1PublicKey.class);
-    when(node.getKey()).thenReturn(ecPublicKey);
-
-    sync.verticesResponseDispatcher().dispatch(node, new GetVerticesResponse(vertices));
+    sync.verticesResponseDispatcher().dispatch(nodeId, new GetVerticesResponse(vertices));
     verify(messageCentral, times(1)).send(any(), any(GetVerticesResponseMessage.class));
   }
 
@@ -130,16 +128,13 @@ public class MessageCentralValidatorSyncTest {
     HighQC highQC = mock(HighQC.class);
     when(highQC.highestQC()).thenReturn(qc);
     when(highQC.highestCommittedQC()).thenReturn(qc);
-    BFTNode node = mock(BFTNode.class);
-    ECDSASecp256k1PublicKey ecPublicKey = mock(ECDSASecp256k1PublicKey.class);
-    when(node.getKey()).thenReturn(ecPublicKey);
+    var nodeId = NodeId.fromPublicKey(PrivateKeys.ofNumeric(1).getPublicKey());
     final var request = new GetVerticesRequest(HashUtils.random256(), 3);
 
     sync.verticesErrorResponseDispatcher()
-        .dispatch(node, new GetVerticesErrorResponse(highQC, request));
+        .dispatch(nodeId, new GetVerticesErrorResponse(highQC, request));
 
-    verify(messageCentral, times(1))
-        .send(eq(NodeId.fromPublicKey(ecPublicKey)), any(GetVerticesErrorResponseMessage.class));
+    verify(messageCentral, times(1)).send(eq(nodeId), any(GetVerticesErrorResponseMessage.class));
   }
 
   @Test

@@ -64,7 +64,7 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.epoch.EpochRound;
 
 /** A timeout which has occurred in the bft node */
@@ -85,11 +85,11 @@ public final class EpochLocalTimeoutOccurrence {
     return localTimeoutOccurrence;
   }
 
-  public BFTNode getLeader() {
+  public BFTValidatorId getLeader() {
     return localTimeoutOccurrence.getLeader();
   }
 
-  public BFTNode getNextLeader() {
+  public BFTValidatorId getNextLeader() {
     return localTimeoutOccurrence.getNextLeader();
   }
 

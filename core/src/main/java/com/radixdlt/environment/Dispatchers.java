@@ -67,9 +67,9 @@ package com.radixdlt.environment;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -138,28 +138,28 @@ public final class Dispatchers {
   }
 
   private static final class RemoteDispatcherProvider<T>
-      implements Provider<RemoteEventDispatcher<T>> {
+      implements Provider<RemoteEventDispatcher<NodeId, T>> {
     @Inject private Provider<Environment> environmentProvider;
 
     @Inject private Metrics metrics;
 
-    @Inject @Self private BFTNode self;
+    @Inject @Self private NodeId self;
 
     @Inject private Set<EventProcessorOnDispatch<?>> onDispatchProcessors;
 
-    private final Class<T> c;
+    private final Class<T> messageType;
 
-    RemoteDispatcherProvider(Class<T> c) {
-      this.c = c;
+    RemoteDispatcherProvider(Class<T> messageType) {
+      this.messageType = messageType;
     }
 
     @Override
-    public RemoteEventDispatcher<T> get() {
-      var remoteDispatcher = environmentProvider.get().getRemoteDispatcher(c);
-      var localDispatcher = environmentProvider.get().getDispatcher(c);
+    public RemoteEventDispatcher<NodeId, T> get() {
+      var remoteDispatcher = environmentProvider.get().getRemoteDispatcher(messageType);
+      var localDispatcher = environmentProvider.get().getDispatcher(messageType);
       final Set<EventProcessor<T>> onDispatch =
           onDispatchProcessors.stream()
-              .flatMap(p -> p.getProcessor(c).stream())
+              .flatMap(p -> p.getProcessor(messageType).stream())
               .collect(Collectors.toSet());
       return (node, e) -> {
         if (node.equals(self)) {
@@ -190,8 +190,9 @@ public final class Dispatchers {
     return new ScheduledDispatcherProvider<>(t);
   }
 
-  public static <T> Provider<RemoteEventDispatcher<T>> remoteDispatcherProvider(Class<T> c) {
-    return new RemoteDispatcherProvider<>(c);
+  public static <T> Provider<RemoteEventDispatcher<NodeId, T>> remoteDispatcherProvider(
+      Class<T> messageType) {
+    return new RemoteDispatcherProvider<>(messageType);
   }
 
   /**

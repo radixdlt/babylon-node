@@ -70,7 +70,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -93,6 +93,6 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 
     var txn = RawNotarizedTransaction.create(new byte[] {0, 1, 2, 3});
 
-    return Vertex.create(qc, round, List.of(txn), BFTNode.random(), 0L);
+    return Vertex.create(qc, round, List.of(txn), BFTValidatorId.random(), 0L);
   }
 }

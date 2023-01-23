@@ -65,7 +65,7 @@
 package com.radixdlt.harness.simulation.network;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.p2p.NodeId;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.Map;
@@ -92,7 +92,7 @@ public final class InOrderChannels implements SimulationNetwork.ChannelCommunica
   }
 
   private SimulationNetwork.MessageInTransit addLatencyIfNotToSelf(
-      SimulationNetwork.MessageInTransit msg, BFTNode receiver) {
+      SimulationNetwork.MessageInTransit msg, NodeId receiver) {
     if (msg.getSender().equals(receiver)) {
       return msg;
     } else {
@@ -115,7 +115,7 @@ public final class InOrderChannels implements SimulationNetwork.ChannelCommunica
 
   @Override
   public Observable<SimulationNetwork.MessageInTransit> transform(
-      BFTNode sender, BFTNode receiver, Observable<SimulationNetwork.MessageInTransit> messages) {
+      NodeId sender, NodeId receiver, Observable<SimulationNetwork.MessageInTransit> messages) {
     return messages
         .map(msg -> addLatencyIfNotToSelf(msg, receiver))
         .filter(msg -> msg.getDelay() >= 0)

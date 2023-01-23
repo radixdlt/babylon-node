@@ -124,7 +124,8 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
                                     .map(
                                         validator ->
                                             BFTValidator.from(
-                                                BFTNode.create(validator.key()), UInt256.ONE));
+                                                BFTValidatorId.create(validator.key()),
+                                                UInt256.ONE));
                             return BFTValidatorSet.from(validators);
                           })
                       .or((BFTValidatorSet) null);

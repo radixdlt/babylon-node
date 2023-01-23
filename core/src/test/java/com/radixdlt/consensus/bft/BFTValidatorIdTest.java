@@ -62,90 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.environment.deterministic.network;
+package com.radixdlt.consensus.bft;
 
-import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.ScheduledEventDispatcher;
-import java.util.function.Function;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/** A sender within a deterministic network. */
-public final class ControlledSender implements Environment {
-  private final DeterministicNetwork network;
-  private final BFTNode self;
-  private final int senderIndex;
-  private final ChannelId localChannel;
-  private final Function<BFTNode, Integer> addressBook;
+public class BFTValidatorIdTest {
 
-  public ControlledSender(
-      Function<BFTNode, Integer> addressBook,
-      DeterministicNetwork network,
-      BFTNode self,
-      int senderIndex) {
-    this.addressBook = addressBook;
-    this.network = network;
-    this.self = self;
-    this.senderIndex = senderIndex;
-    this.localChannel = ChannelId.of(this.senderIndex, this.senderIndex);
-  }
-
-  private static long addTimeNoOverflow(long a, long b) {
-    var sum = a + b;
-    if (sum < 0) {
-      return Long.MAX_VALUE;
-    }
-
-    return sum;
-  }
-
-  @Override
-  public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
-    return e ->
-        handleMessage(
-            new ControlledMessage(
-                self, this.localChannel, e, null, arrivalTime(this.localChannel)));
-  }
-
-  @Override
-  public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass) {
-    return (t, milliseconds) -> {
-      long arrivalTime = addTimeNoOverflow(arrivalTime(this.localChannel), milliseconds);
-      var msg = new ControlledMessage(self, this.localChannel, t, null, arrivalTime);
-      handleMessage(msg);
-    };
-  }
-
-  @Override
-  public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(TypeLiteral<T> typeLiteral) {
-    return (t, milliseconds) -> {
-      var msg =
-          new ControlledMessage(
-              self,
-              this.localChannel,
-              t,
-              typeLiteral,
-              addTimeNoOverflow(arrivalTime(this.localChannel), milliseconds));
-      handleMessage(msg);
-    };
-  }
-
-  @Override
-  public <T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass) {
-    return (node, e) -> {
-      ChannelId channelId = ChannelId.of(this.senderIndex, this.addressBook.apply(node));
-      handleMessage(new ControlledMessage(self, channelId, e, null, arrivalTime(channelId)));
-    };
-  }
-
-  private void handleMessage(ControlledMessage controlledMessage) {
-    this.network.handleMessage(controlledMessage);
-  }
-
-  private long arrivalTime(ChannelId channelId) {
-    long delay = this.network.delayForChannel(channelId);
-    return addTimeNoOverflow(this.network.currentTime(), delay);
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(BFTValidatorId.class).withIgnoredFields("shortenedName").verify();
   }
 }
