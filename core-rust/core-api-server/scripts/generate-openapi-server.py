@@ -102,6 +102,7 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location):
         fix_broken_discriminator_tag(file_path, "substate_type")
         fix_broken_discriminator_tag(file_path, "resource_type")
         fix_broken_discriminator_tag(file_path, "key_type")
+        fix_broken_discriminator_tag(file_path, "error_type")
         fix_broken_discriminator_tag(file_path, "type")
         fix_for_enum_not_implementing_default(file_path, "AccessRule")
         fix_for_enum_not_implementing_default(file_path, "AccessRuleNode")
@@ -122,6 +123,9 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location):
         fix_for_enum_not_implementing_default(file_path, "ValidatorTransaction")
         fix_for_enum_not_implementing_default(file_path, "AccessRuleReference")
         fix_for_enum_not_implementing_default(file_path, "LocalMethodReference")
+        fix_for_enum_not_implementing_default(file_path, "TransactionSubmitErrorDetails")
+        fix_for_enum_not_implementing_default(file_path, "ErrorResponse")
+        fix_for_enum_not_implementing_default(file_path, "TargetIdentifier")
 
     logging.info("Successfully fixed up rust models.")
 
@@ -141,8 +145,8 @@ def generate_java_models(schema_file, tmp_client_folder, out_location):
 
     logging.info("Successfully generated java models.")
 
-    rust_code_root = os.path.join(tmp_client_folder, 'src/main/java/com/radixdlt/api/core/generated/')
-    shutil.copytree(rust_code_root, out_location)
+    code_root = os.path.join(tmp_client_folder, 'src/main/java/com/radixdlt/api/core/generated/')
+    shutil.copytree(code_root, out_location)
 
     logging.info("Successfully copied java models.")
 

@@ -67,6 +67,7 @@ package com.radixdlt.api.core;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.ParsedNotarizedTransaction;
 import com.radixdlt.api.core.generated.models.TransactionParseRequest;
 import com.radixdlt.rev2.REv2TestTransactions;
 import com.radixdlt.utils.Bytes;
@@ -74,8 +75,9 @@ import org.junit.Test;
 
 public class TransactionParseTest extends DeterministicCoreApiTestBase {
   @Test
+  @SuppressWarnings("try")
   public void test_parse_rejected_transaction() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var ignored = buildRunningServerTest()) {
 
       var rawTransaction =
           REv2TestTransactions.validButRejectTransaction(0, 0).constructRawTransaction();
@@ -89,8 +91,13 @@ public class TransactionParseTest extends DeterministicCoreApiTestBase {
                       .validationMode(TransactionParseRequest.ValidationModeEnum.FULL)
                       .payloadHex(Bytes.toHexString(rawTransaction.getPayload())));
 
-      var parsed = response.getParsed().getParsedNotarizedTransaction();
-      assertThat(parsed.getValidationError().getReason())
+      var parsed = response.getParsed();
+
+      assertThat(parsed).isInstanceOfAny(ParsedNotarizedTransaction.class);
+      var parsedNotarized = (ParsedNotarizedTransaction) parsed;
+      var validationError = parsedNotarized.getValidationError();
+      assertThat(validationError).isNotNull();
+      assertThat(validationError.getReason())
           .isEqualTo("FromExecution(SuccessButFeeLoanNotRepaid)");
     }
   }
