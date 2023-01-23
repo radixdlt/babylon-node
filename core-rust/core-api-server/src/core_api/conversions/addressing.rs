@@ -380,6 +380,12 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         (SubstateType::Validator, SubstateKeyType::Validator)
                     }
                 },
+                SubstateOffset::AccessRulesChain(offset) => match offset {
+                    AccessRulesChainOffset::AccessRulesChain => (
+                        SubstateType::AccessRulesChain,
+                        SubstateKeyType::AccessRulesChain,
+                    ),
+                },
                 _ => return Err(unknown_substate_error("Validator", &substate_id)),
             };
             (EntityType::Validator, substate_type_key)
