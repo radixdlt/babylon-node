@@ -146,11 +146,15 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 #[tracing::instrument(skip_all)]
 fn do_get_txns_and_proof(
     state_manager: &ActualStateManager,
-    (start_state_version_inclusive, max_number_of_txns, max_payload_size_in_bytes): (u64, u32, u32),
+    (
+        start_state_version_inclusive,
+        max_number_of_txns_if_more_than_one_proof,
+        max_payload_size_in_bytes,
+    ): (u64, u32, u32),
 ) -> Option<(Vec<Vec<u8>>, Vec<u8>)> {
     state_manager.store.get_txns_and_proof(
         start_state_version_inclusive,
-        max_number_of_txns,
+        max_number_of_txns_if_more_than_one_proof,
         max_payload_size_in_bytes,
     )
 }

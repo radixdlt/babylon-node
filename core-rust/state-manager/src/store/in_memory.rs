@@ -273,7 +273,7 @@ impl QueryableProofStore for InMemoryStore {
     fn get_txns_and_proof(
         &self,
         start_state_version_inclusive: u64,
-        _max_number_of_txns: u32,
+        _max_number_of_txns_if_more_than_one_proof: u32,
         _max_payload_size_in_bytes: u32,
     ) -> Option<(Vec<Vec<u8>>, Vec<u8>)> {
         self.proofs

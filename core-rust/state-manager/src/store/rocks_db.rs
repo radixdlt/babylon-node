@@ -463,7 +463,7 @@ impl QueryableProofStore for RocksDBStore {
     fn get_txns_and_proof(
         &self,
         start_state_version_inclusive: u64,
-        max_number_of_txns: u32,
+        max_number_of_txns_if_more_than_one_proof: u32,
         max_payload_size_in_bytes: u32,
     ) -> Option<(Vec<Vec<u8>>, Vec<u8>)> {
         let mut payload_size_so_far = 0;
@@ -487,7 +487,7 @@ impl QueryableProofStore for RocksDBStore {
         );
 
         'proof_loop: while payload_size_so_far <= max_payload_size_in_bytes
-            && txns.len() <= (max_number_of_txns as usize)
+            && txns.len() <= (max_number_of_txns_if_more_than_one_proof as usize)
         {
             // Fetch next proof and see if all txns it includes can fit
             // If they do - add them to the output and update the latest usable proof then continue the iteration
@@ -504,9 +504,17 @@ impl QueryableProofStore for RocksDBStore {
                     let mut payload_size_including_next_proof_txns = payload_size_so_far;
                     let mut next_proof_txns = Vec::new();
 
+                    // It looks convoluted, but really isn't :D
+                    // * max_payload_size_in_bytes limit is always enforced
+                    // * max_number_of_txns_if_more_than_one_proof limit is skipped
+                    //   if there isn't yet any usable proof (so the response may
+                    //   contain more than max_number_of_txns_if_more_than_one_proof txns
+                    //   if that's what it takes to be able to produce a response at all)
                     'proof_txns_loop: while payload_size_including_next_proof_txns
                         <= max_payload_size_in_bytes
-                        && txns.len() + next_proof_txns.len() <= (max_number_of_txns as usize)
+                        && (latest_usable_proof.is_none()
+                            || txns.len() + next_proof_txns.len()
+                                <= (max_number_of_txns_if_more_than_one_proof as usize))
                     {
                         match txns_iter.next() {
                             Some(next_txn_result) => {
@@ -537,7 +545,9 @@ impl QueryableProofStore for RocksDBStore {
                     // All txns under next_proof have been processed, once again confirm
                     // that they can all fit in the response (the last txn could have crossed the limit)
                     if payload_size_including_next_proof_txns <= max_payload_size_in_bytes
-                        && txns.len() + next_proof_txns.len() <= (max_number_of_txns as usize)
+                        && (latest_usable_proof.is_none()
+                            || txns.len() + next_proof_txns.len()
+                                <= (max_number_of_txns_if_more_than_one_proof as usize))
                     {
                         // Yup, all good, use next_proof as the result and add its txns
                         latest_usable_proof = Some(next_proof_bytes);

@@ -104,7 +104,7 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
   private static final int NUM_COMMITS = 1000;
 
   @Test
-  @Ignore
+  @Ignore("this test is meant to be run manually")
   public void test_txn_commit_and_read_time() throws Exception {
     try (var test = buildRunningServerTest()) {
       final var stateComputer = test.getInstance(0, RustStateComputer.class);
