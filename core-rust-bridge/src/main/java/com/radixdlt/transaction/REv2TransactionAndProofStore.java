@@ -109,11 +109,13 @@ public final class REv2TransactionAndProofStore {
   }
 
   public Option<Tuple.Tuple2<List<byte[]>, byte[]>> getTxnsAndProof(
-      long startStateVersionInclusive, int maxNumberOfTxns, int maxPayloadSizeInBytes) {
+      long startStateVersionInclusive,
+      int maxNumberOfTxnsIfMoreThanOneProof,
+      int maxPayloadSizeInBytes) {
     return this.getTxnsAndProof.call(
         Tuple.Tuple3.of(
             UInt64.fromNonNegativeLong(startStateVersionInclusive),
-            UInt32.fromNonNegativeInt(maxNumberOfTxns),
+            UInt32.fromNonNegativeInt(maxNumberOfTxnsIfMoreThanOneProof),
             UInt32.fromNonNegativeInt(maxPayloadSizeInBytes)));
   }
 

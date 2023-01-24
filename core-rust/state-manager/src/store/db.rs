@@ -367,7 +367,7 @@ impl QueryableProofStore for StateManagerDatabase {
     fn get_txns_and_proof(
         &self,
         start_state_version_inclusive: u64,
-        max_number_of_txns: u32,
+        max_number_of_txns_if_more_than_one_proof: u32,
         max_payload_size_in_bytes: u32,
     ) -> Option<(Vec<Vec<u8>>, Vec<u8>)> {
         match self {
@@ -375,12 +375,12 @@ impl QueryableProofStore for StateManagerDatabase {
                 in_memory_store, ..
             } => in_memory_store.get_txns_and_proof(
                 start_state_version_inclusive,
-                max_number_of_txns,
+                max_number_of_txns_if_more_than_one_proof,
                 max_payload_size_in_bytes,
             ),
             StateManagerDatabase::RocksDB(store) => store.get_txns_and_proof(
                 start_state_version_inclusive,
-                max_number_of_txns,
+                max_number_of_txns_if_more_than_one_proof,
                 max_payload_size_in_bytes,
             ),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
