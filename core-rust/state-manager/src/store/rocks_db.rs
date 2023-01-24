@@ -63,7 +63,7 @@
  */
 
 use crate::types::UserPayloadHash;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::fmt;
 
 use crate::store::traits::*;
@@ -71,20 +71,17 @@ use crate::{
     AccumulatorHash, CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash,
     HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerTransactionReceipt,
 };
-use radix_engine::ledger::{
-    OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
-};
+use radix_engine::ledger::{OutputValue, QueryableSubstateStore, ReadableSubstateStore};
 use radix_engine::model::PersistedSubstate;
 use radix_engine::types::{
     scrypto_decode, scrypto_encode, KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateId,
     SubstateOffset,
 };
 use rocksdb::{
-    ColumnFamily, ColumnFamilyDescriptor, Direction, IteratorMode, Options, SingleThreaded,
-    TransactionDB, TransactionDBOptions,
+    ColumnFamily, ColumnFamilyDescriptor, Direction, IteratorMode, Options, WriteBatch, DB,
 };
 use std::path::PathBuf;
-use tracing::error;
+use tracing::{error, warn};
 
 use crate::transaction::LedgerTransaction;
 
@@ -141,7 +138,7 @@ impl fmt::Display for RocksDBColumnFamily {
 }
 
 pub struct RocksDBStore {
-    db: TransactionDB<SingleThreaded>,
+    db: DB,
 }
 
 impl RocksDBStore {
@@ -150,22 +147,95 @@ impl RocksDBStore {
         db_opts.create_if_missing(true);
         db_opts.create_missing_column_families(true);
 
-        let transactional_db_opts = TransactionDBOptions::default();
-
         let column_families: Vec<ColumnFamilyDescriptor> = ALL_COLUMN_FAMILIES
             .into_iter()
             .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
             .collect();
 
-        let db = TransactionDB::open_cf_descriptors(
-            &db_opts,
-            &transactional_db_opts,
-            root.as_path(),
-            column_families,
-        )
-        .unwrap();
+        let db = DB::open_cf_descriptors(&db_opts, root.as_path(), column_families).unwrap();
 
         RocksDBStore { db }
+    }
+
+    fn add_transaction_to_write_batch(
+        &self,
+        batch: &mut WriteBatch,
+        transaction_bundle: CommittedTransactionBundle,
+    ) {
+        let (transaction, receipt, identifiers) = transaction_bundle;
+        let state_version = identifiers.state_version;
+        let ledger_payload_hash = transaction.ledger_payload_hash();
+
+        // TEMPORARY until this is handled in the engine: we store both an intent lookup and the transaction itself
+        if let LedgerTransaction::User(notarized_transaction) = &transaction {
+            /* For user transactions we only need to check for duplicate intent hashes to know
+            that user payload hash and ledger payload hash are also unique. */
+            let intent_hash = notarized_transaction.intent_hash();
+
+            let maybe_existing_intent_hash = self.db.get_cf(
+                self.cf_handle(&StateVersionByTxnIntentHash),
+                &intent_hash,
+            ).unwrap();
+
+            if let Some(state_version) = maybe_existing_intent_hash {
+                warn!("Duplicate transaction intent hash {:?}", transaction);
+                panic!(
+                    "Attempted to save intent hash {:?} which already exists at state version {:?}",
+                    intent_hash,
+                    u64::from_be_bytes(state_version.try_into().unwrap())
+                );
+            }
+
+            batch.put_cf(
+                self.cf_handle(&StateVersionByTxnIntentHash),
+                intent_hash,
+                state_version.to_be_bytes(),
+            );
+
+            batch.put_cf(
+                self.cf_handle(&StateVersionByTxnUserPayloadHash),
+                notarized_transaction.user_payload_hash(),
+                state_version.to_be_bytes(),
+            );
+        } else {
+            let maybe_existing_ledger_payload_hash = self.db.get_cf(
+                self.cf_handle(&StateVersionByTxnIntentHash),
+                ledger_payload_hash,
+            ).unwrap();
+
+            if let Some(state_version) = maybe_existing_ledger_payload_hash {
+                warn!("Duplicate transaction {:?}", transaction);
+                panic!(
+                    "Attempted to save ledger payload hash {:?} which already exists at state version {:?}",
+                    ledger_payload_hash,
+                    u64::from_be_bytes(state_version.try_into().unwrap())
+                );
+            }
+        }
+
+        batch.put_cf(
+            self.cf_handle(&StateVersionByTxnLedgerPayloadHash),
+            ledger_payload_hash,
+            state_version.to_be_bytes(),
+        );
+
+        batch.put_cf(
+            self.cf_handle(&TxnByStateVersion),
+            state_version.to_be_bytes(),
+            transaction.create_payload().unwrap(),
+        );
+
+        batch.put_cf(
+            self.cf_handle(&TxnReceiptByStateVersion),
+            state_version.to_be_bytes(),
+            scrypto_encode(&receipt).unwrap(),
+        );
+
+        batch.put_cf(
+            self.cf_handle(&TxnAccumulatorHashByStateVersion),
+            state_version.to_be_bytes(),
+            identifiers.accumulator_hash.into_bytes(),
+        );
     }
 
     fn cf_handle(&self, cf: &RocksDBColumnFamily) -> &ColumnFamily {
@@ -173,209 +243,52 @@ impl RocksDBStore {
     }
 }
 
-impl<'db> CommitStore<'db> for RocksDBStore {
-    type DBTransaction = RocksDBCommitTransaction<'db>;
-
-    fn create_db_transaction(&'db mut self) -> RocksDBCommitTransaction<'db> {
-        let db_txn = self.db.transaction();
-        let column_families = ALL_COLUMN_FAMILIES
-            .iter()
-            .map(|cf| (cf.clone(), self.cf_handle(cf)))
-            .collect();
-        RocksDBCommitTransaction {
-            db_txn,
-            column_families,
-        }
-    }
-}
-
-pub struct RocksDBCommitTransaction<'db> {
-    db_txn: rocksdb::Transaction<'db, TransactionDB>,
-    column_families: BTreeMap<RocksDBColumnFamily, &'db ColumnFamily>,
-}
-
-impl<'db> RocksDBCommitTransaction<'db> {
-    fn insert_transaction(&mut self, transaction_bundle: CommittedTransactionBundle) {
-        let (transaction, receipt, identifiers) = transaction_bundle;
-        let state_version = identifiers.state_version;
-
-        // TEMPORARY until this is handled in the engine: we store both an intent lookup and the transaction itself
-        if let LedgerTransaction::User(notarized_transaction) = &transaction {
-            let existing_intent_hash_mapping_opt = self
-                .db_txn
-                .get_for_update_cf(
-                    self.cf_handle(&StateVersionByTxnIntentHash),
-                    notarized_transaction.intent_hash(),
-                    true,
-                )
-                .expect("RocksDB: failure to read intent hash");
-            if let Some(existing_intent_hash_mapping) = existing_intent_hash_mapping_opt {
-                panic!(
-                    "Attempted to save intent hash {:?} which already exists at state version {:?}",
-                    notarized_transaction.intent_hash(),
-                    u64::from_be_bytes(existing_intent_hash_mapping.try_into().unwrap())
-                );
-            }
-            self.db_txn
-                .put_cf(
-                    self.cf_handle(&StateVersionByTxnIntentHash),
-                    notarized_transaction.intent_hash(),
-                    state_version.to_be_bytes(),
-                )
-                .expect("RocksDB: failure to put intent hash");
-
-            self.db_txn
-                .put_cf(
-                    self.cf_handle(&StateVersionByTxnUserPayloadHash),
-                    notarized_transaction.user_payload_hash(),
-                    state_version.to_be_bytes(),
-                )
-                .expect("RocksDB: failure to put user payload hash");
-        }
-
-        self.db_txn
-            .put_cf(
-                self.cf_handle(&StateVersionByTxnLedgerPayloadHash),
-                transaction.ledger_payload_hash(),
-                state_version.to_be_bytes(),
-            )
-            .expect("RocksDB: failure to put ledger payload hash");
-
-        self.db_txn
-            .put_cf(
-                self.cf_handle(&TxnByStateVersion),
-                state_version.to_be_bytes(),
-                transaction.create_payload().unwrap(),
-            )
-            .expect("RocksDB: failure to put transaction");
-
-        self.db_txn
-            .put_cf(
-                self.cf_handle(&TxnReceiptByStateVersion),
-                state_version.to_be_bytes(),
-                scrypto_encode(&receipt).unwrap(),
-            )
-            .expect("RocksDB: failure to put transaction receipt");
-
-        self.db_txn
-            .put_cf(
-                self.cf_handle(&TxnAccumulatorHashByStateVersion),
-                state_version.to_be_bytes(),
-                identifiers.accumulator_hash.into_bytes(),
-            )
-            .expect("RocksDB: failure to put transaction accumulator hash");
-    }
-
-    fn max_state_version(&self) -> u64 {
-        self.db_txn
-            .iterator_cf(self.cf_handle(&TxnByStateVersion), IteratorMode::End)
-            .next()
-            .map(|res| res.unwrap())
-            .map(|(key, _)| u64::from_be_bytes((*key).try_into().unwrap()))
-            .unwrap_or(0)
-    }
-
-    fn cf_handle(&self, cf: &RocksDBColumnFamily) -> &ColumnFamily {
-        self.column_families.get(cf).unwrap()
-    }
-}
-
-impl<'db> ReadableSubstateStore for RocksDBCommitTransaction<'db> {
-    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
-        self.db_txn
-            .get_pinned_cf(
-                self.cf_handle(&Substates),
-                &scrypto_encode(substate_id).unwrap(),
-            )
-            .unwrap()
-            .map(|pinnable_slice| scrypto_decode(pinnable_slice.as_ref()).unwrap())
-    }
-}
-
-impl<'db> WriteableTransactionStore for RocksDBCommitTransaction<'db> {
-    fn insert_committed_transactions(
-        &mut self,
-        committed_transaction_bundles: Vec<CommittedTransactionBundle>,
-    ) {
-        let first_txn_state_version = committed_transaction_bundles
-            .get(0)
-            .unwrap()
-            .2
-            .state_version;
+impl CommitStore for RocksDBStore {
+    fn commit(&mut self, commit_bundle: CommitBundle) {
+        let first_txn_state_version = commit_bundle.transactions.get(0).unwrap().2.state_version;
         let max_state_version_in_db = self.max_state_version();
         if first_txn_state_version != max_state_version_in_db + 1 {
             panic!("Attempted to commit a txn batch that starts with state version {} but the latest state version in DB is {}",
                 first_txn_state_version, max_state_version_in_db);
         }
 
-        for committed_txn_bundle in committed_transaction_bundles {
-            self.insert_transaction(committed_txn_bundle);
+        let mut batch = WriteBatch::default();
+
+        for txn in commit_bundle.transactions {
+            self.add_transaction_to_write_batch(&mut batch, txn);
         }
-    }
-}
 
-impl<'db> WriteableProofStore for RocksDBCommitTransaction<'db> {
-    fn insert_proof(
-        &mut self,
-        state_version: u64,
-        epoch_boundary: Option<u64>,
-        proof_bytes: Vec<u8>,
-    ) {
-        // This is a little "hack" to avoid decoding the whole proof (which isn't even SBOR)
-        // yet still be able to tell if a proof is an epoch change while providing sync responses.
-        // See: get_txns_and_proof
-        let encoded_proof = scrypto_encode(&(epoch_boundary, &proof_bytes)).unwrap();
+        let encoded_proof =
+            scrypto_encode(&(commit_bundle.epoch_boundary, &commit_bundle.proof_bytes))
+                .expect("Failed to encode commit proof");
 
-        self.db_txn
-            .put_cf(
-                self.cf_handle(&LedgerProofByStateVersion),
-                state_version.to_be_bytes(),
-                &encoded_proof,
-            )
-            .unwrap();
+        batch.put_cf(
+            self.cf_handle(&LedgerProofByStateVersion),
+            commit_bundle.proof_state_version.to_be_bytes(),
+            &encoded_proof,
+        );
 
-        if let Some(epoch_boundary) = epoch_boundary {
-            // Note that the LedgerProofByEpoch value is just raw proof bytes, without the extra tuple wrapper and SBOR.
-            self.db_txn
-                .put_cf(
-                    self.cf_handle(&LedgerProofByEpoch),
-                    epoch_boundary.to_be_bytes(),
-                    &proof_bytes,
-                )
-                .unwrap();
+        if let Some(epoch_boundary) = commit_bundle.epoch_boundary {
+            batch.put_cf(
+                self.cf_handle(&LedgerProofByEpoch),
+                epoch_boundary.to_be_bytes(),
+                &commit_bundle.proof_bytes,
+            );
         }
-    }
-}
 
-impl<'db> WriteableSubstateStore for RocksDBCommitTransaction<'db> {
-    fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
-        self.db_txn
-            .put_cf(
+        for (substate_id, substate) in commit_bundle.substates {
+            batch.put_cf(
                 self.cf_handle(&Substates),
                 &scrypto_encode(&substate_id).unwrap(),
                 scrypto_encode(&substate).unwrap(),
-            )
-            .expect("RocksDB: put_substate unexpected error");
-    }
-}
+            );
+        }
 
-impl<'db> CommitStoreTransaction<'db> for RocksDBCommitTransaction<'db> {
-    fn commit(self) {
-        self.db_txn
-            .commit()
-            .expect("Unable to commit rocksdb transaction");
-    }
-}
+        if let Some(vertex_store) = commit_bundle.post_commit_vertex_store {
+            batch.put_cf(self.cf_handle(&VertexStore), [], vertex_store);
+        }
 
-impl ReadableSubstateStore for RocksDBStore {
-    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
-        self.db
-            .get_pinned_cf(
-                self.cf_handle(&Substates),
-                &scrypto_encode(substate_id).unwrap(),
-            )
-            .unwrap()
-            .map(|pinnable_slice| scrypto_decode(pinnable_slice.as_ref()).unwrap())
+        self.db.write(batch).expect("Commit failed");
     }
 }
 
@@ -672,6 +585,18 @@ impl QueryableProofStore for RocksDBStore {
     }
 }
 
+impl ReadableSubstateStore for RocksDBStore {
+    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
+        self.db
+            .get_pinned_cf(
+                self.cf_handle(&Substates),
+                &scrypto_encode(substate_id).unwrap(),
+            )
+            .unwrap()
+            .map(|pinnable_slice| scrypto_decode(pinnable_slice.as_ref()).unwrap())
+    }
+}
+
 impl QueryableSubstateStore for RocksDBStore {
     fn get_kv_store_entries(
         &self,
@@ -710,9 +635,9 @@ impl QueryableSubstateStore for RocksDBStore {
     }
 }
 
-impl<'db> WriteableVertexStore for RocksDBCommitTransaction<'db> {
+impl WriteableVertexStore for RocksDBStore {
     fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>) {
-        self.db_txn
+        self.db
             .put_cf(self.cf_handle(&VertexStore), [], vertex_store_bytes)
             .unwrap();
     }

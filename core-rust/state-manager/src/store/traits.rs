@@ -97,13 +97,6 @@ pub mod transactions {
     use crate::transaction::LedgerTransaction;
     use crate::{CommittedTransactionIdentifiers, LedgerTransactionReceipt};
 
-    pub trait WriteableTransactionStore {
-        fn insert_committed_transactions(
-            &mut self,
-            committed_transaction_bundles: Vec<CommittedTransactionBundle>,
-        );
-    }
-
     pub trait QueryableTransactionStore {
         fn get_committed_transaction_bundles(
             &self,
@@ -130,16 +123,6 @@ pub mod transactions {
 }
 
 pub mod proofs {
-
-    pub trait WriteableProofStore {
-        fn insert_proof(
-            &mut self,
-            state_version: u64,
-            epoch_boundary: Option<u64>,
-            proof_bytes: Vec<u8>,
-        );
-    }
-
     pub trait QueryableProofStore {
         fn max_state_version(&self) -> u64;
         fn get_txns_and_proof(
@@ -155,20 +138,20 @@ pub mod proofs {
 
 pub mod commit {
     use super::*;
+    use radix_engine::ledger::OutputValue;
+    use radix_engine_interface::api::types::SubstateId;
+    use std::collections::BTreeMap;
 
-    pub trait CommitStore<'db> {
-        type DBTransaction: CommitStoreTransaction<'db>;
-
-        fn create_db_transaction(&'db mut self) -> Self::DBTransaction;
+    pub struct CommitBundle {
+        pub transactions: Vec<CommittedTransactionBundle>,
+        pub proof_bytes: Vec<u8>,
+        pub proof_state_version: u64,
+        pub epoch_boundary: Option<u64>,
+        pub substates: BTreeMap<SubstateId, OutputValue>,
+        pub post_commit_vertex_store: Option<Vec<u8>>,
     }
 
-    pub trait CommitStoreTransaction<'db>:
-        WriteableTransactionStore
-        + WriteableProofStore
-        + WriteableVertexStore
-        + WriteableSubstateStore
-        + ReadableSubstateStore
-    {
-        fn commit(self);
+    pub trait CommitStore {
+        fn commit(&mut self, commit_bundle: CommitBundle);
     }
 }

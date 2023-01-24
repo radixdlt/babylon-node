@@ -95,8 +95,11 @@ use radix_engine::types::{
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
 use radix_engine_interface::node::NetworkDefinition;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::convert::TryInto;
+
+use radix_engine::ledger::OutputValue;
+use radix_engine_interface::api::types::SubstateId;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::{info, warn};
 
@@ -761,19 +764,16 @@ where
 
 impl<'db, S> StateManager<S>
 where
-    S: CommitStore<'db>,
+    S: CommitStore,
     S: ReadableSubstateStore,
     S: QueryableProofStore + QueryableTransactionStore,
+    S: WriteableVertexStore,
 {
     pub fn save_vertex_store(&'db mut self, vertex_store: Vec<u8>) {
-        let mut db_transaction = self.store.create_db_transaction();
-        db_transaction.save_vertex_store(vertex_store);
-        db_transaction.commit();
+        self.store.save_vertex_store(vertex_store)
     }
 
     pub fn commit(&'db mut self, commit_request: CommitRequest) -> Result<(), CommitError> {
-        let mut to_store = Vec::new();
-        let mut intent_hashes = Vec::new();
         let commit_request_start_state_version =
             commit_request.proof_state_version - (commit_request.transaction_payloads.len() as u64);
 
@@ -805,12 +805,21 @@ where
             );
         }
 
-        let mut db_transaction = self.store.create_db_transaction();
+        let mut commit_store = CommitTransientSubstateStore {
+            underlying: &mut self.store,
+            substates: BTreeMap::new(),
+        };
+        let mut staged_store_manager = StagedSubstateStoreManager::new(&mut commit_store);
+        let staged_node = staged_store_manager.new_child_node(0);
+        let mut staged_store = staged_store_manager.get_output_store(staged_node);
+
         let mut current_state_version = current_top_of_ledger.state_version;
         let mut current_accumulator = current_top_of_ledger.accumulator_hash;
         let mut epoch_boundary = None;
         let mut receipts = Vec::new();
 
+        let mut committed_transaction_bundles = Vec::new();
+        let mut intent_hashes = Vec::new();
         for (i, transaction) in parsed_transactions.iter().enumerate() {
             if let LedgerTransaction::System(..) = transaction {
                 // TODO: Cleanup and use real system transaction logic
@@ -830,7 +839,7 @@ where
                 });
 
             let engine_receipt = execute_and_commit_transaction(
-                &mut db_transaction,
+                &mut staged_store,
                 &self.scrypto_interpreter,
                 &self.fee_reserve_config,
                 &self.execution_config,
@@ -877,22 +886,21 @@ where
                 accumulator_hash: current_accumulator,
             };
 
-            to_store.push((transaction, ledger_receipt, identifiers));
+            committed_transaction_bundles.push((transaction, ledger_receipt, identifiers));
         }
+        let committed_transactions_count = committed_transaction_bundles.len();
 
-        let committed_transactions_count = to_store.len();
-
-        db_transaction.insert_committed_transactions(to_store);
-        db_transaction.insert_proof(
-            commit_request.proof_state_version,
+        staged_store_manager.merge_to_parent(staged_node);
+        let substates = commit_store.substates;
+        self.store.commit(CommitBundle {
+            transactions: committed_transaction_bundles,
+            proof_bytes: commit_request.proof,
+            proof_state_version: commit_request.proof_state_version,
             epoch_boundary,
-            commit_request.proof,
-        );
-        if let Some(post_commit_vertex_store) = commit_request.post_commit_vertex_store {
-            db_transaction.save_vertex_store(post_commit_vertex_store);
-        }
+            substates,
+            post_commit_vertex_store: commit_request.post_commit_vertex_store,
+        });
 
-        db_transaction.commit();
         self.metrics
             .ledger_state_version
             .set(current_state_version as i64);
@@ -936,5 +944,22 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
 
     pub fn get_epoch(&self) -> u64 {
         self.store.get_epoch()
+    }
+}
+
+struct CommitTransientSubstateStore<'s, S: ReadableSubstateStore> {
+    underlying: &'s mut S,
+    pub substates: BTreeMap<SubstateId, OutputValue>,
+}
+
+impl<'s, S: ReadableSubstateStore> ReadableSubstateStore for CommitTransientSubstateStore<'s, S> {
+    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
+        self.underlying.get_substate(substate_id)
+    }
+}
+
+impl<'s, S: ReadableSubstateStore> WriteableSubstateStore for CommitTransientSubstateStore<'s, S> {
+    fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
+        self.substates.insert(substate_id, substate);
     }
 }
