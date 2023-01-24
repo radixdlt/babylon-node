@@ -29,9 +29,9 @@ fn handle_transaction_status_internal(
     let intent_hash = extract_intent_hash(request.intent_hash)
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
-    let committed_option = state_manager
+    let txn_state_version_opt = state_manager
         .store
-        .get_committed_transaction_by_identifier(&intent_hash);
+        .get_txn_state_version_by_identifier(&intent_hash);
 
     let mut known_pending_payloads = state_manager
         .pending_transaction_result_cache
@@ -58,8 +58,18 @@ fn handle_transaction_status_internal(
         to_api_epoch(maybe_nefarious_epoch).ok()
     });
 
-    if let Some((stored_transaction, receipt, _)) = committed_option {
-        let payload_hash = stored_transaction
+    if let Some(txn_state_version) = txn_state_version_opt {
+        let txn = state_manager
+            .store
+            .get_committed_transaction(txn_state_version)
+            .expect("Txn is missing");
+
+        let receipt = state_manager
+            .store
+            .get_committed_transaction_receipt(txn_state_version)
+            .expect("Txn receipt is missing");
+
+        let payload_hash = txn
             .user()
             .expect("Only user transactions should be able to be looked up by intent hash")
             .user_payload_hash();
