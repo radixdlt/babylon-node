@@ -805,11 +805,10 @@ where
             );
         }
 
-        let mut commit_store = CommitTransientSubstateStore {
-            underlying: &mut self.store,
-            substates: BTreeMap::new(),
-        };
-        let mut staged_store_manager = StagedSubstateStoreManager::new(&mut commit_store);
+        // Create a transient substate store for all txns in the commit batch,
+        // backed by a StagedSubstateStore.
+        let mut commit_substate_store = CommitTransientSubstateStore::new(&mut self.store);
+        let mut staged_store_manager = StagedSubstateStoreManager::new(&mut commit_substate_store);
         let staged_node = staged_store_manager.new_child_node(0);
         let mut staged_store = staged_store_manager.get_output_store(staged_node);
 
@@ -891,7 +890,7 @@ where
         let committed_transactions_count = committed_transaction_bundles.len();
 
         staged_store_manager.merge_to_parent(staged_node);
-        let substates = commit_store.substates;
+        let substates = commit_substate_store.substates;
         self.store.commit(CommitBundle {
             transactions: committed_transaction_bundles,
             proof_bytes: commit_request.proof,
@@ -952,8 +951,30 @@ struct CommitTransientSubstateStore<'s, S: ReadableSubstateStore> {
     pub substates: BTreeMap<SubstateId, OutputValue>,
 }
 
+impl<'s, S: ReadableSubstateStore> CommitTransientSubstateStore<'s, S> {
+    pub fn new(underlying: &'s mut S) -> CommitTransientSubstateStore<'s, S> {
+        CommitTransientSubstateStore {
+            underlying,
+            substates: BTreeMap::new(),
+        }
+    }
+}
+
 impl<'s, S: ReadableSubstateStore> ReadableSubstateStore for CommitTransientSubstateStore<'s, S> {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
+        // This is just a helper store for extracting the modified substates
+        // from the underlying StagedSubstateStore in `commit`. No writes are expected
+        // nor supported while it's still being used to read substates.
+        // The writes are expected to happen when calling `merge_to_parent` (in `commit`)
+        // and, since this is just a helper and not a real staged store, no reads are expected
+        // afterwards.
+        if !self.substates.is_empty() {
+            panic!(
+                "No substates should be written to commit transient store while \
+                    it's still being used to read substates."
+            )
+        }
+
         self.underlying.get_substate(substate_id)
     }
 }

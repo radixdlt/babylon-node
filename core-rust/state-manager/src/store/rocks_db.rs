@@ -248,19 +248,16 @@ impl RocksDBStore {
 
 impl CommitStore for RocksDBStore {
     fn commit(&mut self, commit_bundle: CommitBundle) {
-        let first_txn_state_version = commit_bundle.transactions.get(0).unwrap().2.state_version;
-        let max_state_version_in_db = self.max_state_version();
-        if first_txn_state_version != max_state_version_in_db + 1 {
-            panic!("Attempted to commit a txn batch that starts with state version {} but the latest state version in DB is {}",
-                first_txn_state_version, max_state_version_in_db);
-        }
-
         let mut batch = WriteBatch::default();
 
         for txn in commit_bundle.transactions {
             self.add_transaction_to_write_batch(&mut batch, txn);
         }
 
+        // Ledger proof (by state version) is a tuple of optional epoch boundary and an actual
+        // proof bytes to optimize preparation of ledger sync responses (see: get_txns_and_proof).
+        // Note that this doesn't apply to an epoch proof (stored separately in
+        // LedgerProofByEpoch column family) - it is just raw proof bytes.
         let encoded_proof =
             scrypto_encode(&(commit_bundle.epoch_boundary, &commit_bundle.proof_bytes))
                 .expect("Failed to encode commit proof");
@@ -591,7 +588,7 @@ impl QueryableProofStore for RocksDBStore {
             .map(|res| res.unwrap())
             .next()
             .map(|(_, proof)| {
-                // A proof is a tuple of (epoch_change, proof_bytes), see: insert_proof
+                // A proof is a tuple of (epoch_change, proof_bytes), see: commit
                 let decoded_tuple: (Option<u64>, Vec<u8>) = scrypto_decode(proof.as_ref()).unwrap();
                 decoded_tuple.1
             })
