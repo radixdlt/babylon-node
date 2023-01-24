@@ -86,14 +86,10 @@ import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.UInt64;
-
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.asn1.sec.ECPrivateKey;
-import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
-import org.bouncycastle.util.Integers;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -197,7 +193,8 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
         totalTxnReaderCalls);
   }
 
-  private List<RawLedgerTransaction> createUniqueTransactions(int numTransactions, int notaryPrivKeySeed) throws PrivateKeyException, PublicKeyException {
+  private List<RawLedgerTransaction> createUniqueTransactions(
+      int numTransactions, int notaryPrivKeySeed) throws PrivateKeyException, PublicKeyException {
     final List<RawLedgerTransaction> res = new ArrayList<>();
     final byte[] prvBytes = new byte[ECKeyPair.BYTES];
     final byte[] seedBytes = Longs.toByteArray(notaryPrivKeySeed + 1);

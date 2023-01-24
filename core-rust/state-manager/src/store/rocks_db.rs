@@ -172,10 +172,10 @@ impl RocksDBStore {
             that user payload hash and ledger payload hash are also unique. */
             let intent_hash = notarized_transaction.intent_hash();
 
-            let maybe_existing_intent_hash = self.db.get_cf(
-                self.cf_handle(&StateVersionByTxnIntentHash),
-                &intent_hash,
-            ).unwrap();
+            let maybe_existing_intent_hash = self
+                .db
+                .get_cf(self.cf_handle(&StateVersionByTxnIntentHash), intent_hash)
+                .unwrap();
 
             if let Some(state_version) = maybe_existing_intent_hash {
                 warn!("Duplicate transaction intent hash {:?}", transaction);
@@ -198,10 +198,13 @@ impl RocksDBStore {
                 state_version.to_be_bytes(),
             );
         } else {
-            let maybe_existing_ledger_payload_hash = self.db.get_cf(
-                self.cf_handle(&StateVersionByTxnIntentHash),
-                ledger_payload_hash,
-            ).unwrap();
+            let maybe_existing_ledger_payload_hash = self
+                .db
+                .get_cf(
+                    self.cf_handle(&StateVersionByTxnIntentHash),
+                    ledger_payload_hash,
+                )
+                .unwrap();
 
             if let Some(state_version) = maybe_existing_ledger_payload_hash {
                 warn!("Duplicate transaction {:?}", transaction);
