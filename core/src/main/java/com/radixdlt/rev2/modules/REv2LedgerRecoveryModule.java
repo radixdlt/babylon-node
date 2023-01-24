@@ -88,8 +88,12 @@ import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class REv2LedgerRecoveryModule extends AbstractModule {
+
+  private static final Logger log = LogManager.getLogger();
   private final AccumulatorState initialAccumulatorState;
   private final RawLedgerTransaction genesis;
 
@@ -170,18 +174,26 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
       VertexStoreRecovery vertexStoreRecovery,
       Serialization serialization,
       Hasher hasher) {
-    return vertexStoreRecovery
-        .recoverVertexStore()
-        .map(
-            bytes -> {
-              try {
-                return serialization
-                    .fromDson(bytes, VertexStoreState.SerializedVertexStoreState.class)
-                    .toVertexStoreState(hasher);
-              } catch (DeserializeException e) {
-                throw new RuntimeException("Unable to recover VertexStore", e);
-              }
-            })
-        .orElseGet(() -> genesisEpochProofToGenesisVertexStore(lastEpochProof, hasher));
+
+    var currentEpoch = lastEpochProof.getNextEpoch().orElseThrow();
+    var vertexStoreState =
+        vertexStoreRecovery
+            .recoverVertexStore()
+            .map(
+                bytes -> {
+                  try {
+                    return serialization.fromDson(
+                        bytes, VertexStoreState.SerializedVertexStoreState.class);
+                  } catch (DeserializeException e) {
+                    throw new RuntimeException("Unable to recover VertexStore", e);
+                  }
+                })
+            .filter(state -> state.isForEpoch(currentEpoch.getEpoch()))
+            .map(v -> v.toVertexStoreState(hasher))
+            .orElseGet(() -> genesisEpochProofToGenesisVertexStore(lastEpochProof, hasher));
+
+    log.info("Initial Vertex Store State: {}", vertexStoreState);
+
+    return vertexStoreState;
   }
 }

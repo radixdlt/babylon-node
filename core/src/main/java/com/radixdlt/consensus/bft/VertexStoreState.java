@@ -296,6 +296,18 @@ public final class VertexStoreState {
         && Objects.equals(this.idToVertex, other.idToVertex);
   }
 
+  @Override
+  public String toString() {
+    return "VertexStoreState{"
+        + "root="
+        + root
+        + ", highQC="
+        + highQC
+        + ", vertices="
+        + vertices
+        + '}';
+  }
+
   /** Vertex Store State version which can be serialized. */
   @SerializerId2("store.vertices")
   public static final class SerializedVertexStoreState {
