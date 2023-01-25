@@ -62,59 +62,71 @@
  * permissions under this License.
  */
 
-package com.radixdlt.environment.deterministic.network;
+package com.radixdlt.integration.targeted.consensus;
 
-import com.radixdlt.consensus.epoch.Epoched;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.byzantineBehaviorNotDetected;
 
-/**
- * A mutator called on new messages that can mutate the message rank, the message itself, or the
- * message queue.
- */
-@FunctionalInterface
-public interface MessageMutator {
-  /**
-   * Mutates the message queue. The simplest form of mutation is to add the supplied message to the
-   * queue at the specified rank, but other mutations are possible; the rank can be changed, and the
-   * message can be substituted for a different message.
-   *
-   * @param message the message
-   * @param queue the queue to me mutated
-   * @return {@code true} if the message is to be dropped, {@code false} otherwise.
-   */
-  boolean mutate(ControlledMessage message, MessageQueue queue);
+import com.radixdlt.consensus.EpochNodeWeightMapping;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
+import io.reactivex.rxjava3.schedulers.Timed;
+import java.util.function.Predicate;
+import org.junit.Test;
 
-  /**
-   * Chains this mutator with another. If this mutator does not handle the message, then the next
-   * mutator is called.
-   *
-   * @param next the next mutator in the chain to call if this mutator does not handle the message
-   * @return This mutator chained with the specified mutator
-   */
-  default MessageMutator andThen(MessageMutator next) {
-    return (message, queue) -> mutate(message, queue) || next.mutate(message, queue);
+public final class EpochTimeoutCertTest {
+
+  private static final long ROUNDS_PER_EPOCH = 100;
+
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(4))
+        .messageSelector(MessageSelector.firstSelector())
+        .messageMutator(
+            (m, q) -> {
+              // Drop single proposal at end of epoch to cause a TC
+              if (m.message() instanceof Proposal proposal) {
+                if (proposal.getRound().number() == ROUNDS_PER_EPOCH + 2) {
+                  return m.channelId().receiverIndex() == (m.channelId().senderIndex() + 1) % 4;
+                }
+              }
+              return false;
+            })
+        .addMonitors(byzantineBehaviorNotDetected())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                true,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                FunctionalRadixNodeModule.ConsensusConfig.of(),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                    StateComputerConfig.mockedWithEpochs(
+                        Round.of(ROUNDS_PER_EPOCH),
+                        EpochNodeWeightMapping.constant(4),
+                        new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
   }
 
-  /**
-   * Returns default mutator that does not handle messages. By default, the underlying network code
-   * will add the message to the message queue.
-   *
-   * @return A {@code MessageMutator} that does nothing.
-   */
-  static MessageMutator nothing() {
-    return (message, queue) -> false;
-  }
-
-  /**
-   * Returns a mutator that drops timeout messages.
-   *
-   * @return A {@code MessageMutator} that drops {@code LocalTimeout} messages.
-   */
-  static MessageMutator dropTimeouts() {
-    return (message, queue) -> {
-      Object msg = message.message();
-      return msg instanceof ScheduledLocalTimeout
-          || Epoched.isInstance(msg, ScheduledLocalTimeout.class);
+  public static Predicate<Timed<ControlledMessage>> proposalAtRound(long round) {
+    return m -> {
+      if (m.value().message() instanceof Proposal proposal) {
+        return proposal.getRound().number() == round;
+      }
+      return false;
     };
+  }
+
+  @Test
+  public void no_byzantine_event_occurs_on_epoch_tc_event() {
+    try (var test = createTest()) {
+      test.startAllNodes();
+      // Run until end of first epoch
+      test.runUntilMessage(proposalAtRound(ROUNDS_PER_EPOCH + 2), true);
+      // Run for a while more and verify that no byzantine issues occur
+      test.runForCount(100000);
+    }
   }
 }

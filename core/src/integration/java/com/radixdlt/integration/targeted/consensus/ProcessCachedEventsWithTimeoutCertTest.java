@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.targeted.rev2.consensus;
+package com.radixdlt.integration.targeted.consensus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
