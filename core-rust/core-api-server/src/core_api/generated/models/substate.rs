@@ -49,7 +49,7 @@ pub enum Substate {
     },
     #[serde(rename="EpochManager")]
     EpochManagerSubstate {
-        /// The Bech32m-encoded human readable version of the system address
+        /// The Bech32m-encoded human readable version of the component address
         #[serde(rename = "address")]
         address: String,
         /// An integer between `0` and `10^10`, marking the current epoch
@@ -126,10 +126,10 @@ pub enum Substate {
     },
     #[serde(rename="Validator")]
     ValidatorSubstate {
-        /// The Bech32m-encoded human readable version of the system address
+        /// The Bech32m-encoded human readable version of the component address
         #[serde(rename = "epoch_manager_address")]
         epoch_manager_address: String,
-        /// The Bech32m-encoded human readable version of the system address
+        /// The Bech32m-encoded human readable version of the component address
         #[serde(rename = "validator_address")]
         validator_address: String,
         #[serde(rename = "key")]

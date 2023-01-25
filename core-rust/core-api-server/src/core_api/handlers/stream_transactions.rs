@@ -56,12 +56,15 @@ fn handle_stream_transactions_internal(
         )));
     }
 
-    let max_state_version = state_manager.store.max_state_version();
+    let max_state_version = state_manager.staged_store.root.max_state_version();
 
-    let txns = state_manager.store.get_committed_transaction_bundles(
-        from_state_version,
-        limit.try_into().expect("limit out of usize bounds"),
-    );
+    let txns = state_manager
+        .staged_store
+        .root
+        .get_committed_transaction_bundles(
+            from_state_version,
+            limit.try_into().expect("limit out of usize bounds"),
+        );
 
     let network = state_manager.network.clone();
 

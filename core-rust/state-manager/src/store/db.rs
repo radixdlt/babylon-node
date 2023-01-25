@@ -64,6 +64,7 @@
 
 use crate::jni::java_structure::*;
 
+use crate::query::{QueryableAccumulatorHash, TransactionIdentifierLoader};
 use crate::store::traits::*;
 use crate::store::{InMemoryStore, RocksDBStore};
 
@@ -84,7 +85,8 @@ use crate::store::rocks_db::RocksDBCommitTransaction;
 use crate::store::traits::RecoverableVertexStore;
 use crate::transaction::LedgerTransaction;
 use crate::{
-    CommittedTransactionIdentifiers, IntentHash, LedgerPayloadHash, LedgerTransactionReceipt,
+    AccumulatorHash, CommittedTransactionIdentifiers, IntentHash, LedgerPayloadHash,
+    LedgerTransactionReceipt,
 };
 use radix_engine::types::{KeyValueStoreId, SubstateId};
 
@@ -118,6 +120,20 @@ impl StateManagerDatabase {
                 StateManagerDatabase::RocksDB(db)
             }
             DatabaseConfig::None => StateManagerDatabase::None,
+        }
+    }
+}
+
+impl QueryableAccumulatorHash for StateManagerDatabase {
+    fn get_top_accumulator_hash(&self) -> AccumulatorHash {
+        match self {
+            StateManagerDatabase::InMemory { .. } | StateManagerDatabase::RocksDB(_) => {
+                match self.get_top_of_ledger_transaction_identifiers() {
+                    None => AccumulatorHash::pre_genesis(),
+                    Some(top_of_ledger) => top_of_ledger.accumulator_hash,
+                }
+            }
+            StateManagerDatabase::None => AccumulatorHash::pre_genesis(),
         }
     }
 }

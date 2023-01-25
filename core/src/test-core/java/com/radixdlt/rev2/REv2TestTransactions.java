@@ -162,43 +162,45 @@ public final class REv2TestTransactions {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var faucetAddress =
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+    final var epochManagerComponentAddress =
+        addressing.encodeSystemAddress(ScryptoConstants.EPOCH_MANAGER_COMPONENT_ADDRESS);
 
     return String.format(
         """
                             CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
-                            CREATE_VALIDATOR EcdsaSecp256k1PublicKey("%s");
+                            CALL_METHOD ComponentAddress("%s") "create_validator" EcdsaSecp256k1PublicKey("%s");
                             """,
-        faucetAddress, key.toHex());
+        faucetAddress, epochManagerComponentAddress, key.toHex());
   }
 
   public static String constructRegisterValidatorManifest(
-      NetworkDefinition networkDefinition, SystemAddress validatorAddress) {
+      NetworkDefinition networkDefinition, ComponentAddress validatorAddress) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var faucetAddress =
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
-    final var systemAddress = addressing.encodeSystemAddress(validatorAddress);
+    final var componentAddress = addressing.encodeSystemAddress(validatorAddress);
 
     return String.format(
         """
                         CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
-                        REGISTER_VALIDATOR SystemAddress("%s");
+                        CALL_METHOD ComponentAddress("%s") "register";
                         """,
-        faucetAddress, systemAddress);
+        faucetAddress, componentAddress);
   }
 
   public static String constructUnregisterValidatorManifest(
-      NetworkDefinition networkDefinition, SystemAddress validatorAddress) {
+      NetworkDefinition networkDefinition, ComponentAddress validatorAddress) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var faucetAddress =
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
-    final var systemAddress = addressing.encodeSystemAddress(validatorAddress);
+    final var componentAddress = addressing.encodeSystemAddress(validatorAddress);
 
     return String.format(
         """
                             CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
-                            UNREGISTER_VALIDATOR SystemAddress("%s");
+                            CALL_METHOD ComponentAddress("%s") "unregister";
                             """,
-        faucetAddress, systemAddress);
+        faucetAddress, componentAddress);
   }
 
   public static RawNotarizedTransaction constructNewAccountFromAccountTransaction(
@@ -259,7 +261,7 @@ public final class REv2TestTransactions {
       NetworkDefinition networkDefinition,
       long fromEpoch,
       long nonce,
-      SystemAddress validatorAddress,
+      ComponentAddress validatorAddress,
       ECKeyPair keyPair) {
     var manifest = constructRegisterValidatorManifest(networkDefinition, validatorAddress);
     var signatories = List.of(keyPair);
@@ -271,7 +273,7 @@ public final class REv2TestTransactions {
       NetworkDefinition networkDefinition,
       long fromEpoch,
       long nonce,
-      SystemAddress validatorAddress,
+      ComponentAddress validatorAddress,
       ECKeyPair keyPair) {
     var manifest = constructUnregisterValidatorManifest(networkDefinition, validatorAddress);
     var signatories = List.of(keyPair);

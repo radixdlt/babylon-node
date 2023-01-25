@@ -1204,9 +1204,6 @@ components:
     PackageAddress:
       type: string
       description: The Bech32m-encoded human readable version of the package address
-    SystemAddress:
-      type: string
-      description: The Bech32m-encoded human readable version of the system address
     Instant:
       type: object
       required:
@@ -2024,7 +2021,7 @@ components:
         - key
       properties:
         address:
-          $ref: '#/components/schemas/SystemAddress'
+          $ref: '#/components/schemas/ComponentAddress'
         key:
           $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
 #######################################
@@ -2309,7 +2306,7 @@ components:
             - rounds_per_epoch
           properties:
             address:
-              $ref: '#/components/schemas/SystemAddress'
+              $ref: '#/components/schemas/ComponentAddress'
             epoch:
               type: integer
               format: int64
@@ -2356,9 +2353,9 @@ components:
             - key
           properties:
             epoch_manager_address:
-              $ref: '#/components/schemas/SystemAddress'
+              $ref: '#/components/schemas/ComponentAddress'
             validator_address:
-              $ref: '#/components/schemas/SystemAddress'
+              $ref: '#/components/schemas/ComponentAddress'
             key:
               $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
     ClockCurrentMinuteSubstate:

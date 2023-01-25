@@ -124,7 +124,6 @@ public final class StateManagerSbor {
     ComponentAddress.registerCodec(codecMap);
     PackageAddress.registerCodec(codecMap);
     ResourceAddress.registerCodec(codecMap);
-    SystemAddress.registerCodec(codecMap);
     TID.registerCodec(codecMap);
     StateManagerRuntimeError.registerCodec(codecMap);
     MempoolError.registerCodec(codecMap);

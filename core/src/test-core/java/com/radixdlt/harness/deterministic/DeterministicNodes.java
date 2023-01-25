@@ -85,7 +85,7 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev2.SystemAddress;
+import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -192,7 +192,7 @@ public final class DeterministicNodes implements AutoCloseable {
                 } else {
                   var binder =
                       OptionalBinder.newOptionalBinder(
-                          binder(), Key.get(SystemAddress.class, Self.class));
+                          binder(), Key.get(ComponentAddress.class, Self.class));
                   if (config.validatorAddress() != null) {
                     binder.setBinding().toInstance(config.validatorAddress());
                   }

@@ -735,8 +735,8 @@ pub fn to_api_validator_substate(
     } = substate;
 
     Ok(models::Substate::ValidatorSubstate {
-        manager: bech32_encoder.encode_component_address_to_string(manager),
-        address: bech32_encoder.encode_component_address_to_string(address),
+        epoch_manager_address: bech32_encoder.encode_component_address_to_string(manager),
+        validator_address: bech32_encoder.encode_component_address_to_string(address),
         key: Box::new(to_api_ecdsa_secp256k1_public_key(key)),
     })
 }

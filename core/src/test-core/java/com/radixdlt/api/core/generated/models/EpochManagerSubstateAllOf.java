@@ -59,11 +59,11 @@ public class EpochManagerSubstateAllOf {
   }
 
    /**
-   * The Bech32m-encoded human readable version of the system address
+   * The Bech32m-encoded human readable version of the component address
    * @return address
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the system address")
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the component address")
   @JsonProperty(JSON_PROPERTY_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
