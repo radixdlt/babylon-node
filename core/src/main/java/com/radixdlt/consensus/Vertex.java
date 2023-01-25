@@ -154,7 +154,7 @@ public final class Vertex {
       @JsonProperty(value = "qc", required = true) QuorumCertificate parentQC,
       @JsonProperty("round") long roundNumber,
       @JsonProperty("txns") List<byte[]> transactions,
-      @JsonProperty("p") byte[] proposer,
+      @JsonProperty("p") String proposer,
       @JsonProperty("tout") Boolean proposerTimedOut,
       @JsonProperty("proposer_timestamp") long proposerTimestamp)
       throws PublicKeyException {
@@ -162,7 +162,7 @@ public final class Vertex {
         parentQC,
         Round.of(roundNumber),
         transactions == null ? List.of() : transactions,
-        proposer != null ? BFTValidatorId.fromPublicKeyBytes(proposer) : null,
+        proposer != null ? BFTValidatorId.fromSerializedString(proposer) : null,
         proposerTimedOut,
         proposerTimestamp);
   }
@@ -201,8 +201,8 @@ public final class Vertex {
 
   @JsonProperty("p")
   @DsonOutput(Output.ALL)
-  private byte[] getProposerBytes() {
-    return proposer == null ? null : proposer.getKey().getCompressedBytes();
+  private String getProposerBytes() {
+    return proposer == null ? null : proposer.toSerializedString();
   }
 
   public VertexWithHash withId(Hasher hasher) {

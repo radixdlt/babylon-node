@@ -15,6 +15,7 @@ use radix_engine::{
         RENodeId, ResourceAddress, SubstateId,
     },
 };
+use radix_engine_interface::api::types::ValidatorOffset;
 use radix_engine_interface::model::NonFungibleIdTypeId;
 
 pub fn to_api_global_entity_assignment(
@@ -57,6 +58,7 @@ pub fn get_entity_type_from_global_address(global_address: &GlobalAddress) -> mo
         GlobalAddress::Resource(_) => models::EntityType::ResourceManager,
         GlobalAddress::System(SystemAddress::EpochManager(_)) => models::EntityType::EpochManager,
         GlobalAddress::System(SystemAddress::Clock(_)) => models::EntityType::Clock,
+        GlobalAddress::System(SystemAddress::Validator(_)) => models::EntityType::Validator,
     }
 }
 
@@ -105,6 +107,7 @@ impl TryFrom<RENodeId> for MappedEntityId {
             RENodeId::Package(_) => EntityType::Package,
             RENodeId::ResourceManager(_) => EntityType::ResourceManager,
             RENodeId::EpochManager(_) => EntityType::EpochManager,
+            RENodeId::Validator(_) => EntityType::Validator,
             RENodeId::Clock(_) => EntityType::Clock,
             RENodeId::KeyValueStore(_) => EntityType::KeyValueStore,
             RENodeId::NonFungibleStore(_) => EntityType::NonFungibleStore,
@@ -354,6 +357,24 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 _ => return Err(unknown_substate_error("EpochManager", &substate_id)),
             };
             (EntityType::EpochManager, substate_type_key)
+        }
+
+        SubstateId(RENodeId::Validator(_), offset) => {
+            let substate_type_key = match offset {
+                SubstateOffset::Validator(offset) => match offset {
+                    ValidatorOffset::Validator => {
+                        (SubstateType::Validator, SubstateKeyType::Validator)
+                    }
+                },
+                SubstateOffset::AccessRulesChain(offset) => match offset {
+                    AccessRulesChainOffset::AccessRulesChain => (
+                        SubstateType::AccessRulesChain,
+                        SubstateKeyType::AccessRulesChain,
+                    ),
+                },
+                _ => return Err(unknown_substate_error("Validator", &substate_id)),
+            };
+            (EntityType::Validator, substate_type_key)
         }
 
         SubstateId(RENodeId::Clock(_), offset) => {

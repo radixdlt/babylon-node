@@ -74,6 +74,7 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.recovery.VertexStoreRecovery;
+import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
@@ -85,7 +86,6 @@ import com.radixdlt.store.LastProof;
 import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transactions.RawLedgerTransaction;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 
@@ -117,16 +117,7 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
               var validatorSet =
                   result
                       .validatorSet()
-                      .map(
-                          list -> {
-                            var validators =
-                                list.stream()
-                                    .map(
-                                        key ->
-                                            BFTValidator.from(
-                                                BFTValidatorId.create(key), UInt256.ONE));
-                            return BFTValidatorSet.from(validators);
-                          })
+                      .map(REv2ToConsensus::validatorSet)
                       .or((BFTValidatorSet) null);
               var accumulatorState =
                   ledgerAccumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());

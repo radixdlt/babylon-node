@@ -315,10 +315,12 @@ public final class LocalSyncService {
     log.trace("LocalSync: Received status response {} from peer {}", statusResponse, peer);
 
     if (!currentState.hasAskedPeer(peer)) {
+      log.warn("Received status response from peer we didn't ask: {}", peer);
       return currentState; // we didn't ask this peer
     }
 
     if (currentState.receivedResponseFrom(peer)) {
+      log.warn("Already received status response from peer: {}", peer);
       return currentState; // already got the response from this peer
     }
 

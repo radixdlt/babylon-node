@@ -15,6 +15,9 @@
 pub struct EpochManagerSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
+    /// The Bech32m-encoded human readable version of the system address
+    #[serde(rename = "address")]
+    pub address: String,
     /// An integer between `0` and `10^10`, marking the current epoch
     #[serde(rename = "epoch")]
     pub epoch: i64,
@@ -27,9 +30,10 @@ pub struct EpochManagerSubstate {
 }
 
 impl EpochManagerSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, epoch: i64, round: i64, rounds_per_epoch: i64) -> EpochManagerSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, address: String, epoch: i64, round: i64, rounds_per_epoch: i64) -> EpochManagerSubstate {
         EpochManagerSubstate {
             substate_type,
+            address,
             epoch,
             round,
             rounds_per_epoch,

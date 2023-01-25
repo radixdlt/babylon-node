@@ -84,6 +84,8 @@ import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.monitors.SimulationNodeEventsModule;
 import com.radixdlt.harness.simulation.network.SimulationNetwork;
 import com.radixdlt.harness.simulation.network.SimulationNodes;
+import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
+import com.radixdlt.ledger.MockedBFTNodeModule;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.mempool.MempoolRelayConfig;
@@ -372,6 +374,11 @@ public final class SimulationTest {
 
       modules.add(new TestMessagingModule.Builder().withDefaultRateLimit().build());
       // Functional
+      if (this.functionalNodeModule.supportsREv2()) {
+        modules.add(new BFTValidatorIdFromGenesisModule());
+      } else {
+        modules.add(new MockedBFTNodeModule());
+      }
       modules.add(this.functionalNodeModule);
 
       // Testing

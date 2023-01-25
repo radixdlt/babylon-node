@@ -65,4 +65,9 @@
 package com.radixdlt.consensus.bft;
 
 /** An event indicating that a leader failed their BFT round. */
-public record RoundLeaderFailure(Round round, RoundLeaderFailureReason reason) {}
+public record RoundLeaderFailure(Round round, RoundLeaderFailureReason reason) {
+  @Override
+  public String toString() {
+    return "RoundLeaderFailure{" + "round=" + round + ", reason=" + reason + '}';
+  }
+}

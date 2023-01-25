@@ -30,6 +30,8 @@ public enum EntityType {
   
   EPOCHMANAGER("EpochManager"),
   
+  VALIDATOR("Validator"),
+  
   RESOURCEMANAGER("ResourceManager"),
   
   COMPONENT("Component"),

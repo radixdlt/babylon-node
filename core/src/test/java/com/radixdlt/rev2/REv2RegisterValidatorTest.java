@@ -68,6 +68,7 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
 import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
+import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransaction;
 import static com.radixdlt.harness.predicates.NodesPredicate.anyCommittedProof;
 
 import com.google.inject.*;
@@ -77,6 +78,8 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.NodesReader;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -101,7 +104,7 @@ public final class REv2RegisterValidatorTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numPhysicalNodes(1)
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
         .messageSelector(firstSelector())
         .messageMutator(MessageMutator.dropTimeouts())
         .addMonitors(
@@ -126,13 +129,24 @@ public final class REv2RegisterValidatorTest {
     try (var test = createTest()) {
       // Arrange: Start single node network
       test.startAllNodes();
-      var registerValidatorTransaction =
-          REv2TestTransactions.constructRegisterValidatorTransaction(
-              NetworkDefinition.INT_TEST_NET, 0L, 1, TEST_KEY);
-
-      // Act: Submit transaction to mempool and run consensus
       var mempoolDispatcher =
           test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+      var createValidatorTransaction =
+          REv2TestTransactions.constructCreateValidatorTransaction(
+              NetworkDefinition.INT_TEST_NET, 0L, 1, TEST_KEY);
+      mempoolDispatcher.dispatch(MempoolAdd.create(createValidatorTransaction));
+      test.runUntilState(
+          allCommittedTransaction(createValidatorTransaction),
+          onlyConsensusEvents().or(onlyLocalMempoolAddEvents()));
+      var executedTransaction =
+          NodesReader.getCommittedUserTransaction(
+              test.getNodeInjectors(), createValidatorTransaction);
+      var validatorAddress = executedTransaction.newSystemAddresses().get(0);
+
+      // Act: Submit transaction to mempool and run consensus
+      var registerValidatorTransaction =
+          REv2TestTransactions.constructRegisterValidatorTransaction(
+              NetworkDefinition.INT_TEST_NET, 0L, 1, validatorAddress, TEST_KEY);
       mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTransaction));
 
       // Assert: Validator becomes part of validator set
@@ -145,7 +159,8 @@ public final class REv2RegisterValidatorTest {
                               e.getValidators()
                                   .contains(
                                       BFTValidator.from(
-                                          BFTValidatorId.create(TEST_KEY.getPublicKey()),
+                                          BFTValidatorId.create(
+                                              validatorAddress, TEST_KEY.getPublicKey()),
                                           UInt256.ONE)))
                       .orElse(false)),
           onlyConsensusEvents().or(onlyLocalMempoolAddEvents()));

@@ -1,11 +1,11 @@
 use radix_engine::types::*;
 
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
-
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto_encode;
 use radix_engine_interface::model::{
-    ClockInvocation, ClockSetCurrentTimeInvocation, EpochManagerInvocation, NativeInvocation,
+    ClockInvocation, ClockSetCurrentTimeInvocation, EpochManagerInvocation,
+    EpochManagerNextRoundInvocation, NativeInvocation,
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
 use std::collections::BTreeSet;

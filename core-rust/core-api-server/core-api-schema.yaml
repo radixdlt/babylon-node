@@ -1104,7 +1104,7 @@ components:
         validators:
           type: array
           items:
-            $ref: "#/components/schemas/EcdsaSecp256k1PublicKey"
+            $ref: '#/components/schemas/Validator'
     NewSubstateVersion:
       type: object
       required:
@@ -1204,6 +1204,9 @@ components:
     PackageAddress:
       type: string
       description: The Bech32m-encoded human readable version of the package address
+    SystemAddress:
+      type: string
+      description: The Bech32m-encoded human readable version of the system address
     Instant:
       type: object
       required:
@@ -2012,12 +2015,26 @@ components:
       maximum: 4294967295
       description: An integer between `0` and `2^32 - 1`, representing the number of cost units required to access this method.
 #######################################
+# GENERAL / SHARED MODELS - validators #
+#######################################
+    Validator:
+      type: object
+      required:
+        - address
+        - key
+      properties:
+        address:
+          $ref: '#/components/schemas/SystemAddress'
+        key:
+          $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
+#######################################
 # GENERAL / SHARED MODELS - substates #
 #######################################
     EntityType:
       type: string
       enum:
         - EpochManager
+        - Validator
         - ResourceManager
         - Component
         - Package
@@ -2050,6 +2067,7 @@ components:
           ResourceManager: '#/components/schemas/ResourceManagerSubstate'
           EpochManager: '#/components/schemas/EpochManagerSubstate'
           ValidatorSet: '#/components/schemas/ValidatorSetSubstate'
+          Validator: '#/components/schemas/ValidatorSubstate'
           ClockCurrentMinute: '#/components/schemas/ClockCurrentMinuteSubstate'
           KeyValueStoreEntry: '#/components/schemas/KeyValueStoreEntrySubstate'
           Vault: '#/components/schemas/VaultSubstate'
@@ -2072,6 +2090,7 @@ components:
         - ResourceManager
         - EpochManager
         - ValidatorSet
+        - Validator
         - ClockCurrentMinute
         - KeyValueStoreEntry
         - NonFungibleStoreEntry
@@ -2101,6 +2120,7 @@ components:
         - EpochManager
         - CurrentValidatorSet
         - PreparingValidatorSet
+        - Validator
         - ClockCurrentMinute
         - KeyValueStoreEntry
         - NonFungibleStoreEntry
@@ -2283,10 +2303,13 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
+            - address
             - epoch
             - round
             - rounds_per_epoch
           properties:
+            address:
+              $ref: '#/components/schemas/SystemAddress'
             epoch:
               type: integer
               format: int64
@@ -2316,13 +2339,28 @@ components:
             validator_set:
               type: array
               items:
-                $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
+                $ref: '#/components/schemas/Validator'
             epoch:
               type: integer
               format: int64
               minimum: 0
               maximum: 10000000000
               description: An integer between `0` and `10^10`, marking the epoch the validator set is a part of
+    ValidatorSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - epoch_manager_address
+            - validator_address
+            - key
+          properties:
+            epoch_manager_address:
+              $ref: '#/components/schemas/SystemAddress'
+            validator_address:
+              $ref: '#/components/schemas/SystemAddress'
+            key:
+              $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
     ClockCurrentMinuteSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -2472,6 +2510,7 @@ components:
             - EcdsaSecp256k1VirtualAccountComponent
             - EddsaEd25519VirtualAccountComponent
             - EpochManager
+            - Validator
             - Clock
         hrp_prefix:
           type: string

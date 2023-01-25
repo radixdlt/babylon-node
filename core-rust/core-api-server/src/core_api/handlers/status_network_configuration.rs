@@ -44,7 +44,7 @@ pub(crate) fn handle_status_network_configuration_internal(
     })
 }
 
-const ALL_ENTITY_TYPES: [EntityType; 8] = [
+const ALL_ENTITY_TYPES: [EntityType; 9] = [
     EntityType::Resource,
     EntityType::Package,
     EntityType::NormalComponent,
@@ -52,6 +52,7 @@ const ALL_ENTITY_TYPES: [EntityType; 8] = [
     EntityType::EcdsaSecp256k1VirtualAccountComponent,
     EntityType::EddsaEd25519VirtualAccountComponent,
     EntityType::EpochManager,
+    EntityType::Validator,
     EntityType::Clock,
 ];
 
@@ -93,6 +94,11 @@ fn to_api_address_type(hrp_set: &HrpSet, entity_type: EntityType) -> models::Add
             models::address_type::Subtype::EpochManager,
             models::EntityType::EpochManager,
             extract_length(SystemAddress::EpochManager),
+        ),
+        EntityType::Validator => (
+            models::address_type::Subtype::Validator,
+            models::EntityType::Validator,
+            extract_length(SystemAddress::Validator),
         ),
         EntityType::Clock => (
             models::address_type::Subtype::Clock,

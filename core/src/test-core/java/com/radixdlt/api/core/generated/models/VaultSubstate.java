@@ -44,6 +44,7 @@ import com.radixdlt.api.core.generated.models.ResourceManagerSubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.ValidatorSetSubstate;
+import com.radixdlt.api.core.generated.models.ValidatorSubstate;
 import com.radixdlt.api.core.generated.models.VaultSubstate;
 import com.radixdlt.api.core.generated.models.VaultSubstateAllOf;
 import io.swagger.annotations.ApiModel;
@@ -80,6 +81,7 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageRoyaltyAccumulatorSubstate.class, name = "PackageRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageRoyaltyConfigSubstate.class, name = "PackageRoyaltyConfig"),
   @JsonSubTypes.Type(value = ResourceManagerSubstate.class, name = "ResourceManager"),
+  @JsonSubTypes.Type(value = ValidatorSubstate.class, name = "Validator"),
   @JsonSubTypes.Type(value = ValidatorSetSubstate.class, name = "ValidatorSet"),
   @JsonSubTypes.Type(value = VaultSubstate.class, name = "Vault"),
 })
@@ -177,6 +179,7 @@ static {
   mappings.put("PackageRoyaltyAccumulator", PackageRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageRoyaltyConfig", PackageRoyaltyConfigSubstate.class);
   mappings.put("ResourceManager", ResourceManagerSubstate.class);
+  mappings.put("Validator", ValidatorSubstate.class);
   mappings.put("ValidatorSet", ValidatorSetSubstate.class);
   mappings.put("Vault", VaultSubstate.class);
   mappings.put("VaultSubstate", VaultSubstate.class);

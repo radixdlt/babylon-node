@@ -70,6 +70,7 @@ import static com.radixdlt.harness.predicates.NodePredicate.*;
 import static com.radixdlt.harness.predicates.NodesPredicate.*;
 
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
@@ -112,7 +113,7 @@ public class REv2SyncTest {
 
   private DeterministicTest buildTest() {
     return DeterministicTest.builder()
-        .numPhysicalNodes(2)
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(2, true))
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(

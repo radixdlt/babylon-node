@@ -31,7 +31,6 @@ import com.radixdlt.api.core.generated.models.ComponentInfoSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyConfigSubstate;
 import com.radixdlt.api.core.generated.models.ComponentStateSubstate;
-import com.radixdlt.api.core.generated.models.EcdsaSecp256k1PublicKey;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
 import com.radixdlt.api.core.generated.models.GlobalAddressSubstate;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
@@ -43,8 +42,10 @@ import com.radixdlt.api.core.generated.models.PackageRoyaltyConfigSubstate;
 import com.radixdlt.api.core.generated.models.ResourceManagerSubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
+import com.radixdlt.api.core.generated.models.Validator;
 import com.radixdlt.api.core.generated.models.ValidatorSetSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorSetSubstateAllOf;
+import com.radixdlt.api.core.generated.models.ValidatorSubstate;
 import com.radixdlt.api.core.generated.models.VaultSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -83,13 +84,14 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageRoyaltyAccumulatorSubstate.class, name = "PackageRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageRoyaltyConfigSubstate.class, name = "PackageRoyaltyConfig"),
   @JsonSubTypes.Type(value = ResourceManagerSubstate.class, name = "ResourceManager"),
+  @JsonSubTypes.Type(value = ValidatorSubstate.class, name = "Validator"),
   @JsonSubTypes.Type(value = ValidatorSetSubstate.class, name = "ValidatorSet"),
   @JsonSubTypes.Type(value = VaultSubstate.class, name = "Vault"),
 })
 
 public class ValidatorSetSubstate extends Substate {
   public static final String JSON_PROPERTY_VALIDATOR_SET = "validator_set";
-  private List<EcdsaSecp256k1PublicKey> validatorSet = new ArrayList<>();
+  private List<Validator> validatorSet = new ArrayList<>();
 
   public static final String JSON_PROPERTY_EPOCH = "epoch";
   private Long epoch;
@@ -97,12 +99,12 @@ public class ValidatorSetSubstate extends Substate {
   public ValidatorSetSubstate() { 
   }
 
-  public ValidatorSetSubstate validatorSet(List<EcdsaSecp256k1PublicKey> validatorSet) {
+  public ValidatorSetSubstate validatorSet(List<Validator> validatorSet) {
     this.validatorSet = validatorSet;
     return this;
   }
 
-  public ValidatorSetSubstate addValidatorSetItem(EcdsaSecp256k1PublicKey validatorSetItem) {
+  public ValidatorSetSubstate addValidatorSetItem(Validator validatorSetItem) {
     this.validatorSet.add(validatorSetItem);
     return this;
   }
@@ -116,14 +118,14 @@ public class ValidatorSetSubstate extends Substate {
   @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<EcdsaSecp256k1PublicKey> getValidatorSet() {
+  public List<Validator> getValidatorSet() {
     return validatorSet;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidatorSet(List<EcdsaSecp256k1PublicKey> validatorSet) {
+  public void setValidatorSet(List<Validator> validatorSet) {
     this.validatorSet = validatorSet;
   }
 
@@ -218,6 +220,7 @@ static {
   mappings.put("PackageRoyaltyAccumulator", PackageRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageRoyaltyConfig", PackageRoyaltyConfigSubstate.class);
   mappings.put("ResourceManager", ResourceManagerSubstate.class);
+  mappings.put("Validator", ValidatorSubstate.class);
   mappings.put("ValidatorSet", ValidatorSetSubstate.class);
   mappings.put("Vault", VaultSubstate.class);
   mappings.put("ValidatorSetSubstate", ValidatorSetSubstate.class);

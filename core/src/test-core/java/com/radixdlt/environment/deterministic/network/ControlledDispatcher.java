@@ -68,9 +68,12 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.*;
 import com.radixdlt.p2p.NodeId;
 import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** A sender within a deterministic network. */
 public final class ControlledDispatcher implements Environment {
+  private static final Logger log = LogManager.getLogger();
   private final DeterministicNetwork network;
   private final NodeId self;
   private final int senderIndex;
@@ -132,11 +135,13 @@ public final class ControlledDispatcher implements Environment {
   @Override
   public <T> RemoteEventDispatcher<NodeId, T> getRemoteDispatcher(Class<T> messageType) {
     return (node, e) -> {
-      var channelId =
-          ChannelId.of(
-              this.senderIndex,
-              this.p2pAddressBook.apply(NodeId.fromPublicKey(node.getPublicKey())));
+      var receiverIndex = this.p2pAddressBook.apply(NodeId.fromPublicKey(node.getPublicKey()));
+      if (receiverIndex == null) {
+        log.warn("Could not resolve node {} to physical nodeIndex. Dropping msg: {}", node, e);
+        return;
+      }
 
+      var channelId = ChannelId.of(this.senderIndex, receiverIndex);
       handleMessage(new ControlledMessage(self, channelId, e, null, arrivalTime(channelId)));
     };
   }

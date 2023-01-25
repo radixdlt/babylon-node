@@ -76,6 +76,7 @@ import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
@@ -107,6 +108,7 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
 
     var addressing = Addressing.ofNetwork(Network.INTEGRATIONTESTNET);
     bind(Addressing.class).toInstance(addressing);
+    install(new BFTValidatorIdFromGenesisModule());
     install(new EventLoggerModule(EventLoggerConfig.addressed(addressing)));
     install(new InMemoryBFTKeyModule(self));
     install(new CryptoModule());

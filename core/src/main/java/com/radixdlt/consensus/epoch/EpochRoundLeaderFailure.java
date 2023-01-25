@@ -102,4 +102,14 @@ public final class EpochRoundLeaderFailure {
   public int hashCode() {
     return Objects.hash(epoch, roundLeaderFailure);
   }
+
+  @Override
+  public String toString() {
+    return "EpochRoundLeaderFailure{"
+        + "epoch="
+        + epoch
+        + ", roundLeaderFailure="
+        + roundLeaderFailure
+        + '}';
+  }
 }

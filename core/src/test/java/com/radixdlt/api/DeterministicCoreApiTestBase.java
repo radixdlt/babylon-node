@@ -76,6 +76,7 @@ import com.radixdlt.api.core.generated.client.ApiClient;
 import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
@@ -107,7 +108,7 @@ public abstract class DeterministicCoreApiTestBase {
   protected DeterministicTest buildRunningServerTest() {
     var test =
         DeterministicTest.builder()
-            .numPhysicalNodes(1)
+            .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
             .messageSelector(firstSelector())
             .addModule(new CoreApiServerModule("127.0.0.1", coreApiPort))
             .addModule(

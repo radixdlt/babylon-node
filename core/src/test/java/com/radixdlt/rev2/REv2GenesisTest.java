@@ -69,6 +69,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.*;
 import com.radixdlt.networks.Network;
@@ -81,7 +82,7 @@ import org.junit.Test;
 public final class REv2GenesisTest {
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numPhysicalNodes(1)
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
         .messageSelector(firstSelector())
         .messageMutator(MessageMutator.dropTimeouts())
         .functionalNodeModule(

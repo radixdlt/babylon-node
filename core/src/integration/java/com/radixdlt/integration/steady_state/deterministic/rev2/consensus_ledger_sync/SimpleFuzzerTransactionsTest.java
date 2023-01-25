@@ -68,6 +68,7 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -96,7 +97,7 @@ public final class SimpleFuzzerTransactionsTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numPhysicalNodes(20)
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(20, true))
         .messageSelector(firstSelector())
         .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
         .functionalNodeModule(

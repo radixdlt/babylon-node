@@ -82,7 +82,7 @@ use ::transaction::signing::EcdsaSecp256k1PrivateKey;
 use ::transaction::validation::{TestIntentHashManager, ValidationConfig};
 use prometheus::Registry;
 use radix_engine::engine::ScryptoInterpreter;
-use radix_engine::state_manager::StagedSubstateStoreManager;
+use radix_engine::state_manager::deprecated_staging::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     execute_and_commit_transaction, execute_preview, execute_transaction, ExecutionConfig,
     FeeReserveConfig, PreviewError, PreviewResult, TransactionOutcome, TransactionReceipt,

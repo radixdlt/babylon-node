@@ -67,6 +67,8 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.rev2.SystemAddress;
+import com.radixdlt.utils.Bytes;
 import java.util.Objects;
 
 /**
@@ -77,20 +79,55 @@ import java.util.Objects;
  */
 public final class BFTValidatorId {
   private final ECDSASecp256k1PublicKey key;
+  private final SystemAddress validatorAddress;
   private final String shortenedName;
 
-  private BFTValidatorId(ECDSASecp256k1PublicKey key, String shortenedName) {
+  private BFTValidatorId(
+      SystemAddress validatorAddress, ECDSASecp256k1PublicKey key, String shortenedName) {
+    this.validatorAddress = validatorAddress;
     this.key = Objects.requireNonNull(key);
     this.shortenedName = Objects.requireNonNull(shortenedName);
   }
 
-  public static BFTValidatorId create(ECDSASecp256k1PublicKey key) {
-    var shortenedAddress = key.toHex().substring(0, 10);
-    return new BFTValidatorId(key, shortenedAddress);
+  public static BFTValidatorId create(SystemAddress validatorAddress, ECDSASecp256k1PublicKey key) {
+    final String name;
+    if (validatorAddress == null) {
+      name = key.toHex().substring(0, 10);
+    } else {
+      name = validatorAddress.toHexString().substring(0, 6) + ":" + key.toHex().substring(0, 6);
+    }
+    return new BFTValidatorId(validatorAddress, key, name);
   }
 
-  public static BFTValidatorId fromPublicKeyBytes(byte[] key) throws PublicKeyException {
-    return create(ECDSASecp256k1PublicKey.fromBytes(key));
+  public static BFTValidatorId create(ECDSASecp256k1PublicKey key) {
+    var shortenedAddress = key.toHex().substring(0, 10);
+    return new BFTValidatorId(null, key, shortenedAddress);
+  }
+
+  // This method is only used in deserialization methods so should be okay
+  // to throw exceptions.
+  // TODO: Need a better serialization mechanism for BFTValidatorId
+  public static BFTValidatorId fromSerializedString(String str) {
+    var strings = str.split(":");
+    if (strings.length != 2) {
+      throw new IllegalStateException("Error decoding node");
+    }
+
+    try {
+      var validatorAddress =
+          strings[0].length() == 0 ? null : SystemAddress.create(Bytes.fromHexString(strings[0]));
+      var key = ECDSASecp256k1PublicKey.fromBytes(Bytes.fromHexString(strings[1]));
+      return create(validatorAddress, key);
+    } catch (PublicKeyException e) {
+      throw new IllegalStateException("Error decoding public key", e);
+    }
+  }
+
+  public String toSerializedString() {
+    var addressString =
+        this.validatorAddress == null ? "" : Bytes.toHexString(this.validatorAddress.value());
+    var keyString = Bytes.toHexString(this.key.getCompressedBytes());
+    return addressString + ":" + keyString;
   }
 
   public static BFTValidatorId random() {
@@ -101,22 +138,21 @@ public final class BFTValidatorId {
     return key;
   }
 
+  public SystemAddress getValidatorAddress() {
+    return validatorAddress;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(key);
+    return Objects.hash(key, validatorAddress);
   }
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof BFTValidatorId validatorId)) {
-      return false;
-    }
-
-    return Objects.equals(validatorId.key, this.key);
-  }
-
-  public String getShortenedName() {
-    return shortenedName;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    BFTValidatorId that = (BFTValidatorId) o;
+    return Objects.equals(key, that.key) && Objects.equals(validatorAddress, that.validatorAddress);
   }
 
   @Override

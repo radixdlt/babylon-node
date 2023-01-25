@@ -116,7 +116,7 @@ public final class Vote implements ConsensusEvent {
   @JsonCreator
   @VisibleForTesting
   public Vote(
-      @JsonProperty(value = "author", required = true) byte[] author,
+      @JsonProperty(value = "author", required = true) String author,
       @JsonProperty(value = "vote_data", required = true) VoteData voteData,
       @JsonProperty("ts") long timestamp,
       @JsonProperty(value = "signature", required = true) ECDSASecp256k1Signature signature,
@@ -124,7 +124,7 @@ public final class Vote implements ConsensusEvent {
       @JsonProperty("timeout_signature") ECDSASecp256k1Signature timeoutSignature)
       throws PublicKeyException {
     this(
-        BFTValidatorId.fromPublicKeyBytes(requireNonNull(author)),
+        BFTValidatorId.fromSerializedString(requireNonNull(author)),
         voteData,
         timestamp,
         signature,
@@ -213,8 +213,8 @@ public final class Vote implements ConsensusEvent {
 
   @JsonProperty("author")
   @DsonOutput(Output.ALL)
-  private byte[] getSerializerAuthor() {
-    return this.author == null ? null : this.author.getKey().getBytes();
+  private String getSerializerAuthor() {
+    return this.author.toSerializedString();
   }
 
   @JsonProperty("timeout_signature")

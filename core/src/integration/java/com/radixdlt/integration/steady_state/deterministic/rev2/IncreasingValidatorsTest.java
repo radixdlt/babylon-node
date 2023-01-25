@@ -68,12 +68,16 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.byzantineBehaviorNotDetected;
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.ledgerTransactionSafety;
 import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
+import static com.radixdlt.harness.predicates.NodesPredicate.nodeAt;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.NodesReader;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
+import com.radixdlt.harness.predicates.NodePredicate;
 import com.radixdlt.harness.predicates.NodesPredicate;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
@@ -85,6 +89,7 @@ import com.radixdlt.rev2.REv2TestTransactions;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
 import org.junit.Rule;
@@ -93,13 +98,13 @@ import org.junit.rules.TemporaryFolder;
 
 public final class IncreasingValidatorsTest {
 
-  private static final int NUM_VALIDATORS = 20;
+  private static final int NUM_VALIDATORS = 30;
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numPhysicalNodes(NUM_VALIDATORS)
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(NUM_VALIDATORS, true))
         .messageSelector(firstSelector())
         .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
         .functionalNodeModule(
@@ -115,7 +120,7 @@ public final class IncreasingValidatorsTest {
                             1, UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         StateComputerConfig.REV2ProposerConfig.mempool(
-                            10, 100, MempoolRelayConfig.of(5, 5))),
+                            2, 100, MempoolRelayConfig.of(5, 5))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
@@ -124,18 +129,44 @@ public final class IncreasingValidatorsTest {
     try (var test = createTest()) {
       test.startAllNodes();
 
-      // Run
-      for (int i = 0; i < NUM_VALIDATORS; i++) {
-        test.runForCount(1000);
-        var mempoolDispatcher =
-            test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+      var mempoolDispatcher =
+          test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+      var transactions =
+          PrivateKeys.numeric(2)
+              .map(
+                  k ->
+                      Pair.of(
+                          REv2TestTransactions.constructCreateValidatorTransaction(
+                              NetworkDefinition.INT_TEST_NET, 0, 12, k),
+                          k))
+              .limit(NUM_VALIDATORS - 1)
+              .toList();
 
-        var txn =
-            REv2TestTransactions.constructRegisterValidatorTransaction(
-                NetworkDefinition.INT_TEST_NET, 0, i, PrivateKeys.ofNumeric(i + 1));
-        mempoolDispatcher.dispatch(MempoolAdd.create(txn));
+      // Create Validators
+      for (var txn : transactions) {
+        test.runForCount(100);
+        mempoolDispatcher.dispatch(MempoolAdd.create(txn.getFirst()));
         test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
       }
+
+      // Register Validators
+      for (int i = 0; i < transactions.size(); i++) {
+        var txn = transactions.get(i);
+        test.runForCount(1000);
+        test.runUntilState(nodeAt(0, NodePredicate.committedUserTransaction(txn.getFirst())));
+        var executedTransaction =
+            NodesReader.getCommittedUserTransaction(test.getNodeInjectors(), txn.getFirst());
+        var validatorAddress = executedTransaction.newSystemAddresses().get(0);
+        test.restartNodeWithConfig(
+            i + 1,
+            PhysicalNodeConfig.create(
+                PrivateKeys.ofNumeric(i + 2).getPublicKey(), validatorAddress));
+        var registerValidatorTxn =
+            REv2TestTransactions.constructRegisterValidatorTransaction(
+                NetworkDefinition.INT_TEST_NET, 0, 13, validatorAddress, txn.getSecond());
+        mempoolDispatcher.dispatch(MempoolAdd.create(registerValidatorTxn));
+      }
+
       test.runUntilState(
           NodesPredicate.anyCommittedProof(
               p ->

@@ -69,11 +69,13 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.predicates.NodePredicate;
 import com.radixdlt.harness.predicates.NodesPredicate;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.*;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
@@ -89,7 +91,7 @@ public final class RandomVoteDropperTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numPhysicalNodes(20)
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(10, true))
         .messageSelector(firstSelector())
         .messageMutator(voteDropper(0.2))
         .addMonitors(
@@ -97,10 +99,9 @@ public final class RandomVoteDropperTest {
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 true,
-                FunctionalRadixNodeModule.SafetyRecoveryConfig.berkeleyStore(
-                    folder.getRoot().getAbsolutePath()),
-                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
+                SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
+                ConsensusConfig.of(1000),
+                LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(

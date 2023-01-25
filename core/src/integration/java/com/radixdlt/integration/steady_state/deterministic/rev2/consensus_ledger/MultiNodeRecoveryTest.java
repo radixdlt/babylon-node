@@ -69,6 +69,7 @@ import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitor
 
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.NodesReader;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.predicates.NodesPredicate;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -126,7 +127,7 @@ public final class MultiNodeRecoveryTest {
 
   private DeterministicTest createTest(REv2DatabaseConfig databaseConfig) {
     return DeterministicTest.builder()
-        .numPhysicalNodes(NUM_VALIDATORS)
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(NUM_VALIDATORS, true))
         .messageSelector(randomSelector(random))
         .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
         .functionalNodeModule(

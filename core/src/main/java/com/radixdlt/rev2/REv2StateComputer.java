@@ -65,7 +65,6 @@
 package com.radixdlt.rev2;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -87,7 +86,6 @@ import com.radixdlt.statecomputer.commit.PrepareRequest;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -207,18 +205,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                 new ConsensusByzantineEvent.InvalidProposedTransaction(
                     roundDetails, rejected, exception)));
 
-    var nextEpoch =
-        result
-            .nextEpoch()
-            .map(
-                next -> {
-                  var validators =
-                      next.validators().stream()
-                          .map(v -> BFTValidator.from(BFTValidatorId.create(v), UInt256.ONE))
-                          .collect(ImmutableSet.toImmutableSet());
-                  return NextEpoch.create(next.epoch().toNonNegativeLong().unwrap(), validators);
-                })
-            .or((NextEpoch) null);
+    var nextEpoch = result.nextEpoch().map(REv2ToConsensus::nextEpoch).or((NextEpoch) null);
 
     return new StateComputerLedger.StateComputerResult(
         committableTransactions, rejectedTransactions, nextEpoch);

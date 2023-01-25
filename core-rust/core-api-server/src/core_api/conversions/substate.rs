@@ -9,8 +9,8 @@ use radix_engine::model::{
     ComponentRoyaltyConfigSubstate, ComponentStateSubstate, CurrentTimeRoundedToMinutesSubstate,
     EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate,
     NonFungible, NonFungibleSubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate,
-    PackageRoyaltyConfigSubstate, PersistedSubstate, Resource, ResourceManagerSubstate,
-    ValidatorSetSubstate, VaultSubstate,
+    PackageRoyaltyConfigSubstate, PersistedSubstate, Resource, ResourceManagerSubstate, Validator,
+    ValidatorSetSubstate, ValidatorSubstate, VaultSubstate,
 };
 use radix_engine::types::{
     scrypto_encode, AccessRule, AccessRuleEntry, AccessRuleKey, AccessRuleNode, AccessRules,
@@ -66,10 +66,13 @@ pub fn to_api_substate(
             to_api_package_royalty_accumulator_substate(substate)?
         }
         PersistedSubstate::EpochManager(epoch_manager) => {
-            to_api_epoch_manager_substate(epoch_manager)?
+            to_api_epoch_manager_substate(bech32_encoder, epoch_manager)?
         }
         PersistedSubstate::ValidatorSet(validator_set) => {
-            to_api_validator_set_substate(validator_set)?
+            to_api_validator_set_substate(bech32_encoder, validator_set)?
+        }
+        PersistedSubstate::Validator(validator) => {
+            to_api_validator_substate(bech32_encoder, validator)?
         }
         PersistedSubstate::CurrentTimeRoundedToMinutes(substate) => {
             to_api_clock_current_time_rounded_down_to_minutes_substate(substate)?
@@ -285,9 +288,11 @@ pub fn to_api_local_method_reference(key: &AccessRuleKey) -> models::LocalMethod
                 name: method_name.to_string(),
             }
         }
-        AccessRuleKey::Native(method) => models::LocalMethodReference::LocalNativeMethodReference {
-            name: format!("{:?}", method),
-        },
+        AccessRuleKey::Native(native_fn) => {
+            models::LocalMethodReference::LocalNativeMethodReference {
+                name: format!("{:?}", native_fn),
+            }
+        }
     }
 }
 
@@ -481,6 +486,16 @@ pub fn to_api_ecdsa_secp256k1_public_key(
     models::EcdsaSecp256k1PublicKey {
         key_type: models::PublicKeyType::EcdsaSecp256k1,
         key_hex: to_hex(key.0),
+    }
+}
+
+pub fn to_api_validator(
+    bech32_encoder: &Bech32Encoder,
+    validator: &Validator,
+) -> models::Validator {
+    models::Validator {
+        key: Box::new(to_api_ecdsa_secp256k1_public_key(&validator.key)),
+        address: bech32_encoder.encode_system_address_to_string(&validator.address),
     }
 }
 
@@ -691,6 +706,7 @@ pub fn to_api_package_royalty_accumulator_substate(
 }
 
 pub fn to_api_validator_set_substate(
+    bech32_encoder: &Bech32Encoder,
     substate: &ValidatorSetSubstate,
 ) -> Result<models::Substate, MappingError> {
     let ValidatorSetSubstate {
@@ -700,7 +716,7 @@ pub fn to_api_validator_set_substate(
 
     let validator_set = validator_set
         .iter()
-        .map(to_api_ecdsa_secp256k1_public_key)
+        .map(|v| to_api_validator(bech32_encoder, v))
         .collect();
     Ok(models::Substate::ValidatorSetSubstate {
         validator_set,
@@ -708,16 +724,36 @@ pub fn to_api_validator_set_substate(
     })
 }
 
+pub fn to_api_validator_substate(
+    bech32_encoder: &Bech32Encoder,
+    substate: &ValidatorSubstate,
+) -> Result<models::Substate, MappingError> {
+    let ValidatorSubstate {
+        manager,
+        address,
+        key,
+    } = substate;
+
+    Ok(models::Substate::ValidatorSubstate {
+        epoch_manager_address: bech32_encoder.encode_system_address_to_string(manager),
+        validator_address: bech32_encoder.encode_system_address_to_string(address),
+        key: Box::new(to_api_ecdsa_secp256k1_public_key(key)),
+    })
+}
+
 pub fn to_api_epoch_manager_substate(
+    bech32_encoder: &Bech32Encoder,
     substate: &EpochManagerSubstate,
 ) -> Result<models::Substate, MappingError> {
     let EpochManagerSubstate {
+        address,
         epoch,
         round,
         rounds_per_epoch,
     } = substate;
 
     Ok(models::Substate::EpochManagerSubstate {
+        address: bech32_encoder.encode_system_address_to_string(address),
         epoch: to_api_epoch(*epoch)?,
         round: to_api_round(*round)?,
         rounds_per_epoch: to_api_round(*rounds_per_epoch)?,

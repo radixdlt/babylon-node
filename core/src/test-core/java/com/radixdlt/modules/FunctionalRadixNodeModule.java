@@ -281,7 +281,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
       case MockedLedgerConfig config -> {
         install(new MockedLedgerRecoveryModule());
         install(new MockedLedgerModule());
-
         install(new MockedNoEpochsConsensusRecoveryModule(config.numValidators));
       }
       case StateComputerLedgerConfig stateComputerLedgerConfig -> {
@@ -297,7 +296,9 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
               install(new NoEpochsSyncModule());
             }
           }
-          case SyncConfig.Mocked ignored -> install(mockedSyncServiceModule);
+          case SyncConfig.Mocked ignored -> {
+            install(mockedSyncServiceModule);
+          }
           case SyncConfig.None ignored -> {}
         }
 

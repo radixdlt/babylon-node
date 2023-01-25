@@ -330,7 +330,7 @@ impl<'db> WriteableProofStore for RocksDBCommitTransaction<'db> {
             .put_cf(
                 self.cf_handle(&LedgerProofByStateVersion),
                 state_version.to_be_bytes(),
-                &encoded_proof,
+                encoded_proof,
             )
             .unwrap();
 
@@ -352,7 +352,7 @@ impl<'db> WriteableSubstateStore for RocksDBCommitTransaction<'db> {
         self.db_txn
             .put_cf(
                 self.cf_handle(&Substates),
-                &scrypto_encode(&substate_id).unwrap(),
+                scrypto_encode(&substate_id).unwrap(),
                 scrypto_encode(&substate).unwrap(),
             )
             .expect("RocksDB: put_substate unexpected error");

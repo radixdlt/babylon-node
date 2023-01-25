@@ -70,6 +70,7 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::types::{scrypto_encode, ComponentAddress};
+use radix_engine_interface::model::SystemAddress;
 use radix_engine_interface::*;
 
 use super::utils::jni_state_manager_sbor_read_call;
@@ -81,6 +82,7 @@ struct ExecutedTransaction {
     transaction_bytes: Vec<u8>,
     /// Used by some Java tests, consider removing at some point as it doesn't really fit here
     new_component_addresses: Vec<ComponentAddress>,
+    new_system_addresses: Vec<SystemAddress>,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -130,6 +132,9 @@ fn do_get_transaction_at_state_version(
         new_component_addresses: committed_transaction_receipt
             .entity_changes
             .new_component_addresses,
+        new_system_addresses: committed_transaction_receipt
+            .entity_changes
+            .new_system_addresses,
     })
 }
 

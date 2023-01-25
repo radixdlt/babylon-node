@@ -72,6 +72,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.*;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.integration.Slow;
 import com.radixdlt.mempool.*;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -103,7 +104,7 @@ public final class REv2MempoolFillAndEmptyTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numPhysicalNodes(1)
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(

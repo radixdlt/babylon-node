@@ -63,12 +63,12 @@
  */
 
 use crate::transaction::LedgerTransaction;
+use radix_engine::model::Validator;
 use radix_engine::types::{
     scrypto_encode, sha256_twice, Categorize, Decode, Encode, Hash, PublicKey,
 };
-use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::*;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 use std::fmt;
 use transaction::model::{
     NotarizedTransaction, PreviewFlags, SignedTransactionIntent, TransactionIntent,
@@ -444,7 +444,7 @@ pub struct PrepareResult {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct NextEpoch {
-    pub validator_set: HashSet<EcdsaSecp256k1PublicKey>,
+    pub validator_set: BTreeSet<Validator>,
     pub epoch: u64,
 }
 
@@ -455,5 +455,5 @@ pub struct PrepareGenesisRequest {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareGenesisResult {
-    pub validator_set: Option<HashSet<EcdsaSecp256k1PublicKey>>,
+    pub validator_set: Option<BTreeSet<Validator>>,
 }

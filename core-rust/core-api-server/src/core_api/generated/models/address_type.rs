@@ -54,6 +54,8 @@ pub enum Subtype {
     EddsaEd25519VirtualAccountComponent,
     #[serde(rename = "EpochManager")]
     EpochManager,
+    #[serde(rename = "Validator")]
+    Validator,
     #[serde(rename = "Clock")]
     Clock,
 }

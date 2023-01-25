@@ -73,8 +73,8 @@ import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.StartProcessorOnRunner;
@@ -83,6 +83,7 @@ import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
+import com.radixdlt.ledger.MockedBFTNodeModule;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
@@ -116,7 +117,7 @@ public final class MempoolRunnerTest {
       @Override
       public void configure() {
         var key = PrivateKeys.ofNumeric(1).getPublicKey();
-        bind(BFTValidatorId.class).annotatedWith(Self.class).toInstance(BFTValidatorId.create(key));
+        bind(ECDSASecp256k1PublicKey.class).annotatedWith(Self.class).toInstance(key);
         bind(NodeId.class).annotatedWith(Self.class).toInstance(NodeId.fromPublicKey(key));
         bind(LedgerProof.class).annotatedWith(LastProof.class).toInstance(mock(LedgerProof.class));
         bind(StateComputer.class).toInstance(stateComputer);
@@ -135,6 +136,7 @@ public final class MempoolRunnerTest {
         bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
         Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
         install(MempoolRelayConfig.of(10).asModule());
+        install(new MockedBFTNodeModule());
         install(new MockedKeyModule());
         install(new MockedCryptoModule());
         install(new RxEnvironmentModule());

@@ -73,6 +73,7 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.utils.Bytes;
 import java.util.ArrayList;
 import java.util.List;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -113,19 +114,22 @@ public class VertexTest {
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullThrowsException() throws PublicKeyException {
-    var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
+    var proposer =
+        BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey()).toSerializedString();
     Vertex.create(null, 1, List.of(), proposer, false, 0);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void deserializationWithInvalidRoundThrowsException() throws PublicKeyException {
-    var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
+    var proposer =
+        BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey()).toSerializedString();
     Vertex.create(mock(QuorumCertificate.class), -1, List.of(), proposer, false, 0);
   }
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithInvalidTxnListThrowsException() throws PublicKeyException {
-    var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
+    var proposer =
+        BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey()).toSerializedString();
     var list = new ArrayList<byte[]>();
     list.add(null);
     Vertex.create(mock(QuorumCertificate.class), 1, list, proposer, false, 0);
@@ -134,15 +138,16 @@ public class VertexTest {
   @Test(expected = IllegalArgumentException.class)
   public void deserializationWithInvalidCombinationOfProposerTimeoutAndTxnListThrowsException()
       throws PublicKeyException {
-    var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
+    var proposer =
+        BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey()).toSerializedString();
     var list = new ArrayList<byte[]>();
     list.add(new byte[0]);
     Vertex.create(mock(QuorumCertificate.class), 1, list, proposer, true, 0);
   }
 
-  @Test(expected = PublicKeyException.class)
+  @Test(expected = IllegalStateException.class)
   public void deserializationWithInvalidPublicKeyThrowsException() throws PublicKeyException {
-    var proposer = new byte[] {0x00};
+    var proposer = Bytes.toHexString(new byte[] {0x00});
     Vertex.create(mock(QuorumCertificate.class), 1, List.of(), proposer, false, 0);
   }
 }
