@@ -214,15 +214,15 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         return Optional.empty();
       }
 
-      // Don't execute any transactions if in the process of an epoch change
       if (parentHeader.isEndOfEpoch()) {
+        // Don't execute any transactions and commit to the same LedgerHeader
+        // if in the process of an epoch change. Updates to LedgerHeader here
+        // may cause a disagreement on the next epoch initial vertex if a TC
+        // occurs for example.
         return Optional.of(
             new ExecutedVertex(
                 vertexWithHash,
-                parentHeader.updateRoundAndTimestamps(
-                    vertex.getRound(),
-                    vertex.getQCToParent().getWeightedTimestampOfSignatures(),
-                    vertex.parentLedgerHeader().proposerTimestamp()),
+                parentHeader,
                 ImmutableList.of(),
                 ImmutableMap.of(),
                 timeSupplier.currentTime()));
