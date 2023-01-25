@@ -265,9 +265,8 @@ public final class DeterministicNodes implements AutoCloseable {
       return;
     }
 
+    ThreadContext.put("self", " Node" + nodeIndex);
     var injector = createBFTInstance(nodeIndex, baseModule, overrideModule, time);
-
-    ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
     try {
       var processor = injector.getInstance(DeterministicProcessor.class);
       processor.start();

@@ -74,7 +74,6 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.serialization.*;
 import java.util.HashMap;
 import java.util.Objects;
-import java.util.Optional;
 import javax.annotation.concurrent.Immutable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -119,6 +118,9 @@ public final class VertexStoreState {
       throw new IllegalArgumentException("Expected end of epoch proof");
     }
     final var nextEpoch = epochProof.getNextEpoch().get();
+    final var initialEpochVertex =
+        Vertex.createInitialEpochVertex(epochProof.getHeader()).withId(hasher);
+
     final var nextLedgerHeader =
         LedgerHeader.create(
             nextEpoch.getEpoch(),
@@ -126,8 +128,6 @@ public final class VertexStoreState {
             epochProof.getAccumulatorState(),
             epochProof.consensusParentRoundTimestamp(),
             epochProof.proposerTimestamp());
-    final var initialEpochVertex =
-            Vertex.createInitialEpochVertex(nextLedgerHeader).withId(hasher);
     final var initialEpochQC =
         QuorumCertificate.createInitialEpochQC(initialEpochVertex, nextLedgerHeader);
 
@@ -141,10 +141,6 @@ public final class VertexStoreState {
 
   public static VertexStoreState create(
       HighQC highQC, VertexWithHash root, ImmutableList<VertexWithHash> vertices, Hasher hasher) {
-
-    if (root.vertex().getEpoch() != highQC.highestQC().getEpoch()) {
-      throw new IllegalStateException("Invalid Vertex Store State");
-    }
 
     final var headers =
         highQC

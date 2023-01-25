@@ -226,8 +226,14 @@ public final class Vote implements ConsensusEvent {
   @Override
   public String toString() {
     return String.format(
-        "%s{epoch=%s round=%s author=%s timeout?=%s %s}",
-        getClass().getSimpleName(), getEpoch(), getRound(), author, isTimeout(), highQC);
+        "%s{e=%s p=%s c=%s author=%s timeout?=%s %s}",
+        getClass().getSimpleName(),
+        getEpoch(),
+        getRound(),
+        voteData.getCommitted().map(h -> h.getRound().toString()).orElse(""),
+        author,
+        isTimeout(),
+        highQC);
   }
 
   @Override
