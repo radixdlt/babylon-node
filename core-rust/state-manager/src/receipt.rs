@@ -14,7 +14,7 @@ use radix_engine_interface::*;
 
 use crate::AccumulatorHash;
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct CommittedTransactionIdentifiers {
     pub state_version: u64,
     pub accumulator_hash: AccumulatorHash,
@@ -35,20 +35,20 @@ pub enum CommittedTransactionStatus {
     Failure(RuntimeError),
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct SubstateChanges {
     pub created: BTreeMap<SubstateId, OutputValue>,
     pub updated: BTreeMap<SubstateId, OutputValue>,
     pub deleted: BTreeMap<SubstateId, DeletedSubstateVersion>,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct DeletedSubstateVersion {
     pub substate_hash: Hash,
     pub version: u32,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum LedgerTransactionOutcome {
     Success(Vec<Vec<u8>>),
     Failure(RuntimeError),
@@ -65,7 +65,7 @@ impl From<TransactionOutcome> for LedgerTransactionOutcome {
     }
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LedgerTransactionReceipt {
     pub outcome: LedgerTransactionOutcome,
     pub fee_summary: FeeSummary,

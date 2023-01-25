@@ -64,12 +64,12 @@
 
 package com.radixdlt.transaction;
 
-import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.statemanager.StateManager;
+import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 import java.util.Objects;
@@ -84,12 +84,12 @@ public final class REv2TransactionAndProofStore {
             new TypeToken<>() {},
             new TypeToken<>() {},
             REv2TransactionAndProofStore::getTransactionAtStateVersion);
-    this.getNextProofFunc =
+    this.getTxnsAndProof =
         NativeCalls.Func1.with(
             stateManager,
             new TypeToken<>() {},
             new TypeToken<>() {},
-            REv2TransactionAndProofStore::getNextProof);
+            REv2TransactionAndProofStore::getTxnsAndProof);
     this.getLastProofFunc =
         NativeCalls.Func1.with(
             stateManager,
@@ -108,8 +108,15 @@ public final class REv2TransactionAndProofStore {
     return this.getTransactionAtStateVersionFunc.call(UInt64.fromNonNegativeLong(stateVersion));
   }
 
-  public Option<Tuple.Tuple2<List<HashCode>, byte[]>> getNextProof(long stateVersion) {
-    return this.getNextProofFunc.call(UInt64.fromNonNegativeLong(stateVersion));
+  public Option<Tuple.Tuple2<List<byte[]>, byte[]>> getTxnsAndProof(
+      long startStateVersionInclusive,
+      int maxNumberOfTxnsIfMoreThanOneProof,
+      int maxPayloadSizeInBytes) {
+    return this.getTxnsAndProof.call(
+        Tuple.Tuple3.of(
+            UInt64.fromNonNegativeLong(startStateVersionInclusive),
+            UInt32.fromNonNegativeInt(maxNumberOfTxnsIfMoreThanOneProof),
+            UInt32.fromNonNegativeInt(maxPayloadSizeInBytes)));
   }
 
   public Optional<byte[]> getLastProof() {
@@ -127,10 +134,12 @@ public final class REv2TransactionAndProofStore {
       StateManager stateManager, byte[] payload);
 
   private final NativeCalls.Func1<
-          StateManager, UInt64, Option<Tuple.Tuple2<List<HashCode>, byte[]>>>
-      getNextProofFunc;
+          StateManager,
+          Tuple.Tuple3<UInt64, UInt32, UInt32>,
+          Option<Tuple.Tuple2<List<byte[]>, byte[]>>>
+      getTxnsAndProof;
 
-  private static native byte[] getNextProof(StateManager stateManager, byte[] payload);
+  private static native byte[] getTxnsAndProof(StateManager stateManager, byte[] payload);
 
   private final NativeCalls.Func1<StateManager, Tuple.Tuple0, Option<byte[]>> getLastProofFunc;
 

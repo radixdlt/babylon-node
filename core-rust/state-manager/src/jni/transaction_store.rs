@@ -73,7 +73,6 @@ use radix_engine::types::{scrypto_encode, ComponentAddress};
 use radix_engine_interface::model::SystemAddress;
 use radix_engine_interface::*;
 
-use super::mempool::JavaPayloadHash;
 use super::utils::jni_state_manager_sbor_read_call;
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -111,48 +110,58 @@ fn do_get_transaction_at_state_version(
     state_manager: &ActualStateManager,
     state_version: u64,
 ) -> Option<ExecutedTransaction> {
-    let payload_hash = state_manager.store.get_payload_hash(state_version)?;
-
-    let (stored_transaction, ledger_receipt, _) = state_manager
+    let committed_transaction = state_manager
         .store
-        .get_committed_transaction(&payload_hash)?;
+        .get_committed_transaction(state_version)?;
 
-    let ledger_receipt_bytes = scrypto_encode(&ledger_receipt).unwrap();
+    let committed_transaction_receipt = state_manager
+        .store
+        .get_committed_transaction_receipt(state_version)?;
+
+    let ledger_receipt_bytes = scrypto_encode(&committed_transaction_receipt).unwrap();
 
     Some(ExecutedTransaction {
-        outcome: match ledger_receipt.outcome {
+        outcome: match committed_transaction_receipt.outcome {
             LedgerTransactionOutcome::Success(output) => TransactionOutcomeJava::Success(output),
             LedgerTransactionOutcome::Failure(err) => {
                 TransactionOutcomeJava::Failure(format!("{:?}", err))
             }
         },
         ledger_receipt_bytes,
-        transaction_bytes: stored_transaction.create_payload().unwrap(),
-        new_component_addresses: ledger_receipt.entity_changes.new_component_addresses,
-        new_system_addresses: ledger_receipt.entity_changes.new_system_addresses,
+        transaction_bytes: committed_transaction.create_payload().unwrap(),
+        new_component_addresses: committed_transaction_receipt
+            .entity_changes
+            .new_component_addresses,
+        new_system_addresses: committed_transaction_receipt
+            .entity_changes
+            .new_system_addresses,
     })
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getNextProof(
+extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getTxnsAndProof(
     env: JNIEnv,
     _class: JClass,
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_get_next_proof)
+    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_get_txns_and_proof)
 }
 
 #[tracing::instrument(skip_all)]
-fn do_get_next_proof(
+fn do_get_txns_and_proof(
     state_manager: &ActualStateManager,
-    state_version: u64,
-) -> Option<(Vec<JavaPayloadHash>, Vec<u8>)> {
-    let (payload_hashes, proof) = state_manager.store.get_next_proof(state_version)?;
-
-    let payload_hashes = payload_hashes.into_iter().map(|hash| hash.into()).collect();
-
-    Some((payload_hashes, proof))
+    (
+        start_state_version_inclusive,
+        max_number_of_txns_if_more_than_one_proof,
+        max_payload_size_in_bytes,
+    ): (u64, u32, u32),
+) -> Option<(Vec<Vec<u8>>, Vec<u8>)> {
+    state_manager.store.get_txns_and_proof(
+        start_state_version_inclusive,
+        max_number_of_txns_if_more_than_one_proof,
+        max_payload_size_in_bytes,
+    )
 }
 
 #[no_mangle]

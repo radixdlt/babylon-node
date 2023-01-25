@@ -239,7 +239,7 @@ enum AlreadyPreparedTransaction {
 impl<S> StateManager<S>
 where
     S: ReadableSubstateStore,
-    S: for<'a> TransactionIndex<&'a IntentHash> + TransactionIndex<u64> + QueryableTransactionStore,
+    S: for<'a> TransactionIndex<&'a IntentHash> + QueryableTransactionStore,
     S: ReadableSubstateStore + QueryableSubstateStore, // Temporary - can remove when epoch validation moves to executor
     S: QueryableProofStore,
 {
@@ -309,7 +309,7 @@ where
 
     /// Checking if the transaction should be rejected requires full validation, ie:
     /// * Static Validation
-    /// * Executing the transaction (up to loan replatment)
+    /// * Executing the transaction (up to loan repayment)
     ///
     /// We look for cached rejections first, to avoid this heavy lifting where we can
     fn check_for_rejection_and_add_to_mempool_internal(
@@ -405,7 +405,7 @@ where
     ) -> Result<(), RejectionReason> {
         if self
             .store
-            .get_payload_hash(&transaction.intent_hash())
+            .get_txn_state_version_by_identifier(&transaction.intent_hash())
             .is_some()
         {
             return Err(RejectionReason::IntentHashCommitted);
@@ -517,7 +517,7 @@ where
                 .map(|validated_transaction| validated_transaction.intent_hash())
                 .and_then(|intent_hash| {
                     self.store
-                        .get_payload_hash(&intent_hash)
+                        .get_txn_state_version_by_identifier(&intent_hash)
                         .map(|_| (intent_hash, AlreadyPreparedTransaction::Committed))
                 })
             });
@@ -763,7 +763,7 @@ impl<'db, S> StateManager<S>
 where
     S: CommitStore<'db>,
     S: ReadableSubstateStore,
-    S: QueryableProofStore + TransactionIndex<u64>,
+    S: QueryableProofStore + QueryableTransactionStore,
 {
     pub fn save_vertex_store(&'db mut self, vertex_store: Vec<u8>) {
         let mut db_transaction = self.store.create_db_transaction();
@@ -773,7 +773,6 @@ where
 
     pub fn commit(&'db mut self, commit_request: CommitRequest) -> Result<(), CommitError> {
         let mut to_store = Vec::new();
-        let mut payload_hashes = Vec::new();
         let mut intent_hashes = Vec::new();
         let commit_request_start_state_version =
             commit_request.proof_state_version - (commit_request.transaction_payloads.len() as u64);
@@ -879,16 +878,14 @@ where
             };
 
             to_store.push((transaction, ledger_receipt, identifiers));
-            payload_hashes.push(payload_hash);
         }
 
         let committed_transactions_count = to_store.len();
 
         db_transaction.insert_committed_transactions(to_store);
-        db_transaction.insert_tids_and_proof(
+        db_transaction.insert_proof(
             commit_request.proof_state_version,
             epoch_boundary,
-            payload_hashes,
             commit_request.proof,
         );
         if let Some(post_commit_vertex_store) = commit_request.post_commit_vertex_store {
