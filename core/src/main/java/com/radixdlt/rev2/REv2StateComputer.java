@@ -212,13 +212,12 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   }
 
   @Override
-  public void commit(
-      CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
+  public void commit(CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStore) {
     var proofBytes = serialization.toDson(txnsAndProof.getProof(), DsonOutput.Output.ALL);
     final Option<byte[]> vertexStoreBytes;
-    if (vertexStoreState != null) {
+    if (vertexStore != null) {
       vertexStoreBytes =
-          Option.some(serialization.toDson(vertexStoreState.toSerialized(), DsonOutput.Output.ALL));
+          Option.some(serialization.toDson(vertexStore.toSerialized(), DsonOutput.Output.ALL));
     } else {
       vertexStoreBytes = Option.none();
     }
