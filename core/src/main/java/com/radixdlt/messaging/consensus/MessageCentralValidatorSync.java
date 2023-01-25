@@ -67,7 +67,6 @@ package com.radixdlt.messaging.consensus;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
@@ -93,70 +92,65 @@ public class MessageCentralValidatorSync {
     this.hasher = Objects.requireNonNull(hasher);
   }
 
-  public RemoteEventDispatcher<GetVerticesRequest> verticesRequestDispatcher() {
+  public RemoteEventDispatcher<NodeId, GetVerticesRequest> verticesRequestDispatcher() {
     return this::sendGetVerticesRequest;
   }
 
-  public RemoteEventDispatcher<GetVerticesResponse> verticesResponseDispatcher() {
+  public RemoteEventDispatcher<NodeId, GetVerticesResponse> verticesResponseDispatcher() {
     return this::sendGetVerticesResponse;
   }
 
-  public RemoteEventDispatcher<GetVerticesErrorResponse> verticesErrorResponseDispatcher() {
+  public RemoteEventDispatcher<NodeId, GetVerticesErrorResponse> verticesErrorResponseDispatcher() {
     return this::sendGetVerticesErrorResponse;
   }
 
-  private void sendGetVerticesRequest(BFTNode node, GetVerticesRequest request) {
+  private void sendGetVerticesRequest(NodeId nodeId, GetVerticesRequest request) {
     final GetVerticesRequestMessage vertexRequest =
         new GetVerticesRequestMessage(request.getVertexId(), request.getCount());
-    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), vertexRequest);
+    this.messageCentral.send(nodeId, vertexRequest);
   }
 
-  private void sendGetVerticesResponse(BFTNode node, GetVerticesResponse response) {
+  private void sendGetVerticesResponse(NodeId nodeId, GetVerticesResponse response) {
     var rawVertices = response.getVertices().stream().map(VertexWithHash::vertex).toList();
     var msg = new GetVerticesResponseMessage(rawVertices);
-    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+    this.messageCentral.send(nodeId, msg);
   }
 
-  public void sendGetVerticesErrorResponse(BFTNode node, GetVerticesErrorResponse response) {
+  public void sendGetVerticesErrorResponse(NodeId nodeId, GetVerticesErrorResponse response) {
     var request = response.request();
     var requestMsg = new GetVerticesRequestMessage(request.getVertexId(), request.getCount());
     var msg = new GetVerticesErrorResponseMessage(response.highQC(), requestMsg);
-    this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
+    this.messageCentral.send(nodeId, msg);
   }
 
-  public Flowable<RemoteEvent<GetVerticesRequest>> requests() {
+  public Flowable<RemoteEvent<NodeId, GetVerticesRequest>> requests() {
     return this.createFlowable(
         GetVerticesRequestMessage.class,
-        (peer, msg) -> {
-          final BFTNode node = BFTNode.create(peer.getPublicKey());
-          return RemoteEvent.create(
-              node, new GetVerticesRequest(msg.getVertexId(), msg.getCount()));
-        });
+        (peer, msg) ->
+            RemoteEvent.create(peer, new GetVerticesRequest(msg.getVertexId(), msg.getCount())));
   }
 
-  public Flowable<RemoteEvent<GetVerticesResponse>> responses() {
+  public Flowable<RemoteEvent<NodeId, GetVerticesResponse>> responses() {
     return this.createFlowable(
         GetVerticesResponseMessage.class,
         (src, msg) -> {
-          BFTNode node = BFTNode.create(src.getPublicKey());
           // TODO: Move hasher to a more appropriate place
           ImmutableList<VertexWithHash> hashedVertices =
               msg.getVertices().stream()
                   .map(v -> v.withId(hasher))
                   .collect(ImmutableList.toImmutableList());
 
-          return RemoteEvent.create(node, new GetVerticesResponse(hashedVertices));
+          return RemoteEvent.create(src, new GetVerticesResponse(hashedVertices));
         });
   }
 
-  public Flowable<RemoteEvent<GetVerticesErrorResponse>> errorResponses() {
+  public Flowable<RemoteEvent<NodeId, GetVerticesErrorResponse>> errorResponses() {
     return this.createFlowable(
         GetVerticesErrorResponseMessage.class,
         (src, msg) -> {
-          final var node = BFTNode.create(src.getPublicKey());
           final var request =
               new GetVerticesRequest(msg.request().getVertexId(), msg.request().getCount());
-          return RemoteEvent.create(node, new GetVerticesErrorResponse(msg.highQC(), request));
+          return RemoteEvent.create(src, new GetVerticesErrorResponse(msg.highQC(), request));
         });
   }
 

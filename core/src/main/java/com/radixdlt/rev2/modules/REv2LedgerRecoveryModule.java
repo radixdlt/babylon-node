@@ -88,7 +88,6 @@ import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
-import java.util.Optional;
 
 public final class REv2LedgerRecoveryModule extends AbstractModule {
   private final AccumulatorState initialAccumulatorState;
@@ -161,16 +160,7 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
 
   private static VertexStoreState genesisEpochProofToGenesisVertexStore(
       LedgerProof lastEpochProof, Hasher hasher) {
-    var genesisVertex = Vertex.createGenesis(lastEpochProof.getHeader()).withId(hasher);
-    var nextLedgerHeader =
-        LedgerHeader.create(
-            lastEpochProof.getNextEpoch().orElseThrow().getEpoch(),
-            Round.genesis(),
-            lastEpochProof.getAccumulatorState(),
-            lastEpochProof.consensusParentRoundTimestamp(),
-            lastEpochProof.proposerTimestamp());
-    var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
-    return VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
+    return VertexStoreState.createNewForNextEpoch(lastEpochProof, hasher);
   }
 
   @Provides

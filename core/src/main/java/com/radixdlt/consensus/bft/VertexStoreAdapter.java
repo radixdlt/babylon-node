@@ -77,6 +77,11 @@ import java.util.Objects;
 import java.util.Optional;
 import javax.inject.Inject;
 
+/**
+ * A decorator dispatching events according to the results of the underlying {@link VertexStore},
+ * with a slightly modified API so that it can, at some point, bridge the Rust impl of a VertexStore
+ * and its existing clients on the Java side (mostly BFTSync).
+ */
 public final class VertexStoreAdapter {
   private final VertexStore vertexStore;
 
@@ -109,29 +114,26 @@ public final class VertexStoreAdapter {
     return result.isPresent();
   }
 
-  public void insertTimeoutCertificate(TimeoutCertificate timeoutCertificate) {
-    vertexStore.insertTimeoutCertificate(timeoutCertificate);
+  public boolean insertTimeoutCertificate(TimeoutCertificate timeoutCertificate) {
+    return vertexStore.insertTimeoutCertificate(timeoutCertificate);
   }
 
-  public boolean insertQc(QuorumCertificate qc) {
-    return switch (vertexStore.insertQc(qc)) {
-      case VertexStore.InsertQcResult.Inserted inserted -> {
-        // TODO: why is this if statement needed?
-        if (inserted.committedUpdate().isEmpty()) {
-          this.highQCUpdateDispatcher.dispatch(BFTHighQCUpdate.create(inserted.vertexStoreState()));
-        }
-        inserted
-            .committedUpdate()
-            .onPresent(
-                committedUpdate ->
-                    this.bftCommittedDispatcher.dispatch(
-                        new BFTCommittedUpdate(
-                            committedUpdate.committedVertices(), inserted.vertexStoreState())));
-        yield true;
+  public VertexStore.InsertQcResult insertQc(QuorumCertificate qc) {
+    final var result = vertexStore.insertQc(qc);
+    if (result instanceof VertexStore.InsertQcResult.Inserted inserted) {
+      // TODO: why is this if statement needed?
+      if (inserted.committedUpdate().isEmpty()) {
+        this.highQCUpdateDispatcher.dispatch(BFTHighQCUpdate.create(inserted.vertexStoreState()));
       }
-      case VertexStore.InsertQcResult.Ignored ignored -> true;
-      case VertexStore.InsertQcResult.VertexIsMissing vertexIsMissing -> false;
-    };
+      inserted
+          .committedUpdate()
+          .onPresent(
+              committedUpdate ->
+                  this.bftCommittedDispatcher.dispatch(
+                      new BFTCommittedUpdate(
+                          committedUpdate.committedVertices(), inserted.vertexStoreState())));
+    }
+    return result;
   }
 
   public Optional<ExecutedVertex> getExecutedVertex(HashCode vertexHash) {

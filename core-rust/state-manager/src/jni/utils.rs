@@ -64,7 +64,7 @@
 
 use jni::JNIEnv;
 use jni::{objects::JObject, sys::jbyteArray};
-use radix_engine::types::{ScryptoDecode, ScryptoEncode, ScryptoTypeId};
+use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
 use std::ops::DerefMut;
 
 use crate::jni::state_manager::ActualStateManager;
@@ -96,7 +96,7 @@ pub fn jni_slice_to_jbytearray(env: &JNIEnv, slice: &[u8]) -> jbyteArray {
 
 pub fn jni_static_sbor_call<
     Args: JavaStructure + ScryptoDecode,
-    Response: JavaStructure + ScryptoTypeId + ScryptoEncode + ScryptoDecode,
+    Response: JavaStructure + ScryptoCategorize + ScryptoEncode + ScryptoDecode,
 >(
     env: JNIEnv,
     request_payload: jbyteArray,
@@ -121,7 +121,7 @@ fn jni_static_sbor_call_inner<Args: JavaStructure, Response: JavaStructure>(
 
 pub fn jni_static_sbor_call_flatten_result<
     Args: JavaStructure + ScryptoDecode,
-    Response: JavaStructure + ScryptoTypeId + ScryptoDecode + ScryptoEncode,
+    Response: JavaStructure + ScryptoCategorize + ScryptoDecode + ScryptoEncode,
 >(
     env: JNIEnv,
     request_payload: jbyteArray,
@@ -145,7 +145,7 @@ fn jni_static_sbor_call_flatten_result_inner<Args: JavaStructure, Response: Java
 
 pub fn jni_state_manager_sbor_read_call<
     Args: JavaStructure + ScryptoDecode,
-    Response: JavaStructure + ScryptoEncode + ScryptoDecode + ScryptoTypeId,
+    Response: JavaStructure + ScryptoEncode + ScryptoDecode + ScryptoCategorize,
 >(
     env: JNIEnv,
     j_state_manager: JObject,
@@ -159,7 +159,7 @@ pub fn jni_state_manager_sbor_read_call<
 
 pub fn jni_state_manager_sbor_call<
     Args: JavaStructure + ScryptoDecode,
-    Response: JavaStructure + ScryptoEncode + ScryptoDecode + ScryptoTypeId,
+    Response: JavaStructure + ScryptoEncode + ScryptoDecode + ScryptoCategorize,
 >(
     env: JNIEnv,
     j_state_manager: JObject,
@@ -206,7 +206,7 @@ fn jni_state_manager_sbor_call_inner<Args: JavaStructure, Response: JavaStructur
 
 pub fn jni_state_manager_sbor_call_flatten_result<
     Args: JavaStructure + ScryptoDecode,
-    Response: JavaStructure + ScryptoEncode + ScryptoDecode + ScryptoTypeId,
+    Response: JavaStructure + ScryptoEncode + ScryptoDecode + ScryptoCategorize,
 >(
     env: JNIEnv,
     j_state_manager: JObject,

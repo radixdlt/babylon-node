@@ -68,10 +68,7 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::model::Validator;
-use radix_engine::types::{
-    scrypto, ComponentAddress, Decimal, Decode, Encode, TypeId, RADIX_TOKEN,
-};
-use radix_engine_interface::model::SystemAddress;
+use radix_engine::types::*;
 use std::collections::BTreeMap;
 
 use crate::jni::utils::*;
@@ -225,12 +222,12 @@ fn do_get_epoch(state_manager: &ActualStateManager, _args: ()) -> u64 {
 
 pub fn export_extern_functions() {}
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug, Decode, Encode, Categorize)]
 pub struct JavaCommitRequest {
     pub transactions: Vec<JavaRawTransaction>,
     pub state_version: u64,
     pub proof: Vec<u8>,
-    pub vertex_store: Option<Vec<u8>>,
+    pub post_commit_vertex_store: Option<Vec<u8>>,
 }
 
 impl From<JavaCommitRequest> for CommitRequest {
@@ -243,12 +240,12 @@ impl From<JavaCommitRequest> for CommitRequest {
                 .collect(),
             proof_state_version: commit_request.state_version,
             proof: commit_request.proof,
-            vertex_store: commit_request.vertex_store,
+            post_commit_vertex_store: commit_request.post_commit_vertex_store,
         }
     }
 }
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug, Decode, Encode, Categorize)]
 pub struct JavaPrepareRequest {
     pub already_prepared: Vec<JavaRawTransaction>,
     pub proposed: Vec<JavaRawTransaction>,
@@ -277,8 +274,7 @@ impl From<JavaPrepareRequest> for PrepareRequest {
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPrepareResult {
     pub committed: Vec<Vec<u8>>,
     pub rejected: Vec<(Vec<u8>, String)>,
@@ -295,7 +291,7 @@ impl From<PrepareResult> for JavaPrepareResult {
     }
 }
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug, Decode, Encode, Categorize)]
 pub struct JavaPrepareGenesisRequest {
     pub genesis: JavaRawTransaction,
 }
@@ -308,8 +304,7 @@ impl From<JavaPrepareGenesisRequest> for PrepareGenesisRequest {
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPrepareGenesisResult {
     pub validator_set: Option<BTreeMap<SystemAddress, Validator>>,
 }

@@ -1,7 +1,8 @@
 use crate::core_api::*;
 use models::{
+    target_identifier::TargetIdentifier,
     transaction_call_preview_response::TransactionCallPreviewResponse,
-    transaction_status::TransactionStatus, TransactionCallPreviewRequestTarget,
+    transaction_status::TransactionStatus,
 };
 use radix_engine::{
     transaction::{PreviewError, TransactionOutcome, TransactionResult},
@@ -10,14 +11,24 @@ use radix_engine::{
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use radix_engine_interface::args;
 use state_manager::PreviewRequest;
-use transaction::args_from_bytes_vec;
 use transaction::model::{BasicInstruction, PreviewFlags, TransactionManifest};
+
+macro_rules! args_from_bytes_vec {
+    ($args: expr) => {{
+        let mut fields = Vec::new();
+        for arg in $args {
+            fields.push(::radix_engine_interface::data::scrypto_decode(&arg).unwrap());
+        }
+        let input_struct = ::radix_engine_interface::data::ScryptoValue::Tuple { fields };
+        ::radix_engine_interface::data::scrypto_encode(&input_struct).unwrap()
+    }};
+}
 
 #[tracing::instrument(level = "debug", skip_all, err(Debug))]
 pub(crate) async fn handle_transaction_callpreview(
     Extension(state): Extension<CoreApiState>,
     Json(request): Json<models::TransactionCallPreviewRequest>,
-) -> Result<Json<models::TransactionCallPreviewResponse>, RequestHandlingError> {
+) -> Result<Json<models::TransactionCallPreviewResponse>, ResponseError<()>> {
     let state_manager = state.state_manager.read();
     let bech32_decoder = Bech32Decoder::new(&state_manager.network);
     let bech32_encoder = Bech32Encoder::new(&state_manager.network);
@@ -34,7 +45,7 @@ pub(crate) async fn handle_transaction_callpreview(
         .ok_or_else(|| client_error("Missing target from request".to_string()))?;
 
     let requested_call = match call_target {
-        TransactionCallPreviewRequestTarget::BlueprintFunctionIdentifier {
+        TargetIdentifier::BlueprintFunctionTargetIdentifier {
             package_address,
             blueprint_name,
             function_name,
@@ -50,7 +61,7 @@ pub(crate) async fn handle_transaction_callpreview(
                 args: args_from_bytes_vec!(args),
             }
         }
-        TransactionCallPreviewRequestTarget::ComponentMethodIdentifier {
+        TargetIdentifier::ComponentMethodTargetIdentifier {
             component_address,
             method_name,
         } => {

@@ -64,7 +64,7 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.Objects;
 import java.util.Optional;
@@ -73,10 +73,10 @@ import java.util.Optional;
 public final class MempoolAddSuccess {
   private final RawNotarizedTransaction transaction;
   private final Object processedTxn;
-  private final BFTNode origin;
+  private final NodeId origin;
 
   private MempoolAddSuccess(
-      RawNotarizedTransaction transaction, Object processedTxn, BFTNode origin) {
+      RawNotarizedTransaction transaction, Object processedTxn, NodeId origin) {
     this.transaction = transaction;
     this.processedTxn = processedTxn;
     this.origin = origin;
@@ -86,12 +86,12 @@ public final class MempoolAddSuccess {
     return transaction;
   }
 
-  public Optional<BFTNode> getOrigin() {
+  public Optional<NodeId> getOrigin() {
     return Optional.ofNullable(origin);
   }
 
   public static MempoolAddSuccess create(
-      RawNotarizedTransaction transaction, Object processedTxn, BFTNode origin) {
+      RawNotarizedTransaction transaction, Object processedTxn, NodeId origin) {
     Objects.requireNonNull(transaction);
     return new MempoolAddSuccess(transaction, processedTxn, origin);
   }
@@ -103,11 +103,10 @@ public final class MempoolAddSuccess {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof MempoolAddSuccess)) {
+    if (!(o instanceof MempoolAddSuccess other)) {
       return false;
     }
 
-    MempoolAddSuccess other = (MempoolAddSuccess) o;
     return Objects.equals(this.transaction, other.transaction)
         && Objects.equals(this.processedTxn, other.processedTxn)
         && Objects.equals(this.origin, other.origin);

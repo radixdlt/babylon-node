@@ -79,6 +79,7 @@ import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.Objects;
@@ -103,7 +104,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
   }
 
   @Override
-  public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
+  public void addToMempool(MempoolAdd mempoolAdd, @Nullable NodeId origin) {}
 
   @Override
   public List<RawNotarizedTransaction> getTransactionsForProposal(
@@ -133,7 +134,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
   @Override
   public void commit(
       CommittedTransactionsWithProof committedTransactionsWithProof,
-      VertexStoreState vertexStoreState) {
-    this.stateComputer.commit(committedTransactionsWithProof, vertexStoreState);
+      VertexStoreState preCommitVertexStoreState) {
+    this.stateComputer.commit(committedTransactionsWithProof, preCommitVertexStoreState);
   }
 }

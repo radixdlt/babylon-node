@@ -70,7 +70,7 @@ import static org.mockito.Mockito.*;
 
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
@@ -132,7 +132,7 @@ public class BFTEventStatelessVerifierTest {
   @Test
   public void when_process_correct_proposal_then_should_be_forwarded() {
     Proposal proposal = mock(Proposal.class);
-    BFTNode author = mock(BFTNode.class);
+    BFTValidatorId author = mock(BFTValidatorId.class);
     when(proposal.getAuthor()).thenReturn(author);
     when(proposal.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
     when(timeSupplier.currentTime()).thenReturn(5L);
@@ -149,7 +149,7 @@ public class BFTEventStatelessVerifierTest {
   @Test
   public void when_process_bad_author_proposal_then_should_not_be_forwarded() {
     Proposal proposal = mock(Proposal.class);
-    BFTNode author = mock(BFTNode.class);
+    BFTValidatorId author = mock(BFTValidatorId.class);
     when(proposal.getAuthor()).thenReturn(author);
     when(proposal.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
     when(validatorSet.containsNode(eq(author))).thenReturn(false);
@@ -161,7 +161,7 @@ public class BFTEventStatelessVerifierTest {
   @Test
   public void when_process_bad_signature_proposal_then_should_not_be_forwarded() {
     Proposal proposal = mock(Proposal.class);
-    BFTNode author = mock(BFTNode.class);
+    BFTValidatorId author = mock(BFTValidatorId.class);
     when(proposal.getAuthor()).thenReturn(author);
     when(proposal.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
     when(timeSupplier.currentTime()).thenReturn(5L);
@@ -194,7 +194,7 @@ public class BFTEventStatelessVerifierTest {
     Vote vote = mock(Vote.class);
     when(vote.getRound()).thenReturn(Round.of(1));
     when(vote.getEpoch()).thenReturn(0L);
-    BFTNode author = mock(BFTNode.class);
+    BFTValidatorId author = mock(BFTValidatorId.class);
     when(vote.getAuthor()).thenReturn(author);
     ECDSASecp256k1Signature voteSignature = mock(ECDSASecp256k1Signature.class);
     ECDSASecp256k1Signature timeoutSignature = mock(ECDSASecp256k1Signature.class);
@@ -211,7 +211,7 @@ public class BFTEventStatelessVerifierTest {
   @Test
   public void when_process_bad_author_vote_then_should_not_be_forwarded() {
     Vote vote = mock(Vote.class);
-    BFTNode author = mock(BFTNode.class);
+    BFTValidatorId author = mock(BFTValidatorId.class);
     when(vote.getAuthor()).thenReturn(author);
     when(vote.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
     when(validatorSet.containsNode(eq(author))).thenReturn(false);
@@ -223,7 +223,7 @@ public class BFTEventStatelessVerifierTest {
   @Test
   public void when_process_bad_signature_vote_then_should_not_be_forwarded() {
     Vote vote = mock(Vote.class);
-    BFTNode author = mock(BFTNode.class);
+    BFTValidatorId author = mock(BFTValidatorId.class);
     when(vote.getAuthor()).thenReturn(author);
     when(vote.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
     when(validatorSet.containsNode(eq(author))).thenReturn(true);
@@ -237,7 +237,7 @@ public class BFTEventStatelessVerifierTest {
     Vote vote = mock(Vote.class);
     when(vote.getRound()).thenReturn(Round.of(1));
     when(vote.getEpoch()).thenReturn(0L);
-    BFTNode author = mock(BFTNode.class);
+    BFTValidatorId author = mock(BFTValidatorId.class);
     when(vote.getAuthor()).thenReturn(author);
     ECDSASecp256k1Signature voteSignature = mock(ECDSASecp256k1Signature.class);
     ECDSASecp256k1Signature timeoutSignature = mock(ECDSASecp256k1Signature.class);

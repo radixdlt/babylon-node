@@ -132,7 +132,7 @@ public final class REv2TestTransactions {
                     CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
                     CALL_METHOD ComponentAddress("%s") "free";
                     TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
-                    CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AllowAll") Bucket("xrd");
+                    CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AccessRule::AllowAll") Bucket("xrd");
                     """,
         faucetAddress, faucetAddress, xrdAddress, accountPackageAddress);
   }
@@ -153,7 +153,7 @@ public final class REv2TestTransactions {
                         CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
                         CALL_METHOD ComponentAddress("%s") "withdraw_by_amount" Decimal("900") ResourceAddress("%s");
                         TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
-                        CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AllowAll") Bucket("xrd");
+                        CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AccessRule::AllowAll") Bucket("xrd");
                         """,
         fromAddress, fromAddress, xrdAddress, xrdAddress, accountPackageAddress);
   }

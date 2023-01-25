@@ -65,19 +65,19 @@
 package com.radixdlt.environment.deterministic.network;
 
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.p2p.NodeId;
 import java.util.Objects;
 
 /** A message sent over a channel. */
 public final class ControlledMessage {
-  private final BFTNode origin;
+  private final NodeId origin;
   private final ChannelId channelId;
   private final Object message;
   private final TypeLiteral<?> typeLiteral;
   private final long arrivalTime;
 
   public ControlledMessage(
-      BFTNode origin,
+      NodeId origin,
       ChannelId channelId,
       Object message,
       TypeLiteral<?> typeLiteral,
@@ -103,7 +103,7 @@ public final class ControlledMessage {
         this.origin, this.channelId, this.message, this.typeLiteral, arrivalTime);
   }
 
-  public BFTNode origin() {
+  public NodeId origin() {
     return origin;
   }
 

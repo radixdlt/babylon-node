@@ -67,7 +67,8 @@ package com.radixdlt;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
+import com.google.inject.Key;
+import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.CoreApiServerModule;
 import com.radixdlt.api.prometheus.PrometheusApiModule;
@@ -79,7 +80,8 @@ import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
-import com.radixdlt.keys.BFTNodeFromGenesisModule;
+import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
+import com.radixdlt.keys.BFTValidatorIdModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.AccumulatorState;
@@ -96,6 +98,7 @@ import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.rev2.Decimal;
+import com.radixdlt.rev2.SystemAddress;
 import com.radixdlt.rev2.modules.BerkeleySafetyStoreModule;
 import com.radixdlt.rev2.modules.REv2ConsensusRecoveryModule;
 import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
@@ -111,7 +114,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Optional;
-import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
@@ -178,7 +180,23 @@ public final class RadixNodeModule extends AbstractModule {
     install(new DispatcherModule());
 
     // Consensus
-    install(new BFTNodeFromGenesisModule());
+    final String useGenesis = properties.get("consensus.use_genesis_for_validator_address");
+    final String validatorAddress = properties.get("consensus.validator_address", (String) null);
+    if (useGenesis != null && validatorAddress != null) {
+      throw new IllegalArgumentException(
+          "Invalid configuration. Using both consensus.genesis_for_validator_address and"
+              + " consensus.validator_address. Please use one.");
+    } else if (validatorAddress != null) {
+      OptionalBinder.newOptionalBinder(binder(), Key.get(SystemAddress.class, Self.class))
+          .setBinding()
+          .toInstance(addressing.decodeSystemAddress(validatorAddress));
+      install(new BFTValidatorIdModule());
+    } else if (useGenesis == null || Boolean.parseBoolean(useGenesis)) {
+      install(new BFTValidatorIdFromGenesisModule());
+    } else {
+      OptionalBinder.newOptionalBinder(binder(), Key.get(SystemAddress.class, Self.class));
+      install(new BFTValidatorIdModule());
+    }
     install(new PersistedBFTKeyModule());
     install(new CryptoModule());
     install(new ConsensusModule());
@@ -284,13 +302,6 @@ public final class RadixNodeModule extends AbstractModule {
             .map(LedgerSyncCapability.Builder::new)
             .orElse(LedgerSyncCapability.Builder.asDefault());
     install(new CapabilitiesModule(builder.build()));
-  }
-
-  @Provides
-  @Self
-  String name(
-      Function<ECDSASecp256k1PublicKey, String> nodeToString, @Self ECDSASecp256k1PublicKey key) {
-    return nodeToString.apply(key);
   }
 
   private String loadGenesisFromFile(String genesisFile) {

@@ -64,7 +64,7 @@
 
 package com.radixdlt.harness.simulation.network;
 
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import java.util.HashMap;
 import java.util.Map;
@@ -76,15 +76,13 @@ import java.util.function.Predicate;
  */
 public class OneNodePerEpochLedgerStatusUpdateDropper
     implements Predicate<SimulationNetwork.MessageInTransit> {
-  private final Map<Long, BFTNode> nodeToDrop = new HashMap<>();
+  private final Map<Long, NodeId> nodeToDrop = new HashMap<>();
 
   @Override
   public boolean test(SimulationNetwork.MessageInTransit messageInTransit) {
-    if (!(messageInTransit.getContent() instanceof LedgerStatusUpdate)) {
+    if (!(messageInTransit.getContent() instanceof final LedgerStatusUpdate ledgerStatusUpdate)) {
       return false;
     }
-
-    final var ledgerStatusUpdate = (LedgerStatusUpdate) messageInTransit.getContent();
 
     final var node =
         nodeToDrop.putIfAbsent(

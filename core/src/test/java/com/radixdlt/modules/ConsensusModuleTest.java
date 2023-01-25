@@ -91,14 +91,12 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.ZeroHasher;
+import com.radixdlt.utils.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -115,29 +113,29 @@ public class ConsensusModuleTest {
 
   private ECKeyPair validatorKeyPair;
 
-  private BFTNode validatorBftNode;
+  private BFTValidatorId validatorId;
   private BFTConfiguration bftConfiguration;
 
   private ECKeyPair ecKeyPair;
-  private RemoteEventDispatcher<GetVerticesRequest> requestSender;
-  private RemoteEventDispatcher<GetVerticesResponse> responseSender;
-  private RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseSender;
+  private RemoteEventDispatcher<NodeId, GetVerticesRequest> requestSender;
+  private RemoteEventDispatcher<NodeId, GetVerticesResponse> responseSender;
+  private RemoteEventDispatcher<NodeId, GetVerticesErrorResponse> errorResponseSender;
 
   @Before
   public void setup() {
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     var genesisVertex =
-        Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, null, 0, 0))
+        Vertex.createInitialEpochVertex(LedgerHeader.genesis(accumulatorState, null, 0, 0))
             .withId(ZeroHasher.INSTANCE);
     var qc =
-        QuorumCertificate.ofGenesis(
+        QuorumCertificate.createInitialEpochQC(
             genesisVertex, LedgerHeader.genesis(accumulatorState, null, 0, 0));
     this.validatorKeyPair = ECKeyPair.generateNew();
-    this.validatorBftNode = BFTNode.create(this.validatorKeyPair.getPublicKey());
+    this.validatorId = BFTValidatorId.create(this.validatorKeyPair.getPublicKey());
     var validatorSet =
-        BFTValidatorSet.from(Stream.of(BFTValidator.from(this.validatorBftNode, UInt256.ONE)));
+        BFTValidatorSet.from(Stream.of(BFTValidator.from(this.validatorId, UInt256.ONE)));
     var vertexStoreState =
-        VertexStoreState.create(HighQC.from(qc), genesisVertex, Optional.empty(), hasher);
+        VertexStoreState.create(HighQC.ofInitialEpochQc(qc), genesisVertex, hasher);
     var proposerElection = new WeightedRotatingLeaders(validatorSet);
     this.bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
     this.ecKeyPair = ECKeyPair.generateNew();
@@ -177,15 +175,15 @@ public class ConsensusModuleTest {
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<RoundLeaderFailure>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, Vote>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<Proposal>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, Proposal>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
-        bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesRequest>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesRequest>>() {})
             .toInstance(requestSender);
-        bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesResponse>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesResponse>>() {})
             .toInstance(responseSender);
-        bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesErrorResponse>>() {})
+        bind(new TypeLiteral<RemoteEventDispatcher<NodeId, GetVerticesErrorResponse>>() {})
             .toInstance(errorResponseSender);
         bind(new TypeLiteral<EventDispatcher<NoVote>>() {})
             .toInstance(rmock(EventDispatcher.class));
@@ -221,14 +219,14 @@ public class ConsensusModuleTest {
       }
 
       @Provides
-      RoundUpdate initialRoundUpdate(@Self BFTNode node) {
+      RoundUpdate initialRoundUpdate(@Self BFTValidatorId node) {
         return RoundUpdate.create(Round.of(1), mock(HighQC.class), node, node);
       }
 
       @Provides
       @Self
-      private BFTNode bftNode() {
-        return BFTNode.create(ecKeyPair.getPublicKey());
+      private BFTValidatorId bftNode() {
+        return BFTValidatorId.create(ecKeyPair.getPublicKey());
       }
     };
   }
@@ -241,7 +239,7 @@ public class ConsensusModuleTest {
 
   private Pair<QuorumCertificate, VertexWithHash> createNextVertex(
       QuorumCertificate parent, ECKeyPair proposerKeyPair, RawNotarizedTransaction txn) {
-    final var proposerBftNode = BFTNode.create(proposerKeyPair.getPublicKey());
+    final var proposerBftNode = BFTValidatorId.create(proposerKeyPair.getPublicKey());
     var vertex =
         Vertex.create(parent, Round.of(1), List.of(txn), proposerBftNode, 0).withId(hasher);
     var next =
@@ -270,7 +268,7 @@ public class ConsensusModuleTest {
     Pair<QuorumCertificate, VertexWithHash> nextVertex = createNextVertex(parent, validatorKeyPair);
     HighQC unsyncedHighQC =
         HighQC.from(nextVertex.getFirst(), nextVertex.getFirst(), Optional.empty());
-    bftSync.syncToQC(unsyncedHighQC, validatorBftNode);
+    bftSync.syncToQC(unsyncedHighQC, NodeId.fromPublicKey(validatorId.getKey()));
     GetVerticesRequest request = new GetVerticesRequest(nextVertex.getSecond().hash(), 1);
     VertexRequestTimeout timeout = VertexRequestTimeout.create(request);
 
@@ -281,7 +279,7 @@ public class ConsensusModuleTest {
     // Assert
     verify(requestSender, times(2))
         .dispatch(
-            eq(validatorBftNode),
+            eq(NodeId.fromPublicKey(validatorId.getKey())),
             argThat(
                 r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().hash())));
   }
@@ -289,31 +287,33 @@ public class ConsensusModuleTest {
   @Test
   public void on_synced_to_vertex_should_request_for_parent() {
     // Arrange
-    BFTNode bftNode = BFTNode.random();
+    var nodeId = NodeId.fromPublicKey(PrivateKeys.ofNumeric(1).getPublicKey());
     QuorumCertificate parent = vertexStore.highQC().highestQC();
     Pair<QuorumCertificate, VertexWithHash> nextVertex = createNextVertex(parent, validatorKeyPair);
     Pair<QuorumCertificate, VertexWithHash> nextNextVertex =
         createNextVertex(nextVertex.getFirst(), validatorKeyPair);
     HighQC unsyncedHighQC =
         HighQC.from(nextNextVertex.getFirst(), nextNextVertex.getFirst(), Optional.empty());
-    bftSync.syncToQC(unsyncedHighQC, bftNode);
+    bftSync.syncToQC(unsyncedHighQC, nodeId);
 
     // Act
     nothrowSleep(100); // FIXME: Remove when rate limit on send removed
     GetVerticesResponse response =
         new GetVerticesResponse(ImmutableList.of(nextNextVertex.getSecond()));
-    bftSync.responseProcessor().process(bftNode, response);
+    bftSync.responseProcessor().process(nodeId, response);
 
     // Assert
     verify(requestSender, times(1))
         .dispatch(
-            eq(bftNode),
+            eq(nodeId),
             argThat(
                 r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().hash())));
   }
 
   @Test
   public void bft_sync_should_sync_two_different_QCs_with_the_same_parent() {
+
+    var nodeId = NodeId.fromPublicKey(validatorId.getKey());
     final var parentQc = vertexStore.highQC().highestQC();
     final var parentVertex = createNextVertex(parentQc, validatorKeyPair);
     final var proposedVertex1 =
@@ -331,19 +331,19 @@ public class ConsensusModuleTest {
     final var unsyncedHighQC2 =
         HighQC.from(proposedVertex2.getFirst(), proposedVertex2.getFirst(), Optional.empty());
 
-    bftSync.syncToQC(unsyncedHighQC1, validatorBftNode);
-    bftSync.syncToQC(unsyncedHighQC2, validatorBftNode);
+    bftSync.syncToQC(unsyncedHighQC1, nodeId);
+    bftSync.syncToQC(unsyncedHighQC2, nodeId);
 
     nothrowSleep(100);
     final var response1 = new GetVerticesResponse(ImmutableList.of(proposedVertex1.getSecond()));
-    bftSync.responseProcessor().process(validatorBftNode, response1);
+    bftSync.responseProcessor().process(nodeId, response1);
 
     final var response2 = new GetVerticesResponse(ImmutableList.of(proposedVertex2.getSecond()));
-    bftSync.responseProcessor().process(validatorBftNode, response2);
+    bftSync.responseProcessor().process(nodeId, response2);
 
     verify(requestSender, times(1))
         .dispatch(
-            eq(validatorBftNode),
+            eq(nodeId),
             argThat(
                 r ->
                     r.getCount() == 1
@@ -351,7 +351,7 @@ public class ConsensusModuleTest {
 
     verify(requestSender, times(1))
         .dispatch(
-            eq(validatorBftNode),
+            eq(nodeId),
             argThat(
                 r ->
                     r.getCount() == 1

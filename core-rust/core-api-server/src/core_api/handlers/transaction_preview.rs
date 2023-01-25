@@ -3,7 +3,7 @@ use radix_engine::{
     transaction::{PreviewError, PreviewResult, TransactionResult},
     types::{Bech32Encoder, RENodeId},
 };
-use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::node::NetworkDefinition;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::{LedgerTransactionReceipt, PreviewRequest};
 use transaction::manifest;
@@ -12,7 +12,7 @@ use transaction::model::PreviewFlags;
 pub(crate) async fn handle_transaction_preview(
     state: Extension<CoreApiState>,
     request: Json<models::TransactionPreviewRequest>,
-) -> Result<Json<models::TransactionPreviewResponse>, RequestHandlingError> {
+) -> Result<Json<models::TransactionPreviewResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_preview_internal)
 }
 
@@ -20,7 +20,7 @@ pub(crate) async fn handle_transaction_preview(
 fn handle_preview_internal(
     state_manager: &ActualStateManager,
     request: models::TransactionPreviewRequest,
-) -> Result<models::TransactionPreviewResponse, RequestHandlingError> {
+) -> Result<models::TransactionPreviewResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
     let preview_request = parse_preview_request(&state_manager.network, request)?;
@@ -41,7 +41,7 @@ fn handle_preview_internal(
 fn parse_preview_request(
     network: &NetworkDefinition,
     request: models::TransactionPreviewRequest,
-) -> Result<PreviewRequest, RequestHandlingError> {
+) -> Result<PreviewRequest, ResponseError<()>> {
     let manifest_blobs: Vec<_> = request
         .blobs_hex
         .unwrap_or_default()
@@ -93,7 +93,7 @@ fn parse_preview_request(
 fn to_api_response(
     result: PreviewResult,
     bech32_encoder: &Bech32Encoder,
-) -> Result<models::TransactionPreviewResponse, RequestHandlingError> {
+) -> Result<models::TransactionPreviewResponse, ResponseError<()>> {
     let receipt = result.receipt;
 
     let response = match &receipt.result {
@@ -145,6 +145,7 @@ fn to_api_response(
                 )?),
                 state_updates: Box::default(),
                 output: None,
+                next_epoch: None,
                 error_message: Some(format!("{:?}", reject_result)),
             }),
             resource_changes: vec![],

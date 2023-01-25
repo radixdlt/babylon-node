@@ -73,6 +73,7 @@ import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.lang.Option;
 import java.util.List;
 
+/** Manages the BFT Vertex chain. TODO: Move this logic into ledger package. */
 public interface VertexStore {
   record CommittedUpdate(ImmutableList<ExecutedVertex> committedVertices) {}
 
@@ -94,9 +95,21 @@ public interface VertexStore {
 
   InsertQcResult insertQc(QuorumCertificate qc);
 
-  void insertTimeoutCertificate(TimeoutCertificate timeoutCertificate);
+  /**
+   * Inserts a timeout certificate into the store.
+   *
+   * @param timeoutCertificate the timeout certificate
+   * @return true if the timeout certificate was inserted, false if it was ignored because it's not
+   *     the highest
+   */
+  boolean insertTimeoutCertificate(TimeoutCertificate timeoutCertificate);
 
-  Option<BFTInsertUpdate> insertVertex(VertexWithHash vertex);
+  /**
+   * Inserts a vertex and then attempts to create the next header.
+   *
+   * @param vertexWithHash vertex to insert
+   */
+  Option<BFTInsertUpdate> insertVertex(VertexWithHash vertexWithHash);
 
   InsertVertexChainResult insertVertexChain(VertexChain vertexChain);
 
@@ -110,7 +123,23 @@ public interface VertexStore {
 
   List<ExecutedVertex> getPathFromRoot(HashCode vertexId);
 
+  /**
+   * Returns the vertex with specified id or empty if not exists.
+   *
+   * @param vertexHash the id of a vertex
+   * @return the specified vertex or empty
+   */
   Option<ExecutedVertex> getExecutedVertex(HashCode vertexHash);
 
+  /**
+   * Retrieves list of vertices starting with the given vertexId and then proceeding to its
+   * ancestors.
+   *
+   * <p>if the store does not contain some vertex then will return an empty list.
+   *
+   * @param vertexHash the id of the vertex
+   * @param count the number of vertices to retrieve
+   * @return the list of vertices if all found, otherwise an empty list
+   */
   Option<ImmutableList<VertexWithHash>> getVertices(HashCode vertexHash, int count);
 }

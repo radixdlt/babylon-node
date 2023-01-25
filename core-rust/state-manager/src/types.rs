@@ -64,9 +64,7 @@
 
 use crate::transaction::LedgerTransaction;
 use radix_engine::model::Validator;
-use radix_engine::types::{
-    scrypto, scrypto_encode, sha256_twice, Decode, Encode, Hash, PublicKey, TypeId,
-};
+use radix_engine::types::*;
 use radix_engine_interface::model::SystemAddress;
 use std::collections::BTreeMap;
 use std::fmt;
@@ -75,7 +73,7 @@ use transaction::model::{
     TransactionManifest,
 };
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Decode, Encode, TypeId)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Decode, Encode, Categorize)]
 pub struct AccumulatorHash([u8; Self::LENGTH]);
 
 impl AccumulatorHash {
@@ -119,8 +117,18 @@ impl fmt::Debug for AccumulatorHash {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(
+    PartialEq,
+    Eq,
+    Hash,
+    Clone,
+    Copy,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub struct LedgerPayloadHash([u8; Self::LENGTH]);
 
 impl LedgerPayloadHash {
@@ -183,8 +191,18 @@ impl HasLedgerPayloadHash for NotarizedTransaction {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(
+    PartialEq,
+    Eq,
+    Hash,
+    Clone,
+    Copy,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub struct UserPayloadHash([u8; Self::LENGTH]);
 
 impl UserPayloadHash {
@@ -233,8 +251,18 @@ impl HasUserPayloadHash for NotarizedTransaction {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(
+    PartialEq,
+    Eq,
+    Hash,
+    Clone,
+    Copy,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub struct SignaturesHash([u8; Self::LENGTH]);
 
 impl SignaturesHash {
@@ -289,8 +317,7 @@ impl HasSignaturesHash for NotarizedTransaction {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct IntentHash([u8; Self::LENGTH]);
 
 impl IntentHash {
@@ -352,8 +379,7 @@ impl HasIntentHash for NotarizedTransaction {
 }
 
 /// An uncommitted user transaction, in eg the mempool
-#[derive(Debug, PartialEq, Eq, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PendingTransaction {
     pub payload: NotarizedTransaction,
     pub payload_hash: UserPayloadHash,
@@ -371,8 +397,7 @@ impl From<NotarizedTransaction> for PendingTransaction {
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PreviewRequest {
     pub manifest: TransactionManifest,
     pub start_epoch_inclusive: u64,
@@ -386,21 +411,20 @@ pub struct PreviewRequest {
     pub flags: PreviewFlags,
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum CommitError {
     MissingEpochProof,
 }
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug, Decode, Encode, Categorize)]
 pub struct CommitRequest {
     pub transaction_payloads: Vec<Vec<u8>>,
     pub proof_state_version: u64, // TODO: Use actual proof to get this info
     pub proof: Vec<u8>,
-    pub vertex_store: Option<Vec<u8>>,
+    pub post_commit_vertex_store: Option<Vec<u8>>,
 }
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug, Decode, Encode, Categorize)]
 pub struct PrepareRequest {
     pub already_prepared_payloads: Vec<Vec<u8>>,
     pub proposed_payloads: Vec<Vec<u8>>,
@@ -409,28 +433,25 @@ pub struct PrepareRequest {
     pub proposer_timestamp_ms: i64,
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareResult {
     pub committed: Vec<Vec<u8>>,
     pub rejected: Vec<(Vec<u8>, String)>,
     pub next_epoch: Option<NextEpoch>,
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct NextEpoch {
     pub validator_set: BTreeMap<SystemAddress, Validator>,
     pub epoch: u64,
 }
 
-#[derive(Debug, Decode, Encode, TypeId)]
+#[derive(Debug, Decode, Encode, Categorize)]
 pub struct PrepareGenesisRequest {
     pub genesis: Vec<u8>,
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareGenesisResult {
     pub validator_set: Option<BTreeMap<SystemAddress, Validator>>,
 }

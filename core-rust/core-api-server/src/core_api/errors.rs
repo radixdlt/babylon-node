@@ -3,24 +3,63 @@ use axum::{
     Json,
 };
 use hyper::StatusCode;
-use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::node::NetworkDefinition;
 
-use crate::core_api::*;
+use super::models;
 
-#[derive(Debug, Clone)]
-pub(crate) struct RequestHandlingError(pub StatusCode, pub models::ErrorResponse);
+/// A marker trait for custom error details
+pub trait ErrorDetails: serde::Serialize + std::fmt::Debug + Sized {
+    fn to_error_response(
+        details: Option<Self>,
+        code: i32,
+        message: String,
+        trace_id: Option<String>,
+    ) -> models::ErrorResponse;
+}
 
-impl IntoResponse for RequestHandlingError {
-    fn into_response(self) -> Response {
-        (self.0, Json(self.1)).into_response()
+impl ErrorDetails for () {
+    fn to_error_response(
+        _details: Option<Self>,
+        code: i32,
+        message: String,
+        trace_id: Option<String>,
+    ) -> models::ErrorResponse {
+        models::ErrorResponse::BasicErrorResponse {
+            code,
+            message,
+            trace_id,
+        }
     }
 }
 
-#[tracing::instrument(err(Debug))]
-pub(crate) fn assert_matching_network(
+#[derive(Debug, Clone)]
+pub(crate) struct ResponseError<E: ErrorDetails> {
+    status_code: StatusCode,
+    public_error_message: String,
+    trace: Option<LogTraceId>,
+    details: Option<E>,
+}
+
+#[derive(Debug, Clone)]
+pub struct LogTraceId(pub String);
+
+impl<E: ErrorDetails> IntoResponse for ResponseError<E> {
+    fn into_response(self) -> Response {
+        let body = E::to_error_response(
+            self.details,
+            self.status_code.as_u16() as i32,
+            self.public_error_message,
+            self.trace.map(|x| x.0),
+        );
+
+        (self.status_code, Json(body)).into_response()
+    }
+}
+
+pub(crate) fn assert_matching_network<E: ErrorDetails>(
     request_network: &str,
     network_definition: &NetworkDefinition,
-) -> Result<(), RequestHandlingError> {
+) -> Result<(), ResponseError<E>> {
     if request_network != network_definition.logical_name {
         return Err(client_error(format!(
             "Invalid network - the network is actually: {}",
@@ -30,25 +69,43 @@ pub(crate) fn assert_matching_network(
     Ok(())
 }
 
-// TODO - Replace ErrorResponse "code" with making them an Enum with different structured errors
 // TODO - Add logging, metrics and tracing for all of these errors - require the error is passed in here
-pub(crate) fn client_error(message: impl Into<String>) -> RequestHandlingError {
-    RequestHandlingError(
-        StatusCode::BAD_REQUEST,
-        models::ErrorResponse::new(400, message.into()),
-    )
+pub(crate) fn client_error<E: ErrorDetails>(message: impl Into<String>) -> ResponseError<E> {
+    ResponseError {
+        status_code: StatusCode::BAD_REQUEST,
+        public_error_message: message.into(),
+        trace: None,
+        details: None,
+    }
 }
 
-pub(crate) fn not_found_error(message: impl Into<String>) -> RequestHandlingError {
-    RequestHandlingError(
-        StatusCode::NOT_FOUND,
-        models::ErrorResponse::new(404, message.into()),
-    )
+pub(crate) fn not_found_error<E: ErrorDetails>(message: impl Into<String>) -> ResponseError<E> {
+    ResponseError {
+        status_code: StatusCode::NOT_FOUND,
+        public_error_message: message.into(),
+        trace: None,
+        details: None,
+    }
 }
 
-pub(crate) fn server_error(public_message: impl Into<String>) -> RequestHandlingError {
-    RequestHandlingError(
-        StatusCode::INTERNAL_SERVER_ERROR,
-        models::ErrorResponse::new(500, public_message.into()),
-    )
+pub(crate) fn server_error<E: ErrorDetails>(public_message: impl Into<String>) -> ResponseError<E> {
+    ResponseError {
+        status_code: StatusCode::INTERNAL_SERVER_ERROR,
+        public_error_message: public_message.into(),
+        trace: None,
+        details: None,
+    }
+}
+
+pub(crate) fn detailed_error<E: ErrorDetails>(
+    status_code: StatusCode,
+    public_message: impl Into<String>,
+    details: impl Into<E>,
+) -> ResponseError<E> {
+    ResponseError {
+        status_code,
+        public_error_message: public_message.into(),
+        trace: None,
+        details: Some(details.into()),
+    }
 }

@@ -67,22 +67,25 @@ package com.radixdlt.harness.deterministic;
 import com.google.common.collect.Streams;
 import com.google.inject.*;
 import com.google.inject.Module;
+import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.util.Modules;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
+import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.keys.BFTNodeFromGenesisModule;
+import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
+import com.radixdlt.keys.BFTValidatorIdModule;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.TestP2PModule;
+import com.radixdlt.rev2.SystemAddress;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -127,20 +130,10 @@ public final class DeterministicNodes implements AutoCloseable {
             .limit(nodeConfigs.size())
             .collect(Collectors.toList());
 
-    this.bootNodesTemporarilyAndBuildAddressBook(network);
-  }
-
-  private void bootNodesTemporarilyAndBuildAddressBook(DeterministicNetwork network) {
     for (int nodeIndex = 0; nodeIndex < this.nodeInstances.size(); nodeIndex++) {
-      var injector = createBFTInstance(nodeIndex, baseModule, overrideModule, 0);
-      var node = injector.getInstance(Key.get(BFTNode.class, Self.class));
-      this.addressBook.addressBook.put(node, nodeIndex);
-      var closeables = injector.getInstance(Key.get(new TypeLiteral<Set<NodeAutoCloseable>>() {}));
-      for (var c : closeables) {
-        c.close();
-      }
+      var nodeId = NodeId.fromPublicKey(this.nodeConfigs.get(nodeIndex).key());
+      this.addressBook.addressBook.put(nodeId, nodeIndex);
     }
-    network.dropAllMessages();
   }
 
   private static class ControlledTimeSupplier implements TimeSupplier {
@@ -160,27 +153,17 @@ public final class DeterministicNodes implements AutoCloseable {
     }
   }
 
-  private static class ControlledAddressBook implements Function<BFTNode, Integer> {
+  private static class ControlledAddressBook implements Function<NodeId, Integer> {
 
-    private final Map<BFTNode, Integer> addressBook;
+    private final Map<NodeId, Integer> addressBook;
 
     public ControlledAddressBook() {
       this.addressBook = new HashMap<>();
     }
 
     @Override
-    public Integer apply(BFTNode bftNode) {
-      var index = this.addressBook.get(bftNode);
-      if (index == null) {
-        index =
-            this.addressBook.entrySet().stream()
-                .filter(e -> e.getKey().getKey().equals(bftNode.getKey()))
-                .findFirst()
-                .map(Map.Entry::getValue)
-                .orElse(null);
-      }
-
-      return index;
+    public Integer apply(NodeId nodeId) {
+      return this.addressBook.get(nodeId);
     }
   }
 
@@ -195,17 +178,25 @@ public final class DeterministicNodes implements AutoCloseable {
               public void configure() {
                 install(
                     new EventLoggerModule(
-                        new EventLoggerConfig(k -> "Node" + addressBook.apply(BFTNode.create(k)))));
+                        new EventLoggerConfig(
+                            k -> "Node" + addressBook.apply(NodeId.fromPublicKey(k)))));
                 bind(ECDSASecp256k1PublicKey.class)
                     .annotatedWith(Self.class)
                     .toInstance(config.key());
+                bind(NodeId.class)
+                    .annotatedWith(Self.class)
+                    .toInstance(NodeId.fromPublicKey(config.key()));
 
                 if (config.loadFromGenesis()) {
-                  install(new BFTNodeFromGenesisModule());
+                  install(new BFTValidatorIdFromGenesisModule());
                 } else {
-                  bind(BFTNode.class)
-                      .annotatedWith(Self.class)
-                      .toInstance(BFTNode.create(config.validatorAddress(), config.key()));
+                  var binder =
+                      OptionalBinder.newOptionalBinder(
+                          binder(), Key.get(SystemAddress.class, Self.class));
+                  if (config.validatorAddress() != null) {
+                    binder.setBinding().toInstance(config.validatorAddress());
+                  }
+                  install(new BFTValidatorIdModule());
                 }
 
                 install(
@@ -218,17 +209,9 @@ public final class DeterministicNodes implements AutoCloseable {
               }
 
               @Provides
-              @Self
-              String name(
-                  Function<ECDSASecp256k1PublicKey, String> nodeToString,
-                  @Self ECDSASecp256k1PublicKey key) {
-                return nodeToString.apply(key);
-              }
-
-              @Provides
               @Singleton
-              Environment sender(@Self BFTNode self) {
-                return new ControlledSender(addressBook, network, self, nodeIndex);
+              Environment sender(@Self NodeId self) {
+                return new ControlledDispatcher(addressBook, network, self, nodeIndex);
               }
             },
             baseModule);
@@ -299,7 +282,6 @@ public final class DeterministicNodes implements AutoCloseable {
     var nextMsg = timedNextMsg.value();
     var sender = nextMsg.origin();
     int receiverIndex = nextMsg.channelId().receiverIndex();
-
     var injector = nodeInstances.get(receiverIndex);
 
     if (injector == null) {

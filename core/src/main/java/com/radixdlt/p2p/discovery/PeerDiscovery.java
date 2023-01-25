@@ -68,7 +68,6 @@ import static java.util.function.Predicate.not;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -105,8 +104,8 @@ public final class PeerDiscovery {
   private final AddressBook addressBook;
   private final PeerControl peerControl;
   private final SeedNodesConfigParser seedNodesConfigParser;
-  private final RemoteEventDispatcher<GetPeers> getPeersRemoteEventDispatcher;
-  private final RemoteEventDispatcher<PeersResponse> peersResponseRemoteEventDispatcher;
+  private final RemoteEventDispatcher<NodeId, GetPeers> getPeersRemoteEventDispatcher;
+  private final RemoteEventDispatcher<NodeId, PeersResponse> peersResponseRemoteEventDispatcher;
   private final Addressing addressing;
 
   private final Set<NodeId> peersAsked = new HashSet<>();
@@ -118,8 +117,8 @@ public final class PeerDiscovery {
       AddressBook addressBook,
       PeerControl peerControl,
       SeedNodesConfigParser seedNodesConfigParser,
-      RemoteEventDispatcher<GetPeers> getPeersRemoteEventDispatcher,
-      RemoteEventDispatcher<PeersResponse> peersResponseRemoteEventDispatcher,
+      RemoteEventDispatcher<NodeId, GetPeers> getPeersRemoteEventDispatcher,
+      RemoteEventDispatcher<NodeId, PeersResponse> peersResponseRemoteEventDispatcher,
       Addressing addressing) {
     this.selfUri = Objects.requireNonNull(selfUri);
     this.peerManager = Objects.requireNonNull(peerManager);
@@ -145,8 +144,7 @@ public final class PeerDiscovery {
           .forEach(
               peer -> {
                 peersAsked.add(peer.getRemoteNodeId());
-                getPeersRemoteEventDispatcher.dispatch(
-                    BFTNode.create(peer.getRemoteNodeId().getPublicKey()), GetPeers.create());
+                getPeersRemoteEventDispatcher.dispatch(peer.getRemoteNodeId(), GetPeers.create());
               });
 
       this.tryConnectToSomeKnownPeers();
@@ -164,9 +162,8 @@ public final class PeerDiscovery {
         .forEach(this.peerManager::tryConnect);
   }
 
-  public RemoteEventProcessor<PeersResponse> peersResponseRemoteEventProcessor() {
-    return (sender, peersResponse) -> {
-      final var senderNodeId = NodeId.fromPublicKey(sender.getKey());
+  public RemoteEventProcessor<NodeId, PeersResponse> peersResponseRemoteEventProcessor() {
+    return (senderNodeId, peersResponse) -> {
       if (!peersAsked.contains(senderNodeId)) {
         log.warn(
             "Received unexpected peers response from {}",
@@ -184,7 +181,7 @@ public final class PeerDiscovery {
     };
   }
 
-  public RemoteEventProcessor<GetPeers> getPeersRemoteEventProcessor() {
+  public RemoteEventProcessor<NodeId, GetPeers> getPeersRemoteEventProcessor() {
     return (sender, unused) -> {
       final var peers =
           Stream.concat(

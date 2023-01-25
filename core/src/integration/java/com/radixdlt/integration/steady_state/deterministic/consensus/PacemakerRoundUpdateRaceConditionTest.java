@@ -73,7 +73,6 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
@@ -88,7 +87,6 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.utils.KeyComparator;
-import com.radixdlt.utils.PrivateKeys;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.*;
 import java.util.function.Predicate;
@@ -111,12 +109,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
   @Test
   public void test_pacemaker_round_update_race_condition() {
     var nodeConfigs =
-        PrivateKeys.numeric(1)
-            .limit(numValidatorNodes)
-            .map(ECKeyPair::getPublicKey)
-            .sorted(KeyComparator.instance())
-            .map(PhysicalNodeConfig::createBasic)
-            .toList();
+        PhysicalNodeConfig.createBasicBatchWithOrder(numValidatorNodes, KeyComparator.instance());
 
     final DeterministicTest test =
         DeterministicTest.builder()
@@ -149,10 +142,10 @@ public class PacemakerRoundUpdateRaceConditionTest {
                   public ProposerElection proposerElection(BFTValidatorSet validatorSet) {
                     final var sortedValidators =
                         validatorSet.getValidators().stream()
-                            .map(BFTValidator::getNode)
+                            .map(BFTValidator::getValidatorId)
                             .sorted(
                                 Comparator.comparing(
-                                    BFTNode::getKey, KeyComparator.instance().reversed()))
+                                    BFTValidatorId::getKey, KeyComparator.instance().reversed()))
                             .toList();
                     return round ->
                         sortedValidators.get(((int) round.number() - 1) % sortedValidators.size());

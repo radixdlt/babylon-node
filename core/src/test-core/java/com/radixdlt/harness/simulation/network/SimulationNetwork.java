@@ -65,10 +65,10 @@
 package com.radixdlt.harness.simulation.network;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
+import com.radixdlt.p2p.NodeId;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Maybe;
@@ -88,13 +88,13 @@ public class SimulationNetwork {
 
   public static final class MessageInTransit {
     private final Object content;
-    private final BFTNode sender;
-    private final BFTNode receiver;
+    private final NodeId sender;
+    private final NodeId receiver;
     private final long delay;
     private final long delayAfterPrevious;
 
     private MessageInTransit(
-        Object content, BFTNode sender, BFTNode receiver, long delay, long delayAfterPrevious) {
+        Object content, NodeId sender, NodeId receiver, long delay, long delayAfterPrevious) {
       if (content instanceof RemoteEvent) {
         throw new IllegalArgumentException("Message in transit should not be RemoteEvent");
       }
@@ -106,7 +106,7 @@ public class SimulationNetwork {
       this.delayAfterPrevious = delayAfterPrevious;
     }
 
-    private static MessageInTransit newMessage(Object content, BFTNode sender, BFTNode receiver) {
+    private static MessageInTransit newMessage(Object content, NodeId sender, NodeId receiver) {
       return new MessageInTransit(content, sender, receiver, 0, 0);
     }
 
@@ -118,7 +118,7 @@ public class SimulationNetwork {
       return Maybe.empty();
     }
 
-    public <T> Maybe<RemoteEvent<T>> remoteEvent(Class<T> eventClass) {
+    public <N, T> Maybe<RemoteEvent<NodeId, T>> remoteEvent(Class<T> eventClass) {
       if (!sender.equals(receiver) && eventClass.isInstance(content)) {
         return Maybe.just(RemoteEvent.create(sender, eventClass.cast(content)));
       }
@@ -146,11 +146,11 @@ public class SimulationNetwork {
       return this.content;
     }
 
-    public BFTNode getSender() {
+    public NodeId getSender() {
       return sender;
     }
 
-    public BFTNode getReceiver() {
+    public NodeId getReceiver() {
       return receiver;
     }
 
@@ -167,11 +167,11 @@ public class SimulationNetwork {
 
   public interface ChannelCommunication {
     Observable<MessageInTransit> transform(
-        BFTNode sender, BFTNode receiver, Observable<MessageInTransit> messages);
+        NodeId sender, NodeId receiver, Observable<MessageInTransit> messages);
   }
 
   private final Subject<MessageInTransit> receivedMessages;
-  private final Map<BFTNode, SimulatedNetworkImpl> receivers = new ConcurrentHashMap<>();
+  private final Map<NodeId, SimulatedNetworkImpl> receivers = new ConcurrentHashMap<>();
   private final ChannelCommunication channelCommunication;
 
   @Inject
@@ -184,9 +184,9 @@ public class SimulationNetwork {
 
   public class SimulatedNetworkImpl implements RxRemoteEnvironment {
     private final Flowable<MessageInTransit> myMessages;
-    private final BFTNode thisNode;
+    private final NodeId thisNode;
 
-    private SimulatedNetworkImpl(BFTNode node) {
+    private SimulatedNetworkImpl(NodeId node) {
       this.thisNode = node;
       // filter only relevant messages (appropriate target and if receiving is allowed)
       this.myMessages =
@@ -210,20 +210,20 @@ public class SimulationNetwork {
     }
 
     @Override
-    public <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> eventClass) {
-      return myMessages.flatMapMaybe(m -> m.remoteEvent(eventClass));
+    public <T> Flowable<RemoteEvent<NodeId, T>> remoteEvents(Class<T> messageType) {
+      return myMessages.flatMapMaybe(m -> m.remoteEvent(messageType));
     }
 
-    public <T> RemoteEventDispatcher<T> remoteEventDispatcher(Class<T> eventClass) {
+    public <T> RemoteEventDispatcher<NodeId, T> remoteEventDispatcher(Class<T> eventClass) {
       return this::sendRemoteEvent;
     }
 
-    private <T> void sendRemoteEvent(BFTNode node, T event) {
+    private <T> void sendRemoteEvent(NodeId node, T event) {
       receivedMessages.onNext(MessageInTransit.newMessage(event, thisNode, node));
     }
   }
 
-  public SimulatedNetworkImpl getNetwork(BFTNode forNode) {
+  public SimulatedNetworkImpl getNetwork(NodeId forNode) {
     return receivers.computeIfAbsent(forNode, SimulatedNetworkImpl::new);
   }
 }

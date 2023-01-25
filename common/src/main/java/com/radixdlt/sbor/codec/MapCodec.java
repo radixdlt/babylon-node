@@ -64,8 +64,7 @@
 
 package com.radixdlt.sbor.codec;
 
-import static com.radixdlt.sbor.codec.constants.TypeId.TYPE_ARRAY;
-import static com.radixdlt.sbor.codec.constants.TypeId.TYPE_TUPLE;
+import static com.radixdlt.sbor.codec.constants.TypeId.*;
 
 import com.radixdlt.lang.Functions;
 import com.radixdlt.sbor.codec.constants.TypeId;
@@ -87,18 +86,19 @@ public interface MapCodec {
 
     @Override
     public TypeId getTypeId() {
-      return TYPE_ARRAY;
+      return TYPE_MAP;
     }
 
     public void encodeFromIterable(
         EncoderApi encoder, int size, Iterable<Map.Entry<TKey, TItem>> iterable) {
-      encoder.encodeTypeId(TYPE_TUPLE);
+      encoder.encodeTypeId(keyCodec.getTypeId());
+      encoder.encodeTypeId(itemCodec.getTypeId());
+
       encoder.writeSize(size);
 
       for (var item : iterable) {
-        encoder.writeSize(2);
-        keyCodec.encodeWithTypeId(encoder, item.getKey());
-        itemCodec.encodeWithTypeId(encoder, item.getValue());
+        keyCodec.encodeWithoutTypeId(encoder, item.getKey());
+        itemCodec.encodeWithoutTypeId(encoder, item.getValue());
       }
     }
 
@@ -109,14 +109,15 @@ public interface MapCodec {
 
     @Override
     public TMap decodeWithoutTypeId(DecoderApi decoder) {
-      decoder.expectType(TYPE_TUPLE);
+      decoder.expectType(keyCodec.getTypeId());
+      decoder.expectType(itemCodec.getTypeId());
+
       var length = decoder.readSize();
 
       var map = createMapWithPreparedLength.apply(length);
 
       for (var i = 0; i < length; i++) {
-        decoder.expectSize(2);
-        map.put(keyCodec.decodeWithTypeId(decoder), itemCodec.decodeWithTypeId(decoder));
+        map.put(keyCodec.decodeWithoutTypeId(decoder), itemCodec.decodeWithoutTypeId(decoder));
       }
 
       if (map.size() != length) {

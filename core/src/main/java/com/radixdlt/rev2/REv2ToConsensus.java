@@ -66,8 +66,8 @@ package com.radixdlt.rev2;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.NextEpoch;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.statecomputer.commit.Validator;
 import java.util.Map;
@@ -79,7 +79,7 @@ public final class REv2ToConsensus {
 
   public static BFTValidator validator(SystemAddress address, Validator validator) {
     return BFTValidator.from(
-        BFTNode.create(address, validator.key()), validator.stake().toUInt256());
+        BFTValidatorId.create(address, validator.key()), validator.stake().toUInt256());
   }
 
   public static BFTValidatorSet validatorSet(Map<SystemAddress, Validator> validators) {

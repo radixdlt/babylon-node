@@ -64,7 +64,7 @@
 
 use std::sync::{Arc, MutexGuard};
 
-use crate::jni::java_structure::*;
+use crate::jni::java_structure::JavaStructure;
 use crate::jni::utils::*;
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::mempool::MempoolConfig;
@@ -74,8 +74,8 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use parking_lot::RwLock;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::scrypto;
+use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::*;
 
 const POINTER_JNI_FIELD_NAME: &str = "rustStateManagerPointer";
 
@@ -119,8 +119,7 @@ extern "system" fn Java_com_radixdlt_prometheus_StateManagerPrometheus_prometheu
     jni_state_manager_sbor_read_call(env, j_state_manager, args, do_prometheus_metrics)
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct StateManagerConfig {
     pub network_definition: NetworkDefinition,
     pub mempool_config: Option<MempoolConfig>,

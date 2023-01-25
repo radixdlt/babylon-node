@@ -73,7 +73,6 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.serialization.DefaultSerialization;
-import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -87,7 +86,7 @@ public class VertexStoreStateCreationTest {
   @Before
   public void setup() {
     this.hasher = new Sha256Hasher(DefaultSerialization.getInstance());
-    this.genesisVertex = Vertex.createGenesis(MOCKED_HEADER).withId(hasher);
+    this.genesisVertex = Vertex.createInitialEpochVertex(MOCKED_HEADER).withId(hasher);
     this.genesisHash = genesisVertex.hash();
   }
 
@@ -98,8 +97,7 @@ public class VertexStoreStateCreationTest {
     QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
     assertThatThrownBy(
             () ->
-                VertexStoreState.create(
-                    HighQC.from(badRootQC), genesisVertex, Optional.empty(), hasher))
+                VertexStoreState.create(HighQC.ofInitialEpochQc(badRootQC), genesisVertex, hasher))
         .isInstanceOf(IllegalStateException.class);
   }
 
@@ -112,8 +110,7 @@ public class VertexStoreStateCreationTest {
     QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
     assertThatThrownBy(
             () ->
-                VertexStoreState.create(
-                    HighQC.from(badRootQC), genesisVertex, Optional.empty(), hasher))
+                VertexStoreState.create(HighQC.ofInitialEpochQc(badRootQC), genesisVertex, hasher))
         .isInstanceOf(IllegalStateException.class);
   }
 
@@ -125,8 +122,7 @@ public class VertexStoreStateCreationTest {
     QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
     assertThatThrownBy(
             () ->
-                VertexStoreState.create(
-                    HighQC.from(badRootQC), genesisVertex, Optional.empty(), hasher))
+                VertexStoreState.create(HighQC.ofInitialEpochQc(badRootQC), genesisVertex, hasher))
         .isInstanceOf(IllegalStateException.class);
   }
 }

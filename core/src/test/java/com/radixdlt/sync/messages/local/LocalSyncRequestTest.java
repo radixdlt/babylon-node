@@ -71,15 +71,15 @@ import static org.mockito.Mockito.mock;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.p2p.NodeId;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
 public class LocalSyncRequestTest {
   private LocalSyncRequest request;
-  private ImmutableList<BFTNode> targetNodes;
+  private ImmutableList<NodeId> targetNodes;
   private LedgerProof target;
 
   @Before

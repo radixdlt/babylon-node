@@ -138,6 +138,12 @@ public final class Addressing {
     return Bech32mCoder.encode(network.getSystemComponentHrp(), systemAddress.value());
   }
 
+  public SystemAddress decodeSystemAddress(String address) {
+    // TODO - checks on first byte of address
+    return SystemAddress.create(
+        Bech32mCoder.decodeWithExpectedHrp(network.getSystemComponentHrp(), address));
+  }
+
   public ComponentAddress decodeSystemComponentAddress(String address) {
     // TODO - checks on first byte of address
     return ComponentAddress.create(

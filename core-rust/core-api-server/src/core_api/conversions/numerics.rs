@@ -1,5 +1,7 @@
 use radix_engine::types::Decimal;
 
+use crate::core_api::models;
+
 use super::*;
 
 // See the guidance in the top of the core-api-schema.yaml
@@ -11,6 +13,8 @@ const MAX_API_EPOCH: u64 = 10000000000;
 const MAX_API_ROUND: u64 = 10000000000;
 const MAX_API_STATE_VERSION: u64 = 100000000000000;
 const MAX_API_SUBSTATE_VERSION: u64 = 100000000000000;
+const MIN_API_TIMESTAMP_MS: i64 = 0;
+const MAX_API_TIMESTAMP_MS: i64 = 100000000000000; // For comparison, current timestamp is 1673822843000 (about 1/100th the size)
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_epoch(epoch: u64) -> Result<i64, MappingError> {
@@ -75,6 +79,40 @@ pub fn to_api_u32_as_i64(input: u32) -> i64 {
 
 pub fn to_api_u64_as_string(input: u64) -> String {
     input.to_string()
+}
+
+pub fn to_unix_timestamp_ms(time: std::time::SystemTime) -> Result<i64, MappingError> {
+    let millis = time
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("system time should be after Unix epoch")
+        .as_millis();
+
+    millis.try_into().map_err(|_| MappingError::IntegerError {
+        message: format!("Timestamp ms must be <= {}", MAX_API_TIMESTAMP_MS),
+    })
+}
+
+pub fn to_api_instant_from_safe_timestamp(
+    timestamp_millis: i64,
+) -> Result<models::Instant, MappingError> {
+    if !(MIN_API_TIMESTAMP_MS..=MAX_API_TIMESTAMP_MS).contains(&timestamp_millis) {
+        return Err(MappingError::IntegerError {
+            message: format!("Timestamp ms must be >= 0 and <= {}", MAX_API_TIMESTAMP_MS),
+        });
+    }
+    use chrono::prelude::*;
+    let date_time = NaiveDateTime::from_timestamp_millis(timestamp_millis)
+        .map(|d| {
+            DateTime::<Utc>::from_utc(d, Utc).to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
+        })
+        .ok_or_else(|| MappingError::IntegerError {
+            message: "Timestamp invalid when converted to DateTime".to_string(),
+        })?;
+
+    Ok(models::Instant {
+        unix_timestamp_ms: timestamp_millis,
+        date_time,
+    })
 }
 
 pub fn extract_api_state_version(state_version: i64) -> Result<u64, ExtractionError> {

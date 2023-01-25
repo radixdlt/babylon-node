@@ -80,6 +80,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.TimeSupplier;
@@ -96,7 +97,6 @@ public final class ConsensusModule extends AbstractModule {
     bind(PacemakerReducer.class).to(PacemakerState.class);
     bind(ExponentialPacemakerTimeoutCalculator.class).in(Scopes.SINGLETON);
     bind(PacemakerTimeoutCalculator.class).to(ExponentialPacemakerTimeoutCalculator.class);
-    bind(VertexStoreBFTSyncRequestProcessor.class).in(Scopes.SINGLETON);
 
     var eventBinder =
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
@@ -110,6 +110,17 @@ public final class ConsensusModule extends AbstractModule {
 
   @Provides
   @Singleton
+  public VertexStoreBFTSyncRequestProcessor syncRequestProcessor(
+      VertexStoreAdapter vertexStore,
+      RemoteEventDispatcher<NodeId, GetVerticesErrorResponse> errorResponseDispatcher,
+      RemoteEventDispatcher<NodeId, GetVerticesResponse> responseDispatcher,
+      Metrics metrics) {
+    return new VertexStoreBFTSyncRequestProcessor(
+        vertexStore, errorResponseDispatcher, responseDispatcher, metrics);
+  }
+
+  @Provides
+  @Singleton
   public ProposerElection proposerElection(BFTConfiguration configuration) {
     return configuration.getProposerElection();
   }
@@ -117,7 +128,7 @@ public final class ConsensusModule extends AbstractModule {
   @Provides
   @Singleton
   public BFTEventProcessor bftEventProcessor(
-      @Self BFTNode self,
+      @Self BFTValidatorId self,
       BFTConfiguration config,
       Pacemaker pacemaker,
       VertexStoreAdapter vertexStore,
@@ -130,14 +141,18 @@ public final class ConsensusModule extends AbstractModule {
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteEventDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
-      RemoteEventDispatcher<Vote> voteDispatcher,
+      RemoteEventDispatcher<NodeId, Vote> voteDispatcher,
       EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher,
       RoundUpdate roundUpdate) {
     return BFTBuilder.create()
         .self(self)
         .hasher(hasher)
         .verifier(verifier)
-        .voteDispatcher(voteDispatcher)
+        .voteDispatcher(
+            (n, m) -> {
+              var nodeId = NodeId.fromPublicKey(n.getKey());
+              voteDispatcher.dispatch(nodeId, m);
+            })
         .roundLeaderFailureEventDispatcher(roundLeaderFailureEventDispatcher)
         .safetyRules(safetyRules)
         .pacemaker(pacemaker)
@@ -161,7 +176,7 @@ public final class ConsensusModule extends AbstractModule {
   @Provides
   @Singleton
   private Pacemaker pacemaker(
-      @Self BFTNode self,
+      @Self BFTValidatorId self,
       SafetyRules safetyRules,
       BFTConfiguration configuration,
       VertexStoreAdapter vertexStore,
@@ -170,8 +185,8 @@ public final class ConsensusModule extends AbstractModule {
       PacemakerTimeoutCalculator timeoutCalculator,
       ProposalGenerator proposalGenerator,
       Hasher hasher,
-      RemoteEventDispatcher<Proposal> proposalDispatcher,
-      RemoteEventDispatcher<Vote> voteDispatcher,
+      RemoteEventDispatcher<NodeId, Proposal> proposalDispatcher,
+      RemoteEventDispatcher<NodeId, Vote> voteDispatcher,
       EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher,
       TimeSupplier timeSupplier,
       RoundUpdate initialRoundUpdate,
@@ -186,8 +201,14 @@ public final class ConsensusModule extends AbstractModule {
         timeoutSender,
         timeoutCalculator,
         proposalGenerator,
-        proposalDispatcher,
-        voteDispatcher,
+        (n, m) -> {
+          var nodeId = NodeId.fromPublicKey(n.getKey());
+          proposalDispatcher.dispatch(nodeId, m);
+        },
+        (n, m) -> {
+          var nodeId = NodeId.fromPublicKey(n.getKey());
+          voteDispatcher.dispatch(nodeId, m);
+        },
         roundLeaderFailureEventDispatcher,
         hasher,
         timeSupplier,
@@ -198,11 +219,11 @@ public final class ConsensusModule extends AbstractModule {
   @Provides
   @Singleton
   private BFTSync bftSync(
-      @Self BFTNode self,
+      @Self BFTValidatorId self,
       @GetVerticesRequestRateLimit RateLimiter syncRequestRateLimiter,
       VertexStoreAdapter vertexStore,
       PacemakerReducer pacemakerReducer,
-      RemoteEventDispatcher<GetVerticesRequest> requestSender,
+      RemoteEventDispatcher<NodeId, GetVerticesRequest> requestSender,
       EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
       ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
       EventDispatcher<ConsensusByzantineEvent> unexpectedEventEventDispatcher,

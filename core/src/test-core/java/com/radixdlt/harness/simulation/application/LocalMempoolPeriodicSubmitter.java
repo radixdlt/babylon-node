@@ -64,10 +64,10 @@
 
 package com.radixdlt.harness.simulation.application;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.harness.simulation.SimulationTest.SimulationNetworkActor;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
@@ -79,7 +79,7 @@ import java.util.concurrent.TimeUnit;
 /** Contributes to steady state by submitting transactions to the mempool every few seconds */
 public class LocalMempoolPeriodicSubmitter implements SimulationNetworkActor {
 
-  private final PublishSubject<Pair<RawNotarizedTransaction, BFTNode>> transactionsSubject;
+  private final PublishSubject<Pair<RawNotarizedTransaction, NodeId>> transactionsSubject;
   private final TransactionGenerator<RawNotarizedTransaction> transactionGenerator;
   private final NodeSelector nodeSelector;
 
@@ -93,11 +93,11 @@ public class LocalMempoolPeriodicSubmitter implements SimulationNetworkActor {
     this.nodeSelector = nodeSelector;
   }
 
-  private void act(RunningNetwork network, RawNotarizedTransaction transaction, BFTNode node) {
+  private void act(RunningNetwork network, RawNotarizedTransaction transaction, NodeId node) {
     network.getDispatcher(MempoolAdd.class, node).dispatch(MempoolAdd.create(transaction));
   }
 
-  public Observable<Pair<RawNotarizedTransaction, BFTNode>> issuedTransactions() {
+  public Observable<Pair<RawNotarizedTransaction, NodeId>> issuedTransactions() {
     return transactionsSubject.observeOn(Schedulers.io());
   }
 

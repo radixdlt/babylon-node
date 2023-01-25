@@ -65,11 +65,15 @@
 package com.radixdlt.api;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static org.assertj.core.api.Assertions.*;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.reflect.ClassPath;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.api.core.generated.api.*;
 import com.radixdlt.api.core.generated.client.ApiClient;
+import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
@@ -86,6 +90,7 @@ import com.radixdlt.utils.FreePortFinder;
 import com.radixdlt.utils.UInt64;
 import java.net.http.HttpClient;
 import javax.net.ssl.SSLContext;
+import org.assertj.core.api.ThrowableAssert;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
@@ -94,6 +99,12 @@ public abstract class DeterministicCoreApiTestBase {
   public static NetworkDefinition networkDefinition = NetworkDefinition.INT_TEST_NET;
   public static String networkLogicalName = networkDefinition.logical_name();
   protected int coreApiPort = FreePortFinder.findFreeLocalPort();
+
+  protected ApiClient apiClient = buildApiClient();
+
+  static {
+    ensureOpenApiModelsAreReady();
+  }
 
   protected DeterministicTest buildRunningServerTest() {
     var test =
@@ -120,7 +131,7 @@ public abstract class DeterministicCoreApiTestBase {
                         StateComputerConfig.rev2(
                             Network.INTEGRATIONTESTNET.getId(),
                             TransactionBuilder.createGenesisWithNumValidators(
-                                1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
+                                1, Decimal.of(1), UInt64.fromNonNegativeLong(10000000)),
                             REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                             StateComputerConfig.REV2ProposerConfig.mempool(
                                 50, 1000, MempoolRelayConfig.of())),
@@ -134,35 +145,69 @@ public abstract class DeterministicCoreApiTestBase {
     return test;
   }
 
-  protected ApiClient buildApiClient() throws Exception {
+  private static void ensureOpenApiModelsAreReady() {
+    /* The generated Open API models are rubbish and requires that static initializers run on models before
+     * deserialization to work correctly... But that doesn't happen in eg models under the response model in
+     * assertErrorResponseOfType.
+     * As a workaround for now, let's go through all the types and explicitly ensure their static initializers run
+     * by using the Class.forName method.
+     */
+    try {
+      ClassPath.from(ClassLoader.getSystemClassLoader()).getAllClasses().stream()
+          .filter(clazz -> clazz.getPackageName().equals("com.radixdlt.api.core.generated.models"))
+          .forEach(
+              clazz -> {
+                try {
+                  Class.forName(clazz.getName());
+                } catch (Exception ex) {
+                  throw new RuntimeException(ex);
+                }
+              });
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
+  }
+
+  protected ApiClient buildApiClient() {
     final var apiClient = new ApiClient();
     apiClient.updateBaseUri("http://127.0.0.1:" + coreApiPort + "/core");
     // Create a dummy SSLContext to avoid the "NoSuchAlgorithmException" when
     // the default HttpClient fails to load a trust store. We don't need SSL anyway.
-    final var dummySSLContext = SSLContext.getInstance("TLS");
-    dummySSLContext.init(null, null, null);
-    apiClient.setHttpClientBuilder(HttpClient.newBuilder().sslContext(dummySSLContext));
-    return apiClient;
+    try {
+      final var dummySSLContext = SSLContext.getInstance("TLS");
+      dummySSLContext.init(null, null, null);
+      apiClient.setHttpClientBuilder(HttpClient.newBuilder().sslContext(dummySSLContext));
+      return apiClient;
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
   }
 
-  public MempoolApi getMempoolApi() throws Exception {
-    return new MempoolApi(buildApiClient());
+  public <Response> Response assertErrorResponseOfType(
+      ThrowableAssert.ThrowingCallable apiCall, Class<Response> responseClass)
+      throws JsonProcessingException {
+    var apiException = catchThrowableOfType(apiCall, ApiException.class);
+    return apiClient.getObjectMapper().readValue(apiException.getResponseBody(), responseClass);
   }
 
-  protected StatusApi getStatusApi() throws Exception {
-    return new StatusApi(buildApiClient());
+  public MempoolApi getMempoolApi() {
+    return new MempoolApi(apiClient);
   }
 
-  protected TransactionApi getTransactionApi() throws Exception {
-    return new TransactionApi(buildApiClient());
+  protected StatusApi getStatusApi() {
+    return new StatusApi(apiClient);
   }
 
-  protected StreamApi getStreamApi() throws Exception {
-    return new StreamApi(buildApiClient());
+  protected TransactionApi getTransactionApi() {
+    return new TransactionApi(apiClient);
   }
 
-  protected StateApi getStateApi() throws Exception {
-    return new StateApi(buildApiClient());
+  protected StreamApi getStreamApi() {
+    return new StreamApi(apiClient);
+  }
+
+  protected StateApi getStateApi() {
+    return new StateApi(apiClient);
   }
 
   protected DeterministicCoreApiTestBase() {}

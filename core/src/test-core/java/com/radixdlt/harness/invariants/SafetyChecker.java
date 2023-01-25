@@ -70,11 +70,11 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.harness.simulation.TestInvariant;
+import com.radixdlt.p2p.NodeId;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -87,11 +87,11 @@ import javax.annotation.concurrent.NotThreadSafe;
 @NotThreadSafe
 public final class SafetyChecker {
   private final TreeMap<EpochRound, VertexWithHash> committedVertices = new TreeMap<>();
-  private final Map<BFTNode, EpochRound> lastCommittedByNode = new HashMap<>();
-  private final ImmutableSet<BFTNode> nodes;
+  private final Map<NodeId, EpochRound> lastCommittedByNode = new HashMap<>();
+  private final ImmutableSet<NodeId> nodes;
 
   @Inject
-  public SafetyChecker(ImmutableSet<BFTNode> nodes) {
+  public SafetyChecker(ImmutableSet<NodeId> nodes) {
     this.nodes = Objects.requireNonNull(nodes);
   }
 
@@ -112,7 +112,7 @@ public final class SafetyChecker {
   }
 
   private Optional<TestInvariant.TestInvariantError> process(
-      BFTNode node, VertexWithHash vertexWithHash) {
+      NodeId node, VertexWithHash vertexWithHash) {
     final var vertex = vertexWithHash.vertex();
     final EpochRound epochRound =
         EpochRound.of(vertex.getParentHeader().getLedgerHeader().getEpoch(), vertex.getRound());
@@ -158,7 +158,7 @@ public final class SafetyChecker {
   }
 
   public Optional<TestInvariant.TestInvariantError> process(
-      BFTNode node, BFTCommittedUpdate committedUpdate) {
+      NodeId node, BFTCommittedUpdate committedUpdate) {
     ImmutableList<ExecutedVertex> vertices = committedUpdate.committed();
     for (ExecutedVertex vertex : vertices) {
       Optional<TestInvariant.TestInvariantError> maybeError =

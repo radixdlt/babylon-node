@@ -1,10 +1,13 @@
 use super::addressing::*;
 use crate::core_api::*;
+use radix_engine::model::Validator;
 use radix_engine::{
     fee::{FeeSummary, RoyaltyReceiver},
     ledger::OutputValue,
     types::{hash, scrypto_encode, Bech32Encoder, Decimal, GlobalAddress, RENodeId, SubstateId},
 };
+use radix_engine_interface::model::SystemAddress;
+use std::collections::BTreeMap;
 
 use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
 
@@ -76,11 +79,18 @@ pub fn to_api_receipt(
         None => None,
     };
 
+    let next_epoch = if let Some(next_epoch) = receipt.next_epoch {
+        Some(Box::new(to_api_next_epoch(bech32_encoder, next_epoch)?))
+    } else {
+        None
+    };
+
     Ok(models::TransactionReceipt {
         status,
         fee_summary: Box::new(api_fee_summary),
         state_updates: Box::new(api_state_updates),
         output: api_output,
+        next_epoch,
         error_message,
     })
 }
@@ -121,6 +131,25 @@ pub fn to_api_deleted_substate(
         substate_data_hash: to_hex(deleted_substate.substate_hash),
         version: to_api_substate_version(deleted_substate.version)?,
     })
+}
+
+#[tracing::instrument(skip_all)]
+pub fn to_api_next_epoch(
+    bech32_encoder: &Bech32Encoder,
+    next_epoch: (BTreeMap<SystemAddress, Validator>, u64),
+) -> Result<models::NextEpoch, MappingError> {
+    let mut validators = Vec::new();
+    for (address, validator) in next_epoch.0 {
+        let api_validator = to_api_validator_entry(bech32_encoder, &address, &validator);
+        validators.push(api_validator);
+    }
+
+    let next_epoch = models::NextEpoch {
+        epoch: to_api_epoch(next_epoch.1)?,
+        validators,
+    };
+
+    Ok(next_epoch)
 }
 
 #[tracing::instrument(skip_all)]

@@ -64,9 +64,10 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.environment.EventDispatcher;
@@ -103,7 +104,7 @@ public class PacemakerState implements PacemakerReducer {
   public void processQC(HighQC highQC) {
     log.trace("QuorumCertificate: {}", highQC);
 
-    final Round round = highQC.getHighestRound();
+    final var round = highQC.getHighestRound();
     if (round.gte(this.currentRound)) {
       this.highQC = highQC;
       this.updateRound(round.next());
@@ -118,10 +119,15 @@ public class PacemakerState implements PacemakerReducer {
       return;
     }
 
-    final BFTNode leader = this.proposerElection.getProposer(nextRound);
-    final BFTNode nextLeader = this.proposerElection.getProposer(nextRound.next());
+    final BFTValidatorId leader = this.proposerElection.getProposer(nextRound);
+    final BFTValidatorId nextLeader = this.proposerElection.getProposer(nextRound.next());
     this.currentRound = nextRound;
     roundUpdateSender.dispatch(
         RoundUpdate.create(this.currentRound, this.highQC, leader, nextLeader));
+  }
+
+  @VisibleForTesting
+  public HighQC highQC() {
+    return this.highQC;
   }
 }

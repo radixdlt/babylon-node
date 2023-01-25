@@ -72,6 +72,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.utils.properties.RuntimeProperties;
 
 /** Configures the key to be used for signing things as a BFT validator. */
@@ -93,6 +94,12 @@ public final class PersistedBFTKeyModule extends AbstractModule {
   @Self
   ECDSASecp256k1PublicKey key(PersistedBFTKeyManager bftKeyManager) {
     return bftKeyManager.getPublicKey();
+  }
+
+  @Provides
+  @Self
+  NodeId nodeId(@Self ECDSASecp256k1PublicKey key) {
+    return NodeId.fromPublicKey(key);
   }
 
   @Provides

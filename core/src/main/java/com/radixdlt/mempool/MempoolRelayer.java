@@ -66,10 +66,10 @@ package com.radixdlt.mempool;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.Collections;
@@ -82,7 +82,7 @@ import javax.inject.Inject;
 @Singleton
 public final class MempoolRelayer {
   private final PeersView peersView;
-  private final RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher;
+  private final RemoteEventDispatcher<NodeId, MempoolAdd> remoteEventDispatcher;
 
   private final Metrics metrics;
 
@@ -93,7 +93,7 @@ public final class MempoolRelayer {
   @Inject
   public MempoolRelayer(
       MempoolReader<RawNotarizedTransaction> mempoolRelayReader,
-      RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher,
+      RemoteEventDispatcher<NodeId, MempoolAdd> remoteEventDispatcher,
       PeersView peersView,
       @MempoolRelayMaxPeers int maxPeers,
       Metrics metrics) {
@@ -122,10 +122,10 @@ public final class MempoolRelayer {
   }
 
   private void relayTransactions(
-      List<RawNotarizedTransaction> transactions, ImmutableList<BFTNode> ignorePeers) {
+      List<RawNotarizedTransaction> transactions, ImmutableList<NodeId> ignorePeers) {
     final var mempoolAddMsg = MempoolAdd.create(transactions);
     final var peers =
-        this.peersView.peers().map(PeersView.PeerInfo::bftNode).collect(Collectors.toList());
+        this.peersView.peers().map(PeersView.PeerInfo::getNodeId).collect(Collectors.toList());
     peers.removeAll(ignorePeers);
     Collections.shuffle(peers);
     peers.stream()

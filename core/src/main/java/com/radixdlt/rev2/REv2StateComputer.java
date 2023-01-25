@@ -77,6 +77,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.RoundDetails;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.*;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
@@ -87,7 +88,6 @@ import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -123,7 +123,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   }
 
   @Override
-  public void addToMempool(MempoolAdd mempoolAdd, BFTNode origin) {
+  public void addToMempool(MempoolAdd mempoolAdd, NodeId origin) {
     mempoolAdd
         .transactions()
         .forEach(
@@ -162,6 +162,8 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                         .map(RawNotarizedTransaction::create))
             .toList();
 
+    // TODO: Don't include transactions if NextEpoch is to occur
+    // TODO: This will require Proposer to simulate a NextRound update before proposing
     return stateComputer.getTransactionsForProposal(
         transactionsPerProposalCount, transactionsNotToInclude);
   }
@@ -211,57 +213,54 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
   @Override
   public void commit(
-      CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
-    var proofBytes = serialization.toDson(txnsAndProof.getProof(), DsonOutput.Output.ALL);
-    final Option<byte[]> vertexStoreBytes;
-    if (vertexStoreState != null) {
-      vertexStoreBytes =
-          Option.some(serialization.toDson(vertexStoreState.toSerialized(), DsonOutput.Output.ALL));
+      CommittedTransactionsWithProof txnsAndProof, VertexStoreState preCommitVertexStoreState) {
+    final var proof = txnsAndProof.getProof();
+
+    final var outputBuilder = ImmutableClassToInstanceMap.builder();
+
+    final VertexStoreState postCommitVertexStoreState;
+    if (proof.getNextEpoch().isPresent()) {
+      final var nextEpoch = proof.getNextEpoch().get();
+
+      // Post commit vertex store is a fresh one
+      postCommitVertexStoreState = VertexStoreState.createNewForNextEpoch(proof, hasher);
+
+      // Add an EpochChange tx output
+      // TODO: Move vertex stuff somewhere else
+      final var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
+      final var proposerElection = new WeightedRotatingLeaders(validatorSet);
+      final var bftConfiguration =
+          new BFTConfiguration(proposerElection, validatorSet, postCommitVertexStoreState);
+      outputBuilder.put(EpochChange.class, new EpochChange(proof, bftConfiguration));
     } else {
-      vertexStoreBytes = Option.none();
+      // Pre- and post-commit vertex store is the same if no epoch change
+      postCommitVertexStoreState = preCommitVertexStoreState;
     }
 
-    var stateVersion = UInt64.fromNonNegativeLong(txnsAndProof.getProof().getStateVersion());
-    var commitRequest =
-        new CommitRequest(
-            txnsAndProof.getTransactions(), stateVersion, proofBytes, vertexStoreBytes);
+    final Option<byte[]> postCommitVertexStoreBytes;
+    if (postCommitVertexStoreState != null) {
+      postCommitVertexStoreBytes =
+          Option.some(
+              serialization.toDson(
+                  postCommitVertexStoreState.toSerialized(), DsonOutput.Output.ALL));
+    } else {
+      postCommitVertexStoreBytes = Option.none();
+    }
 
-    var result = stateComputer.commit(commitRequest);
+    final var proofBytes = serialization.toDson(proof, DsonOutput.Output.ALL);
+
+    final var stateVersion = UInt64.fromNonNegativeLong(txnsAndProof.getProof().getStateVersion());
+    final var commitRequest =
+        new CommitRequest(
+            txnsAndProof.getTransactions(), stateVersion, proofBytes, postCommitVertexStoreBytes);
+
+    final var result = stateComputer.commit(commitRequest);
     if (result.isError()) {
       log.warn("Could not commit: {}", result.unwrapError());
       return;
     }
 
-    var epochChangeOptional =
-        txnsAndProof
-            .getProof()
-            .getNextEpoch()
-            .map(
-                nextEpoch -> {
-                  var header = txnsAndProof.getProof();
-                  // TODO: Move vertex stuff somewhere else
-                  var genesisVertex = Vertex.createGenesis(header.getHeader()).withId(hasher);
-                  var nextLedgerHeader =
-                      LedgerHeader.create(
-                          nextEpoch.getEpoch(),
-                          Round.genesis(),
-                          header.getAccumulatorState(),
-                          header.consensusParentRoundTimestamp(),
-                          header.proposerTimestamp());
-                  var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
-                  final var initialState =
-                      VertexStoreState.create(
-                          HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
-                  var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
-                  var proposerElection = new WeightedRotatingLeaders(validatorSet);
-                  var bftConfiguration =
-                      new BFTConfiguration(proposerElection, validatorSet, initialState);
-                  return new EpochChange(header, bftConfiguration);
-                });
-    var outputBuilder = ImmutableClassToInstanceMap.builder();
-    epochChangeOptional.ifPresent(e -> outputBuilder.put(EpochChange.class, e));
-
-    var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build());
+    final var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build());
     ledgerUpdateEventDispatcher.dispatch(ledgerUpdate);
   }
 }
