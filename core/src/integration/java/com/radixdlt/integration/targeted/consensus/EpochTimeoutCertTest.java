@@ -79,6 +79,11 @@ import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.function.Predicate;
 import org.junit.Test;
 
+/**
+ * This test tests a specific case where if a TC occurs on the epoch boundary that votes on
+ * additional Consensus Vertices past the epoch round does NOT cause any disagreement amongst
+ * validators for the initial vertex in the next epoch.
+ */
 public final class EpochTimeoutCertTest {
 
   private static final long ROUNDS_PER_EPOCH = 100;
