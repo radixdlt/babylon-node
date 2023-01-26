@@ -142,7 +142,6 @@ public class MockedSyncServiceModule extends AbstractModule {
               .getNextEpoch()
               .ifPresent(
                   nextEpoch -> {
-                    logger.info("Epoch Proof: " + nextEpoch.getEpoch());
                     sharedEpochProofs.put(nextEpoch.getEpoch(), update.getTail());
                   });
         });

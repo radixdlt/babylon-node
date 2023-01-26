@@ -252,7 +252,9 @@ public final class Vertex {
   }
 
   public long getEpoch() {
-    return getParentHeader().getLedgerHeader().getEpoch();
+    var epoch = getParentHeader().getLedgerHeader().getEpoch();
+    // If vertex is genesis, the parent will point to the previous epoch so must add 1
+    return round.isGenesis() ? epoch + 1 : epoch;
   }
 
   public BFTHeader getGrandParentHeader() {
@@ -294,11 +296,10 @@ public final class Vertex {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof Vertex)) {
+    if (!(o instanceof Vertex v)) {
       return false;
     }
 
-    Vertex v = (Vertex) o;
     return Objects.equals(v.round, this.round)
         && Objects.equals(v.proposerTimedOut, this.proposerTimedOut)
         && Objects.equals(v.proposer, this.proposer)

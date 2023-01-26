@@ -62,73 +62,76 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.consensus_ledger_epochs;
+package com.radixdlt.integration.targeted.consensus;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.byzantineBehaviorNotDetected;
 
 import com.radixdlt.consensus.EpochNodeWeightMapping;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.harness.simulation.*;
-import com.radixdlt.harness.simulation.SimulationTest.Builder;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
+import io.reactivex.rxjava3.schedulers.Timed;
+import java.util.function.Predicate;
 import org.junit.Test;
 
-public class StaticValidatorsTest {
-  private final Builder bftTestBuilder =
-      SimulationTest.builder()
-          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .numPhysicalNodes(4)
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
-              ConsensusMonitors.noTimeouts(),
-              ConsensusMonitors.directParents(),
-              LedgerMonitors.consensusToLedger(),
-              LedgerMonitors.ordered());
+/**
+ * This test tests a specific case where if a TC occurs on the epoch boundary that votes on
+ * additional Consensus Vertices past the epoch round does NOT cause any disagreement amongst
+ * validators for the initial vertex in the next epoch.
+ */
+public final class EpochTimeoutCertTest {
 
-  private Map<Monitor, Optional<TestInvariant.TestInvariantError>> runTest(
-      long epochRounds, long epochRoundsCheck) {
-    SimulationTest bftTest =
-        bftTestBuilder
-            .functionalNodeModule(
-                new FunctionalRadixNodeModule(
-                    true,
-                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
-                    ConsensusConfig.of(1000),
-                    FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
-                        StateComputerConfig.mockedWithEpochs(
-                            Round.of(epochRounds),
-                            EpochNodeWeightMapping.constant(e -> IntStream.range(0, 4)),
-                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
-            .addTestModules(ConsensusMonitors.epochMaxRound(Round.of(epochRoundsCheck)))
-            .build();
-    return bftTest.run().awaitCompletion();
+  private static final long ROUNDS_PER_EPOCH = 100;
+
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(4))
+        .messageSelector(MessageSelector.firstSelector())
+        .messageMutator(
+            (m, q) -> {
+              // Drop single proposal at end of epoch to cause a TC
+              if (m.message() instanceof Proposal proposal) {
+                if (proposal.getRound().number() == ROUNDS_PER_EPOCH + 2) {
+                  return m.channelId().receiverIndex() == (m.channelId().senderIndex() + 1) % 4;
+                }
+              }
+              return false;
+            })
+        .addMonitors(byzantineBehaviorNotDetected())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                true,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                FunctionalRadixNodeModule.ConsensusConfig.of(),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                    StateComputerConfig.mockedWithEpochs(
+                        Round.of(ROUNDS_PER_EPOCH),
+                        EpochNodeWeightMapping.constant(4),
+                        new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
+  }
+
+  public static Predicate<Timed<ControlledMessage>> proposalAtRound(long round) {
+    return m -> {
+      if (m.value().message() instanceof Proposal proposal) {
+        return proposal.getRound().number() == round;
+      }
+      return false;
+    };
   }
 
   @Test
-  public void epoch_ceiling_monitor_fails_correctly() {
-    var checkResults = runTest(10, 9);
-    assertThat(checkResults)
-        .hasEntrySatisfying(Monitor.EPOCH_MAX_ROUND, error -> assertThat(error).isPresent());
-  }
-
-  @Test
-  public void verify_ceiling_1_round() {
-    var checkResults = runTest(1, 1);
-    assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
-  }
-
-  @Test
-  public void verify_ceiling_10_rounds() {
-    var checkResults = runTest(10, 10);
-    assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
+  public void no_byzantine_event_occurs_on_epoch_tc_event() {
+    try (var test = createTest()) {
+      test.startAllNodes();
+      // Run until end of first epoch
+      test.runUntilMessage(proposalAtRound(ROUNDS_PER_EPOCH + 2), true);
+      // Run for a while more and verify that no byzantine issues occur
+      test.runForCount(100000);
+    }
   }
 }
