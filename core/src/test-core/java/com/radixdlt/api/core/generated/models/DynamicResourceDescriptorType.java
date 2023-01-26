@@ -30,7 +30,9 @@ public enum DynamicResourceDescriptorType {
   
   NONFUNGIBLE("NonFungible"),
   
-  RESOURCE("Resource");
+  RESOURCE("Resource"),
+  
+  SCHEMAPATH("SchemaPath");
 
   private String value;
 
