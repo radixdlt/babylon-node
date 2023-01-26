@@ -16,6 +16,8 @@ pub enum DynamicResourceDescriptorType {
     NonFungible,
     #[serde(rename = "Resource")]
     Resource,
+    #[serde(rename = "SchemaPath")]
+    SchemaPath,
 
 }
 
@@ -24,6 +26,7 @@ impl ToString for DynamicResourceDescriptorType {
         match self {
             Self::NonFungible => String::from("NonFungible"),
             Self::Resource => String::from("Resource"),
+            Self::SchemaPath => String::from("SchemaPath"),
         }
     }
 }
