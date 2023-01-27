@@ -52,6 +52,12 @@ pub enum Subtype {
     EcdsaSecp256k1VirtualAccountComponent,
     #[serde(rename = "EddsaEd25519VirtualAccountComponent")]
     EddsaEd25519VirtualAccountComponent,
+    #[serde(rename = "IdentityComponent")]
+    IdentityComponent,
+    #[serde(rename = "EcdsaSecp256k1VirtualIdentityComponent")]
+    EcdsaSecp256k1VirtualIdentityComponent,
+    #[serde(rename = "EddsaEd25519VirtualIdentityComponent")]
+    EddsaEd25519VirtualIdentityComponent,
     #[serde(rename = "EpochManager")]
     EpochManager,
     #[serde(rename = "Validator")]

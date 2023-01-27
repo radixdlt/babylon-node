@@ -59,8 +59,11 @@ pub fn get_entity_type_from_global_address(global_address: &GlobalAddress) -> mo
             ComponentAddress::Validator(_) => models::EntityType::Validator,
             ComponentAddress::Normal(_) => models::EntityType::Component,
             ComponentAddress::Account(_) => models::EntityType::Component,
+            ComponentAddress::Identity(_) => models::EntityType::Component,
             ComponentAddress::EcdsaSecp256k1VirtualAccount(_) => models::EntityType::Component,
             ComponentAddress::EddsaEd25519VirtualAccount(_) => models::EntityType::Component,
+            ComponentAddress::EcdsaSecp256k1VirtualIdentity(_) => models::EntityType::Component,
+            ComponentAddress::EddsaEd25519VirtualIdentity(_) => models::EntityType::Component,
         },
         GlobalAddress::Package(_) => models::EntityType::Package,
         GlobalAddress::Resource(_) => models::EntityType::ResourceManager,
@@ -117,6 +120,7 @@ impl TryFrom<RENodeId> for MappedEntityId {
             RENodeId::KeyValueStore(_) => EntityType::KeyValueStore,
             RENodeId::NonFungibleStore(_) => EntityType::NonFungibleStore,
             RENodeId::Vault(_) => EntityType::Vault,
+            RENodeId::Identity(_) => EntityType::Component,
             RENodeId::Bucket(_) => return Err(transient_renode_error("Bucket")),
             RENodeId::Proof(_) => return Err(transient_renode_error("Proof")),
             RENodeId::Worktop => return Err(transient_renode_error("Worktop")),
@@ -399,6 +403,22 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 _ => return Err(unknown_substate_error("Clock", &substate_id)),
             };
             (EntityType::Clock, substate_type_key)
+        }
+
+        SubstateId(RENodeId::Identity(_), offset) => {
+            let substate_type_key = match offset {
+                SubstateOffset::Metadata(offset) => match offset {
+                    MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
+                },
+                SubstateOffset::AccessRulesChain(offset) => match offset {
+                    AccessRulesChainOffset::AccessRulesChain => (
+                        SubstateType::AccessRulesChain,
+                        SubstateKeyType::AccessRulesChain,
+                    ),
+                },
+                _ => return Err(unknown_substate_error("Identity", &substate_id)),
+            };
+            (EntityType::Validator, substate_type_key)
         }
 
         // TRANSIENT SUBSTATES

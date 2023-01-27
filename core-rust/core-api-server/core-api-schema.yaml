@@ -2516,6 +2516,9 @@ components:
             - AccountComponent
             - EcdsaSecp256k1VirtualAccountComponent
             - EddsaEd25519VirtualAccountComponent
+            - IdentityComponent
+            - EcdsaSecp256k1VirtualIdentityComponent
+            - EddsaEd25519VirtualIdentityComponent
             - EpochManager
             - Validator
             - Clock
