@@ -1,4 +1,5 @@
 use std::convert::TryFrom;
+use std::str::FromStr;
 
 use crate::core_api::*;
 
@@ -11,12 +12,12 @@ use radix_engine::{
     model::GlobalAddressSubstate,
     types::{
         scrypto_encode, AccessRulesChainOffset, Bech32Decoder, Bech32Encoder, ClockOffset,
-        ComponentAddress, EpochManagerOffset, MetadataOffset, NonFungibleId, PackageAddress,
-        RENodeId, ResourceAddress, SubstateId,
+        ComponentAddress, EpochManagerOffset, MetadataOffset, PackageAddress, RENodeId,
+        ResourceAddress, SubstateId,
     },
 };
 use radix_engine_interface::api::types::ValidatorOffset;
-use radix_engine_interface::model::NonFungibleIdTypeId;
+use radix_engine_interface::model::{NonFungibleIdType, NonFungibleLocalId};
 
 pub fn to_api_global_entity_assignment(
     bech32_encoder: &Bech32Encoder,
@@ -476,10 +477,11 @@ pub fn extract_resource_address(
 }
 
 pub fn extract_non_fungible_id_from_simple_representation(
-    id_type: NonFungibleIdTypeId,
+    _id_type: NonFungibleIdType,
     simple_rep: &str,
-) -> Result<NonFungibleId, ExtractionError> {
-    Ok(NonFungibleId::try_from_simple_string(id_type, simple_rep)?)
+) -> Result<NonFungibleLocalId, ExtractionError> {
+    let non_fungible_local_id = NonFungibleLocalId::from_str(simple_rep)?;
+    Ok(non_fungible_local_id)
 }
 
 pub fn re_node_id_to_entity_id_bytes(re_node_id: &RENodeId) -> Result<Vec<u8>, MappingError> {

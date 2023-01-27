@@ -14,13 +14,12 @@ use radix_engine::model::{
 };
 use radix_engine::types::{
     scrypto_encode, AccessRule, AccessRuleEntry, AccessRuleKey, AccessRuleNode, AccessRules,
-    Bech32Encoder, Decimal, GlobalOffset, KeyValueStoreOffset, NonFungibleId,
-    NonFungibleStoreOffset, ProofRule, RENodeId, ResourceAddress, ResourceType, RoyaltyConfig,
-    SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
-    SubstateId, SubstateOffset,
+    Bech32Encoder, Decimal, GlobalOffset, KeyValueStoreOffset, NonFungibleStoreOffset, ProofRule,
+    RENodeId, ResourceAddress, ResourceType, RoyaltyConfig, SoftCount, SoftDecimal, SoftResource,
+    SoftResourceOrNonFungible, SoftResourceOrNonFungibleList, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use radix_engine_interface::model::NonFungibleIdTypeId;
+use radix_engine_interface::model::{NonFungibleIdType, NonFungibleLocalId};
 
 use super::MappingError;
 
@@ -184,12 +183,12 @@ pub fn to_api_resource_manager_substate(
     })
 }
 
-pub fn to_api_fungible_id_type(id_type: &NonFungibleIdTypeId) -> models::NonFungibleIdType {
+pub fn to_api_fungible_id_type(id_type: &NonFungibleIdType) -> models::NonFungibleIdType {
     match id_type {
-        NonFungibleIdTypeId::String => models::NonFungibleIdType::String,
-        NonFungibleIdTypeId::Number => models::NonFungibleIdType::Number,
-        NonFungibleIdTypeId::Bytes => models::NonFungibleIdType::Bytes,
-        NonFungibleIdTypeId::UUID => models::NonFungibleIdType::UUID,
+        NonFungibleIdType::String => models::NonFungibleIdType::String,
+        NonFungibleIdType::Integer => models::NonFungibleIdType::Number,
+        NonFungibleIdType::Bytes => models::NonFungibleIdType::Bytes,
+        NonFungibleIdType::UUID => models::NonFungibleIdType::UUID,
     }
 }
 
@@ -464,7 +463,7 @@ pub fn to_api_dynamic_resource_descriptor(
             models::DynamicResourceDescriptor::NonFungibleDynamicResourceDescriptor {
                 resource_address: bech32_encoder
                     .encode_resource_address_to_string(&nf.resource_address()),
-                non_fungible_id: Box::new(to_api_non_fungible_id(nf.non_fungible_id())),
+                non_fungible_id: Box::new(to_api_non_fungible_id(nf.local_id())),
             }
         }
         SoftResourceOrNonFungible::StaticResource(resource) => {
@@ -499,9 +498,9 @@ pub fn to_api_validator(
     }
 }
 
-pub fn to_api_non_fungible_id(non_fungible_id: &NonFungibleId) -> models::NonFungibleId {
+pub fn to_api_non_fungible_id(non_fungible_id: &NonFungibleLocalId) -> models::NonFungibleId {
     models::NonFungibleId {
-        simple_rep: non_fungible_id.to_simple_string(),
+        simple_rep: non_fungible_id.to_string(),
         id_type: to_api_fungible_id_type(&non_fungible_id.id_type()),
         sbor_hex: to_hex(scrypto_encode(non_fungible_id).unwrap()),
     }
@@ -816,8 +815,8 @@ fn to_api_fungible_resource_amount(
 fn to_api_non_fungible_resource_amount(
     bech32_encoder: &Bech32Encoder,
     resource_address: &ResourceAddress,
-    _id_type: &NonFungibleIdTypeId,
-    ids: &BTreeSet<NonFungibleId>,
+    _id_type: &NonFungibleIdType,
+    ids: &BTreeSet<NonFungibleLocalId>,
 ) -> Result<models::ResourceAmount, MappingError> {
     let non_fungible_ids = ids.iter().map(to_api_non_fungible_id).collect();
     Ok(models::ResourceAmount::NonFungibleResourceAmount {
