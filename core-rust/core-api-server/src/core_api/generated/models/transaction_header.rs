@@ -15,6 +15,7 @@
 pub struct TransactionHeader {
     #[serde(rename = "version")]
     pub version: i32,
+    /// The logical id of the network
     #[serde(rename = "network_id")]
     pub network_id: i32,
     /// An integer between `0` and `10^10`, marking the epoch from which the transaction can be submitted
