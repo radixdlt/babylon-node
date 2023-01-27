@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.consensus_ledger_epochs;
+package com.radixdlt.integration.targeted.consensus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -89,41 +89,43 @@ public class ProcessCachedEventsWithTimeoutCertTest {
   private static final int TEST_NODE = 4;
   private final Random random = new Random(123456);
 
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(5))
+        .messageSelector(MessageSelector.randomSelector(random))
+        .messageMutators(
+            dropProposalToNodes(Round.of(1), ImmutableList.of(TEST_NODE)),
+            dropProposalToNodes(Round.of(2), ImmutableList.of(2, 3, TEST_NODE)),
+            dropVotesSentToNode(TEST_NODE))
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                true,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                FunctionalRadixNodeModule.ConsensusConfig.of(),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
+                    StateComputerConfig.mockedWithEpochs(
+                        Round.of(100),
+                        EpochNodeWeightMapping.constant(5),
+                        new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
+  }
+
   @Test
   public void process_cached_sync_event_with_tc_test() {
-    final var test =
-        DeterministicTest.builder()
-            .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(5))
-            .messageSelector(MessageSelector.randomSelector(random))
-            .messageMutators(
-                dropProposalToNodes(Round.of(1), ImmutableList.of(TEST_NODE)),
-                dropProposalToNodes(Round.of(2), ImmutableList.of(2, 3, TEST_NODE)),
-                dropVotesForNode(TEST_NODE))
-            .functionalNodeModule(
-                new FunctionalRadixNodeModule(
-                    true,
-                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
-                    FunctionalRadixNodeModule.ConsensusConfig.of(),
-                    FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
-                        StateComputerConfig.mockedWithEpochs(
-                            Round.of(100),
-                            EpochNodeWeightMapping.constant(5),
-                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
+    try (var test = createTest()) {
+      test.startAllNodes();
+      test.runUntilMessage(nodeVotesForRound(Round.of(3), TEST_NODE));
 
-    test.startAllNodes();
-    test.runUntilMessage(nodeVotesForRound(Round.of(3), TEST_NODE));
-
-    // just to check if the node indeed needed to sync
-    final var counters = test.getInstance(TEST_NODE, Metrics.class);
-    assertThat(counters.bft().timeoutQuorums().get()).isEqualTo(0);
-    assertThat(counters.bft().voteQuorums().get()).isEqualTo(0);
+      // just to check if the node indeed needed to sync
+      final var counters = test.getInstance(TEST_NODE, Metrics.class);
+      assertThat(counters.bft().timeoutQuorums().get()).isEqualTo(0);
+      assertThat(counters.bft().voteQuorums().get()).isEqualTo(0);
+    }
   }
 
   private static MessageMutator dropProposalToNodes(Round round, ImmutableList<Integer> nodes) {
     return (message, queue) -> {
       final var msg = message.message();
-      if (msg instanceof Proposal) {
-        final Proposal proposal = (Proposal) msg;
+      if (msg instanceof final Proposal proposal) {
         return proposal.getRound().equals(round)
             && nodes.contains(message.channelId().receiverIndex());
       }
@@ -131,7 +133,7 @@ public class ProcessCachedEventsWithTimeoutCertTest {
     };
   }
 
-  private static MessageMutator dropVotesForNode(int node) {
+  private static MessageMutator dropVotesSentToNode(int node) {
     return (message, queue) -> {
       final var msg = message.message();
       if (msg instanceof Vote) {
@@ -144,10 +146,9 @@ public class ProcessCachedEventsWithTimeoutCertTest {
   public static Predicate<Timed<ControlledMessage>> nodeVotesForRound(Round round, int node) {
     return timedMsg -> {
       final var message = timedMsg.value();
-      if (!(message.message() instanceof Vote)) {
+      if (!(message.message() instanceof final Vote vote)) {
         return false;
       }
-      final var vote = (Vote) message.message();
       return vote.getRound().equals(round) && message.channelId().senderIndex() == node;
     };
   }

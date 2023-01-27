@@ -346,10 +346,14 @@ public final class DeterministicTest implements AutoCloseable {
         String.format("Run for %s messages, but didn't run out", count));
   }
 
-  public DeterministicTest runUntilMessage(Predicate<Timed<ControlledMessage>> stopPredicate) {
+  public DeterministicTest runUntilMessage(
+      Predicate<Timed<ControlledMessage>> stopPredicate, boolean inclusive) {
     while (true) {
       Timed<ControlledMessage> nextMsg = this.network.nextMessage();
       if (stopPredicate.test(nextMsg)) {
+        if (inclusive) {
+          handleMessage(nextMsg);
+        }
         break;
       }
 
@@ -357,6 +361,10 @@ public final class DeterministicTest implements AutoCloseable {
     }
 
     return this;
+  }
+
+  public DeterministicTest runUntilMessage(Predicate<Timed<ControlledMessage>> stopPredicate) {
+    return runUntilMessage(stopPredicate, false);
   }
 
   public DeterministicTest runForCount(int count) {
