@@ -66,6 +66,7 @@ package com.radixdlt.sbor.codec;
 
 import static com.radixdlt.sbor.codec.constants.TypeId.*;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.lang.Functions;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
@@ -81,7 +82,7 @@ public interface MapCodec {
       Codec<TItem> itemCodec,
       Functions.Func1<TMap, Integer> getSize,
       Functions.Func1<TMap, Iterable<Map.Entry<TKey, TItem>>> getIterable,
-      Functions.Func1<Integer, TMap> createMapWithPreparedLength)
+      Functions.Func1<Iterable<Map.Entry<TKey, TItem>>, TMap> createMapWithPreparedEntries)
       implements Codec<TMap> {
 
     @Override
@@ -113,13 +114,14 @@ public interface MapCodec {
       decoder.expectType(itemCodec.getTypeId());
 
       var length = decoder.readSize();
-
-      var map = createMapWithPreparedLength.apply(length);
-
+      var entries = new ArrayList<Map.Entry<TKey, TItem>>(length);
       for (var i = 0; i < length; i++) {
-        map.put(keyCodec.decodeWithoutTypeId(decoder), itemCodec.decodeWithoutTypeId(decoder));
+        entries.add(
+            Map.entry(
+                keyCodec.decodeWithoutTypeId(decoder), itemCodec.decodeWithoutTypeId(decoder)));
       }
 
+      var map = createMapWithPreparedEntries.apply(entries);
       if (map.size() != length) {
         throw new SborDecodeException(
             String.format(
@@ -151,9 +153,10 @@ public interface MapCodec {
   static <TKey, TItem> Codec<Map<TKey, TItem>> forMap(
       Codec<TKey> keyCodec,
       Codec<TItem> itemCodec,
-      Functions.Func1<Integer, Map<TKey, TItem>> createEmptyMapWithSize) {
+      Functions.Func1<Iterable<Map.Entry<TKey, TItem>>, Map<TKey, TItem>>
+          createEmptyMapWithEntries) {
     return new MapCodecInternal<>(
-        keyCodec, itemCodec, Map::size, Map::entrySet, createEmptyMapWithSize);
+        keyCodec, itemCodec, Map::size, Map::entrySet, createEmptyMapWithEntries);
   }
 
   /**
@@ -167,14 +170,30 @@ public interface MapCodec {
   static <TKey, TItem> Codec<HashMap<TKey, TItem>> forHashMap(
       Codec<TKey> keyCodec, Codec<TItem> itemCodec) {
     return new MapCodecInternal<>(
-        keyCodec, itemCodec, HashMap::size, HashMap::entrySet, HashMap::new);
+        keyCodec,
+        itemCodec,
+        HashMap::size,
+        HashMap::entrySet,
+        entries -> {
+          var map = new HashMap<TKey, TItem>();
+          entries.forEach(e -> map.put(e.getKey(), e.getValue()));
+          return map;
+        });
   }
 
   @SuppressWarnings("SortedCollectionWithNonComparableKeys")
   static <TKey, TItem> Codec<TreeMap<TKey, TItem>> forTreeMap(
       Codec<TKey> keyCodec, Codec<TItem> itemCodec) {
     return new MapCodecInternal<>(
-        keyCodec, itemCodec, TreeMap::size, TreeMap::entrySet, length -> new TreeMap<>());
+        keyCodec,
+        itemCodec,
+        TreeMap::size,
+        TreeMap::entrySet,
+        entries -> {
+          var map = new TreeMap<TKey, TItem>();
+          entries.forEach(e -> map.put(e.getKey(), e.getValue()));
+          return map;
+        });
   }
 
   static void registerMapToMapTo(CodecMap codecMap) {
@@ -184,7 +203,14 @@ public interface MapCodec {
           try {
             var keyType = TypeTokenUtils.getGenericTypeParameter(mapType, 0);
             var itemType = TypeTokenUtils.getGenericTypeParameter(mapType, 1);
-            return forMap(codecs.of(keyType), codecs.of(itemType), HashMap::new);
+            return forMap(
+                codecs.of(keyType),
+                codecs.of(itemType),
+                entries -> {
+                  var builder = ImmutableMap.builder();
+                  entries.forEach(e -> builder.put(e.getKey(), e.getValue()));
+                  return (Map) builder.buildOrThrow();
+                });
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating Map type codec for %s", mapType), ex);
