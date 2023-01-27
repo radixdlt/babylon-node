@@ -63,9 +63,9 @@
  */
 
 use crate::transaction::LedgerTransaction;
-use radix_engine::model::Validator;
-use radix_engine::types::{
-    scrypto_encode, sha256_twice, Categorize, Decode, Encode, Hash, PublicKey,
+use radix_engine::{
+    model::Validator,
+    types::{scrypto_encode, sha256_twice, Categorize, Decode, Encode, Hash, PublicKey},
 };
 use radix_engine_interface::*;
 use std::collections::BTreeSet;
@@ -137,7 +137,11 @@ impl LedgerPayloadHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_transaction(transaction: &LedgerTransaction) -> Self {
-        Self(sha256_twice(scrypto_encode(transaction).unwrap()).0)
+        Self::for_ledger_payload_bytes(&scrypto_encode(transaction).unwrap())
+    }
+
+    pub fn for_ledger_payload_bytes(ledger_payload_bytes: &[u8]) -> Self {
+        Self(sha256_twice(ledger_payload_bytes).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {

@@ -235,12 +235,12 @@ where
 
         match self.execution_cache.get(&new_accumulator_hash) {
             None => {
-                // This should be unreachable code. Failing to meet this indicates either one of:
-                // 1. Unproper usage inside StateManager or
-                // 2. Incorrect pregenesis hash
                 let parent_key = self
                     .execution_cache
                     .get(parent_accumulator_hash)
+                    // This should be unreachable code. Failing to meet this indicates either one of:
+                    // 1. Improper usage inside StateManager or
+                    // 2. Incorrect pregenesis hash
                     .expect("Parent AccumulatorHash not found in cache. This should not happen!");
 
                 let receipt = execute_transaction(
@@ -715,11 +715,11 @@ where
                     }
                 };
 
-                let (new_accumulator_hash, receipt) = self.execute_with_cache(
-                    &parent_accumulator_hash,
-                    &executable,
-                    &LedgerTransaction::User(parsed.clone()).get_hash(),
-                );
+                let (payload, hash) = LedgerTransaction::User(parsed.clone())
+                    .create_payload_and_hash()
+                    .unwrap();
+                let (new_accumulator_hash, receipt) =
+                    self.execute_with_cache(&parent_accumulator_hash, &executable, &hash);
 
                 match &receipt.result {
                     TransactionResult::Commit(result) => {
@@ -727,7 +727,7 @@ where
 
                         already_committed_or_prepared_intent_hashes
                             .insert(intent_hash, AlreadyPreparedTransaction::Proposed);
-                        committed.push(LedgerTransaction::User(parsed).create_payload().unwrap());
+                        committed.push(payload);
                         pending_transaction_results.push((
                             intent_hash,
                             user_payload_hash,
