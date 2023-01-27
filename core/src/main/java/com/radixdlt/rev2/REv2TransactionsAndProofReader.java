@@ -86,7 +86,7 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
 
   /* Maximum transaction size (in terms of their total byte size) to return in a single getTransactions response.
    * See also MAX_PACKET_LENGTH in PeerChannelInitializer and OVERRIDE_MAX_PAYLOAD_SIZE for transaction size */
-  private static final int MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE = 24_800_000; // 24.8MB
+  private static final int MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE = 5 * 1024 * 1024; // 5MB
 
   private final REv2TransactionAndProofStore transactionStore;
   private final Serialization serialization;

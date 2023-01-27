@@ -219,11 +219,11 @@ public final class REv2TestTransactions {
   }
 
   public static byte[] constructLargeValidTransactionIntent(
-      NetworkDefinition networkDefinition, long fromEpoch, long nonce, PublicKey notary, int size) {
+      NetworkDefinition networkDefinition, long fromEpoch, long nonce, PublicKey notary, int blobsSize) {
     final var manifest = constructNewAccountManifest(networkDefinition);
     final var header =
         TransactionHeader.defaults(networkDefinition, fromEpoch, 100, nonce, notary, false);
-    final var blobs = List.of(new byte[size]);
+    final var blobs = List.of(new byte[blobsSize]);
     return TransactionBuilder.createIntent(networkDefinition, header, manifest, blobs);
   }
 
