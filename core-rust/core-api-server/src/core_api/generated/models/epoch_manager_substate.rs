@@ -15,7 +15,7 @@
 pub struct EpochManagerSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The Bech32m-encoded human readable version of the system address
+    /// The Bech32m-encoded human readable version of the component address
     #[serde(rename = "address")]
     pub address: String,
     /// An integer between `0` and `10^10`, marking the current epoch

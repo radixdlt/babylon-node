@@ -495,7 +495,7 @@ pub fn to_api_validator(
 ) -> models::Validator {
     models::Validator {
         key: Box::new(to_api_ecdsa_secp256k1_public_key(&validator.key)),
-        address: bech32_encoder.encode_system_address_to_string(&validator.address),
+        address: bech32_encoder.encode_component_address_to_string(&validator.address),
     }
 }
 
@@ -735,8 +735,8 @@ pub fn to_api_validator_substate(
     } = substate;
 
     Ok(models::Substate::ValidatorSubstate {
-        epoch_manager_address: bech32_encoder.encode_system_address_to_string(manager),
-        validator_address: bech32_encoder.encode_system_address_to_string(address),
+        epoch_manager_address: bech32_encoder.encode_component_address_to_string(manager),
+        validator_address: bech32_encoder.encode_component_address_to_string(address),
         key: Box::new(to_api_ecdsa_secp256k1_public_key(key)),
     })
 }
@@ -753,7 +753,7 @@ pub fn to_api_epoch_manager_substate(
     } = substate;
 
     Ok(models::Substate::EpochManagerSubstate {
-        address: bech32_encoder.encode_system_address_to_string(address),
+        address: bech32_encoder.encode_component_address_to_string(address),
         epoch: to_api_epoch(*epoch)?,
         round: to_api_round(*round)?,
         rounds_per_epoch: to_api_round(*rounds_per_epoch)?,

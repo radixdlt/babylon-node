@@ -69,14 +69,14 @@ import com.google.inject.Provides;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.rev2.SystemAddress;
+import com.radixdlt.rev2.ComponentAddress;
 import java.util.Optional;
 
 public final class BFTValidatorIdModule extends AbstractModule {
   @Provides
   @Self
   public BFTValidatorId validatorId(
-      @Self Optional<SystemAddress> validatorAddress, @Self ECDSASecp256k1PublicKey key) {
+      @Self Optional<ComponentAddress> validatorAddress, @Self ECDSASecp256k1PublicKey key) {
     return BFTValidatorId.create(validatorAddress.orElse(null), key);
   }
 }

@@ -5,7 +5,7 @@ use crate::core_api::*;
 use models::{EntityType, SubstateKeyType, SubstateType};
 use radix_engine::types::{
     ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, NonFungibleStoreOffset,
-    PackageOffset, ResourceManagerOffset, SubstateOffset, SystemAddress, VaultOffset,
+    PackageOffset, ResourceManagerOffset, SubstateOffset, VaultOffset,
 };
 use radix_engine::{
     model::GlobalAddressSubstate,
@@ -47,18 +47,22 @@ pub fn encode_to_bech32m_string(
         GlobalAddress::Component(addr) => bech32_encoder.encode_component_address_to_string(addr),
         GlobalAddress::Package(addr) => bech32_encoder.encode_package_address_to_string(addr),
         GlobalAddress::Resource(addr) => bech32_encoder.encode_resource_address_to_string(addr),
-        GlobalAddress::System(addr) => bech32_encoder.encode_system_address_to_string(addr),
     }
 }
 
 pub fn get_entity_type_from_global_address(global_address: &GlobalAddress) -> models::EntityType {
     match global_address {
-        GlobalAddress::Component(_) => models::EntityType::Component,
+        GlobalAddress::Component(component) => match component {
+            ComponentAddress::EpochManager(_) => models::EntityType::EpochManager,
+            ComponentAddress::Clock(_) => models::EntityType::Clock,
+            ComponentAddress::Validator(_) => models::EntityType::Validator,
+            ComponentAddress::Normal(_) => models::EntityType::Component,
+            ComponentAddress::Account(_) => models::EntityType::Component,
+            ComponentAddress::EcdsaSecp256k1VirtualAccount(_) => models::EntityType::Component,
+            ComponentAddress::EddsaEd25519VirtualAccount(_) => models::EntityType::Component,
+        },
         GlobalAddress::Package(_) => models::EntityType::Package,
         GlobalAddress::Resource(_) => models::EntityType::ResourceManager,
-        GlobalAddress::System(SystemAddress::EpochManager(_)) => models::EntityType::EpochManager,
-        GlobalAddress::System(SystemAddress::Clock(_)) => models::EntityType::Clock,
-        GlobalAddress::System(SystemAddress::Validator(_)) => models::EntityType::Validator,
     }
 }
 
@@ -499,6 +503,5 @@ pub fn global_address_to_vec(global_address: &GlobalAddress) -> Vec<u8> {
         GlobalAddress::Package(package_addr) => package_addr.to_vec(),
         GlobalAddress::Resource(resource_addr) => resource_addr.to_vec(),
         GlobalAddress::Component(component_addr) => component_addr.to_vec(),
-        GlobalAddress::System(system_addr) => system_addr.to_vec(),
     }
 }

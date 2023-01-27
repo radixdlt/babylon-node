@@ -34,8 +34,8 @@ pub(crate) fn handle_status_network_configuration_internal(
         well_known_addresses: Box::new(models::NetworkConfigurationResponseWellKnownAddresses {
             account_package: bech32_encoder.encode_package_address_to_string(&ACCOUNT_PACKAGE),
             faucet: bech32_encoder.encode_component_address_to_string(&FAUCET_COMPONENT),
-            epoch_manager: bech32_encoder.encode_system_address_to_string(&EPOCH_MANAGER),
-            clock: bech32_encoder.encode_system_address_to_string(&CLOCK),
+            epoch_manager: bech32_encoder.encode_component_address_to_string(&EPOCH_MANAGER),
+            clock: bech32_encoder.encode_component_address_to_string(&CLOCK),
             ecdsa_secp256k1: bech32_encoder
                 .encode_resource_address_to_string(&ECDSA_SECP256K1_TOKEN),
             eddsa_ed25519: bech32_encoder.encode_resource_address_to_string(&EDDSA_ED25519_TOKEN),
@@ -93,17 +93,17 @@ fn to_api_address_type(hrp_set: &HrpSet, entity_type: EntityType) -> models::Add
         EntityType::EpochManager => (
             models::address_type::Subtype::EpochManager,
             models::EntityType::EpochManager,
-            extract_length(SystemAddress::EpochManager),
+            extract_length(ComponentAddress::EpochManager),
         ),
         EntityType::Validator => (
             models::address_type::Subtype::Validator,
             models::EntityType::Validator,
-            extract_length(SystemAddress::Validator),
+            extract_length(ComponentAddress::Validator),
         ),
         EntityType::Clock => (
             models::address_type::Subtype::Clock,
             models::EntityType::Clock,
-            extract_length(SystemAddress::Clock),
+            extract_length(ComponentAddress::Clock),
         ),
     };
     models::AddressType {

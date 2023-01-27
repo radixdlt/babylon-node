@@ -68,7 +68,8 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::model::Validator;
-use radix_engine::types::*;
+use radix_engine::types::{Categorize, ComponentAddress, Decimal, Decode, Encode, RADIX_TOKEN};
+use radix_engine_interface::*;
 use std::collections::BTreeSet;
 
 use crate::jni::utils::*;

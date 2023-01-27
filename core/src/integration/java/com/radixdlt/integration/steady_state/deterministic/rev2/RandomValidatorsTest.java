@@ -79,9 +79,9 @@ import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2TestTransactions;
-import com.radixdlt.rev2.SystemAddress;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
@@ -133,14 +133,14 @@ public final class RandomValidatorsTest {
       var random = new Random(12345);
 
       var creating_validators = new HashMap<Integer, RawNotarizedTransaction>();
-      var validators = new HashMap<Integer, SystemAddress>();
+      var validators = new HashMap<Integer, ComponentAddress>();
       var genesis = NodesReader.getCommittedLedgerTransaction(test.getNodeInjectors(), GENESIS);
-      var systemAddresses =
-          genesis.newSystemAddresses().stream()
-              .filter(systemAddress -> systemAddress.value()[0] == 5)
+      var componentAddresses =
+          genesis.newComponentAddresses().stream()
+              .filter(componentAddress -> componentAddress.value()[0] == 5)
               .toList();
       for (int i = 0; i < NUM_VALIDATORS / 2; i++) {
-        validators.put(i, systemAddresses.get(i));
+        validators.put(i, componentAddresses.get(i));
       }
 
       // Run
@@ -153,8 +153,8 @@ public final class RandomValidatorsTest {
                 Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
 
         var randomValidator = random.nextInt(0, NUM_VALIDATORS);
-        var systemAddress = validators.get(randomValidator);
-        if (systemAddress == null) {
+        var componentAddress = validators.get(randomValidator);
+        if (componentAddress == null) {
           var inflightTransaction = creating_validators.get(randomValidator);
           if (inflightTransaction == null) {
             var txn =
@@ -171,7 +171,7 @@ public final class RandomValidatorsTest {
                     test.getNodeInjectors().get(randomValidator), inflightTransaction);
             maybeExecuted.ifPresent(
                 executedTransaction -> {
-                  var validatorAddress = executedTransaction.newSystemAddresses().get(0);
+                  var validatorAddress = executedTransaction.newComponentAddresses().get(0);
                   test.restartNodeWithConfig(
                       randomValidator,
                       PhysicalNodeConfig.create(
@@ -188,13 +188,13 @@ public final class RandomValidatorsTest {
                       NetworkDefinition.INT_TEST_NET,
                       0,
                       random.nextInt(1000000),
-                      systemAddress,
+                      componentAddress,
                       PrivateKeys.ofNumeric(randomValidator + 1))
                   : REv2TestTransactions.constructUnregisterValidatorTransaction(
                       NetworkDefinition.INT_TEST_NET,
                       0,
                       random.nextInt(1000000),
-                      systemAddress,
+                      componentAddress,
                       PrivateKeys.ofNumeric(randomValidator + 1));
 
           mempoolDispatcher.dispatch(MempoolAdd.create(txn));

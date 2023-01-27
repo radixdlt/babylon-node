@@ -156,7 +156,7 @@ public final class IncreasingValidatorsTest {
         test.runUntilState(nodeAt(0, NodePredicate.committedUserTransaction(txn.getFirst())));
         var executedTransaction =
             NodesReader.getCommittedUserTransaction(test.getNodeInjectors(), txn.getFirst());
-        var validatorAddress = executedTransaction.newSystemAddresses().get(0);
+        var validatorAddress = executedTransaction.newComponentAddresses().get(0);
         test.restartNodeWithConfig(
             i + 1,
             PhysicalNodeConfig.create(

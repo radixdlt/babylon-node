@@ -67,7 +67,7 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.rev2.SystemAddress;
+import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.utils.Bytes;
 import java.util.Objects;
 
@@ -79,17 +79,18 @@ import java.util.Objects;
  */
 public final class BFTValidatorId {
   private final ECDSASecp256k1PublicKey key;
-  private final SystemAddress validatorAddress;
+  private final ComponentAddress validatorAddress;
   private final String shortenedName;
 
   private BFTValidatorId(
-      SystemAddress validatorAddress, ECDSASecp256k1PublicKey key, String shortenedName) {
+      ComponentAddress validatorAddress, ECDSASecp256k1PublicKey key, String shortenedName) {
     this.validatorAddress = validatorAddress;
     this.key = Objects.requireNonNull(key);
     this.shortenedName = Objects.requireNonNull(shortenedName);
   }
 
-  public static BFTValidatorId create(SystemAddress validatorAddress, ECDSASecp256k1PublicKey key) {
+  public static BFTValidatorId create(
+      ComponentAddress validatorAddress, ECDSASecp256k1PublicKey key) {
     final String name;
     if (validatorAddress == null) {
       name = key.toHex().substring(0, 10);
@@ -115,7 +116,9 @@ public final class BFTValidatorId {
 
     try {
       var validatorAddress =
-          strings[0].length() == 0 ? null : SystemAddress.create(Bytes.fromHexString(strings[0]));
+          strings[0].length() == 0
+              ? null
+              : ComponentAddress.create(Bytes.fromHexString(strings[0]));
       var key = ECDSASecp256k1PublicKey.fromBytes(Bytes.fromHexString(strings[1]));
       return create(validatorAddress, key);
     } catch (PublicKeyException e) {
@@ -138,7 +141,7 @@ public final class BFTValidatorId {
     return key;
   }
 
-  public SystemAddress getValidatorAddress() {
+  public ComponentAddress getValidatorAddress() {
     return validatorAddress;
   }
 
