@@ -98,6 +98,6 @@ public class BerkeleySafetyStoreModule extends AbstractModule {
   @Provides
   @DatabaseLocation
   private String databaseLocation(@Self BFTValidatorId node) {
-    return rootPath + "/" + node;
+    return rootPath + "/" + node.toString().replaceAll("\\W+", "_");
   }
 }
