@@ -17,11 +17,11 @@ pub struct NextEpoch {
     #[serde(rename = "epoch")]
     pub epoch: i64,
     #[serde(rename = "validators")]
-    pub validators: Vec<crate::core_api::generated::models::ValidatorEntry>,
+    pub validators: Vec<crate::core_api::generated::models::ActiveValidator>,
 }
 
 impl NextEpoch {
-    pub fn new(epoch: i64, validators: Vec<crate::core_api::generated::models::ValidatorEntry>) -> NextEpoch {
+    pub fn new(epoch: i64, validators: Vec<crate::core_api::generated::models::ActiveValidator>) -> NextEpoch {
         NextEpoch {
             epoch,
             validators,

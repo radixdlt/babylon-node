@@ -29,24 +29,54 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * Validator
+ * ActiveValidator
  */
 @JsonPropertyOrder({
-  Validator.JSON_PROPERTY_KEY,
-  Validator.JSON_PROPERTY_STAKE
+  ActiveValidator.JSON_PROPERTY_ADDRESS,
+  ActiveValidator.JSON_PROPERTY_KEY,
+  ActiveValidator.JSON_PROPERTY_STAKE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class Validator {
+public class ActiveValidator {
+  public static final String JSON_PROPERTY_ADDRESS = "address";
+  private String address;
+
   public static final String JSON_PROPERTY_KEY = "key";
   private EcdsaSecp256k1PublicKey key;
 
   public static final String JSON_PROPERTY_STAKE = "stake";
   private String stake;
 
-  public Validator() { 
+  public ActiveValidator() { 
   }
 
-  public Validator key(EcdsaSecp256k1PublicKey key) {
+  public ActiveValidator address(String address) {
+    this.address = address;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable version of the component address
+   * @return address
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the component address")
+  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getAddress() {
+    return address;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAddress(String address) {
+    this.address = address;
+  }
+
+
+  public ActiveValidator key(EcdsaSecp256k1PublicKey key) {
     this.key = key;
     return this;
   }
@@ -72,17 +102,17 @@ public class Validator {
   }
 
 
-  public Validator stake(String stake) {
+  public ActiveValidator stake(String stake) {
     this.stake = stake;
     return this;
   }
 
    /**
-   * The string-encoded decimal representing the amount of XRD staked. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
+   * A string-encoded decimal representing the validator&#39;s voting power for this epoch. This is a snapshot of the amount of XRD staked to the validator at the start of the epoch. 
    * @return stake
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the amount of XRD staked. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
+  @ApiModelProperty(required = true, value = "A string-encoded decimal representing the validator's voting power for this epoch. This is a snapshot of the amount of XRD staked to the validator at the start of the epoch. ")
   @JsonProperty(JSON_PROPERTY_STAKE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -99,7 +129,7 @@ public class Validator {
 
 
   /**
-   * Return true if this Validator object is equal to o.
+   * Return true if this ActiveValidator object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -109,20 +139,22 @@ public class Validator {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Validator validator = (Validator) o;
-    return Objects.equals(this.key, validator.key) &&
-        Objects.equals(this.stake, validator.stake);
+    ActiveValidator activeValidator = (ActiveValidator) o;
+    return Objects.equals(this.address, activeValidator.address) &&
+        Objects.equals(this.key, activeValidator.key) &&
+        Objects.equals(this.stake, activeValidator.stake);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, stake);
+    return Objects.hash(address, key, stake);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class Validator {\n");
+    sb.append("class ActiveValidator {\n");
+    sb.append("    address: ").append(toIndentedString(address)).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("    stake: ").append(toIndentedString(stake)).append("\n");
     sb.append("}");

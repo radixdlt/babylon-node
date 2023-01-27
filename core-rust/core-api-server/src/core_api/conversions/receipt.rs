@@ -140,7 +140,7 @@ pub fn to_api_next_epoch(
 ) -> Result<models::NextEpoch, MappingError> {
     let mut validators = Vec::new();
     for (address, validator) in next_epoch.0 {
-        let api_validator = to_api_validator_entry(bech32_encoder, &address, &validator);
+        let api_validator = to_api_active_validator(bech32_encoder, &address, &validator);
         validators.push(api_validator);
     }
 

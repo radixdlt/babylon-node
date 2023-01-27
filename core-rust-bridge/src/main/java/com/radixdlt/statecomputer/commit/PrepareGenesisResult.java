@@ -71,7 +71,8 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import java.util.Map;
 
-public record PrepareGenesisResult(Option<Map<ComponentAddress, Validator>> validatorSet) {
+public record PrepareGenesisResult(
+    Option<Map<ComponentAddress, ActiveValidatorInfo>> validatorSet) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PrepareGenesisResult.class,

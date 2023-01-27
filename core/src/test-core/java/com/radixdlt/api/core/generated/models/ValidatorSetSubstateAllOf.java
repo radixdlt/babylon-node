@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ValidatorEntry;
+import com.radixdlt.api.core.generated.models.ActiveValidator;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -40,7 +40,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ValidatorSetSubstateAllOf {
   public static final String JSON_PROPERTY_VALIDATOR_SET = "validator_set";
-  private List<ValidatorEntry> validatorSet = new ArrayList<>();
+  private List<ActiveValidator> validatorSet = new ArrayList<>();
 
   public static final String JSON_PROPERTY_EPOCH = "epoch";
   private Long epoch;
@@ -48,12 +48,12 @@ public class ValidatorSetSubstateAllOf {
   public ValidatorSetSubstateAllOf() { 
   }
 
-  public ValidatorSetSubstateAllOf validatorSet(List<ValidatorEntry> validatorSet) {
+  public ValidatorSetSubstateAllOf validatorSet(List<ActiveValidator> validatorSet) {
     this.validatorSet = validatorSet;
     return this;
   }
 
-  public ValidatorSetSubstateAllOf addValidatorSetItem(ValidatorEntry validatorSetItem) {
+  public ValidatorSetSubstateAllOf addValidatorSetItem(ActiveValidator validatorSetItem) {
     this.validatorSet.add(validatorSetItem);
     return this;
   }
@@ -67,14 +67,14 @@ public class ValidatorSetSubstateAllOf {
   @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<ValidatorEntry> getValidatorSet() {
+  public List<ActiveValidator> getValidatorSet() {
     return validatorSet;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidatorSet(List<ValidatorEntry> validatorSet) {
+  public void setValidatorSet(List<ActiveValidator> validatorSet) {
     this.validatorSet = validatorSet;
   }
 

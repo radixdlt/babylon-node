@@ -488,21 +488,15 @@ pub fn to_api_ecdsa_secp256k1_public_key(
     }
 }
 
-pub fn to_api_validator(validator: &Validator) -> models::Validator {
-    models::Validator {
-        key: Box::new(to_api_ecdsa_secp256k1_public_key(&validator.key)),
-        stake: to_api_decimal(&validator.stake),
-    }
-}
-
-pub fn to_api_validator_entry(
+pub fn to_api_active_validator(
     bech32_encoder: &Bech32Encoder,
     address: &ComponentAddress,
     validator: &Validator,
-) -> models::ValidatorEntry {
-    models::ValidatorEntry {
+) -> models::ActiveValidator {
+    models::ActiveValidator {
         address: bech32_encoder.encode_component_address_to_string(address),
-        validator: Box::new(to_api_validator(validator)),
+        key: Box::new(to_api_ecdsa_secp256k1_public_key(&validator.key)),
+        stake: to_api_decimal(&validator.stake),
     }
 }
 
@@ -723,7 +717,7 @@ pub fn to_api_validator_set_substate(
 
     let validator_set = validator_set
         .iter()
-        .map(|(address, validator)| to_api_validator_entry(bech32_encoder, address, validator))
+        .map(|(address, validator)| to_api_active_validator(bech32_encoder, address, validator))
         .collect();
     Ok(models::Substate::ValidatorSetSubstate {
         validator_set,

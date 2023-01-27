@@ -181,6 +181,20 @@ public interface MapCodec {
         });
   }
 
+  static <TKey, TItem> Codec<ImmutableMap<TKey, TItem>> forImmutableMap(
+      Codec<TKey> keyCodec, Codec<TItem> itemCodec) {
+    return new MapCodecInternal<>(
+        keyCodec,
+        itemCodec,
+        ImmutableMap::size,
+        ImmutableMap::entrySet,
+        entries -> {
+          var builder = ImmutableMap.<TKey, TItem>builder();
+          entries.forEach(e -> builder.put(e.getKey(), e.getValue()));
+          return builder.buildOrThrow();
+        });
+  }
+
   @SuppressWarnings("SortedCollectionWithNonComparableKeys")
   static <TKey, TItem> Codec<TreeMap<TKey, TItem>> forTreeMap(
       Codec<TKey> keyCodec, Codec<TItem> itemCodec) {
@@ -241,6 +255,21 @@ public interface MapCodec {
             var keyType = TypeTokenUtils.getGenericTypeParameter(mapType, 0);
             var itemType = TypeTokenUtils.getGenericTypeParameter(mapType, 1);
             return forTreeMap(codecs.of(keyType), codecs.of(itemType));
+          } catch (Exception ex) {
+            throw new SborCodecException(
+                String.format("Exception creating TreeMap type codec for %s", mapType), ex);
+          }
+        });
+  }
+
+  static void registerImmutableMapToMapTo(CodecMap codecMap) {
+    codecMap.registerForGeneric(
+        ImmutableMap.class,
+        (codecs, mapType) -> {
+          try {
+            var keyType = TypeTokenUtils.getGenericTypeParameter(mapType, 0);
+            var itemType = TypeTokenUtils.getGenericTypeParameter(mapType, 1);
+            return forImmutableMap(codecs.of(keyType), codecs.of(itemType));
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating TreeMap type codec for %s", mapType), ex);
