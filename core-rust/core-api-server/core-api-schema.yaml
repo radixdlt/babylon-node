@@ -1110,6 +1110,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ActiveValidator'
+          description: Validators are sorted by descending stake amount
     NewSubstateVersion:
       type: object
       required:
