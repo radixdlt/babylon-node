@@ -22,22 +22,26 @@ fn handle_transaction_receipt_internal(
 
     let network = &state_manager.network;
     let txn_state_version_opt = state_manager
-        .store
+        .staged_store
+        .root
         .get_txn_state_version_by_identifier(&intent_hash);
 
     if let Some(txn_state_version) = txn_state_version_opt {
         let txn = state_manager
-            .store
+            .staged_store
+            .root
             .get_committed_transaction(txn_state_version)
             .expect("Txn is missing");
 
         let receipt = state_manager
-            .store
+            .staged_store
+            .root
             .get_committed_transaction_receipt(txn_state_version)
             .expect("Txn receipt is missing");
 
         let identifiers = state_manager
-            .store
+            .staged_store
+            .root
             .get_committed_transaction_identifiers(txn_state_version)
             .expect("Txn identifiers are missing");
 

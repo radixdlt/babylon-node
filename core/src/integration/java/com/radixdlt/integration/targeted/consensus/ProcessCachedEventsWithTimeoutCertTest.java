@@ -62,51 +62,94 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.integration.targeted.consensus;
 
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
-import com.radixdlt.sbor.codec.constants.TypeId;
-import java.util.Arrays;
-import org.bouncycastle.util.encoders.Hex;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public record SystemAddress(byte[] value) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        SystemAddress.class,
-        codecs ->
-            new CustomTypeKnownLengthCodec<>(
-                TypeId.TYPE_CUSTOM_SYSTEM_ADDRESS,
-                BYTE_LENGTH,
-                SystemAddress::value,
-                SystemAddress::new));
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.EpochNodeWeightMapping;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.monitoring.Metrics;
+import io.reactivex.rxjava3.schedulers.Timed;
+import java.util.Random;
+import java.util.function.Predicate;
+import org.junit.Test;
+
+public class ProcessCachedEventsWithTimeoutCertTest {
+
+  private static final int TEST_NODE = 4;
+  private final Random random = new Random(123456);
+
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(5))
+        .messageSelector(MessageSelector.randomSelector(random))
+        .messageMutators(
+            dropProposalToNodes(Round.of(1), ImmutableList.of(TEST_NODE)),
+            dropProposalToNodes(Round.of(2), ImmutableList.of(2, 3, TEST_NODE)),
+            dropVotesSentToNode(TEST_NODE))
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                true,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                FunctionalRadixNodeModule.ConsensusConfig.of(),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
+                    StateComputerConfig.mockedWithEpochs(
+                        Round.of(100),
+                        EpochNodeWeightMapping.constant(5),
+                        new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
   }
 
-  private static final int BYTE_LENGTH = 27;
+  @Test
+  public void process_cached_sync_event_with_tc_test() {
+    try (var test = createTest()) {
+      test.startAllNodes();
+      test.runUntilMessage(nodeVotesForRound(Round.of(3), TEST_NODE));
 
-  public static SystemAddress create(byte[] addressBytes) {
-    if (addressBytes.length != BYTE_LENGTH) {
-      throw new IllegalArgumentException("Invalid system address length");
+      // just to check if the node indeed needed to sync
+      final var counters = test.getInstance(TEST_NODE, Metrics.class);
+      assertThat(counters.bft().timeoutQuorums().get()).isEqualTo(0);
+      assertThat(counters.bft().voteQuorums().get()).isEqualTo(0);
     }
-    return new SystemAddress(addressBytes);
   }
 
-  public String toHexString() {
-    return Hex.toHexString(value);
+  private static MessageMutator dropProposalToNodes(Round round, ImmutableList<Integer> nodes) {
+    return (message, queue) -> {
+      final var msg = message.message();
+      if (msg instanceof final Proposal proposal) {
+        return proposal.getRound().equals(round)
+            && nodes.contains(message.channelId().receiverIndex());
+      }
+      return false;
+    };
   }
 
-  @Override
-  public String toString() {
-    return toHexString();
+  private static MessageMutator dropVotesSentToNode(int node) {
+    return (message, queue) -> {
+      final var msg = message.message();
+      if (msg instanceof Vote) {
+        return message.channelId().receiverIndex() == node;
+      }
+      return false;
+    };
   }
 
-  @Override
-  public int hashCode() {
-    return Arrays.hashCode(value);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    return o instanceof SystemAddress other && Arrays.equals(this.value, other.value);
+  public static Predicate<Timed<ControlledMessage>> nodeVotesForRound(Round round, int node) {
+    return timedMsg -> {
+      final var message = timedMsg.value();
+      if (!(message.message() instanceof final Vote vote)) {
+        return false;
+      }
+      return vote.getRound().equals(round) && message.channelId().senderIndex() == node;
+    };
   }
 }

@@ -138,7 +138,7 @@ public final class REv2RegisterValidatorTest {
       var executedTransaction =
           NodesReader.getCommittedUserTransaction(
               test.getNodeInjectors(), createValidatorTransaction);
-      var validatorAddress = executedTransaction.newSystemAddresses().get(0);
+      var validatorAddress = executedTransaction.newComponentAddresses().get(0);
 
       // Act: Submit transaction to mempool and run consensus
       var registerValidatorTransaction =

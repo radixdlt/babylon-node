@@ -116,11 +116,11 @@ public class ValidatorSubstate extends Substate {
   }
 
    /**
-   * The Bech32m-encoded human readable version of the system address
+   * The Bech32m-encoded human readable version of the component address
    * @return epochManagerAddress
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the system address")
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the component address")
   @JsonProperty(JSON_PROPERTY_EPOCH_MANAGER_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -142,11 +142,11 @@ public class ValidatorSubstate extends Substate {
   }
 
    /**
-   * The Bech32m-encoded human readable version of the system address
+   * The Bech32m-encoded human readable version of the component address
    * @return validatorAddress
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the system address")
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the component address")
   @JsonProperty(JSON_PROPERTY_VALIDATOR_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

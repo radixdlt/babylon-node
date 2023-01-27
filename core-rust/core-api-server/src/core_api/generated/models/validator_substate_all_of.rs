@@ -13,10 +13,10 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ValidatorSubstateAllOf {
-    /// The Bech32m-encoded human readable version of the system address
+    /// The Bech32m-encoded human readable version of the component address
     #[serde(rename = "epoch_manager_address")]
     pub epoch_manager_address: String,
-    /// The Bech32m-encoded human readable version of the system address
+    /// The Bech32m-encoded human readable version of the component address
     #[serde(rename = "validator_address")]
     pub validator_address: String,
     #[serde(rename = "key")]

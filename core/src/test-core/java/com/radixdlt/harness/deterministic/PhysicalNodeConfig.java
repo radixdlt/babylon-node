@@ -66,7 +66,7 @@ package com.radixdlt.harness.deterministic;
 
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.rev2.SystemAddress;
+import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.Comparator;
 import java.util.List;
@@ -83,8 +83,11 @@ import javax.annotation.Nullable;
  */
 public record PhysicalNodeConfig(
     ECDSASecp256k1PublicKey key,
-    @Nullable SystemAddress validatorAddress,
+    @Nullable ComponentAddress validatorAddress,
     boolean loadFromGenesis) {
+  public static PhysicalNodeConfig createBasic(ECDSASecp256k1PublicKey key) {
+    return new PhysicalNodeConfig(key, null, false);
+  }
 
   public static List<PhysicalNodeConfig> createBasicBatch(int numPhysicalNodes) {
     return createBatch(numPhysicalNodes, false);
@@ -96,7 +99,7 @@ public record PhysicalNodeConfig(
   }
 
   public static PhysicalNodeConfig create(
-      ECDSASecp256k1PublicKey key, SystemAddress validatorAddress) {
+      ECDSASecp256k1PublicKey key, ComponentAddress validatorAddress) {
     return new PhysicalNodeConfig(key, validatorAddress, false);
   }
 

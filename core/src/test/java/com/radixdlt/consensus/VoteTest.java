@@ -125,8 +125,8 @@ public class VoteTest {
     assertThat(this.testObject.toString())
         .isNotNull()
         .contains(Vote.class.getSimpleName())
-        .contains("epoch=0")
-        .contains("round=0")
+        .contains("e=0")
+        .contains("p=0")
         .contains(this.author.toString());
   }
 

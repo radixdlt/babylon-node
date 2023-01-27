@@ -97,8 +97,8 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
+import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.SystemAddress;
 import com.radixdlt.rev2.modules.BerkeleySafetyStoreModule;
 import com.radixdlt.rev2.modules.REv2ConsensusRecoveryModule;
 import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
@@ -187,14 +187,14 @@ public final class RadixNodeModule extends AbstractModule {
           "Invalid configuration. Using both consensus.genesis_for_validator_address and"
               + " consensus.validator_address. Please use one.");
     } else if (validatorAddress != null) {
-      OptionalBinder.newOptionalBinder(binder(), Key.get(SystemAddress.class, Self.class))
+      OptionalBinder.newOptionalBinder(binder(), Key.get(ComponentAddress.class, Self.class))
           .setBinding()
           .toInstance(addressing.decodeSystemAddress(validatorAddress));
       install(new BFTValidatorIdModule());
     } else if (useGenesis == null || Boolean.parseBoolean(useGenesis)) {
       install(new BFTValidatorIdFromGenesisModule());
     } else {
-      OptionalBinder.newOptionalBinder(binder(), Key.get(SystemAddress.class, Self.class));
+      OptionalBinder.newOptionalBinder(binder(), Key.get(ComponentAddress.class, Self.class));
       install(new BFTValidatorIdModule());
     }
     install(new PersistedBFTKeyModule());

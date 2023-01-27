@@ -15,10 +15,10 @@
 pub struct ValidatorSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The Bech32m-encoded human readable version of the system address
+    /// The Bech32m-encoded human readable version of the component address
     #[serde(rename = "epoch_manager_address")]
     pub epoch_manager_address: String,
-    /// The Bech32m-encoded human readable version of the system address
+    /// The Bech32m-encoded human readable version of the component address
     #[serde(rename = "validator_address")]
     pub validator_address: String,
     #[serde(rename = "key")]

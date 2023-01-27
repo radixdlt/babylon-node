@@ -212,55 +212,45 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   }
 
   @Override
-  public void commit(
-      CommittedTransactionsWithProof txnsAndProof, VertexStoreState preCommitVertexStoreState) {
-    final var proof = txnsAndProof.getProof();
-
-    final var outputBuilder = ImmutableClassToInstanceMap.builder();
-
-    final VertexStoreState postCommitVertexStoreState;
-    if (proof.getNextEpoch().isPresent()) {
-      final var nextEpoch = proof.getNextEpoch().get();
-
-      // Post commit vertex store is a fresh one
-      postCommitVertexStoreState = VertexStoreState.createNewForNextEpoch(proof, hasher);
-
-      // Add an EpochChange tx output
-      // TODO: Move vertex stuff somewhere else
-      final var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
-      final var proposerElection = new WeightedRotatingLeaders(validatorSet);
-      final var bftConfiguration =
-          new BFTConfiguration(proposerElection, validatorSet, postCommitVertexStoreState);
-      outputBuilder.put(EpochChange.class, new EpochChange(proof, bftConfiguration));
+  public void commit(CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStore) {
+    var proofBytes = serialization.toDson(txnsAndProof.getProof(), DsonOutput.Output.ALL);
+    final Option<byte[]> vertexStoreBytes;
+    if (vertexStore != null) {
+      vertexStoreBytes =
+          Option.some(serialization.toDson(vertexStore.toSerialized(), DsonOutput.Output.ALL));
     } else {
-      // Pre- and post-commit vertex store is the same if no epoch change
-      postCommitVertexStoreState = preCommitVertexStoreState;
+      vertexStoreBytes = Option.none();
     }
 
-    final Option<byte[]> postCommitVertexStoreBytes;
-    if (postCommitVertexStoreState != null) {
-      postCommitVertexStoreBytes =
-          Option.some(
-              serialization.toDson(
-                  postCommitVertexStoreState.toSerialized(), DsonOutput.Output.ALL));
-    } else {
-      postCommitVertexStoreBytes = Option.none();
-    }
-
-    final var proofBytes = serialization.toDson(proof, DsonOutput.Output.ALL);
-
-    final var stateVersion = UInt64.fromNonNegativeLong(txnsAndProof.getProof().getStateVersion());
-    final var commitRequest =
+    var stateVersion = UInt64.fromNonNegativeLong(txnsAndProof.getProof().getStateVersion());
+    var commitRequest =
         new CommitRequest(
-            txnsAndProof.getTransactions(), stateVersion, proofBytes, postCommitVertexStoreBytes);
+            txnsAndProof.getTransactions(), stateVersion, proofBytes, vertexStoreBytes);
 
-    final var result = stateComputer.commit(commitRequest);
+    var result = stateComputer.commit(commitRequest);
     if (result.isError()) {
       log.warn("Could not commit: {}", result.unwrapError());
       return;
     }
 
-    final var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build());
+    var epochChangeOptional =
+        txnsAndProof
+            .getProof()
+            .getNextEpoch()
+            .map(
+                nextEpoch -> {
+                  var header = txnsAndProof.getProof();
+                  final var initialState = VertexStoreState.createNewForNextEpoch(header, hasher);
+                  var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
+                  var proposerElection = new WeightedRotatingLeaders(validatorSet);
+                  var bftConfiguration =
+                      new BFTConfiguration(proposerElection, validatorSet, initialState);
+                  return new EpochChange(header, bftConfiguration);
+                });
+    var outputBuilder = ImmutableClassToInstanceMap.builder();
+    epochChangeOptional.ifPresent(e -> outputBuilder.put(EpochChange.class, e));
+
+    var ledgerUpdate = new LedgerUpdate(txnsAndProof, outputBuilder.build());
     ledgerUpdateEventDispatcher.dispatch(ledgerUpdate);
   }
 }

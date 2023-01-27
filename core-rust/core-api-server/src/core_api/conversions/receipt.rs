@@ -6,7 +6,7 @@ use radix_engine::{
     ledger::OutputValue,
     types::{hash, scrypto_encode, Bech32Encoder, Decimal, GlobalAddress, RENodeId, SubstateId},
 };
-use radix_engine_interface::model::SystemAddress;
+use radix_engine_interface::model::ComponentAddress;
 use std::collections::BTreeMap;
 
 use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
@@ -136,7 +136,7 @@ pub fn to_api_deleted_substate(
 #[tracing::instrument(skip_all)]
 pub fn to_api_next_epoch(
     bech32_encoder: &Bech32Encoder,
-    next_epoch: (BTreeMap<SystemAddress, Validator>, u64),
+    next_epoch: (BTreeMap<ComponentAddress, Validator>, u64),
 ) -> Result<models::NextEpoch, MappingError> {
     let mut validators = Vec::new();
     for (address, validator) in next_epoch.0 {

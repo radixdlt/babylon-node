@@ -77,12 +77,12 @@ public final class REv2ToConsensus {
     throw new IllegalStateException("Cannot instantiate.");
   }
 
-  public static BFTValidator validator(SystemAddress address, Validator validator) {
+  public static BFTValidator validator(ComponentAddress address, Validator validator) {
     return BFTValidator.from(
         BFTValidatorId.create(address, validator.key()), validator.stake().toUInt256());
   }
 
-  public static BFTValidatorSet validatorSet(Map<SystemAddress, Validator> validators) {
+  public static BFTValidatorSet validatorSet(Map<ComponentAddress, Validator> validators) {
     var bftValidators =
         validators.entrySet().stream()
             .map(e -> REv2ToConsensus.validator(e.getKey(), e.getValue()));

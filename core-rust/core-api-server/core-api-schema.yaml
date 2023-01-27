@@ -816,12 +816,11 @@ components:
       properties:
         version:
           type: integer
+          format: int32
           minimum: 0
           maximum: 255
         network_id:
-          type: integer
-          minimum: 0
-          maximum: 255
+          $ref: "#/components/schemas/NetworkIdentifierByte"
         start_epoch_inclusive:
           type: integer
           format: int64
@@ -873,6 +872,12 @@ components:
       description: The logical name of the network
       type: string
       example: "{{network}}"
+    NetworkIdentifierByte:
+      description: The logical id of the network
+      type: integer
+      format: int32
+      minimum: 0
+      maximum: 255
     CommittedStateIdentifier:
       type: object
       # This should expand to include the state hash
@@ -1204,9 +1209,6 @@ components:
     PackageAddress:
       type: string
       description: The Bech32m-encoded human readable version of the package address
-    SystemAddress:
-      type: string
-      description: The Bech32m-encoded human readable version of the system address
     Instant:
       type: object
       required:
@@ -1725,6 +1727,7 @@ components:
           properties:
             count:
               type: integer
+              format: int32
               minimum: 0
               maximum: 255
     SchemaPathDynamicCount:
@@ -1779,6 +1782,7 @@ components:
       enum:
         - NonFungible
         - Resource
+        - SchemaPath
     DynamicResourceDescriptor:
       type: object
       required:
@@ -2024,7 +2028,7 @@ components:
         - validator
       properties:
         address:
-          $ref: '#/components/schemas/SystemAddress'
+          $ref: '#/components/schemas/ComponentAddress'
         validator:
           $ref: '#/components/schemas/Validator'
     Validator:
@@ -2322,7 +2326,7 @@ components:
             - rounds_per_epoch
           properties:
             address:
-              $ref: '#/components/schemas/SystemAddress'
+              $ref: '#/components/schemas/ComponentAddress'
             epoch:
               type: integer
               format: int64
@@ -2371,9 +2375,9 @@ components:
             - is_registered
           properties:
             epoch_manager_address:
-              $ref: '#/components/schemas/SystemAddress'
+              $ref: '#/components/schemas/ComponentAddress'
             validator_address:
-              $ref: '#/components/schemas/SystemAddress'
+              $ref: '#/components/schemas/ComponentAddress'
             key:
               $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
             stake_vault:
@@ -2460,6 +2464,7 @@ components:
       required:
         - version
         - network
+        - network_id
         - network_hrp_suffix
         - address_types
         - well_known_addresses
@@ -2477,6 +2482,8 @@ components:
               type: string
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
+        network_id:
+          $ref: "#/components/schemas/NetworkIdentifierByte"
         network_hrp_suffix:
           type: string
           description: The network suffix used for Bech32m HRPs used for addressing.
@@ -2528,6 +2535,9 @@ components:
             - AccountComponent
             - EcdsaSecp256k1VirtualAccountComponent
             - EddsaEd25519VirtualAccountComponent
+            - IdentityComponent
+            - EcdsaSecp256k1VirtualIdentityComponent
+            - EddsaEd25519VirtualIdentityComponent
             - EpochManager
             - Validator
             - Clock

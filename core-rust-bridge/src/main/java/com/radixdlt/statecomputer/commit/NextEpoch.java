@@ -65,13 +65,13 @@
 package com.radixdlt.statecomputer.commit;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.rev2.SystemAddress;
+import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt64;
 import java.util.Map;
 
-public record NextEpoch(Map<SystemAddress, Validator> validators, UInt64 epoch) {
+public record NextEpoch(Map<ComponentAddress, Validator> validators, UInt64 epoch) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         NextEpoch.class,

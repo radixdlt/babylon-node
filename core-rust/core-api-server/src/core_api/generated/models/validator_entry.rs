@@ -13,7 +13,7 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ValidatorEntry {
-    /// The Bech32m-encoded human readable version of the system address
+    /// The Bech32m-encoded human readable version of the component address
     #[serde(rename = "address")]
     pub address: String,
     #[serde(rename = "validator")]

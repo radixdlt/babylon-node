@@ -62,93 +62,76 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.consensus_ledger_epochs;
+package com.radixdlt.integration.targeted.consensus;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.byzantineBehaviorNotDetected;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.monitoring.Metrics;
 import io.reactivex.rxjava3.schedulers.Timed;
-import java.util.Random;
 import java.util.function.Predicate;
 import org.junit.Test;
 
-public class ProcessCachedEventsWithTimeoutCertTest {
+/**
+ * This test tests a specific case where if a TC occurs on the epoch boundary that votes on
+ * additional Consensus Vertices past the epoch round does NOT cause any disagreement amongst
+ * validators for the initial vertex in the next epoch.
+ */
+public final class EpochTimeoutCertTest {
 
-  private static final int TEST_NODE = 4;
-  private final Random random = new Random(123456);
+  private static final long ROUNDS_PER_EPOCH = 100;
+
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(4))
+        .messageSelector(MessageSelector.firstSelector())
+        .messageMutator(
+            (m, q) -> {
+              // Drop single proposal at end of epoch to cause a TC
+              if (m.message() instanceof Proposal proposal) {
+                if (proposal.getRound().number() == ROUNDS_PER_EPOCH + 2) {
+                  return m.channelId().receiverIndex() == (m.channelId().senderIndex() + 1) % 4;
+                }
+              }
+              return false;
+            })
+        .addMonitors(byzantineBehaviorNotDetected())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                true,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                FunctionalRadixNodeModule.ConsensusConfig.of(),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                    StateComputerConfig.mockedWithEpochs(
+                        Round.of(ROUNDS_PER_EPOCH),
+                        EpochNodeWeightMapping.constant(4),
+                        new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
+  }
+
+  public static Predicate<Timed<ControlledMessage>> proposalAtRound(long round) {
+    return m -> {
+      if (m.value().message() instanceof Proposal proposal) {
+        return proposal.getRound().number() == round;
+      }
+      return false;
+    };
+  }
 
   @Test
-  public void process_cached_sync_event_with_tc_test() {
-    final var test =
-        DeterministicTest.builder()
-            .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(5))
-            .messageSelector(MessageSelector.randomSelector(random))
-            .messageMutators(
-                dropProposalToNodes(Round.of(1), ImmutableList.of(TEST_NODE)),
-                dropProposalToNodes(Round.of(2), ImmutableList.of(2, 3, TEST_NODE)),
-                dropVotesForNode(TEST_NODE))
-            .functionalNodeModule(
-                new FunctionalRadixNodeModule(
-                    true,
-                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
-                    FunctionalRadixNodeModule.ConsensusConfig.of(),
-                    FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
-                        StateComputerConfig.mockedWithEpochs(
-                            Round.of(100),
-                            EpochNodeWeightMapping.constant(5),
-                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
-
-    test.startAllNodes();
-    test.runUntilMessage(nodeVotesForRound(Round.of(3), TEST_NODE));
-
-    // just to check if the node indeed needed to sync
-    final var counters = test.getInstance(TEST_NODE, Metrics.class);
-    assertThat(counters.bft().timeoutQuorums().get()).isEqualTo(0);
-    assertThat(counters.bft().voteQuorums().get()).isEqualTo(0);
-  }
-
-  private static MessageMutator dropProposalToNodes(Round round, ImmutableList<Integer> nodes) {
-    return (message, queue) -> {
-      final var msg = message.message();
-      if (msg instanceof Proposal) {
-        final Proposal proposal = (Proposal) msg;
-        return proposal.getRound().equals(round)
-            && nodes.contains(message.channelId().receiverIndex());
-      }
-      return false;
-    };
-  }
-
-  private static MessageMutator dropVotesForNode(int node) {
-    return (message, queue) -> {
-      final var msg = message.message();
-      if (msg instanceof Vote) {
-        return message.channelId().receiverIndex() == node;
-      }
-      return false;
-    };
-  }
-
-  public static Predicate<Timed<ControlledMessage>> nodeVotesForRound(Round round, int node) {
-    return timedMsg -> {
-      final var message = timedMsg.value();
-      if (!(message.message() instanceof Vote)) {
-        return false;
-      }
-      final var vote = (Vote) message.message();
-      return vote.getRound().equals(round) && message.channelId().senderIndex() == node;
-    };
+  public void no_byzantine_event_occurs_on_epoch_tc_event() {
+    try (var test = createTest()) {
+      test.startAllNodes();
+      // Run until end of first epoch
+      test.runUntilMessage(proposalAtRound(ROUNDS_PER_EPOCH + 2), true);
+      // Run for a while more and verify that no byzantine issues occur
+      test.runForCount(100000);
+    }
   }
 }
