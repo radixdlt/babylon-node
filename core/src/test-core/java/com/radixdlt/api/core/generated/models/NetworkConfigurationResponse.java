@@ -38,6 +38,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   NetworkConfigurationResponse.JSON_PROPERTY_VERSION,
   NetworkConfigurationResponse.JSON_PROPERTY_NETWORK,
+  NetworkConfigurationResponse.JSON_PROPERTY_NETWORK_ID,
   NetworkConfigurationResponse.JSON_PROPERTY_NETWORK_HRP_SUFFIX,
   NetworkConfigurationResponse.JSON_PROPERTY_ADDRESS_TYPES,
   NetworkConfigurationResponse.JSON_PROPERTY_WELL_KNOWN_ADDRESSES
@@ -49,6 +50,9 @@ public class NetworkConfigurationResponse {
 
   public static final String JSON_PROPERTY_NETWORK = "network";
   private String network;
+
+  public static final String JSON_PROPERTY_NETWORK_ID = "network_id";
+  private Integer networkId;
 
   public static final String JSON_PROPERTY_NETWORK_HRP_SUFFIX = "network_hrp_suffix";
   private String networkHrpSuffix;
@@ -111,6 +115,34 @@ public class NetworkConfigurationResponse {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setNetwork(String network) {
     this.network = network;
+  }
+
+
+  public NetworkConfigurationResponse networkId(Integer networkId) {
+    this.networkId = networkId;
+    return this;
+  }
+
+   /**
+   * The logical id of the network
+   * minimum: 0
+   * maximum: 255
+   * @return networkId
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The logical id of the network")
+  @JsonProperty(JSON_PROPERTY_NETWORK_ID)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Integer getNetworkId() {
+    return networkId;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_NETWORK_ID)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setNetworkId(Integer networkId) {
+    this.networkId = networkId;
   }
 
 
@@ -211,6 +243,7 @@ public class NetworkConfigurationResponse {
     NetworkConfigurationResponse networkConfigurationResponse = (NetworkConfigurationResponse) o;
     return Objects.equals(this.version, networkConfigurationResponse.version) &&
         Objects.equals(this.network, networkConfigurationResponse.network) &&
+        Objects.equals(this.networkId, networkConfigurationResponse.networkId) &&
         Objects.equals(this.networkHrpSuffix, networkConfigurationResponse.networkHrpSuffix) &&
         Objects.equals(this.addressTypes, networkConfigurationResponse.addressTypes) &&
         Objects.equals(this.wellKnownAddresses, networkConfigurationResponse.wellKnownAddresses);
@@ -218,7 +251,7 @@ public class NetworkConfigurationResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(version, network, networkHrpSuffix, addressTypes, wellKnownAddresses);
+    return Objects.hash(version, network, networkId, networkHrpSuffix, addressTypes, wellKnownAddresses);
   }
 
   @Override
@@ -227,6 +260,7 @@ public class NetworkConfigurationResponse {
     sb.append("class NetworkConfigurationResponse {\n");
     sb.append("    version: ").append(toIndentedString(version)).append("\n");
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
+    sb.append("    networkId: ").append(toIndentedString(networkId)).append("\n");
     sb.append("    networkHrpSuffix: ").append(toIndentedString(networkHrpSuffix)).append("\n");
     sb.append("    addressTypes: ").append(toIndentedString(addressTypes)).append("\n");
     sb.append("    wellKnownAddresses: ").append(toIndentedString(wellKnownAddresses)).append("\n");

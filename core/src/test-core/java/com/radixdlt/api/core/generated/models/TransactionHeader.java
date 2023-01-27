@@ -108,13 +108,13 @@ public class TransactionHeader {
   }
 
    /**
-   * Get networkId
+   * The logical id of the network
    * minimum: 0
    * maximum: 255
    * @return networkId
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @ApiModelProperty(required = true, value = "The logical id of the network")
   @JsonProperty(JSON_PROPERTY_NETWORK_ID)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

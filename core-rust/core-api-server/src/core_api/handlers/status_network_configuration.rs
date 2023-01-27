@@ -29,6 +29,7 @@ pub(crate) fn handle_status_network_configuration_internal(
             api_version: models::SCHEMA_VERSION.to_string(),
         }),
         network: network.logical_name,
+        network_id: to_api_u8_as_i32(network.id),
         network_hrp_suffix: network.hrp_suffix,
         address_types,
         well_known_addresses: Box::new(models::NetworkConfigurationResponseWellKnownAddresses {
