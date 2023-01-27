@@ -88,9 +88,12 @@ import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
-import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class REv2LedgerRecoveryModule extends AbstractModule {
+
+  private static final Logger log = LogManager.getLogger();
   private final AccumulatorState initialAccumulatorState;
   private final RawLedgerTransaction genesis;
 
@@ -161,16 +164,7 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
 
   private static VertexStoreState genesisEpochProofToGenesisVertexStore(
       LedgerProof lastEpochProof, Hasher hasher) {
-    var genesisVertex = Vertex.createGenesis(lastEpochProof.getHeader()).withId(hasher);
-    var nextLedgerHeader =
-        LedgerHeader.create(
-            lastEpochProof.getNextEpoch().orElseThrow().getEpoch(),
-            Round.genesis(),
-            lastEpochProof.getAccumulatorState(),
-            lastEpochProof.consensusParentRoundTimestamp(),
-            lastEpochProof.proposerTimestamp());
-    var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
-    return VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
+    return VertexStoreState.createNewForNextEpoch(lastEpochProof, hasher);
   }
 
   @Provides
@@ -180,18 +174,26 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
       VertexStoreRecovery vertexStoreRecovery,
       Serialization serialization,
       Hasher hasher) {
-    return vertexStoreRecovery
-        .recoverVertexStore()
-        .map(
-            bytes -> {
-              try {
-                return serialization
-                    .fromDson(bytes, VertexStoreState.SerializedVertexStoreState.class)
-                    .toVertexStoreState(hasher);
-              } catch (DeserializeException e) {
-                throw new RuntimeException("Unable to recover VertexStore", e);
-              }
-            })
-        .orElseGet(() -> genesisEpochProofToGenesisVertexStore(lastEpochProof, hasher));
+
+    var currentEpoch = lastEpochProof.getNextEpoch().orElseThrow();
+    var vertexStoreState =
+        vertexStoreRecovery
+            .recoverVertexStore()
+            .map(
+                bytes -> {
+                  try {
+                    return serialization.fromDson(
+                        bytes, VertexStoreState.SerializedVertexStoreState.class);
+                  } catch (DeserializeException e) {
+                    throw new RuntimeException("Unable to recover VertexStore", e);
+                  }
+                })
+            .filter(state -> state.isForEpoch(currentEpoch.getEpoch()))
+            .map(v -> v.toVertexStoreState(hasher))
+            .orElseGet(() -> genesisEpochProofToGenesisVertexStore(lastEpochProof, hasher));
+
+    log.info("Initial Vertex Store State: {}", vertexStoreState);
+
+    return vertexStoreState;
   }
 }

@@ -66,13 +66,82 @@ use sbor::*;
 
 use std::string::ToString;
 
-use self::transaction_rejection_cache::RejectionReason;
+use crate::MetricLabel;
+
+pub use crate::pending_transaction_result_cache::*;
+
+#[derive(Debug, Clone, Copy)]
+pub enum MempoolAddSource {
+    CoreApi,
+    MempoolSync,
+}
+
+impl MetricLabel for MempoolAddSource {
+    type StringReturnType = &'static str;
+
+    fn prometheus_label_name(&self) -> Self::StringReturnType {
+        match *self {
+            MempoolAddSource::CoreApi => "CoreApi",
+            MempoolAddSource::MempoolSync => "MempoolSync",
+        }
+    }
+}
 
 #[derive(Debug)]
 pub enum MempoolAddError {
     Full { current_size: u64, max_size: u64 },
     Duplicate,
-    Rejected(RejectionReason),
+    Rejected(MempoolAddRejection),
+}
+
+#[derive(Debug)]
+pub struct MempoolAddRejection {
+    pub reason: RejectionReason,
+    pub against_state: AtState,
+    pub recalculation_due: RecalculationDue,
+    pub was_cached: bool,
+    /// The epoch when the payload will definitely be permanently rejected
+    pub invalid_from_epoch: u64,
+}
+
+impl MempoolAddRejection {
+    pub fn is_permanent_for_payload(&self) -> bool {
+        match self.against_state {
+            AtState::Committed { .. } => self.reason.is_permanent_for_payload(),
+            AtState::PendingPreparingVertices { .. } => false,
+        }
+    }
+
+    pub fn is_permanent_for_intent(&self) -> bool {
+        match self.against_state {
+            AtState::Committed { .. } => self.reason.is_permanent_for_intent(),
+            AtState::PendingPreparingVertices { .. } => false,
+        }
+    }
+
+    pub fn is_rejected_because_intent_already_committed(&self) -> bool {
+        match self.against_state {
+            AtState::Committed { .. } => self.reason.is_rejected_because_intent_already_committed(),
+            AtState::PendingPreparingVertices { .. } => false,
+        }
+    }
+}
+
+impl MetricLabel for MempoolAddError {
+    type StringReturnType = &'static str;
+
+    fn prometheus_label_name(&self) -> Self::StringReturnType {
+        match self {
+            MempoolAddError::Rejected(rejection) => match &rejection.reason {
+                RejectionReason::FromExecution(_) => "ExecutionError",
+                RejectionReason::ValidationError(_) => "ValidationError",
+                RejectionReason::IntentHashCommitted => "IntentHashCommitted",
+                RejectionReason::ExecutionTookTooLong { .. } => "ExecutionTooLong",
+            },
+            MempoolAddError::Full { .. } => "MempoolFull",
+            MempoolAddError::Duplicate => "Duplicate",
+        }
+    }
 }
 
 impl ToString for MempoolAddError {
@@ -83,15 +152,15 @@ impl ToString for MempoolAddError {
                 max_size,
             } => format!("Mempool Full [{} - {}]", current_size, max_size),
             MempoolAddError::Duplicate => "Duplicate Entry".to_string(),
-            MempoolAddError::Rejected(reason) => reason.to_string(),
+            MempoolAddError::Rejected(rejection) => rejection.reason.to_string(),
         }
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode, Clone)]
+#[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct MempoolConfig {
     pub max_size: u32,
 }
 
+pub mod pending_transaction_result_cache;
 pub mod simple_mempool;
-pub mod transaction_rejection_cache;

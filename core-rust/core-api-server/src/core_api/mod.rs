@@ -84,3 +84,6 @@ pub(crate) mod models {
     pub(crate) use super::generated::models::*;
     pub(crate) use super::generated::SCHEMA_VERSION;
 }
+
+// Re-exports for handlers
+pub use hyper::StatusCode;

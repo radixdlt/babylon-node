@@ -68,11 +68,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -86,7 +85,6 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.PrivateKeys;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.Test;
@@ -96,13 +94,7 @@ public class DifferentTimestampsCauseTimeoutTest {
   public void when_four_nodes_receive_qcs_with_same_timestamps__quorum_is_achieved() {
     final int numValidatorNodes = 4;
     var nodeConfigs =
-        PrivateKeys.numeric(1)
-            .limit(numValidatorNodes)
-            .map(ECKeyPair::getPublicKey)
-            .sorted(KeyComparator.instance())
-            .map(PhysicalNodeConfig::createBasic)
-            .toList();
-
+        PhysicalNodeConfig.createBasicBatchWithOrder(numValidatorNodes, KeyComparator.instance());
     DeterministicManualExecutor executor =
         DeterministicTest.builder()
             .addPhysicalNodes(nodeConfigs)
@@ -138,12 +130,7 @@ public class DifferentTimestampsCauseTimeoutTest {
   public void when_four_nodes_receive_qcs_with_different_timestamps__quorum_is_not_achieved() {
     final int numValidatorNodes = 4;
     var nodeConfigs =
-        PrivateKeys.numeric(1)
-            .limit(numValidatorNodes)
-            .map(ECKeyPair::getPublicKey)
-            .sorted(KeyComparator.instance())
-            .map(PhysicalNodeConfig::createBasic)
-            .toList();
+        PhysicalNodeConfig.createBasicBatchWithOrder(numValidatorNodes, KeyComparator.instance());
 
     // TODO: this test isn't exactly right and should be updated so that
     // TODO: byzantine node sends different sets of valid QCs to each node
@@ -264,7 +251,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 
   private TimestampedECDSASignatures mutateTimestampedSignatures(
       TimestampedECDSASignatures signatures, int destination) {
-    Map<BFTNode, TimestampedECDSASignature> sigs = signatures.getSignatures();
+    Map<BFTValidatorId, TimestampedECDSASignature> sigs = signatures.getSignatures();
     return new TimestampedECDSASignatures(
         sigs.entrySet().stream()
             .map(e -> Pair.of(e.getKey(), mutateTimestampedSignature(e.getValue(), destination)))

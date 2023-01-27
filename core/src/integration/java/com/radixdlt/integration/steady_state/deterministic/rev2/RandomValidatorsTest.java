@@ -131,14 +131,14 @@ public final class RandomValidatorsTest {
       var random = new Random(12345);
 
       var creating_validators = new HashMap<Integer, RawNotarizedTransaction>();
-      var validators = new HashMap<Integer, SystemAddress>();
+      var validators = new HashMap<Integer, ComponentAddress>();
       var genesis = NodesReader.getCommittedLedgerTransaction(test.getNodeInjectors(), GENESIS);
-      var systemAddresses =
-          genesis.newSystemAddresses().stream()
-              .filter(systemAddress -> systemAddress.value()[0] == 5)
+      var componentAddresses =
+          genesis.newComponentAddresses().stream()
+              .filter(componentAddress -> componentAddress.value()[0] == 5)
               .toList();
       for (int i = 0; i < NUM_VALIDATORS / 2; i++) {
-        validators.put(i, systemAddresses.get(i));
+        validators.put(i, componentAddresses.get(i));
       }
 
       // Run
@@ -151,8 +151,8 @@ public final class RandomValidatorsTest {
                 Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
 
         var randomValidatorIndex = random.nextInt(0, NUM_VALIDATORS);
-        var systemAddress = validators.get(randomValidatorIndex);
-        if (systemAddress == null) {
+        var componentAddress = validators.get(randomValidatorIndex);
+        if (componentAddress == null) {
           var inflightTransaction = creating_validators.get(randomValidatorIndex);
           if (inflightTransaction == null) {
             var txn =
@@ -169,7 +169,7 @@ public final class RandomValidatorsTest {
                     test.getNodeInjectors().get(randomValidatorIndex), inflightTransaction);
             maybeExecuted.ifPresent(
                 executedTransaction -> {
-                  var validatorAddress = executedTransaction.newSystemAddresses().get(0);
+                  var validatorAddress = executedTransaction.newComponentAddresses().get(0);
                   test.restartNodeWithConfig(
                       randomValidatorIndex,
                       PhysicalNodeConfig.create(
@@ -188,7 +188,7 @@ public final class RandomValidatorsTest {
                       NetworkDefinition.INT_TEST_NET,
                       0,
                       random.nextInt(1000000),
-                      systemAddress,
+                      componentAddress,
                       PrivateKeys.ofNumeric(randomValidatorIndex + 1));
             }
             case 1 -> {
@@ -197,7 +197,7 @@ public final class RandomValidatorsTest {
                       NetworkDefinition.INT_TEST_NET,
                       0,
                       random.nextInt(1000000),
-                      systemAddress,
+                      componentAddress,
                       PrivateKeys.ofNumeric(randomValidatorIndex + 1));
             }
             case 2 -> {
@@ -206,30 +206,30 @@ public final class RandomValidatorsTest {
                       NetworkDefinition.INT_TEST_NET,
                       0,
                       random.nextInt(1000000),
-                      systemAddress,
+                      componentAddress,
                       PrivateKeys.ofNumeric(randomValidatorIndex + 1));
             }
             case 3 -> {
               var stateReader = test.getInstance(randomValidatorIndex, REv2StateReader.class);
-              var validatorInfo = stateReader.getValidatorInfo(systemAddress);
+              var validatorInfo = stateReader.getValidatorInfo(componentAddress);
               txn =
                   REv2TestTransactions.constructUnstakeValidatorTransaction(
                       NetworkDefinition.INT_TEST_NET,
                       0,
                       random.nextInt(1000000),
                       validatorInfo.lpTokenAddress(),
-                      systemAddress,
+                      componentAddress,
                       PrivateKeys.ofNumeric(randomValidatorIndex + 1));
             }
             default -> {
               var stateReader = test.getInstance(randomValidatorIndex, REv2StateReader.class);
-              var validatorInfo = stateReader.getValidatorInfo(systemAddress);
+              var validatorInfo = stateReader.getValidatorInfo(componentAddress);
               txn =
                   REv2TestTransactions.constructClaimXrdTransaction(
                       NetworkDefinition.INT_TEST_NET,
                       0,
                       random.nextInt(1000000),
-                      systemAddress,
+                      componentAddress,
                       validatorInfo.unstakeResource(),
                       PrivateKeys.ofNumeric(randomValidatorIndex + 1));
             }

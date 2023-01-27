@@ -133,7 +133,6 @@ public final class CodecMap {
   }
 
   public CodecMap addCoreSchemaCodecs() {
-    storeCodec(Unit.class, new UnitCodec());
     storeCodec(String.class, new StringCodec());
 
     storeCodec(Boolean.class, new BooleanCodec());
@@ -185,6 +184,7 @@ public final class CodecMap {
     MapCodec.registerMapToMapTo(this);
     MapCodec.registerHashMapToMapTo(this);
     MapCodec.registerTreeMapToMapTo(this);
+    MapCodec.registerImmutableMapToMapTo(this);
 
     return this;
   }

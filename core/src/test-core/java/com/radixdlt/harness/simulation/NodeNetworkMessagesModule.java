@@ -70,7 +70,6 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
@@ -79,6 +78,7 @@ import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.harness.simulation.network.SimulationNetwork;
 import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
@@ -100,8 +100,18 @@ public class NodeNetworkMessagesModule extends AbstractModule {
   }
 
   @Provides
-  private SimulationNetwork.SimulatedNetworkImpl network(@Self BFTNode node) {
+  private SimulationNetwork.SimulatedNetworkImpl network(@Self NodeId node) {
     return simulationNetwork.getNetwork(node);
+  }
+
+  @ProvidesIntoSet
+  private RxRemoteDispatcher<?> proposalDispatcher(SimulationNetwork.SimulatedNetworkImpl network) {
+    return RxRemoteDispatcher.create(Proposal.class, network.remoteEventDispatcher(Proposal.class));
+  }
+
+  @ProvidesIntoSet
+  private RxRemoteDispatcher<?> voteDispatcher(SimulationNetwork.SimulatedNetworkImpl network) {
+    return RxRemoteDispatcher.create(Vote.class, network.remoteEventDispatcher(Vote.class));
   }
 
   @ProvidesIntoSet
@@ -130,16 +140,6 @@ public class NodeNetworkMessagesModule extends AbstractModule {
     return RxRemoteDispatcher.create(
         GetVerticesErrorResponse.class,
         network.remoteEventDispatcher(GetVerticesErrorResponse.class));
-  }
-
-  @ProvidesIntoSet
-  private RxRemoteDispatcher<?> proposalDispatcher(SimulationNetwork.SimulatedNetworkImpl network) {
-    return RxRemoteDispatcher.create(Proposal.class, network.remoteEventDispatcher(Proposal.class));
-  }
-
-  @ProvidesIntoSet
-  private RxRemoteDispatcher<?> voteDispatcher(SimulationNetwork.SimulatedNetworkImpl network) {
-    return RxRemoteDispatcher.create(Vote.class, network.remoteEventDispatcher(Vote.class));
   }
 
   @ProvidesIntoSet

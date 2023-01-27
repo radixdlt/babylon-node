@@ -1,22 +1,23 @@
 use std::convert::TryFrom;
+use std::str::FromStr;
 
 use crate::core_api::*;
 
 use models::{EntityType, SubstateKeyType, SubstateType};
 use radix_engine::types::{
-    ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, NonFungibleIdType,
-    NonFungibleStoreOffset, PackageOffset, ResourceManagerOffset, SubstateOffset, SystemAddress,
-    VaultOffset,
+    ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, NonFungibleStoreOffset,
+    PackageOffset, ResourceManagerOffset, SubstateOffset, VaultOffset,
 };
 use radix_engine::{
     model::GlobalAddressSubstate,
     types::{
         scrypto_encode, AccessRulesChainOffset, Bech32Decoder, Bech32Encoder, ClockOffset,
-        ComponentAddress, EpochManagerOffset, MetadataOffset, NonFungibleId, PackageAddress,
-        RENodeId, ResourceAddress, SubstateId,
+        ComponentAddress, EpochManagerOffset, MetadataOffset, PackageAddress, RENodeId,
+        ResourceAddress, SubstateId,
     },
 };
 use radix_engine_interface::api::types::ValidatorOffset;
+use radix_engine_interface::model::{NonFungibleIdType, NonFungibleLocalId};
 
 pub fn to_api_global_entity_assignment(
     bech32_encoder: &Bech32Encoder,
@@ -47,18 +48,25 @@ pub fn encode_to_bech32m_string(
         GlobalAddress::Component(addr) => bech32_encoder.encode_component_address_to_string(addr),
         GlobalAddress::Package(addr) => bech32_encoder.encode_package_address_to_string(addr),
         GlobalAddress::Resource(addr) => bech32_encoder.encode_resource_address_to_string(addr),
-        GlobalAddress::System(addr) => bech32_encoder.encode_system_address_to_string(addr),
     }
 }
 
 pub fn get_entity_type_from_global_address(global_address: &GlobalAddress) -> models::EntityType {
     match global_address {
-        GlobalAddress::Component(_) => models::EntityType::Component,
+        GlobalAddress::Component(component) => match component {
+            ComponentAddress::EpochManager(_) => models::EntityType::EpochManager,
+            ComponentAddress::Clock(_) => models::EntityType::Clock,
+            ComponentAddress::Validator(_) => models::EntityType::Validator,
+            ComponentAddress::Normal(_) => models::EntityType::Component,
+            ComponentAddress::Account(_) => models::EntityType::Component,
+            ComponentAddress::Identity(_) => models::EntityType::Component,
+            ComponentAddress::EcdsaSecp256k1VirtualAccount(_) => models::EntityType::Component,
+            ComponentAddress::EddsaEd25519VirtualAccount(_) => models::EntityType::Component,
+            ComponentAddress::EcdsaSecp256k1VirtualIdentity(_) => models::EntityType::Component,
+            ComponentAddress::EddsaEd25519VirtualIdentity(_) => models::EntityType::Component,
+        },
         GlobalAddress::Package(_) => models::EntityType::Package,
         GlobalAddress::Resource(_) => models::EntityType::ResourceManager,
-        GlobalAddress::System(SystemAddress::EpochManager(_)) => models::EntityType::EpochManager,
-        GlobalAddress::System(SystemAddress::Clock(_)) => models::EntityType::Clock,
-        GlobalAddress::System(SystemAddress::Validator(_)) => models::EntityType::Validator,
     }
 }
 
@@ -112,6 +120,7 @@ impl TryFrom<RENodeId> for MappedEntityId {
             RENodeId::KeyValueStore(_) => EntityType::KeyValueStore,
             RENodeId::NonFungibleStore(_) => EntityType::NonFungibleStore,
             RENodeId::Vault(_) => EntityType::Vault,
+            RENodeId::Identity(_) => EntityType::Component,
             RENodeId::Bucket(_) => return Err(transient_renode_error("Bucket")),
             RENodeId::Proof(_) => return Err(transient_renode_error("Proof")),
             RENodeId::Worktop => return Err(transient_renode_error("Worktop")),
@@ -396,6 +405,22 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::Clock, substate_type_key)
         }
 
+        SubstateId(RENodeId::Identity(_), offset) => {
+            let substate_type_key = match offset {
+                SubstateOffset::Metadata(offset) => match offset {
+                    MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
+                },
+                SubstateOffset::AccessRulesChain(offset) => match offset {
+                    AccessRulesChainOffset::AccessRulesChain => (
+                        SubstateType::AccessRulesChain,
+                        SubstateKeyType::AccessRulesChain,
+                    ),
+                },
+                _ => return Err(unknown_substate_error("Identity", &substate_id)),
+            };
+            (EntityType::Validator, substate_type_key)
+        }
+
         // TRANSIENT SUBSTATES
         SubstateId(RENodeId::Bucket(..), _) => {
             return Err(transient_substate_error("Bucket", &substate_id))
@@ -472,10 +497,11 @@ pub fn extract_resource_address(
 }
 
 pub fn extract_non_fungible_id_from_simple_representation(
-    id_type: NonFungibleIdType,
+    _id_type: NonFungibleIdType,
     simple_rep: &str,
-) -> Result<NonFungibleId, ExtractionError> {
-    Ok(NonFungibleId::try_from_simple_string(id_type, simple_rep)?)
+) -> Result<NonFungibleLocalId, ExtractionError> {
+    let non_fungible_local_id = NonFungibleLocalId::from_str(simple_rep)?;
+    Ok(non_fungible_local_id)
 }
 
 pub fn re_node_id_to_entity_id_bytes(re_node_id: &RENodeId) -> Result<Vec<u8>, MappingError> {
@@ -499,6 +525,5 @@ pub fn global_address_to_vec(global_address: &GlobalAddress) -> Vec<u8> {
         GlobalAddress::Package(package_addr) => package_addr.to_vec(),
         GlobalAddress::Resource(resource_addr) => resource_addr.to_vec(),
         GlobalAddress::Component(component_addr) => component_addr.to_vec(),
-        GlobalAddress::System(system_addr) => system_addr.to_vec(),
     }
 }

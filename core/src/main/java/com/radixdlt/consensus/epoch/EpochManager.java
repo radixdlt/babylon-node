@@ -88,6 +88,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import java.util.*;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -101,7 +102,7 @@ import org.apache.logging.log4j.Logger;
 @NotThreadSafe
 public final class EpochManager {
   private static final Logger log = LogManager.getLogger();
-  private final BFTNode self;
+  private final BFTValidatorId self;
   private final PacemakerFactory pacemakerFactory;
   private final VertexStoreFactory vertexStoreFactory;
   private final BFTSyncRequestProcessorFactory bftSyncRequestProcessorFactory;
@@ -121,21 +122,22 @@ public final class EpochManager {
   private EventProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
   private BFTEventProcessor bftEventProcessor;
 
-  private Set<RemoteEventProcessor<GetVerticesRequest>> syncRequestProcessors;
-  private Set<RemoteEventProcessor<GetVerticesResponse>> syncResponseProcessors;
-  private Set<RemoteEventProcessor<GetVerticesErrorResponse>> syncErrorResponseProcessors;
+  private Set<RemoteEventProcessor<NodeId, GetVerticesRequest>> syncRequestProcessors;
+  private Set<RemoteEventProcessor<NodeId, GetVerticesResponse>> syncResponseProcessors;
+  private Set<RemoteEventProcessor<NodeId, GetVerticesErrorResponse>> syncErrorResponseProcessors;
 
   private Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors;
   private Set<EventProcessor<BFTRebuildUpdate>> bftRebuildProcessors;
 
-  private final RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher;
-
+  private final RemoteEventDispatcher<NodeId, LedgerStatusUpdate> ledgerStatusUpdateDispatcher;
   private final PersistentSafetyStateStore persistentSafetyStateStore;
+
+  private final HashSet<NodeId> validatorNodeIds = new HashSet<>();
 
   @Inject
   public EpochManager(
-      @Self BFTNode self,
-      RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
+      @Self BFTValidatorId self,
+      RemoteEventDispatcher<NodeId, LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
       EpochChange lastEpochChange,
       PacemakerFactory pacemakerFactory,
       VertexStoreFactory vertexStoreFactory,
@@ -186,13 +188,20 @@ public final class EpochManager {
       return;
     }
 
+    // TODO: Move this filterign into a separate network module
+    this.validatorNodeIds.clear();
+    for (var validator : validatorSet.getValidators()) {
+      var nodeId = NodeId.fromPublicKey(validator.getValidatorId().getKey());
+      validatorNodeIds.add(nodeId);
+    }
+
     final var nextEpoch = this.lastEpochChange.getNextEpoch();
 
     // Config
     final var bftConfiguration = this.lastEpochChange.getBFTConfiguration();
     final var proposerElection = bftConfiguration.getProposerElection();
     final var highQC = bftConfiguration.getVertexStoreState().getHighQC();
-    final var round = highQC.highestQC().getRound().next();
+    final var round = highQC.getHighestRound().next();
     final var leader = proposerElection.getProposer(round);
     final var nextLeader = proposerElection.getProposer(round.next());
     final var initialRoundUpdate = RoundUpdate.create(round, highQC, leader, nextLeader);
@@ -240,6 +249,7 @@ public final class EpochManager {
 
     this.syncResponseProcessors = Set.of(bftSync.responseProcessor());
     this.syncErrorResponseProcessors = Set.of(bftSync.errorResponseProcessor());
+
     this.syncRequestProcessors = Set.of(bftSyncRequestProcessorFactory.create(vertexStore));
     this.bftRebuildProcessors = Set.of(bftEventProcessor::processBFTRebuildUpdate);
     this.bftUpdateProcessors = Set.of(bftEventProcessor::processBFTUpdate);
@@ -284,8 +294,9 @@ public final class EpochManager {
 
       final var ledgerStatusUpdate = LedgerStatusUpdate.create(epochChange.getGenesisHeader());
       for (var validator : currentAndNextValidators) {
-        if (!validator.getNode().equals(self)) {
-          this.ledgerStatusUpdateDispatcher.dispatch(validator.getNode(), ledgerStatusUpdate);
+        if (!validator.getValidatorId().equals(self)) {
+          var nodeId = NodeId.fromPublicKey(validator.getValidatorId().getKey());
+          this.ledgerStatusUpdateDispatcher.dispatch(nodeId, ledgerStatusUpdate);
         }
       }
     }
@@ -333,7 +344,7 @@ public final class EpochManager {
       queuedEvents
           .computeIfAbsent(consensusEvent.getEpoch(), e -> new ArrayList<>())
           .add(consensusEvent);
-      metrics.misc().epochManagerEnqueuedConsensusEvents().inc();
+      metrics.epochManager().enqueuedConsensusEvents().inc();
       return;
     }
 
@@ -398,16 +409,24 @@ public final class EpochManager {
     };
   }
 
-  public RemoteEventProcessor<GetVerticesRequest> bftSyncRequestProcessor() {
-    return (node, request) -> syncRequestProcessors.forEach(p -> p.process(node, request));
+  public RemoteEventProcessor<NodeId, GetVerticesRequest> bftSyncRequestProcessor() {
+    return (nodeId, request) -> {
+      if (this.validatorNodeIds.contains(nodeId)) {
+        syncRequestProcessors.forEach(p -> p.process(nodeId, request));
+      }
+    };
   }
 
-  public RemoteEventProcessor<GetVerticesResponse> bftSyncResponseProcessor() {
-    return (node, resp) -> syncResponseProcessors.forEach(p -> p.process(node, resp));
+  public RemoteEventProcessor<NodeId, GetVerticesResponse> bftSyncResponseProcessor() {
+    return (nodeId, resp) -> {
+      if (this.validatorNodeIds.contains(nodeId)) {
+        syncResponseProcessors.forEach(p -> p.process(nodeId, resp));
+      }
+    };
   }
 
-  public RemoteEventProcessor<GetVerticesErrorResponse> bftSyncErrorResponseProcessor() {
-    return (node, err) -> {
+  public RemoteEventProcessor<NodeId, GetVerticesErrorResponse> bftSyncErrorResponseProcessor() {
+    return (nodeId, err) -> {
       if (log.isDebugEnabled()) {
         log.debug("SYNC_ERROR: Received GetVerticesErrorResponse {}", err);
       }
@@ -432,7 +451,9 @@ public final class EpochManager {
         }
       } else {
         // Current epoch
-        syncErrorResponseProcessors.forEach(p -> p.process(node, err));
+        if (this.validatorNodeIds.contains(nodeId)) {
+          syncErrorResponseProcessors.forEach(p -> p.process(nodeId, err));
+        }
       }
     };
   }

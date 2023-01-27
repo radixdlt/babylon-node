@@ -68,7 +68,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
@@ -97,7 +97,7 @@ public class BerkeleySafetyStoreModule extends AbstractModule {
 
   @Provides
   @DatabaseLocation
-  private String databaseLocation(@Self BFTNode node) {
-    return rootPath + "/" + node;
+  private String databaseLocation(@Self BFTValidatorId node) {
+    return rootPath + "/" + node.toString().replaceAll("\\W+", "_");
   }
 }

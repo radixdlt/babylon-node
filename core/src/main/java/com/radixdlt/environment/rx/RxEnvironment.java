@@ -65,10 +65,8 @@
 package com.radixdlt.environment.rx;
 
 import com.google.inject.TypeLiteral;
-import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.environment.*;
+import com.radixdlt.p2p.NodeId;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -85,6 +83,7 @@ public final class RxEnvironment implements Environment {
   private final Map<Class<?>, Subject<?>> subjects;
   private final Map<TypeLiteral<?>, Subject<?>> typeLiteralSubjects;
   private final ScheduledExecutorService executorService;
+
   private final Map<Class<?>, RxRemoteDispatcher<?>> remoteDispatchers;
 
   public RxEnvironment(
@@ -140,14 +139,14 @@ public final class RxEnvironment implements Environment {
   }
 
   @Override
-  public <T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass) {
-    if (!remoteDispatchers.containsKey(eventClass)) {
-      throw new IllegalStateException("No dispatcher for " + eventClass);
+  public <T> RemoteEventDispatcher<NodeId, T> getRemoteDispatcher(Class<T> messageType) {
+    if (!remoteDispatchers.containsKey(messageType)) {
+      throw new IllegalStateException("No dispatcher for " + messageType);
     }
 
     @SuppressWarnings("unchecked")
-    final RemoteEventDispatcher<T> dispatcher =
-        (RemoteEventDispatcher<T>) remoteDispatchers.get(eventClass).dispatcher();
+    final RemoteEventDispatcher<NodeId, T> dispatcher =
+        (RemoteEventDispatcher<NodeId, T>) remoteDispatchers.get(messageType).dispatcher();
     return dispatcher;
   }
 

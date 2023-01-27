@@ -66,35 +66,20 @@ package com.radixdlt.api.prometheus;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.system.health.HealthInfoService;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.monitoring.InMemorySystemInfo;
-import com.radixdlt.p2p.PeersView;
 import com.radixdlt.prometheus.StateManagerPrometheus;
-import java.util.AbstractCollection;
 
 public class PrometheusService {
 
   private final JavaPrometheus javaPrometheus;
   private final StateManagerPrometheus stateManagerPrometheus;
   private final HealthInfoService healthInfoService;
-  private final InMemorySystemInfo inMemorySystemInfo;
-  private final BFTNode self;
-  private final PeersView peersView;
 
   @Inject
   public PrometheusService(
-      PeersView peersView,
       HealthInfoService healthInfoService,
-      InMemorySystemInfo inMemorySystemInfo,
-      @Self BFTNode self,
       StateManagerPrometheus stateManagerPrometheus,
       JavaPrometheus javaPrometheus) {
-    this.peersView = peersView;
     this.healthInfoService = healthInfoService;
-    this.inMemorySystemInfo = inMemorySystemInfo;
-    this.self = self;
     this.stateManagerPrometheus = stateManagerPrometheus;
     this.javaPrometheus = javaPrometheus;
   }
@@ -103,64 +88,28 @@ public class PrometheusService {
     var builder = new StringBuilder();
     builder.append(this.stateManagerPrometheus.prometheusMetrics());
     builder.append(this.javaPrometheus.prometheusMetrics());
-    exportSystemInfo(builder);
+    exportHealth(builder);
     return builder.append('\n').toString();
   }
 
-  private void exportSystemInfo(StringBuilder builder) {
-    var currentEpochRound = inMemorySystemInfo.getCurrentRound();
-
-    appendCounter(
-        builder, "info_epochmanager_currentround_round", currentEpochRound.getRound().number());
-    appendCounter(builder, "info_epochmanager_currentround_epoch", currentEpochRound.getEpoch());
-    appendCounter(builder, "total_peers", peersView.peers().count());
-
-    var totalValidators =
-        inMemorySystemInfo
-            .getEpochProof()
-            .getNextValidatorSet()
-            .map(BFTValidatorSet::getValidators)
-            .map(AbstractCollection::size)
-            .orElse(0);
-
-    appendCounter(builder, "total_validators", totalValidators);
-
+  private void exportHealth(StringBuilder builder) {
     appendCounterExtended(
         builder,
-        prepareNodeInfo(),
+        prepareHealth(),
         "nodeinfo",
         "Special metric used to convey information about the current node using labels. Value will"
             + " always be 0.",
         0.0);
   }
 
-  private String prepareNodeInfo() {
+  private String prepareHealth() {
     var builder = new StringBuilder("nodeinfo{");
-    addValidatorAddress(builder);
     appendField(builder, "health", healthInfoService.nodeStatus().name());
     return builder.append("}").toString();
   }
 
-  private void addValidatorAddress(StringBuilder builder) {
-    // TODO - add back when validators have addresses in the engine
-    // appendField(builder, "own_validator_address", addressing.forValidators().of(self.getKey()));
-
-    var inSet =
-        inMemorySystemInfo
-            .getEpochProof()
-            .getNextValidatorSet()
-            .map(set -> set.containsNode(self))
-            .orElse(false);
-
-    appendField(builder, "is_in_validator_set", inSet);
-  }
-
   private void appendField(StringBuilder builder, String name, Object value) {
     builder.append(name).append("=\"").append(value).append("\",");
-  }
-
-  private static void appendCounter(StringBuilder builder, String name, Number value) {
-    appendCounterExtended(builder, name, name, name, value.doubleValue());
   }
 
   private static void appendCounterExtended(

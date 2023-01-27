@@ -72,7 +72,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.utils.Pair;
 import java.util.Objects;
@@ -139,45 +139,44 @@ public sealed interface SyncState {
 
   final class SyncCheckState implements SyncState {
     private final LedgerProof currentHeader;
-    private final ImmutableSet<BFTNode> peersAskedForStatus;
-    private final ImmutableMap<BFTNode, StatusResponse> receivedStatusResponses;
+    private final ImmutableSet<NodeId> peersAskedForStatus;
+    private final ImmutableMap<NodeId, StatusResponse> receivedStatusResponses;
 
     public static SyncCheckState init(
-        LedgerProof currentHeader, ImmutableSet<BFTNode> peersAskedForStatus) {
+        LedgerProof currentHeader, ImmutableSet<NodeId> peersAskedForStatus) {
       return new SyncCheckState(currentHeader, peersAskedForStatus, ImmutableMap.of());
     }
 
     private SyncCheckState(
         LedgerProof currentHeader,
-        ImmutableSet<BFTNode> peersAskedForStatus,
-        ImmutableMap<BFTNode, StatusResponse> receivedStatusResponses) {
+        ImmutableSet<NodeId> peersAskedForStatus,
+        ImmutableMap<NodeId, StatusResponse> receivedStatusResponses) {
       this.currentHeader = currentHeader;
       this.peersAskedForStatus = peersAskedForStatus;
       this.receivedStatusResponses = receivedStatusResponses;
     }
 
-    public boolean hasAskedPeer(BFTNode peer) {
-      return this.peersAskedForStatus.stream().anyMatch(p -> peer.getKey().equals(p.getKey()));
+    public boolean hasAskedPeer(NodeId peer) {
+      return this.peersAskedForStatus.contains(peer);
     }
 
-    public boolean receivedResponseFrom(BFTNode peer) {
-      return this.receivedStatusResponses.keySet().stream()
-          .anyMatch(p -> peer.getKey().equals(p.getKey()));
+    public boolean receivedResponseFrom(NodeId peer) {
+      return this.receivedStatusResponses.containsKey(peer);
     }
 
     public boolean gotAllResponses() {
       return this.receivedStatusResponses.size() == this.peersAskedForStatus.size();
     }
 
-    public ImmutableMap<BFTNode, StatusResponse> responses() {
+    public ImmutableMap<NodeId, StatusResponse> responses() {
       return this.receivedStatusResponses;
     }
 
-    public SyncCheckState withStatusResponse(BFTNode peer, StatusResponse statusResponse) {
+    public SyncCheckState withStatusResponse(NodeId peer, StatusResponse statusResponse) {
       return new SyncCheckState(
           currentHeader,
           peersAskedForStatus,
-          new ImmutableMap.Builder<BFTNode, StatusResponse>()
+          new ImmutableMap.Builder<NodeId, StatusResponse>()
               .putAll(receivedStatusResponses)
               .put(peer, statusResponse)
               .build());
@@ -224,19 +223,19 @@ public sealed interface SyncState {
   }
 
   final class PendingRequest {
-    private final BFTNode peer;
+    private final NodeId peer;
     private final long requestId;
 
-    public static PendingRequest create(BFTNode peer, long requestId) {
+    public static PendingRequest create(NodeId peer, long requestId) {
       return new PendingRequest(peer, requestId);
     }
 
-    private PendingRequest(BFTNode peer, long requestId) {
+    private PendingRequest(NodeId peer, long requestId) {
       this.peer = peer;
       this.requestId = requestId;
     }
 
-    public BFTNode getPeer() {
+    public NodeId getPeer() {
       return peer;
     }
 
@@ -264,20 +263,20 @@ public sealed interface SyncState {
 
   final class SyncingState implements SyncState {
     private final LedgerProof currentHeader;
-    private final ImmutableList<BFTNode> candidatePeersQueue;
+    private final ImmutableList<NodeId> candidatePeersQueue;
     private final LedgerProof targetHeader;
     private final Optional<PendingRequest> pendingRequest;
 
     public static SyncingState init(
         LedgerProof currentHeader,
-        ImmutableList<BFTNode> candidatePeersQueue,
+        ImmutableList<NodeId> candidatePeersQueue,
         LedgerProof targetHeader) {
       return new SyncingState(currentHeader, candidatePeersQueue, targetHeader, Optional.empty());
     }
 
     private SyncingState(
         LedgerProof currentHeader,
-        ImmutableList<BFTNode> candidatePeersQueue,
+        ImmutableList<NodeId> candidatePeersQueue,
         LedgerProof targetHeader,
         Optional<PendingRequest> pendingRequest) {
       this.currentHeader = currentHeader;
@@ -286,7 +285,7 @@ public sealed interface SyncState {
       this.pendingRequest = pendingRequest;
     }
 
-    public SyncingState withPendingRequest(BFTNode peer, long requestId) {
+    public SyncingState withPendingRequest(NodeId peer, long requestId) {
       return new SyncingState(
           currentHeader,
           candidatePeersQueue,
@@ -298,7 +297,7 @@ public sealed interface SyncState {
       return new SyncingState(currentHeader, candidatePeersQueue, targetHeader, Optional.empty());
     }
 
-    public SyncingState removeCandidate(BFTNode peer) {
+    public SyncingState removeCandidate(NodeId peer) {
       return new SyncingState(
           currentHeader,
           ImmutableList.copyOf(Collections2.filter(candidatePeersQueue, not(equalTo(peer)))),
@@ -310,14 +309,14 @@ public sealed interface SyncState {
       return new SyncingState(currentHeader, candidatePeersQueue, newTargetHeader, pendingRequest);
     }
 
-    public Pair<SyncingState, Optional<BFTNode>> fetchNextCandidatePeer() {
+    public Pair<SyncingState, Optional<NodeId>> fetchNextCandidatePeer() {
       final var peerToUse = candidatePeersQueue.stream().findFirst();
 
       if (peerToUse.isPresent()) {
         final var newState =
             new SyncingState(
                 currentHeader,
-                new ImmutableList.Builder<BFTNode>()
+                new ImmutableList.Builder<NodeId>()
                     .addAll(Collections2.filter(candidatePeersQueue, not(equalTo(peerToUse.get()))))
                     .add(peerToUse.get())
                     .build(),
@@ -330,10 +329,10 @@ public sealed interface SyncState {
       }
     }
 
-    public SyncingState addCandidatePeers(ImmutableList<BFTNode> peers) {
+    public SyncingState addCandidatePeers(ImmutableList<NodeId> peers) {
       return new SyncingState(
           currentHeader,
-          new ImmutableList.Builder<BFTNode>()
+          new ImmutableList.Builder<NodeId>()
               .addAll(peers)
               .addAll(Collections2.filter(candidatePeersQueue, not(peers::contains)))
               .build(),
@@ -345,7 +344,7 @@ public sealed interface SyncState {
       return this.pendingRequest.isPresent();
     }
 
-    public boolean waitingForResponseFrom(BFTNode peer) {
+    public boolean waitingForResponseFrom(NodeId peer) {
       return this.pendingRequest.stream().anyMatch(pr -> pr.getPeer().equals(peer));
     }
 
@@ -357,9 +356,9 @@ public sealed interface SyncState {
       return this.targetHeader;
     }
 
-    public Optional<BFTNode> peekNthCandidate(int n) {
+    public Optional<NodeId> peekNthCandidate(int n) {
       var state = this;
-      Optional<BFTNode> candidate = Optional.empty();
+      Optional<NodeId> candidate = Optional.empty();
       for (int i = 0; i <= n; i++) {
         final var res = state.fetchNextCandidatePeer();
         state = res.getFirst();

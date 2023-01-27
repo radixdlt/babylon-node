@@ -66,6 +66,7 @@ package com.radixdlt.monitoring;
 
 import com.google.common.base.Preconditions;
 import io.prometheus.client.*;
+import java.util.function.DoubleSupplier;
 import javax.annotation.Nullable;
 
 /**
@@ -83,6 +84,10 @@ import javax.annotation.Nullable;
  *   <li>{@link Gauge}: a Prometheus-native indicator of an arbitrarily changing value. Its name
  *       should be a noun describing the value - may be singular (e.g. "versionNumber") or plural
  *       (e.g. "activeClients").
+ *   <li>{@link GetterGauge}: our getter-based counterpart of the {@link Gauge}, for which a direct
+ *       "sample provider" needs to be {@link GetterGauge#initialize(DoubleSupplier) initialized}.
+ *       <b>Note:</b> such approach goes against Prometheus' conventions, and we only use it in
+ *       legacy cases (which could not be easily migrated to regular "{@link Gauge} update" style).
  *   <li>{@link Timer}: our duration-specific wrapper for a {@link Summary} without quantiles. It
  *       effectively represents a pair of [occurrence count, cumulative elapsed seconds],
  *       appropriate for tracking an average latency of an operation. Its name should be a verb
@@ -139,11 +144,13 @@ public record Metrics(
     BerkeleyDb berkeleyDb,
     Ledger ledger,
     LedgerSync sync,
+    Mempool mempool,
     V1Mempool v1Mempool,
     V1RadixEngine v1RadixEngine,
     Messages messages,
     Networking networking,
     Crypto crypto,
+    EpochManager epochManager,
     Misc misc) {
 
   public record Bft(
@@ -157,7 +164,10 @@ public record Metrics(
       Counter noVotesSent,
       Counter voteQuorums,
       Counter timeoutQuorums,
+      Timer consensusEventsQueueWait,
       LabelledCounter<RejectedConsensusEvent> rejectedConsensusEvents,
+      GetterGauge validatorCount,
+      GetterGauge inValidatorSet,
       Pacemaker pacemaker,
       Sync sync,
       VertexStore vertexStore) {
@@ -202,7 +212,9 @@ public record Metrics(
   public record Ledger(
       @NotExposed Gauge stateVersion,
       Counter syncTransactionsProcessed,
-      Counter bftTransactionsProcessed) {}
+      Counter bftTransactionsProcessed,
+      Timer commit,
+      Timer prepare) {}
 
   public record LedgerSync(
       Counter invalidResponsesReceived,
@@ -210,6 +222,8 @@ public record Metrics(
       Counter remoteRequestsReceived,
       Gauge currentStateVersion,
       Gauge targetStateVersion) {}
+
+  public record Mempool(Timer addTransaction) {}
 
   public record V1Mempool(
       Gauge size, Counter relaysSent, Counter addSuccesses, Counter addFailures) {}
@@ -233,11 +247,14 @@ public record Metrics(
 
   public record Crypto(Counter bytesHashed, Counter signaturesSigned, Counter signaturesVerified) {}
 
+  public record EpochManager(
+      GetterGauge currentEpoch, GetterGauge currentRound, Counter enqueuedConsensusEvents) {}
+
   public record Misc(
       TypedInfo<Config> config,
       Timer applicationStart,
-      Counter epochManagerEnqueuedConsensusEvents,
-      Counter vertexStoreSaved) {}
+      Counter vertexStoreSaved,
+      GetterGauge peerCount) {}
 
   public record RejectedConsensusEvent(
       Type type, Invalidity invalidity, @Nullable TimestampIssue timestampIssue) {

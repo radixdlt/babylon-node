@@ -66,7 +66,7 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.serialization.DsonOutput;
@@ -107,7 +107,7 @@ public final class QuorumCertificate {
    * @param genesisVertexWithHash the vertex to create a qc for
    * @return a mocked QC
    */
-  public static QuorumCertificate ofGenesis(
+  public static QuorumCertificate createInitialEpochQC(
       VertexWithHash genesisVertexWithHash, LedgerHeader ledgerHeader) {
     final var vertex = genesisVertexWithHash.vertex();
     if (!vertex.getRound().isGenesis()) {
@@ -170,7 +170,7 @@ public final class QuorumCertificate {
     return signatures;
   }
 
-  public Stream<BFTNode> getSigners() {
+  public Stream<BFTValidatorId> getSigners() {
     return signatures.getSignatures().keySet().stream();
   }
 

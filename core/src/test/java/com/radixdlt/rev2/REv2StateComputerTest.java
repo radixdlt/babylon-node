@@ -72,8 +72,8 @@ import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.EventDispatcher;
@@ -124,7 +124,7 @@ public class REv2StateComputerTest {
     var validatorSet =
         BFTValidatorSet.from(
             PrivateKeys.numeric(1)
-                .map(k -> BFTValidator.from(BFTNode.create(k.getPublicKey()), UInt256.ONE))
+                .map(k -> BFTValidator.from(BFTValidatorId.create(k.getPublicKey()), UInt256.ONE))
                 .limit(1));
     var proof = LedgerProof.genesis(accumulatorState, validatorSet, 0, 0);
     return CommittedTransactionsWithProof.create(List.of(genesis), proof);
@@ -140,7 +140,7 @@ public class REv2StateComputerTest {
     var validTransaction = REv2TestTransactions.constructValidRawTransaction(0, 0);
 
     // Act
-    var roundDetails = new RoundDetails(1, 1, 0, BFTNode.random(), false, 1000, 1000);
+    var roundDetails = new RoundDetails(1, 1, 0, BFTValidatorId.random(), false, 1000, 1000);
     var result = stateComputer.prepare(List.of(), List.of(validTransaction), roundDetails);
 
     // Assert
@@ -157,7 +157,7 @@ public class REv2StateComputerTest {
     var invalidTransaction = RawNotarizedTransaction.create(new byte[1]);
 
     // Act
-    var roundDetails = new RoundDetails(1, 1, 0, BFTNode.random(), false, 1000, 1000);
+    var roundDetails = new RoundDetails(1, 1, 0, BFTValidatorId.random(), false, 1000, 1000);
     var result = stateComputer.prepare(List.of(), List.of(invalidTransaction), roundDetails);
 
     // Assert

@@ -91,10 +91,10 @@ public final class BFTBuilder {
   private EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher;
 
   // Instance specific objects
-  private BFTNode self;
+  private BFTValidatorId self;
 
   private RoundUpdate roundUpdate;
-  private RemoteEventDispatcher<Vote> voteDispatcher;
+  private RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher;
   private SafetyRules safetyRules;
 
   private TimeSupplier timeSupplier;
@@ -108,7 +108,7 @@ public final class BFTBuilder {
     return new BFTBuilder();
   }
 
-  public BFTBuilder self(BFTNode self) {
+  public BFTBuilder self(BFTValidatorId self) {
     this.self = self;
     return this;
   }
@@ -118,7 +118,7 @@ public final class BFTBuilder {
     return this;
   }
 
-  public BFTBuilder voteDispatcher(RemoteEventDispatcher<Vote> voteDispatcher) {
+  public BFTBuilder voteDispatcher(RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher) {
     this.voteDispatcher = voteDispatcher;
     return this;
   }
@@ -227,7 +227,7 @@ public final class BFTBuilder {
         new BFTEventStatefulVerifier(proposalTimestampVerifier, metrics, roundUpdate);
 
     final var syncUpPreprocessor =
-        new SyncUpPreprocessor(bftEventStatefulVerifier, bftSyncer, roundUpdate);
+        new SyncUpPreprocessor(bftEventStatefulVerifier, bftSyncer, metrics, roundUpdate);
 
     return new BFTEventStatelessVerifier(
         validatorSet, syncUpPreprocessor, hasher, verifier, safetyRules, metrics);

@@ -71,7 +71,7 @@ import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransac
 import static com.radixdlt.harness.predicates.NodesPredicate.anyCommittedProof;
 
 import com.google.inject.*;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -138,7 +138,7 @@ public final class REv2RegisterValidatorTest {
       var executedTransaction =
           NodesReader.getCommittedUserTransaction(
               test.getNodeInjectors(), createValidatorTransaction);
-      var validatorAddress = executedTransaction.newSystemAddresses().get(0);
+      var validatorAddress = executedTransaction.newComponentAddresses().get(0);
 
       // Act: Submit transaction to mempool and run consensus
       var registerValidatorTransaction =
@@ -160,9 +160,9 @@ public final class REv2RegisterValidatorTest {
                               e.getValidators().stream()
                                   .anyMatch(
                                       v ->
-                                          v.getNode()
+                                          v.getValidatorId()
                                               .equals(
-                                                  BFTNode.create(
+                                                  BFTValidatorId.create(
                                                       validatorAddress, TEST_KEY.getPublicKey()))))
                       .orElse(false)),
           onlyConsensusEventsAndSelfLedgerUpdates().or(onlyLocalMempoolAddEvents()));

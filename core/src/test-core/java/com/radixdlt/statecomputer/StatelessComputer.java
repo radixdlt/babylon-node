@@ -66,7 +66,6 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.radixdlt.consensus.*;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VertexStoreState;
@@ -79,11 +78,11 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.RoundDetails;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Ledger Computer for testing which stores no state but only statelessly verifies whether a
@@ -116,7 +115,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
   }
 
   @Override
-  public void addToMempool(MempoolAdd mempoolAdd, BFTNode origin) {}
+  public void addToMempool(MempoolAdd mempoolAdd, NodeId origin) {}
 
   @Override
   public List<RawNotarizedTransaction> getTransactionsForProposal(
@@ -160,7 +159,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
                 nextEpoch -> {
                   LedgerProof header = txnsAndProof.getProof();
                   VertexWithHash genesisVertex =
-                      Vertex.createGenesis(header.getHeader()).withId(hasher);
+                      Vertex.createInitialEpochVertex(header.getHeader()).withId(hasher);
                   LedgerHeader nextLedgerHeader =
                       LedgerHeader.create(
                           nextEpoch.getEpoch(),
@@ -168,11 +167,11 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
                           header.getAccumulatorState(),
                           header.consensusParentRoundTimestamp(),
                           header.proposerTimestamp());
-                  QuorumCertificate genesisQC =
-                      QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+                  QuorumCertificate initialEpochQC =
+                      QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
                   final var initialState =
                       VertexStoreState.create(
-                          HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
+                          HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher);
                   var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
                   var proposerElection = new WeightedRotatingLeaders(validatorSet);
                   var bftConfiguration =

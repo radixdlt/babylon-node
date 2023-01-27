@@ -78,8 +78,12 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.utils.PrivateKeys;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -90,11 +94,13 @@ public class SyncUpPreprocessorTest {
 
   private final BFTEventProcessor forwardTo = mock(BFTEventProcessor.class);
   private final BFTSyncer bftSyncer = mock(BFTSyncer.class);
+  private final Metrics metrics = new MetricsInitializer().initialize();
   private final RoundUpdate initialRoundUpdate = mock(RoundUpdate.class);
 
   @Before
   public void setUp() {
-    this.syncUpPreprocessor = new SyncUpPreprocessor(forwardTo, bftSyncer, initialRoundUpdate);
+    this.syncUpPreprocessor =
+        new SyncUpPreprocessor(forwardTo, bftSyncer, metrics, initialRoundUpdate);
   }
 
   @Test
@@ -104,6 +110,8 @@ public class SyncUpPreprocessorTest {
     final var proposalHighestCommittedQc = mock(QuorumCertificate.class);
     final var proposalLedgerProof = mock(LedgerProof.class);
     when(initialRoundUpdate.getCurrentRound()).thenReturn(Round.of(2));
+    when(proposal.getAuthor())
+        .thenReturn(BFTValidatorId.create(PrivateKeys.ofNumeric(1).getPublicKey()));
     when(proposal.getRound()).thenReturn(Round.of(4));
     when(proposal.highQC()).thenReturn(proposalHighQc);
     when(proposalHighQc.highestCommittedQC()).thenReturn(proposalHighestCommittedQc);

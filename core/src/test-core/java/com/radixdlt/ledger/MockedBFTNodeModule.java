@@ -67,7 +67,7 @@ package com.radixdlt.ledger;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 
@@ -75,7 +75,7 @@ public final class MockedBFTNodeModule extends AbstractModule {
   @Provides
   @Singleton
   @Self
-  private BFTNode self(@Self ECDSASecp256k1PublicKey key) {
-    return BFTNode.create(key);
+  private BFTValidatorId self(@Self ECDSASecp256k1PublicKey key) {
+    return BFTValidatorId.create(key);
   }
 }

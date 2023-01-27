@@ -1,10 +1,10 @@
-use radix_engine::types::{AddressError, ParseNonFungibleIdError};
-use radix_engine_interface::data::ScryptoValueDecodeError;
+use radix_engine::types::AddressError;
+use radix_engine_interface::model::ParseNonFungibleLocalIdError;
 use sbor::{DecodeError, EncodeError};
 use tracing::warn;
 use transaction::errors::TransactionValidationError;
 
-use crate::core_api::{client_error, server_error, RequestHandlingError};
+use crate::core_api::*;
 
 /// Should be used when there's an error mapping to an API response
 #[derive(Debug, Clone)]
@@ -19,7 +19,7 @@ pub enum MappingError {
         message: String,
     },
     ScryptoValueDecode {
-        decode_error: ScryptoValueDecodeError,
+        decode_error: DecodeError,
         bytes: Vec<u8>,
     },
     InvalidSbor {
@@ -46,12 +46,9 @@ pub enum MappingError {
     IntegerError {
         message: String,
     },
-    NotXrdError {
-        message: String,
-    },
 }
 
-impl From<MappingError> for RequestHandlingError {
+impl<E: ErrorDetails> From<MappingError> for ResponseError<E> {
     fn from(mapping_error: MappingError) -> Self {
         warn!(?mapping_error, "Error mapping response on Core API");
         server_error("Server error mapping response")
@@ -69,11 +66,11 @@ pub enum ExtractionError {
     InvalidHash,
     InvalidTransaction(TransactionValidationError),
     InvalidAddress(AddressError),
-    InvalidNonFungibleId(ParseNonFungibleIdError),
+    InvalidNonFungibleId(ParseNonFungibleLocalIdError),
 }
 
 impl ExtractionError {
-    pub(crate) fn into_response_error(self, field_name: &str) -> RequestHandlingError {
+    pub(crate) fn into_response_error<E: ErrorDetails>(self, field_name: &str) -> ResponseError<E> {
         client_error(format!(
             "Error extracting {} from request: {:?}",
             field_name, self
@@ -87,8 +84,8 @@ impl From<TransactionValidationError> for ExtractionError {
     }
 }
 
-impl From<ParseNonFungibleIdError> for ExtractionError {
-    fn from(err: ParseNonFungibleIdError) -> Self {
+impl From<ParseNonFungibleLocalIdError> for ExtractionError {
+    fn from(err: ParseNonFungibleLocalIdError) -> Self {
         ExtractionError::InvalidNonFungibleId(err)
     }
 }

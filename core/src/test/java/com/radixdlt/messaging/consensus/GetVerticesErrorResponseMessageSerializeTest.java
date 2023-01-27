@@ -85,8 +85,9 @@ public class GetVerticesErrorResponseMessageSerializeTest
   private static GetVerticesErrorResponseMessage get() {
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     LedgerHeader ledgerHeader = LedgerHeaderMock.get();
-    VertexWithHash vertexWithHash = Vertex.createGenesis(ledgerHeader).withId(ZeroHasher.INSTANCE);
-    QuorumCertificate qc = QuorumCertificate.ofGenesis(vertexWithHash, ledgerHeader);
+    VertexWithHash vertexWithHash =
+        Vertex.createInitialEpochVertex(ledgerHeader).withId(ZeroHasher.INSTANCE);
+    QuorumCertificate qc = QuorumCertificate.createInitialEpochQC(vertexWithHash, ledgerHeader);
     HighQC highQC = HighQC.from(qc, qc, Optional.empty());
     final var request = new GetVerticesRequestMessage(HashUtils.random256(), 3);
     return new GetVerticesErrorResponseMessage(highQC, request);

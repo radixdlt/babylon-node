@@ -3,20 +3,19 @@ use std::collections::BTreeMap;
 use radix_engine::engine::RuntimeError;
 use radix_engine::fee::FeeSummary;
 use radix_engine::ledger::OutputValue;
-use radix_engine::model::ResourceChange;
+use radix_engine::model::{ResourceChange, Validator};
 use radix_engine::state_manager::StateDiff;
 use radix_engine::transaction::{
     CommitResult, EntityChanges, TransactionOutcome,
     TransactionReceipt as EngineTransactionReceipt, TransactionResult,
 };
 use radix_engine::types::{hash, scrypto_encode, Hash, Level, SubstateId};
-use radix_engine_interface::scrypto;
-use sbor::*;
+use radix_engine_interface::model::ComponentAddress;
+use radix_engine_interface::*;
 
 use crate::AccumulatorHash;
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct CommittedTransactionIdentifiers {
     pub state_version: u64,
     pub accumulator_hash: AccumulatorHash,
@@ -31,30 +30,26 @@ impl CommittedTransactionIdentifiers {
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum CommittedTransactionStatus {
     Success(Vec<Vec<u8>>),
     Failure(RuntimeError),
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct SubstateChanges {
     pub created: BTreeMap<SubstateId, OutputValue>,
     pub updated: BTreeMap<SubstateId, OutputValue>,
     pub deleted: BTreeMap<SubstateId, DeletedSubstateVersion>,
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct DeletedSubstateVersion {
     pub substate_hash: Hash,
     pub version: u32,
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum LedgerTransactionOutcome {
     Success(Vec<Vec<u8>>),
     Failure(RuntimeError),
@@ -71,8 +66,7 @@ impl From<TransactionOutcome> for LedgerTransactionOutcome {
     }
 }
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LedgerTransactionReceipt {
     pub outcome: LedgerTransactionOutcome,
     pub fee_summary: FeeSummary,
@@ -80,6 +74,7 @@ pub struct LedgerTransactionReceipt {
     pub substate_changes: SubstateChanges,
     pub entity_changes: EntityChanges,
     pub resource_changes: Vec<ResourceChange>,
+    pub next_epoch: Option<(BTreeMap<ComponentAddress, Validator>, u64)>,
 }
 
 impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
@@ -87,6 +82,9 @@ impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
 
     fn try_from(engine_receipt: EngineTransactionReceipt) -> Result<Self, Self::Error> {
         match engine_receipt.result {
+            TransactionResult::Abort(_) => {
+                todo!()
+            }
             TransactionResult::Commit(commit_result) => {
                 Ok((commit_result, engine_receipt.execution.fee_summary).into())
             }
@@ -108,6 +106,7 @@ impl From<(CommitResult, FeeSummary)> for LedgerTransactionReceipt {
             substate_changes: map_state_updates(commit_result.state_updates),
             entity_changes: commit_result.entity_changes,
             resource_changes: commit_result.resource_changes,
+            next_epoch: commit_result.next_epoch,
         }
     }
 }

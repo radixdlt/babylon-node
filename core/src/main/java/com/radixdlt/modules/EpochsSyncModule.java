@@ -75,6 +75,7 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseHandler;
@@ -169,34 +170,41 @@ public class EpochsSyncModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> statusResponseEventProcessor(
-      EpochsLocalSyncService epochsLocalSyncService) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.SYNC, StatusResponse.class, epochsLocalSyncService.statusResponseEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> syncResponseEventProcessor(
-      EpochsLocalSyncService epochsLocalSyncService) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.SYNC, SyncResponse.class, epochsLocalSyncService.syncResponseEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> ledgerStatusUpdateEventProcessor(
+  private RemoteEventProcessorOnRunner<?, ?> statusResponseEventProcessor(
       EpochsLocalSyncService epochsLocalSyncService) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.SYNC,
+        NodeId.class,
+        StatusResponse.class,
+        epochsLocalSyncService.statusResponseEventProcessor());
+  }
+
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?, ?> syncResponseEventProcessor(
+      EpochsLocalSyncService epochsLocalSyncService) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.SYNC,
+        NodeId.class,
+        SyncResponse.class,
+        epochsLocalSyncService.syncResponseEventProcessor());
+  }
+
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?, ?> ledgerStatusUpdateEventProcessor(
+      EpochsLocalSyncService epochsLocalSyncService) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.SYNC,
+        NodeId.class,
         LedgerStatusUpdate.class,
         epochsLocalSyncService.ledgerStatusUpdateEventProcessor());
   }
 
   @Provides
   private LocalSyncServiceFactory localSyncServiceFactory(
-      RemoteEventDispatcher<StatusRequest> statusRequestDispatcher,
+      RemoteEventDispatcher<NodeId, StatusRequest> statusRequestDispatcher,
       ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout>
           syncCheckReceiveStatusTimeoutDispatcher,
-      RemoteEventDispatcher<SyncRequest> syncRequestDispatcher,
+      RemoteEventDispatcher<NodeId, SyncRequest> syncRequestDispatcher,
       ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher,
       ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher,
       SyncRelayConfig syncRelayConfig,

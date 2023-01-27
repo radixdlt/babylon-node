@@ -64,7 +64,6 @@
 
 package com.radixdlt.environment.rx;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 
 /**
@@ -72,23 +71,23 @@ import java.util.Objects;
  *
  * @param <T> the event class
  */
-public final class RemoteEvent<T> {
+public final class RemoteEvent<N, T> {
   private final T event;
-  private final BFTNode origin;
+  private final N origin;
 
-  private RemoteEvent(BFTNode origin, T event) {
+  private RemoteEvent(N origin, T event) {
     this.origin = origin;
     this.event = event;
   }
 
-  public static <T> RemoteEvent<T> create(BFTNode origin, T event) {
+  public static <N, T> RemoteEvent<N, T> create(N origin, T event) {
     Objects.requireNonNull(origin);
     Objects.requireNonNull(event);
 
     return new RemoteEvent<>(origin, event);
   }
 
-  public BFTNode getOrigin() {
+  public N getOrigin() {
     return origin;
   }
 

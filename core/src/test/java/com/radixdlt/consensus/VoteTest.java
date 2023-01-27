@@ -69,7 +69,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.ECKeyPair;
@@ -82,7 +82,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class VoteTest {
-  private BFTNode author;
+  private BFTValidatorId author;
   private Vote testObject;
   private VoteData voteData;
   private HighQC highQC;
@@ -93,7 +93,7 @@ public class VoteTest {
         new BFTHeader(Round.of(1234567890L), HashUtils.random256(), mock(LedgerHeader.class));
     this.voteData =
         new VoteData(BFTHeader.ofGenesisAncestor(mock(LedgerHeader.class)), parent, null);
-    this.author = mock(BFTNode.class);
+    this.author = mock(BFTValidatorId.class);
     this.highQC = mock(HighQC.class);
     this.testObject =
         new Vote(
@@ -125,8 +125,8 @@ public class VoteTest {
     assertThat(this.testObject.toString())
         .isNotNull()
         .contains(Vote.class.getSimpleName())
-        .contains("epoch=0")
-        .contains("round=0")
+        .contains("e=0")
+        .contains("p=0")
         .contains(this.author.toString());
   }
 
@@ -143,7 +143,7 @@ public class VoteTest {
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullThrowsException2() throws PublicKeyException {
-    var author = BFTNode.create(ECKeyPair.generateNew().getPublicKey()).toSerializedString();
+    var author = BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey()).toSerializedString();
     new Vote(
         author,
         null,
@@ -155,7 +155,7 @@ public class VoteTest {
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullThrowsException3() throws PublicKeyException {
-    var author = BFTNode.create(ECKeyPair.generateNew().getPublicKey()).toSerializedString();
+    var author = BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey()).toSerializedString();
     new Vote(
         author,
         mock(VoteData.class),
@@ -167,7 +167,7 @@ public class VoteTest {
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullThrowsException4() throws PublicKeyException {
-    var author = BFTNode.create(ECKeyPair.generateNew().getPublicKey()).toSerializedString();
+    var author = BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey()).toSerializedString();
     new Vote(
         author,
         mock(VoteData.class),
@@ -179,7 +179,7 @@ public class VoteTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void deserializationWithInvalidEpochThrowsException4() throws PublicKeyException {
-    var author = BFTNode.create(ECKeyPair.generateNew().getPublicKey()).toSerializedString();
+    var author = BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey()).toSerializedString();
     new Vote(
         author,
         mock(VoteData.class),

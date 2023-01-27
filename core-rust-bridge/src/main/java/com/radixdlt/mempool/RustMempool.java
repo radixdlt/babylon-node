@@ -66,22 +66,24 @@ package com.radixdlt.mempool;
 
 import static com.radixdlt.lang.Tuple.tuple;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
-import com.radixdlt.lang.Unit;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt32;
 import java.util.List;
-import java.util.Objects;
 
 public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
 
-  public RustMempool(StateManager stateManager) {
-    Objects.requireNonNull(stateManager);
+  private final Metrics metrics;
+
+  public RustMempool(Metrics metrics, StateManager stateManager) {
+    this.metrics = metrics;
     addFunc =
         NativeCalls.Func1.with(
             stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustMempool::add);
@@ -104,7 +106,9 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
 
   public RawNotarizedTransaction addTransaction(RawNotarizedTransaction transaction)
       throws MempoolRejectedException {
-    var result = addFunc.call(transaction);
+    final var stopwatch = Stopwatch.createStarted();
+    final var result = addFunc.call(transaction);
+    metrics.mempool().addTransaction().observe(stopwatch.elapsed());
 
     // Handle Errors.
     if (result.isError()) {
@@ -138,12 +142,12 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
 
   @Override
   public List<RawNotarizedTransaction> getTransactionsToRelay() {
-    return getTransactionsToRelayFunc.call(Unit.unit());
+    return getTransactionsToRelayFunc.call(Tuple.tuple());
   }
 
   @Override
   public int getCount() {
-    return getCountFunc.call(Unit.unit());
+    return getCountFunc.call(Tuple.Tuple0.of());
   }
 
   private static native byte[] add(StateManager stateManager, byte[] payload);
@@ -161,10 +165,10 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
 
   private static native byte[] getTransactionsToRelay(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<StateManager, Unit, List<RawNotarizedTransaction>>
+  private final NativeCalls.Func1<StateManager, Tuple.Tuple0, List<RawNotarizedTransaction>>
       getTransactionsToRelayFunc;
 
   private static native byte[] getCount(Object stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<StateManager, Unit, Integer> getCountFunc;
+  private final NativeCalls.Func1<StateManager, Tuple.Tuple0, Integer> getCountFunc;
 }

@@ -216,7 +216,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                 }
 
                 @Override
-                public ValidatorInfo getValidatorInfo(SystemAddress systemAddress) {
+                public ValidatorInfo getValidatorInfo(ComponentAddress systemAddress) {
                   return stateComputer.getValidatorInfo(systemAddress);
                 }
 
@@ -286,7 +286,7 @@ public final class REv2StateManagerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private RustStateComputer rustStateComputer(StateManager stateManager) {
-    return new RustStateComputer(stateManager);
+  private RustStateComputer rustStateComputer(Metrics metrics, StateManager stateManager) {
+    return new RustStateComputer(metrics, stateManager);
   }
 }

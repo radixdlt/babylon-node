@@ -2,7 +2,21 @@ FROM ubuntu:22.04
 MAINTAINER radixdlt <devops@radixdlt.com>
 
 RUN apt-get -y update > /dev/null && \
-    apt-get -y --no-install-recommends install apt-utils net-tools iptables iproute2 gettext-base curl tcpdump strace attr software-properties-common daemontools > /dev/null && \
+    apt-get -y --no-install-recommends install \
+    apt-utils \
+    attr \
+    curl \
+    daemontools \
+    gettext-base \
+    iproute2 \
+    iptables \
+    libssl-dev \
+    net-tools \
+    pkg-config \
+    software-properties-common \
+    strace \
+    tcpdump \
+    > /dev/null && \
     apt-get clean > /dev/null && \
     rm -rf /var/lib/apt/lists/* /var/tmp/* /tmp/*
 

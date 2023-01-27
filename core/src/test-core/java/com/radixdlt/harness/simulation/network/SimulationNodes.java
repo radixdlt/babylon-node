@@ -75,7 +75,6 @@ import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
@@ -87,6 +86,7 @@ import com.radixdlt.keys.LocalSigner;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
@@ -129,6 +129,12 @@ public class SimulationNodes {
             new AbstractModule() {
               @Provides
               @Self
+              private NodeId selfNodeId() {
+                return NodeId.fromPublicKey(self.getPublicKey());
+              }
+
+              @Provides
+              @Self
               private ECDSASecp256k1PublicKey key() {
                 return self.getPublicKey();
               }
@@ -159,47 +165,47 @@ public class SimulationNodes {
 
   // TODO: Add support for epoch changes
   public interface RunningNetwork {
-    ImmutableSet<BFTNode> getNodes();
+    ImmutableSet<NodeId> getNodes();
 
     BFTConfiguration bftConfiguration();
 
     Observable<EpochChange> latestEpochChanges();
 
-    Observable<Pair<BFTNode, LedgerUpdate>> ledgerUpdates();
+    Observable<Pair<NodeId, LedgerUpdate>> ledgerUpdates();
 
-    <T> EventDispatcher<T> getDispatcher(Class<T> eventClass, BFTNode node);
+    <T> EventDispatcher<T> getDispatcher(Class<T> eventClass, NodeId node);
 
-    Injector getNodeInjector(BFTNode node);
+    Injector getNodeInjector(NodeId node);
 
-    <T> T getInstance(Class<T> clazz, BFTNode node);
+    <T> T getInstance(Class<T> clazz, NodeId node);
 
-    <T> T getInstance(Key<T> clazz, BFTNode node);
+    <T> T getInstance(Key<T> clazz, NodeId node);
 
     SimulationNetwork getUnderlyingNetwork();
 
-    Map<BFTNode, Metrics> getMetrics();
+    Map<NodeId, Metrics> getMetrics();
 
-    void runModule(BFTNode node, String name);
+    void runModule(NodeId node, String name);
 
     void stop();
   }
 
-  public RunningNetwork start(ImmutableMap<BFTNode, ImmutableSet<String>> disabledModuleRunners) {
+  public RunningNetwork start(ImmutableMap<NodeId, ImmutableSet<String>> disabledModuleRunners) {
     return new RunningNetworkImpl(disabledModuleRunners);
   }
 
   private class RunningNetworkImpl implements RunningNetwork {
-    private final ImmutableMap<BFTNode, ImmutableSet<String>> disabledModuleRunners;
-    private final Map<BFTNode, Injector> nodes;
+    private final ImmutableMap<NodeId, ImmutableSet<String>> disabledModuleRunners;
+    private final Map<NodeId, Injector> nodes;
 
     private final Scheduler testScheduler;
-    private final ReplaySubject<Observable<Pair<BFTNode, EpochChange>>> epochChangeObservables;
-    private final ReplaySubject<Observable<Pair<BFTNode, LedgerUpdate>>> ledgerUpdateObservables;
-    private final Observable<Pair<BFTNode, EpochChange>> epochChanges;
-    private final Observable<Pair<BFTNode, LedgerUpdate>> ledgerUpdates;
+    private final ReplaySubject<Observable<Pair<NodeId, EpochChange>>> epochChangeObservables;
+    private final ReplaySubject<Observable<Pair<NodeId, LedgerUpdate>>> ledgerUpdateObservables;
+    private final Observable<Pair<NodeId, EpochChange>> epochChanges;
+    private final Observable<Pair<NodeId, LedgerUpdate>> ledgerUpdates;
     private final CompositeDisposable epochAndLedgerUpdatesDisposable;
 
-    RunningNetworkImpl(ImmutableMap<BFTNode, ImmutableSet<String>> disabledModuleRunners) {
+    RunningNetworkImpl(ImmutableMap<NodeId, ImmutableSet<String>> disabledModuleRunners) {
       this.disabledModuleRunners = disabledModuleRunners;
 
       nodes =
@@ -211,7 +217,7 @@ public class SimulationNodes {
                   })
               .collect(
                   Collectors.toMap(
-                      p -> BFTNode.create(p.getFirst().getPublicKey()), Pair::getSecond));
+                      p -> NodeId.fromPublicKey(p.getFirst().getPublicKey()), Pair::getSecond));
 
       /* Using ReplaySubject so that the initial events that are
       send in between the module runners are started and rxjava subscriber is started (in awaitCompletion)
@@ -236,7 +242,7 @@ public class SimulationNodes {
       nodes.forEach(this::startRunners);
     }
 
-    private void startRunners(BFTNode node, Injector injector) {
+    private void startRunners(NodeId node, Injector injector) {
       final var nodeDisabledModuleRunners =
           disabledModuleRunners.getOrDefault(node, ImmutableSet.of());
 
@@ -248,7 +254,7 @@ public class SimulationNodes {
           .forEach(e -> e.getValue().start());
     }
 
-    private void addObservables(BFTNode node, Injector injector) {
+    private void addObservables(NodeId node, Injector injector) {
       final var ledgerUpdateObservable =
           injector.getInstance(Key.get(new TypeLiteral<Observable<LedgerUpdate>>() {}));
 
@@ -265,7 +271,7 @@ public class SimulationNodes {
     }
 
     @Override
-    public ImmutableSet<BFTNode> getNodes() {
+    public ImmutableSet<NodeId> getNodes() {
       return ImmutableSet.copyOf(nodes.keySet());
     }
 
@@ -291,27 +297,27 @@ public class SimulationNodes {
     }
 
     @Override
-    public Observable<Pair<BFTNode, LedgerUpdate>> ledgerUpdates() {
+    public Observable<Pair<NodeId, LedgerUpdate>> ledgerUpdates() {
       return ledgerUpdates;
     }
 
     @Override
-    public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass, BFTNode node) {
+    public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass, NodeId node) {
       return getInstance(Environment.class, node).getDispatcher(eventClass);
     }
 
     @Override
-    public Injector getNodeInjector(BFTNode node) {
+    public Injector getNodeInjector(NodeId node) {
       return nodes.get(node);
     }
 
     @Override
-    public <T> T getInstance(Class<T> clazz, BFTNode node) {
+    public <T> T getInstance(Class<T> clazz, NodeId node) {
       return nodes.get(node).getInstance(clazz);
     }
 
     @Override
-    public <T> T getInstance(Key<T> clazz, BFTNode node) {
+    public <T> T getInstance(Key<T> clazz, NodeId node) {
       return nodes.get(node).getInstance(clazz);
     }
 
@@ -321,14 +327,14 @@ public class SimulationNodes {
     }
 
     @Override
-    public Map<BFTNode, Metrics> getMetrics() {
+    public Map<NodeId, Metrics> getMetrics() {
       return nodes.entrySet().stream()
           .collect(
               Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getInstance(Metrics.class)));
     }
 
     @Override
-    public void runModule(BFTNode node, String name) {
+    public void runModule(NodeId node, String name) {
       nodes
           .get(node)
           .getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}))

@@ -69,7 +69,7 @@ import static java.util.Objects.requireNonNull;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -123,13 +123,13 @@ public final class Vertex {
   private final long proposerTimestamp;
 
   // This is serialized in getProposerBytes below
-  private final BFTNode proposer;
+  private final BFTValidatorId proposer;
 
   private Vertex(
       QuorumCertificate qcToParent,
       Round round,
       List<byte[]> transactions,
-      BFTNode proposer,
+      BFTValidatorId proposer,
       Boolean proposerTimedOut,
       long proposerTimestamp) {
     this.qcToParent = requireNonNull(qcToParent);
@@ -162,12 +162,12 @@ public final class Vertex {
         parentQC,
         Round.of(roundNumber),
         transactions == null ? List.of() : transactions,
-        proposer != null ? BFTNode.fromSerializedString(proposer) : null,
+        proposer != null ? BFTValidatorId.fromSerializedString(proposer) : null,
         proposerTimedOut,
         proposerTimestamp);
   }
 
-  public static Vertex createGenesis(LedgerHeader ledgerHeader) {
+  public static Vertex createInitialEpochVertex(LedgerHeader ledgerHeader) {
     BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerHeader);
     final VoteData voteData = new VoteData(header, header, header);
     final QuorumCertificate parentQC =
@@ -176,7 +176,8 @@ public final class Vertex {
         parentQC, Round.genesis(), null, null, false, ledgerHeader.proposerTimestamp());
   }
 
-  public static Vertex createTimeout(QuorumCertificate parentQC, Round round, BFTNode proposer) {
+  public static Vertex createTimeout(
+      QuorumCertificate parentQC, Round round, BFTValidatorId proposer) {
     /* Timeout vertices simply reuse the previous timestamp. This makes sure that
     all validators (that participate in a timeout quorum) agree on the same timestamp. */
     final var prevTimestamp = parentQC.getProposedHeader().getLedgerHeader().proposerTimestamp();
@@ -187,7 +188,7 @@ public final class Vertex {
       QuorumCertificate parentQC,
       Round round,
       List<RawNotarizedTransaction> transactions,
-      BFTNode proposer,
+      BFTValidatorId proposer,
       long proposerTimestamp) {
     if (round.number() == 0) {
       throw new IllegalArgumentException("Only genesis can have round 0.");
@@ -208,7 +209,7 @@ public final class Vertex {
     return VertexWithHash.from(this, hasher);
   }
 
-  public BFTNode getProposer() {
+  public BFTValidatorId getProposer() {
     return proposer;
   }
 
@@ -251,7 +252,9 @@ public final class Vertex {
   }
 
   public long getEpoch() {
-    return getParentHeader().getLedgerHeader().getEpoch();
+    var epoch = getParentHeader().getLedgerHeader().getEpoch();
+    // If vertex is genesis, the parent will point to the previous epoch so must add 1
+    return round.isGenesis() ? epoch + 1 : epoch;
   }
 
   public BFTHeader getGrandParentHeader() {
@@ -293,11 +296,10 @@ public final class Vertex {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof Vertex)) {
+    if (!(o instanceof Vertex v)) {
       return false;
     }
 
-    Vertex v = (Vertex) o;
     return Objects.equals(v.round, this.round)
         && Objects.equals(v.proposerTimedOut, this.proposerTimedOut)
         && Objects.equals(v.proposer, this.proposer)

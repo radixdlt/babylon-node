@@ -77,6 +77,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.RoundDetails;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.*;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
@@ -87,7 +88,6 @@ import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -123,7 +123,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   }
 
   @Override
-  public void addToMempool(MempoolAdd mempoolAdd, BFTNode origin) {
+  public void addToMempool(MempoolAdd mempoolAdd, NodeId origin) {
     mempoolAdd
         .transactions()
         .forEach(
@@ -162,6 +162,8 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                         .map(RawNotarizedTransaction::create))
             .toList();
 
+    // TODO: Don't include transactions if NextEpoch is to occur
+    // TODO: This will require Proposer to simulate a NextRound update before proposing
     return stateComputer.getTransactionsForProposal(
         transactionsPerProposalCount, transactionsNotToInclude);
   }
@@ -210,13 +212,12 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   }
 
   @Override
-  public void commit(
-      CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
+  public void commit(CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStore) {
     var proofBytes = serialization.toDson(txnsAndProof.getProof(), DsonOutput.Output.ALL);
     final Option<byte[]> vertexStoreBytes;
-    if (vertexStoreState != null) {
+    if (vertexStore != null) {
       vertexStoreBytes =
-          Option.some(serialization.toDson(vertexStoreState.toSerialized(), DsonOutput.Output.ALL));
+          Option.some(serialization.toDson(vertexStore.toSerialized(), DsonOutput.Output.ALL));
     } else {
       vertexStoreBytes = Option.none();
     }
@@ -239,19 +240,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
             .map(
                 nextEpoch -> {
                   var header = txnsAndProof.getProof();
-                  // TODO: Move vertex stuff somewhere else
-                  var genesisVertex = Vertex.createGenesis(header.getHeader()).withId(hasher);
-                  var nextLedgerHeader =
-                      LedgerHeader.create(
-                          nextEpoch.getEpoch(),
-                          Round.genesis(),
-                          header.getAccumulatorState(),
-                          header.consensusParentRoundTimestamp(),
-                          header.proposerTimestamp());
-                  var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
-                  final var initialState =
-                      VertexStoreState.create(
-                          HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
+                  final var initialState = VertexStoreState.createNewForNextEpoch(header, hasher);
                   var validatorSet = BFTValidatorSet.from(nextEpoch.getValidators());
                   var proposerElection = new WeightedRotatingLeaders(validatorSet);
                   var bftConfiguration =

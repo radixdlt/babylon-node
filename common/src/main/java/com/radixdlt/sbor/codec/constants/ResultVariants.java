@@ -65,6 +65,6 @@
 package com.radixdlt.sbor.codec.constants;
 
 public class ResultVariants {
-  public static final String OK = "Ok";
-  public static final String ERR = "Err";
+  public static final byte OK = 0x0;
+  public static final byte ERR = 0x1;
 }

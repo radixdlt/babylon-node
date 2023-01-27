@@ -72,7 +72,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.ECKeyPair;
@@ -98,7 +98,7 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
     QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
     var transaction = RawNotarizedTransaction.create(new byte[] {0, 1, 2, 3});
 
-    BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
+    BFTValidatorId author = BFTValidatorId.create(ECKeyPair.generateNew().getPublicKey());
     Vertex vertex = Vertex.create(qc, round, List.of(transaction), author, 0L);
     return new Proposal(vertex, qc, ECDSASecp256k1Signature.zeroSignature(), Optional.empty());
   }

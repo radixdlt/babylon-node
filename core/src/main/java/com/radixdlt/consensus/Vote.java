@@ -71,7 +71,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.hash.HashCode;
 import com.google.errorprone.annotations.Immutable;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.Hasher;
@@ -93,7 +93,7 @@ public final class Vote implements ConsensusEvent {
   @DsonOutput(Output.ALL)
   SerializerDummy serializer = SerializerDummy.DUMMY;
 
-  private final BFTNode author;
+  private final BFTValidatorId author;
 
   @JsonProperty("high_qc")
   @DsonOutput(Output.ALL)
@@ -124,7 +124,7 @@ public final class Vote implements ConsensusEvent {
       @JsonProperty("timeout_signature") ECDSASecp256k1Signature timeoutSignature)
       throws PublicKeyException {
     this(
-        BFTNode.fromSerializedString(requireNonNull(author)),
+        BFTValidatorId.fromSerializedString(requireNonNull(author)),
         voteData,
         timestamp,
         signature,
@@ -133,7 +133,7 @@ public final class Vote implements ConsensusEvent {
   }
 
   public Vote(
-      BFTNode author,
+      BFTValidatorId author,
       VoteData voteData,
       long timestamp,
       ECDSASecp256k1Signature signature,
@@ -157,7 +157,7 @@ public final class Vote implements ConsensusEvent {
   }
 
   @Override
-  public BFTNode getAuthor() {
+  public BFTValidatorId getAuthor() {
     return author;
   }
 
@@ -226,8 +226,14 @@ public final class Vote implements ConsensusEvent {
   @Override
   public String toString() {
     return String.format(
-        "%s{epoch=%s round=%s author=%s timeout?=%s %s}",
-        getClass().getSimpleName(), getEpoch(), getRound(), author, isTimeout(), highQC);
+        "%s{e=%s p=%s c=%s author=%s timeout?=%s %s}",
+        getClass().getSimpleName(),
+        getEpoch(),
+        getRound(),
+        voteData.getCommitted().map(h -> h.getRound().toString()).orElse(""),
+        author,
+        isTimeout(),
+        highQC);
   }
 
   @Override

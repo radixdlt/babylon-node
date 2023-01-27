@@ -69,6 +69,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
@@ -142,24 +143,31 @@ public class NoEpochsSyncModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> statusResponseEventProcessor(
-      LocalSyncService localSyncService) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.SYNC, StatusResponse.class, localSyncService.statusResponseEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> syncResponseEventProcessor(
-      LocalSyncService localSyncService) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.SYNC, SyncResponse.class, localSyncService.syncResponseEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> ledgerStatusUpdateEventProcessor(
+  private RemoteEventProcessorOnRunner<?, ?> statusResponseEventProcessor(
       LocalSyncService localSyncService) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.SYNC,
+        NodeId.class,
+        StatusResponse.class,
+        localSyncService.statusResponseEventProcessor());
+  }
+
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?, ?> syncResponseEventProcessor(
+      LocalSyncService localSyncService) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.SYNC,
+        NodeId.class,
+        SyncResponse.class,
+        localSyncService.syncResponseEventProcessor());
+  }
+
+  @ProvidesIntoSet
+  private RemoteEventProcessorOnRunner<?, ?> ledgerStatusUpdateEventProcessor(
+      LocalSyncService localSyncService) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.SYNC,
+        NodeId.class,
         LedgerStatusUpdate.class,
         localSyncService.ledgerStatusUpdateEventProcessor());
   }

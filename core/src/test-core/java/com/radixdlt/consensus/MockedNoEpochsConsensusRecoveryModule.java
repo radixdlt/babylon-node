@@ -75,7 +75,6 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
-import java.util.Optional;
 
 public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule {
   private final int numValidators;
@@ -88,9 +87,9 @@ public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule 
   private RoundUpdate initialRoundUpdate(
       BFTConfiguration configuration, ProposerElection proposerElection) {
     HighQC highQC = configuration.getVertexStoreState().getHighQC();
-    Round round = highQC.highestQC().getRound().next();
-    final BFTNode leader = proposerElection.getProposer(round);
-    final BFTNode nextLeader = proposerElection.getProposer(round.next());
+    Round round = highQC.getHighestRound().next();
+    final BFTValidatorId leader = proposerElection.getProposer(round);
+    final BFTValidatorId nextLeader = proposerElection.getProposer(round.next());
 
     return RoundUpdate.create(round, highQC, leader, nextLeader);
   }
@@ -100,7 +99,7 @@ public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule 
     var validators =
         PrivateKeys.numeric(1)
             .limit(numValidators)
-            .map(k -> BFTNode.create(k.getPublicKey()))
+            .map(k -> BFTValidatorId.create(k.getPublicKey()))
             .map(n -> BFTValidator.from(n, UInt256.ONE));
     return BFTValidatorSet.from(validators);
   }
@@ -110,7 +109,7 @@ public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule 
       @LastEpochProof LedgerProof proof, BFTValidatorSet validatorSet, Hasher hasher) {
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     VertexWithHash genesisVertex =
-        Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0, 0))
+        Vertex.createInitialEpochVertex(LedgerHeader.genesis(accumulatorState, validatorSet, 0, 0))
             .withId(hasher);
     LedgerHeader nextLedgerHeader =
         LedgerHeader.create(
@@ -119,11 +118,12 @@ public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule 
             proof.getAccumulatorState(),
             proof.consensusParentRoundTimestamp(),
             proof.proposerTimestamp());
-    var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+    final var initialEpochQC =
+        QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
     var proposerElection = new WeightedRotatingLeaders(validatorSet);
     return new BFTConfiguration(
         proposerElection,
         validatorSet,
-        VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher));
+        VertexStoreState.create(HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher));
   }
 }

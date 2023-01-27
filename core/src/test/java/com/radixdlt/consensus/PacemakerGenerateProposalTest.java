@@ -87,9 +87,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 public final class PacemakerGenerateProposalTest {
-  private BFTNode self = BFTNode.create(PrivateKeys.ofNumeric(1).getPublicKey());
-  private BFTNode validator1 = BFTNode.create(PrivateKeys.ofNumeric(2).getPublicKey());
-  private BFTNode validator2 = BFTNode.create(PrivateKeys.ofNumeric(3).getPublicKey());
+  private BFTValidatorId self = BFTValidatorId.create(PrivateKeys.ofNumeric(1).getPublicKey());
+  private BFTValidatorId validator1 =
+      BFTValidatorId.create(PrivateKeys.ofNumeric(2).getPublicKey());
+  private BFTValidatorId validator2 =
+      BFTValidatorId.create(PrivateKeys.ofNumeric(3).getPublicKey());
   private BFTValidatorSet validatorSet;
   private VertexStoreAdapter vertexStore;
   private SafetyRules safetyRules;
@@ -97,8 +99,8 @@ public final class PacemakerGenerateProposalTest {
   private ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender;
   private PacemakerTimeoutCalculator timeoutCalculator;
   private ProposalGenerator proposalGenerator;
-  private RemoteEventDispatcher<Proposal> proposalDispatcher;
-  private RemoteEventDispatcher<Vote> voteDispatcher;
+  private RemoteEventDispatcher<BFTValidatorId, Proposal> proposalDispatcher;
+  private RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher;
   private EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher;
   private Hasher hasher;
   private TimeSupplier timeSupplier;

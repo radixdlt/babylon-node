@@ -74,6 +74,7 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.p2p.NodeId;
 
 public class MempoolReceiverModule extends AbstractModule {
   @Override
@@ -96,10 +97,11 @@ public class MempoolReceiverModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> mempoolAddRemoteEventProcessor(
+  private RemoteEventProcessorOnRunner<?, ?> mempoolAddRemoteEventProcessor(
       StateComputerLedger stateComputerLedger, @MempoolThrottleMs long mempoolThrottleMs) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.MEMPOOL,
+        NodeId.class,
         MempoolAdd.class,
         stateComputerLedger.mempoolAddRemoteEventProcessor(),
         mempoolThrottleMs);

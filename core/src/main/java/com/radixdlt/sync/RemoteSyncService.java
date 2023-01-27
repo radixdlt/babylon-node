@@ -67,12 +67,12 @@ package com.radixdlt.sync;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.*;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.remote.*;
@@ -90,9 +90,9 @@ public final class RemoteSyncService {
   private final PeersView peersView;
   private final LocalSyncService localSyncService; // TODO: consider removing this dependency
   private final TransactionsAndProofReader committedReader;
-  private final RemoteEventDispatcher<StatusResponse> statusResponseDispatcher;
-  private final RemoteEventDispatcher<SyncResponse> syncResponseDispatcher;
-  private final RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher;
+  private final RemoteEventDispatcher<NodeId, StatusResponse> statusResponseDispatcher;
+  private final RemoteEventDispatcher<NodeId, SyncResponse> syncResponseDispatcher;
+  private final RemoteEventDispatcher<NodeId, LedgerStatusUpdate> statusUpdateDispatcher;
   private final SyncRelayConfig syncRelayConfig;
   private final Metrics metrics;
   private final Comparator<AccumulatorState> accComparator;
@@ -105,9 +105,9 @@ public final class RemoteSyncService {
       PeersView peersView,
       LocalSyncService localSyncService,
       TransactionsAndProofReader committedReader,
-      RemoteEventDispatcher<StatusResponse> statusResponseDispatcher,
-      RemoteEventDispatcher<SyncResponse> syncResponseDispatcher,
-      RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher,
+      RemoteEventDispatcher<NodeId, StatusResponse> statusResponseDispatcher,
+      RemoteEventDispatcher<NodeId, SyncResponse> syncResponseDispatcher,
+      RemoteEventDispatcher<NodeId, LedgerStatusUpdate> statusUpdateDispatcher,
       SyncRelayConfig syncRelayConfig,
       Metrics metrics,
       Comparator<AccumulatorState> accComparator,
@@ -127,11 +127,11 @@ public final class RemoteSyncService {
     this.currentHeader = initialHeader;
   }
 
-  public RemoteEventProcessor<SyncRequest> syncRequestEventProcessor() {
+  public RemoteEventProcessor<NodeId, SyncRequest> syncRequestEventProcessor() {
     return this::processSyncRequest;
   }
 
-  private void processSyncRequest(BFTNode sender, SyncRequest syncRequest) {
+  private void processSyncRequest(NodeId sender, SyncRequest syncRequest) {
     final var remoteCurrentHeader = syncRequest.getHeader();
     final var transactionsWithProof = getTransactionsWithProofForSyncRequest(remoteCurrentHeader);
 
@@ -164,11 +164,11 @@ public final class RemoteSyncService {
     return committedReader.getTransactions(startHeader);
   }
 
-  public RemoteEventProcessor<StatusRequest> statusRequestEventProcessor() {
+  public RemoteEventProcessor<NodeId, StatusRequest> statusRequestEventProcessor() {
     return this::processStatusRequest;
   }
 
-  private void processStatusRequest(BFTNode sender, StatusRequest statusRequest) {
+  private void processStatusRequest(NodeId sender, StatusRequest statusRequest) {
     statusResponseDispatcher.dispatch(sender, StatusResponse.create(this.currentHeader));
   }
 
@@ -198,7 +198,7 @@ public final class RemoteSyncService {
 
     currentPeers.stream()
         .limit(syncRelayConfig.ledgerStatusUpdateMaxPeersToNotify())
-        .map(PeersView.PeerInfo::bftNode)
+        .map(PeersView.PeerInfo::getNodeId)
         .forEach(
             peer -> {
               if (this.ledgerStatusUpdateSendRateLimiter.tryAcquire()) {

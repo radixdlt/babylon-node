@@ -7,14 +7,14 @@ use super::to_api_notarized_transaction;
 pub(crate) async fn handle_mempool_transaction(
     state: Extension<CoreApiState>,
     request: Json<models::MempoolTransactionRequest>,
-) -> Result<Json<models::MempoolTransactionResponse>, RequestHandlingError> {
+) -> Result<Json<models::MempoolTransactionResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_mempool_list_internal)
 }
 
 fn handle_mempool_list_internal(
     state_manager: &ActualStateManager,
     request: models::MempoolTransactionRequest,
-) -> Result<models::MempoolTransactionResponse, RequestHandlingError> {
+) -> Result<models::MempoolTransactionResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
     let payload_hash = extract_payload_hash(request.payload_hash)
