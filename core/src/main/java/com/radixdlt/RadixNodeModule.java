@@ -98,6 +98,7 @@ import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.modules.BerkeleySafetyStoreModule;
 import com.radixdlt.rev2.modules.REv2ConsensusRecoveryModule;
 import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
@@ -111,8 +112,8 @@ import com.radixdlt.utils.UInt64;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
@@ -249,7 +250,9 @@ public final class RadixNodeModule extends AbstractModule {
                 })
             .toList();
 
-    var validatorSet = initialVset.stream().collect(Collectors.toSet());
+    var validatorSet = new HashMap<ECDSASecp256k1PublicKey, Decimal>();
+    initialVset.forEach(k -> validatorSet.put(k, Decimal.of(1)));
+
     var genesis =
         TransactionBuilder.createGenesis(
             validatorSet,

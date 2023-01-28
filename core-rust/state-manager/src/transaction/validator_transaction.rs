@@ -81,6 +81,7 @@ impl PreparedValidatorTransaction {
                 auth_zone_params,
                 fee_payment: FeePayment::NoFee,
                 runtime_validations: vec![],
+                pre_allocated_ids: BTreeSet::new(),
             },
         )
     }

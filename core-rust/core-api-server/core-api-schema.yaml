@@ -1109,7 +1109,8 @@ components:
         validators:
           type: array
           items:
-            $ref: '#/components/schemas/Validator'
+            $ref: '#/components/schemas/ActiveValidator'
+          description: Validators are sorted by descending stake amount
     NewSubstateVersion:
       type: object
       required:
@@ -2021,16 +2022,23 @@ components:
 #######################################
 # GENERAL / SHARED MODELS - validators #
 #######################################
-    Validator:
+    ActiveValidator:
       type: object
       required:
         - address
         - key
+        - stake
       properties:
         address:
           $ref: '#/components/schemas/ComponentAddress'
         key:
           $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
+        stake:
+          type: string
+          description: |
+            A string-encoded decimal representing the validator's voting power for this epoch.
+            This is a snapshot of the amount of XRD staked to the validator at the start of the epoch.
+
 #######################################
 # GENERAL / SHARED MODELS - substates #
 #######################################
@@ -2343,7 +2351,7 @@ components:
             validator_set:
               type: array
               items:
-                $ref: '#/components/schemas/Validator'
+                $ref: '#/components/schemas/ActiveValidator'
             epoch:
               type: integer
               format: int64
@@ -2358,6 +2366,8 @@ components:
             - epoch_manager_address
             - validator_address
             - key
+            - stake_vault
+            - is_registered
           properties:
             epoch_manager_address:
               $ref: '#/components/schemas/ComponentAddress'
@@ -2365,6 +2375,10 @@ components:
               $ref: '#/components/schemas/ComponentAddress'
             key:
               $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
+            stake_vault:
+              $ref: '#/components/schemas/EntityReference'
+            is_registered:
+              type: boolean
     ClockCurrentMinuteSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -2516,6 +2530,9 @@ components:
             - AccountComponent
             - EcdsaSecp256k1VirtualAccountComponent
             - EddsaEd25519VirtualAccountComponent
+            - IdentityComponent
+            - EcdsaSecp256k1VirtualIdentityComponent
+            - EddsaEd25519VirtualIdentityComponent
             - EpochManager
             - Validator
             - Clock

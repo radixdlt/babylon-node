@@ -68,9 +68,8 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::model::Validator;
-use radix_engine::types::{Categorize, ComponentAddress, Decimal, Decode, Encode, RADIX_TOKEN};
-use radix_engine_interface::*;
-use std::collections::BTreeSet;
+use radix_engine::types::*;
+use std::collections::BTreeMap;
 
 use crate::jni::utils::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
@@ -307,7 +306,7 @@ impl From<JavaPrepareGenesisRequest> for PrepareGenesisRequest {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPrepareGenesisResult {
-    pub validator_set: Option<BTreeSet<Validator>>,
+    pub validator_set: Option<BTreeMap<ComponentAddress, Validator>>,
 }
 
 impl From<PrepareGenesisResult> for JavaPrepareGenesisResult {

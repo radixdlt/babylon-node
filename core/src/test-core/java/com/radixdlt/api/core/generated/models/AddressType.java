@@ -56,6 +56,12 @@ public class AddressType {
     
     EDDSAED25519VIRTUALACCOUNTCOMPONENT("EddsaEd25519VirtualAccountComponent"),
     
+    IDENTITYCOMPONENT("IdentityComponent"),
+    
+    ECDSASECP256K1VIRTUALIDENTITYCOMPONENT("EcdsaSecp256k1VirtualIdentityComponent"),
+    
+    EDDSAED25519VIRTUALIDENTITYCOMPONENT("EddsaEd25519VirtualIdentityComponent"),
+    
     EPOCHMANAGER("EpochManager"),
     
     VALIDATOR("Validator"),

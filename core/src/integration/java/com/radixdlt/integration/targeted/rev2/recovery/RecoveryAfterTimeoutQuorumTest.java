@@ -85,6 +85,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
@@ -122,7 +123,7 @@ public final class RecoveryAfterTimeoutQuorumTest {
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),
                     TransactionBuilder.createGenesisWithNumValidators(
-                        NUM_VALIDATORS, UInt64.fromNonNegativeLong(10)),
+                        NUM_VALIDATORS, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                     databaseConfig,
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                         new REV2TransactionGenerator(), 1)),

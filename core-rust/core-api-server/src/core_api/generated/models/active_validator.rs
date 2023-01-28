@@ -12,19 +12,23 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct Validator {
+pub struct ActiveValidator {
     /// The Bech32m-encoded human readable version of the component address
     #[serde(rename = "address")]
     pub address: String,
     #[serde(rename = "key")]
     pub key: Box<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
+    /// A string-encoded decimal representing the validator's voting power for this epoch. This is a snapshot of the amount of XRD staked to the validator at the start of the epoch. 
+    #[serde(rename = "stake")]
+    pub stake: String,
 }
 
-impl Validator {
-    pub fn new(address: String, key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey) -> Validator {
-        Validator {
+impl ActiveValidator {
+    pub fn new(address: String, key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey, stake: String) -> ActiveValidator {
+        ActiveValidator {
             address,
             key: Box::new(key),
+            stake,
         }
     }
 }

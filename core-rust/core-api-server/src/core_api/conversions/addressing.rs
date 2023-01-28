@@ -1,4 +1,5 @@
 use std::convert::TryFrom;
+use std::str::FromStr;
 
 use crate::core_api::*;
 
@@ -11,12 +12,12 @@ use radix_engine::{
     model::GlobalAddressSubstate,
     types::{
         scrypto_encode, AccessRulesChainOffset, Bech32Decoder, Bech32Encoder, ClockOffset,
-        ComponentAddress, EpochManagerOffset, MetadataOffset, NonFungibleId, PackageAddress,
-        RENodeId, ResourceAddress, SubstateId,
+        ComponentAddress, EpochManagerOffset, MetadataOffset, PackageAddress, RENodeId,
+        ResourceAddress, SubstateId,
     },
 };
 use radix_engine_interface::api::types::ValidatorOffset;
-use radix_engine_interface::model::NonFungibleIdTypeId;
+use radix_engine_interface::model::{NonFungibleIdType, NonFungibleLocalId};
 
 pub fn to_api_global_entity_assignment(
     bech32_encoder: &Bech32Encoder,
@@ -58,8 +59,11 @@ pub fn get_entity_type_from_global_address(global_address: &GlobalAddress) -> mo
             ComponentAddress::Validator(_) => models::EntityType::Validator,
             ComponentAddress::Normal(_) => models::EntityType::Component,
             ComponentAddress::Account(_) => models::EntityType::Component,
+            ComponentAddress::Identity(_) => models::EntityType::Component,
             ComponentAddress::EcdsaSecp256k1VirtualAccount(_) => models::EntityType::Component,
             ComponentAddress::EddsaEd25519VirtualAccount(_) => models::EntityType::Component,
+            ComponentAddress::EcdsaSecp256k1VirtualIdentity(_) => models::EntityType::Component,
+            ComponentAddress::EddsaEd25519VirtualIdentity(_) => models::EntityType::Component,
         },
         GlobalAddress::Package(_) => models::EntityType::Package,
         GlobalAddress::Resource(_) => models::EntityType::ResourceManager,
@@ -116,6 +120,7 @@ impl TryFrom<RENodeId> for MappedEntityId {
             RENodeId::KeyValueStore(_) => EntityType::KeyValueStore,
             RENodeId::NonFungibleStore(_) => EntityType::NonFungibleStore,
             RENodeId::Vault(_) => EntityType::Vault,
+            RENodeId::Identity(_) => EntityType::Component,
             RENodeId::Bucket(_) => return Err(transient_renode_error("Bucket")),
             RENodeId::Proof(_) => return Err(transient_renode_error("Proof")),
             RENodeId::Worktop => return Err(transient_renode_error("Worktop")),
@@ -400,6 +405,22 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::Clock, substate_type_key)
         }
 
+        SubstateId(RENodeId::Identity(_), offset) => {
+            let substate_type_key = match offset {
+                SubstateOffset::Metadata(offset) => match offset {
+                    MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
+                },
+                SubstateOffset::AccessRulesChain(offset) => match offset {
+                    AccessRulesChainOffset::AccessRulesChain => (
+                        SubstateType::AccessRulesChain,
+                        SubstateKeyType::AccessRulesChain,
+                    ),
+                },
+                _ => return Err(unknown_substate_error("Identity", &substate_id)),
+            };
+            (EntityType::Validator, substate_type_key)
+        }
+
         // TRANSIENT SUBSTATES
         SubstateId(RENodeId::Bucket(..), _) => {
             return Err(transient_substate_error("Bucket", &substate_id))
@@ -476,10 +497,11 @@ pub fn extract_resource_address(
 }
 
 pub fn extract_non_fungible_id_from_simple_representation(
-    id_type: NonFungibleIdTypeId,
+    _id_type: NonFungibleIdType,
     simple_rep: &str,
-) -> Result<NonFungibleId, ExtractionError> {
-    Ok(NonFungibleId::try_from_simple_string(id_type, simple_rep)?)
+) -> Result<NonFungibleLocalId, ExtractionError> {
+    let non_fungible_local_id = NonFungibleLocalId::from_str(simple_rep)?;
+    Ok(non_fungible_local_id)
 }
 
 pub fn re_node_id_to_entity_id_bytes(re_node_id: &RENodeId) -> Result<Vec<u8>, MappingError> {

@@ -538,11 +538,16 @@ where
             &parsed_transaction.get_hash(),
         );
         match &receipt.result {
-            TransactionResult::Commit(commit) => PrepareGenesisResult {
-                validator_set: commit
-                    .next_epoch
-                    .clone()
-                    .map(|(validator_set, _)| validator_set),
+            TransactionResult::Commit(commit) => match &commit.outcome {
+                TransactionOutcome::Success(..) => PrepareGenesisResult {
+                    validator_set: commit
+                        .next_epoch
+                        .clone()
+                        .map(|(validator_set, _)| validator_set),
+                },
+                TransactionOutcome::Failure(error) => {
+                    panic!("Genesis failed. Error: {:?}", error)
+                }
             },
             TransactionResult::Reject(reject_result) => {
                 panic!("Genesis rejected. Result: {:?}", reject_result)

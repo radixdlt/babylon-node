@@ -29,24 +29,28 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * Validator
+ * ActiveValidator
  */
 @JsonPropertyOrder({
-  Validator.JSON_PROPERTY_ADDRESS,
-  Validator.JSON_PROPERTY_KEY
+  ActiveValidator.JSON_PROPERTY_ADDRESS,
+  ActiveValidator.JSON_PROPERTY_KEY,
+  ActiveValidator.JSON_PROPERTY_STAKE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class Validator {
+public class ActiveValidator {
   public static final String JSON_PROPERTY_ADDRESS = "address";
   private String address;
 
   public static final String JSON_PROPERTY_KEY = "key";
   private EcdsaSecp256k1PublicKey key;
 
-  public Validator() { 
+  public static final String JSON_PROPERTY_STAKE = "stake";
+  private String stake;
+
+  public ActiveValidator() { 
   }
 
-  public Validator address(String address) {
+  public ActiveValidator address(String address) {
     this.address = address;
     return this;
   }
@@ -72,7 +76,7 @@ public class Validator {
   }
 
 
-  public Validator key(EcdsaSecp256k1PublicKey key) {
+  public ActiveValidator key(EcdsaSecp256k1PublicKey key) {
     this.key = key;
     return this;
   }
@@ -98,8 +102,34 @@ public class Validator {
   }
 
 
+  public ActiveValidator stake(String stake) {
+    this.stake = stake;
+    return this;
+  }
+
+   /**
+   * A string-encoded decimal representing the validator&#39;s voting power for this epoch. This is a snapshot of the amount of XRD staked to the validator at the start of the epoch. 
+   * @return stake
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "A string-encoded decimal representing the validator's voting power for this epoch. This is a snapshot of the amount of XRD staked to the validator at the start of the epoch. ")
+  @JsonProperty(JSON_PROPERTY_STAKE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getStake() {
+    return stake;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_STAKE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setStake(String stake) {
+    this.stake = stake;
+  }
+
+
   /**
-   * Return true if this Validator object is equal to o.
+   * Return true if this ActiveValidator object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -109,22 +139,24 @@ public class Validator {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Validator validator = (Validator) o;
-    return Objects.equals(this.address, validator.address) &&
-        Objects.equals(this.key, validator.key);
+    ActiveValidator activeValidator = (ActiveValidator) o;
+    return Objects.equals(this.address, activeValidator.address) &&
+        Objects.equals(this.key, activeValidator.key) &&
+        Objects.equals(this.stake, activeValidator.stake);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(address, key);
+    return Objects.hash(address, key, stake);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class Validator {\n");
+    sb.append("class ActiveValidator {\n");
     sb.append("    address: ").append(toIndentedString(address)).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
+    sb.append("    stake: ").append(toIndentedString(stake)).append("\n");
     sb.append("}");
     return sb.toString();
   }

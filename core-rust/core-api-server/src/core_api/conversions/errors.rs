@@ -1,4 +1,5 @@
-use radix_engine::types::{AddressError, ParseNonFungibleIdError};
+use radix_engine::types::AddressError;
+use radix_engine_interface::model::ParseNonFungibleLocalIdError;
 use sbor::{DecodeError, EncodeError};
 use tracing::warn;
 use transaction::errors::TransactionValidationError;
@@ -65,7 +66,7 @@ pub enum ExtractionError {
     InvalidHash,
     InvalidTransaction(TransactionValidationError),
     InvalidAddress(AddressError),
-    InvalidNonFungibleId(ParseNonFungibleIdError),
+    InvalidNonFungibleId(ParseNonFungibleLocalIdError),
 }
 
 impl ExtractionError {
@@ -83,8 +84,8 @@ impl From<TransactionValidationError> for ExtractionError {
     }
 }
 
-impl From<ParseNonFungibleIdError> for ExtractionError {
-    fn from(err: ParseNonFungibleIdError) -> Self {
+impl From<ParseNonFungibleLocalIdError> for ExtractionError {
+    fn from(err: ParseNonFungibleLocalIdError) -> Self {
         ExtractionError::InvalidNonFungibleId(err)
     }
 }

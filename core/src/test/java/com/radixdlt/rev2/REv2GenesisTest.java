@@ -94,7 +94,7 @@ public final class REv2GenesisTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
-                            1, UInt64.fromNonNegativeLong(10)),
+                            1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.inMemory(),
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             0, 0, MempoolRelayConfig.of())))));
@@ -116,7 +116,7 @@ public final class REv2GenesisTest {
 
       var systemAmount =
           stateReader.getComponentXrdAmount(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
-      assertThat(systemAmount).isEqualTo(REv2Constants.GENESIS_AMOUNT);
+      assertThat(systemAmount).isEqualTo(REv2Constants.GENESIS_AMOUNT.subtract(Decimal.of(1)));
 
       var emptyAccountAmount =
           stateReader.getComponentXrdAmount(ComponentAddress.NON_EXISTENT_COMPONENT_ADDRESS);

@@ -78,6 +78,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REv2SimpleFuzzerTransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
@@ -109,7 +110,7 @@ public final class SimpleFuzzerTransactionsTest {
                     StateComputerConfig.rev2(
                         Network.LOCALSIMULATOR.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
-                            10, UInt64.fromNonNegativeLong(10)),
+                            10, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.transactionGenerator(transactionGenerator, 10)),
                     SyncRelayConfig.of(5000, 10, 3000L))));

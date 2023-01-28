@@ -118,7 +118,8 @@ public class REv2MempoolToCommittedTest {
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(1, this.roundsPerEpoch),
+                        TransactionBuilder.createGenesisWithNumValidators(
+                            1, Decimal.of(1), this.roundsPerEpoch),
                         REv2DatabaseConfig.inMemory(),
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             1, 1, new MempoolRelayConfig(0, 100))),

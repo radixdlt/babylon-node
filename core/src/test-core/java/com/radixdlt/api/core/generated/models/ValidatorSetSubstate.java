@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessRulesChainSubstate;
+import com.radixdlt.api.core.generated.models.ActiveValidator;
 import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
 import com.radixdlt.api.core.generated.models.ComponentInfoSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
@@ -42,7 +43,6 @@ import com.radixdlt.api.core.generated.models.PackageRoyaltyConfigSubstate;
 import com.radixdlt.api.core.generated.models.ResourceManagerSubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
-import com.radixdlt.api.core.generated.models.Validator;
 import com.radixdlt.api.core.generated.models.ValidatorSetSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorSetSubstateAllOf;
 import com.radixdlt.api.core.generated.models.ValidatorSubstate;
@@ -91,7 +91,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 
 public class ValidatorSetSubstate extends Substate {
   public static final String JSON_PROPERTY_VALIDATOR_SET = "validator_set";
-  private List<Validator> validatorSet = new ArrayList<>();
+  private List<ActiveValidator> validatorSet = new ArrayList<>();
 
   public static final String JSON_PROPERTY_EPOCH = "epoch";
   private Long epoch;
@@ -99,12 +99,12 @@ public class ValidatorSetSubstate extends Substate {
   public ValidatorSetSubstate() { 
   }
 
-  public ValidatorSetSubstate validatorSet(List<Validator> validatorSet) {
+  public ValidatorSetSubstate validatorSet(List<ActiveValidator> validatorSet) {
     this.validatorSet = validatorSet;
     return this;
   }
 
-  public ValidatorSetSubstate addValidatorSetItem(Validator validatorSetItem) {
+  public ValidatorSetSubstate addValidatorSetItem(ActiveValidator validatorSetItem) {
     this.validatorSet.add(validatorSetItem);
     return this;
   }
@@ -118,14 +118,14 @@ public class ValidatorSetSubstate extends Substate {
   @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<Validator> getValidatorSet() {
+  public List<ActiveValidator> getValidatorSet() {
     return validatorSet;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VALIDATOR_SET)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidatorSet(List<Validator> validatorSet) {
+  public void setValidatorSet(List<ActiveValidator> validatorSet) {
     this.validatorSet = validatorSet;
   }
 
