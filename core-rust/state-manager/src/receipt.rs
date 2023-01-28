@@ -82,15 +82,16 @@ impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
 
     fn try_from(engine_receipt: EngineTransactionReceipt) -> Result<Self, Self::Error> {
         match engine_receipt.result {
-            TransactionResult::Abort(_) => {
-                todo!()
-            }
             TransactionResult::Commit(commit_result) => {
                 Ok((commit_result, engine_receipt.execution.fee_summary).into())
             }
             TransactionResult::Reject(error) => Err(format!(
                 "Can't create a ledger receipt for rejected txn: {:?}",
                 error
+            )),
+            TransactionResult::Abort(result) => Err(format!(
+                "Can't create a ledger receipt for aborted txn: {:?}",
+                result
             )),
         }
     }

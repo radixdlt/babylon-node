@@ -562,7 +562,7 @@ where
             }
             TransactionResult::Abort(_) => {
                 // TODO: Should remove this
-                panic!("Should not be aborting");
+                panic!("Genesis aborted.");
             }
         }
     }
@@ -637,8 +637,7 @@ where
                     )
                 }
                 TransactionResult::Abort(_) => {
-                    // TODO: Should remove this
-                    panic!("Should not be aborting");
+                    panic!("Already prepared transactions should be committable.");
                 }
             }
         }
@@ -677,9 +676,8 @@ where
             TransactionResult::Reject(reject_result) => {
                 panic!("Validator txn failed: {:?}", reject_result)
             }
-            TransactionResult::Abort(_) => {
-                // TODO: Should remove this
-                panic!("Should not be aborting");
+            TransactionResult::Abort(abort_result) => {
+                panic!("Validator txn aborted: {:?}", abort_result);
             }
         };
 
@@ -768,10 +766,6 @@ where
                             break;
                         }
                     }
-                    TransactionResult::Abort(_) => {
-                        // TODO: Should remove this
-                        panic!("Should not be aborting");
-                    }
                     TransactionResult::Reject(reject_result) => {
                         rejected_payloads.push((proposed_payload, format!("{:?}", &reject_result)));
                         pending_transaction_results.push((
@@ -782,6 +776,9 @@ where
                                 reject_result.error.clone(),
                             ))),
                         ));
+                    }
+                    TransactionResult::Abort(_) => {
+                        panic!("Should not be aborting prepared transactions.");
                     }
                 };
             }
@@ -928,15 +925,17 @@ where
 
                     (result, engine_receipt.execution.fee_summary).into()
                 }
-                TransactionResult::Abort(_) => {
-                    // TODO: Should remove this
-                    panic!("Should not be aborting");
-                }
                 TransactionResult::Reject(error) => {
                     panic!(
                         "Failed to commit a txn at state version {}: {:?}",
                         commit_request.proof_state_version, error
                     )
+                }
+                TransactionResult::Abort(abort_result) => {
+                    panic!(
+                        "Failed to commit a txn at state version {}: {:?}",
+                        commit_request.proof_state_version, abort_result
+                    );
                 }
             };
 
