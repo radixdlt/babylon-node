@@ -62,7 +62,9 @@ public enum SubstateType {
   
   NONFUNGIBLESTOREENTRY("NonFungibleStoreEntry"),
   
-  VAULT("Vault");
+  VAULT("Vault"),
+  
+  ACCESSCONTROLLER("AccessController");
 
   private String value;
 

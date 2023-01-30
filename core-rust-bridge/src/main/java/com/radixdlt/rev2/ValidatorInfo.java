@@ -62,71 +62,20 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transaction;
+package com.radixdlt.rev2;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.ResourceAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.transactions.RawLedgerTransaction;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
 
-/** A wrapper for a transaction and its ledger receipt */
-public record ExecutedTransaction(
-    CommittedTransactionStatus status,
-    byte[] ledgerReceiptBytes,
-    byte[] transactionBytes,
-    List<ComponentAddress> newComponentAddresses,
-    List<ResourceAddress> newResourceAddresses) {
+public record ValidatorInfo(ResourceAddress lpTokenAddress, ResourceAddress unstakeResource) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        ExecutedTransaction.class,
+        ValidatorInfo.class,
         codecs ->
             StructCodec.with(
-                ExecutedTransaction::new,
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                (t, encoder) ->
-                    encoder.encode(
-                        t.status,
-                        t.ledgerReceiptBytes,
-                        t.transactionBytes,
-                        t.newComponentAddresses,
-                        t.newResourceAddresses)));
-  }
-
-  public RawLedgerTransaction rawTransaction() {
-    return RawLedgerTransaction.create(transactionBytes);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    ExecutedTransaction that = (ExecutedTransaction) o;
-    return Objects.equals(status, that.status)
-        && Arrays.equals(ledgerReceiptBytes, that.ledgerReceiptBytes)
-        && Arrays.equals(transactionBytes, that.transactionBytes)
-        && Objects.equals(newComponentAddresses, that.newComponentAddresses)
-        && Objects.equals(newResourceAddresses, that.newResourceAddresses);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = Objects.hash(status, newComponentAddresses, newResourceAddresses);
-    result = 31 * result + Arrays.hashCode(ledgerReceiptBytes);
-    result = 31 * result + Arrays.hashCode(transactionBytes);
-    return result;
-  }
-
-  @Override
-  public String toString() {
-    return "ExecutedTransaction{" + "newComponentAddresses=" + newComponentAddresses + '}';
+                ValidatorInfo::new,
+                codecs.of(ResourceAddress.class),
+                codecs.of(ResourceAddress.class),
+                (t, encoder) -> encoder.encode(t.lpTokenAddress, t.unstakeResource)));
   }
 }

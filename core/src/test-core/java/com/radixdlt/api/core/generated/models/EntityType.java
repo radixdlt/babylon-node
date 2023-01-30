@@ -46,7 +46,9 @@ public enum EntityType {
   
   NONFUNGIBLESTORE("NonFungibleStore"),
   
-  CLOCK("Clock");
+  CLOCK("Clock"),
+  
+  ACCESSCONTROLLER("AccessController");
 
   private String value;
 

@@ -141,6 +141,10 @@ pub(crate) async fn handle_transaction_callpreview(
             TransactionResult::Reject(r) => {
                 (TransactionStatus::Rejected, None, Some(format!("{r:?}")))
             }
+            TransactionResult::Abort(_) => {
+                // TODO: Should remove this
+                panic!("Should not be aborting");
+            }
         }
     };
 

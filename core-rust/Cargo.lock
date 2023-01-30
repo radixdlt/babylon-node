@@ -567,6 +567,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "either"
+version = "1.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
+
+[[package]]
 name = "error-chain"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -904,6 +910,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8bb03732005da905c88227371639bf1ad885cc712789c011c31c5fb3ab3ccf02"
 
 [[package]]
+name = "itertools"
+version = "0.10.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1123,7 +1138,7 @@ dependencies = [
 [[package]]
 name = "native-sdk"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2556e2#2556e2de9d805afec61164368c6fbf60b0aceeba"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-b393d4df2#b393d4df2cc103304ebef529aee42dbae839ef94"
 dependencies = [
  "radix-engine-derive",
  "radix-engine-interface",
@@ -1441,7 +1456,7 @@ dependencies = [
 [[package]]
 name = "radix-engine"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2556e2#2556e2de9d805afec61164368c6fbf60b0aceeba"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-b393d4df2#b393d4df2cc103304ebef529aee42dbae839ef94"
 dependencies = [
  "bitflags",
  "colored",
@@ -1464,12 +1479,12 @@ dependencies = [
 [[package]]
 name = "radix-engine-constants"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2556e2#2556e2de9d805afec61164368c6fbf60b0aceeba"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-b393d4df2#b393d4df2cc103304ebef529aee42dbae839ef94"
 
 [[package]]
 name = "radix-engine-derive"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2556e2#2556e2de9d805afec61164368c6fbf60b0aceeba"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-b393d4df2#b393d4df2cc103304ebef529aee42dbae839ef94"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1480,7 +1495,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-interface"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2556e2#2556e2de9d805afec61164368c6fbf60b0aceeba"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-b393d4df2#b393d4df2cc103304ebef529aee42dbae839ef94"
 dependencies = [
  "bech32",
  "bnum",
@@ -1503,8 +1518,9 @@ dependencies = [
 [[package]]
 name = "radix-engine-stores"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2556e2#2556e2de9d805afec61164368c6fbf60b0aceeba"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-b393d4df2#b393d4df2cc103304ebef529aee42dbae839ef94"
 dependencies = [
+ "itertools",
  "radix-engine",
  "radix-engine-interface",
  "sbor",
@@ -1672,7 +1688,7 @@ dependencies = [
 [[package]]
 name = "sbor"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2556e2#2556e2de9d805afec61164368c6fbf60b0aceeba"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-b393d4df2#b393d4df2cc103304ebef529aee42dbae839ef94"
 dependencies = [
  "const-sha1",
  "indexmap 2.0.0-pre",
@@ -1683,7 +1699,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2556e2#2556e2de9d805afec61164368c6fbf60b0aceeba"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-b393d4df2#b393d4df2cc103304ebef529aee42dbae839ef94"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -1692,7 +1708,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive-common"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2556e2#2556e2de9d805afec61164368c6fbf60b0aceeba"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-b393d4df2#b393d4df2cc103304ebef529aee42dbae839ef94"
 dependencies = [
  "const-sha1",
  "proc-macro2",
@@ -1724,7 +1740,7 @@ checksum = "9c8132065adcfd6e02db789d9285a0deb2f3fcb04002865ab67d5fb103533898"
 [[package]]
 name = "scrypto-abi"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2556e2#2556e2de9d805afec61164368c6fbf60b0aceeba"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-b393d4df2#b393d4df2cc103304ebef529aee42dbae839ef94"
 dependencies = [
  "sbor",
  "serde",
@@ -2283,7 +2299,7 @@ dependencies = [
 [[package]]
 name = "transaction"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2556e2#2556e2de9d805afec61164368c6fbf60b0aceeba"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-b393d4df2#b393d4df2cc103304ebef529aee42dbae839ef94"
 dependencies = [
  "ed25519-dalek",
  "hex",
@@ -2343,7 +2359,7 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 [[package]]
 name = "utils"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2556e2#2556e2de9d805afec61164368c6fbf60b0aceeba"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-b393d4df2#b393d4df2cc103304ebef529aee42dbae839ef94"
 dependencies = [
  "sbor",
  "serde",

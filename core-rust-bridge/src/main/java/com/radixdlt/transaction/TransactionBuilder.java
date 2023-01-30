@@ -69,9 +69,11 @@ import static com.radixdlt.lang.Tuple.tuple;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.*;
 import com.radixdlt.exceptions.ManifestCompilationException;
+import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
+import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionHeader;
@@ -90,29 +92,47 @@ public final class TransactionBuilder {
   }
 
   public static RawLedgerTransaction createGenesis(
-      Map<ECDSASecp256k1PublicKey, Decimal> validatorSet,
+      Map<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>> validatorSet,
       UInt64 initialEpoch,
-      UInt64 roundsPerEpoch) {
+      UInt64 roundsPerEpoch,
+      UInt64 numUnstakeEpochs) {
     return RawLedgerTransaction.create(
-        createGenesisFunc.call(tuple(validatorSet, initialEpoch, roundsPerEpoch)));
+        createGenesisFunc.call(
+            tuple(validatorSet, initialEpoch, roundsPerEpoch, numUnstakeEpochs)));
   }
 
   public static RawLedgerTransaction createGenesis(
-      ECDSASecp256k1PublicKey validator, Decimal initialStake, UInt64 roundsPerEpoch) {
+      ECDSASecp256k1PublicKey validator,
+      Decimal initialStake,
+      UInt64 roundsPerEpoch,
+      UInt64 numUnstakeEpochs) {
+    final var stakingAccount = Address.virtualAccountAddress(validator);
     return RawLedgerTransaction.create(
         createGenesisFunc.call(
-            tuple(Map.of(validator, initialStake), UInt64.fromNonNegativeLong(1), roundsPerEpoch)));
+            tuple(
+                Map.of(validator, Tuple.tuple(initialStake, stakingAccount)),
+                UInt64.fromNonNegativeLong(1),
+                roundsPerEpoch,
+                numUnstakeEpochs)));
   }
 
   public static RawLedgerTransaction createGenesisWithNumValidators(
       long numValidators, Decimal initialStake, UInt64 roundsPerEpoch) {
+
+    final var stakingAccount =
+        Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
     var validators =
         PrivateKeys.numeric(1)
             .limit(numValidators)
             .map(ECKeyPair::getPublicKey)
-            .collect(Collectors.toMap(k -> k, k -> initialStake));
+            .collect(Collectors.toMap(k -> k, k -> Tuple.tuple(initialStake, stakingAccount)));
     return RawLedgerTransaction.create(
-        createGenesisFunc.call(tuple(validators, UInt64.fromNonNegativeLong(1), roundsPerEpoch)));
+        createGenesisFunc.call(
+            tuple(
+                validators,
+                UInt64.fromNonNegativeLong(1),
+                roundsPerEpoch,
+                UInt64.fromNonNegativeLong(1))));
   }
 
   public static byte[] compileManifest(
@@ -151,7 +171,12 @@ public final class TransactionBuilder {
   private static native byte[] compileManifest(byte[] payload);
 
   private static final NativeCalls.StaticFunc1<
-          Tuple.Tuple3<Map<ECDSASecp256k1PublicKey, Decimal>, UInt64, UInt64>, byte[]>
+          Tuple.Tuple4<
+              Map<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>>,
+              UInt64,
+              UInt64,
+              UInt64>,
+          byte[]>
       createGenesisFunc =
           NativeCalls.StaticFunc1.with(
               new TypeToken<>() {},

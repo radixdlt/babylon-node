@@ -63,6 +63,7 @@
  */
 
 use crate::execution_cache::ExecutionCache;
+use crate::jni::state_computer::JavaValidatorInfo;
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::query::*;
 use crate::store::traits::*;
@@ -84,6 +85,7 @@ use ::transaction::signing::EcdsaSecp256k1PrivateKey;
 use ::transaction::validation::{TestIntentHashManager, ValidationConfig};
 use prometheus::Registry;
 use radix_engine::engine::ScryptoInterpreter;
+use radix_engine::model::ValidatorSubstate;
 use radix_engine::state_manager::{StagedSubstateStoreKey, StagedSubstateStoreManager};
 use radix_engine::transaction::{
     execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
@@ -95,12 +97,12 @@ use radix_engine::types::{
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
+use radix_engine_interface::api::types::{SubstateId, SubstateOffset, ValidatorOffset};
 use radix_engine_interface::node::NetworkDefinition;
 use std::collections::{BTreeMap, HashMap};
 use std::convert::TryInto;
 
 use radix_engine::ledger::OutputValue;
-use radix_engine_interface::api::types::SubstateId;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::{info, warn};
 
@@ -170,6 +172,7 @@ where
                 max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                 trace: logging_config.engine_trace,
                 max_sys_call_trace_depth: 1,
+                abort_when_loan_repaid: false,
             },
             scrypto_interpreter: ScryptoInterpreter {
                 wasm_engine: DefaultWasmEngine::default(),
@@ -489,6 +492,10 @@ where
                 Err(RejectionReason::FromExecution(Box::new(result.error)))
             }
             TransactionResult::Commit(..) => Ok(()),
+            TransactionResult::Abort(_) => {
+                // TODO: Should remove this
+                panic!("Should not be aborting");
+            }
         }
     }
 
@@ -554,6 +561,10 @@ where
             },
             TransactionResult::Reject(reject_result) => {
                 panic!("Genesis rejected. Result: {:?}", reject_result)
+            }
+            TransactionResult::Abort(_) => {
+                // TODO: Should remove this
+                panic!("Genesis aborted.");
             }
         }
     }
@@ -627,6 +638,9 @@ where
                         reject_result
                     )
                 }
+                TransactionResult::Abort(_) => {
+                    panic!("Already prepared transactions should be committable.");
+                }
             }
         }
 
@@ -663,6 +677,9 @@ where
             }
             TransactionResult::Reject(reject_result) => {
                 panic!("Validator txn failed: {:?}", reject_result)
+            }
+            TransactionResult::Abort(abort_result) => {
+                panic!("Validator txn aborted: {:?}", abort_result);
             }
         };
 
@@ -761,6 +778,9 @@ where
                                 reject_result.error.clone(),
                             ))),
                         ));
+                    }
+                    TransactionResult::Abort(_) => {
+                        panic!("Should not be aborting prepared transactions.");
                     }
                 };
             }
@@ -915,6 +935,12 @@ where
                         commit_request.proof_state_version, error
                     )
                 }
+                TransactionResult::Abort(abort_result) => {
+                    panic!(
+                        "Failed to commit a txn at state version {}: {:?}",
+                        commit_request.proof_state_version, abort_result
+                    );
+                }
             };
 
             if let LedgerTransaction::User(notarized_transaction) = &transaction {
@@ -996,6 +1022,24 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
                 component_address,
             )))
             .map_or(None, |()| Some(resource_accounter.into_map()))
+    }
+
+    pub fn get_validator_info(&self, validator_address: ComponentAddress) -> JavaValidatorInfo {
+        let node_id = self
+            .staged_store
+            .root
+            .global_deref(GlobalAddress::Component(validator_address))
+            .unwrap();
+        let substate_id = SubstateId(
+            node_id,
+            SubstateOffset::Validator(ValidatorOffset::Validator),
+        );
+        let output = self.staged_store.root.get_substate(&substate_id).unwrap();
+        let validator_substate: ValidatorSubstate = output.substate.to_runtime().into();
+        JavaValidatorInfo {
+            lp_token_address: validator_substate.liquidity_token,
+            unstake_resource: validator_substate.unstake_nft,
+        }
     }
 
     pub fn get_epoch(&self) -> u64 {

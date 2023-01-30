@@ -66,7 +66,9 @@ public class AddressType {
     
     VALIDATOR("Validator"),
     
-    CLOCK("Clock");
+    CLOCK("Clock"),
+    
+    ACCESSCONTROLLER("AccessController");
 
     private String value;
 

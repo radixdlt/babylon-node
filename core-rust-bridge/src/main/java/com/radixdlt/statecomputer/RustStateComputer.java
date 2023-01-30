@@ -70,8 +70,7 @@ import com.radixdlt.lang.Tuple;
 import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.recovery.VertexStoreRecovery;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.Decimal;
+import com.radixdlt.rev2.*;
 import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.statecomputer.commit.*;
 import com.radixdlt.statemanager.StateManager;
@@ -121,6 +120,12 @@ public class RustStateComputer {
             new TypeToken<>() {},
             new TypeToken<>() {},
             RustStateComputer::componentXrdAmount);
+    this.validatorInfoFunc =
+        NativeCalls.Func1.with(
+            stateManager,
+            new TypeToken<>() {},
+            new TypeToken<>() {},
+            RustStateComputer::validatorInfo);
     this.epoch =
         NativeCalls.Func1.with(
             stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::epoch);
@@ -206,4 +211,12 @@ public class RustStateComputer {
   }
 
   private static native byte[] epoch(StateManager stateManager, byte[] payload);
+
+  private final NativeCalls.Func1<StateManager, ComponentAddress, ValidatorInfo> validatorInfoFunc;
+
+  public ValidatorInfo getValidatorInfo(ComponentAddress validatorAddress) {
+    return validatorInfoFunc.call(validatorAddress);
+  }
+
+  private static native byte[] validatorInfo(StateManager stateManager, byte[] payload);
 }

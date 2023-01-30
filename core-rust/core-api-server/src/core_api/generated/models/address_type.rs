@@ -64,6 +64,8 @@ pub enum Subtype {
     Validator,
     #[serde(rename = "Clock")]
     Clock,
+    #[serde(rename = "AccessController")]
+    AccessController,
 }
 
 impl Default for Subtype {

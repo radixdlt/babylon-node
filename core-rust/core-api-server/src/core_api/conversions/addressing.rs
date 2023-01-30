@@ -15,7 +15,7 @@ use radix_engine::{
         MetadataOffset, PackageAddress, RENodeId, ResourceAddress, SubstateId,
     },
 };
-use radix_engine_interface::api::types::ValidatorOffset;
+use radix_engine_interface::api::types::{AccessControllerOffset, ValidatorOffset};
 use radix_engine_interface::model::{NonFungibleIdType, NonFungibleLocalId};
 
 pub fn to_api_component_address(
@@ -81,6 +81,7 @@ pub fn get_entity_type_from_global_address(global_address: &GlobalAddress) -> mo
             ComponentAddress::Clock(_) => models::EntityType::Clock,
             ComponentAddress::Validator(_) => models::EntityType::Validator,
             ComponentAddress::Normal(_) => models::EntityType::Component,
+            ComponentAddress::AccessController(_) => models::EntityType::AccessController,
             ComponentAddress::Account(_) => models::EntityType::Component,
             ComponentAddress::Identity(_) => models::EntityType::Component,
             ComponentAddress::EcdsaSecp256k1VirtualAccount(_) => models::EntityType::Component,
@@ -143,6 +144,7 @@ impl TryFrom<RENodeId> for MappedEntityId {
             RENodeId::KeyValueStore(_) => EntityType::KeyValueStore,
             RENodeId::NonFungibleStore(_) => EntityType::NonFungibleStore,
             RENodeId::Vault(_) => EntityType::Vault,
+            RENodeId::AccessController(_) => EntityType::Component,
             RENodeId::Identity(_) => EntityType::Component,
             RENodeId::Bucket(_) => return Err(transient_renode_error("Bucket")),
             RENodeId::Proof(_) => return Err(transient_renode_error("Proof")),
@@ -270,6 +272,27 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 _ => return Err(unknown_substate_error("Component", &substate_id)),
             };
             (EntityType::Component, substate_type_key)
+        }
+        SubstateId(RENodeId::AccessController(_), offset) => {
+            let substate_type_key = match offset {
+                SubstateOffset::AccessController(offset) => match offset {
+                    AccessControllerOffset::AccessController => (
+                        SubstateType::AccessController,
+                        SubstateKeyType::AccessController,
+                    ),
+                },
+                SubstateOffset::Metadata(offset) => match offset {
+                    MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
+                },
+                SubstateOffset::AccessRulesChain(offset) => match offset {
+                    AccessRulesChainOffset::AccessRulesChain => (
+                        SubstateType::AccessRulesChain,
+                        SubstateKeyType::AccessRulesChain,
+                    ),
+                },
+                _ => return Err(unknown_substate_error("AccessController", &substate_id)),
+            };
+            (EntityType::AccessController, substate_type_key)
         }
 
         SubstateId(RENodeId::Package(_), offset) => {

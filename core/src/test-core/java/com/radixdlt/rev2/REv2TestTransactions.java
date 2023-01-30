@@ -211,6 +211,8 @@ public final class REv2TestTransactions {
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
     final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
     final var systemAddress = addressing.encodeSystemAddress(validatorAddress);
+    final var toAccount = Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
+    final var toAccountAddress = addressing.encodeAccountAddress(toAccount);
 
     return String.format(
         """
@@ -218,28 +220,63 @@ public final class REv2TestTransactions {
                                 CALL_METHOD ComponentAddress("%s") "free";
                                 TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
                                 CALL_METHOD ComponentAddress("%s") "stake" Bucket("xrd");
+                                CALL_METHOD ComponentAddress("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
                                 """,
-        faucetAddress, faucetAddress, xrdAddress, systemAddress);
+        faucetAddress, faucetAddress, xrdAddress, systemAddress, toAccountAddress);
   }
 
   public static String constructUnstakeValidatorManifest(
-      NetworkDefinition networkDefinition, ComponentAddress validatorAddress) {
+      NetworkDefinition networkDefinition,
+      ResourceAddress lpTokenAddress,
+      ComponentAddress validatorAddress) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var faucetAddress =
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
-    final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
     final var systemAddress = addressing.encodeSystemAddress(validatorAddress);
-    final var toAccount = Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
-    final var toAccountAddress = addressing.encodeAccountAddress(toAccount);
+    final var account = Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
+    final var accountAddress = addressing.encodeAccountAddress(account);
+    final var lpAddress = addressing.encodeResourceAddress(lpTokenAddress);
 
     return String.format(
         """
                                 CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
-                                CALL_METHOD ComponentAddress("%s") "unstake" Decimal("1000");
-                                TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
-                                CALL_METHOD ComponentAddress("%s") "deposit" Bucket("xrd");
+                                CALL_METHOD ComponentAddress("%s") "withdraw_by_amount" ResourceAddress("%s") Decimal("1");
+                                TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("lp_token");
+                                CALL_METHOD ComponentAddress("%s") "unstake" Bucket("lp_token");
+                                CALL_METHOD ComponentAddress("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
                                 """,
-        faucetAddress, systemAddress, xrdAddress, toAccountAddress);
+        faucetAddress, accountAddress, lpAddress, lpAddress, systemAddress, accountAddress);
+  }
+
+  public static String constructClaimXrdManifest(
+      NetworkDefinition networkDefinition,
+      ComponentAddress validatorAddress,
+      ResourceAddress unstakeResource) {
+    final var addressing = Addressing.ofNetwork(networkDefinition);
+    final var faucetAddress =
+        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+    final var unstakeResourceAddress = addressing.encodeResourceAddress(unstakeResource);
+    final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
+    final var systemAddress = addressing.encodeSystemAddress(validatorAddress);
+    final var account = Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
+    final var accountAddress = addressing.encodeAccountAddress(account);
+
+    return String.format(
+        """
+                                    CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
+                                    CALL_METHOD ComponentAddress("%s") "withdraw" ResourceAddress("%s");
+                                    TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("unstake");
+                                    CALL_METHOD ComponentAddress("%s") "claim_xrd" Bucket("unstake");
+                                    TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
+                                    CALL_METHOD ComponentAddress("%s") "deposit" Bucket("xrd");
+                                    """,
+        faucetAddress,
+        accountAddress,
+        unstakeResourceAddress,
+        unstakeResourceAddress,
+        systemAddress,
+        xrdAddress,
+        accountAddress);
   }
 
   public static RawNotarizedTransaction constructNewAccountFromAccountTransaction(
@@ -336,9 +373,24 @@ public final class REv2TestTransactions {
       NetworkDefinition networkDefinition,
       long fromEpoch,
       long nonce,
+      ResourceAddress lpTokenAddress,
       ComponentAddress validatorAddress,
       ECKeyPair keyPair) {
-    var manifest = constructUnstakeValidatorManifest(networkDefinition, validatorAddress);
+    var manifest =
+        constructUnstakeValidatorManifest(networkDefinition, lpTokenAddress, validatorAddress);
+    var signatories = List.of(keyPair);
+    return constructRawTransaction(
+        networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
+  }
+
+  public static RawNotarizedTransaction constructClaimXrdTransaction(
+      NetworkDefinition networkDefinition,
+      long fromEpoch,
+      long nonce,
+      ComponentAddress validatorAddress,
+      ResourceAddress unstakeAddress,
+      ECKeyPair keyPair) {
+    var manifest = constructClaimXrdManifest(networkDefinition, validatorAddress, unstakeAddress);
     var signatories = List.of(keyPair);
     return constructRawTransaction(
         networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);

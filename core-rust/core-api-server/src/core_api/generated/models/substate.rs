@@ -13,6 +13,11 @@
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "substate_type")]
 pub enum Substate {
+    #[serde(rename="AccessController")]
+    AccessControllerSubstate {
+        #[serde(rename = "data_struct")]
+        data_struct: Box<crate::core_api::generated::models::DataStruct>,
+    },
     #[serde(rename="AccessRulesChain")]
     AccessRulesChainSubstate {
         /// The layers of access rules applied. 
@@ -61,6 +66,8 @@ pub enum Substate {
         /// An integer between `0` and `10^10`, specifying the number of rounds per epoch
         #[serde(rename = "rounds_per_epoch")]
         rounds_per_epoch: i64,
+        #[serde(rename = "num_unstake_epochs")]
+        num_unstake_epochs: i64,
     },
     #[serde(rename="GlobalAddress")]
     GlobalAddressSubstate {
@@ -136,6 +143,14 @@ pub enum Substate {
         key: Box<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
         #[serde(rename = "stake_vault")]
         stake_vault: Box<crate::core_api::generated::models::EntityReference>,
+        #[serde(rename = "unstake_vault")]
+        unstake_vault: Box<crate::core_api::generated::models::EntityReference>,
+        /// The Bech32m-encoded human readable version of the resource address
+        #[serde(rename = "liquid_stake_unit_resource_address")]
+        liquid_stake_unit_resource_address: String,
+        /// The Bech32m-encoded human readable version of the resource address
+        #[serde(rename = "unstake_claim_token_resource_address")]
+        unstake_claim_token_resource_address: String,
         #[serde(rename = "is_registered")]
         is_registered: bool,
     },
