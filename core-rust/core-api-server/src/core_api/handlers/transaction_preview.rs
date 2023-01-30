@@ -1,7 +1,7 @@
 use crate::core_api::*;
 use radix_engine::{
     transaction::{PreviewError, PreviewResult, TransactionResult},
-    types::{Bech32Encoder, RENodeId},
+    types::RENodeId,
 };
 use radix_engine_interface::node::NetworkDefinition;
 use state_manager::jni::state_manager::ActualStateManager;
@@ -23,7 +23,7 @@ fn handle_preview_internal(
 ) -> Result<models::TransactionPreviewResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
-    let preview_request = parse_preview_request(&state_manager.network, request)?;
+    let preview_request = extract_preview_request(&state_manager.network, request)?;
 
     let result = state_manager
         .preview(preview_request)
@@ -33,12 +33,12 @@ fn handle_preview_internal(
             }
         })?;
 
-    let bech32_encoder = Bech32Encoder::new(&state_manager.network);
+    let mapping_context = MappingContext::new(&state_manager.network);
 
-    to_api_response(result, &bech32_encoder)
+    to_api_response(&mapping_context, result)
 }
 
-fn parse_preview_request(
+fn extract_preview_request(
     network: &NetworkDefinition,
     request: models::TransactionPreviewRequest,
 ) -> Result<PreviewRequest, ResponseError<()>> {
@@ -91,8 +91,8 @@ fn parse_preview_request(
 }
 
 fn to_api_response(
+    context: &MappingContext,
     result: PreviewResult,
-    bech32_encoder: &Bech32Encoder,
 ) -> Result<models::TransactionPreviewResponse, ResponseError<()>> {
     let receipt = result.receipt;
 
@@ -103,12 +103,13 @@ fn to_api_response(
                 .iter()
                 .map(|v| {
                     Ok(models::ResourceChange {
-                        resource_address: bech32_encoder
-                            .encode_resource_address_to_string(&v.resource_address),
-                        component_entity: Box::new(to_entity_reference(RENodeId::Component(
+                        resource_address: to_api_resource_address(context, &v.resource_address),
+                        component_entity: Box::new(to_api_entity_reference(RENodeId::Component(
                             v.component_id,
                         ))?),
-                        vault_entity: Box::new(to_entity_reference(RENodeId::Vault(v.vault_id))?),
+                        vault_entity: Box::new(to_api_entity_reference(RENodeId::Vault(
+                            v.vault_id,
+                        ))?),
                         amount: to_api_decimal(&v.amount),
                     })
                 })
@@ -131,7 +132,7 @@ fn to_api_response(
                 .map_err(|_| server_error("Can't create a ledger receipt"))?;
 
             models::TransactionPreviewResponse {
-                receipt: Box::new(to_api_receipt(bech32_encoder, ledger_receipt)?),
+                receipt: Box::new(to_api_receipt(context, ledger_receipt)?),
                 resource_changes: api_resource_changes,
                 logs,
             }
@@ -139,10 +140,7 @@ fn to_api_response(
         TransactionResult::Reject(reject_result) => models::TransactionPreviewResponse {
             receipt: Box::new(models::TransactionReceipt {
                 status: models::TransactionStatus::Rejected,
-                fee_summary: Box::new(to_api_fee_summary(
-                    bech32_encoder,
-                    receipt.execution.fee_summary,
-                )?),
+                fee_summary: Box::new(to_api_fee_summary(context, receipt.execution.fee_summary)?),
                 state_updates: Box::default(),
                 output: None,
                 next_epoch: None,

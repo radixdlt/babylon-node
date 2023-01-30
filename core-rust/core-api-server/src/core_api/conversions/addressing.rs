@@ -11,16 +11,42 @@ use radix_engine::types::{
 use radix_engine::{
     model::GlobalAddressSubstate,
     types::{
-        scrypto_encode, AccessRulesChainOffset, Bech32Decoder, Bech32Encoder, ClockOffset,
-        ComponentAddress, EpochManagerOffset, MetadataOffset, PackageAddress, RENodeId,
-        ResourceAddress, SubstateId,
+        scrypto_encode, AccessRulesChainOffset, ClockOffset, ComponentAddress, EpochManagerOffset,
+        MetadataOffset, PackageAddress, RENodeId, ResourceAddress, SubstateId,
     },
 };
 use radix_engine_interface::api::types::{AccessControllerOffset, ValidatorOffset};
 use radix_engine_interface::model::{NonFungibleIdType, NonFungibleLocalId};
 
+pub fn to_api_component_address(
+    context: &MappingContext,
+    component_address: &ComponentAddress,
+) -> String {
+    context
+        .bech32_encoder
+        .encode_component_address_to_string(component_address)
+}
+
+pub fn to_api_resource_address(
+    context: &MappingContext,
+    resource_address: &ResourceAddress,
+) -> String {
+    context
+        .bech32_encoder
+        .encode_resource_address_to_string(resource_address)
+}
+
+pub fn to_api_package_address(
+    context: &MappingContext,
+    package_address: &PackageAddress,
+) -> String {
+    context
+        .bech32_encoder
+        .encode_package_address_to_string(package_address)
+}
+
 pub fn to_api_global_entity_assignment(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     global_substate_id: &SubstateId,
     global_address: &GlobalAddress,
     global_substate: &GlobalAddressSubstate,
@@ -36,18 +62,15 @@ pub fn to_api_global_entity_assignment(
         target_entity_id_hex: to_hex(target_entity.entity_id_bytes),
         global_entity_id_hex: to_hex(global_entity_id_bytes),
         global_address_hex: to_hex(global_address_to_vec(global_address)),
-        global_address: encode_to_bech32m_string(bech32_encoder, global_address),
+        global_address: to_api_global_address(context, global_address),
     })
 }
 
-pub fn encode_to_bech32m_string(
-    bech32_encoder: &Bech32Encoder,
-    global_address: &GlobalAddress,
-) -> String {
+pub fn to_api_global_address(context: &MappingContext, global_address: &GlobalAddress) -> String {
     match global_address {
-        GlobalAddress::Component(addr) => bech32_encoder.encode_component_address_to_string(addr),
-        GlobalAddress::Package(addr) => bech32_encoder.encode_package_address_to_string(addr),
-        GlobalAddress::Resource(addr) => bech32_encoder.encode_resource_address_to_string(addr),
+        GlobalAddress::Component(addr) => to_api_component_address(context, addr),
+        GlobalAddress::Package(addr) => to_api_package_address(context, addr),
+        GlobalAddress::Resource(addr) => to_api_resource_address(context, addr),
     }
 }
 
@@ -469,43 +492,42 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
 }
 
 pub fn to_global_entity_reference(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     global_address: &GlobalAddress,
 ) -> models::GlobalEntityReference {
     models::GlobalEntityReference {
         entity_type: get_entity_type_from_global_address(global_address),
         global_address_hex: to_hex(global_address_to_vec(global_address)),
-        global_address: encode_to_bech32m_string(bech32_encoder, global_address),
+        global_address: to_api_global_address(context, global_address),
     }
 }
 
-pub fn to_entity_reference(re_node_id: RENodeId) -> Result<models::EntityReference, MappingError> {
-    Ok(MappedEntityId::try_from(re_node_id)?.into())
-}
-
 pub fn extract_package_address(
-    bech32_decoder: &Bech32Decoder,
+    extraction_context: &ExtractionContext,
     package_address: &str,
 ) -> Result<PackageAddress, ExtractionError> {
-    bech32_decoder
+    extraction_context
+        .bech32_decoder
         .validate_and_decode_package_address(package_address)
         .map_err(ExtractionError::InvalidAddress)
 }
 
 pub fn extract_component_address(
-    bech32_decoder: &Bech32Decoder,
+    extraction_context: &ExtractionContext,
     component_address: &str,
 ) -> Result<ComponentAddress, ExtractionError> {
-    bech32_decoder
+    extraction_context
+        .bech32_decoder
         .validate_and_decode_component_address(component_address)
         .map_err(ExtractionError::InvalidAddress)
 }
 
 pub fn extract_resource_address(
-    bech32_decoder: &Bech32Decoder,
+    extraction_context: &ExtractionContext,
     resource_address: &str,
 ) -> Result<ResourceAddress, ExtractionError> {
-    bech32_decoder
+    extraction_context
+        .bech32_decoder
         .validate_and_decode_resource_address(resource_address)
         .map_err(ExtractionError::InvalidAddress)
 }

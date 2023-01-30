@@ -16,6 +16,7 @@ fn handle_mempool_list_internal(
     request: models::MempoolTransactionRequest,
 ) -> Result<models::MempoolTransactionResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
+    let mapping_context = MappingContext::new(&state_manager.network);
 
     let payload_hash = extract_payload_hash(request.payload_hash)
         .map_err(|err| err.into_response_error("payload_hash"))?;
@@ -23,8 +24,8 @@ fn handle_mempool_list_internal(
     match state_manager.mempool.get_payload(&payload_hash) {
         Some(pending_transaction) => Ok(models::MempoolTransactionResponse {
             notarized_transaction: Box::new(to_api_notarized_transaction(
+                &mapping_context,
                 &pending_transaction.payload,
-                &state_manager.network,
             )?),
         }),
         None => Err(not_found_error(

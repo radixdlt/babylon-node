@@ -17,17 +17,18 @@ fn handle_transaction_receipt_internal(
 ) -> Result<models::TransactionReceiptResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
+    let mapping_context = MappingContext::new(&state_manager.network);
+
     let intent_hash = extract_intent_hash(request.intent_hash)
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
-    let network = &state_manager.network;
     let txn_state_version_opt = state_manager
         .staged_store
         .root
         .get_txn_state_version_by_identifier(&intent_hash);
 
     if let Some(txn_state_version) = txn_state_version_opt {
-        let txn = state_manager
+        let ledger_transaction = state_manager
             .staged_store
             .root
             .get_committed_transaction(txn_state_version)
@@ -47,8 +48,8 @@ fn handle_transaction_receipt_internal(
 
         Ok(models::TransactionReceiptResponse {
             committed: Box::new(to_api_committed_transaction(
-                network,
-                txn,
+                &mapping_context,
+                ledger_transaction,
                 receipt,
                 identifiers,
             )?),

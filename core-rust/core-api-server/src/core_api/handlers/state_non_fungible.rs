@@ -1,8 +1,8 @@
 use crate::core_api::*;
 use radix_engine::model::PersistedSubstate;
 use radix_engine::types::{
-    Bech32Decoder, Bech32Encoder, GlobalAddress, NonFungibleStoreOffset, RENodeId,
-    ResourceManagerOffset, ResourceType, SubstateId, SubstateOffset,
+    GlobalAddress, NonFungibleStoreOffset, RENodeId, ResourceManagerOffset, ResourceType,
+    SubstateId, SubstateOffset,
 };
 
 use crate::core_api::models::StateNonFungibleResponse;
@@ -21,10 +21,10 @@ fn handle_state_non_fungible_internal(
 ) -> Result<StateNonFungibleResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
-    let bech32_decoder = Bech32Decoder::new(&state_manager.network);
-    let bech32_encoder = Bech32Encoder::new(&state_manager.network);
+    let mapping_context = MappingContext::new(&state_manager.network);
+    let extraction_context = ExtractionContext::new(&state_manager.network);
 
-    let resource_address = extract_resource_address(&bech32_decoder, &request.resource_address)
+    let resource_address = extract_resource_address(&extraction_context, &request.resource_address)
         .map_err(|err| err.into_response_error("resource_address"))?;
 
     let resource_node_id =
@@ -81,7 +81,7 @@ fn handle_state_non_fungible_internal(
 
     Ok(StateNonFungibleResponse {
         non_fungible: Some(to_api_non_fungible_substate(
-            &bech32_encoder,
+            &mapping_context,
             &non_fungible_substate_id,
             &non_fungible,
         )?),
