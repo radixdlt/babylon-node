@@ -81,6 +81,7 @@ import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
@@ -130,7 +131,7 @@ public abstract class DeterministicCoreApiTestBase {
                         StateComputerConfig.rev2(
                             Network.INTEGRATIONTESTNET.getId(),
                             TransactionBuilder.createGenesisWithNumValidators(
-                                1, UInt64.fromNonNegativeLong(10000000)),
+                                1, Decimal.of(1), UInt64.fromNonNegativeLong(10000000)),
                             REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                             StateComputerConfig.REV2ProposerConfig.mempool(
                                 50, 1000, MempoolRelayConfig.of())),

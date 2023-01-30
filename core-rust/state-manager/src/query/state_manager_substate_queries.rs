@@ -26,7 +26,7 @@ impl<T: ReadableSubstateStore> StateManagerSubstateQueries for T {
 
     fn get_epoch(&self) -> u64 {
         let epoch_manager_node = self
-            .global_deref(GlobalAddress::System(EPOCH_MANAGER))
+            .global_deref(GlobalAddress::Component(EPOCH_MANAGER))
             .expect("Couldn't find Epoch Manager from Global Address!");
 
         let system_substate: EpochManagerSubstate = self

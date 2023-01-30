@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.Validator;
+import com.radixdlt.api.core.generated.models.ActiveValidator;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -43,7 +43,7 @@ public class NextEpoch {
   private Long epoch;
 
   public static final String JSON_PROPERTY_VALIDATORS = "validators";
-  private List<Validator> validators = new ArrayList<>();
+  private List<ActiveValidator> validators = new ArrayList<>();
 
   public NextEpoch() { 
   }
@@ -76,12 +76,12 @@ public class NextEpoch {
   }
 
 
-  public NextEpoch validators(List<Validator> validators) {
+  public NextEpoch validators(List<ActiveValidator> validators) {
     this.validators = validators;
     return this;
   }
 
-  public NextEpoch addValidatorsItem(Validator validatorsItem) {
+  public NextEpoch addValidatorsItem(ActiveValidator validatorsItem) {
     this.validators.add(validatorsItem);
     return this;
   }
@@ -95,14 +95,14 @@ public class NextEpoch {
   @JsonProperty(JSON_PROPERTY_VALIDATORS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<Validator> getValidators() {
+  public List<ActiveValidator> getValidators() {
     return validators;
   }
 
 
   @JsonProperty(JSON_PROPERTY_VALIDATORS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValidators(List<Validator> validators) {
+  public void setValidators(List<ActiveValidator> validators) {
     this.validators = validators;
   }
 

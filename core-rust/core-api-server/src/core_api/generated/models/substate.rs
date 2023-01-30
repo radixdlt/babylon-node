@@ -49,7 +49,7 @@ pub enum Substate {
     },
     #[serde(rename="EpochManager")]
     EpochManagerSubstate {
-        /// The Bech32m-encoded human readable version of the system address
+        /// The Bech32m-encoded human readable version of the component address
         #[serde(rename = "address")]
         address: String,
         /// An integer between `0` and `10^10`, marking the current epoch
@@ -126,19 +126,23 @@ pub enum Substate {
     },
     #[serde(rename="Validator")]
     ValidatorSubstate {
-        /// The Bech32m-encoded human readable version of the system address
+        /// The Bech32m-encoded human readable version of the component address
         #[serde(rename = "epoch_manager_address")]
         epoch_manager_address: String,
-        /// The Bech32m-encoded human readable version of the system address
+        /// The Bech32m-encoded human readable version of the component address
         #[serde(rename = "validator_address")]
         validator_address: String,
         #[serde(rename = "key")]
         key: Box<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
+        #[serde(rename = "stake_vault")]
+        stake_vault: Box<crate::core_api::generated::models::EntityReference>,
+        #[serde(rename = "is_registered")]
+        is_registered: bool,
     },
     #[serde(rename="ValidatorSet")]
     ValidatorSetSubstate {
         #[serde(rename = "validator_set")]
-        validator_set: Vec<crate::core_api::generated::models::Validator>,
+        validator_set: Vec<crate::core_api::generated::models::ActiveValidator>,
         /// An integer between `0` and `10^10`, marking the epoch the validator set is a part of
         #[serde(rename = "epoch")]
         epoch: i64,

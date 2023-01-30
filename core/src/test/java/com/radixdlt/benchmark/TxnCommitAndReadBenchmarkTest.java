@@ -69,6 +69,8 @@ import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.StreamTransactionsRequest;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.DtoLedgerProof;
@@ -82,6 +84,7 @@ import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.UInt64;
 import java.util.ArrayList;
 import java.util.List;
@@ -114,7 +117,7 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
             DefaultSerialization.getInstance().toDson(proof, DsonOutput.Output.ALL);
         final var commitRequest =
             new CommitRequest(
-                createUniqueTransactions(NUM_TXNS_IN_A_COMMIT),
+                createUniqueTransactions(NUM_TXNS_IN_A_COMMIT, i),
                 UInt64.fromNonNegativeLong(proof.getStateVersion()),
                 proofBytes,
                 Option.none());
@@ -190,9 +193,13 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
         totalTxnReaderCalls);
   }
 
-  private List<RawLedgerTransaction> createUniqueTransactions(int numTransactions) {
+  private List<RawLedgerTransaction> createUniqueTransactions(
+      int numTransactions, int notaryPrivKeySeed) throws PrivateKeyException, PublicKeyException {
     final List<RawLedgerTransaction> res = new ArrayList<>();
-    final var notary = ECKeyPair.generateNew();
+    final byte[] prvBytes = new byte[ECKeyPair.BYTES];
+    final byte[] seedBytes = Longs.toByteArray(notaryPrivKeySeed + 1);
+    System.arraycopy(seedBytes, 0, prvBytes, prvBytes.length - seedBytes.length, seedBytes.length);
+    final var notary = ECKeyPair.fromPrivateKey(prvBytes);
     for (int i = 0; i < numTransactions; i++) {
       final var intentBytes =
           REv2TestTransactions.constructValidIntentBytes(

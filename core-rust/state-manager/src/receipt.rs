@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 use radix_engine::engine::RuntimeError;
 use radix_engine::fee::FeeSummary;
@@ -10,6 +10,7 @@ use radix_engine::transaction::{
     TransactionReceipt as EngineTransactionReceipt, TransactionResult,
 };
 use radix_engine::types::{hash, scrypto_encode, Hash, Level, SubstateId};
+use radix_engine_interface::model::ComponentAddress;
 use radix_engine_interface::*;
 
 use crate::AccumulatorHash;
@@ -73,7 +74,7 @@ pub struct LedgerTransactionReceipt {
     pub substate_changes: SubstateChanges,
     pub entity_changes: EntityChanges,
     pub resource_changes: Vec<ResourceChange>,
-    pub next_epoch: Option<(BTreeSet<Validator>, u64)>,
+    pub next_epoch: Option<(BTreeMap<ComponentAddress, Validator>, u64)>,
 }
 
 impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {

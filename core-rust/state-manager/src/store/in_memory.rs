@@ -70,36 +70,11 @@ use crate::{
     IntentHash, LedgerPayloadHash, LedgerTransactionReceipt,
 };
 
+use radix_engine::ledger::OutputValue;
+use radix_engine::model::PersistedSubstate;
+use radix_engine_interface::api::types::{KeyValueStoreId, SubstateId};
+use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 use std::collections::{BTreeMap, HashMap};
-
-#[derive(Debug)]
-pub struct InMemoryVertexStore {
-    vertex_store: Option<Vec<u8>>,
-}
-
-impl InMemoryVertexStore {
-    pub fn new() -> Self {
-        Self { vertex_store: None }
-    }
-}
-
-impl WriteableVertexStore for InMemoryVertexStore {
-    fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>) {
-        self.vertex_store = Some(vertex_store_bytes);
-    }
-}
-
-impl RecoverableVertexStore for InMemoryVertexStore {
-    fn get_vertex_store(&self) -> Option<Vec<u8>> {
-        self.vertex_store.clone()
-    }
-}
-
-impl Default for InMemoryVertexStore {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 #[derive(Debug)]
 pub struct InMemoryStore {
@@ -111,6 +86,8 @@ pub struct InMemoryStore {
     ledger_payload_hash_lookup: HashMap<LedgerPayloadHash, u64>,
     proofs: BTreeMap<u64, Vec<u8>>,
     epoch_proofs: BTreeMap<u64, Vec<u8>>,
+    vertex_store: Option<Vec<u8>>,
+    substate_store: SerializedInMemorySubstateStore,
 }
 
 impl InMemoryStore {
@@ -124,6 +101,8 @@ impl InMemoryStore {
             ledger_payload_hash_lookup: HashMap::new(),
             proofs: BTreeMap::new(),
             epoch_proofs: BTreeMap::new(),
+            vertex_store: None,
+            substate_store: SerializedInMemorySubstateStore::new(),
         }
     }
 
@@ -169,18 +148,15 @@ impl Default for InMemoryStore {
     }
 }
 
-impl WriteableTransactionStore for InMemoryStore {
-    fn insert_committed_transactions(
-        &mut self,
-        transactions: Vec<(
-            LedgerTransaction,
-            LedgerTransactionReceipt,
-            CommittedTransactionIdentifiers,
-        )>,
-    ) {
-        for (txn, receipt, identifiers) in transactions {
-            self.insert_transaction(txn, receipt, identifiers);
-        }
+impl WriteableVertexStore for InMemoryStore {
+    fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>) {
+        self.vertex_store = Some(vertex_store_bytes);
+    }
+}
+
+impl RecoverableVertexStore for InMemoryStore {
+    fn get_vertex_store(&self) -> Option<Vec<u8>> {
+        self.vertex_store.clone()
     }
 }
 
@@ -199,6 +175,44 @@ impl TransactionIndex<&UserPayloadHash> for InMemoryStore {
 impl TransactionIndex<&LedgerPayloadHash> for InMemoryStore {
     fn get_txn_state_version_by_identifier(&self, identifier: &LedgerPayloadHash) -> Option<u64> {
         self.ledger_payload_hash_lookup.get(identifier).cloned()
+    }
+}
+
+impl ReadableSubstateStore for InMemoryStore {
+    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
+        self.substate_store.get_substate(substate_id)
+    }
+}
+
+impl QueryableSubstateStore for InMemoryStore {
+    fn get_kv_store_entries(
+        &self,
+        kv_store_id: &KeyValueStoreId,
+    ) -> HashMap<Vec<u8>, PersistedSubstate> {
+        self.substate_store.get_kv_store_entries(kv_store_id)
+    }
+}
+
+impl CommitStore for InMemoryStore {
+    fn commit(&mut self, commit_bundle: CommitBundle) {
+        for (txn, receipt, identifiers) in commit_bundle.transactions {
+            self.insert_transaction(txn, receipt, identifiers);
+        }
+
+        if let Some(epoch_boundary) = commit_bundle.epoch_boundary {
+            self.epoch_proofs
+                .insert(epoch_boundary, commit_bundle.proof_bytes.clone());
+        }
+        self.proofs
+            .insert(commit_bundle.proof_state_version, commit_bundle.proof_bytes);
+
+        for (substate_id, substate) in commit_bundle.substates {
+            self.substate_store.put_substate(substate_id, substate);
+        }
+
+        if let Some(vertex_store) = commit_bundle.vertex_store {
+            self.save_vertex_store(vertex_store)
+        }
     }
 }
 
@@ -243,21 +257,6 @@ impl QueryableTransactionStore for InMemoryStore {
         state_version: u64,
     ) -> Option<CommittedTransactionIdentifiers> {
         Some(self.transaction_identifiers.get(&state_version)?.clone())
-    }
-}
-
-impl WriteableProofStore for InMemoryStore {
-    fn insert_proof(
-        &mut self,
-        state_version: u64,
-        epoch_boundary: Option<u64>,
-        proof_bytes: Vec<u8>,
-    ) {
-        if let Some(epoch_boundary) = epoch_boundary {
-            self.epoch_proofs
-                .insert(epoch_boundary, proof_bytes.clone());
-        }
-        self.proofs.insert(state_version, proof_bytes);
     }
 }
 

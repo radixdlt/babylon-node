@@ -72,6 +72,7 @@ import com.radixdlt.exceptions.ManifestCompilationException;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionHeader;
 import com.radixdlt.sbor.NativeCalls;
@@ -79,7 +80,7 @@ import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class TransactionBuilder {
@@ -89,25 +90,27 @@ public final class TransactionBuilder {
   }
 
   public static RawLedgerTransaction createGenesis(
-      Set<ECDSASecp256k1PublicKey> validatorSet, UInt64 initialEpoch, UInt64 roundsPerEpoch) {
+      Map<ECDSASecp256k1PublicKey, Decimal> validatorSet,
+      UInt64 initialEpoch,
+      UInt64 roundsPerEpoch) {
     return RawLedgerTransaction.create(
         createGenesisFunc.call(tuple(validatorSet, initialEpoch, roundsPerEpoch)));
   }
 
   public static RawLedgerTransaction createGenesis(
-      ECDSASecp256k1PublicKey validator, UInt64 roundsPerEpoch) {
+      ECDSASecp256k1PublicKey validator, Decimal initialStake, UInt64 roundsPerEpoch) {
     return RawLedgerTransaction.create(
         createGenesisFunc.call(
-            tuple(Set.of(validator), UInt64.fromNonNegativeLong(1), roundsPerEpoch)));
+            tuple(Map.of(validator, initialStake), UInt64.fromNonNegativeLong(1), roundsPerEpoch)));
   }
 
   public static RawLedgerTransaction createGenesisWithNumValidators(
-      long numValidators, UInt64 roundsPerEpoch) {
+      long numValidators, Decimal initialStake, UInt64 roundsPerEpoch) {
     var validators =
         PrivateKeys.numeric(1)
             .limit(numValidators)
             .map(ECKeyPair::getPublicKey)
-            .collect(Collectors.toSet());
+            .collect(Collectors.toMap(k -> k, k -> initialStake));
     return RawLedgerTransaction.create(
         createGenesisFunc.call(tuple(validators, UInt64.fromNonNegativeLong(1), roundsPerEpoch)));
   }
@@ -148,7 +151,7 @@ public final class TransactionBuilder {
   private static native byte[] compileManifest(byte[] payload);
 
   private static final NativeCalls.StaticFunc1<
-          Tuple.Tuple3<Set<ECDSASecp256k1PublicKey>, UInt64, UInt64>, byte[]>
+          Tuple.Tuple3<Map<ECDSASecp256k1PublicKey, Decimal>, UInt64, UInt64>, byte[]>
       createGenesisFunc =
           NativeCalls.StaticFunc1.with(
               new TypeToken<>() {},

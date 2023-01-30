@@ -1,5 +1,9 @@
 use crate::store::traits::*;
-use crate::CommittedTransactionIdentifiers;
+use crate::{AccumulatorHash, CommittedTransactionIdentifiers};
+
+pub trait QueryableAccumulatorHash {
+    fn get_top_accumulator_hash(&self) -> AccumulatorHash;
+}
 
 pub trait TransactionIdentifierLoader {
     fn get_top_of_ledger_transaction_identifiers(&self) -> Option<CommittedTransactionIdentifiers>;

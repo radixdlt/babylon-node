@@ -62,23 +62,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.commit;
+package com.radixdlt.identifiers;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.rev2.SystemAddress;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.sbor.NativeCalls;
 
-public record Validator(SystemAddress address, ECDSASecp256k1PublicKey key) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        Validator.class,
-        codecs ->
-            StructCodec.with(
-                Validator::new,
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                (t, encoder) -> encoder.encode(t.address, t.key)));
+public final class Address {
+  static {
+    // This is idempotent with the other calls
+    System.loadLibrary("corerust");
   }
+
+  public static ComponentAddress virtualAccountAddress(ECDSASecp256k1PublicKey key) {
+    return virtualAccountAddress.call(key);
+  }
+
+  private static final NativeCalls.StaticFunc1<ECDSASecp256k1PublicKey, ComponentAddress>
+      virtualAccountAddress =
+          NativeCalls.StaticFunc1.with(
+              new TypeToken<>() {}, new TypeToken<>() {}, Address::virtualAccountAddress);
+
+  private static native byte[] virtualAccountAddress(byte[] requestPayload);
 }

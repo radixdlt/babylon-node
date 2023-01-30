@@ -32,6 +32,7 @@ import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstat
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyConfigSubstate;
 import com.radixdlt.api.core.generated.models.ComponentStateSubstate;
 import com.radixdlt.api.core.generated.models.EcdsaSecp256k1PublicKey;
+import com.radixdlt.api.core.generated.models.EntityReference;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
 import com.radixdlt.api.core.generated.models.GlobalAddressSubstate;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
@@ -59,7 +60,9 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonPropertyOrder({
   ValidatorSubstate.JSON_PROPERTY_EPOCH_MANAGER_ADDRESS,
   ValidatorSubstate.JSON_PROPERTY_VALIDATOR_ADDRESS,
-  ValidatorSubstate.JSON_PROPERTY_KEY
+  ValidatorSubstate.JSON_PROPERTY_KEY,
+  ValidatorSubstate.JSON_PROPERTY_STAKE_VAULT,
+  ValidatorSubstate.JSON_PROPERTY_IS_REGISTERED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -98,6 +101,12 @@ public class ValidatorSubstate extends Substate {
   public static final String JSON_PROPERTY_KEY = "key";
   private EcdsaSecp256k1PublicKey key;
 
+  public static final String JSON_PROPERTY_STAKE_VAULT = "stake_vault";
+  private EntityReference stakeVault;
+
+  public static final String JSON_PROPERTY_IS_REGISTERED = "is_registered";
+  private Boolean isRegistered;
+
   public ValidatorSubstate() { 
   }
 
@@ -107,11 +116,11 @@ public class ValidatorSubstate extends Substate {
   }
 
    /**
-   * The Bech32m-encoded human readable version of the system address
+   * The Bech32m-encoded human readable version of the component address
    * @return epochManagerAddress
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the system address")
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the component address")
   @JsonProperty(JSON_PROPERTY_EPOCH_MANAGER_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -133,11 +142,11 @@ public class ValidatorSubstate extends Substate {
   }
 
    /**
-   * The Bech32m-encoded human readable version of the system address
+   * The Bech32m-encoded human readable version of the component address
    * @return validatorAddress
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the system address")
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the component address")
   @JsonProperty(JSON_PROPERTY_VALIDATOR_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -179,6 +188,58 @@ public class ValidatorSubstate extends Substate {
   }
 
 
+  public ValidatorSubstate stakeVault(EntityReference stakeVault) {
+    this.stakeVault = stakeVault;
+    return this;
+  }
+
+   /**
+   * Get stakeVault
+   * @return stakeVault
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_STAKE_VAULT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public EntityReference getStakeVault() {
+    return stakeVault;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_STAKE_VAULT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setStakeVault(EntityReference stakeVault) {
+    this.stakeVault = stakeVault;
+  }
+
+
+  public ValidatorSubstate isRegistered(Boolean isRegistered) {
+    this.isRegistered = isRegistered;
+    return this;
+  }
+
+   /**
+   * Get isRegistered
+   * @return isRegistered
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IS_REGISTERED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsRegistered() {
+    return isRegistered;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_REGISTERED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsRegistered(Boolean isRegistered) {
+    this.isRegistered = isRegistered;
+  }
+
+
   /**
    * Return true if this ValidatorSubstate object is equal to o.
    */
@@ -194,12 +255,14 @@ public class ValidatorSubstate extends Substate {
     return Objects.equals(this.epochManagerAddress, validatorSubstate.epochManagerAddress) &&
         Objects.equals(this.validatorAddress, validatorSubstate.validatorAddress) &&
         Objects.equals(this.key, validatorSubstate.key) &&
+        Objects.equals(this.stakeVault, validatorSubstate.stakeVault) &&
+        Objects.equals(this.isRegistered, validatorSubstate.isRegistered) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(epochManagerAddress, validatorAddress, key, super.hashCode());
+    return Objects.hash(epochManagerAddress, validatorAddress, key, stakeVault, isRegistered, super.hashCode());
   }
 
   @Override
@@ -210,6 +273,8 @@ public class ValidatorSubstate extends Substate {
     sb.append("    epochManagerAddress: ").append(toIndentedString(epochManagerAddress)).append("\n");
     sb.append("    validatorAddress: ").append(toIndentedString(validatorAddress)).append("\n");
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
+    sb.append("    stakeVault: ").append(toIndentedString(stakeVault)).append("\n");
+    sb.append("    isRegistered: ").append(toIndentedString(isRegistered)).append("\n");
     sb.append("}");
     return sb.toString();
   }
