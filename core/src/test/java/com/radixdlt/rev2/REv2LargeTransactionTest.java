@@ -124,9 +124,10 @@ public final class REv2LargeTransactionTest {
   }
 
   private static RawNotarizedTransaction createLargeValidTransaction() {
-    var intentBytes =
+    final var blobsSize = 1024 * 1024 - 462 /* space for other intent/notarized txn fields */;
+    final var intentBytes =
         REv2TestTransactions.constructLargeValidTransactionIntent(
-            NETWORK_DEFINITION, 0, 1, TEST_KEY.getPublicKey().toPublicKey(), 23 * 1024 * 1024);
+            NETWORK_DEFINITION, 0, 1, TEST_KEY.getPublicKey().toPublicKey(), blobsSize);
     return REv2TestTransactions.constructRawTransaction(intentBytes, TEST_KEY, List.of(TEST_KEY));
   }
 

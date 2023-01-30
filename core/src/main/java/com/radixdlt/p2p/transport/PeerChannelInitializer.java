@@ -98,7 +98,9 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
   // This needs to be larger than proposals / vertices
   // See also constant/s in REv2TransactionsAndProofReader
   // TODO - update this number once we have a REP/RNP for these numbers
-  private static final int MAX_PACKET_LENGTH = 25 * 1024 * 1024;
+  // Current max txn size is 1024*1024 and there are max 10 txns in a proposal
+  // + adding an extra mb for any vertex/proposal/qc overhead
+  private static final int MAX_PACKET_LENGTH = 11 * 1024 * 1024;
   private static final int FRAME_HEADER_LENGTH = Integer.BYTES;
   private static final int SOCKET_BACKLOG_SIZE = 1024;
 

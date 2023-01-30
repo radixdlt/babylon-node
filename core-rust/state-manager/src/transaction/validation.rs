@@ -14,10 +14,8 @@ pub struct UserTransactionValidator {
     pub intent_hash_manager: TestIntentHashManager,
 }
 
-// NB - For alphanet, we allow transactions of up to 24MB, up from
-// 4MB MAX_PAYLOAD_SIZE in the radixdlt-scrypto codebase
-// This limit will likely need reducing after some review
-pub const OVERRIDE_MAX_PAYLOAD_SIZE: usize = 24 * 1024 * 1024;
+// TODO: consider use of radix-engine-constans::MAX_TRANSACTION_SIZE here
+pub const OVERRIDE_MAX_PAYLOAD_SIZE: usize = 1024 * 1024;
 
 // Add a few extra bytes for the enum disciminator at the start(!)
 pub const OVERRIDE_LEDGER_MAX_PAYLOAD_SIZE: usize = OVERRIDE_MAX_PAYLOAD_SIZE + 10;
