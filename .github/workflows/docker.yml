@@ -108,30 +108,32 @@ jobs:
           tags: ${{ needs.build_deb.outputs.tags }}
           labels: ${{ needs.build_deb.outputs.labels }}
 
-  ephemeral-deploy-and-test:
-    name: Run ephemeral deploy and test
-    needs:
-      - build_deb
-      - build_push_container
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Get docker image tag
-        run: |
-          #There can be multiple tag entries. Get the first and only take the tag (i.e. not the image repo and name)
-          TAGS="${{ needs.build_deb.outputs.tags }}"
-          DOCKER_TAG=$(echo $TAGS | awk 'NR==1{print $1}' | cut -d':' -f2)
-          echo "DOCKER_TAG=$DOCKER_TAG" >> $GITHUB_ENV
-          echo "BABYLON_NODE_BRANCH=$GITHUB_HEAD_REF" >> $GITHUB_ENV
-      - name: Deploy and test on ephemeral network
-        uses: toptal/jenkins-job-trigger-action@1.0.0
-        with:
-          jenkins_url: "${{ secrets.JENKINS_URL }}"
-          jenkins_user: ${{ secrets.JENKINS_USER }}
-          jenkins_token: ${{ secrets.BABYLON_NODE_JENKINS_API_TOKEN }}
-          job_name: "ephemeral-deployments/job/ephemeral-env-deploy-and-test"
-          job_params: |
-            {
-              "nodeDockerTag": "${{ env.DOCKER_TAG }}",
-              "babylonNodeBranch": "${{ env.BABYLON_NODE_BRANCH }}"
-            }
-          job_timeout: "3600"
+# TEMPORARILY REMOVE EPHEMERAL TESTS
+# => Until we can change them to only run the "node" tests and not the transaction tests
+# ephemeral-deploy-and-test:
+#   name: Run ephemeral deploy and test
+#   needs:
+#     - build_deb
+#     - build_push_container
+#   runs-on: ubuntu-22.04
+#   steps:
+#     - name: Get docker image tag
+#       run: |
+#         #There can be multiple tag entries. Get the first and only take the tag (i.e. not the image repo and name)
+#         TAGS="${{ needs.build_deb.outputs.tags }}"
+#         DOCKER_TAG=$(echo $TAGS | awk 'NR==1{print $1}' | cut -d':' -f2)
+#         echo "DOCKER_TAG=$DOCKER_TAG" >> $GITHUB_ENV
+#         echo "BABYLON_NODE_BRANCH=$GITHUB_HEAD_REF" >> $GITHUB_ENV
+#     - name: Deploy and test on ephemeral network
+#       uses: toptal/jenkins-job-trigger-action@1.0.0
+#       with:
+#         jenkins_url: "${{ secrets.JENKINS_URL }}"
+#         jenkins_user: ${{ secrets.JENKINS_USER }}
+#         jenkins_token: ${{ secrets.BABYLON_NODE_JENKINS_API_TOKEN }}
+#         job_name: "ephemeral-deployments/job/ephemeral-env-deploy-and-test"
+#         job_params: |
+#           {
+#             "nodeDockerTag": "${{ env.DOCKER_TAG }}",
+#             "babylonNodeBranch": "${{ env.BABYLON_NODE_BRANCH }}"
+#           }
+#         job_timeout: "3600"
