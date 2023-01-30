@@ -15,7 +15,7 @@ pub struct UserTransactionValidator {
 }
 
 // TODO: consider use of radix-engine-constans::MAX_TRANSACTION_SIZE here
-pub const OVERRIDE_MAX_PAYLOAD_SIZE: usize = 1 * 1024 * 1024;
+pub const OVERRIDE_MAX_PAYLOAD_SIZE: usize = 1024 * 1024;
 
 // Add a few extra bytes for the enum disciminator at the start(!)
 pub const OVERRIDE_LEDGER_MAX_PAYLOAD_SIZE: usize = OVERRIDE_MAX_PAYLOAD_SIZE + 10;
