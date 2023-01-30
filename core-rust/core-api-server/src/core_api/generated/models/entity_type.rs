@@ -32,6 +32,8 @@ pub enum EntityType {
     NonFungibleStore,
     #[serde(rename = "Clock")]
     Clock,
+    #[serde(rename = "AccessController")]
+    AccessController,
 
 }
 
@@ -48,6 +50,7 @@ impl ToString for EntityType {
             Self::Global => String::from("Global"),
             Self::NonFungibleStore => String::from("NonFungibleStore"),
             Self::Clock => String::from("Clock"),
+            Self::AccessController => String::from("AccessController"),
         }
     }
 }

@@ -121,6 +121,11 @@ fn to_api_address_type(hrp_set: &HrpSet, entity_type: EntityType) -> models::Add
             models::EntityType::Clock,
             extract_length(ComponentAddress::Clock),
         ),
+        EntityType::AccessControllerComponent => (
+            models::address_type::Subtype::AccessController,
+            models::EntityType::AccessController,
+            extract_length(ComponentAddress::AccessController),
+        ),
     };
     models::AddressType {
         hrp_prefix: hrp_set.get_entity_hrp(&entity_type).to_string(),

@@ -5,12 +5,13 @@ use crate::core_api::models;
 use radix_engine_interface::data::{IndexedScryptoValue, SchemaPath, SchemaSubPath};
 
 use radix_engine::model::{
-    AccessRulesChainSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
-    ComponentRoyaltyConfigSubstate, ComponentStateSubstate, CurrentTimeRoundedToMinutesSubstate,
-    EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate,
-    NonFungible, NonFungibleSubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate,
-    PackageRoyaltyConfigSubstate, PersistedSubstate, Resource, ResourceManagerSubstate, Validator,
-    ValidatorSetSubstate, ValidatorSubstate, VaultSubstate,
+    AccessControllerSubstate, AccessRulesChainSubstate, ComponentInfoSubstate,
+    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
+    CurrentTimeRoundedToMinutesSubstate, EpochManagerSubstate, GlobalAddressSubstate,
+    KeyValueStoreEntrySubstate, MetadataSubstate, NonFungible, NonFungibleSubstate,
+    PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate,
+    PersistedSubstate, Resource, ResourceManagerSubstate, Validator, ValidatorSetSubstate,
+    ValidatorSubstate, VaultSubstate,
 };
 use radix_engine::types::{
     scrypto_encode, AccessRule, AccessRuleEntry, AccessRuleKey, AccessRuleNode, AccessRules,
@@ -86,6 +87,9 @@ pub fn to_api_substate(
         }
         PersistedSubstate::NonFungible(non_fungible_wrapper) => {
             to_api_non_fungible_substate(bech32_encoder, substate_id, non_fungible_wrapper)?
+        }
+        PersistedSubstate::AccessController(access_controller) => {
+            to_api_access_controller_substate(bech32_encoder, access_controller)?
         }
     })
 }
@@ -751,8 +755,10 @@ pub fn to_api_validator_substate(
         key: Box::new(to_api_ecdsa_secp256k1_public_key(key)),
         stake_vault: Box::new(owned_stake_vault_id.into()),
         unstake_vault: Box::new(owned_unstake_vault_id.into()),
-        unstake_claim_token_resource_address: bech32_encoder.encode_resource_address_to_string(unstake_nft),
-        liquid_stake_unit_resource_address: bech32_encoder.encode_resource_address_to_string(liquidity_token),
+        unstake_claim_token_resource_address: bech32_encoder
+            .encode_resource_address_to_string(unstake_nft),
+        liquid_stake_unit_resource_address: bech32_encoder
+            .encode_resource_address_to_string(liquidity_token),
         is_registered: *is_registered,
     })
 }
@@ -900,6 +906,18 @@ fn to_api_non_fungible_data(
         mutable_data: mutable_data_sbor_option.map(Box::new),
         mutable_data_raw_hex: to_hex(&mutable_data),
     })
+}
+
+pub fn to_api_access_controller_substate(
+    bech32_encoder: &Bech32Encoder,
+    substate: &AccessControllerSubstate,
+) -> Result<models::Substate, MappingError> {
+    let data = scrypto_encode(substate).unwrap();
+    let substate = models::Substate::AccessControllerSubstate {
+        data_struct: Box::new(to_api_data_struct(bech32_encoder, &data)?),
+    };
+
+    Ok(substate)
 }
 
 fn to_api_key_value_story_entry_substate(

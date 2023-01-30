@@ -2055,6 +2055,7 @@ components:
         - Global
         - NonFungibleStore
         - Clock
+        - AccessController
     Substate:
       type: object
       required:
@@ -2084,6 +2085,7 @@ components:
           KeyValueStoreEntry: '#/components/schemas/KeyValueStoreEntrySubstate'
           Vault: '#/components/schemas/VaultSubstate'
           NonFungibleStoreEntry: '#/components/schemas/NonFungibleStoreEntrySubstate'
+          AccessController: '#/components/schemas/AccessControllerSubstate'
     SubstateType:
       type: string
       enum:
@@ -2107,6 +2109,7 @@ components:
         - KeyValueStoreEntry
         - NonFungibleStoreEntry
         - Vault
+        - AccessController
     SubstateKeyType:
       # This corresponds to what's currently referred to as the "SubstateOffset"
       # This is roughly the same as the substate type, but some entities have two of the same substates
@@ -2137,6 +2140,7 @@ components:
         - KeyValueStoreEntry
         - NonFungibleStoreEntry
         - Vault
+        - AccessController
 ### COMMON SUBSTATES
     AccessRulesChainSubstate:
       allOf:
@@ -2466,6 +2470,15 @@ components:
           type: string
           description: |
             The hex-encoded raw bytes of the mutadata data of the NF.
+    AccessControllerSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - data_struct
+          properties:
+            data_struct:
+              $ref: '#/components/schemas/DataStruct'
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################
@@ -2551,6 +2564,7 @@ components:
             - EpochManager
             - Validator
             - Clock
+            - AccessController
         hrp_prefix:
           type: string
         entity_type:

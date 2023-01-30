@@ -26,14 +26,14 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerSubstate;
-import com.radixdlt.api.core.generated.models.AccessRules;
 import com.radixdlt.api.core.generated.models.AccessRulesChainSubstate;
-import com.radixdlt.api.core.generated.models.AccessRulesChainSubstateAllOf;
 import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
 import com.radixdlt.api.core.generated.models.ComponentInfoSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyConfigSubstate;
 import com.radixdlt.api.core.generated.models.ComponentStateSubstate;
+import com.radixdlt.api.core.generated.models.ComponentStateSubstateAllOf;
+import com.radixdlt.api.core.generated.models.DataStruct;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
 import com.radixdlt.api.core.generated.models.GlobalAddressSubstate;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
@@ -50,17 +50,15 @@ import com.radixdlt.api.core.generated.models.ValidatorSubstate;
 import com.radixdlt.api.core.generated.models.VaultSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * AccessRulesChainSubstate
+ * AccessControllerSubstate
  */
 @JsonPropertyOrder({
-  AccessRulesChainSubstate.JSON_PROPERTY_CHAIN
+  AccessControllerSubstate.JSON_PROPERTY_DATA_STRUCT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -90,46 +88,41 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = VaultSubstate.class, name = "Vault"),
 })
 
-public class AccessRulesChainSubstate extends Substate {
-  public static final String JSON_PROPERTY_CHAIN = "chain";
-  private List<AccessRules> chain = new ArrayList<>();
+public class AccessControllerSubstate extends Substate {
+  public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
+  private DataStruct dataStruct;
 
-  public AccessRulesChainSubstate() { 
+  public AccessControllerSubstate() { 
   }
 
-  public AccessRulesChainSubstate chain(List<AccessRules> chain) {
-    this.chain = chain;
-    return this;
-  }
-
-  public AccessRulesChainSubstate addChainItem(AccessRules chainItem) {
-    this.chain.add(chainItem);
+  public AccessControllerSubstate dataStruct(DataStruct dataStruct) {
+    this.dataStruct = dataStruct;
     return this;
   }
 
    /**
-   * The layers of access rules applied. 
-   * @return chain
+   * Get dataStruct
+   * @return dataStruct
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The layers of access rules applied. ")
-  @JsonProperty(JSON_PROPERTY_CHAIN)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<AccessRules> getChain() {
-    return chain;
+  public DataStruct getDataStruct() {
+    return dataStruct;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CHAIN)
+  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setChain(List<AccessRules> chain) {
-    this.chain = chain;
+  public void setDataStruct(DataStruct dataStruct) {
+    this.dataStruct = dataStruct;
   }
 
 
   /**
-   * Return true if this AccessRulesChainSubstate object is equal to o.
+   * Return true if this AccessControllerSubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -139,22 +132,22 @@ public class AccessRulesChainSubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    AccessRulesChainSubstate accessRulesChainSubstate = (AccessRulesChainSubstate) o;
-    return Objects.equals(this.chain, accessRulesChainSubstate.chain) &&
+    AccessControllerSubstate accessControllerSubstate = (AccessControllerSubstate) o;
+    return Objects.equals(this.dataStruct, accessControllerSubstate.dataStruct) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(chain, super.hashCode());
+    return Objects.hash(dataStruct, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class AccessRulesChainSubstate {\n");
+    sb.append("class AccessControllerSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    chain: ").append(toIndentedString(chain)).append("\n");
+    sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -192,8 +185,8 @@ static {
   mappings.put("Validator", ValidatorSubstate.class);
   mappings.put("ValidatorSet", ValidatorSetSubstate.class);
   mappings.put("Vault", VaultSubstate.class);
-  mappings.put("AccessRulesChainSubstate", AccessRulesChainSubstate.class);
-  JSON.registerDiscriminator(AccessRulesChainSubstate.class, "substate_type", mappings);
+  mappings.put("AccessControllerSubstate", AccessControllerSubstate.class);
+  JSON.registerDiscriminator(AccessControllerSubstate.class, "substate_type", mappings);
 }
 }
 

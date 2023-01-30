@@ -13,6 +13,11 @@
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "substate_type")]
 pub enum Substate {
+    #[serde(rename="AccessController")]
+    AccessControllerSubstate {
+        #[serde(rename = "data_struct")]
+        data_struct: Box<crate::core_api::generated::models::DataStruct>,
+    },
     #[serde(rename="AccessRulesChain")]
     AccessRulesChainSubstate {
         /// The layers of access rules applied. 
