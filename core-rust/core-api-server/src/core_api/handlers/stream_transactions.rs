@@ -1,10 +1,9 @@
 use crate::core_api::*;
 
 use radix_engine::types::hash;
-use radix_engine::types::Bech32Encoder;
 
 use radix_engine_interface::data::scrypto_encode;
-use radix_engine_interface::node::NetworkDefinition;
+
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
 use state_manager::transaction::{LedgerTransaction, ValidatorTransaction};
@@ -66,13 +65,13 @@ fn handle_stream_transactions_internal(
             limit.try_into().expect("limit out of usize bounds"),
         );
 
-    let network = state_manager.network.clone();
+    let mapping_context = MappingContext::new(&state_manager.network);
 
     let api_txns = txns
         .into_iter()
         .map(|(ledger_transaction, receipt, identifiers)| {
             Ok(to_api_committed_transaction(
-                &network,
+                &mapping_context,
                 ledger_transaction,
                 receipt,
                 identifiers,
@@ -106,26 +105,25 @@ fn handle_stream_transactions_internal(
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_committed_transaction(
-    network: &NetworkDefinition,
+    context: &MappingContext,
     ledger_transaction: LedgerTransaction,
     receipt: LedgerTransactionReceipt,
     identifiers: CommittedTransactionIdentifiers,
 ) -> Result<models::CommittedTransaction, MappingError> {
-    let bech32_encoder = Bech32Encoder::new(network);
-    let receipt = to_api_receipt(&bech32_encoder, receipt)?;
+    let receipt = to_api_receipt(context, receipt)?;
 
     Ok(models::CommittedTransaction {
         state_version: to_api_state_version(identifiers.state_version)?,
         accumulator_hash: to_api_accumulator_hash(&identifiers.accumulator_hash),
-        ledger_transaction: Some(to_api_ledger_transaction(&ledger_transaction, network)?),
+        ledger_transaction: Some(to_api_ledger_transaction(context, &ledger_transaction)?),
         receipt: Box::new(receipt),
     })
 }
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_ledger_transaction(
+    context: &MappingContext,
     ledger_transaction: &LedgerTransaction,
-    network: &NetworkDefinition,
 ) -> Result<models::LedgerTransaction, MappingError> {
     Ok(match ledger_transaction {
         LedgerTransaction::User(tx) => models::LedgerTransaction::UserLedgerTransaction {
@@ -135,7 +133,7 @@ pub fn to_api_ledger_transaction(
                     message: "Error encoding user payload sbor".to_string(),
                 }
             })?),
-            notarized_transaction: Box::new(to_api_notarized_transaction(tx, network)?),
+            notarized_transaction: Box::new(to_api_notarized_transaction(context, tx)?),
         },
         LedgerTransaction::Validator(tx) => models::LedgerTransaction::ValidatorLedgerTransaction {
             payload_hex: to_hex(ledger_transaction.create_payload().map_err(|err| {
@@ -144,7 +142,7 @@ pub fn to_api_ledger_transaction(
                     message: "Error encoding validator payload sbor".to_string(),
                 }
             })?),
-            validator_transaction: Box::new(to_api_validator_transaction(tx, network)?),
+            validator_transaction: Box::new(to_api_validator_transaction(context, tx)?),
         },
         LedgerTransaction::System(tx) => models::LedgerTransaction::SystemLedgerTransaction {
             payload_hex: to_hex(ledger_transaction.create_payload().map_err(|err| {
@@ -153,15 +151,15 @@ pub fn to_api_ledger_transaction(
                     message: "Error encoding system payload sbor".to_string(),
                 }
             })?),
-            system_transaction: Box::new(to_api_system_transaction(tx, network)?),
+            system_transaction: Box::new(to_api_system_transaction(context, tx)?),
         },
     })
 }
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_notarized_transaction(
+    context: &MappingContext,
     tx: &NotarizedTransaction,
-    network: &NetworkDefinition,
 ) -> Result<models::NotarizedTransaction, MappingError> {
     // NOTE: We don't use the .hash() method on the struct impls themselves,
     //       because they use the wrong hash function
@@ -174,15 +172,15 @@ pub fn to_api_notarized_transaction(
     Ok(models::NotarizedTransaction {
         hash: to_api_payload_hash(&payload_hash),
         payload_hex: to_hex(payload),
-        signed_intent: Box::new(to_api_signed_intent(&tx.signed_intent, network)?),
+        signed_intent: Box::new(to_api_signed_intent(context, &tx.signed_intent)?),
         notary_signature: Some(to_api_signature(&tx.notary_signature)),
     })
 }
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_signed_intent(
+    context: &MappingContext,
     signed_intent: &SignedTransactionIntent,
-    network: &NetworkDefinition,
 ) -> Result<models::SignedTransactionIntent, MappingError> {
     // NOTE: We don't use the .hash() method on the struct impls themselves,
     //       because they use the wrong hash function
@@ -190,7 +188,7 @@ pub fn to_api_signed_intent(
 
     Ok(models::SignedTransactionIntent {
         hash: to_api_signed_intent_hash(&signed_intent_hash),
-        intent: Box::new(to_api_intent(&signed_intent.intent, network)?),
+        intent: Box::new(to_api_intent(context, &signed_intent.intent)?),
         intent_signatures: signed_intent
             .intent_signatures
             .iter()
@@ -201,8 +199,8 @@ pub fn to_api_signed_intent(
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_intent(
+    context: &MappingContext,
     intent: &TransactionIntent,
-    network: &NetworkDefinition,
 ) -> Result<models::TransactionIntent, MappingError> {
     // NOTE: We don't use the .hash() method on the struct impls themselves,
     //       because they use the wrong hash function
@@ -222,24 +220,23 @@ pub fn to_api_intent(
             cost_unit_limit: to_api_u32_as_i64(header.cost_unit_limit),
             tip_percentage: to_api_u16_as_i32(header.tip_percentage),
         }),
-        manifest: Box::new(to_api_manifest(&intent.manifest, network)?),
+        manifest: Box::new(to_api_manifest(context, &intent.manifest)?),
     })
 }
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_manifest(
+    context: &MappingContext,
     manifest: &TransactionManifest,
-    network: &NetworkDefinition,
 ) -> Result<models::TransactionManifest, MappingError> {
     Ok(models::TransactionManifest {
-        instructions: manifest::decompile(&manifest.instructions, network).map_err(|err| {
-            MappingError::InvalidManifest {
+        instructions: manifest::decompile(&manifest.instructions, &context.network_definition)
+            .map_err(|err| MappingError::InvalidManifest {
                 message: format!(
                     "Failed to decompile a transaction manifest: {err:?}, instructions: {:?}",
                     &manifest.instructions
                 ),
-            }
-        })?,
+            })?,
         blobs_hex: manifest
             .blobs
             .iter()
@@ -249,8 +246,8 @@ pub fn to_api_manifest(
 }
 
 pub fn to_api_validator_transaction(
+    _context: &MappingContext,
     validator_transaction: &ValidatorTransaction,
-    _network: &NetworkDefinition,
 ) -> Result<models::ValidatorTransaction, MappingError> {
     Ok(match validator_transaction {
         ValidatorTransaction::RoundUpdate {
@@ -268,8 +265,8 @@ pub fn to_api_validator_transaction(
 }
 
 pub fn to_api_system_transaction(
+    _context: &MappingContext,
     system_transaction: &SystemTransaction,
-    _network: &NetworkDefinition,
 ) -> Result<models::SystemTransaction, MappingError> {
     // NOTE: We don't use the .hash() method on the struct impls themselves,
     //       because they use the wrong hash function

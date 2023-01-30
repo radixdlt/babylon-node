@@ -1,8 +1,8 @@
 use crate::core_api::*;
 use radix_engine::model::PersistedSubstate;
 use radix_engine::types::{
-    AccessRulesChainOffset, Bech32Decoder, Bech32Encoder, ComponentOffset, GlobalAddress,
-    MetadataOffset, RENodeId, SubstateId, SubstateOffset,
+    AccessRulesChainOffset, ComponentOffset, GlobalAddress, MetadataOffset, RENodeId, SubstateId,
+    SubstateOffset,
 };
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::query::dump_component_state;
@@ -20,11 +20,12 @@ fn handle_state_component_internal(
 ) -> Result<models::StateComponentResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
-    let bech32_decoder = Bech32Decoder::new(&state_manager.network);
-    let bech32_encoder = Bech32Encoder::new(&state_manager.network);
+    let mapping_context = MappingContext::new(&state_manager.network);
+    let extraction_context = ExtractionContext::new(&state_manager.network);
 
-    let component_address = extract_component_address(&bech32_decoder, &request.component_address)
-        .map_err(|err| err.into_response_error("component_address"))?;
+    let component_address =
+        extract_component_address(&extraction_context, &request.component_address)
+            .map_err(|err| err.into_response_error("component_address"))?;
 
     let component_node_id =
         read_derefed_global_node_id(state_manager, GlobalAddress::Component(component_address))?;
@@ -91,7 +92,7 @@ fn handle_state_component_internal(
     let state_owned_vaults = component_dump
         .vaults
         .into_iter()
-        .map(|vault| to_api_vault_substate(&bech32_encoder, &vault))
+        .map(|vault| to_api_vault_substate(&mapping_context, &vault))
         .collect::<Result<Vec<_>, _>>()?;
 
     let descendent_ids = component_dump
@@ -103,26 +104,26 @@ fn handle_state_component_internal(
 
     Ok(models::StateComponentResponse {
         info: Some(to_api_component_info_substate(
-            &bech32_encoder,
+            &mapping_context,
             &component_info,
         )?),
         state: Some(to_api_component_state_substate(
-            &bech32_encoder,
+            &mapping_context,
             &component_state,
         )?),
         royalty_config: Some(to_api_component_royalty_config_substate(
-            &bech32_encoder,
+            &mapping_context,
             &component_royalty_config,
         )?),
         royalty_accumulator: Some(to_api_component_royalty_accumulator_substate(
             &component_royalty_accumulator,
         )?),
         access_rules: Some(to_api_access_rules_chain_substate(
-            &bech32_encoder,
+            &mapping_context,
             &component_access_rules,
         )?),
         metadata: Some(to_api_metadata_substate(
-            &bech32_encoder,
+            &mapping_context,
             &component_metadata,
         )?),
         state_owned_vaults,

@@ -4,7 +4,7 @@ use radix_engine::model::Validator;
 use radix_engine::{
     fee::{FeeSummary, RoyaltyReceiver},
     ledger::OutputValue,
-    types::{hash, scrypto_encode, Bech32Encoder, Decimal, GlobalAddress, RENodeId, SubstateId},
+    types::{hash, scrypto_encode, Decimal, GlobalAddress, RENodeId, SubstateId},
 };
 use radix_engine_interface::model::ComponentAddress;
 use std::collections::BTreeMap;
@@ -12,7 +12,7 @@ use std::collections::BTreeMap;
 use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
 
 pub fn to_api_receipt(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     receipt: LedgerTransactionReceipt,
 ) -> Result<models::TransactionReceipt, MappingError> {
     let fee_summary = receipt.fee_summary;
@@ -33,13 +33,13 @@ pub fn to_api_receipt(
     let created = substate_changes
         .created
         .into_iter()
-        .map(|substate_kv| to_api_new_substate_version(bech32_encoder, substate_kv))
+        .map(|substate_kv| to_api_new_substate_version(context, substate_kv))
         .collect::<Result<Vec<_>, _>>()?;
 
     let updated = substate_changes
         .updated
         .into_iter()
-        .map(|substate_kv| to_api_new_substate_version(bech32_encoder, substate_kv))
+        .map(|substate_kv| to_api_new_substate_version(context, substate_kv))
         .collect::<Result<Vec<_>, _>>()?;
 
     let deleted = substate_changes
@@ -67,20 +67,20 @@ pub fn to_api_receipt(
         new_global_entities,
     };
 
-    let api_fee_summary = to_api_fee_summary(bech32_encoder, fee_summary)?;
+    let api_fee_summary = to_api_fee_summary(context, fee_summary)?;
 
     let api_output = match output {
         Some(output) => Some(
             output
                 .into_iter()
-                .map(|line_output| scrypto_bytes_to_api_sbor_data(bech32_encoder, &line_output))
+                .map(|line_output| scrypto_bytes_to_api_sbor_data(context, &line_output))
                 .collect::<Result<Vec<_>, _>>()?,
         ),
         None => None,
     };
 
     let next_epoch = if let Some(next_epoch) = receipt.next_epoch {
-        Some(Box::new(to_api_next_epoch(bech32_encoder, next_epoch)?))
+        Some(Box::new(to_api_next_epoch(context, next_epoch)?))
     } else {
         None
     };
@@ -97,7 +97,7 @@ pub fn to_api_receipt(
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_new_substate_version(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     (substate_id, output_value): (SubstateId, OutputValue),
 ) -> Result<models::NewSubstateVersion, MappingError> {
     let substate_bytes =
@@ -108,9 +108,9 @@ pub fn to_api_new_substate_version(
     let hash = to_hex(hash(&substate_bytes));
 
     let api_substate_data = Some(to_api_substate(
+        context,
         &substate_id,
         &output_value.substate,
-        bech32_encoder,
     )?);
 
     Ok(models::NewSubstateVersion {
@@ -135,7 +135,7 @@ pub fn to_api_deleted_substate(
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_next_epoch(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     next_epoch: (BTreeMap<ComponentAddress, Validator>, u64),
 ) -> Result<models::NextEpoch, MappingError> {
     let mut sorted_validators: Vec<(ComponentAddress, Validator)> =
@@ -144,7 +144,7 @@ pub fn to_api_next_epoch(
 
     let mut validators = Vec::new();
     for (address, validator) in sorted_validators {
-        let api_validator = to_api_active_validator(bech32_encoder, &address, &validator);
+        let api_validator = to_api_active_validator(context, &address, &validator);
         validators.push(api_validator);
     }
 
@@ -158,7 +158,7 @@ pub fn to_api_next_epoch(
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_fee_summary(
-    bech32_encoder: &Bech32Encoder,
+    context: &MappingContext,
     fee_summary: FeeSummary,
 ) -> Result<models::FeeSummary, MappingError> {
     Ok(models::FeeSummary {
@@ -176,7 +176,9 @@ pub fn to_api_fee_summary(
                     .into_iter()
                     .map(|(vault_id, amount)| {
                         Ok(models::VaultPayment {
-                            vault_entity: Box::new(to_entity_reference(RENodeId::Vault(vault_id))?),
+                            vault_entity: Box::new(to_api_entity_reference(RENodeId::Vault(
+                                vault_id,
+                            ))?),
                             xrd_amount: to_api_decimal(&amount),
                         })
                     })
@@ -198,7 +200,7 @@ pub fn to_api_fee_summary(
                 };
                 models::RoyaltyPayment {
                     royalty_receiver: Box::new(to_global_entity_reference(
-                        bech32_encoder,
+                        context,
                         &global_address,
                     )),
                     cost_unit_amount: to_api_u32_as_i64(cost_unit_amount),

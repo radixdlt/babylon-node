@@ -27,6 +27,7 @@ pub(crate) async fn handle_transaction_parse(
 }
 
 pub struct ParseContext<'a> {
+    mapping_context: MappingContext,
     response_mode: ResponseMode,
     validation_mode: ValidationMode,
     state_manager: &'a ActualStateManager,
@@ -42,6 +43,7 @@ fn handle_transaction_parse_internal(
         from_hex(request.payload_hex).map_err(|err| err.into_response_error("payload_hex"))?;
 
     let context = ParseContext {
+        mapping_context: MappingContext::new(&state_manager.network),
         response_mode: request.response_mode.unwrap_or(ResponseMode::Full),
         validation_mode: request.validation_mode.unwrap_or(ValidationMode::_Static),
         state_manager,
@@ -181,8 +183,8 @@ fn to_api_parsed_notarized_transaction(
     let model = match context.response_mode {
         ResponseMode::Basic => None,
         ResponseMode::Full => Some(Box::new(to_api_notarized_transaction(
+            &context.mapping_context,
             &parsed.transaction,
-            &context.state_manager.network,
         )?)),
     };
 
@@ -219,8 +221,8 @@ fn to_api_parsed_signed_intent(
     let model = match context.response_mode {
         ResponseMode::Basic => None,
         ResponseMode::Full => Some(Box::new(to_api_signed_intent(
+            &context.mapping_context,
             &parsed,
-            &context.state_manager.network,
         )?)),
     };
     Ok(models::ParsedTransaction::ParsedSignedTransactionIntent {
@@ -242,10 +244,7 @@ fn to_api_parsed_intent(
 ) -> Result<models::ParsedTransaction, ResponseError<()>> {
     let model = match context.response_mode {
         ResponseMode::Basic => None,
-        ResponseMode::Full => Some(Box::new(to_api_intent(
-            &parsed,
-            &context.state_manager.network,
-        )?)),
+        ResponseMode::Full => Some(Box::new(to_api_intent(&context.mapping_context, &parsed)?)),
     };
     Ok(models::ParsedTransaction::ParsedTransactionIntent {
         intent: model,
@@ -266,8 +265,8 @@ fn to_api_parsed_manifest(
     let model = match context.response_mode {
         ResponseMode::Basic => None,
         ResponseMode::Full => Some(Box::new(to_api_manifest(
+            &context.mapping_context,
             &parsed,
-            &context.state_manager.network,
         )?)),
     };
     Ok(models::ParsedTransaction::ParsedTransactionManifest { manifest: model })
@@ -284,8 +283,8 @@ fn to_api_parsed_ledger_transaction(
     let model = match context.response_mode {
         ResponseMode::Basic => None,
         ResponseMode::Full => Some(Box::new(to_api_ledger_transaction(
+            &context.mapping_context,
             &parsed,
-            &context.state_manager.network,
         )?)),
     };
     let notarized = parsed.user();
