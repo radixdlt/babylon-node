@@ -821,7 +821,10 @@ where
     S: WriteableVertexStore,
 {
     pub fn save_vertex_store(&'db mut self, vertex_store: Vec<u8>) {
-        self.store().save_vertex_store(vertex_store);
+        self.execution_cache
+            .staged_store_manager
+            .root
+            .save_vertex_store(vertex_store);
     }
 
     pub fn commit(&'db mut self, commit_request: CommitRequest) -> Result<(), CommitError> {
@@ -944,14 +947,17 @@ where
             }
         }
 
-        self.staged_store.root.commit(CommitBundle {
-            transactions: committed_transaction_bundles,
-            proof_bytes: commit_request.proof,
-            proof_state_version: commit_request.proof_state_version,
-            epoch_boundary,
-            substates: substates_collector.substates,
-            vertex_store: commit_request.vertex_store,
-        });
+        self.execution_cache
+            .staged_store_manager
+            .root
+            .commit(CommitBundle {
+                transactions: committed_transaction_bundles,
+                proof_bytes: commit_request.proof,
+                proof_state_version: commit_request.proof_state_version,
+                epoch_boundary,
+                substates: substates_collector.substates,
+                vertex_store: commit_request.vertex_store,
+            });
 
         self.metrics
             .ledger_state_version
@@ -996,15 +1002,14 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
 
     pub fn get_validator_info(&self, validator_address: ComponentAddress) -> JavaValidatorInfo {
         let node_id = self
-            .staged_store
-            .root
+            .store()
             .global_deref(GlobalAddress::Component(validator_address))
             .unwrap();
         let substate_id = SubstateId(
             node_id,
             SubstateOffset::Validator(ValidatorOffset::Validator),
         );
-        let output = self.staged_store.root.get_substate(&substate_id).unwrap();
+        let output = self.store().get_substate(&substate_id).unwrap();
         let validator_substate: ValidatorSubstate = output.substate.to_runtime().into();
         JavaValidatorInfo {
             lp_token_address: validator_substate.liquidity_token,
