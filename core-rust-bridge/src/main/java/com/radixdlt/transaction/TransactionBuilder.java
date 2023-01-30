@@ -92,13 +92,14 @@ public final class TransactionBuilder {
   }
 
   public static RawLedgerTransaction createGenesis(
-      Map<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>> validatorSet,
+      Map<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>> validatorSetAndStakeOwners,
+      Map<ECDSASecp256k1PublicKey, Decimal> accountXrdAllocations,
       UInt64 initialEpoch,
       UInt64 roundsPerEpoch,
       UInt64 numUnstakeEpochs) {
     return RawLedgerTransaction.create(
         createGenesisFunc.call(
-            tuple(validatorSet, initialEpoch, roundsPerEpoch, numUnstakeEpochs)));
+            tuple(validatorSetAndStakeOwners, accountXrdAllocations, initialEpoch, roundsPerEpoch, numUnstakeEpochs)));
   }
 
   public static RawLedgerTransaction createGenesis(
@@ -111,13 +112,20 @@ public final class TransactionBuilder {
         createGenesisFunc.call(
             tuple(
                 Map.of(validator, Tuple.tuple(initialStake, stakingAccount)),
+                Map.of(),
                 UInt64.fromNonNegativeLong(1),
                 roundsPerEpoch,
                 numUnstakeEpochs)));
   }
 
   public static RawLedgerTransaction createGenesisWithNumValidators(
-      long numValidators, Decimal initialStake, UInt64 roundsPerEpoch) {
+          long numValidators,
+          Decimal initialStake, UInt64 roundsPerEpoch) {
+    return createGenesisWithNumValidatorsAndXrdAlloc(numValidators, Map.of(), initialStake, roundsPerEpoch);
+  }
+
+  public static RawLedgerTransaction createGenesisWithNumValidatorsAndXrdAlloc(
+      long numValidators, Map<ECDSASecp256k1PublicKey, Decimal> xrdAlloc, Decimal initialStake, UInt64 roundsPerEpoch) {
 
     final var stakingAccount =
         Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
@@ -130,6 +138,7 @@ public final class TransactionBuilder {
         createGenesisFunc.call(
             tuple(
                 validators,
+                xrdAlloc,
                 UInt64.fromNonNegativeLong(1),
                 roundsPerEpoch,
                 UInt64.fromNonNegativeLong(1))));
@@ -171,8 +180,9 @@ public final class TransactionBuilder {
   private static native byte[] compileManifest(byte[] payload);
 
   private static final NativeCalls.StaticFunc1<
-          Tuple.Tuple4<
+          Tuple.Tuple5<
               Map<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>>,
+              Map<ECDSASecp256k1PublicKey, Decimal>,
               UInt64,
               UInt64,
               UInt64>,

@@ -132,6 +132,10 @@ public final class HashUtils {
     return HashCode.fromBytes(shaHashHandler.sha256Twice(dataToBeHashed, offset, length));
   }
 
+  public static HashCode sha256Once(byte[] dataToBeHashed, int offset, int length) {
+    return HashCode.fromBytes(shaHashHandler.sha256Once(dataToBeHashed, offset, length));
+  }
+
   /**
    * Hashes the specified portion of the array, returning a cryptographically secure 512-bit hash.
    *

@@ -107,6 +107,13 @@ class SHAHashHandler implements HashHandler {
     return sha512Twice(data, offset, length);
   }
 
+  public byte[] sha256Once(byte[] data, int offset, int length) {
+    final MessageDigest hash256DigesterInnerLocal = hash256DigesterInner.get();
+    hash256DigesterInnerLocal.reset();
+    hash256DigesterInnerLocal.update(data, offset, length);
+    return hash256DigesterInnerLocal.digest();
+  }
+
   public byte[] sha256Twice(byte[] data, int offset, int length) {
     final MessageDigest hash256DigesterOuterLocal = hash256DigesterOuter.get();
     final MessageDigest hash256DigesterInnerLocal = hash256DigesterInner.get();
