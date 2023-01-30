@@ -28,6 +28,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+      - name: Set short git commit SHA
+        id: vars
+        run: |
+          calculatedSha=$(git rev-parse --short ${{ github.sha }})
+          echo "::set-output name=short_sha::$calculatedSha"
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v4
@@ -41,6 +46,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=sha
+            ${{ steps.vars.outputs.short_sha }}
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
