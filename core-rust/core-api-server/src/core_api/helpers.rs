@@ -34,8 +34,7 @@ pub(crate) fn read_derefed_global_node_id(
     global_address: GlobalAddress,
 ) -> Result<RENodeId, ResponseError<()>> {
     state_manager
-        .staged_store
-        .root
+        .store()
         .global_deref(global_address)
         .ok_or_else(|| {
             not_found_error(format!(
@@ -53,8 +52,7 @@ pub(crate) fn read_known_substate(
 ) -> Result<PersistedSubstate, ResponseError<()>> {
     let substate_id = SubstateId(renode_id, substate_offset.clone());
     let output_value = state_manager
-        .staged_store
-        .root
+        .store()
         .get_substate(&substate_id)
         .ok_or_else(|| MappingError::MismatchedSubstateId {
             message: format!(

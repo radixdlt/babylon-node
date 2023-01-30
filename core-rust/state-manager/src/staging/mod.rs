@@ -63,6 +63,6 @@
  */
 
 mod cache;
-pub mod stage_tree;
+mod stage_tree;
 
 pub use cache::*;
