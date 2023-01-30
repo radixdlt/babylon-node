@@ -96,8 +96,11 @@ use radix_engine::types::{
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
 use radix_engine_interface::node::NetworkDefinition;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::convert::TryInto;
+
+use radix_engine::ledger::OutputValue;
+use radix_engine_interface::api::types::SubstateId;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::{info, warn};
 
@@ -814,19 +817,16 @@ where
 
 impl<'db, S> StateManager<S>
 where
-    S: CommitStore<'db>,
+    S: CommitStore,
     S: ReadableSubstateStore,
     S: QueryableProofStore + QueryableTransactionStore,
+    S: WriteableVertexStore,
 {
     pub fn save_vertex_store(&'db mut self, vertex_store: Vec<u8>) {
-        let mut db_transaction = self.staged_store.root.create_db_transaction();
-        db_transaction.save_vertex_store(vertex_store);
-        db_transaction.commit();
+        self.staged_store.root.save_vertex_store(vertex_store);
     }
 
     pub fn commit(&'db mut self, commit_request: CommitRequest) -> Result<(), CommitError> {
-        let mut to_store = Vec::new();
-        let mut intent_hashes = Vec::new();
         let commit_request_start_state_version =
             commit_request.proof_state_version - (commit_request.transaction_payloads.len() as u64);
 
@@ -864,7 +864,12 @@ where
         let mut epoch_boundary = None;
         let mut receipts = Vec::new();
 
-        for (i, transaction) in parsed_transactions.iter().enumerate() {
+        let mut committed_transaction_bundles = Vec::new();
+        let mut intent_hashes = Vec::new();
+
+        let parsed_txns_len = parsed_transactions.len();
+
+        for (i, transaction) in parsed_transactions.into_iter().enumerate() {
             if let LedgerTransaction::System(..) = transaction {
                 // TODO: Cleanup and use real system transaction logic
                 if commit_request.proof_state_version != 1 && i != 0 {
@@ -874,7 +879,7 @@ where
 
             let executable = self
                 .ledger_transaction_validator
-                .validate_and_create_executable(transaction)
+                .validate_and_create_executable(&transaction)
                 .unwrap_or_else(|error| {
                     panic!(
                         "Committed transaction is not valid - likely byzantine quorum: {:?}",
@@ -894,7 +899,7 @@ where
             let ledger_receipt: LedgerTransactionReceipt = match engine_receipt.result {
                 TransactionResult::Commit(result) => {
                     if let Some((_, next_epoch)) = result.next_epoch {
-                        let is_last = i == (parsed_transactions.len() - 1);
+                        let is_last = i == (parsed_txns_len - 1);
                         if !is_last {
                             return Err(CommitError::MissingEpochProof);
                         }
@@ -924,7 +929,7 @@ where
                 accumulator_hash: current_accumulator_hash,
             };
 
-            to_store.push(((*transaction).clone(), ledger_receipt, identifiers));
+            committed_transaction_bundles.push((transaction, ledger_receipt, identifiers));
         }
 
         let new_root_key = self.execution_cache.get(&parent_accumulator_hash).unwrap();
@@ -936,33 +941,28 @@ where
             StagedSubstateStoreKey::RootStoreKey,
         );
 
-        let committed_transactions_count = to_store.len();
-
-        let mut db_transaction = self.staged_store.root.create_db_transaction();
-
+        let mut substates_collector = CommitSubstatesCollector::new();
         for receipt in receipts {
             if let TransactionResult::Commit(commit) = &receipt.result {
-                commit.state_updates.commit(&mut db_transaction);
+                commit.state_updates.commit(&mut substates_collector);
             }
         }
 
-        db_transaction.insert_committed_transactions(to_store);
-        db_transaction.insert_proof(
-            commit_request.proof_state_version,
+        self.staged_store.root.commit(CommitBundle {
+            transactions: committed_transaction_bundles,
+            proof_bytes: commit_request.proof,
+            proof_state_version: commit_request.proof_state_version,
             epoch_boundary,
-            commit_request.proof,
-        );
-        if let Some(vertex_store) = commit_request.vertex_store {
-            db_transaction.save_vertex_store(vertex_store);
-        }
+            substates: substates_collector.substates,
+            vertex_store: commit_request.vertex_store,
+        });
 
-        db_transaction.commit();
         self.metrics
             .ledger_state_version
             .set(current_state_version as i64);
         self.metrics
             .ledger_transactions_committed
-            .inc_by(committed_transactions_count as u64);
+            .inc_by(parsed_txns_len as u64);
         self.metrics.ledger_last_update_epoch_second.set(
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -1000,5 +1000,23 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
 
     pub fn get_epoch(&self) -> u64 {
         self.staged_store.root.get_epoch()
+    }
+}
+
+struct CommitSubstatesCollector {
+    pub substates: BTreeMap<SubstateId, OutputValue>,
+}
+
+impl CommitSubstatesCollector {
+    pub fn new() -> CommitSubstatesCollector {
+        CommitSubstatesCollector {
+            substates: BTreeMap::new(),
+        }
+    }
+}
+
+impl WriteableSubstateStore for CommitSubstatesCollector {
+    fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
+        self.substates.insert(substate_id, substate);
     }
 }
