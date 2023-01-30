@@ -82,6 +82,7 @@ import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
@@ -141,7 +142,6 @@ public class MockedSyncServiceModule extends AbstractModule {
               .getNextEpoch()
               .ifPresent(
                   nextEpoch -> {
-                    logger.info("Epoch Proof: " + nextEpoch.getEpoch());
                     sharedEpochProofs.put(nextEpoch.getEpoch(), update.getTail());
                   });
         });
@@ -195,10 +195,11 @@ public class MockedSyncServiceModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> ledgerStatusUpdateRemoteEventProcessor(
+  private RemoteEventProcessorOnRunner<?, ?> ledgerStatusUpdateRemoteEventProcessor(
       EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher) {
     return new RemoteEventProcessorOnRunner<>(
         Runners.SYNC,
+        NodeId.class,
         LedgerStatusUpdate.class,
         (sender, ev) ->
             localSyncRequestEventDispatcher.dispatch(
@@ -236,22 +237,22 @@ public class MockedSyncServiceModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> statusRequestEventProcessor() {
+  private RemoteEventProcessorOnRunner<?, ?> statusRequestEventProcessor() {
     return noOpRemoteProcessor(StatusRequest.class);
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> statusResponseEventProcessor() {
+  private RemoteEventProcessorOnRunner<?, ?> statusResponseEventProcessor() {
     return noOpRemoteProcessor(StatusResponse.class);
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> syncRequestEventProcessor() {
+  private RemoteEventProcessorOnRunner<?, ?> syncRequestEventProcessor() {
     return noOpRemoteProcessor(SyncRequest.class);
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> syncResponseEventProcessor() {
+  private RemoteEventProcessorOnRunner<?, ?> syncResponseEventProcessor() {
     return noOpRemoteProcessor(SyncResponse.class);
   }
 
@@ -259,7 +260,8 @@ public class MockedSyncServiceModule extends AbstractModule {
     return new EventProcessorOnRunner<>(Runners.SYNC, clazz, ev -> {});
   }
 
-  private RemoteEventProcessorOnRunner<?> noOpRemoteProcessor(Class<?> clazz) {
-    return new RemoteEventProcessorOnRunner<>(Runners.SYNC, clazz, (sender, ev) -> {});
+  private RemoteEventProcessorOnRunner<?, ?> noOpRemoteProcessor(Class<?> clazz) {
+    return new RemoteEventProcessorOnRunner<>(
+        Runners.SYNC, NodeId.class, clazz, (sender, ev) -> {});
   }
 }

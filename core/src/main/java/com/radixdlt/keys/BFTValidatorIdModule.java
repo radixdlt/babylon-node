@@ -62,66 +62,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.keys;
 
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import java.util.Objects;
+import com.radixdlt.rev2.ComponentAddress;
+import java.util.Optional;
 
-/**
- * A node in a BFT network which can run BFT validation
- *
- * <p>TODO: turn this into an interface so that an ECPublicKey is not required TODO: Serialization
- * of BFT messages are currently what prevent this from happening
- */
-public final class BFTNode {
-  private final ECDSASecp256k1PublicKey key;
-  private final String simpleName;
-
-  private BFTNode(ECDSASecp256k1PublicKey key, String simpleName) {
-    this.key = Objects.requireNonNull(key);
-    this.simpleName = Objects.requireNonNull(simpleName);
-  }
-
-  public static BFTNode create(ECDSASecp256k1PublicKey key) {
-    var shortenedAddress = key.toHex().substring(0, 10);
-    return new BFTNode(key, shortenedAddress);
-  }
-
-  public static BFTNode fromPublicKeyBytes(byte[] key) throws PublicKeyException {
-    return create(ECDSASecp256k1PublicKey.fromBytes(key));
-  }
-
-  public static BFTNode random() {
-    return create(ECKeyPair.generateNew().getPublicKey());
-  }
-
-  public ECDSASecp256k1PublicKey getKey() {
-    return key;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(key);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof BFTNode)) {
-      return false;
-    }
-
-    BFTNode bftNodeId = (BFTNode) o;
-    return Objects.equals(bftNodeId.key, this.key);
-  }
-
-  public String getSimpleName() {
-    return simpleName;
-  }
-
-  @Override
-  public String toString() {
-    return simpleName;
+public final class BFTValidatorIdModule extends AbstractModule {
+  @Provides
+  @Self
+  public BFTValidatorId validatorId(
+      @Self Optional<ComponentAddress> validatorAddress, @Self ECDSASecp256k1PublicKey key) {
+    return BFTValidatorId.create(validatorAddress.orElse(null), key);
   }
 }

@@ -76,10 +76,12 @@ import com.radixdlt.api.core.generated.client.ApiClient;
 import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
@@ -107,7 +109,7 @@ public abstract class DeterministicCoreApiTestBase {
   protected DeterministicTest buildRunningServerTest() {
     var test =
         DeterministicTest.builder()
-            .numPhysicalNodes(1)
+            .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
             .messageSelector(firstSelector())
             .addModule(new CoreApiServerModule("127.0.0.1", coreApiPort))
             .addModule(
@@ -129,7 +131,7 @@ public abstract class DeterministicCoreApiTestBase {
                         StateComputerConfig.rev2(
                             Network.INTEGRATIONTESTNET.getId(),
                             TransactionBuilder.createGenesisWithNumValidators(
-                                1, UInt64.fromNonNegativeLong(10)),
+                                1, Decimal.of(1), UInt64.fromNonNegativeLong(10000000)),
                             REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                             StateComputerConfig.REV2ProposerConfig.mempool(
                                 50, 1000, MempoolRelayConfig.of())),

@@ -64,7 +64,7 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 
 /** Represents the election for valid proposers */
@@ -75,5 +75,5 @@ public interface ProposerElection {
    * @param round the round to get the proposer for
    * @return the EUID of the proposer
    */
-  BFTNode getProposer(Round round);
+  BFTValidatorId getProposer(Round round);
 }

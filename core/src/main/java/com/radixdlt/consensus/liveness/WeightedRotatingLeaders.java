@@ -64,8 +64,8 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.utils.KeyComparator;
@@ -106,7 +106,8 @@ public final class WeightedRotatingLeaders implements ProposerElection {
     this.validatorSet = validatorSet;
     this.weightsComparator =
         Comparator.comparing(Entry<BFTValidator, UInt384>::getValue)
-            .thenComparing(v -> v.getKey().getNode().getKey(), KeyComparator.instance().reversed());
+            .thenComparing(
+                v -> v.getKey().getValidatorId().getKey(), KeyComparator.instance().reversed());
     this.nextLeaderComputer =
         new CachingNextLeaderComputer(validatorSet, weightsComparator, cacheSize);
   }
@@ -210,7 +211,7 @@ public final class WeightedRotatingLeaders implements ProposerElection {
   }
 
   @Override
-  public BFTNode getProposer(Round round) {
+  public BFTValidatorId getProposer(Round round) {
     nextLeaderComputer.computeToRound(round);
 
     // validator will only be null if the round supplied is before the cache
@@ -218,12 +219,12 @@ public final class WeightedRotatingLeaders implements ProposerElection {
     BFTValidator validator = nextLeaderComputer.checkCacheForProposer(round);
     if (validator != null) {
       // dynamic program cache successful
-      return validator.getNode();
+      return validator.getValidatorId();
     } else {
       // cache doesn't have value, do the expensive operation
       CachingNextLeaderComputer computer =
           new CachingNextLeaderComputer(validatorSet, weightsComparator, 1);
-      return computer.resetToRound(round).getNode();
+      return computer.resetToRound(round).getValidatorId();
     }
   }
 

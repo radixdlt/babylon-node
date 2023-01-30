@@ -62,15 +62,20 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.ledger;
 
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 
-public class BFTNodeTest {
-
-  @Test
-  public void equalsContract() {
-    EqualsVerifier.forClass(BFTNode.class).withIgnoredFields("simpleName").verify();
+public final class MockedBFTNodeModule extends AbstractModule {
+  @Provides
+  @Singleton
+  @Self
+  private BFTValidatorId self(@Self ECDSASecp256k1PublicKey key) {
+    return BFTValidatorId.create(key);
   }
 }

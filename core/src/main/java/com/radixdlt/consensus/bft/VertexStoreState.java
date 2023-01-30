@@ -120,6 +120,7 @@ public final class VertexStoreState {
     final var nextEpoch = epochProof.getNextEpoch().get();
     final var initialEpochVertex =
         Vertex.createInitialEpochVertex(epochProof.getHeader()).withId(hasher);
+
     final var nextLedgerHeader =
         LedgerHeader.create(
             nextEpoch.getEpoch(),
@@ -140,6 +141,7 @@ public final class VertexStoreState {
 
   public static VertexStoreState create(
       HighQC highQC, VertexWithHash root, ImmutableList<VertexWithHash> vertices, Hasher hasher) {
+
     final var headers =
         highQC
             .highestCommittedQC()
@@ -294,6 +296,18 @@ public final class VertexStoreState {
         && Objects.equals(this.highQC, other.highQC)
         && Objects.equals(this.vertices, other.vertices)
         && Objects.equals(this.idToVertex, other.idToVertex);
+  }
+
+  @Override
+  public String toString() {
+    return "VertexStoreState{"
+        + "root="
+        + root
+        + ", highQC="
+        + highQC
+        + ", vertices="
+        + vertices
+        + '}';
   }
 
   /** Vertex Store State version which can be serialized. */

@@ -64,11 +64,11 @@
 
 package com.radixdlt.harness.simulation.application;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.p2p.NodeId;
 import io.reactivex.rxjava3.core.Single;
 
 /** Node generator for a given network */
 public interface NodeSelector {
-  Single<BFTNode> nextNode(RunningNetwork network);
+  Single<NodeId> nextNode(RunningNetwork network);
 }

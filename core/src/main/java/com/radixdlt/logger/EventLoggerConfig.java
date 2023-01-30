@@ -68,7 +68,7 @@ import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import java.util.function.Function;
 
-public record EventLoggerConfig(Function<ECDSASecp256k1PublicKey, String> nodeToString) {
+public record EventLoggerConfig(Function<ECDSASecp256k1PublicKey, String> nodeKeyToString) {
   public static EventLoggerConfig addressed(Addressing addressing) {
     return new EventLoggerConfig(
         k -> {

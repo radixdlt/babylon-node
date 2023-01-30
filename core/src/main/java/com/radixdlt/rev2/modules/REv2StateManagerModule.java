@@ -71,6 +71,7 @@ import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
@@ -141,10 +142,10 @@ public final class REv2StateManagerModule extends AbstractModule {
           new AbstractModule() {
             @Provides
             @Singleton
-            private StateManager stateManager(@Self BFTNode node) {
+            private StateManager stateManager(@Self ECDSASecp256k1PublicKey key) {
               var network = Network.ofId(networkId).orElseThrow();
               final REv2DatabaseConfig databaseConfigToUse;
-              var databasePath = rocksDB.databasePath() + node.toString();
+              var databasePath = rocksDB.databasePath() + key.toString();
               databaseConfigToUse = REv2DatabaseConfig.rocksDB(databasePath);
               return StateManager.createAndInitialize(
                   new StateManagerConfig(

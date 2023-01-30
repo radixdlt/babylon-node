@@ -59,6 +59,8 @@ public enum SubstateKeyType {
   
   PREPARINGVALIDATORSET("PreparingValidatorSet"),
   
+  VALIDATOR("Validator"),
+  
   CLOCKCURRENTMINUTE("ClockCurrentMinute"),
   
   KEYVALUESTOREENTRY("KeyValueStoreEntry"),

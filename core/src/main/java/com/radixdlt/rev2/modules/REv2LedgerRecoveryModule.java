@@ -74,6 +74,7 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.recovery.VertexStoreRecovery;
+import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
@@ -85,11 +86,14 @@ import com.radixdlt.store.LastProof;
 import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transactions.RawLedgerTransaction;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class REv2LedgerRecoveryModule extends AbstractModule {
+
+  private static final Logger log = LogManager.getLogger();
   private final AccumulatorState initialAccumulatorState;
   private final RawLedgerTransaction genesis;
 
@@ -117,14 +121,7 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
               var validatorSet =
                   result
                       .validatorSet()
-                      .map(
-                          list -> {
-                            var validators =
-                                list.stream()
-                                    .map(
-                                        key -> BFTValidator.from(BFTNode.create(key), UInt256.ONE));
-                            return BFTValidatorSet.from(validators);
-                          })
+                      .map(REv2ToConsensus::validatorSet)
                       .or((BFTValidatorSet) null);
               var accumulatorState =
                   ledgerAccumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
@@ -177,18 +174,26 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
       VertexStoreRecovery vertexStoreRecovery,
       Serialization serialization,
       Hasher hasher) {
-    return vertexStoreRecovery
-        .recoverVertexStore()
-        .map(
-            bytes -> {
-              try {
-                return serialization
-                    .fromDson(bytes, VertexStoreState.SerializedVertexStoreState.class)
-                    .toVertexStoreState(hasher);
-              } catch (DeserializeException e) {
-                throw new RuntimeException("Unable to recover VertexStore", e);
-              }
-            })
-        .orElseGet(() -> genesisEpochProofToGenesisVertexStore(lastEpochProof, hasher));
+
+    var currentEpoch = lastEpochProof.getNextEpoch().orElseThrow();
+    var vertexStoreState =
+        vertexStoreRecovery
+            .recoverVertexStore()
+            .map(
+                bytes -> {
+                  try {
+                    return serialization.fromDson(
+                        bytes, VertexStoreState.SerializedVertexStoreState.class);
+                  } catch (DeserializeException e) {
+                    throw new RuntimeException("Unable to recover VertexStore", e);
+                  }
+                })
+            .filter(state -> state.isForEpoch(currentEpoch.getEpoch()))
+            .map(v -> v.toVertexStoreState(hasher))
+            .orElseGet(() -> genesisEpochProofToGenesisVertexStore(lastEpochProof, hasher));
+
+    log.info("Initial Vertex Store State: {}", vertexStoreState);
+
+    return vertexStoreState;
   }
 }

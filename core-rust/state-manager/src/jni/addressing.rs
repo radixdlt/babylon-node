@@ -66,6 +66,8 @@ use bech32::{FromBase32, ToBase32, Variant};
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::model::ComponentAddress;
 
 use super::utils::jni_static_sbor_call;
 
@@ -117,6 +119,19 @@ fn check_variant_is_bech32m(variant: Variant) -> Result<(), String> {
         bech32::Variant::Bech32 => Err("Address was bech32 encoded, not bech32m".to_owned()),
         bech32::Variant::Bech32m => Ok(()),
     }
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_identifiers_Address_virtualAccountAddress(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_static_sbor_call(env, request_payload, do_virtual_account_address)
+}
+
+fn do_virtual_account_address(key: EcdsaSecp256k1PublicKey) -> ComponentAddress {
+    ComponentAddress::virtual_account_from_public_key(&key)
 }
 
 pub fn export_extern_functions() {}

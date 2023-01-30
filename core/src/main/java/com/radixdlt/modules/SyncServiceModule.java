@@ -114,17 +114,23 @@ public class SyncServiceModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> syncRequestEventProcessor(
+  private RemoteEventProcessorOnRunner<?, ?> syncRequestEventProcessor(
       RemoteSyncService remoteSyncService) {
     return new RemoteEventProcessorOnRunner<>(
-        Runners.SYNC, SyncRequest.class, remoteSyncService.syncRequestEventProcessor());
+        Runners.SYNC,
+        NodeId.class,
+        SyncRequest.class,
+        remoteSyncService.syncRequestEventProcessor());
   }
 
   @ProvidesIntoSet
-  private RemoteEventProcessorOnRunner<?> statusRequestEventProcessor(
+  private RemoteEventProcessorOnRunner<?, ?> statusRequestEventProcessor(
       RemoteSyncService remoteSyncService) {
     return new RemoteEventProcessorOnRunner<>(
-        Runners.SYNC, StatusRequest.class, remoteSyncService.statusRequestEventProcessor());
+        Runners.SYNC,
+        NodeId.class,
+        StatusRequest.class,
+        remoteSyncService.statusRequestEventProcessor());
   }
 
   @ProvidesIntoSet
@@ -138,10 +144,7 @@ public class SyncServiceModule extends AbstractModule {
   private InvalidSyncResponseHandler invalidSyncResponseHandler(
       Metrics metrics, PeerControl peerControl) {
     return (sender, resp) -> {
-      peerControl.banPeer(
-          NodeId.fromPublicKey(sender.getKey()),
-          Duration.ofMinutes(10),
-          "Received invalid sync response");
+      peerControl.banPeer(sender, Duration.ofMinutes(10), "Received invalid sync response");
       metrics.sync().invalidResponsesReceived().inc();
     };
   }

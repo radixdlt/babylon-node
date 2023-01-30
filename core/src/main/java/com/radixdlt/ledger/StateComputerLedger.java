@@ -74,6 +74,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -121,7 +122,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   }
 
   public interface StateComputer {
-    void addToMempool(MempoolAdd mempoolAdd, BFTNode origin);
+    void addToMempool(MempoolAdd mempoolAdd, NodeId origin);
 
     List<RawNotarizedTransaction> getTransactionsForProposal(
         List<ExecutedTransaction> executedTransactions);
@@ -133,7 +134,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
     void commit(
         CommittedTransactionsWithProof committedTransactionsWithProof,
-        VertexStoreState preCommitVertexStoreState);
+        VertexStoreState vertexStore);
   }
 
   private final Comparator<LedgerProof> headerComparator;
@@ -164,7 +165,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     this.currentLedgerHeader = initialLedgerState;
   }
 
-  public RemoteEventProcessor<MempoolAdd> mempoolAddRemoteEventProcessor() {
+  public RemoteEventProcessor<NodeId, MempoolAdd> mempoolAddRemoteEventProcessor() {
     return (node, mempoolAdd) -> {
       synchronized (lock) {
         stateComputer.addToMempool(mempoolAdd, node);
@@ -213,15 +214,15 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         return Optional.empty();
       }
 
-      // Don't execute any transactions if in the process of an epoch change
       if (parentHeader.isEndOfEpoch()) {
+        // Don't execute any transactions and commit to the same LedgerHeader
+        // if in the process of an epoch change. Updates to LedgerHeader here
+        // may cause a disagreement on the next epoch initial vertex if a TC
+        // occurs for example.
         return Optional.of(
             new ExecutedVertex(
                 vertexWithHash,
-                parentHeader.updateRoundAndTimestamps(
-                    vertex.getRound(),
-                    vertex.getQCToParent().getWeightedTimestampOfSignatures(),
-                    vertex.parentLedgerHeader().proposerTimestamp()),
+                parentHeader,
                 ImmutableList.of(),
                 ImmutableMap.of(),
                 timeSupplier.currentTime()));
@@ -296,8 +297,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   }
 
   private void commit(
-      CommittedTransactionsWithProof committedTransactionsWithProof,
-      VertexStoreState preCommitVertexStoreState) {
+      CommittedTransactionsWithProof committedTransactionsWithProof, VertexStoreState vertexStore) {
     synchronized (lock) {
       final LedgerProof nextHeader = committedTransactionsWithProof.getProof();
       if (headerComparator.compare(nextHeader, this.currentLedgerHeader) <= 0) {
@@ -308,7 +308,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
           verifier.verifyAndGetExtension(
               this.currentLedgerHeader.getAccumulatorState(),
               committedTransactionsWithProof.getTransactions(),
-              transaction -> transaction.getPayloadHash(),
+              RawLedgerTransaction::getPayloadHash,
               committedTransactionsWithProof.getProof().getAccumulatorState());
 
       if (verifiedExtension.isEmpty()) {
@@ -317,7 +317,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       }
 
       var transactions = verifiedExtension.get();
-      if (preCommitVertexStoreState == null) {
+      if (vertexStore == null) {
         this.metrics.ledger().syncTransactionsProcessed().inc(transactions.size());
       } else {
         this.metrics.ledger().bftTransactionsProcessed().inc(transactions.size());
@@ -328,7 +328,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               transactions, committedTransactionsWithProof.getProof());
 
       // persist
-      this.stateComputer.commit(extensionToCommit, preCommitVertexStoreState);
+      this.stateComputer.commit(extensionToCommit, vertexStore);
 
       // TODO: move all of the following to post-persist event handling
       this.currentLedgerHeader = nextHeader;

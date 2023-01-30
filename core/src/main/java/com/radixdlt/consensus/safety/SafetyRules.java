@@ -87,7 +87,7 @@ public final class SafetyRules {
 
   private static final int VERIFIED_CERTIFICATES_CACHE_MAX_SIZE = 1000;
 
-  private final BFTNode self;
+  private final BFTValidatorId self;
   private final Hasher hasher;
   private final HashSigner signer;
   private final HashVerifier hashVerifier;
@@ -99,7 +99,7 @@ public final class SafetyRules {
 
   @Inject
   public SafetyRules(
-      @Self BFTNode self,
+      @Self BFTValidatorId self,
       SafetyState initialState,
       PersistentSafetyStateStore persistentSafetyStateStore,
       Hasher hasher,

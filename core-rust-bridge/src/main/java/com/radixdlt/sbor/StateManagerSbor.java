@@ -141,6 +141,7 @@ public final class StateManagerSbor {
     PrepareRequest.registerCodec(codecMap);
     PrepareResult.registerCodec(codecMap);
     NextEpoch.registerCodec(codecMap);
+    ActiveValidatorInfo.registerCodec(codecMap);
     CommitRequest.registerCodec(codecMap);
     CommitError.registerCodec(codecMap);
     REv2DatabaseConfig.registerCodec(codecMap);

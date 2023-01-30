@@ -65,13 +65,14 @@
 package com.radixdlt.statecomputer.commit;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.lang.Option;
+import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import java.util.Set;
+import java.util.Map;
 
-public record PrepareGenesisResult(Option<Set<ECDSASecp256k1PublicKey>> validatorSet) {
+public record PrepareGenesisResult(
+    Option<Map<ComponentAddress, ActiveValidatorInfo>> validatorSet) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PrepareGenesisResult.class,

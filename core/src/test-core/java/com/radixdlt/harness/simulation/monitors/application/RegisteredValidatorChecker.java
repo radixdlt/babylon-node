@@ -64,7 +64,7 @@
 
 package com.radixdlt.harness.simulation.monitors.application;
 
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
@@ -73,9 +73,9 @@ import java.util.concurrent.TimeUnit;
 
 /** Checks to make sure that a node has been registered as a validator in some epoch */
 public class RegisteredValidatorChecker implements TestInvariant {
-  private final Observable<BFTNode> registeringValidators;
+  private final Observable<BFTValidatorId> registeringValidators;
 
-  public RegisteredValidatorChecker(Observable<BFTNode> registeringValidators) {
+  public RegisteredValidatorChecker(Observable<BFTValidatorId> registeringValidators) {
     this.registeringValidators = Objects.requireNonNull(registeringValidators);
   }
 

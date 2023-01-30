@@ -95,7 +95,7 @@ public class MessageCentralLedgerSyncTest {
 
   @Test
   public void when_receive_sync_request__then_should_receive_it() {
-    TestSubscriber<RemoteEvent<SyncRequest>> testObserver =
+    TestSubscriber<RemoteEvent<NodeId, SyncRequest>> testObserver =
         this.messageCentralLedgerSync.syncRequests().test();
     final var peer = createPeer();
     SyncRequestMessage syncRequestMessage = mock(SyncRequestMessage.class);
@@ -106,12 +106,12 @@ public class MessageCentralLedgerSyncTest {
     testObserver.assertValue(
         syncRequest ->
             syncRequest.getEvent().getHeader().equals(header)
-                && syncRequest.getOrigin().getKey().equals(peer.getPublicKey()));
+                && syncRequest.getOrigin().equals(peer));
   }
 
   @Test
   public void when_receive_sync_response__then_should_receive_it() {
-    TestSubscriber<RemoteEvent<SyncResponse>> testObserver =
+    TestSubscriber<RemoteEvent<NodeId, SyncResponse>> testObserver =
         this.messageCentralLedgerSync.syncResponses().test();
     final var peer = createPeer();
     SyncResponseMessage syncResponseMessage = mock(SyncResponseMessage.class);
@@ -126,19 +126,18 @@ public class MessageCentralLedgerSyncTest {
 
   @Test
   public void when_receive_status_request__then_should_receive_it() {
-    TestSubscriber<RemoteEvent<StatusRequest>> testObserver =
+    TestSubscriber<RemoteEvent<NodeId, StatusRequest>> testObserver =
         this.messageCentralLedgerSync.statusRequests().test();
     final var peer = createPeer();
     StatusRequestMessage statusRequestMessage = mock(StatusRequestMessage.class);
     messageCentral.send(peer, statusRequestMessage);
     testObserver.awaitCount(1);
-    testObserver.assertValue(
-        statusResponse -> statusResponse.getOrigin().getKey().equals(peer.getPublicKey()));
+    testObserver.assertValue(statusResponse -> statusResponse.getOrigin().equals(peer));
   }
 
   @Test
   public void when_receive_status_response__then_should_receive_it() {
-    TestSubscriber<RemoteEvent<StatusResponse>> testObserver =
+    TestSubscriber<RemoteEvent<NodeId, StatusResponse>> testObserver =
         this.messageCentralLedgerSync.statusResponses().test();
     final var peer = createPeer();
     final var header = mock(LedgerProof.class);
@@ -149,7 +148,7 @@ public class MessageCentralLedgerSyncTest {
     testObserver.assertValue(
         statusResponse ->
             statusResponse.getEvent().getHeader().equals(header)
-                && statusResponse.getOrigin().getKey().equals(peer.getPublicKey()));
+                && statusResponse.getOrigin().equals(peer));
   }
 
   @Test
@@ -159,8 +158,7 @@ public class MessageCentralLedgerSyncTest {
     final var updateMsg = mock(LedgerStatusUpdateMessage.class);
     messageCentral.send(peer, updateMsg);
     testObserver.awaitCount(1);
-    testObserver.assertValue(
-        receivedMsg -> receivedMsg.getOrigin().getKey().equals(peer.getPublicKey()));
+    testObserver.assertValue(receivedMsg -> receivedMsg.getOrigin().equals(peer));
   }
 
   private NodeId createPeer() {

@@ -69,6 +69,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.*;
 import com.radixdlt.networks.Network;
@@ -81,7 +82,7 @@ import org.junit.Test;
 public final class REv2GenesisTest {
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numPhysicalNodes(1)
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
         .messageSelector(firstSelector())
         .messageMutator(MessageMutator.dropTimeouts())
         .functionalNodeModule(
@@ -93,7 +94,7 @@ public final class REv2GenesisTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
-                            1, UInt64.fromNonNegativeLong(10)),
+                            1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.inMemory(),
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             0, 0, MempoolRelayConfig.of())))));
@@ -115,7 +116,7 @@ public final class REv2GenesisTest {
 
       var systemAmount =
           stateReader.getComponentXrdAmount(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
-      assertThat(systemAmount).isEqualTo(REv2Constants.GENESIS_AMOUNT);
+      assertThat(systemAmount).isEqualTo(REv2Constants.GENESIS_AMOUNT.subtract(Decimal.of(1)));
 
       var emptyAccountAmount =
           stateReader.getComponentXrdAmount(ComponentAddress.NON_EXISTENT_COMPONENT_ADDRESS);

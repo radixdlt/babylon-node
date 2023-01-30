@@ -62,92 +62,96 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.consensus_ledger_epochs;
+package com.radixdlt.environment.deterministic.network;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.environment.*;
+import com.radixdlt.p2p.NodeId;
+import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.EpochNodeWeightMapping;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.monitoring.Metrics;
-import io.reactivex.rxjava3.schedulers.Timed;
-import java.util.Random;
-import java.util.function.Predicate;
-import org.junit.Test;
+/** A sender within a deterministic network. */
+public final class ControlledDispatcher implements Environment {
+  private static final Logger log = LogManager.getLogger();
+  private final DeterministicNetwork network;
+  private final NodeId self;
+  private final int senderIndex;
+  private final ChannelId localChannel;
+  private final Function<NodeId, Integer> p2pAddressBook;
 
-public class ProcessCachedEventsWithTimeoutCertTest {
-
-  private static final int TEST_NODE = 4;
-  private final Random random = new Random(123456);
-
-  @Test
-  public void process_cached_sync_event_with_tc_test() {
-    final var test =
-        DeterministicTest.builder()
-            .numPhysicalNodes(5)
-            .messageSelector(MessageSelector.randomSelector(random))
-            .messageMutators(
-                dropProposalToNodes(Round.of(1), ImmutableList.of(TEST_NODE)),
-                dropProposalToNodes(Round.of(2), ImmutableList.of(2, 3, TEST_NODE)),
-                dropVotesForNode(TEST_NODE))
-            .functionalNodeModule(
-                new FunctionalRadixNodeModule(
-                    true,
-                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
-                    FunctionalRadixNodeModule.ConsensusConfig.of(),
-                    FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
-                        StateComputerConfig.mockedWithEpochs(
-                            Round.of(100),
-                            EpochNodeWeightMapping.constant(5),
-                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
-
-    test.startAllNodes();
-    test.runUntilMessage(nodeVotesForRound(Round.of(3), TEST_NODE));
-
-    // just to check if the node indeed needed to sync
-    final var counters = test.getInstance(TEST_NODE, Metrics.class);
-    assertThat(counters.bft().timeoutQuorums().get()).isEqualTo(0);
-    assertThat(counters.bft().voteQuorums().get()).isEqualTo(0);
+  public ControlledDispatcher(
+      Function<NodeId, Integer> p2pAddressBook,
+      DeterministicNetwork network,
+      NodeId self,
+      int senderIndex) {
+    this.p2pAddressBook = p2pAddressBook;
+    this.network = network;
+    this.self = self;
+    this.senderIndex = senderIndex;
+    this.localChannel = ChannelId.of(this.senderIndex, this.senderIndex);
   }
 
-  private static MessageMutator dropProposalToNodes(Round round, ImmutableList<Integer> nodes) {
-    return (message, queue) -> {
-      final var msg = message.message();
-      if (msg instanceof Proposal) {
-        final Proposal proposal = (Proposal) msg;
-        return proposal.getRound().equals(round)
-            && nodes.contains(message.channelId().receiverIndex());
-      }
-      return false;
+  private static long addTimeNoOverflow(long a, long b) {
+    var sum = a + b;
+    if (sum < 0) {
+      return Long.MAX_VALUE;
+    }
+
+    return sum;
+  }
+
+  @Override
+  public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
+    return e ->
+        handleMessage(
+            new ControlledMessage(
+                self, this.localChannel, e, null, arrivalTime(this.localChannel)));
+  }
+
+  @Override
+  public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass) {
+    return (t, milliseconds) -> {
+      long arrivalTime = addTimeNoOverflow(arrivalTime(this.localChannel), milliseconds);
+      var msg = new ControlledMessage(self, this.localChannel, t, null, arrivalTime);
+      handleMessage(msg);
     };
   }
 
-  private static MessageMutator dropVotesForNode(int node) {
-    return (message, queue) -> {
-      final var msg = message.message();
-      if (msg instanceof Vote) {
-        return message.channelId().receiverIndex() == node;
-      }
-      return false;
+  @Override
+  public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(TypeLiteral<T> typeLiteral) {
+    return (t, milliseconds) -> {
+      var msg =
+          new ControlledMessage(
+              self,
+              this.localChannel,
+              t,
+              typeLiteral,
+              addTimeNoOverflow(arrivalTime(this.localChannel), milliseconds));
+      handleMessage(msg);
     };
   }
 
-  public static Predicate<Timed<ControlledMessage>> nodeVotesForRound(Round round, int node) {
-    return timedMsg -> {
-      final var message = timedMsg.value();
-      if (!(message.message() instanceof Vote)) {
-        return false;
+  @Override
+  public <T> RemoteEventDispatcher<NodeId, T> getRemoteDispatcher(Class<T> messageType) {
+    return (node, e) -> {
+      var receiverIndex = this.p2pAddressBook.apply(NodeId.fromPublicKey(node.getPublicKey()));
+      if (receiverIndex == null) {
+        log.warn("Could not resolve node {} to physical nodeIndex. Dropping msg: {}", node, e);
+        return;
       }
-      final var vote = (Vote) message.message();
-      return vote.getRound().equals(round) && message.channelId().senderIndex() == node;
+
+      var channelId = ChannelId.of(this.senderIndex, receiverIndex);
+      handleMessage(new ControlledMessage(self, channelId, e, null, arrivalTime(channelId)));
     };
+  }
+
+  private void handleMessage(ControlledMessage controlledMessage) {
+    this.network.handleMessage(controlledMessage);
+  }
+
+  private long arrivalTime(ChannelId channelId) {
+    long delay = this.network.delayForChannel(channelId);
+    return addTimeNoOverflow(this.network.currentTime(), delay);
   }
 }

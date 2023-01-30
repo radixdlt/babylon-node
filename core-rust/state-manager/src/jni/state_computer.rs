@@ -67,10 +67,9 @@ use crate::transaction::UserTransactionValidator;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::types::{Categorize, ComponentAddress, Decimal, Decode, Encode, RADIX_TOKEN};
-use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use radix_engine_interface::*;
-use std::collections::HashSet;
+use radix_engine::model::Validator;
+use radix_engine::types::*;
+use std::collections::BTreeMap;
 
 use crate::jni::utils::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
@@ -228,7 +227,7 @@ pub struct JavaCommitRequest {
     pub transactions: Vec<JavaRawTransaction>,
     pub state_version: u64,
     pub proof: Vec<u8>,
-    pub post_commit_vertex_store: Option<Vec<u8>>,
+    pub vertex_store: Option<Vec<u8>>,
 }
 
 impl From<JavaCommitRequest> for CommitRequest {
@@ -241,7 +240,7 @@ impl From<JavaCommitRequest> for CommitRequest {
                 .collect(),
             proof_state_version: commit_request.state_version,
             proof: commit_request.proof,
-            post_commit_vertex_store: commit_request.post_commit_vertex_store,
+            vertex_store: commit_request.vertex_store,
         }
     }
 }
@@ -307,7 +306,7 @@ impl From<JavaPrepareGenesisRequest> for PrepareGenesisRequest {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPrepareGenesisResult {
-    pub validator_set: Option<HashSet<EcdsaSecp256k1PublicKey>>,
+    pub validator_set: Option<BTreeMap<ComponentAddress, Validator>>,
 }
 
 impl From<PrepareGenesisResult> for JavaPrepareGenesisResult {

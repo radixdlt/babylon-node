@@ -79,6 +79,7 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
@@ -107,9 +108,12 @@ public class PacemakerRoundUpdateRaceConditionTest {
 
   @Test
   public void test_pacemaker_round_update_race_condition() {
+    var nodeConfigs =
+        PhysicalNodeConfig.createBasicBatchWithOrder(numValidatorNodes, KeyComparator.instance());
+
     final DeterministicTest test =
         DeterministicTest.builder()
-            .numPhysicalNodes(numValidatorNodes, true)
+            .addPhysicalNodes(nodeConfigs)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(messUpMessagesForNodeUnderTest())
             .overrideWithIncorrectModule(
@@ -138,10 +142,10 @@ public class PacemakerRoundUpdateRaceConditionTest {
                   public ProposerElection proposerElection(BFTValidatorSet validatorSet) {
                     final var sortedValidators =
                         validatorSet.getValidators().stream()
-                            .map(BFTValidator::getNode)
+                            .map(BFTValidator::getValidatorId)
                             .sorted(
                                 Comparator.comparing(
-                                    BFTNode::getKey, KeyComparator.instance().reversed()))
+                                    BFTValidatorId::getKey, KeyComparator.instance().reversed()))
                             .toList();
                     return round ->
                         sortedValidators.get(((int) round.number() - 1) % sortedValidators.size());

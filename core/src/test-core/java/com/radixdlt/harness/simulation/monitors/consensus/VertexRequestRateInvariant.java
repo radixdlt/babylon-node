@@ -64,11 +64,11 @@
 
 package com.radixdlt.harness.simulation.monitors.consensus;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.TimeUnit;
@@ -86,7 +86,7 @@ public final class VertexRequestRateInvariant implements TestInvariant {
 
   @Override
   public Observable<TestInvariantError> check(RunningNetwork network) {
-    return Observable.<Pair<BFTNode, GetVerticesRequest>>create(
+    return Observable.<Pair<NodeId, GetVerticesRequest>>create(
             emitter ->
                 nodeEvents.addListener(
                     (node, req) -> emitter.onNext(Pair.of(node, req)), GetVerticesRequest.class))

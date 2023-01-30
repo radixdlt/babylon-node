@@ -147,8 +147,12 @@ public class NodeCapabilityTests {
     } catch (Exception ex) {
       fail(String.format("Exception %s", ex.getMessage()));
     } finally {
-      node1.stopP2PServer();
-      node2.stopP2PServer();
+      if (node1 != null) {
+        node1.stopP2PServer();
+      }
+      if (node2 != null) {
+        node2.stopP2PServer();
+      }
     }
   }
 
@@ -187,8 +191,12 @@ public class NodeCapabilityTests {
     } catch (Exception ex) {
       fail(String.format("Exception %s", ex.getMessage()));
     } finally {
-      node1.stopP2PServer();
-      node2.stopP2PServer();
+      if (node1 != null) {
+        node1.stopP2PServer();
+      }
+      if (node2 != null) {
+        node2.stopP2PServer();
+      }
     }
   }
 
@@ -228,8 +236,12 @@ public class NodeCapabilityTests {
     } catch (Exception ex) {
       fail(String.format("Exception %s", ex.getMessage()));
     } finally {
-      node1.stopP2PServer();
-      node2.stopP2PServer();
+      if (node1 != null) {
+        node1.stopP2PServer();
+      }
+      if (node2 != null) {
+        node2.stopP2PServer();
+      }
     }
   }
 

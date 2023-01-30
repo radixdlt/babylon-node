@@ -71,30 +71,42 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.NodesReader;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2TestTransactions;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
+import java.util.HashMap;
 import java.util.Random;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class RandomValidatorsTest {
+  private static final int NUM_VALIDATORS = 30;
+  private static final RawLedgerTransaction GENESIS =
+      TransactionBuilder.createGenesisWithNumValidators(
+          NUM_VALIDATORS / 2, Decimal.of(1000), UInt64.fromNonNegativeLong(10));
+
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numPhysicalNodes(50)
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(NUM_VALIDATORS, true))
         .messageSelector(firstSelector())
         .addMonitors(
             byzantineBehaviorNotDetected(), consensusLiveness(3000), ledgerTransactionSafety())
@@ -107,8 +119,7 @@ public final class RandomValidatorsTest {
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
-                            25, UInt64.fromNonNegativeLong(10)),
+                        GENESIS,
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             10, 100, MempoolRelayConfig.of(5, 5))),
@@ -122,27 +133,95 @@ public final class RandomValidatorsTest {
 
       var random = new Random(12345);
 
+      var creating_validators = new HashMap<Integer, RawNotarizedTransaction>();
+      var validators = new HashMap<Integer, ComponentAddress>();
+      var genesis = NodesReader.getCommittedLedgerTransaction(test.getNodeInjectors(), GENESIS);
+      var componentAddresses =
+          genesis.newComponentAddresses().stream()
+              .filter(componentAddress -> componentAddress.value()[0] == 5)
+              .toList();
+      for (int i = 0; i < NUM_VALIDATORS / 2; i++) {
+        validators.put(i, componentAddresses.get(i));
+      }
+
       // Run
       for (int i = 0; i < 100; i++) {
         test.runForCount(1000);
 
-        for (int j = 0; j < 50; j++) {
-          var mempoolDispatcher =
-              test.getInstance(
-                  random.nextInt(0, 50),
-                  Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
-          var txn =
-              random.nextBoolean()
-                  ? REv2TestTransactions.constructRegisterValidatorTransaction(
+        var mempoolDispatcher =
+            test.getInstance(
+                random.nextInt(0, NUM_VALIDATORS),
+                Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
+
+        var randomValidator = random.nextInt(0, NUM_VALIDATORS);
+        var componentAddress = validators.get(randomValidator);
+        if (componentAddress == null) {
+          var inflightTransaction = creating_validators.get(randomValidator);
+          if (inflightTransaction == null) {
+            var txn =
+                REv2TestTransactions.constructCreateValidatorTransaction(
+                    NetworkDefinition.INT_TEST_NET,
+                    0,
+                    random.nextInt(1000000),
+                    PrivateKeys.ofNumeric(randomValidator + 1));
+            creating_validators.put(randomValidator, txn);
+            mempoolDispatcher.dispatch(MempoolAdd.create(txn));
+          } else {
+            var maybeExecuted =
+                NodesReader.tryGetCommittedUserTransaction(
+                    test.getNodeInjectors().get(randomValidator), inflightTransaction);
+            maybeExecuted.ifPresent(
+                executedTransaction -> {
+                  var validatorAddress = executedTransaction.newComponentAddresses().get(0);
+                  test.restartNodeWithConfig(
+                      randomValidator,
+                      PhysicalNodeConfig.create(
+                          PrivateKeys.ofNumeric(randomValidator + 1).getPublicKey(),
+                          validatorAddress));
+                  validators.put(randomValidator, validatorAddress);
+                  creating_validators.remove(randomValidator);
+                });
+          }
+        } else {
+          final RawNotarizedTransaction txn;
+          switch (random.nextInt(0, 4)) {
+            case 0 -> {
+              txn =
+                  REv2TestTransactions.constructRegisterValidatorTransaction(
                       NetworkDefinition.INT_TEST_NET,
                       0,
                       random.nextInt(1000000),
-                      PrivateKeys.ofNumeric(j + 1))
-                  : REv2TestTransactions.constructUnregisterValidatorTransaction(
+                      componentAddress,
+                      PrivateKeys.ofNumeric(randomValidator + 1));
+            }
+            case 1 -> {
+              txn =
+                  REv2TestTransactions.constructUnregisterValidatorTransaction(
                       NetworkDefinition.INT_TEST_NET,
                       0,
                       random.nextInt(1000000),
-                      PrivateKeys.ofNumeric(j + 1));
+                      componentAddress,
+                      PrivateKeys.ofNumeric(randomValidator + 1));
+            }
+            case 2 -> {
+              txn =
+                  REv2TestTransactions.constructStakeValidatorTransaction(
+                      NetworkDefinition.INT_TEST_NET,
+                      0,
+                      random.nextInt(1000000),
+                      componentAddress,
+                      PrivateKeys.ofNumeric(randomValidator + 1));
+            }
+            default -> {
+              txn =
+                  REv2TestTransactions.constructUnstakeValidatorTransaction(
+                      NetworkDefinition.INT_TEST_NET,
+                      0,
+                      random.nextInt(1000000),
+                      componentAddress,
+                      PrivateKeys.ofNumeric(randomValidator + 1));
+            }
+          }
           mempoolDispatcher.dispatch(MempoolAdd.create(txn));
         }
       }

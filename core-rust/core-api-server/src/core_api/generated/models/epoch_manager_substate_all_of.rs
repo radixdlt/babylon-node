@@ -13,6 +13,9 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct EpochManagerSubstateAllOf {
+    /// The Bech32m-encoded human readable version of the component address
+    #[serde(rename = "address")]
+    pub address: String,
     /// An integer between `0` and `10^10`, marking the current epoch
     #[serde(rename = "epoch")]
     pub epoch: i64,
@@ -25,8 +28,9 @@ pub struct EpochManagerSubstateAllOf {
 }
 
 impl EpochManagerSubstateAllOf {
-    pub fn new(epoch: i64, round: i64, rounds_per_epoch: i64) -> EpochManagerSubstateAllOf {
+    pub fn new(address: String, epoch: i64, round: i64, rounds_per_epoch: i64) -> EpochManagerSubstateAllOf {
         EpochManagerSubstateAllOf {
+            address,
             epoch,
             round,
             rounds_per_epoch,

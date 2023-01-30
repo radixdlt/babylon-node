@@ -62,90 +62,94 @@
  * permissions under this License.
  */
 
-package com.radixdlt.environment.deterministic.network;
+package com.radixdlt.integration.targeted.consensus;
 
-import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.ScheduledEventDispatcher;
-import java.util.function.Function;
+import static org.assertj.core.api.Assertions.assertThat;
 
-/** A sender within a deterministic network. */
-public final class ControlledSender implements Environment {
-  private final DeterministicNetwork network;
-  private final BFTNode self;
-  private final int senderIndex;
-  private final ChannelId localChannel;
-  private final Function<BFTNode, Integer> addressBook;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.EpochNodeWeightMapping;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.monitoring.Metrics;
+import io.reactivex.rxjava3.schedulers.Timed;
+import java.util.Random;
+import java.util.function.Predicate;
+import org.junit.Test;
 
-  public ControlledSender(
-      Function<BFTNode, Integer> addressBook,
-      DeterministicNetwork network,
-      BFTNode self,
-      int senderIndex) {
-    this.addressBook = addressBook;
-    this.network = network;
-    this.self = self;
-    this.senderIndex = senderIndex;
-    this.localChannel = ChannelId.of(this.senderIndex, this.senderIndex);
+public class ProcessCachedEventsWithTimeoutCertTest {
+
+  private static final int TEST_NODE = 4;
+  private final Random random = new Random(123456);
+
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(5))
+        .messageSelector(MessageSelector.randomSelector(random))
+        .messageMutators(
+            dropProposalToNodes(Round.of(1), ImmutableList.of(TEST_NODE)),
+            dropProposalToNodes(Round.of(2), ImmutableList.of(2, 3, TEST_NODE)),
+            dropVotesSentToNode(TEST_NODE))
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                true,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                FunctionalRadixNodeModule.ConsensusConfig.of(),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
+                    StateComputerConfig.mockedWithEpochs(
+                        Round.of(100),
+                        EpochNodeWeightMapping.constant(5),
+                        new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
   }
 
-  private static long addTimeNoOverflow(long a, long b) {
-    var sum = a + b;
-    if (sum < 0) {
-      return Long.MAX_VALUE;
+  @Test
+  public void process_cached_sync_event_with_tc_test() {
+    try (var test = createTest()) {
+      test.startAllNodes();
+      test.runUntilMessage(nodeVotesForRound(Round.of(3), TEST_NODE));
+
+      // just to check if the node indeed needed to sync
+      final var counters = test.getInstance(TEST_NODE, Metrics.class);
+      assertThat(counters.bft().timeoutQuorums().get()).isEqualTo(0);
+      assertThat(counters.bft().voteQuorums().get()).isEqualTo(0);
     }
-
-    return sum;
   }
 
-  @Override
-  public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
-    return e ->
-        handleMessage(
-            new ControlledMessage(
-                self, this.localChannel, e, null, arrivalTime(this.localChannel)));
-  }
-
-  @Override
-  public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass) {
-    return (t, milliseconds) -> {
-      long arrivalTime = addTimeNoOverflow(arrivalTime(this.localChannel), milliseconds);
-      var msg = new ControlledMessage(self, this.localChannel, t, null, arrivalTime);
-      handleMessage(msg);
+  private static MessageMutator dropProposalToNodes(Round round, ImmutableList<Integer> nodes) {
+    return (message, queue) -> {
+      final var msg = message.message();
+      if (msg instanceof final Proposal proposal) {
+        return proposal.getRound().equals(round)
+            && nodes.contains(message.channelId().receiverIndex());
+      }
+      return false;
     };
   }
 
-  @Override
-  public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(TypeLiteral<T> typeLiteral) {
-    return (t, milliseconds) -> {
-      var msg =
-          new ControlledMessage(
-              self,
-              this.localChannel,
-              t,
-              typeLiteral,
-              addTimeNoOverflow(arrivalTime(this.localChannel), milliseconds));
-      handleMessage(msg);
+  private static MessageMutator dropVotesSentToNode(int node) {
+    return (message, queue) -> {
+      final var msg = message.message();
+      if (msg instanceof Vote) {
+        return message.channelId().receiverIndex() == node;
+      }
+      return false;
     };
   }
 
-  @Override
-  public <T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass) {
-    return (node, e) -> {
-      ChannelId channelId = ChannelId.of(this.senderIndex, this.addressBook.apply(node));
-      handleMessage(new ControlledMessage(self, channelId, e, null, arrivalTime(channelId)));
+  public static Predicate<Timed<ControlledMessage>> nodeVotesForRound(Round round, int node) {
+    return timedMsg -> {
+      final var message = timedMsg.value();
+      if (!(message.message() instanceof final Vote vote)) {
+        return false;
+      }
+      return vote.getRound().equals(round) && message.channelId().senderIndex() == node;
     };
-  }
-
-  private void handleMessage(ControlledMessage controlledMessage) {
-    this.network.handleMessage(controlledMessage);
-  }
-
-  private long arrivalTime(ChannelId channelId) {
-    long delay = this.network.delayForChannel(channelId);
-    return addTimeNoOverflow(this.network.currentTime(), delay);
   }
 }

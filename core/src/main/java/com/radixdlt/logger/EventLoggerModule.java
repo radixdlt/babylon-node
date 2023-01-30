@@ -74,7 +74,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
@@ -93,26 +93,33 @@ import org.apache.logging.log4j.Logger;
 
 public final class EventLoggerModule extends AbstractModule {
   private static final Logger logger = LogManager.getLogger();
-  private final Function<ECDSASecp256k1PublicKey, String> nodeToString;
+  private final Function<ECDSASecp256k1PublicKey, String> nodeKeyToString;
 
   public EventLoggerModule(EventLoggerConfig config) {
-    this.nodeToString = config.nodeToString();
+    this.nodeKeyToString = config.nodeKeyToString();
   }
 
   protected void configure() {
     bind(new TypeLiteral<Function<ECDSASecp256k1PublicKey, String>>() {})
-        .toInstance(this.nodeToString);
-  }
-
-  @ProvidesIntoSet
-  EventProcessorOnDispatch<?> logByzantineEvents(Function<BFTNode, String> nodeString) {
-    return new EventProcessorOnDispatch<>(
-        ConsensusByzantineEvent.class,
-        event -> logger.warn("Byzantine Behavior detected from {}: {}", event.getAuthor(), event));
+        .toInstance(this.nodeKeyToString);
   }
 
   @Provides
-  Function<BFTNode, String> loggingFormatterForNode(
+  @Self
+  String name(
+      Function<ECDSASecp256k1PublicKey, String> nodeToString, @Self ECDSASecp256k1PublicKey key) {
+    return nodeToString.apply(key);
+  }
+
+  @ProvidesIntoSet
+  EventProcessorOnDispatch<?> logByzantineEvents(Function<BFTValidatorId, String> nodeString) {
+    return new EventProcessorOnDispatch<>(
+        ConsensusByzantineEvent.class,
+        event -> logger.warn("Byzantine Behavior detected: {}", event));
+  }
+
+  @Provides
+  Function<BFTValidatorId, String> loggingFormatterForNode(
       Function<ECDSASecp256k1PublicKey, String> loggingFormatterForNodePublicKey) {
     return n -> loggingFormatterForNodePublicKey.apply(n.getKey());
   }
@@ -127,7 +134,7 @@ public final class EventLoggerModule extends AbstractModule {
   */
 
   @ProvidesIntoSet
-  EventProcessorOnDispatch<?> logTimeouts(Function<BFTNode, String> nodeString) {
+  EventProcessorOnDispatch<?> logTimeouts(Function<BFTValidatorId, String> nodeString) {
     return new EventProcessorOnDispatch<>(
         EpochLocalTimeoutOccurrence.class,
         t ->
@@ -142,7 +149,7 @@ public final class EventLoggerModule extends AbstractModule {
 
   @ProvidesIntoSet
   @SuppressWarnings("UnstableApiUsage")
-  EventProcessorOnDispatch<?> logRounds(Function<BFTNode, String> nodeString) {
+  EventProcessorOnDispatch<?> logRounds(Function<BFTValidatorId, String> nodeString) {
     final var logLimiter = RateLimiter.create(1.0);
     return new EventProcessorOnDispatch<>(
         EpochRoundUpdate.class,
@@ -162,7 +169,7 @@ public final class EventLoggerModule extends AbstractModule {
   @Singleton
   @SuppressWarnings("UnstableApiUsage")
   EventProcessorOnDispatch<?> ledgerUpdate(
-      @Self BFTNode self, Function<ECDSASecp256k1PublicKey, String> nodeString) {
+      @Self BFTValidatorId self, Function<ECDSASecp256k1PublicKey, String> nodeString) {
     final var logLimiter = RateLimiter.create(1.0);
     return new EventProcessorOnDispatch<>(
         LedgerUpdate.class,
@@ -171,7 +178,7 @@ public final class EventLoggerModule extends AbstractModule {
 
   @SuppressWarnings("UnstableApiUsage")
   private static void processLedgerUpdate(
-      BFTNode self,
+      BFTValidatorId self,
       Function<ECDSASecp256k1PublicKey, String> nodeString,
       RateLimiter logLimiter,
       LedgerUpdate ledgerUpdate) {
@@ -204,7 +211,7 @@ public final class EventLoggerModule extends AbstractModule {
     */
   }
 
-  private static void logEpochChange(BFTNode self, EpochChange epochChange) {
+  private static void logEpochChange(BFTValidatorId self, EpochChange epochChange) {
     var validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
     logger.info(
         "lgr_nepoch{epoch={} included={} num_validators={} total_stake={}}",
@@ -246,7 +253,7 @@ public final class EventLoggerModule extends AbstractModule {
   }
 
   private static void logValidatorEvents(
-      BFTNode self, Function<ECDSASecp256k1PublicKey, String> nodeString, REEvent e) {
+      BFTValidatorId self, Function<ECDSASecp256k1PublicKey, String> nodeString, REEvent e) {
     if (e instanceof ValidatorBFTDataEvent event) {
       var level = event.missedProposals() > 0 ? WARN : INFO;
 

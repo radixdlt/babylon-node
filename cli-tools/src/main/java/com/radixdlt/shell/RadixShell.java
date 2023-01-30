@@ -73,14 +73,10 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.RadixNodeModule;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
-import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.Runners;
+import com.radixdlt.environment.*;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
@@ -312,14 +308,15 @@ public final class RadixShell {
     }
 
     public <T> void dispatchRemote(PeerChannel receiver, T t) {
-      dispatchRemote(BFTNode.create(receiver.getRemoteNodeId().getPublicKey()), t);
+      dispatchRemote(receiver.getRemoteNodeId(), t);
     }
 
     public <T> void dispatchRemote(RadixNodeUri receiver, T t) {
-      dispatchRemote(BFTNode.create(receiver.getNodeId().getPublicKey()), t);
+      dispatchRemote(receiver.getNodeId(), t);
     }
 
-    public <T> Disposable onRemoteEvent(Class<T> eventClass, Consumer<RemoteEvent<T>> consumer) {
+    public <T> Disposable onRemoteEvent(
+        Class<T> eventClass, Consumer<RemoteEvent<NodeId, T>> consumer) {
       final var disposable =
           injector
               .getInstance(RxRemoteEnvironment.class)
@@ -336,8 +333,8 @@ public final class RadixShell {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> void dispatchRemote(BFTNode receiver, T t) {
-      ((RemoteEventDispatcher<T>)
+    public <T> void dispatchRemote(NodeId receiver, T t) {
+      ((RemoteEventDispatcher<NodeId, T>)
               injector.getInstance(Environment.class).getRemoteDispatcher(t.getClass()))
           .dispatch(receiver, t);
     }

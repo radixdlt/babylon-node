@@ -78,6 +78,7 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
@@ -86,9 +87,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 public final class PacemakerGenerateProposalTest {
-  private BFTNode self;
-  private BFTNode validator1;
-  private BFTNode validator2;
+  private BFTValidatorId self = BFTValidatorId.create(PrivateKeys.ofNumeric(1).getPublicKey());
+  private BFTValidatorId validator1 =
+      BFTValidatorId.create(PrivateKeys.ofNumeric(2).getPublicKey());
+  private BFTValidatorId validator2 =
+      BFTValidatorId.create(PrivateKeys.ofNumeric(3).getPublicKey());
   private BFTValidatorSet validatorSet;
   private VertexStoreAdapter vertexStore;
   private SafetyRules safetyRules;
@@ -96,8 +99,8 @@ public final class PacemakerGenerateProposalTest {
   private ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender;
   private PacemakerTimeoutCalculator timeoutCalculator;
   private ProposalGenerator proposalGenerator;
-  private RemoteEventDispatcher<Proposal> proposalDispatcher;
-  private RemoteEventDispatcher<Vote> voteDispatcher;
+  private RemoteEventDispatcher<BFTValidatorId, Proposal> proposalDispatcher;
+  private RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher;
   private EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher;
   private Hasher hasher;
   private TimeSupplier timeSupplier;
@@ -108,9 +111,6 @@ public final class PacemakerGenerateProposalTest {
 
   @Before
   public void setup() {
-    this.self = BFTNode.random();
-    this.validator1 = BFTNode.random();
-    this.validator2 = BFTNode.random();
     this.metrics = new MetricsInitializer().initialize();
     this.validatorSet =
         BFTValidatorSet.from(

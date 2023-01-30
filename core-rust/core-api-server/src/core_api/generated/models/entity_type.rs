@@ -14,6 +14,8 @@
 pub enum EntityType {
     #[serde(rename = "EpochManager")]
     EpochManager,
+    #[serde(rename = "Validator")]
+    Validator,
     #[serde(rename = "ResourceManager")]
     ResourceManager,
     #[serde(rename = "Component")]
@@ -37,6 +39,7 @@ impl ToString for EntityType {
     fn to_string(&self) -> String {
         match self {
             Self::EpochManager => String::from("EpochManager"),
+            Self::Validator => String::from("Validator"),
             Self::ResourceManager => String::from("ResourceManager"),
             Self::Component => String::from("Component"),
             Self::Package => String::from("Package"),

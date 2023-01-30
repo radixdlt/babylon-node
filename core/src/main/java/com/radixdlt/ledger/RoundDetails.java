@@ -65,13 +65,13 @@
 package com.radixdlt.ledger;
 
 import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 
 public record RoundDetails(
     long epoch,
     long roundNumber,
     long previousQcRoundNumber,
-    BFTNode roundProposer,
+    BFTValidatorId roundProposer,
     boolean roundWasTimeout,
     long consensusParentRoundTimestampMs,
     long proposerTimestampMs) {

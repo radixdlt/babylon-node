@@ -43,6 +43,8 @@ pub enum SubstateKeyType {
     CurrentValidatorSet,
     #[serde(rename = "PreparingValidatorSet")]
     PreparingValidatorSet,
+    #[serde(rename = "Validator")]
+    Validator,
     #[serde(rename = "ClockCurrentMinute")]
     ClockCurrentMinute,
     #[serde(rename = "KeyValueStoreEntry")]
@@ -72,6 +74,7 @@ impl ToString for SubstateKeyType {
             Self::EpochManager => String::from("EpochManager"),
             Self::CurrentValidatorSet => String::from("CurrentValidatorSet"),
             Self::PreparingValidatorSet => String::from("PreparingValidatorSet"),
+            Self::Validator => String::from("Validator"),
             Self::ClockCurrentMinute => String::from("ClockCurrentMinute"),
             Self::KeyValueStoreEntry => String::from("KeyValueStoreEntry"),
             Self::NonFungibleStoreEntry => String::from("NonFungibleStoreEntry"),

@@ -64,6 +64,7 @@
 
 extern crate core;
 
+mod execution_cache;
 pub mod jni;
 pub mod mempool;
 mod metrics;

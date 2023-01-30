@@ -67,12 +67,10 @@ package com.radixdlt.keys;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import java.util.Objects;
-import java.util.function.Function;
 
 /** In memory Hash signing and identity handling */
 public final class InMemoryBFTKeyModule extends AbstractModule {
@@ -96,17 +94,5 @@ public final class InMemoryBFTKeyModule extends AbstractModule {
   @Self
   ECDSASecp256k1PublicKey publicKey() {
     return keyPair.getPublicKey();
-  }
-
-  @Provides
-  @Self
-  public BFTNode node() {
-    return BFTNode.create(keyPair.getPublicKey());
-  }
-
-  @Provides
-  @Self
-  String name(Function<ECDSASecp256k1PublicKey, String> nodeToString) {
-    return nodeToString.apply(keyPair.getPublicKey());
   }
 }

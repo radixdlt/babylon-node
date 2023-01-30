@@ -17,7 +17,8 @@ fn handle_state_epoch_internal(
 ) -> Result<models::StateEpochResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
-    let node_id = read_derefed_global_node_id(state_manager, GlobalAddress::System(EPOCH_MANAGER))?;
+    let node_id =
+        read_derefed_global_node_id(state_manager, GlobalAddress::Component(EPOCH_MANAGER))?;
 
     let epoch_manager_substate = {
         let substate_offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);

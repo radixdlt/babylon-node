@@ -70,6 +70,7 @@ import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitor
 import com.google.inject.*;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolAdd;
@@ -81,6 +82,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
@@ -121,10 +123,13 @@ public final class SanityTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numPhysicalNodes(20)
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(20, true))
         .messageSelector(firstSelector())
         .addMonitors(
-            byzantineBehaviorNotDetected(), consensusLiveness(3000), ledgerTransactionSafety())
+            byzantineBehaviorNotDetected(),
+            consensusLiveness(3000),
+            noTimeouts(),
+            ledgerTransactionSafety())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 epochs,
@@ -133,14 +138,15 @@ public final class SanityTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(10, roundsPerEpoch),
+                        TransactionBuilder.createGenesisWithNumValidators(
+                            10, Decimal.of(1), roundsPerEpoch),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.mempool(10, 100, MempoolRelayConfig.of())),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
   @Test
-  public void normal_run_should_not_cause_unexpected_errors() {
+  public void normal_run_with_transactions_should_not_cause_unexpected_errors() {
     try (var test = createTest()) {
       test.startAllNodes();
 

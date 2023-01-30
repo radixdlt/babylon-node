@@ -66,9 +66,9 @@ package com.radixdlt.harness.simulation.monitors;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnDispatch;
+import com.radixdlt.p2p.NodeId;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
@@ -78,20 +78,20 @@ import java.util.function.BiConsumer;
  * in deterministic tests.
  */
 public final class NodeEvents {
-  private final ConcurrentMap<Class<?>, Set<BiConsumer<BFTNode, Object>>> consumers =
+  private final ConcurrentMap<Class<?>, Set<BiConsumer<NodeId, Object>>> consumers =
       Maps.newConcurrentMap();
 
-  public <T> void addListener(BiConsumer<BFTNode, T> eventConsumer, Class<T> eventClass) {
+  public <T> void addListener(BiConsumer<NodeId, T> eventConsumer, Class<T> eventClass) {
     this.consumers
         .computeIfAbsent(eventClass, k -> Sets.newConcurrentHashSet())
         .add((node, e) -> eventConsumer.accept(node, eventClass.cast(e)));
   }
 
-  public <T> EventProcessor<T> processor(BFTNode node, Class<T> eventClass) {
+  public <T> EventProcessor<T> processor(NodeId node, Class<T> eventClass) {
     return t -> this.consumers.getOrDefault(eventClass, Set.of()).forEach(c -> c.accept(node, t));
   }
 
-  public <T> EventProcessorOnDispatch<T> processorOnDispatch(BFTNode node, Class<T> eventClass) {
+  public <T> EventProcessorOnDispatch<T> processorOnDispatch(NodeId node, Class<T> eventClass) {
     return new EventProcessorOnDispatch<>(eventClass, processor(node, eventClass));
   }
 }

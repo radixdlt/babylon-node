@@ -73,7 +73,6 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VertexStoreState;
@@ -88,6 +87,7 @@ import com.radixdlt.ledger.RoundDetails;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.Map;
@@ -105,7 +105,7 @@ public final class MockedStateComputer implements StateComputer {
   }
 
   @Override
-  public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
+  public void addToMempool(MempoolAdd mempoolAdd, @Nullable NodeId origin) {}
 
   @Override
   public List<RawNotarizedTransaction> getTransactionsForProposal(

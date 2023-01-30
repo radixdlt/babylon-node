@@ -64,7 +64,6 @@
 
 package com.radixdlt.environment;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.rx.RemoteEvent;
 
 /**
@@ -72,10 +71,10 @@ import com.radixdlt.environment.rx.RemoteEvent;
  *
  * @param <T> the event class
  */
-public interface RemoteEventProcessor<T> {
-  void process(BFTNode sender, T t);
+public interface RemoteEventProcessor<N, T> {
+  void process(N sender, T t);
 
-  default void process(RemoteEvent<T> event) {
+  default void process(RemoteEvent<N, T> event) {
     process(event.getOrigin(), event.getEvent());
   }
 }

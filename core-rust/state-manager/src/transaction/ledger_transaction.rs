@@ -27,6 +27,12 @@ impl LedgerTransaction {
         scrypto_encode(self)
     }
 
+    pub fn create_payload_and_hash(&self) -> Result<(Vec<u8>, LedgerPayloadHash), EncodeError> {
+        let payload = scrypto_encode(self)?;
+        let hash = LedgerPayloadHash::for_ledger_payload_bytes(&payload);
+        Ok((payload, hash))
+    }
+
     pub fn user(&self) -> Option<&NotarizedTransaction> {
         match self {
             LedgerTransaction::User(tx) => Some(tx),

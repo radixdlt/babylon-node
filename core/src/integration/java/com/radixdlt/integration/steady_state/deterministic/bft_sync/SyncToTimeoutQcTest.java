@@ -74,6 +74,7 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.Metrics;
@@ -104,7 +105,7 @@ public class SyncToTimeoutQcTest {
   public void sync_to_timeout_qc_test() {
     final DeterministicTest test =
         DeterministicTest.builder()
-            .numPhysicalNodes(NUM_NODES)
+            .addPhysicalNodes(PhysicalNodeConfig.createBatch(NUM_NODES, false))
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(dropProposalsToNodes(ImmutableSet.of(2, 3)).andThen(dropVotesToNode(0)))
             .functionalNodeModule(

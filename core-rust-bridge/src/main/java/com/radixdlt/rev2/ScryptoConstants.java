@@ -97,9 +97,18 @@ public final class ScryptoConstants {
               ScryptoConstants::getXrdResourceAddress)
           .call(Tuple.Tuple0.of());
 
+  public static final ComponentAddress EPOCH_MANAGER_COMPONENT_ADDRESS =
+      NativeCalls.StaticFunc1.with(
+              new TypeToken<Tuple.Tuple0>() {},
+              new TypeToken<Result<ComponentAddress, StateManagerRuntimeError>>() {},
+              ScryptoConstants::getEpochManagerComponentAddress)
+          .call(Tuple.Tuple0.of());
+
   private static native byte[] getFaucetComponentAddress(byte[] unused);
 
   private static native byte[] getAccountPackageAddress(byte[] unused);
 
   private static native byte[] getXrdResourceAddress(byte[] unused);
+
+  private static native byte[] getEpochManagerComponentAddress(byte[] unused);
 }

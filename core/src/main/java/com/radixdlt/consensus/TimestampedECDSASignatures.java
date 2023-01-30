@@ -68,15 +68,13 @@ import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import java.util.ArrayList;
@@ -101,7 +99,7 @@ public final class TimestampedECDSASignatures {
   @DsonOutput(DsonOutput.Output.ALL)
   private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-  private final Map<BFTNode, TimestampedECDSASignature> nodeToTimestampedSignature;
+  private final Map<BFTValidatorId, TimestampedECDSASignature> nodeToTimestampedSignature;
 
   @JsonCreator
   public static TimestampedECDSASignatures from(
@@ -116,9 +114,11 @@ public final class TimestampedECDSASignatures {
 
     var signaturesByNode =
         signatures == null
-            ? Map.<BFTNode, TimestampedECDSASignature>of()
+            ? Map.<BFTValidatorId, TimestampedECDSASignature>of()
             : signatures.entrySet().stream()
-                .collect(Collectors.toMap(e -> toBFTNode(e.getKey()), Map.Entry::getValue));
+                .collect(
+                    Collectors.toMap(
+                        e -> BFTValidatorId.fromSerializedString(e.getKey()), Map.Entry::getValue));
 
     return new TimestampedECDSASignatures(signaturesByNode);
   }
@@ -135,7 +135,7 @@ public final class TimestampedECDSASignatures {
    *     corresponding timestamps and {@link ECDSASecp256k1PublicKey}
    */
   public TimestampedECDSASignatures(
-      Map<BFTNode, TimestampedECDSASignature> nodeToTimestampAndSignature) {
+      Map<BFTValidatorId, TimestampedECDSASignature> nodeToTimestampAndSignature) {
     this.nodeToTimestampedSignature =
         nodeToTimestampAndSignature == null ? Map.of() : nodeToTimestampAndSignature;
     this.nodeToTimestampedSignature.forEach(
@@ -150,7 +150,7 @@ public final class TimestampedECDSASignatures {
    *
    * @return Signatures and timestamps for each public key
    */
-  public Map<BFTNode, TimestampedECDSASignature> getSignatures() {
+  public Map<BFTValidatorId, TimestampedECDSASignature> getSignatures() {
     return this.nodeToTimestampedSignature;
   }
 
@@ -206,10 +206,9 @@ public final class TimestampedECDSASignatures {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof TimestampedECDSASignatures)) {
+    if (!(o instanceof TimestampedECDSASignatures that)) {
       return false;
     }
-    TimestampedECDSASignatures that = (TimestampedECDSASignatures) o;
     return Objects.equals(this.nodeToTimestampedSignature, that.nodeToTimestampedSignature);
   }
 
@@ -223,20 +222,8 @@ public final class TimestampedECDSASignatures {
   private Map<String, TimestampedECDSASignature> getSerializerSignatures() {
     if (this.nodeToTimestampedSignature != null) {
       return this.nodeToTimestampedSignature.entrySet().stream()
-          .collect(Collectors.toMap(e -> encodePublicKey(e.getKey()), Map.Entry::getValue));
+          .collect(Collectors.toMap(e -> e.getKey().toSerializedString(), Map.Entry::getValue));
     }
     return null;
-  }
-
-  private static String encodePublicKey(BFTNode key) {
-    return Bytes.toHexString(key.getKey().getBytes());
-  }
-
-  private static BFTNode toBFTNode(String str) {
-    try {
-      return BFTNode.fromPublicKeyBytes(Bytes.fromHexString(str));
-    } catch (PublicKeyException e) {
-      throw new IllegalStateException("Error decoding public key", e);
-    }
   }
 }
