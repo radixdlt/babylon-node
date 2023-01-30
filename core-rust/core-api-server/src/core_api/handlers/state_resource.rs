@@ -1,8 +1,8 @@
 use crate::core_api::*;
-use radix_engine::types::{AccessRulesChainOffset, Bech32Decoder, MetadataOffset};
+use radix_engine::types::{AccessRulesChainOffset, MetadataOffset};
 use radix_engine::{
     model::PersistedSubstate,
-    types::{Bech32Encoder, GlobalAddress, ResourceManagerOffset, SubstateOffset},
+    types::{GlobalAddress, ResourceManagerOffset, SubstateOffset},
 };
 
 use state_manager::jni::state_manager::ActualStateManager;
@@ -19,11 +19,9 @@ fn handle_state_resource_internal(
     request: models::StateResourceRequest,
 ) -> Result<models::StateResourceResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
+    let extraction_context = ExtractionContext::new(&state_manager.network);
 
-    let bech32_decoder = Bech32Decoder::new(&state_manager.network);
-    let bech32_encoder = Bech32Encoder::new(&state_manager.network);
-
-    let resource_address = extract_resource_address(&bech32_decoder, &request.resource_address)
+    let resource_address = extract_resource_address(&extraction_context, &request.resource_address)
         .map_err(|err| err.into_response_error("resource_address"))?;
 
     let resource_node_id =
@@ -69,18 +67,20 @@ fn handle_state_resource_internal(
         substate
     };
 
+    let mapping_context = MappingContext::new(&state_manager.network);
+
     Ok(models::StateResourceResponse {
         manager: Some(to_api_resource_manager_substate(
-            &bech32_encoder,
+            &mapping_context,
             &resource_manager,
         )?),
-        metadata: Some(to_api_metadata_substate(&bech32_encoder, &metadata)?),
+        metadata: Some(to_api_metadata_substate(&mapping_context, &metadata)?),
         access_rules: Some(to_api_access_rules_chain_substate(
-            &bech32_encoder,
+            &mapping_context,
             &access_rules,
         )?),
         vault_access_rules: Some(to_api_access_rules_chain_substate(
-            &bech32_encoder,
+            &mapping_context,
             &vault_access_rules,
         )?),
     })

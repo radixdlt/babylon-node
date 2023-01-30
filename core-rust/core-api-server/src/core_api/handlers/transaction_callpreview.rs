@@ -6,7 +6,7 @@ use models::{
 };
 use radix_engine::{
     transaction::{PreviewError, TransactionOutcome, TransactionResult},
-    types::{Bech32Decoder, Bech32Encoder, Decimal, FAUCET_COMPONENT},
+    types::{Decimal, FAUCET_COMPONENT},
 };
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use radix_engine_interface::args;
@@ -30,8 +30,9 @@ pub(crate) async fn handle_transaction_callpreview(
     Json(request): Json<models::TransactionCallPreviewRequest>,
 ) -> Result<Json<models::TransactionCallPreviewResponse>, ResponseError<()>> {
     let state_manager = state.state_manager.read();
-    let bech32_decoder = Bech32Decoder::new(&state_manager.network);
-    let bech32_encoder = Bech32Encoder::new(&state_manager.network);
+
+    let extraction_context = ExtractionContext::new(&state_manager.network);
+    let mapping_context = MappingContext::new(&state_manager.network);
 
     let args: Vec<_> = request
         .arguments
@@ -51,7 +52,7 @@ pub(crate) async fn handle_transaction_callpreview(
             function_name,
         } => {
             let package_address =
-                extract_package_address(&bech32_decoder, package_address.as_str())
+                extract_package_address(&extraction_context, package_address.as_str())
                     .map_err(|err| err.into_response_error("target.package_address"))?;
 
             BasicInstruction::CallFunction {
@@ -66,7 +67,7 @@ pub(crate) async fn handle_transaction_callpreview(
             method_name,
         } => {
             let component_address =
-                extract_component_address(&bech32_decoder, component_address.as_str())
+                extract_component_address(&extraction_context, component_address.as_str())
                     .map_err(|err| err.into_response_error("target.component_address"))?;
 
             BasicInstruction::CallMethod {
@@ -121,7 +122,7 @@ pub(crate) async fn handle_transaction_callpreview(
                         .into_iter()
                         .skip(1) // Skip the result of `lock_fee`
                         .map(|line_output| {
-                            scrypto_bytes_to_api_sbor_data(&bech32_encoder, &line_output.as_vec())
+                            scrypto_bytes_to_api_sbor_data(&mapping_context, &line_output.as_vec())
                         })
                         .next()
                     {
