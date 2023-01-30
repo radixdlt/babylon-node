@@ -92,14 +92,20 @@ public final class TransactionBuilder {
   }
 
   public static RawLedgerTransaction createGenesis(
-      Map<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>> validatorSetAndStakeOwners,
+      Map<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>>
+          validatorSetAndStakeOwners,
       Map<ECDSASecp256k1PublicKey, Decimal> accountXrdAllocations,
       UInt64 initialEpoch,
       UInt64 roundsPerEpoch,
       UInt64 numUnstakeEpochs) {
     return RawLedgerTransaction.create(
         createGenesisFunc.call(
-            tuple(validatorSetAndStakeOwners, accountXrdAllocations, initialEpoch, roundsPerEpoch, numUnstakeEpochs)));
+            tuple(
+                validatorSetAndStakeOwners,
+                accountXrdAllocations,
+                initialEpoch,
+                roundsPerEpoch,
+                numUnstakeEpochs)));
   }
 
   public static RawLedgerTransaction createGenesis(
@@ -119,13 +125,16 @@ public final class TransactionBuilder {
   }
 
   public static RawLedgerTransaction createGenesisWithNumValidators(
-          long numValidators,
-          Decimal initialStake, UInt64 roundsPerEpoch) {
-    return createGenesisWithNumValidatorsAndXrdAlloc(numValidators, Map.of(), initialStake, roundsPerEpoch);
+      long numValidators, Decimal initialStake, UInt64 roundsPerEpoch) {
+    return createGenesisWithNumValidatorsAndXrdAlloc(
+        numValidators, Map.of(), initialStake, roundsPerEpoch);
   }
 
   public static RawLedgerTransaction createGenesisWithNumValidatorsAndXrdAlloc(
-      long numValidators, Map<ECDSASecp256k1PublicKey, Decimal> xrdAlloc, Decimal initialStake, UInt64 roundsPerEpoch) {
+      long numValidators,
+      Map<ECDSASecp256k1PublicKey, Decimal> xrdAlloc,
+      Decimal initialStake,
+      UInt64 roundsPerEpoch) {
 
     final var stakingAccount =
         Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());

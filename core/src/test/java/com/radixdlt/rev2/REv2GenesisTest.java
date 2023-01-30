@@ -79,16 +79,15 @@ import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
-import org.junit.Test;
-
 import java.util.Map;
+import org.junit.Test;
 
 public final class REv2GenesisTest {
   private static final Decimal INITIAL_STAKE = Decimal.of(1);
 
   private static final Decimal XRD_ALLOC_AMOUNT = Decimal.of(100123);
   private static final ECDSASecp256k1PublicKey XRD_ALLOC_ACCOUNT_PUB_KEY =
-    ECKeyPair.generateNew().getPublicKey();
+      ECKeyPair.generateNew().getPublicKey();
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
@@ -104,7 +103,10 @@ public final class REv2GenesisTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidatorsAndXrdAlloc(
-                            1, Map.of(XRD_ALLOC_ACCOUNT_PUB_KEY, XRD_ALLOC_AMOUNT), INITIAL_STAKE, UInt64.fromNonNegativeLong(10)),
+                            1,
+                            Map.of(XRD_ALLOC_ACCOUNT_PUB_KEY, XRD_ALLOC_AMOUNT),
+                            INITIAL_STAKE,
+                            UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.inMemory(),
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             0, 0, MempoolRelayConfig.of())))));
@@ -124,16 +126,16 @@ public final class REv2GenesisTest {
       assertThat(genesis.newComponentAddresses())
           .contains(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
 
-      final var xrdLeftInFaucet = REv2Constants.GENESIS_AMOUNT
-        .subtract(INITIAL_STAKE)
-        .subtract(XRD_ALLOC_AMOUNT);
+      final var xrdLeftInFaucet =
+          REv2Constants.GENESIS_AMOUNT.subtract(INITIAL_STAKE).subtract(XRD_ALLOC_AMOUNT);
       var systemAmount =
           stateReader.getComponentXrdAmount(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
       assertThat(systemAmount).isEqualTo(xrdLeftInFaucet);
 
       // Check genesis XRD alloc
       final var allocatedAmount =
-        stateReader.getComponentXrdAmount(ComponentAddress.ofAccountPublicKey(XRD_ALLOC_ACCOUNT_PUB_KEY));
+          stateReader.getComponentXrdAmount(
+              ComponentAddress.ofAccountPublicKey(XRD_ALLOC_ACCOUNT_PUB_KEY));
       assertThat(allocatedAmount).isEqualTo(XRD_ALLOC_AMOUNT);
 
       var emptyAccountAmount =

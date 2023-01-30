@@ -64,7 +64,6 @@
 
 package com.radixdlt.rev2;
 
-import com.google.common.hash.HashCode;
 import com.google.common.primitives.Bytes;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.HashUtils;
@@ -72,8 +71,6 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import java.util.Arrays;
-
-import org.bouncycastle.asn1.eac.ECDSAPublicKey;
 import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -135,9 +132,11 @@ public record ComponentAddress(byte[] value) {
 
   public static ComponentAddress ofAccountPublicKey(ECDSASecp256k1PublicKey publicKey) {
     final var pubKeyBytes = publicKey.getCompressedBytes();
-    return ComponentAddress.create(Bytes.concat(
-      new byte[] { ECDSA_SECP_256K1_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID },
-        ByteUtils.subArray(HashUtils.sha256Once(pubKeyBytes, 0, pubKeyBytes.length).asBytes(), 6, 32)));
+    return ComponentAddress.create(
+        Bytes.concat(
+            new byte[] {ECDSA_SECP_256K1_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID},
+            ByteUtils.subArray(
+                HashUtils.sha256Once(pubKeyBytes, 0, pubKeyBytes.length).asBytes(), 6, 32)));
   }
 
   public static ComponentAddress create(byte[] addressBytes) {
