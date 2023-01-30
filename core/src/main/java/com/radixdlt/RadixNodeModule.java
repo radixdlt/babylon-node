@@ -270,6 +270,9 @@ public final class RadixNodeModule extends AbstractModule {
       ? Map.of(XRD_ALLOCATION_ACCOUNT_PUBLIC_KEY, XRD_ALLOCATION_AMOUNT)
       : Map.of();
 
+    log.info("Genesis XRD allocations: {}", xrdAllocations.isEmpty() ? "(empty)" : "");
+    xrdAllocations.forEach((k, v) -> log.info("{}: {}", k, v));
+
     var genesis =
         TransactionBuilder.createGenesis(
             validatorSet,
