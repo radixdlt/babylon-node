@@ -63,7 +63,7 @@
  */
 
 use crate::types::UserPayloadHash;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 
 use crate::store::traits::*;
@@ -250,8 +250,27 @@ impl CommitStore for RocksDBStore {
     fn commit(&mut self, commit_bundle: CommitBundle) {
         let mut batch = WriteBatch::default();
 
-        for txn in commit_bundle.transactions {
-            self.add_transaction_to_write_batch(&mut batch, txn);
+        // Check for duplicate intent/payload hashes in the commit request
+        let mut user_transactions_count = 0;
+        let mut processed_intent_hashes = HashSet::new();
+        let transactions_count = commit_bundle.transactions.len();
+        let mut processed_payload_hashes = HashSet::new();
+
+        for txn_bundle in commit_bundle.transactions {
+            if let LedgerTransaction::User(notarized_transaction) = &txn_bundle.0 {
+                processed_intent_hashes.insert(notarized_transaction.intent_hash());
+                user_transactions_count += 1;
+            }
+            processed_payload_hashes.insert(txn_bundle.0.ledger_payload_hash());
+            self.add_transaction_to_write_batch(&mut batch, txn_bundle);
+        }
+
+        if processed_intent_hashes.len() != user_transactions_count {
+            panic!("Commit request contains duplicate intent hashes");
+        }
+
+        if processed_payload_hashes.len() != transactions_count {
+            panic!("Commit request contains duplicate payload hashes");
         }
 
         // Ledger proof (by state version) is a tuple of optional epoch boundary and an actual

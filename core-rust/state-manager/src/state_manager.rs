@@ -910,7 +910,6 @@ where
                     if let Some((_, next_epoch)) = result.next_epoch {
                         let is_last = i == (parsed_txns_len - 1);
                         if !is_last {
-                            // need to cleanup staged store?
                             return Err(CommitError::MissingEpochProof);
                         }
                         // TODO: Use actual result and verify proof validator set matches transaction receipt validator set
