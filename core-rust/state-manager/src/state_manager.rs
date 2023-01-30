@@ -859,15 +859,6 @@ where
             );
         }
 
-        /*
-                // Create a transient substate store for all txns in the commit batch,
-                // backed by a StagedSubstateStore.
-                let mut commit_substate_store = CommitTransientSubstateStore::new(&mut self.store);
-                let mut staged_store_manager = StagedSubstateStoreManager::new(&mut commit_substate_store);
-                let staged_node = staged_store_manager.new_child_node(0);
-                let mut staged_store = staged_store_manager.get_output_store(staged_node);
-        */
-
         let mut current_state_version = current_top_of_ledger.state_version;
         let mut parent_accumulator_hash = current_top_of_ledger.accumulator_hash;
         let mut epoch_boundary = None;
