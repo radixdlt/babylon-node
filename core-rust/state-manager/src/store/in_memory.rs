@@ -210,7 +210,7 @@ impl CommitStore for InMemoryStore {
             self.substate_store.put_substate(substate_id, substate);
         }
 
-        if let Some(vertex_store) = commit_bundle.post_commit_vertex_store {
+        if let Some(vertex_store) = commit_bundle.vertex_store {
             self.save_vertex_store(vertex_store)
         }
     }

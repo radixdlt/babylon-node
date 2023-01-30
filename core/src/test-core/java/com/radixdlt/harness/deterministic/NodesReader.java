@@ -68,16 +68,32 @@ import com.google.inject.Injector;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.ExecutedTransaction;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 public final class NodesReader {
   private NodesReader() {
     throw new IllegalStateException("Not allowed to instantiate.");
+  }
+
+  public static ExecutedTransaction getCommittedLedgerTransaction(
+      List<Injector> nodes, RawLedgerTransaction committedTransaction) {
+    for (var injector : nodes) {
+      if (injector == null) {
+        continue;
+      }
+
+      var maybeExecuted = NodeReader.getCommittedLedgerTransaction(injector, committedTransaction);
+      if (maybeExecuted.isPresent()) {
+        return maybeExecuted.orElseThrow();
+      }
+    }
+
+    throw new IllegalStateException("Committed Transaction Not Found " + committedTransaction);
   }
 
   public static ExecutedTransaction getCommittedUserTransaction(
@@ -86,26 +102,16 @@ public final class NodesReader {
         RawLedgerTransaction.create(
             TransactionBuilder.userTransactionToLedgerBytes(userTransaction.getPayload()));
 
-    for (var injector : nodes) {
-      if (injector == null) {
-        continue;
-      }
+    return getCommittedLedgerTransaction(nodes, committedTransaction);
+  }
 
-      var store = injector.getInstance(REv2TransactionAndProofStore.class);
-      for (long version = 1; true; version++) {
-        var maybeTxn = store.getTransactionAtStateVersion(version);
-        if (maybeTxn.isEmpty()) {
-          break;
-        } else {
-          var txn = maybeTxn.unwrap();
-          if (txn.rawTransaction().equals(committedTransaction)) {
-            return txn;
-          }
-        }
-      }
-    }
+  public static Optional<ExecutedTransaction> tryGetCommittedUserTransaction(
+      Injector node, RawNotarizedTransaction userTransaction) {
+    var committedTransaction =
+        RawLedgerTransaction.create(
+            TransactionBuilder.userTransactionToLedgerBytes(userTransaction.getPayload()));
 
-    throw new IllegalStateException("Committed Transaction Not Found " + userTransaction);
+    return NodeReader.getCommittedLedgerTransaction(node, committedTransaction);
   }
 
   public static long getHighestStateVersion(List<Injector> nodes) {

@@ -148,7 +148,7 @@ pub mod commit {
         pub proof_state_version: u64,
         pub epoch_boundary: Option<u64>,
         pub substates: BTreeMap<SubstateId, OutputValue>,
-        pub post_commit_vertex_store: Option<Vec<u8>>,
+        pub vertex_store: Option<Vec<u8>>,
     }
 
     pub trait CommitStore {

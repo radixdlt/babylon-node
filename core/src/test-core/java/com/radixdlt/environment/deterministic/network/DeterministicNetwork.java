@@ -171,6 +171,10 @@ public final class DeterministicNetwork {
     this.messageQueue.remove(controlledMessagePredicate);
   }
 
+  public void dropAllMessages() {
+    this.messageQueue.removeAll();
+  }
+
   public long currentTime() {
     return this.currentTime;
   }

@@ -80,7 +80,7 @@ public interface MessageMutator {
    *
    * @param message the message
    * @param queue the queue to me mutated
-   * @return {@code true} if the message was processed, {@code false} otherwise.
+   * @return {@code true} if the message is to be dropped, {@code false} otherwise.
    */
   boolean mutate(ControlledMessage message, MessageQueue queue);
 

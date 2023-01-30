@@ -68,13 +68,11 @@ import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
@@ -99,7 +97,7 @@ public final class BFTValidator {
   private BFTValidator(
       @JsonProperty(value = "id", required = true) String validatorId,
       @JsonProperty(value = "power", required = true) UInt256 power) {
-    this(toBFTValidatorId(requireNonNull(validatorId)), power);
+    this(BFTValidatorId.fromSerializedString(requireNonNull(validatorId)), power);
   }
 
   private BFTValidator(BFTValidatorId validatorId, UInt256 power) {
@@ -122,19 +120,7 @@ public final class BFTValidator {
   @JsonProperty("id")
   @DsonOutput(Output.ALL)
   private String getSerializerValidatorId() {
-    return encodePublicKey(this.validatorId);
-  }
-
-  private static String encodePublicKey(BFTValidatorId key) {
-    return Bytes.toHexString(key.getKey().getBytes());
-  }
-
-  private static BFTValidatorId toBFTValidatorId(String str) {
-    try {
-      return BFTValidatorId.fromPublicKeyBytes(Bytes.fromHexString(str));
-    } catch (PublicKeyException e) {
-      throw new IllegalStateException("Error decoding public key", e);
-    }
+    return this.validatorId.toSerializedString();
   }
 
   @Override
@@ -156,7 +142,6 @@ public final class BFTValidator {
   @Override
   public String toString() {
     return String.format(
-        "%s{id=%s power=%s}",
-        getClass().getSimpleName(), this.validatorId.getShortenedName(), this.power);
+        "%s{id=%s power=%s}", getClass().getSimpleName(), this.validatorId, this.power);
   }
 }

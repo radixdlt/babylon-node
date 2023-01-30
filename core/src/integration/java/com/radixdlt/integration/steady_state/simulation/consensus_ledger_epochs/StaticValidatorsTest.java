@@ -110,7 +110,6 @@ public class StaticValidatorsTest {
                             new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
             .addTestModules(ConsensusMonitors.epochMaxRound(Round.of(epochRoundsCheck)))
             .build();
-
     return bftTest.run().awaitCompletion();
   }
 

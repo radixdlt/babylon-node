@@ -67,28 +67,30 @@ package com.radixdlt.harness.deterministic;
 import com.google.common.collect.Streams;
 import com.google.inject.*;
 import com.google.inject.Module;
+import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.util.Modules;
-import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
+import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
+import com.radixdlt.keys.BFTValidatorIdModule;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.TestP2PModule;
+import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.schedulers.Timed;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -103,9 +105,8 @@ public final class DeterministicNodes implements AutoCloseable {
 
   // Nodes
   private final List<Injector> nodeInstances;
-  private final Map<BFTValidatorId, Integer> bftAddressBook;
-  private final Map<NodeId, Integer> p2pAddressBook;
-  private final Map<Integer, BFTValidatorId> nodeIdentifiers;
+  private final ControlledAddressBook addressBook;
+  private final Map<Integer, PhysicalNodeConfig> nodeConfigs;
   private final Module baseModule;
   private final Module overrideModule;
 
@@ -113,26 +114,26 @@ public final class DeterministicNodes implements AutoCloseable {
   private final DeterministicNetwork network;
 
   public DeterministicNodes(
-      List<BFTValidatorId> nodes,
+      List<PhysicalNodeConfig> nodeConfigs,
       DeterministicNetwork network,
       Module baseModule,
       Module overrideModule) {
     this.baseModule = baseModule;
     this.overrideModule = overrideModule;
     this.network = network;
-    this.bftAddressBook =
-        Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of((int) index, node))
-            .collect(Collectors.toMap(Pair::getSecond, Pair::getFirst));
-    this.p2pAddressBook =
-        Streams.mapWithIndex(
-                nodes.stream(),
-                (node, index) -> Pair.of((int) index, NodeId.fromPublicKey(node.getKey())))
-            .collect(Collectors.toMap(Pair::getSecond, Pair::getFirst));
-    this.nodeIdentifiers =
-        Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of((int) index, node))
+    this.addressBook = new ControlledAddressBook();
+    this.nodeConfigs =
+        Streams.mapWithIndex(nodeConfigs.stream(), (node, index) -> Pair.of((int) index, node))
             .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
     this.nodeInstances =
-        Stream.generate(() -> (Injector) null).limit(nodes.size()).collect(Collectors.toList());
+        Stream.generate(() -> (Injector) null)
+            .limit(nodeConfigs.size())
+            .collect(Collectors.toList());
+
+    for (int nodeIndex = 0; nodeIndex < this.nodeInstances.size(); nodeIndex++) {
+      var nodeId = NodeId.fromPublicKey(this.nodeConfigs.get(nodeIndex).key());
+      this.addressBook.addressBook.put(nodeId, nodeIndex);
+    }
   }
 
   private static class ControlledTimeSupplier implements TimeSupplier {
@@ -152,9 +153,24 @@ public final class DeterministicNodes implements AutoCloseable {
     }
   }
 
+  private static class ControlledAddressBook implements Function<NodeId, Integer> {
+
+    private final Map<NodeId, Integer> addressBook;
+
+    public ControlledAddressBook() {
+      this.addressBook = new HashMap<>();
+    }
+
+    @Override
+    public Integer apply(NodeId nodeId) {
+      return this.addressBook.get(nodeId);
+    }
+  }
+
   private Injector createBFTInstance(
       int nodeIndex, Module baseModule, Module overrideModule, long time) {
-    var self = this.nodeIdentifiers.get(nodeIndex);
+    var config = this.nodeConfigs.get(nodeIndex);
+
     Module module =
         Modules.combine(
             new AbstractModule() {
@@ -163,25 +179,39 @@ public final class DeterministicNodes implements AutoCloseable {
                 install(
                     new EventLoggerModule(
                         new EventLoggerConfig(
-                            k -> "Node" + bftAddressBook.get(BFTValidatorId.create(k)))));
-                bind(BFTValidatorId.class).annotatedWith(Self.class).toInstance(self);
+                            k -> "Node" + addressBook.apply(NodeId.fromPublicKey(k)))));
+                bind(ECDSASecp256k1PublicKey.class)
+                    .annotatedWith(Self.class)
+                    .toInstance(config.key());
                 bind(NodeId.class)
                     .annotatedWith(Self.class)
-                    .toInstance(NodeId.fromPublicKey(self.getKey()));
+                    .toInstance(NodeId.fromPublicKey(config.key()));
+
+                if (config.loadFromGenesis()) {
+                  install(new BFTValidatorIdFromGenesisModule());
+                } else {
+                  var binder =
+                      OptionalBinder.newOptionalBinder(
+                          binder(), Key.get(ComponentAddress.class, Self.class));
+                  if (config.validatorAddress() != null) {
+                    binder.setBinding().toInstance(config.validatorAddress());
+                  }
+                  install(new BFTValidatorIdModule());
+                }
+
                 install(
                     new TestP2PModule.Builder()
-                        .withAllNodes(p2pAddressBook.keySet().stream().toList())
+                        .withAllNodes(addressBook.addressBook.keySet().stream().toList())
                         .build());
-                bind(Environment.class)
-                    .toInstance(
-                        new ControlledDispatcher(
-                            p2pAddressBook::get,
-                            network,
-                            NodeId.fromPublicKey(self.getKey()),
-                            nodeIndex));
                 bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
                 bind(ControlledTimeSupplier.class).toInstance(new ControlledTimeSupplier(time));
                 bind(TimeSupplier.class).to(ControlledTimeSupplier.class);
+              }
+
+              @Provides
+              @Singleton
+              Environment sender(@Self NodeId self) {
+                return new ControlledDispatcher(addressBook, network, self, nodeIndex);
               }
             },
             baseModule);
@@ -235,9 +265,8 @@ public final class DeterministicNodes implements AutoCloseable {
       return;
     }
 
+    ThreadContext.put("self", " Node" + nodeIndex);
     var injector = createBFTInstance(nodeIndex, baseModule, overrideModule, time);
-
-    ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
     try {
       var processor = injector.getInstance(DeterministicProcessor.class);
       processor.start();
@@ -250,11 +279,8 @@ public final class DeterministicNodes implements AutoCloseable {
 
   public void handleMessage(Timed<ControlledMessage> timedNextMsg) {
     var nextMsg = timedNextMsg.value();
-
-    int senderIndex = nextMsg.channelId().senderIndex();
+    var sender = nextMsg.origin();
     int receiverIndex = nextMsg.channelId().receiverIndex();
-    var sender = NodeId.fromPublicKey(this.nodeIdentifiers.get(senderIndex).getKey());
-
     var injector = nodeInstances.get(receiverIndex);
 
     if (injector == null) {
@@ -280,6 +306,10 @@ public final class DeterministicNodes implements AutoCloseable {
 
   public List<Injector> getNodeInjectors() {
     return this.nodeInstances;
+  }
+
+  public void setNodeConfig(int nodeIndex, PhysicalNodeConfig config) {
+    this.nodeConfigs.put(nodeIndex, config);
   }
 
   public int getNode(Predicate<Injector> injectorPredicate) {

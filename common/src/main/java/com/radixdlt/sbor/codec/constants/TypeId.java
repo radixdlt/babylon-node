@@ -88,6 +88,7 @@ public enum TypeId {
   TYPE_ARRAY(0x20),
   TYPE_TUPLE(0x21), // Any "product type" - Tuples and Structs (T1, T2, T3)
   TYPE_ENUM(0x22),
+  TYPE_MAP(0x23),
 
   // Custom Start
   // custom types start from 0x80 and values are encoded as `len + data`

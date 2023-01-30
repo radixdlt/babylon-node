@@ -65,9 +65,7 @@
 package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableBiMap;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.utils.UInt256;
 import java.util.Collection;
 import java.util.Objects;
@@ -143,16 +141,8 @@ public final class BFTValidatorSet {
     return validators.containsKey(node);
   }
 
-  public boolean containsNode(ECDSASecp256k1PublicKey publicKey) {
-    return containsNode(BFTValidatorId.create(publicKey));
-  }
-
   public UInt256 getPower(BFTValidatorId node) {
     return validators.get(node).getPower();
-  }
-
-  public UInt256 getPower(ECDSASecp256k1PublicKey publicKey) {
-    return getPower(BFTValidatorId.create(publicKey));
   }
 
   public UInt256 getTotalPower() {
@@ -165,10 +155,6 @@ public final class BFTValidatorSet {
 
   public ImmutableSet<BFTValidatorId> nodes() {
     return validators.keySet();
-  }
-
-  public ImmutableMap<BFTValidatorId, BFTValidator> validatorsByKey() {
-    return validators;
   }
 
   @Override
@@ -192,9 +178,7 @@ public final class BFTValidatorSet {
   public String toString() {
     final StringJoiner joiner = new StringJoiner(",");
     for (BFTValidator validator : this.validators.values()) {
-      joiner.add(
-          String.format(
-              "%s=%s", validator.getValidatorId().getShortenedName(), validator.getPower()));
+      joiner.add(String.format("%s=%s", validator.getValidatorId(), validator.getPower()));
     }
     return String.format("%s[%s]", this.getClass().getSimpleName(), joiner.toString());
   }

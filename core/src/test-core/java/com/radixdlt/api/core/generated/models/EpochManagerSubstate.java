@@ -44,6 +44,7 @@ import com.radixdlt.api.core.generated.models.ResourceManagerSubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.ValidatorSetSubstate;
+import com.radixdlt.api.core.generated.models.ValidatorSubstate;
 import com.radixdlt.api.core.generated.models.VaultSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -55,6 +56,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * EpochManagerSubstate
  */
 @JsonPropertyOrder({
+  EpochManagerSubstate.JSON_PROPERTY_ADDRESS,
   EpochManagerSubstate.JSON_PROPERTY_EPOCH,
   EpochManagerSubstate.JSON_PROPERTY_ROUND,
   EpochManagerSubstate.JSON_PROPERTY_ROUNDS_PER_EPOCH
@@ -81,11 +83,15 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageRoyaltyAccumulatorSubstate.class, name = "PackageRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageRoyaltyConfigSubstate.class, name = "PackageRoyaltyConfig"),
   @JsonSubTypes.Type(value = ResourceManagerSubstate.class, name = "ResourceManager"),
+  @JsonSubTypes.Type(value = ValidatorSubstate.class, name = "Validator"),
   @JsonSubTypes.Type(value = ValidatorSetSubstate.class, name = "ValidatorSet"),
   @JsonSubTypes.Type(value = VaultSubstate.class, name = "Vault"),
 })
 
 public class EpochManagerSubstate extends Substate {
+  public static final String JSON_PROPERTY_ADDRESS = "address";
+  private String address;
+
   public static final String JSON_PROPERTY_EPOCH = "epoch";
   private Long epoch;
 
@@ -97,6 +103,32 @@ public class EpochManagerSubstate extends Substate {
 
   public EpochManagerSubstate() { 
   }
+
+  public EpochManagerSubstate address(String address) {
+    this.address = address;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable version of the component address
+   * @return address
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the component address")
+  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getAddress() {
+    return address;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setAddress(String address) {
+    this.address = address;
+  }
+
 
   public EpochManagerSubstate epoch(Long epoch) {
     this.epoch = epoch;
@@ -194,7 +226,8 @@ public class EpochManagerSubstate extends Substate {
       return false;
     }
     EpochManagerSubstate epochManagerSubstate = (EpochManagerSubstate) o;
-    return Objects.equals(this.epoch, epochManagerSubstate.epoch) &&
+    return Objects.equals(this.address, epochManagerSubstate.address) &&
+        Objects.equals(this.epoch, epochManagerSubstate.epoch) &&
         Objects.equals(this.round, epochManagerSubstate.round) &&
         Objects.equals(this.roundsPerEpoch, epochManagerSubstate.roundsPerEpoch) &&
         super.equals(o);
@@ -202,7 +235,7 @@ public class EpochManagerSubstate extends Substate {
 
   @Override
   public int hashCode() {
-    return Objects.hash(epoch, round, roundsPerEpoch, super.hashCode());
+    return Objects.hash(address, epoch, round, roundsPerEpoch, super.hashCode());
   }
 
   @Override
@@ -210,6 +243,7 @@ public class EpochManagerSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class EpochManagerSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    address: ").append(toIndentedString(address)).append("\n");
     sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
     sb.append("    round: ").append(toIndentedString(round)).append("\n");
     sb.append("    roundsPerEpoch: ").append(toIndentedString(roundsPerEpoch)).append("\n");
@@ -246,6 +280,7 @@ static {
   mappings.put("PackageRoyaltyAccumulator", PackageRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageRoyaltyConfig", PackageRoyaltyConfigSubstate.class);
   mappings.put("ResourceManager", ResourceManagerSubstate.class);
+  mappings.put("Validator", ValidatorSubstate.class);
   mappings.put("ValidatorSet", ValidatorSetSubstate.class);
   mappings.put("Vault", VaultSubstate.class);
   mappings.put("EpochManagerSubstate", EpochManagerSubstate.class);

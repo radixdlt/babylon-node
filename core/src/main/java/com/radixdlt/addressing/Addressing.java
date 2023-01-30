@@ -69,10 +69,7 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.exceptions.Bech32DecodeException;
 import com.radixdlt.identifiers.Bech32mCoder;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.NetworkDefinition;
-import com.radixdlt.rev2.PackageAddress;
-import com.radixdlt.rev2.ResourceAddress;
+import com.radixdlt.rev2.*;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Pair;
 
@@ -136,9 +133,15 @@ public final class Addressing {
         Bech32mCoder.decodeWithExpectedHrp(network.getAccountComponentHrp(), address));
   }
 
-  public String encodeSystemComponentAddress(ComponentAddress componentAddress) {
+  public String encodeSystemAddress(ComponentAddress systemAddress) {
     // TODO - checks on first byte of address
-    return Bech32mCoder.encode(network.getSystemComponentHrp(), componentAddress.value());
+    return Bech32mCoder.encode(network.getSystemComponentHrp(), systemAddress.value());
+  }
+
+  public ComponentAddress decodeSystemAddress(String address) {
+    // TODO - checks on first byte of address
+    return ComponentAddress.create(
+        Bech32mCoder.decodeWithExpectedHrp(network.getSystemComponentHrp(), address));
   }
 
   public ComponentAddress decodeSystemComponentAddress(String address) {

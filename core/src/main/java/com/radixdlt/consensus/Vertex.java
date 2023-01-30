@@ -154,7 +154,7 @@ public final class Vertex {
       @JsonProperty(value = "qc", required = true) QuorumCertificate parentQC,
       @JsonProperty("round") long roundNumber,
       @JsonProperty("txns") List<byte[]> transactions,
-      @JsonProperty("p") byte[] proposer,
+      @JsonProperty("p") String proposer,
       @JsonProperty("tout") Boolean proposerTimedOut,
       @JsonProperty("proposer_timestamp") long proposerTimestamp)
       throws PublicKeyException {
@@ -162,7 +162,7 @@ public final class Vertex {
         parentQC,
         Round.of(roundNumber),
         transactions == null ? List.of() : transactions,
-        proposer != null ? BFTValidatorId.fromPublicKeyBytes(proposer) : null,
+        proposer != null ? BFTValidatorId.fromSerializedString(proposer) : null,
         proposerTimedOut,
         proposerTimestamp);
   }
@@ -201,8 +201,8 @@ public final class Vertex {
 
   @JsonProperty("p")
   @DsonOutput(Output.ALL)
-  private byte[] getProposerBytes() {
-    return proposer == null ? null : proposer.getKey().getCompressedBytes();
+  private String getProposerBytes() {
+    return proposer == null ? null : proposer.toSerializedString();
   }
 
   public VertexWithHash withId(Hasher hasher) {
@@ -252,7 +252,9 @@ public final class Vertex {
   }
 
   public long getEpoch() {
-    return getParentHeader().getLedgerHeader().getEpoch();
+    var epoch = getParentHeader().getLedgerHeader().getEpoch();
+    // If vertex is genesis, the parent will point to the previous epoch so must add 1
+    return round.isGenesis() ? epoch + 1 : epoch;
   }
 
   public BFTHeader getGrandParentHeader() {
@@ -294,11 +296,10 @@ public final class Vertex {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof Vertex)) {
+    if (!(o instanceof Vertex v)) {
       return false;
     }
 
-    Vertex v = (Vertex) o;
     return Objects.equals(v.round, this.round)
         && Objects.equals(v.proposerTimedOut, this.proposerTimedOut)
         && Objects.equals(v.proposer, this.proposer)

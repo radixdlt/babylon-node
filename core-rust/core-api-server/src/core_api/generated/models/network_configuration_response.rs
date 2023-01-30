@@ -18,6 +18,9 @@ pub struct NetworkConfigurationResponse {
     /// The logical name of the network
     #[serde(rename = "network")]
     pub network: String,
+    /// The logical id of the network
+    #[serde(rename = "network_id")]
+    pub network_id: i32,
     /// The network suffix used for Bech32m HRPs used for addressing.
     #[serde(rename = "network_hrp_suffix")]
     pub network_hrp_suffix: String,
@@ -28,10 +31,11 @@ pub struct NetworkConfigurationResponse {
 }
 
 impl NetworkConfigurationResponse {
-    pub fn new(version: crate::core_api::generated::models::NetworkConfigurationResponseVersion, network: String, network_hrp_suffix: String, address_types: Vec<crate::core_api::generated::models::AddressType>, well_known_addresses: crate::core_api::generated::models::NetworkConfigurationResponseWellKnownAddresses) -> NetworkConfigurationResponse {
+    pub fn new(version: crate::core_api::generated::models::NetworkConfigurationResponseVersion, network: String, network_id: i32, network_hrp_suffix: String, address_types: Vec<crate::core_api::generated::models::AddressType>, well_known_addresses: crate::core_api::generated::models::NetworkConfigurationResponseWellKnownAddresses) -> NetworkConfigurationResponse {
         NetworkConfigurationResponse {
             version: Box::new(version),
             network,
+            network_id,
             network_hrp_suffix,
             address_types,
             well_known_addresses: Box::new(well_known_addresses),

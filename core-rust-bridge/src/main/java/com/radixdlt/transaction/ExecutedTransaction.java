@@ -106,14 +106,15 @@ public record ExecutedTransaction(
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     ExecutedTransaction that = (ExecutedTransaction) o;
-    return Arrays.equals(ledgerReceiptBytes, that.ledgerReceiptBytes)
+    return Objects.equals(status, that.status)
+        && Arrays.equals(ledgerReceiptBytes, that.ledgerReceiptBytes)
         && Arrays.equals(transactionBytes, that.transactionBytes)
         && Objects.equals(newComponentAddresses, that.newComponentAddresses);
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(newComponentAddresses);
+    int result = Objects.hash(status, newComponentAddresses);
     result = 31 * result + Arrays.hashCode(ledgerReceiptBytes);
     result = 31 * result + Arrays.hashCode(transactionBytes);
     return result;

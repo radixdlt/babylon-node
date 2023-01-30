@@ -76,6 +76,7 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.predicates.NodePredicate;
 import com.radixdlt.harness.predicates.NodesPredicate;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -84,6 +85,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
@@ -107,7 +109,7 @@ public final class RecoveryAfterTimeoutQuorumTest {
     final var databaseConfig = REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath());
     final var builder =
         DeterministicTest.builder()
-            .numPhysicalNodes(NUM_VALIDATORS)
+            .addPhysicalNodes(PhysicalNodeConfig.createBatch(NUM_VALIDATORS, true))
             .messageSelector(randomSelector(new Random(12345)))
             .messageMutator(dropProposalForHalfNodesAtRound(TIMEOUT_QUORUM_ROUND))
             .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety());
@@ -121,7 +123,7 @@ public final class RecoveryAfterTimeoutQuorumTest {
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),
                     TransactionBuilder.createGenesisWithNumValidators(
-                        NUM_VALIDATORS, UInt64.fromNonNegativeLong(10)),
+                        NUM_VALIDATORS, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                     databaseConfig,
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                         new REV2TransactionGenerator(), 1)),

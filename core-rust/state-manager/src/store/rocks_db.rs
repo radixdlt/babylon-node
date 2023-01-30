@@ -279,12 +279,12 @@ impl CommitStore for RocksDBStore {
         for (substate_id, substate) in commit_bundle.substates {
             batch.put_cf(
                 self.cf_handle(&Substates),
-                &scrypto_encode(&substate_id).unwrap(),
+                scrypto_encode(&substate_id).unwrap(),
                 scrypto_encode(&substate).unwrap(),
             );
         }
 
-        if let Some(vertex_store) = commit_bundle.post_commit_vertex_store {
+        if let Some(vertex_store) = commit_bundle.vertex_store {
             batch.put_cf(self.cf_handle(&VertexStore), [], vertex_store);
         }
 

@@ -71,6 +71,7 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -93,7 +94,7 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
   private void run(int numValidatorNodes, long numRounds) {
     final DeterministicTest test =
         DeterministicTest.builder()
-            .numPhysicalNodes(numValidatorNodes)
+            .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(numValidatorNodes))
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(dropAllNonTimeoutVotes())
             .functionalNodeModule(

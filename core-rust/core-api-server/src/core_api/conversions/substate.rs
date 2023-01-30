@@ -9,18 +9,17 @@ use radix_engine::model::{
     ComponentRoyaltyConfigSubstate, ComponentStateSubstate, CurrentTimeRoundedToMinutesSubstate,
     EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate,
     NonFungible, NonFungibleSubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate,
-    PackageRoyaltyConfigSubstate, PersistedSubstate, Resource, ResourceManagerSubstate,
-    ValidatorSetSubstate, VaultSubstate,
+    PackageRoyaltyConfigSubstate, PersistedSubstate, Resource, ResourceManagerSubstate, Validator,
+    ValidatorSetSubstate, ValidatorSubstate, VaultSubstate,
 };
 use radix_engine::types::{
     scrypto_encode, AccessRule, AccessRuleEntry, AccessRuleKey, AccessRuleNode, AccessRules,
-    Bech32Encoder, Decimal, GlobalOffset, KeyValueStoreOffset, NonFungibleId,
-    NonFungibleStoreOffset, ProofRule, RENodeId, ResourceAddress, ResourceType, RoyaltyConfig,
-    SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
-    SubstateId, SubstateOffset,
+    Bech32Encoder, Decimal, GlobalOffset, KeyValueStoreOffset, NonFungibleStoreOffset, ProofRule,
+    RENodeId, ResourceAddress, ResourceType, RoyaltyConfig, SoftCount, SoftDecimal, SoftResource,
+    SoftResourceOrNonFungible, SoftResourceOrNonFungibleList, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use radix_engine_interface::model::NonFungibleIdTypeId;
+use radix_engine_interface::model::{ComponentAddress, NonFungibleIdType, NonFungibleLocalId};
 
 use super::MappingError;
 
@@ -66,10 +65,13 @@ pub fn to_api_substate(
             to_api_package_royalty_accumulator_substate(substate)?
         }
         PersistedSubstate::EpochManager(epoch_manager) => {
-            to_api_epoch_manager_substate(epoch_manager)?
+            to_api_epoch_manager_substate(bech32_encoder, epoch_manager)?
         }
         PersistedSubstate::ValidatorSet(validator_set) => {
-            to_api_validator_set_substate(validator_set)?
+            to_api_validator_set_substate(bech32_encoder, validator_set)?
+        }
+        PersistedSubstate::Validator(validator) => {
+            to_api_validator_substate(bech32_encoder, validator)?
         }
         PersistedSubstate::CurrentTimeRoundedToMinutes(substate) => {
             to_api_clock_current_time_rounded_down_to_minutes_substate(substate)?
@@ -181,12 +183,12 @@ pub fn to_api_resource_manager_substate(
     })
 }
 
-pub fn to_api_fungible_id_type(id_type: &NonFungibleIdTypeId) -> models::NonFungibleIdType {
+pub fn to_api_fungible_id_type(id_type: &NonFungibleIdType) -> models::NonFungibleIdType {
     match id_type {
-        NonFungibleIdTypeId::String => models::NonFungibleIdType::String,
-        NonFungibleIdTypeId::Number => models::NonFungibleIdType::Number,
-        NonFungibleIdTypeId::Bytes => models::NonFungibleIdType::Bytes,
-        NonFungibleIdTypeId::UUID => models::NonFungibleIdType::UUID,
+        NonFungibleIdType::String => models::NonFungibleIdType::String,
+        NonFungibleIdType::Integer => models::NonFungibleIdType::Number,
+        NonFungibleIdType::Bytes => models::NonFungibleIdType::Bytes,
+        NonFungibleIdType::UUID => models::NonFungibleIdType::UUID,
     }
 }
 
@@ -285,9 +287,11 @@ pub fn to_api_local_method_reference(key: &AccessRuleKey) -> models::LocalMethod
                 name: method_name.to_string(),
             }
         }
-        AccessRuleKey::Native(method) => models::LocalMethodReference::LocalNativeMethodReference {
-            name: format!("{:?}", method),
-        },
+        AccessRuleKey::Native(native_fn) => {
+            models::LocalMethodReference::LocalNativeMethodReference {
+                name: format!("{:?}", native_fn),
+            }
+        }
     }
 }
 
@@ -459,7 +463,7 @@ pub fn to_api_dynamic_resource_descriptor(
             models::DynamicResourceDescriptor::NonFungibleDynamicResourceDescriptor {
                 resource_address: bech32_encoder
                     .encode_resource_address_to_string(&nf.resource_address()),
-                non_fungible_id: Box::new(to_api_non_fungible_id(nf.non_fungible_id())),
+                non_fungible_id: Box::new(to_api_non_fungible_id(nf.local_id())),
             }
         }
         SoftResourceOrNonFungible::StaticResource(resource) => {
@@ -484,9 +488,21 @@ pub fn to_api_ecdsa_secp256k1_public_key(
     }
 }
 
-pub fn to_api_non_fungible_id(non_fungible_id: &NonFungibleId) -> models::NonFungibleId {
+pub fn to_api_active_validator(
+    bech32_encoder: &Bech32Encoder,
+    address: &ComponentAddress,
+    validator: &Validator,
+) -> models::ActiveValidator {
+    models::ActiveValidator {
+        address: bech32_encoder.encode_component_address_to_string(address),
+        key: Box::new(to_api_ecdsa_secp256k1_public_key(&validator.key)),
+        stake: to_api_decimal(&validator.stake),
+    }
+}
+
+pub fn to_api_non_fungible_id(non_fungible_id: &NonFungibleLocalId) -> models::NonFungibleId {
     models::NonFungibleId {
-        simple_rep: non_fungible_id.to_simple_string(),
+        simple_rep: non_fungible_id.to_string(),
         id_type: to_api_fungible_id_type(&non_fungible_id.id_type()),
         sbor_hex: to_hex(scrypto_encode(non_fungible_id).unwrap()),
     }
@@ -691,6 +707,7 @@ pub fn to_api_package_royalty_accumulator_substate(
 }
 
 pub fn to_api_validator_set_substate(
+    bech32_encoder: &Bech32Encoder,
     substate: &ValidatorSetSubstate,
 ) -> Result<models::Substate, MappingError> {
     let ValidatorSetSubstate {
@@ -700,7 +717,7 @@ pub fn to_api_validator_set_substate(
 
     let validator_set = validator_set
         .iter()
-        .map(to_api_ecdsa_secp256k1_public_key)
+        .map(|(address, validator)| to_api_active_validator(bech32_encoder, address, validator))
         .collect();
     Ok(models::Substate::ValidatorSetSubstate {
         validator_set,
@@ -708,16 +725,42 @@ pub fn to_api_validator_set_substate(
     })
 }
 
+pub fn to_api_validator_substate(
+    bech32_encoder: &Bech32Encoder,
+    substate: &ValidatorSubstate,
+) -> Result<models::Substate, MappingError> {
+    let ValidatorSubstate {
+        manager,
+        address,
+        key,
+        stake_vault_id,
+        is_registered,
+    } = substate;
+
+    let owned_stake_vault_id = MappedEntityId::try_from(RENodeId::Vault(*stake_vault_id))?;
+
+    Ok(models::Substate::ValidatorSubstate {
+        epoch_manager_address: bech32_encoder.encode_component_address_to_string(manager),
+        validator_address: bech32_encoder.encode_component_address_to_string(address),
+        key: Box::new(to_api_ecdsa_secp256k1_public_key(key)),
+        stake_vault: Box::new(owned_stake_vault_id.into()),
+        is_registered: *is_registered,
+    })
+}
+
 pub fn to_api_epoch_manager_substate(
+    bech32_encoder: &Bech32Encoder,
     substate: &EpochManagerSubstate,
 ) -> Result<models::Substate, MappingError> {
     let EpochManagerSubstate {
+        address,
         epoch,
         round,
         rounds_per_epoch,
     } = substate;
 
     Ok(models::Substate::EpochManagerSubstate {
+        address: bech32_encoder.encode_component_address_to_string(address),
         epoch: to_api_epoch(*epoch)?,
         round: to_api_round(*round)?,
         rounds_per_epoch: to_api_round(*rounds_per_epoch)?,
@@ -780,8 +823,8 @@ fn to_api_fungible_resource_amount(
 fn to_api_non_fungible_resource_amount(
     bech32_encoder: &Bech32Encoder,
     resource_address: &ResourceAddress,
-    _id_type: &NonFungibleIdTypeId,
-    ids: &BTreeSet<NonFungibleId>,
+    _id_type: &NonFungibleIdType,
+    ids: &BTreeSet<NonFungibleLocalId>,
 ) -> Result<models::ResourceAmount, MappingError> {
     let non_fungible_ids = ids.iter().map(to_api_non_fungible_id).collect();
     Ok(models::ResourceAmount::NonFungibleResourceAmount {
