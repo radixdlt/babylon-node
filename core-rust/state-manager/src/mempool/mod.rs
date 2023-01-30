@@ -150,7 +150,7 @@ impl ToString for MempoolAddError {
             MempoolAddError::Full {
                 current_size,
                 max_size,
-            } => format!("Mempool Full [{} - {}]", current_size, max_size),
+            } => format!("Mempool Full [{current_size} - {max_size}]"),
             MempoolAddError::Duplicate => "Duplicate Entry".to_string(),
             MempoolAddError::Rejected(rejection) => rejection.reason.to_string(),
         }

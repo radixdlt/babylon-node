@@ -86,8 +86,7 @@ impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
                 Ok((commit_result, engine_receipt.execution.fee_summary).into())
             }
             TransactionResult::Reject(error) => Err(format!(
-                "Can't create a ledger receipt for rejected txn: {:?}",
-                error
+                "Can't create a ledger receipt for rejected txn: {error:?}"
             )),
         }
     }

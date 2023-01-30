@@ -247,7 +247,7 @@ impl From<MempoolAddError> for MempoolAddErrorJava {
 
 impl From<TransactionValidationError> for MempoolAddErrorJava {
     fn from(error: TransactionValidationError) -> Self {
-        MempoolAddErrorJava::TransactionValidationError(format!("{:?}", error))
+        MempoolAddErrorJava::TransactionValidationError(format!("{error:?}"))
     }
 }
 

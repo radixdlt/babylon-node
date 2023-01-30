@@ -29,7 +29,7 @@ fn handle_preview_internal(
         .preview(preview_request)
         .map_err(|err| match err {
             PreviewError::TransactionValidationError(err) => {
-                client_error(format!("Transaction validation error: {:?}", err))
+                client_error(format!("Transaction validation error: {err:?}"))
             }
         })?;
 
@@ -51,7 +51,7 @@ fn parse_preview_request(
         .map_err(|err| err.into_response_error("blobs"))?;
 
     let manifest = manifest::compile(&request.manifest, network, manifest_blobs)
-        .map_err(|err| client_error(format!("Invalid manifest - {:?}", err)))?;
+        .map_err(|err| client_error(format!("Invalid manifest - {err:?}")))?;
 
     let signer_public_keys: Vec<_> = request
         .signer_public_keys
@@ -146,7 +146,7 @@ fn to_api_response(
                 state_updates: Box::default(),
                 output: None,
                 next_epoch: None,
-                error_message: Some(format!("{:?}", reject_result)),
+                error_message: Some(format!("{reject_result:?}")),
             }),
             resource_changes: vec![],
             logs: vec![],

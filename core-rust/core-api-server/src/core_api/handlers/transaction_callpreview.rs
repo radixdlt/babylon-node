@@ -109,7 +109,7 @@ pub(crate) async fn handle_transaction_callpreview(
         })
         .map_err(|err| match err {
             PreviewError::TransactionValidationError(err) => {
-                server_error(format!("Transaction validation error: {:?}", err))
+                server_error(format!("Transaction validation error: {err:?}"))
             }
         })?;
 
@@ -128,7 +128,7 @@ pub(crate) async fn handle_transaction_callpreview(
                         None => None,
                         Some(Ok(output)) => Some(output),
                         // Decoding engine response should succeed
-                        Some(Err(err)) => Err(server_error(format!("{:?}", err)))?,
+                        Some(Err(err)) => Err(server_error(format!("{err:?}")))?,
                     };
 
                     (TransactionStatus::Succeeded, output, None)

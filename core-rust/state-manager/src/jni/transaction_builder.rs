@@ -99,7 +99,7 @@ fn do_compile_manifest(
     (network, manifest_str, blobs): (NetworkDefinition, String, Vec<Vec<u8>>),
 ) -> Result<Vec<u8>, String> {
     create_manifest(&network, &manifest_str, blobs)
-        .map_err(|err| format!("{:?}", err))
+        .map_err(|err| format!("{err:?}"))
         .map(|manifest| scrypto_encode(&manifest).unwrap())
 }
 
@@ -186,7 +186,7 @@ fn do_create_intent_bytes(
     ),
 ) -> Result<Vec<u8>, String> {
     create_intent_bytes(&network_definition, header.into(), manifest, blobs)
-        .map_err(|err| format!("{:?}", err))
+        .map_err(|err| format!("{err:?}"))
 }
 
 #[no_mangle]

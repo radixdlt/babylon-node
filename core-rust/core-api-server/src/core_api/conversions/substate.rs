@@ -289,7 +289,7 @@ pub fn to_api_local_method_reference(key: &AccessRuleKey) -> models::LocalMethod
         }
         AccessRuleKey::Native(native_fn) => {
             models::LocalMethodReference::LocalNativeMethodReference {
-                name: format!("{:?}", native_fn),
+                name: format!("{native_fn:?}"),
             }
         }
     }
@@ -406,7 +406,7 @@ pub fn to_api_dynamic_count_from_soft_count(
             count: (*count)
                 .try_into()
                 .map_err(|err| MappingError::IntegerError {
-                    message: format!("Could not translate count into i32: {:?}", err),
+                    message: format!("Could not translate count into i32: {err:?}"),
                 })?,
         },
         SoftCount::Dynamic(schema_path) => models::DynamicCount::SchemaPathDynamicCount {
@@ -529,7 +529,7 @@ pub fn to_api_schema_subpath(
         SchemaSubPath::Index(index) => models::SchemaSubpath::IndexSchemaSubpath {
             index: to_api_u64_as_string((*index).try_into().map_err(|err| {
                 MappingError::IntegerError {
-                    message: format!("Couldn't map usize to u64: {:?}", err),
+                    message: format!("Couldn't map usize to u64: {err:?}"),
                 }
             })?),
         },

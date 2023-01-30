@@ -138,16 +138,15 @@ impl RejectionPermanence {
 impl fmt::Display for RejectionReason {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RejectionReason::FromExecution(rejection_error) => write!(f, "{}", rejection_error),
+            RejectionReason::FromExecution(rejection_error) => write!(f, "{rejection_error}"),
             RejectionReason::ValidationError(validation_error) => {
-                write!(f, "Validation Error: {:?}", validation_error)
+                write!(f, "Validation Error: {validation_error:?}")
             }
             RejectionReason::IntentHashCommitted => write!(f, "Intent hash already committed"),
             // Temporary until we have better execution limits
             RejectionReason::ExecutionTookTooLong { time_limit_ms } => write!(
                 f,
-                "Execution took longer than max time allowed: {}",
-                time_limit_ms
+                "Execution took longer than max time allowed: {time_limit_ms}"
             ),
         }
     }
@@ -451,8 +450,8 @@ impl PendingTransactionResultCache {
         }
     }
 
-    pub fn get_pending_transaction_record<'a>(
-        &'a mut self,
+    pub fn get_pending_transaction_record(
+        &mut self,
         intent_hash: &IntentHash,
         payload_hash: &UserPayloadHash,
         invalid_from_epoch: u64,

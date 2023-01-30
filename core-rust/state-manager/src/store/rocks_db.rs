@@ -136,7 +136,7 @@ impl fmt::Display for RocksDBColumnFamily {
             Substates => "substates",
             VertexStore => "vertex_store",
         };
-        write!(f, "{}", str)
+        write!(f, "{str}")
     }
 }
 
@@ -304,8 +304,7 @@ impl<'db> WriteableTransactionStore for RocksDBCommitTransaction<'db> {
             .state_version;
         let max_state_version_in_db = self.max_state_version();
         if first_txn_state_version != max_state_version_in_db + 1 {
-            panic!("Attempted to commit a txn batch that starts with state version {} but the latest state version in DB is {}",
-                first_txn_state_version, max_state_version_in_db);
+            panic!("Attempted to commit a txn batch that starts with state version {first_txn_state_version} but the latest state version in DB is {max_state_version_in_db}");
         }
 
         for committed_txn_bundle in committed_transaction_bundles {
@@ -414,8 +413,7 @@ impl QueryableTransactionStore for RocksDBStore {
                     let expected_state_version = start_state_version_inclusive + res.len() as u64;
                     if expected_state_version != next_txn_state_version {
                         panic!(
-                            "DB inconsistency! Missing txn at state version {}",
-                            expected_state_version
+                            "DB inconsistency! Missing txn at state version {expected_state_version}"
                         );
                     }
 
@@ -432,13 +430,11 @@ impl QueryableTransactionStore for RocksDBStore {
                         u64::from_be_bytes((*next_accumulator_hash_kv.0).try_into().unwrap());
 
                     if next_receipt_state_version != next_txn_state_version {
-                        panic!("DB inconsistency! Receipt state version ({}) doesn't match txn state version ({})",
-                            next_receipt_state_version, next_txn_state_version);
+                        panic!("DB inconsistency! Receipt state version ({next_receipt_state_version}) doesn't match txn state version ({next_txn_state_version})");
                     }
 
                     if next_accumulator_hash_state_version != next_txn_state_version {
-                        panic!("DB inconsistency! Accumulator hash state version ({}) doesn't match txn state version ({})",
-                           next_accumulator_hash_state_version, next_txn_state_version);
+                        panic!("DB inconsistency! Accumulator hash state version ({next_accumulator_hash_state_version}) doesn't match txn state version ({next_txn_state_version})");
                     }
 
                     let next_txn = scrypto_decode(next_txn_kv.1.as_ref()).unwrap();

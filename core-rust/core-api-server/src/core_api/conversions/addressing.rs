@@ -103,7 +103,7 @@ impl TryFrom<RENodeId> for MappedEntityId {
         // Helper function
         fn transient_renode_error(name: &'static str) -> MappingError {
             MappingError::TransientRENodePersisted {
-                message: format!("{} persisted", name),
+                message: format!("{name} persisted"),
             }
         }
 
@@ -179,8 +179,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
     fn unknown_substate_error(renode_name: &'static str, substate_id: &SubstateId) -> MappingError {
         MappingError::UnsupportedSubstatePersisted {
             message: format!(
-                "Unsupported substate persisted for {} RENode: {:?}",
-                renode_name, substate_id
+                "Unsupported substate persisted for {renode_name} RENode: {substate_id:?}"
             ),
         }
     }
@@ -190,8 +189,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
     ) -> MappingError {
         MappingError::TransientSubstatePersisted {
             message: format!(
-                "Transient substate persisted for {} RENode: {:?}",
-                renode_name, substate_id
+                "Transient substate persisted for {renode_name} RENode: {substate_id:?}"
             ),
         }
     }

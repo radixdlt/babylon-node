@@ -57,10 +57,7 @@ pub(crate) fn read_known_substate(
         .root
         .get_substate(&substate_id)
         .ok_or_else(|| MappingError::MismatchedSubstateId {
-            message: format!(
-                "Substate {:?} not found under {:?}",
-                substate_offset, renode_id
-            ),
+            message: format!("Substate {substate_offset:?} not found under {renode_id:?}"),
         })?;
     Ok(output_value.substate)
 }
@@ -68,7 +65,7 @@ pub(crate) fn read_known_substate(
 #[tracing::instrument(skip_all)]
 pub(crate) fn wrong_substate_type(substate_offset: SubstateOffset) -> ResponseError<()> {
     MappingError::MismatchedSubstateId {
-        message: format!("{:?} not of expected type", substate_offset),
+        message: format!("{substate_offset:?} not of expected type"),
     }
     .into()
 }

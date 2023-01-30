@@ -24,7 +24,7 @@ pub fn to_api_receipt(
         LedgerTransactionOutcome::Failure(error) => (
             models::TransactionStatus::Failed,
             None,
-            Some(format!("{:?}", error)),
+            Some(format!("{error:?}")),
         ),
     };
 

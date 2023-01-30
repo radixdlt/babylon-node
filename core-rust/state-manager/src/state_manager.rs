@@ -62,9 +62,10 @@
  * permissions under this License.
  */
 
-use crate::execution_cache::ExecutionCache;
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::query::*;
+use crate::staging::stage_tree::{StagedSubstateStoreKey, StagedSubstateStoreManager};
+use crate::staging::ExecutionCache;
 use crate::store::traits::*;
 use crate::transaction::{
     LedgerTransaction, LedgerTransactionValidator, UserTransactionValidator, ValidatorTransaction,
@@ -84,7 +85,6 @@ use ::transaction::signing::EcdsaSecp256k1PrivateKey;
 use ::transaction::validation::{TestIntentHashManager, ValidationConfig};
 use prometheus::Registry;
 use radix_engine::engine::ScryptoInterpreter;
-use radix_engine::state_manager::{StagedSubstateStoreKey, StagedSubstateStoreManager};
 use radix_engine::transaction::{
     execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
     PreviewResult, TransactionOutcome, TransactionReceipt, TransactionResult,
@@ -546,11 +546,11 @@ where
                         .map(|(validator_set, _)| validator_set),
                 },
                 TransactionOutcome::Failure(error) => {
-                    panic!("Genesis failed. Error: {:?}", error)
+                    panic!("Genesis failed. Error: {error:?}")
                 }
             },
             TransactionResult::Reject(reject_result) => {
-                panic!("Genesis rejected. Result: {:?}", reject_result)
+                panic!("Genesis rejected. Result: {reject_result:?}")
             }
         }
     }
@@ -620,8 +620,7 @@ where
                 }
                 TransactionResult::Reject(reject_result) => {
                     panic!(
-                        "Already prepared transactions should be committable. Reject result: {:?}",
-                        reject_result
+                        "Already prepared transactions should be committable. Reject result: {reject_result:?}"
                     )
                 }
             }
@@ -647,7 +646,7 @@ where
         let mut next_epoch = match &receipt.result {
             TransactionResult::Commit(commit_result) => {
                 if let TransactionOutcome::Failure(error) = &commit_result.outcome {
-                    panic!("Validator txn failed: {:?}", error);
+                    panic!("Validator txn failed: {error:?}");
                 }
 
                 parent_accumulator_hash = new_accumulator_hash;
@@ -659,7 +658,7 @@ where
                 })
             }
             TransactionResult::Reject(reject_result) => {
-                panic!("Validator txn failed: {:?}", reject_result)
+                panic!("Validator txn failed: {reject_result:?}")
             }
         };
 
@@ -677,7 +676,7 @@ where
                     ) {
                         Ok(parsed) => parsed,
                         Err(error) => {
-                            rejected_payloads.push((proposed_payload, format!("{:?}", error)));
+                            rejected_payloads.push((proposed_payload, format!("{error:?}")));
                             continue;
                         }
                     };
@@ -840,7 +839,7 @@ where
                 .map(|payload| {
                     LedgerTransactionValidator::parse_unvalidated_transaction_from_slice(&payload)
                         .unwrap_or_else(|error| {
-                            panic!("Committed transaction cannot be decoded - likely byzantine quorum: {:?}", error);
+                            panic!("Committed transaction cannot be decoded - likely byzantine quorum: {error:?}");
                         })
                     // TODO - will want to validate when non-user transactions (eg round/epoch change intents) occur
                 })
@@ -877,8 +876,7 @@ where
                 .validate_and_create_executable(transaction)
                 .unwrap_or_else(|error| {
                     panic!(
-                        "Committed transaction is not valid - likely byzantine quorum: {:?}",
-                        error
+                        "Committed transaction is not valid - likely byzantine quorum: {error:?}"
                     );
                 });
 

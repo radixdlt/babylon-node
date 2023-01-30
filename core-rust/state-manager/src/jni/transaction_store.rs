@@ -124,7 +124,7 @@ fn do_get_transaction_at_state_version(
         outcome: match committed_transaction_receipt.outcome {
             LedgerTransactionOutcome::Success(output) => TransactionOutcomeJava::Success(output),
             LedgerTransactionOutcome::Failure(err) => {
-                TransactionOutcomeJava::Failure(format!("{:?}", err))
+                TransactionOutcomeJava::Failure(format!("{err:?}"))
             }
         },
         ledger_receipt_bytes,

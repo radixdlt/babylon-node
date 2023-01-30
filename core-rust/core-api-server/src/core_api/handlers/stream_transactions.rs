@@ -51,8 +51,7 @@ fn handle_stream_transactions_internal(
 
     if limit > MAX_TXN_COUNT_PER_REQUEST.into() {
         return Err(client_error(format!(
-            "limit must <= {}",
-            MAX_TXN_COUNT_PER_REQUEST
+            "limit must <= {MAX_TXN_COUNT_PER_REQUEST}"
         )));
     }
 
