@@ -80,10 +80,12 @@ import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
+import com.radixdlt.identifiers.Address;
 import com.radixdlt.keys.BFTValidatorIdFromGenesisModule;
 import com.radixdlt.keys.BFTValidatorIdModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Tuple;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
@@ -108,6 +110,7 @@ import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.IOUtils;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.FileInputStream;
@@ -249,15 +252,19 @@ public final class RadixNodeModule extends AbstractModule {
                   }
                 })
             .toList();
+    var validatorSet =
+        new HashMap<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>>();
+    final var stakingAccount =
+        Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
 
-    var validatorSet = new HashMap<ECDSASecp256k1PublicKey, Decimal>();
-    initialVset.forEach(k -> validatorSet.put(k, Decimal.of(1)));
+    initialVset.forEach(k -> validatorSet.put(k, Tuple.tuple(Decimal.of(1), stakingAccount)));
 
     var genesis =
         TransactionBuilder.createGenesis(
             validatorSet,
             UInt64.fromNonNegativeLong(1),
-            UInt64.fromNonNegativeLong(1800)); // approximately 5 minutes per epoch
+            UInt64.fromNonNegativeLong(1800), // approximately 5 minutes per epoch
+            UInt64.fromNonNegativeLong(1));
 
     install(
         REv2StateManagerModule.create(

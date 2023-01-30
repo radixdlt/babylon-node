@@ -216,6 +216,11 @@ public final class REv2StateManagerModule extends AbstractModule {
                 }
 
                 @Override
+                public ValidatorInfo getValidatorInfo(ComponentAddress systemAddress) {
+                  return stateComputer.getValidatorInfo(systemAddress);
+                }
+
+                @Override
                 public long getEpoch() {
                   return stateComputer
                       .getEpoch()

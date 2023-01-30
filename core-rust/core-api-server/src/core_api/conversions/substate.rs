@@ -5,12 +5,13 @@ use crate::core_api::models;
 use radix_engine_interface::data::{IndexedScryptoValue, SchemaPath, SchemaSubPath};
 
 use radix_engine::model::{
-    AccessRulesChainSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
-    ComponentRoyaltyConfigSubstate, ComponentStateSubstate, CurrentTimeRoundedToMinutesSubstate,
-    EpochManagerSubstate, GlobalAddressSubstate, KeyValueStoreEntrySubstate, MetadataSubstate,
-    NonFungible, NonFungibleSubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate,
-    PackageRoyaltyConfigSubstate, PersistedSubstate, Resource, ResourceManagerSubstate, Validator,
-    ValidatorSetSubstate, ValidatorSubstate, VaultSubstate,
+    AccessControllerSubstate, AccessRulesChainSubstate, ComponentInfoSubstate,
+    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
+    CurrentTimeRoundedToMinutesSubstate, EpochManagerSubstate, GlobalAddressSubstate,
+    KeyValueStoreEntrySubstate, MetadataSubstate, NonFungible, NonFungibleSubstate,
+    PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate,
+    PersistedSubstate, Resource, ResourceManagerSubstate, Validator, ValidatorSetSubstate,
+    ValidatorSubstate, VaultSubstate,
 };
 use radix_engine::types::{
     scrypto_encode, AccessRule, AccessRuleEntry, AccessRuleKey, AccessRuleNode, AccessRules,
@@ -76,6 +77,9 @@ pub fn to_api_substate(
         }
         PersistedSubstate::NonFungible(non_fungible_wrapper) => {
             to_api_non_fungible_substate(context, substate_id, non_fungible_wrapper)?
+        }
+        PersistedSubstate::AccessController(access_controller) => {
+            to_api_access_controller_substate(context, access_controller)?
         }
     })
 }
@@ -710,17 +714,26 @@ pub fn to_api_validator_substate(
         manager,
         address,
         key,
-        stake_vault_id,
         is_registered,
+
+        unstake_nft,
+        liquidity_token,
+        stake_xrd_vault_id,
+        pending_xrd_withdraw_vault_id,
     } = substate;
 
-    let owned_stake_vault_id = MappedEntityId::try_from(RENodeId::Vault(*stake_vault_id))?;
+    let owned_stake_vault_id = MappedEntityId::try_from(RENodeId::Vault(*stake_xrd_vault_id))?;
+    let owned_unstake_vault_id =
+        MappedEntityId::try_from(RENodeId::Vault(*pending_xrd_withdraw_vault_id))?;
 
     Ok(models::Substate::ValidatorSubstate {
         epoch_manager_address: to_api_component_address(context, manager),
         validator_address: to_api_component_address(context, address),
         key: Box::new(to_api_ecdsa_secp256k1_public_key(key)),
         stake_vault: Box::new(owned_stake_vault_id.into()),
+        unstake_vault: Box::new(owned_unstake_vault_id.into()),
+        unstake_claim_token_resource_address: to_api_resource_address(context, unstake_nft),
+        liquid_stake_unit_resource_address: to_api_resource_address(context, liquidity_token),
         is_registered: *is_registered,
     })
 }
@@ -734,6 +747,7 @@ pub fn to_api_epoch_manager_substate(
         epoch,
         round,
         rounds_per_epoch,
+        num_unstake_epochs,
     } = substate;
 
     Ok(models::Substate::EpochManagerSubstate {
@@ -741,6 +755,7 @@ pub fn to_api_epoch_manager_substate(
         epoch: to_api_epoch(*epoch)?,
         round: to_api_round(*round)?,
         rounds_per_epoch: to_api_round(*rounds_per_epoch)?,
+        num_unstake_epochs: to_api_epoch(*num_unstake_epochs)?,
     })
 }
 
@@ -863,6 +878,18 @@ fn to_api_non_fungible_data(
         mutable_data: mutable_data_sbor_option.map(Box::new),
         mutable_data_raw_hex: to_hex(&mutable_data),
     })
+}
+
+pub fn to_api_access_controller_substate(
+    context: &MappingContext,
+    substate: &AccessControllerSubstate,
+) -> Result<models::Substate, MappingError> {
+    let data = scrypto_encode(substate).unwrap();
+    let substate = models::Substate::AccessControllerSubstate {
+        data_struct: Box::new(to_api_data_struct(context, &data)?),
+    };
+
+    Ok(substate)
 }
 
 fn to_api_key_value_story_entry_substate(

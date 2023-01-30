@@ -149,6 +149,9 @@ fn to_api_response(
             resource_changes: vec![],
             logs: vec![],
         },
+        TransactionResult::Abort(_) => {
+            panic!("Should not be aborting");
+        }
     };
 
     Ok(response)

@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.AccessControllerSubstate;
 import com.radixdlt.api.core.generated.models.AccessRulesChainSubstate;
 import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
 import com.radixdlt.api.core.generated.models.ComponentInfoSubstate;
@@ -59,7 +60,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   EpochManagerSubstate.JSON_PROPERTY_ADDRESS,
   EpochManagerSubstate.JSON_PROPERTY_EPOCH,
   EpochManagerSubstate.JSON_PROPERTY_ROUND,
-  EpochManagerSubstate.JSON_PROPERTY_ROUNDS_PER_EPOCH
+  EpochManagerSubstate.JSON_PROPERTY_ROUNDS_PER_EPOCH,
+  EpochManagerSubstate.JSON_PROPERTY_NUM_UNSTAKE_EPOCHS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -68,6 +70,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "substate_type", visible = true)
 @JsonSubTypes({
+  @JsonSubTypes.Type(value = AccessControllerSubstate.class, name = "AccessController"),
   @JsonSubTypes.Type(value = AccessRulesChainSubstate.class, name = "AccessRulesChain"),
   @JsonSubTypes.Type(value = ClockCurrentMinuteSubstate.class, name = "ClockCurrentMinute"),
   @JsonSubTypes.Type(value = ComponentInfoSubstate.class, name = "ComponentInfo"),
@@ -100,6 +103,9 @@ public class EpochManagerSubstate extends Substate {
 
   public static final String JSON_PROPERTY_ROUNDS_PER_EPOCH = "rounds_per_epoch";
   private Long roundsPerEpoch;
+
+  public static final String JSON_PROPERTY_NUM_UNSTAKE_EPOCHS = "num_unstake_epochs";
+  private Long numUnstakeEpochs;
 
   public EpochManagerSubstate() { 
   }
@@ -214,6 +220,34 @@ public class EpochManagerSubstate extends Substate {
   }
 
 
+  public EpochManagerSubstate numUnstakeEpochs(Long numUnstakeEpochs) {
+    this.numUnstakeEpochs = numUnstakeEpochs;
+    return this;
+  }
+
+   /**
+   * Get numUnstakeEpochs
+   * minimum: 0
+   * maximum: 10000000000
+   * @return numUnstakeEpochs
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_NUM_UNSTAKE_EPOCHS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getNumUnstakeEpochs() {
+    return numUnstakeEpochs;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_NUM_UNSTAKE_EPOCHS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setNumUnstakeEpochs(Long numUnstakeEpochs) {
+    this.numUnstakeEpochs = numUnstakeEpochs;
+  }
+
+
   /**
    * Return true if this EpochManagerSubstate object is equal to o.
    */
@@ -230,12 +264,13 @@ public class EpochManagerSubstate extends Substate {
         Objects.equals(this.epoch, epochManagerSubstate.epoch) &&
         Objects.equals(this.round, epochManagerSubstate.round) &&
         Objects.equals(this.roundsPerEpoch, epochManagerSubstate.roundsPerEpoch) &&
+        Objects.equals(this.numUnstakeEpochs, epochManagerSubstate.numUnstakeEpochs) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(address, epoch, round, roundsPerEpoch, super.hashCode());
+    return Objects.hash(address, epoch, round, roundsPerEpoch, numUnstakeEpochs, super.hashCode());
   }
 
   @Override
@@ -247,6 +282,7 @@ public class EpochManagerSubstate extends Substate {
     sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
     sb.append("    round: ").append(toIndentedString(round)).append("\n");
     sb.append("    roundsPerEpoch: ").append(toIndentedString(roundsPerEpoch)).append("\n");
+    sb.append("    numUnstakeEpochs: ").append(toIndentedString(numUnstakeEpochs)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -265,6 +301,7 @@ public class EpochManagerSubstate extends Substate {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
+  mappings.put("AccessController", AccessControllerSubstate.class);
   mappings.put("AccessRulesChain", AccessRulesChainSubstate.class);
   mappings.put("ClockCurrentMinute", ClockCurrentMinuteSubstate.class);
   mappings.put("ComponentInfo", ComponentInfoSubstate.class);

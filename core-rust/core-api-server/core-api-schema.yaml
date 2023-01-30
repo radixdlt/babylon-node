@@ -2055,6 +2055,7 @@ components:
         - Global
         - NonFungibleStore
         - Clock
+        - AccessController
     Substate:
       type: object
       required:
@@ -2084,6 +2085,7 @@ components:
           KeyValueStoreEntry: '#/components/schemas/KeyValueStoreEntrySubstate'
           Vault: '#/components/schemas/VaultSubstate'
           NonFungibleStoreEntry: '#/components/schemas/NonFungibleStoreEntrySubstate'
+          AccessController: '#/components/schemas/AccessControllerSubstate'
     SubstateType:
       type: string
       enum:
@@ -2107,6 +2109,7 @@ components:
         - KeyValueStoreEntry
         - NonFungibleStoreEntry
         - Vault
+        - AccessController
     SubstateKeyType:
       # This corresponds to what's currently referred to as the "SubstateOffset"
       # This is roughly the same as the substate type, but some entities have two of the same substates
@@ -2137,6 +2140,7 @@ components:
         - KeyValueStoreEntry
         - NonFungibleStoreEntry
         - Vault
+        - AccessController
 ### COMMON SUBSTATES
     AccessRulesChainSubstate:
       allOf:
@@ -2319,6 +2323,7 @@ components:
             - epoch
             - round
             - rounds_per_epoch
+            - num_unstake_epochs
           properties:
             address:
               $ref: '#/components/schemas/ComponentAddress'
@@ -2340,6 +2345,11 @@ components:
               minimum: 0
               maximum: 10000000000
               description: An integer between `0` and `10^10`, specifying the number of rounds per epoch
+            num_unstake_epochs:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
     ValidatorSetSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -2367,6 +2377,9 @@ components:
             - validator_address
             - key
             - stake_vault
+            - unstake_vault
+            - liquid_stake_unit_resource_address
+            - unstake_claim_token_resource_address
             - is_registered
           properties:
             epoch_manager_address:
@@ -2377,6 +2390,12 @@ components:
               $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
             stake_vault:
               $ref: '#/components/schemas/EntityReference'
+            unstake_vault:
+              $ref: '#/components/schemas/EntityReference'
+            liquid_stake_unit_resource_address:
+              $ref: '#/components/schemas/ResourceAddress'
+            unstake_claim_token_resource_address:
+              $ref: '#/components/schemas/ResourceAddress'
             is_registered:
               type: boolean
     ClockCurrentMinuteSubstate:
@@ -2451,6 +2470,15 @@ components:
           type: string
           description: |
             The hex-encoded raw bytes of the mutadata data of the NF.
+    AccessControllerSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - data_struct
+          properties:
+            data_struct:
+              $ref: '#/components/schemas/DataStruct'
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################
@@ -2536,6 +2564,7 @@ components:
             - EpochManager
             - Validator
             - Clock
+            - AccessController
         hrp_prefix:
           type: string
         entity_type:

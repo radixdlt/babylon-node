@@ -48,6 +48,8 @@ pub enum SubstateType {
     NonFungibleStoreEntry,
     #[serde(rename = "Vault")]
     Vault,
+    #[serde(rename = "AccessController")]
+    AccessController,
 
 }
 
@@ -72,6 +74,7 @@ impl ToString for SubstateType {
             Self::KeyValueStoreEntry => String::from("KeyValueStoreEntry"),
             Self::NonFungibleStoreEntry => String::from("NonFungibleStoreEntry"),
             Self::Vault => String::from("Vault"),
+            Self::AccessController => String::from("AccessController"),
         }
     }
 }

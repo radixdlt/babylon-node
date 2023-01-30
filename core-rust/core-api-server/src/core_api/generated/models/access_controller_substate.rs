@@ -12,20 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct NextEpoch {
-    /// An integer between `0` and `10^10`
-    #[serde(rename = "epoch")]
-    pub epoch: i64,
-    /// Validators are sorted by descending stake amount
-    #[serde(rename = "validators")]
-    pub validators: Vec<crate::core_api::generated::models::ActiveValidator>,
+pub struct AccessControllerSubstate {
+    #[serde(rename = "substate_type")]
+    pub substate_type: crate::core_api::generated::models::SubstateType,
+    #[serde(rename = "data_struct")]
+    pub data_struct: Box<crate::core_api::generated::models::DataStruct>,
 }
 
-impl NextEpoch {
-    pub fn new(epoch: i64, validators: Vec<crate::core_api::generated::models::ActiveValidator>) -> NextEpoch {
-        NextEpoch {
-            epoch,
-            validators,
+impl AccessControllerSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, data_struct: crate::core_api::generated::models::DataStruct) -> AccessControllerSubstate {
+        AccessControllerSubstate {
+            substate_type,
+            data_struct: Box::new(data_struct),
         }
     }
 }

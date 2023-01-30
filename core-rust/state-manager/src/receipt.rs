@@ -89,6 +89,10 @@ impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
                 "Can't create a ledger receipt for rejected txn: {:?}",
                 error
             )),
+            TransactionResult::Abort(result) => Err(format!(
+                "Can't create a ledger receipt for aborted txn: {:?}",
+                result
+            )),
         }
     }
 }

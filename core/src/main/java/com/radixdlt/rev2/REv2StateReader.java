@@ -68,5 +68,7 @@ package com.radixdlt.rev2;
 public interface REv2StateReader {
   Decimal getComponentXrdAmount(ComponentAddress componentAddress);
 
+  ValidatorInfo getValidatorInfo(ComponentAddress systemAddress);
+
   long getEpoch();
 }
