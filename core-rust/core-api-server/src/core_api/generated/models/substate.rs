@@ -141,11 +141,11 @@ pub enum Substate {
         #[serde(rename = "unstake_vault")]
         unstake_vault: Box<crate::core_api::generated::models::EntityReference>,
         /// The Bech32m-encoded human readable version of the resource address
-        #[serde(rename = "liquidity_token")]
-        liquidity_token: String,
+        #[serde(rename = "liquid_stake_unit_resource_address")]
+        liquid_stake_unit_resource_address: String,
         /// The Bech32m-encoded human readable version of the resource address
-        #[serde(rename = "unstake_nft_address")]
-        unstake_nft_address: String,
+        #[serde(rename = "unstake_claim_token_resource_address")]
+        unstake_claim_token_resource_address: String,
         #[serde(rename = "is_registered")]
         is_registered: bool,
     },

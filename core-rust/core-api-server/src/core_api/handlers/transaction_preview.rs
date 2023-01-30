@@ -152,7 +152,6 @@ fn to_api_response(
             logs: vec![],
         },
         TransactionResult::Abort(_) => {
-            // TODO: Should remove this
             panic!("Should not be aborting");
         }
     };

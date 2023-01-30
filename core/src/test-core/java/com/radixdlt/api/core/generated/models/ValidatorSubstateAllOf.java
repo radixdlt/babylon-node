@@ -38,8 +38,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   ValidatorSubstateAllOf.JSON_PROPERTY_KEY,
   ValidatorSubstateAllOf.JSON_PROPERTY_STAKE_VAULT,
   ValidatorSubstateAllOf.JSON_PROPERTY_UNSTAKE_VAULT,
-  ValidatorSubstateAllOf.JSON_PROPERTY_LIQUIDITY_TOKEN,
-  ValidatorSubstateAllOf.JSON_PROPERTY_UNSTAKE_NFT_ADDRESS,
+  ValidatorSubstateAllOf.JSON_PROPERTY_LIQUID_STAKE_UNIT_RESOURCE_ADDRESS,
+  ValidatorSubstateAllOf.JSON_PROPERTY_UNSTAKE_CLAIM_TOKEN_RESOURCE_ADDRESS,
   ValidatorSubstateAllOf.JSON_PROPERTY_IS_REGISTERED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -59,11 +59,11 @@ public class ValidatorSubstateAllOf {
   public static final String JSON_PROPERTY_UNSTAKE_VAULT = "unstake_vault";
   private EntityReference unstakeVault;
 
-  public static final String JSON_PROPERTY_LIQUIDITY_TOKEN = "liquidity_token";
-  private String liquidityToken;
+  public static final String JSON_PROPERTY_LIQUID_STAKE_UNIT_RESOURCE_ADDRESS = "liquid_stake_unit_resource_address";
+  private String liquidStakeUnitResourceAddress;
 
-  public static final String JSON_PROPERTY_UNSTAKE_NFT_ADDRESS = "unstake_nft_address";
-  private String unstakeNftAddress;
+  public static final String JSON_PROPERTY_UNSTAKE_CLAIM_TOKEN_RESOURCE_ADDRESS = "unstake_claim_token_resource_address";
+  private String unstakeClaimTokenResourceAddress;
 
   public static final String JSON_PROPERTY_IS_REGISTERED = "is_registered";
   private Boolean isRegistered;
@@ -201,55 +201,55 @@ public class ValidatorSubstateAllOf {
   }
 
 
-  public ValidatorSubstateAllOf liquidityToken(String liquidityToken) {
-    this.liquidityToken = liquidityToken;
+  public ValidatorSubstateAllOf liquidStakeUnitResourceAddress(String liquidStakeUnitResourceAddress) {
+    this.liquidStakeUnitResourceAddress = liquidStakeUnitResourceAddress;
     return this;
   }
 
    /**
    * The Bech32m-encoded human readable version of the resource address
-   * @return liquidityToken
+   * @return liquidStakeUnitResourceAddress
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
-  @JsonProperty(JSON_PROPERTY_LIQUIDITY_TOKEN)
+  @JsonProperty(JSON_PROPERTY_LIQUID_STAKE_UNIT_RESOURCE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getLiquidityToken() {
-    return liquidityToken;
+  public String getLiquidStakeUnitResourceAddress() {
+    return liquidStakeUnitResourceAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_LIQUIDITY_TOKEN)
+  @JsonProperty(JSON_PROPERTY_LIQUID_STAKE_UNIT_RESOURCE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setLiquidityToken(String liquidityToken) {
-    this.liquidityToken = liquidityToken;
+  public void setLiquidStakeUnitResourceAddress(String liquidStakeUnitResourceAddress) {
+    this.liquidStakeUnitResourceAddress = liquidStakeUnitResourceAddress;
   }
 
 
-  public ValidatorSubstateAllOf unstakeNftAddress(String unstakeNftAddress) {
-    this.unstakeNftAddress = unstakeNftAddress;
+  public ValidatorSubstateAllOf unstakeClaimTokenResourceAddress(String unstakeClaimTokenResourceAddress) {
+    this.unstakeClaimTokenResourceAddress = unstakeClaimTokenResourceAddress;
     return this;
   }
 
    /**
    * The Bech32m-encoded human readable version of the resource address
-   * @return unstakeNftAddress
+   * @return unstakeClaimTokenResourceAddress
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
-  @JsonProperty(JSON_PROPERTY_UNSTAKE_NFT_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_UNSTAKE_CLAIM_TOKEN_RESOURCE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getUnstakeNftAddress() {
-    return unstakeNftAddress;
+  public String getUnstakeClaimTokenResourceAddress() {
+    return unstakeClaimTokenResourceAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_UNSTAKE_NFT_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_UNSTAKE_CLAIM_TOKEN_RESOURCE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setUnstakeNftAddress(String unstakeNftAddress) {
-    this.unstakeNftAddress = unstakeNftAddress;
+  public void setUnstakeClaimTokenResourceAddress(String unstakeClaimTokenResourceAddress) {
+    this.unstakeClaimTokenResourceAddress = unstakeClaimTokenResourceAddress;
   }
 
 
@@ -296,14 +296,14 @@ public class ValidatorSubstateAllOf {
         Objects.equals(this.key, validatorSubstateAllOf.key) &&
         Objects.equals(this.stakeVault, validatorSubstateAllOf.stakeVault) &&
         Objects.equals(this.unstakeVault, validatorSubstateAllOf.unstakeVault) &&
-        Objects.equals(this.liquidityToken, validatorSubstateAllOf.liquidityToken) &&
-        Objects.equals(this.unstakeNftAddress, validatorSubstateAllOf.unstakeNftAddress) &&
+        Objects.equals(this.liquidStakeUnitResourceAddress, validatorSubstateAllOf.liquidStakeUnitResourceAddress) &&
+        Objects.equals(this.unstakeClaimTokenResourceAddress, validatorSubstateAllOf.unstakeClaimTokenResourceAddress) &&
         Objects.equals(this.isRegistered, validatorSubstateAllOf.isRegistered);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(epochManagerAddress, validatorAddress, key, stakeVault, unstakeVault, liquidityToken, unstakeNftAddress, isRegistered);
+    return Objects.hash(epochManagerAddress, validatorAddress, key, stakeVault, unstakeVault, liquidStakeUnitResourceAddress, unstakeClaimTokenResourceAddress, isRegistered);
   }
 
   @Override
@@ -315,8 +315,8 @@ public class ValidatorSubstateAllOf {
     sb.append("    key: ").append(toIndentedString(key)).append("\n");
     sb.append("    stakeVault: ").append(toIndentedString(stakeVault)).append("\n");
     sb.append("    unstakeVault: ").append(toIndentedString(unstakeVault)).append("\n");
-    sb.append("    liquidityToken: ").append(toIndentedString(liquidityToken)).append("\n");
-    sb.append("    unstakeNftAddress: ").append(toIndentedString(unstakeNftAddress)).append("\n");
+    sb.append("    liquidStakeUnitResourceAddress: ").append(toIndentedString(liquidStakeUnitResourceAddress)).append("\n");
+    sb.append("    unstakeClaimTokenResourceAddress: ").append(toIndentedString(unstakeClaimTokenResourceAddress)).append("\n");
     sb.append("    isRegistered: ").append(toIndentedString(isRegistered)).append("\n");
     sb.append("}");
     return sb.toString();

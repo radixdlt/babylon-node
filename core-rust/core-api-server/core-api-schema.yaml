@@ -2374,8 +2374,8 @@ components:
             - key
             - stake_vault
             - unstake_vault
-            - liquidity_token
-            - unstake_nft_address
+            - liquid_stake_unit_resource_address
+            - unstake_claim_token_resource_address
             - is_registered
           properties:
             epoch_manager_address:
@@ -2388,9 +2388,9 @@ components:
               $ref: '#/components/schemas/EntityReference'
             unstake_vault:
               $ref: '#/components/schemas/EntityReference'
-            liquidity_token:
+            liquid_stake_unit_resource_address:
               $ref: '#/components/schemas/ResourceAddress'
-            unstake_nft_address:
+            unstake_claim_token_resource_address:
               $ref: '#/components/schemas/ResourceAddress'
             is_registered:
               type: boolean

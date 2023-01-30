@@ -26,25 +26,25 @@ pub struct ValidatorSubstateAllOf {
     #[serde(rename = "unstake_vault")]
     pub unstake_vault: Box<crate::core_api::generated::models::EntityReference>,
     /// The Bech32m-encoded human readable version of the resource address
-    #[serde(rename = "liquidity_token")]
-    pub liquidity_token: String,
+    #[serde(rename = "liquid_stake_unit_resource_address")]
+    pub liquid_stake_unit_resource_address: String,
     /// The Bech32m-encoded human readable version of the resource address
-    #[serde(rename = "unstake_nft_address")]
-    pub unstake_nft_address: String,
+    #[serde(rename = "unstake_claim_token_resource_address")]
+    pub unstake_claim_token_resource_address: String,
     #[serde(rename = "is_registered")]
     pub is_registered: bool,
 }
 
 impl ValidatorSubstateAllOf {
-    pub fn new(epoch_manager_address: String, validator_address: String, key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey, stake_vault: crate::core_api::generated::models::EntityReference, unstake_vault: crate::core_api::generated::models::EntityReference, liquidity_token: String, unstake_nft_address: String, is_registered: bool) -> ValidatorSubstateAllOf {
+    pub fn new(epoch_manager_address: String, validator_address: String, key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey, stake_vault: crate::core_api::generated::models::EntityReference, unstake_vault: crate::core_api::generated::models::EntityReference, liquid_stake_unit_resource_address: String, unstake_claim_token_resource_address: String, is_registered: bool) -> ValidatorSubstateAllOf {
         ValidatorSubstateAllOf {
             epoch_manager_address,
             validator_address,
             key: Box::new(key),
             stake_vault: Box::new(stake_vault),
             unstake_vault: Box::new(unstake_vault),
-            liquidity_token,
-            unstake_nft_address,
+            liquid_stake_unit_resource_address,
+            unstake_claim_token_resource_address,
             is_registered,
         }
     }

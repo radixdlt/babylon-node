@@ -751,8 +751,8 @@ pub fn to_api_validator_substate(
         key: Box::new(to_api_ecdsa_secp256k1_public_key(key)),
         stake_vault: Box::new(owned_stake_vault_id.into()),
         unstake_vault: Box::new(owned_unstake_vault_id.into()),
-        unstake_nft_address: bech32_encoder.encode_resource_address_to_string(unstake_nft),
-        liquidity_token: bech32_encoder.encode_resource_address_to_string(liquidity_token),
+        unstake_claim_token_resource_address: bech32_encoder.encode_resource_address_to_string(unstake_nft),
+        liquid_stake_unit_resource_address: bech32_encoder.encode_resource_address_to_string(liquidity_token),
         is_registered: *is_registered,
     })
 }
