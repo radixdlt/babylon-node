@@ -45,16 +45,20 @@ pub(crate) fn handle_status_network_configuration_internal(
     })
 }
 
-const ALL_ENTITY_TYPES: [EntityType; 9] = [
+const ALL_ENTITY_TYPES: [EntityType; 13] = [
     EntityType::Resource,
     EntityType::Package,
     EntityType::NormalComponent,
     EntityType::AccountComponent,
     EntityType::EcdsaSecp256k1VirtualAccountComponent,
     EntityType::EddsaEd25519VirtualAccountComponent,
+    EntityType::IdentityComponent,
+    EntityType::EcdsaSecp256k1VirtualIdentityComponent,
+    EntityType::EddsaEd25519VirtualIdentityComponent,
     EntityType::EpochManager,
     EntityType::Validator,
     EntityType::Clock,
+    EntityType::AccessControllerComponent,
 ];
 
 fn to_api_address_type(hrp_set: &HrpSet, entity_type: EntityType) -> models::AddressType {
