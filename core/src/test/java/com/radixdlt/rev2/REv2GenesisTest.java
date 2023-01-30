@@ -72,6 +72,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
+import com.radixdlt.identifiers.Address;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.*;
 import com.radixdlt.networks.Network;
@@ -135,7 +136,7 @@ public final class REv2GenesisTest {
       // Check genesis XRD alloc
       final var allocatedAmount =
           stateReader.getComponentXrdAmount(
-              ComponentAddress.ofAccountPublicKey(XRD_ALLOC_ACCOUNT_PUB_KEY));
+              Address.virtualAccountAddress(XRD_ALLOC_ACCOUNT_PUB_KEY));
       assertThat(allocatedAmount).isEqualTo(XRD_ALLOC_AMOUNT);
 
       var emptyAccountAmount =
