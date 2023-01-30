@@ -62,10 +62,11 @@
  * permissions under this License.
  */
 
-use crate::execution_cache::ExecutionCache;
 use crate::jni::state_computer::JavaValidatorInfo;
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::query::*;
+use crate::staging::stage_tree::{StagedSubstateStoreKey, StagedSubstateStoreManager};
+use crate::staging::ExecutionCache;
 use crate::store::traits::*;
 use crate::transaction::{
     LedgerTransaction, LedgerTransactionValidator, UserTransactionValidator, ValidatorTransaction,
@@ -86,7 +87,6 @@ use ::transaction::validation::{TestIntentHashManager, ValidationConfig};
 use prometheus::Registry;
 use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::model::ValidatorSubstate;
-use radix_engine::state_manager::{StagedSubstateStoreKey, StagedSubstateStoreManager};
 use radix_engine::transaction::{
     execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
     PreviewResult, TransactionOutcome, TransactionReceipt, TransactionResult,
@@ -697,7 +697,7 @@ where
                     ) {
                         Ok(parsed) => parsed,
                         Err(error) => {
-                            rejected_payloads.push((proposed_payload, format!("{:?}", error)));
+                            rejected_payloads.push((proposed_payload, format!("{error:?}")));
                             continue;
                         }
                     };
