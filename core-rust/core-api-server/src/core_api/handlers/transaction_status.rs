@@ -30,8 +30,7 @@ fn handle_transaction_status_internal(
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
     let txn_state_version_opt = state_manager
-        .staged_store
-        .root
+        .store()
         .get_txn_state_version_by_identifier(&intent_hash);
 
     let mut known_pending_payloads = state_manager
@@ -61,14 +60,12 @@ fn handle_transaction_status_internal(
 
     if let Some(txn_state_version) = txn_state_version_opt {
         let txn = state_manager
-            .staged_store
-            .root
+            .store()
             .get_committed_transaction(txn_state_version)
             .expect("Txn is missing");
 
         let receipt = state_manager
-            .staged_store
-            .root
+            .store()
             .get_committed_transaction_receipt(txn_state_version)
             .expect("Txn receipt is missing");
 

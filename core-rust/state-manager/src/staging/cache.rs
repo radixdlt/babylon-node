@@ -63,30 +63,65 @@
  */
 
 use super::stage_tree::{StagedSubstateStoreKey, StagedSubstateStoreNodeKey};
-use core::hash::Hash;
+use crate::staging::stage_tree::{StagedSubstateStore, StagedSubstateStoreManager};
+use crate::AccumulatorHash;
+use radix_engine::ledger::ReadableSubstateStore;
+use radix_engine::transaction::TransactionReceipt;
 use sbor::rust::collections::HashMap;
 use slotmap::SecondaryMap;
 
-#[derive(Debug)]
-pub struct ExecutionCache<H> {
-    root_accumulator_hash: H,
-    accumulator_hash_to_key: HashMap<H, StagedSubstateStoreNodeKey>,
-    key_to_accumulator_hash: SecondaryMap<StagedSubstateStoreNodeKey, H>,
+pub struct ExecutionCache<S: ReadableSubstateStore> {
+    pub staged_store_manager: StagedSubstateStoreManager<S>,
+    root_accumulator_hash: AccumulatorHash,
+    accumulator_hash_to_key: HashMap<AccumulatorHash, StagedSubstateStoreNodeKey>,
+    key_to_accumulator_hash: SecondaryMap<StagedSubstateStoreNodeKey, AccumulatorHash>,
 }
 
-impl<H> ExecutionCache<H>
-where
-    H: Eq + Hash + Copy,
-{
-    pub fn new(root_accumulator_hash: H) -> Self {
+impl<S: ReadableSubstateStore> ExecutionCache<S> {
+    pub fn new(root_store: S, root_accumulator_hash: AccumulatorHash) -> Self {
         ExecutionCache {
+            staged_store_manager: StagedSubstateStoreManager::new(root_store),
             root_accumulator_hash,
             accumulator_hash_to_key: HashMap::new(),
             key_to_accumulator_hash: SecondaryMap::new(),
         }
     }
 
-    pub fn get(&self, accumulator_hash: &H) -> Option<StagedSubstateStoreKey> {
+    pub fn execute<T: FnOnce(&StagedSubstateStore<S>) -> TransactionReceipt>(
+        &mut self,
+        parent_hash: &AccumulatorHash,
+        new_hash: &AccumulatorHash,
+        transaction: T,
+    ) -> &TransactionReceipt {
+        match self.get_existing_substore_key(new_hash) {
+            Some(new_key) => self.staged_store_manager.get_receipt(&new_key).unwrap(),
+            None => {
+                let parent_key = self.get_existing_substore_key(parent_hash).unwrap();
+                let receipt = transaction(&self.staged_store_manager.get_store(parent_key));
+                let new_key = self
+                    .staged_store_manager
+                    .new_child_node(parent_key, receipt);
+                self.set(new_hash, new_key);
+                self.staged_store_manager.get_receipt(&new_key).unwrap()
+            }
+        }
+    }
+
+    pub fn progress_root(&mut self, new_root_hash: &AccumulatorHash) {
+        let new_root_key = self.get_existing_substore_key(new_root_hash).unwrap();
+        let mut removed_keys = Vec::new();
+        self.staged_store_manager
+            .reparent(new_root_key, &mut |key| removed_keys.push(*key));
+        for removed_key in removed_keys {
+            self.remove_node(&removed_key);
+        }
+        self.set(new_root_hash, StagedSubstateStoreKey::RootStoreKey);
+    }
+
+    fn get_existing_substore_key(
+        &self,
+        accumulator_hash: &AccumulatorHash,
+    ) -> Option<StagedSubstateStoreKey> {
         match self.accumulator_hash_to_key.get(accumulator_hash) {
             None => {
                 if *accumulator_hash == self.root_accumulator_hash {
@@ -98,7 +133,7 @@ where
         }
     }
 
-    pub fn set(&mut self, accumulator_hash: &H, key: StagedSubstateStoreKey) {
+    fn set(&mut self, accumulator_hash: &AccumulatorHash, key: StagedSubstateStoreKey) {
         match key {
             StagedSubstateStoreKey::RootStoreKey => {
                 self.root_accumulator_hash = *accumulator_hash;
@@ -112,7 +147,7 @@ where
         }
     }
 
-    pub fn remove_node(&mut self, key: &StagedSubstateStoreNodeKey) {
+    fn remove_node(&mut self, key: &StagedSubstateStoreNodeKey) {
         // Note: we don't have to remove anything from key_to_accumulator_hash.
         // Since it's a SecondaryMap, it's guaranteed to be removed once the key
         // is removed from the "primary" SlotMap.

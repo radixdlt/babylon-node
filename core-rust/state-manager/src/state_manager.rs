@@ -64,7 +64,6 @@
 
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::query::*;
-use crate::staging::stage_tree::{StagedSubstateStoreKey, StagedSubstateStoreManager};
 use crate::staging::ExecutionCache;
 use crate::store::traits::*;
 use crate::transaction::{
@@ -116,8 +115,7 @@ pub struct StateManagerLoggingConfig {
 pub struct StateManager<S: ReadableSubstateStore> {
     pub mempool: SimpleMempool,
     pub network: NetworkDefinition,
-    pub staged_store: StagedSubstateStoreManager<S>,
-    execution_cache: ExecutionCache<AccumulatorHash>,
+    execution_cache: ExecutionCache<S>,
     pub user_transaction_validator: UserTransactionValidator,
     pub ledger_transaction_validator: LedgerTransactionValidator,
     pub pending_transaction_result_cache: PendingTransactionResultCache,
@@ -159,8 +157,7 @@ where
         StateManager {
             network,
             mempool,
-            staged_store: StagedSubstateStoreManager::new(store),
-            execution_cache: ExecutionCache::new(accumulator_hash),
+            execution_cache: ExecutionCache::new(store, accumulator_hash),
             user_transaction_validator,
             ledger_transaction_validator: committed_transaction_validator,
             execution_config: ExecutionConfig {
@@ -187,6 +184,10 @@ impl<S> StateManager<S>
 where
     S: ReadableSubstateStore,
 {
+    pub fn store(&self) -> &S {
+        &self.execution_cache.staged_store_manager.root
+    }
+
     pub fn preview(&self, preview_request: PreviewRequest) -> Result<PreviewResult, PreviewError> {
         let notary = preview_request.notary_public_key.unwrap_or_else(|| {
             PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PrivateKey::from_u64(2).unwrap().public_key())
@@ -217,7 +218,7 @@ where
         };
 
         execute_preview(
-            &self.staged_store.root,
+            self.store(),
             &self.scrypto_interpreter,
             &self.intent_hash_manager,
             &self.network,
@@ -232,39 +233,18 @@ where
         payload_hash: &LedgerPayloadHash,
     ) -> (AccumulatorHash, &TransactionReceipt) {
         let new_accumulator_hash = parent_accumulator_hash.accumulate(payload_hash);
-
-        match self.execution_cache.get(&new_accumulator_hash) {
-            None => {
-                let parent_key = self
-                    .execution_cache
-                    .get(parent_accumulator_hash)
-                    // This should be unreachable code. Failing to meet this indicates either one of:
-                    // 1. Improper usage inside StateManager or
-                    // 2. Incorrect pregenesis hash
-                    .expect("Parent AccumulatorHash not found in cache. This should not happen!");
-
-                let receipt = execute_transaction(
-                    &self.staged_store.get_store(parent_key),
-                    &self.scrypto_interpreter,
-                    &self.fee_reserve_config,
-                    &self.execution_config,
-                    executable,
-                );
-
-                let new_key = self.staged_store.new_child_node(parent_key, receipt);
-
-                self.execution_cache.set(&new_accumulator_hash, new_key);
-
-                (
-                    new_accumulator_hash,
-                    self.staged_store.get_receipt(&new_key).unwrap(),
-                )
-            }
-            Some(new_key) => (
-                new_accumulator_hash,
-                self.staged_store.get_receipt(&new_key).unwrap(),
-            ),
-        }
+        let receipt =
+            self.execution_cache
+                .execute(parent_accumulator_hash, &new_accumulator_hash, |store| {
+                    execute_transaction(
+                        store,
+                        &self.scrypto_interpreter,
+                        &self.fee_reserve_config,
+                        &self.execution_config,
+                        executable,
+                    )
+                });
+        (new_accumulator_hash, receipt)
     }
 }
 
@@ -308,7 +288,7 @@ where
         let start = std::time::Instant::now();
 
         let receipt = execute_transaction(
-            &self.staged_store.root,
+            self.store(),
             &self.scrypto_interpreter,
             &self.fee_reserve_config,
             &self.execution_config,
@@ -431,7 +411,7 @@ where
         let attempt = TransactionAttempt {
             rejection: new_status.as_ref().err().cloned(),
             against_state: AtState::Committed {
-                state_version: self.staged_store.root.max_state_version(),
+                state_version: self.store().max_state_version(),
             },
             timestamp: current_time,
         };
@@ -454,8 +434,7 @@ where
         payload_size: usize,
     ) -> Result<(), RejectionReason> {
         if self
-            .staged_store
-            .root
+            .store()
             .get_txn_state_version_by_identifier(&transaction.intent_hash())
             .is_some()
         {
@@ -557,7 +536,7 @@ where
 
     pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
         // This intent hash check, and current epoch should eventually live in the executor
-        let pending_transaction_base_state_version = self.staged_store.root.max_state_version();
+        let pending_transaction_base_state_version = self.store().max_state_version();
         let mut already_committed_or_prepared_intent_hashes: HashMap<
             IntentHash,
             AlreadyPreparedTransaction,
@@ -573,8 +552,7 @@ where
                 .ok()
                 .map(|validated_transaction| validated_transaction.intent_hash())
                 .and_then(|intent_hash| {
-                    self.staged_store
-                        .root
+                    self.store()
                         .get_txn_state_version_by_identifier(&intent_hash)
                         .map(|_| (intent_hash, AlreadyPreparedTransaction::Committed))
                 })
@@ -583,7 +561,7 @@ where
         already_committed_or_prepared_intent_hashes
             .extend(already_committed_proposed_payload_hashes);
 
-        let mut parent_accumulator_hash = self.staged_store.root.get_top_accumulator_hash();
+        let mut parent_accumulator_hash = self.store().get_top_accumulator_hash();
 
         for prepared in prepare_request.already_prepared_payloads {
             let parsed_transaction =
@@ -818,7 +796,11 @@ where
     S: QueryableProofStore + QueryableTransactionStore,
 {
     pub fn save_vertex_store(&'db mut self, vertex_store: Vec<u8>) {
-        let mut db_transaction = self.staged_store.root.create_db_transaction();
+        let mut db_transaction = self
+            .execution_cache
+            .staged_store_manager
+            .root
+            .create_db_transaction();
         db_transaction.save_vertex_store(vertex_store);
         db_transaction.commit();
     }
@@ -846,8 +828,7 @@ where
                 .collect::<Vec<_>>();
 
         let current_top_of_ledger = self
-            .staged_store
-            .root
+            .store()
             .get_top_of_ledger_transaction_identifiers()
             .unwrap_or_else(CommittedTransactionIdentifiers::pre_genesis);
         if current_top_of_ledger.state_version != commit_request_start_state_version {
@@ -925,18 +906,14 @@ where
             to_store.push(((*transaction).clone(), ledger_receipt, identifiers));
         }
 
-        let new_root_key = self.execution_cache.get(&parent_accumulator_hash).unwrap();
-        self.staged_store.reparent(new_root_key, &mut |key| {
-            self.execution_cache.remove_node(key);
-        });
-        self.execution_cache.set(
-            &parent_accumulator_hash,
-            StagedSubstateStoreKey::RootStoreKey,
-        );
+        self.execution_cache.progress_root(&parent_accumulator_hash);
 
         let committed_transactions_count = to_store.len();
-
-        let mut db_transaction = self.staged_store.root.create_db_transaction();
+        let mut db_transaction = self
+            .execution_cache
+            .staged_store_manager
+            .root
+            .create_db_transaction();
 
         for receipt in receipts {
             if let TransactionResult::Commit(commit) = &receipt.result {
@@ -988,7 +965,7 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
         &self,
         component_address: ComponentAddress,
     ) -> Option<HashMap<ResourceAddress, Decimal>> {
-        let mut resource_accounter = ResourceAccounter::new(&self.staged_store.root);
+        let mut resource_accounter = ResourceAccounter::new(self.store());
         resource_accounter
             .add_resources(RENodeId::Global(GlobalAddress::Component(
                 component_address,
@@ -997,6 +974,6 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
     }
 
     pub fn get_epoch(&self) -> u64 {
-        self.staged_store.root.get_epoch()
+        self.store().get_epoch()
     }
 }

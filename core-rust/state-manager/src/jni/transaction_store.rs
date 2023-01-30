@@ -109,13 +109,11 @@ fn do_get_transaction_at_state_version(
     state_version: u64,
 ) -> Option<ExecutedTransaction> {
     let committed_transaction = state_manager
-        .staged_store
-        .root
+        .store()
         .get_committed_transaction(state_version)?;
 
     let committed_transaction_receipt = state_manager
-        .staged_store
-        .root
+        .store()
         .get_committed_transaction_receipt(state_version)?;
 
     let ledger_receipt_bytes = scrypto_encode(&committed_transaction_receipt).unwrap();
@@ -154,7 +152,7 @@ fn do_get_txns_and_proof(
         max_payload_size_in_bytes,
     ): (u64, u32, u32),
 ) -> Option<(Vec<Vec<u8>>, Vec<u8>)> {
-    state_manager.staged_store.root.get_txns_and_proof(
+    state_manager.store().get_txns_and_proof(
         start_state_version_inclusive,
         max_number_of_txns_if_more_than_one_proof,
         max_payload_size_in_bytes,
@@ -173,10 +171,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 
 #[tracing::instrument(skip_all)]
 fn do_get_epoch_proof(state_manager: &ActualStateManager, state_version: u64) -> Option<Vec<u8>> {
-    state_manager
-        .staged_store
-        .root
-        .get_epoch_proof(state_version)
+    state_manager.store().get_epoch_proof(state_version)
 }
 
 #[no_mangle]
@@ -191,7 +186,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 
 #[tracing::instrument(skip_all)]
 fn do_get_last_proof(state_manager: &ActualStateManager, _args: ()) -> Option<Vec<u8>> {
-    state_manager.staged_store.root.get_last_proof()
+    state_manager.store().get_last_proof()
 }
 
 pub fn export_extern_functions() {}
