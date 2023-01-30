@@ -124,33 +124,23 @@ pub enum StagedSubstateStoreKey {
     InternalNodeStoreKey(StagedSubstateStoreNodeKey),
 }
 
-/// Nodes form a tree towards the [`parent_key`]. If it is of type
-/// StagedSubstateStoreKey::RootStoreKey than the parent is the root store
-/// living in the StagedSubstateStoreManager.
-/// [`parent_key`] and [`children_keys`] are needed in order to traverse
-/// the tree.
+/// [`children_keys`] are needed in order to traverse the tree.
 /// [`receipt`] applied to the parent's store, results in this node store.
 /// We need to keep the [`receipt`] to both recompute the stores when doing
 /// the data reconstruction/"garbage collection" but also to retrieve it
 /// when caching.
 pub struct StagedSubstateStoreNode {
-    parent_key: StagedSubstateStoreKey,
     children_keys: Vec<StagedSubstateStoreNodeKey>,
     receipt: TransactionReceipt,
     store: ImmutableStore,
 }
 
 impl StagedSubstateStoreNode {
-    fn new(
-        parent_key: StagedSubstateStoreKey,
-        receipt: TransactionReceipt,
-        mut store: ImmutableStore,
-    ) -> Self {
+    fn new(receipt: TransactionReceipt, mut store: ImmutableStore) -> Self {
         if let TransactionResult::Commit(commit) = &receipt.result {
             commit.state_updates.commit(&mut store);
         }
         StagedSubstateStoreNode {
-            parent_key,
             children_keys: Vec::new(),
             receipt,
             store,
@@ -193,7 +183,7 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
         &mut self,
         parent_key: StagedSubstateStoreKey,
         receipt: TransactionReceipt,
-    ) -> StagedSubstateStoreKey {
+    ) -> StagedSubstateStoreNodeKey {
         let store = match parent_key {
             StagedSubstateStoreKey::RootStoreKey => ImmutableStore::new(),
             StagedSubstateStoreKey::InternalNodeStoreKey(parent_key) => {
@@ -202,7 +192,7 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
         };
 
         // Build new node by applying the receipt to the parent store
-        let new_node = StagedSubstateStoreNode::new(parent_key, receipt, store);
+        let new_node = StagedSubstateStoreNode::new(receipt, store);
 
         // Update the `total_weight` of the tree
         self.total_weight += new_node.weight();
@@ -216,25 +206,15 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
                 parent_node.children_keys.push(new_node_key);
             }
         }
-        StagedSubstateStoreKey::InternalNodeStoreKey(new_node_key)
+        new_node_key
     }
 
     pub fn get_store(&self, key: StagedSubstateStoreKey) -> StagedSubstateStore<S> {
         StagedSubstateStore { manager: self, key }
     }
 
-    pub fn get_receipt(&self, key: &StagedSubstateStoreKey) -> Option<&TransactionReceipt> {
-        match self.get_node(key) {
-            None => None,
-            Some(node) => Some(&node.receipt),
-        }
-    }
-
-    pub fn get_node(&self, key: &StagedSubstateStoreKey) -> Option<&StagedSubstateStoreNode> {
-        match key {
-            StagedSubstateStoreKey::RootStoreKey => None,
-            StagedSubstateStoreKey::InternalNodeStoreKey(key) => self.nodes.get(*key),
-        }
+    pub fn get_receipt(&self, key: &StagedSubstateStoreNodeKey) -> &TransactionReceipt {
+        &self.nodes.get(*key).unwrap().receipt
     }
 
     fn recompute_data_recursive(
@@ -275,12 +255,14 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
         total_weight: &mut usize,
         callback: &mut CB,
         node_key: &StagedSubstateStoreNodeKey,
-    ) where
+    ) -> StagedSubstateStoreNode
+    where
         CB: FnMut(&StagedSubstateStoreNodeKey),
     {
-        *total_weight -= nodes.get(*node_key).unwrap().weight();
-        nodes.remove(*node_key);
+        let removed = nodes.remove(*node_key).unwrap();
+        *total_weight -= removed.weight();
         callback(node_key);
+        removed
     }
 
     /// Recursively deletes all nodes that are not in new_root_key subtree and returns the
@@ -357,20 +339,13 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
                     );
                 }
 
-                let new_root = self.nodes.get(new_root_key).unwrap();
-                // Reparent to new_root node and delete it
-                self.children_keys = new_root.children_keys.clone();
-                for key in self.children_keys.iter() {
-                    let node = self.nodes.get_mut(*key).unwrap();
-                    node.parent_key = StagedSubstateStoreKey::RootStoreKey;
-                }
-
-                Self::remove_node(
+                let new_root = Self::remove_node(
                     &mut self.nodes,
                     &mut self.total_weight,
                     callback,
                     &new_root_key,
                 );
+                self.children_keys = new_root.children_keys;
 
                 // If the number of state changes that overlap with the self.root (dead_weight) store is greater
                 // than the number of state changes applied on top of it (total_weight), we recalculate the
@@ -587,7 +562,7 @@ mod tests {
                 child_node[node_data.parent_id],
                 build_transaction_receipt_from_state_diff(state_diff.clone()),
             );
-            child_node.push(new_child_node);
+            child_node.push(StagedSubstateStoreKey::InternalNodeStoreKey(new_child_node));
 
             let mut expected_node_state = expected_node_states[node_data.parent_id].clone();
             expected_node_state.extend(up_substates);
@@ -638,12 +613,5 @@ mod tests {
         assert_eq!(manager.total_weight, expected_total_weight);
         assert_eq!(manager.dead_weight, 0);
         assert_eq!(manager.nodes.len(), 3);
-
-        let node = manager.get_node(&child_node[6]).expect("Should exist");
-        assert_eq!(node.parent_key, StagedSubstateStoreKey::RootStoreKey);
-        let node = manager.get_node(&child_node[9]).expect("Should exist");
-        assert_eq!(node.parent_key, child_node[6]);
-        let node = manager.get_node(&child_node[10]).expect("Should exist");
-        assert_eq!(node.parent_key, child_node[9]);
     }
 }

@@ -93,57 +93,42 @@ impl<S: ReadableSubstateStore> ExecutionCache<S> {
         new_hash: &AccumulatorHash,
         transaction: T,
     ) -> &TransactionReceipt {
-        match self.get_existing_substore_key(new_hash) {
-            Some(new_key) => self.staged_store_manager.get_receipt(&new_key).unwrap(),
+        match self.accumulator_hash_to_key.get(new_hash) {
+            Some(new_key) => self.staged_store_manager.get_receipt(new_key),
             None => {
-                let parent_key = self.get_existing_substore_key(parent_hash).unwrap();
+                let parent_key = self.get_existing_substore_key(parent_hash);
                 let receipt = transaction(&self.staged_store_manager.get_store(parent_key));
                 let new_key = self
                     .staged_store_manager
                     .new_child_node(parent_key, receipt);
-                self.set(new_hash, new_key);
-                self.staged_store_manager.get_receipt(&new_key).unwrap()
+                self.key_to_accumulator_hash.insert(new_key, *new_hash);
+                self.accumulator_hash_to_key.insert(*new_hash, new_key);
+                self.staged_store_manager.get_receipt(&new_key)
             }
         }
     }
 
     pub fn progress_root(&mut self, new_root_hash: &AccumulatorHash) {
-        let new_root_key = self.get_existing_substore_key(new_root_hash).unwrap();
+        let new_root_key = self.get_existing_substore_key(new_root_hash);
         let mut removed_keys = Vec::new();
         self.staged_store_manager
             .reparent(new_root_key, &mut |key| removed_keys.push(*key));
         for removed_key in removed_keys {
             self.remove_node(&removed_key);
         }
-        self.set(new_root_hash, StagedSubstateStoreKey::RootStoreKey);
+        self.root_accumulator_hash = *new_root_hash;
     }
 
     fn get_existing_substore_key(
         &self,
         accumulator_hash: &AccumulatorHash,
-    ) -> Option<StagedSubstateStoreKey> {
-        match self.accumulator_hash_to_key.get(accumulator_hash) {
-            None => {
-                if *accumulator_hash == self.root_accumulator_hash {
-                    return Some(StagedSubstateStoreKey::RootStoreKey);
-                }
-                None
-            }
-            Some(node_key) => Some(StagedSubstateStoreKey::InternalNodeStoreKey(*node_key)),
-        }
-    }
-
-    fn set(&mut self, accumulator_hash: &AccumulatorHash, key: StagedSubstateStoreKey) {
-        match key {
-            StagedSubstateStoreKey::RootStoreKey => {
-                self.root_accumulator_hash = *accumulator_hash;
-            }
-            StagedSubstateStoreKey::InternalNodeStoreKey(node_key) => {
-                self.key_to_accumulator_hash
-                    .insert(node_key, *accumulator_hash);
-                self.accumulator_hash_to_key
-                    .insert(*accumulator_hash, node_key);
-            }
+    ) -> StagedSubstateStoreKey {
+        if *accumulator_hash == self.root_accumulator_hash {
+            StagedSubstateStoreKey::RootStoreKey
+        } else {
+            StagedSubstateStoreKey::InternalNodeStoreKey(
+                *self.accumulator_hash_to_key.get(accumulator_hash).unwrap(),
+            )
         }
     }
 
