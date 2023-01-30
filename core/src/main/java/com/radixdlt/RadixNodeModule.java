@@ -119,7 +119,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
@@ -136,10 +135,14 @@ public final class RadixNodeModule extends AbstractModule {
   private static final String DEFAULT_PROMETHEUS_API_BIND_ADDRESS = "127.0.0.1";
 
   // XRD allocation for testnets
-  private static final Set<Network> XRD_ALLOCATION_NETWORKS = Set.of(Network.NEBUNET, Network.HAMMUNET);
-  private static final Decimal XRD_ALLOCATION_AMOUNT = Decimal.of(700_000_000_000L); // 70% XRD_MAX_SUPPLY
+  private static final Set<Network> XRD_ALLOCATION_NETWORKS =
+      Set.of(Network.NEBUNET, Network.HAMMUNET);
+  private static final Decimal XRD_ALLOCATION_AMOUNT =
+      Decimal.of(700_000_000_000L); // 70% XRD_MAX_SUPPLY
   private static final ECDSASecp256k1PublicKey XRD_ALLOCATION_ACCOUNT_PUBLIC_KEY =
-    ECDSASecp256k1PublicKey.tryFromHex("026f08db98ef1d0231eb15580da9123db8e25aa1747c8c32e5fd2ec47b8db73d5c").unwrap();
+      ECDSASecp256k1PublicKey.tryFromHex(
+              "026f08db98ef1d0231eb15580da9123db8e25aa1747c8c32e5fd2ec47b8db73d5c")
+          .unwrap();
 
   private static final Logger log = LogManager.getLogger();
 
@@ -159,8 +162,12 @@ public final class RadixNodeModule extends AbstractModule {
     if (this.networkId <= 0) {
       throw new IllegalStateException("Illegal networkId " + networkId);
     }
-    final var network = Network.ofId(this.networkId)
-      .orElseThrow(() -> new IllegalStateException("NetworkId " + networkId + " does not match any known networks"));
+    final var network =
+        Network.ofId(this.networkId)
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "NetworkId " + networkId + " does not match any known networks"));
 
     bindConstant().annotatedWith(NetworkId.class).to(networkId);
 
@@ -266,9 +273,10 @@ public final class RadixNodeModule extends AbstractModule {
 
     initialVset.forEach(k -> validatorSet.put(k, Tuple.tuple(Decimal.of(1), stakingAccount)));
 
-    final Map<ECDSASecp256k1PublicKey, Decimal> xrdAllocations = XRD_ALLOCATION_NETWORKS.contains(network)
-      ? Map.of(XRD_ALLOCATION_ACCOUNT_PUBLIC_KEY, XRD_ALLOCATION_AMOUNT)
-      : Map.of();
+    final Map<ECDSASecp256k1PublicKey, Decimal> xrdAllocations =
+        XRD_ALLOCATION_NETWORKS.contains(network)
+            ? Map.of(XRD_ALLOCATION_ACCOUNT_PUBLIC_KEY, XRD_ALLOCATION_AMOUNT)
+            : Map.of();
 
     log.info("Genesis XRD allocations: {}", xrdAllocations.isEmpty() ? "(empty)" : "");
     xrdAllocations.forEach((k, v) -> log.info("{}: {}", k, v));
