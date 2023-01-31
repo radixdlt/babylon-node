@@ -62,23 +62,85 @@
  * permissions under this License.
  */
 
-extern crate core;
+use super::stage_tree::{StagedSubstateStoreKey, StagedSubstateStoreNodeKey};
+use crate::staging::stage_tree::{StagedSubstateStore, StagedSubstateStoreManager};
+use crate::AccumulatorHash;
+use radix_engine::ledger::ReadableSubstateStore;
+use radix_engine::transaction::TransactionReceipt;
+use sbor::rust::collections::HashMap;
+use slotmap::SecondaryMap;
 
-pub mod jni;
-pub mod mempool;
-mod metrics;
-pub mod query;
-mod receipt;
-mod result;
-mod staging;
-mod state_manager;
-pub mod store;
-pub mod transaction;
-mod types;
+pub struct ExecutionCache<S: ReadableSubstateStore> {
+    pub staged_store_manager: StagedSubstateStoreManager<S>,
+    root_accumulator_hash: AccumulatorHash,
+    accumulator_hash_to_key: HashMap<AccumulatorHash, StagedSubstateStoreNodeKey>,
+    key_to_accumulator_hash: SecondaryMap<StagedSubstateStoreNodeKey, AccumulatorHash>,
+}
 
-pub use crate::mempool::*;
-pub use crate::metrics::*;
-pub use crate::pending_transaction_result_cache::*;
-pub use crate::receipt::*;
-pub use crate::state_manager::*;
-pub use crate::types::*;
+impl<S: ReadableSubstateStore> ExecutionCache<S> {
+    pub fn new(root_store: S, root_accumulator_hash: AccumulatorHash) -> Self {
+        ExecutionCache {
+            staged_store_manager: StagedSubstateStoreManager::new(root_store),
+            root_accumulator_hash,
+            accumulator_hash_to_key: HashMap::new(),
+            key_to_accumulator_hash: SecondaryMap::new(),
+        }
+    }
+
+    pub fn execute<T: FnOnce(&StagedSubstateStore<S>) -> TransactionReceipt>(
+        &mut self,
+        parent_hash: &AccumulatorHash,
+        new_hash: &AccumulatorHash,
+        transaction: T,
+    ) -> &TransactionReceipt {
+        match self.accumulator_hash_to_key.get(new_hash) {
+            Some(new_key) => self.staged_store_manager.get_receipt(new_key),
+            None => {
+                let parent_key = self.get_existing_substore_key(parent_hash);
+                let receipt = transaction(&self.staged_store_manager.get_store(parent_key));
+                let new_key = self
+                    .staged_store_manager
+                    .new_child_node(parent_key, receipt);
+                self.key_to_accumulator_hash.insert(new_key, *new_hash);
+                self.accumulator_hash_to_key.insert(*new_hash, new_key);
+                self.staged_store_manager.get_receipt(&new_key)
+            }
+        }
+    }
+
+    pub fn progress_root(&mut self, new_root_hash: &AccumulatorHash) {
+        let new_root_key = self.get_existing_substore_key(new_root_hash);
+        let mut removed_keys = Vec::new();
+        self.staged_store_manager
+            .reparent(new_root_key, &mut |key| removed_keys.push(*key));
+        for removed_key in removed_keys {
+            self.remove_node(&removed_key);
+        }
+        self.root_accumulator_hash = *new_root_hash;
+    }
+
+    fn get_existing_substore_key(
+        &self,
+        accumulator_hash: &AccumulatorHash,
+    ) -> StagedSubstateStoreKey {
+        if *accumulator_hash == self.root_accumulator_hash {
+            StagedSubstateStoreKey::RootStoreKey
+        } else {
+            StagedSubstateStoreKey::InternalNodeStoreKey(
+                *self.accumulator_hash_to_key.get(accumulator_hash).unwrap(),
+            )
+        }
+    }
+
+    fn remove_node(&mut self, key: &StagedSubstateStoreNodeKey) {
+        // Note: we don't have to remove anything from key_to_accumulator_hash.
+        // Since it's a SecondaryMap, it's guaranteed to be removed once the key
+        // is removed from the "primary" SlotMap.
+        match self.key_to_accumulator_hash.get(*key) {
+            None => {}
+            Some(accumulator_hash) => {
+                self.accumulator_hash_to_key.remove(accumulator_hash);
+            }
+        };
+    }
+}
