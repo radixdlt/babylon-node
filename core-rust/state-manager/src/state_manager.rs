@@ -490,55 +490,40 @@ where
         max_num_txns: u64,
         max_payload_size_bytes: u64,
     ) -> Vec<PendingTransaction> {
-        let mut mempool_txns = Vec::from_iter(self.mempool.get_transactions().into_values());
-        mempool_txns.shuffle(&mut thread_rng());
+        let (remove, mut keep): (Vec<_>, _) = {
+            let mempool_txns: Vec<_> = self
+                .mempool
+                .transactions()
+                .values()
+                .map(|x| x.transaction.clone())
+                .collect();
 
-        let mut txns_to_return = Vec::new();
-        let mut payload_size_so_far = 0u64;
-
-        // We (partially) cleanup the mempool on the occasion of getting the relay txns
-        // TODO: move this to a separate job
-        let mut txns_to_remove = Vec::new();
-
-        let mut txns_iter = mempool_txns.into_iter();
-        let mut next_opt = txns_iter.next();
-        while next_opt.is_some() && (txns_to_return.len() as u64) < max_num_txns {
-            let next = next_opt.unwrap();
-
-            let (record, was_cached) =
-                self.check_for_rejection_with_caching(&next.transaction.payload);
-            if !was_cached && record.latest_attempt.rejection.is_some() {
-                // Mark the transaction to be removed from the mempool
-                // (see the comment above about moving this to a separate job)
-                txns_to_remove.push((next.transaction.intent_hash, next.transaction.payload_hash));
-            } else {
-                // Check the payload size limit
-                payload_size_so_far += next.transaction.payload_size;
-                if payload_size_so_far > max_payload_size_bytes {
-                    break;
-                }
-
-                // Add the transaction to response
-                txns_to_return.push(next.transaction)
-            }
-
-            next_opt = txns_iter.next();
-        }
+            // We (partially) cleanup the mempool on the occasion of getting the relay txns
+            mempool_txns.into_iter().partition(|t| {
+                let (record, was_cached) = self.check_for_rejection_with_caching(&t.payload);
+                !was_cached && record.latest_attempt.rejection.is_some()
+            })
+        };
 
         // See the comment above about moving this to a separate job
-        for txn_to_remove in txns_to_remove {
-            if self
-                .mempool
-                .remove_transaction(&txn_to_remove.0, &txn_to_remove.1)
-                .is_some()
-            {
-                self.metrics
-                    .mempool_current_transactions
-                    .set(self.mempool.get_count() as i64);
-            }
+        for txn_to_remove in remove {
+            self.mempool
+                .remove_transaction(&txn_to_remove.intent_hash, &txn_to_remove.payload_hash);
         }
+        self.metrics
+            .mempool_current_transactions
+            .set(self.mempool.get_count() as i64);
 
-        txns_to_return
+        keep.shuffle(&mut thread_rng());
+        let mut tx_size = 0;
+        keep.into_iter()
+            .take(max_num_txns as usize)
+            // Check the payload size limit
+            .take_while(|t| {
+                tx_size += t.payload_size;
+                tx_size <= max_payload_size_bytes
+            })
+            .collect()
     }
 
     // TODO: Update to prepare_system_transaction when we start to support forking
