@@ -207,8 +207,8 @@ impl SimpleMempool {
             .collect()
     }
 
-    pub fn get_transactions(&self) -> HashMap<UserPayloadHash, MempoolData> {
-        self.data.clone()
+    pub fn transactions(&self) -> &HashMap<UserPayloadHash, MempoolData> {
+        &self.data
     }
 
     pub fn remove_transaction(
