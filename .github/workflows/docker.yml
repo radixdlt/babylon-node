@@ -114,7 +114,7 @@ jobs:
             Docker tags
             ${{ needs.build_deb.outputs.tags }}
           comment_tag: dockerTags
-        if: github.event_name == 'pull_request'
+        if: github.event_name != 'pull_request'
 
 # TEMPORARILY REMOVE EPHEMERAL TESTS
 # => Until we can change them to only run the "node" tests and not the transaction tests
