@@ -163,15 +163,13 @@ public final class REv2TestTransactions {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var faucetAddress =
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
-    final var epochManagerComponentAddress =
-        addressing.encodeSystemAddress(ScryptoConstants.EPOCH_MANAGER_COMPONENT_ADDRESS);
 
     return String.format(
         """
                             CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
-                            CALL_METHOD ComponentAddress("%s") "create_validator" EcdsaSecp256k1PublicKey("%s");
+                            CREATE_VALIDATOR EcdsaSecp256k1PublicKey("%s");
                             """,
-        faucetAddress, epochManagerComponentAddress, key.toHex());
+        faucetAddress, key.toHex());
   }
 
   public static String constructRegisterValidatorManifest(
@@ -179,7 +177,7 @@ public final class REv2TestTransactions {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var faucetAddress =
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
-    final var componentAddress = addressing.encodeSystemAddress(validatorAddress);
+    final var componentAddress = addressing.encodeValidatorAddress(validatorAddress);
 
     return String.format(
         """
@@ -194,7 +192,7 @@ public final class REv2TestTransactions {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var faucetAddress =
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
-    final var componentAddress = addressing.encodeSystemAddress(validatorAddress);
+    final var componentAddress = addressing.encodeValidatorAddress(validatorAddress);
 
     return String.format(
         """
@@ -210,7 +208,7 @@ public final class REv2TestTransactions {
     final var faucetAddress =
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
     final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
-    final var systemAddress = addressing.encodeSystemAddress(validatorAddress);
+    final var validatorHrpAddress = addressing.encodeValidatorAddress(validatorAddress);
     final var toAccount = Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
     final var toAccountAddress = addressing.encodeAccountAddress(toAccount);
 
@@ -222,7 +220,7 @@ public final class REv2TestTransactions {
                                 CALL_METHOD ComponentAddress("%s") "stake" Bucket("xrd");
                                 CALL_METHOD ComponentAddress("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
                                 """,
-        faucetAddress, faucetAddress, xrdAddress, systemAddress, toAccountAddress);
+        faucetAddress, faucetAddress, xrdAddress, validatorHrpAddress, toAccountAddress);
   }
 
   public static String constructUnstakeValidatorManifest(
@@ -232,7 +230,7 @@ public final class REv2TestTransactions {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var faucetAddress =
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
-    final var systemAddress = addressing.encodeSystemAddress(validatorAddress);
+    final var validatorHrpAddress = addressing.encodeValidatorAddress(validatorAddress);
     final var account = Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
     final var accountAddress = addressing.encodeAccountAddress(account);
     final var lpAddress = addressing.encodeResourceAddress(lpTokenAddress);
@@ -245,7 +243,7 @@ public final class REv2TestTransactions {
                                 CALL_METHOD ComponentAddress("%s") "unstake" Bucket("lp_token");
                                 CALL_METHOD ComponentAddress("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
                                 """,
-        faucetAddress, accountAddress, lpAddress, lpAddress, systemAddress, accountAddress);
+        faucetAddress, accountAddress, lpAddress, lpAddress, validatorHrpAddress, accountAddress);
   }
 
   public static String constructClaimXrdManifest(
@@ -257,7 +255,7 @@ public final class REv2TestTransactions {
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
     final var unstakeResourceAddress = addressing.encodeResourceAddress(unstakeResource);
     final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
-    final var systemAddress = addressing.encodeSystemAddress(validatorAddress);
+    final var validatorHrpAddress = addressing.encodeValidatorAddress(validatorAddress);
     final var account = Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
     final var accountAddress = addressing.encodeAccountAddress(account);
 
@@ -274,7 +272,7 @@ public final class REv2TestTransactions {
         accountAddress,
         unstakeResourceAddress,
         unstakeResourceAddress,
-        systemAddress,
+        validatorHrpAddress,
         xrdAddress,
         accountAddress);
   }

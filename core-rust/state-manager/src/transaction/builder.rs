@@ -84,12 +84,14 @@ use transaction::model::{
 
 pub fn create_genesis_ledger_transaction_bytes(
     validator_set_and_stake_owners: BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
+    account_xrd_allocations: BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
     initial_epoch: u64,
     rounds_per_epoch: u64,
     num_unstake_epochs: u64,
 ) -> Vec<u8> {
     let genesis = create_genesis(
         validator_set_and_stake_owners,
+        account_xrd_allocations,
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
