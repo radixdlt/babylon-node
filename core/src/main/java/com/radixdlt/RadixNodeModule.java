@@ -206,7 +206,7 @@ public final class RadixNodeModule extends AbstractModule {
     } else if (validatorAddress != null) {
       OptionalBinder.newOptionalBinder(binder(), Key.get(ComponentAddress.class, Self.class))
           .setBinding()
-          .toInstance(addressing.decodeSystemAddress(validatorAddress));
+          .toInstance(addressing.decodeValidatorAddress(validatorAddress));
       install(new BFTValidatorIdModule());
     } else if (useGenesis == null || Boolean.parseBoolean(useGenesis)) {
       install(new BFTValidatorIdFromGenesisModule());

@@ -84,8 +84,7 @@ public final class REv2LargeTransactionGenerator
   public RawNotarizedTransaction nextTransaction() {
     final var notary = PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
 
-    // Somewhere from 100kb to just over 23MB
-    var size = (int) (Math.random() * 23 * 1024 * 1024) + 100 * 1024;
+    var size = (int) (Math.random() * 23 * 1024 * 512) + 100 * 1024;
     var intentBytes =
         REv2TestTransactions.constructLargeValidTransactionIntent(
             networkDefinition, 0, 1, notary.getPublicKey().toPublicKey(), size);

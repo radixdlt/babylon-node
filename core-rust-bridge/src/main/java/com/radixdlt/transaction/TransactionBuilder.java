@@ -110,6 +110,7 @@ public final class TransactionBuilder {
 
   public static RawLedgerTransaction createGenesis(
       ECDSASecp256k1PublicKey validator,
+      Map<ECDSASecp256k1PublicKey, Decimal> accountXrdAllocations,
       Decimal initialStake,
       UInt64 roundsPerEpoch,
       UInt64 numUnstakeEpochs) {
@@ -118,7 +119,7 @@ public final class TransactionBuilder {
         createGenesisFunc.call(
             tuple(
                 Map.of(validator, Tuple.tuple(initialStake, stakingAccount)),
-                Map.of(),
+                accountXrdAllocations,
                 UInt64.fromNonNegativeLong(1),
                 roundsPerEpoch,
                 numUnstakeEpochs)));

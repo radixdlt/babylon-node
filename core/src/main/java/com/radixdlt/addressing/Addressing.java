@@ -133,21 +133,15 @@ public final class Addressing {
         Bech32mCoder.decodeWithExpectedHrp(network.getAccountComponentHrp(), address));
   }
 
-  public String encodeSystemAddress(ComponentAddress systemAddress) {
+  public String encodeValidatorAddress(ComponentAddress systemAddress) {
     // TODO - checks on first byte of address
-    return Bech32mCoder.encode(network.getSystemComponentHrp(), systemAddress.value());
+    return Bech32mCoder.encode(network.getValidatorHrp(), systemAddress.value());
   }
 
-  public ComponentAddress decodeSystemAddress(String address) {
+  public ComponentAddress decodeValidatorAddress(String address) {
     // TODO - checks on first byte of address
     return ComponentAddress.create(
-        Bech32mCoder.decodeWithExpectedHrp(network.getSystemComponentHrp(), address));
-  }
-
-  public ComponentAddress decodeSystemComponentAddress(String address) {
-    // TODO - checks on first byte of address
-    return ComponentAddress.create(
-        Bech32mCoder.decodeWithExpectedHrp(network.getSystemComponentHrp(), address));
+        Bech32mCoder.decodeWithExpectedHrp(network.getValidatorHrp(), address));
   }
 
   public String encodeNodeAddress(ECDSASecp256k1PublicKey publicKey) {
