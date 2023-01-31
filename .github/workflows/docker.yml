@@ -107,6 +107,13 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ needs.build_deb.outputs.tags }}
           labels: ${{ needs.build_deb.outputs.labels }}
+      - name: Add docker tags to PR comment
+        uses: thollander/actions-comment-pull-request@632cf9ce90574d125be56b5f3405cda41a84e2fd
+        with:
+          message: | 
+            Docker tags
+            ${{ needs.build_deb.outputs.tags }}
+          comment_tag: dockerTags
 
 # TEMPORARILY REMOVE EPHEMERAL TESTS
 # => Until we can change them to only run the "node" tests and not the transaction tests
