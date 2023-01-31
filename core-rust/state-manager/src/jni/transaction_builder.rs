@@ -113,6 +113,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createGenesi
     jni_static_sbor_call(env, request_payload, do_create_genesis_ledger_transaction)
 }
 
+#[allow(clippy::type_complexity)]
 fn do_create_genesis_ledger_transaction(
     (
         validator_set_and_stake_owners,

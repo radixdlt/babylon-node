@@ -70,6 +70,7 @@ import com.google.common.base.Suppliers;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
@@ -128,6 +129,14 @@ public final class ECDSASecp256k1PublicKey {
   @JsonCreator
   public static ECDSASecp256k1PublicKey fromHex(String hex) throws PublicKeyException {
     return fromBytes(Bytes.fromHexString(hex));
+  }
+
+  public static Option<ECDSASecp256k1PublicKey> tryFromHex(String hex) {
+    try {
+      return Option.some(fromBytes(Bytes.fromHexString(hex)));
+    } catch (PublicKeyException e) {
+      return Option.empty();
+    }
   }
 
   public static Optional<ECDSASecp256k1PublicKey> recoverFrom(
