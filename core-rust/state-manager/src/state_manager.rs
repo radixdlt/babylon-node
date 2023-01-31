@@ -381,8 +381,9 @@ where
     /// Reads the transaction rejection status from the cache, else calculates it fresh, by
     /// statically validating the transaction and then attempting to run it.
     ///
-    /// The result is stored in the cache. If the transaction is freshly rejected,
-    /// it is also removed from the mempool if it exists.
+    /// The result is stored in the cache.
+    /// If the transaction is freshly rejected, the caller should perform additional cleanup,
+    /// e.g. removing the transaction from the mempool
     ///
     /// Its pending transaction record is returned, along with a boolean about whether the last attempt was cached.
     pub fn check_for_rejection_with_caching(
@@ -406,23 +407,12 @@ where
 
         // TODO: Remove and use some sort of cache to store size
         let payload_size = scrypto_encode(transaction).unwrap().len();
-        let new_status = self.check_for_rejection_uncached(transaction, payload_size);
-
-        if new_status.is_err() {
-            // If it's been rejected, let's remove it from the mempool, if it's present
-            if self
-                .mempool
-                .remove_transaction(&intent_hash, &payload_hash)
-                .is_some()
-            {
-                self.metrics
-                    .mempool_current_transactions
-                    .set(self.mempool.get_count() as i64);
-            }
-        }
+        let rejection = self
+            .check_for_rejection_uncached(transaction, payload_size)
+            .err();
 
         let attempt = TransactionAttempt {
-            rejection: new_status.as_ref().err().cloned(),
+            rejection,
             against_state: AtState::Committed {
                 state_version: self.store.max_state_version(),
             },
