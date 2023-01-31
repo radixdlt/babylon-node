@@ -116,6 +116,7 @@ import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -192,7 +193,7 @@ public final class RadixNodeModule extends AbstractModule {
     } else if (validatorAddress != null) {
       OptionalBinder.newOptionalBinder(binder(), Key.get(ComponentAddress.class, Self.class))
           .setBinding()
-          .toInstance(addressing.decodeSystemAddress(validatorAddress));
+          .toInstance(addressing.decodeValidatorAddress(validatorAddress));
       install(new BFTValidatorIdModule());
     } else if (useGenesis == null || Boolean.parseBoolean(useGenesis)) {
       install(new BFTValidatorIdFromGenesisModule());
@@ -262,6 +263,7 @@ public final class RadixNodeModule extends AbstractModule {
     var genesis =
         TransactionBuilder.createGenesis(
             validatorSet,
+            Map.of(),
             UInt64.fromNonNegativeLong(1),
             UInt64.fromNonNegativeLong(1800), // approximately 5 minutes per epoch
             UInt64.fromNonNegativeLong(1));

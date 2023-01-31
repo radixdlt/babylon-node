@@ -101,6 +101,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ExceptionHandler;
 import io.undertow.util.HeaderMap;
 import java.io.ByteArrayInputStream;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 
@@ -126,6 +127,7 @@ public abstract class SystemApiTestBase {
                             Network.INTEGRATIONTESTNET.getId(),
                             TransactionBuilder.createGenesis(
                                 TEST_KEY.getPublicKey(),
+                                Map.of(),
                                 Decimal.of(1),
                                 UInt64.fromNonNegativeLong(10),
                                 UInt64.fromNonNegativeLong(1)),

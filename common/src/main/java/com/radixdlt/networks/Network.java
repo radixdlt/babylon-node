@@ -114,7 +114,6 @@ public enum Network {
   private final String packageHrp;
   private final String normalComponentHrp;
   private final String accountComponentHrp;
-  private final String systemComponentHrp;
   private final String validatorHrp;
   private final String resourceHrp;
   private final String nodeHrp;
@@ -133,7 +132,6 @@ public enum Network {
     this.packageHrp = "package_" + hrpSuffix;
     this.normalComponentHrp = "component_" + hrpSuffix;
     this.accountComponentHrp = "account_" + hrpSuffix;
-    this.systemComponentHrp = "system_" + hrpSuffix;
     this.validatorHrp = "validator_" + hrpSuffix;
     this.resourceHrp = "resource_" + hrpSuffix;
     this.nodeHrp = "node_" + hrpSuffix;
@@ -150,10 +148,6 @@ public enum Network {
 
   public String getAccountComponentHrp() {
     return accountComponentHrp;
-  }
-
-  public String getSystemComponentHrp() {
-    return systemComponentHrp;
   }
 
   public String getValidatorHrp() {

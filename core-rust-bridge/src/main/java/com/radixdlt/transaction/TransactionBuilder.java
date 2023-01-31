@@ -93,16 +93,23 @@ public final class TransactionBuilder {
 
   public static RawLedgerTransaction createGenesis(
       Map<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>> validatorSet,
+      Map<ECDSASecp256k1PublicKey, Decimal> accountXrdAllocations,
       UInt64 initialEpoch,
       UInt64 roundsPerEpoch,
       UInt64 numUnstakeEpochs) {
     return RawLedgerTransaction.create(
         createGenesisFunc.call(
-            tuple(validatorSet, initialEpoch, roundsPerEpoch, numUnstakeEpochs)));
+            tuple(
+                validatorSet,
+                accountXrdAllocations,
+                initialEpoch,
+                roundsPerEpoch,
+                numUnstakeEpochs)));
   }
 
   public static RawLedgerTransaction createGenesis(
       ECDSASecp256k1PublicKey validator,
+      Map<ECDSASecp256k1PublicKey, Decimal> accountXrdAllocations,
       Decimal initialStake,
       UInt64 roundsPerEpoch,
       UInt64 numUnstakeEpochs) {
@@ -111,6 +118,7 @@ public final class TransactionBuilder {
         createGenesisFunc.call(
             tuple(
                 Map.of(validator, Tuple.tuple(initialStake, stakingAccount)),
+                accountXrdAllocations,
                 UInt64.fromNonNegativeLong(1),
                 roundsPerEpoch,
                 numUnstakeEpochs)));
@@ -130,6 +138,7 @@ public final class TransactionBuilder {
         createGenesisFunc.call(
             tuple(
                 validators,
+                Map.of(),
                 UInt64.fromNonNegativeLong(1),
                 roundsPerEpoch,
                 UInt64.fromNonNegativeLong(1))));
@@ -171,8 +180,9 @@ public final class TransactionBuilder {
   private static native byte[] compileManifest(byte[] payload);
 
   private static final NativeCalls.StaticFunc1<
-          Tuple.Tuple4<
+          Tuple.Tuple5<
               Map<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>>,
+              Map<ECDSASecp256k1PublicKey, Decimal>,
               UInt64,
               UInt64,
               UInt64>,

@@ -102,6 +102,7 @@ public final class RustMempoolTest {
     var genesis =
         TransactionBuilder.createGenesis(
             Map.of(),
+            Map.of(),
             UInt64.fromNonNegativeLong(1),
             UInt64.fromNonNegativeLong(10),
             UInt64.fromNonNegativeLong(1));

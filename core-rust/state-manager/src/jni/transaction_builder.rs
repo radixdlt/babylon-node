@@ -114,8 +114,15 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createGenesi
 }
 
 fn do_create_genesis_ledger_transaction(
-    (validator_set_and_stake_owners, initial_epoch, rounds_per_epoch, num_unstake_epochs): (
+    (
+        validator_set_and_stake_owners,
+        account_xrd_allocations,
+        initial_epoch,
+        rounds_per_epoch,
+        num_unstake_epochs,
+    ): (
         BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
+        BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
         u64,
         u64,
         u64,
@@ -123,6 +130,7 @@ fn do_create_genesis_ledger_transaction(
 ) -> Vec<u8> {
     create_genesis_ledger_transaction_bytes(
         validator_set_and_stake_owners,
+        account_xrd_allocations,
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
