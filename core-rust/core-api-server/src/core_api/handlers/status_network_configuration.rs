@@ -97,17 +97,17 @@ fn to_api_address_type(hrp_set: &HrpSet, entity_type: EntityType) -> models::Add
         ),
         EntityType::IdentityComponent => (
             models::address_type::Subtype::IdentityComponent,
-            models::EntityType::Component,
+            models::EntityType::Identity,
             extract_length(ComponentAddress::Identity),
         ),
         EntityType::EcdsaSecp256k1VirtualIdentityComponent => (
             models::address_type::Subtype::EcdsaSecp256k1VirtualIdentityComponent,
-            models::EntityType::Component,
+            models::EntityType::Identity,
             extract_length(ComponentAddress::EcdsaSecp256k1VirtualIdentity),
         ),
         EntityType::EddsaEd25519VirtualIdentityComponent => (
             models::address_type::Subtype::EddsaEd25519VirtualIdentityComponent,
-            models::EntityType::Component,
+            models::EntityType::Identity,
             extract_length(ComponentAddress::EddsaEd25519VirtualIdentity),
         ),
         EntityType::EpochManager => (
