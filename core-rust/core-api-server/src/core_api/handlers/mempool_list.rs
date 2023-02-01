@@ -11,8 +11,7 @@ pub(crate) async fn handle_mempool_list(
     Ok(models::MempoolListResponse {
         contents: state_manager
             .mempool
-            .list_all_hashes()
-            .into_iter()
+            .all_hashes_iter()
             .map(
                 |(intent_hash, payload_hash)| models::MempoolTransactionHashes {
                     intent_hash: to_api_intent_hash(intent_hash),
