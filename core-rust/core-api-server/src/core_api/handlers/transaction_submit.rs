@@ -27,7 +27,7 @@ pub(crate) async fn handle_transaction_submit(
     Extension(state): Extension<CoreApiState>,
     Json(request): Json<models::TransactionSubmitRequest>,
 ) -> Result<Json<models::TransactionSubmitResponse>, ResponseError<TransactionSubmitErrorDetails>> {
-    let mut state_manager = state.state_manager.write();
+    let state_manager = state.state_manager.read();
 
     assert_matching_network(&request.network, &state_manager.network)?;
 

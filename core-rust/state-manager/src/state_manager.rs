@@ -126,7 +126,7 @@ pub struct StateManager<S: ReadableSubstateStore> {
     execution_cache: ExecutionCache<S>,
     pub user_transaction_validator: UserTransactionValidator,
     pub ledger_transaction_validator: LedgerTransactionValidator,
-    pub pending_transaction_result_cache: PendingTransactionResultCache,
+    pub pending_transaction_result_cache: RwLock<PendingTransactionResultCache>,
     pub metrics: StateManagerMetrics,
     pub prometheus_registry: Registry,
     execution_config: ExecutionConfig,
@@ -182,7 +182,9 @@ where
             fee_reserve_config: FeeReserveConfig::standard(),
             intent_hash_manager: TestIntentHashManager::new(),
             logging_config: logging_config.state_manager_config,
-            pending_transaction_result_cache: PendingTransactionResultCache::new(10000, 10000),
+            pending_transaction_result_cache: RwLock::new(PendingTransactionResultCache::new(
+                10000, 10000,
+            )),
             metrics,
             prometheus_registry,
         }
@@ -322,7 +324,7 @@ where
     ///
     /// We look for cached rejections first, to avoid this heavy lifting where we can
     pub fn check_for_rejection_and_add_to_mempool(
-        &mut self,
+        &self,
         mempool_add_source: MempoolAddSource,
         unvalidated_transaction: NotarizedTransaction,
     ) -> Result<(), MempoolAddError> {
@@ -352,7 +354,7 @@ where
     ///
     /// We look for cached rejections first, to avoid this heavy lifting where we can
     fn check_for_rejection_and_add_to_mempool_internal(
-        &mut self,
+        &self,
         unvalidated_transaction: NotarizedTransaction,
     ) -> Result<(), MempoolAddError> {
         // Quick check to avoid transaction validation if it couldn't be added to the mempool anyway
@@ -385,7 +387,7 @@ where
     ///
     /// Its pending transaction record is returned, along with a boolean about whether the last attempt was cached.
     pub fn check_for_rejection_with_caching(
-        &mut self,
+        &self,
         transaction: &NotarizedTransaction,
     ) -> (PendingTransactionRecord, bool) {
         let current_time = SystemTime::now();
@@ -393,9 +395,12 @@ where
         let payload_hash = transaction.user_payload_hash();
         let invalid_from_epoch = transaction.signed_intent.intent.header.end_epoch_exclusive;
 
-        let record_option = self
-            .pending_transaction_result_cache
-            .get_pending_transaction_record(&intent_hash, &payload_hash, invalid_from_epoch);
+        let mut pending_transaction_result_cache = self.pending_transaction_result_cache.write();
+        let record_option = pending_transaction_result_cache.get_pending_transaction_record(
+            &intent_hash,
+            &payload_hash,
+            invalid_from_epoch,
+        );
 
         if let Some(record) = record_option {
             if !record.should_recalculate(current_time) {
@@ -417,12 +422,16 @@ where
             timestamp: current_time,
         };
         let invalid_from_epoch = transaction.signed_intent.intent.header.end_epoch_exclusive;
-        self.pending_transaction_result_cache
-            .track_transaction_result(intent_hash, payload_hash, invalid_from_epoch, attempt);
+        pending_transaction_result_cache.track_transaction_result(
+            intent_hash,
+            payload_hash,
+            invalid_from_epoch,
+            attempt,
+        );
 
         // Unwrap allowed as we've just put it in the cache, and unless the cache has size 0 it must be there
         (
-            self.pending_transaction_result_cache
+            pending_transaction_result_cache
                 .get_pending_transaction_record(&intent_hash, &payload_hash, invalid_from_epoch)
                 .unwrap(),
             false,
@@ -474,7 +483,7 @@ where
     }
 
     pub fn get_relay_transactions(
-        &mut self,
+        &self,
         max_num_txns: u64,
         max_payload_size_bytes: u64,
     ) -> Vec<PendingTransaction> {
@@ -794,23 +803,26 @@ where
                 .set(mempool.get_count() as i64);
         }
 
-        for (intent_hash, user_payload_hash, invalid_at_epoch, rejection_option) in
-            pending_transaction_results.into_iter()
         {
-            let attempt = TransactionAttempt {
-                rejection: rejection_option,
-                against_state: AtState::PendingPreparingVertices {
-                    base_committed_state_version: pending_transaction_base_state_version,
-                },
-                timestamp: pending_transaction_timestamp,
-            };
-            self.pending_transaction_result_cache
-                .track_transaction_result(
+            let mut pending_transaction_result_cache =
+                self.pending_transaction_result_cache.write();
+            for (intent_hash, user_payload_hash, invalid_at_epoch, rejection_option) in
+                pending_transaction_results.into_iter()
+            {
+                let attempt = TransactionAttempt {
+                    rejection: rejection_option,
+                    against_state: AtState::PendingPreparingVertices {
+                        base_committed_state_version: pending_transaction_base_state_version,
+                    },
+                    timestamp: pending_transaction_timestamp,
+                };
+                pending_transaction_result_cache.track_transaction_result(
                     intent_hash,
                     user_payload_hash,
                     invalid_at_epoch,
                     attempt,
                 );
+            }
         }
 
         PrepareResult {
@@ -988,6 +1000,7 @@ where
         }
 
         self.pending_transaction_result_cache
+            .write()
             .track_committed_transactions(
                 SystemTime::now(),
                 commit_request_start_state_version,
