@@ -110,7 +110,7 @@ public final class REv2GenesisTest {
                             UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.inMemory(),
                         StateComputerConfig.REV2ProposerConfig.mempool(
-                            0, 0, MempoolRelayConfig.of())))));
+                            0, 0, 0, MempoolRelayConfig.of())))));
   }
 
   @Test

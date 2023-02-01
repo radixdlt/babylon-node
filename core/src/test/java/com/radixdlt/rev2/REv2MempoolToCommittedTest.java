@@ -122,7 +122,7 @@ public class REv2MempoolToCommittedTest {
                             1, Decimal.of(1), this.roundsPerEpoch),
                         REv2DatabaseConfig.inMemory(),
                         StateComputerConfig.REV2ProposerConfig.mempool(
-                            1, 1, new MempoolRelayConfig(0, 100))),
+                            1, 1024 * 1024, 1, new MempoolRelayConfig(0, 100))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

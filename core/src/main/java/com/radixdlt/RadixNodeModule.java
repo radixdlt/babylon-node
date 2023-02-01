@@ -144,6 +144,12 @@ public final class RadixNodeModule extends AbstractModule {
               "026f08db98ef1d0231eb15580da9123db8e25aa1747c8c32e5fd2ec47b8db73d5c")
           .unwrap();
 
+  // Proposal constants
+  // Up to 20 txns and 5 MiB total payload size for a proposal.
+  // With a txn limit of 1 MiB, a proposal can fit at least 5 txns.
+  public static final int MAX_TRANSACTIONS_PER_PROPOSAL = 20;
+  public static final int MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE = 5 * 1024 * 1024;
+
   private static final Logger log = LogManager.getLogger();
 
   private final RuntimeProperties properties;
@@ -240,7 +246,6 @@ public final class RadixNodeModule extends AbstractModule {
     var mempoolMaxSize = properties.get("mempool.maxSize", 50);
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
     var databaseConfig = new REv2DatabaseConfig.RocksDB(databasePath);
-    var transactionsPerProposalCount = 10;
 
     String genesisTxn;
     final var genesisFileProp = properties.get("network.genesis_file");
@@ -291,7 +296,11 @@ public final class RadixNodeModule extends AbstractModule {
 
     install(
         REv2StateManagerModule.create(
-            networkId, transactionsPerProposalCount, databaseConfig, Option.some(mempoolConfig)));
+            networkId,
+            MAX_TRANSACTIONS_PER_PROPOSAL,
+            MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE,
+            databaseConfig,
+            Option.some(mempoolConfig)));
 
     // Recovery
     install(new BerkeleySafetyStoreModule(databasePath));

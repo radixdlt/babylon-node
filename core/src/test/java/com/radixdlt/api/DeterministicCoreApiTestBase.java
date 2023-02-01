@@ -134,7 +134,7 @@ public abstract class DeterministicCoreApiTestBase {
                                 1, Decimal.of(1), UInt64.fromNonNegativeLong(10000000)),
                             REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                             StateComputerConfig.REV2ProposerConfig.mempool(
-                                50, 1000, MempoolRelayConfig.of())),
+                                50, 50 * 1024 * 1024, 1000, MempoolRelayConfig.of())),
                         SyncRelayConfig.of(200, 10, 2000))));
     try {
       test.startAllNodes();

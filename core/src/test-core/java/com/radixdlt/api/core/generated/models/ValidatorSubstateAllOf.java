@@ -35,7 +35,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   ValidatorSubstateAllOf.JSON_PROPERTY_EPOCH_MANAGER_ADDRESS,
   ValidatorSubstateAllOf.JSON_PROPERTY_VALIDATOR_ADDRESS,
-  ValidatorSubstateAllOf.JSON_PROPERTY_KEY,
+  ValidatorSubstateAllOf.JSON_PROPERTY_PUBLIC_KEY,
   ValidatorSubstateAllOf.JSON_PROPERTY_STAKE_VAULT,
   ValidatorSubstateAllOf.JSON_PROPERTY_UNSTAKE_VAULT,
   ValidatorSubstateAllOf.JSON_PROPERTY_LIQUID_STAKE_UNIT_RESOURCE_ADDRESS,
@@ -50,8 +50,8 @@ public class ValidatorSubstateAllOf {
   public static final String JSON_PROPERTY_VALIDATOR_ADDRESS = "validator_address";
   private String validatorAddress;
 
-  public static final String JSON_PROPERTY_KEY = "key";
-  private EcdsaSecp256k1PublicKey key;
+  public static final String JSON_PROPERTY_PUBLIC_KEY = "public_key";
+  private EcdsaSecp256k1PublicKey publicKey;
 
   public static final String JSON_PROPERTY_STAKE_VAULT = "stake_vault";
   private EntityReference stakeVault;
@@ -123,29 +123,29 @@ public class ValidatorSubstateAllOf {
   }
 
 
-  public ValidatorSubstateAllOf key(EcdsaSecp256k1PublicKey key) {
-    this.key = key;
+  public ValidatorSubstateAllOf publicKey(EcdsaSecp256k1PublicKey publicKey) {
+    this.publicKey = publicKey;
     return this;
   }
 
    /**
-   * Get key
-   * @return key
+   * Get publicKey
+   * @return publicKey
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EcdsaSecp256k1PublicKey getKey() {
-    return key;
+  public EcdsaSecp256k1PublicKey getPublicKey() {
+    return publicKey;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKey(EcdsaSecp256k1PublicKey key) {
-    this.key = key;
+  public void setPublicKey(EcdsaSecp256k1PublicKey publicKey) {
+    this.publicKey = publicKey;
   }
 
 
@@ -293,7 +293,7 @@ public class ValidatorSubstateAllOf {
     ValidatorSubstateAllOf validatorSubstateAllOf = (ValidatorSubstateAllOf) o;
     return Objects.equals(this.epochManagerAddress, validatorSubstateAllOf.epochManagerAddress) &&
         Objects.equals(this.validatorAddress, validatorSubstateAllOf.validatorAddress) &&
-        Objects.equals(this.key, validatorSubstateAllOf.key) &&
+        Objects.equals(this.publicKey, validatorSubstateAllOf.publicKey) &&
         Objects.equals(this.stakeVault, validatorSubstateAllOf.stakeVault) &&
         Objects.equals(this.unstakeVault, validatorSubstateAllOf.unstakeVault) &&
         Objects.equals(this.liquidStakeUnitResourceAddress, validatorSubstateAllOf.liquidStakeUnitResourceAddress) &&
@@ -303,7 +303,7 @@ public class ValidatorSubstateAllOf {
 
   @Override
   public int hashCode() {
-    return Objects.hash(epochManagerAddress, validatorAddress, key, stakeVault, unstakeVault, liquidStakeUnitResourceAddress, unstakeClaimTokenResourceAddress, isRegistered);
+    return Objects.hash(epochManagerAddress, validatorAddress, publicKey, stakeVault, unstakeVault, liquidStakeUnitResourceAddress, unstakeClaimTokenResourceAddress, isRegistered);
   }
 
   @Override
@@ -312,7 +312,7 @@ public class ValidatorSubstateAllOf {
     sb.append("class ValidatorSubstateAllOf {\n");
     sb.append("    epochManagerAddress: ").append(toIndentedString(epochManagerAddress)).append("\n");
     sb.append("    validatorAddress: ").append(toIndentedString(validatorAddress)).append("\n");
-    sb.append("    key: ").append(toIndentedString(key)).append("\n");
+    sb.append("    publicKey: ").append(toIndentedString(publicKey)).append("\n");
     sb.append("    stakeVault: ").append(toIndentedString(stakeVault)).append("\n");
     sb.append("    unstakeVault: ").append(toIndentedString(unstakeVault)).append("\n");
     sb.append("    liquidStakeUnitResourceAddress: ").append(toIndentedString(liquidStakeUnitResourceAddress)).append("\n");

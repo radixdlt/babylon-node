@@ -120,7 +120,7 @@ public final class REv2ConsensusTransferTest {
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         StateComputerConfig.REV2ProposerConfig.mempool(
-                            10, 1, MempoolRelayConfig.of())))));
+                            10, 10 * 1024 * 1024, 1, MempoolRelayConfig.of())))));
   }
 
   private static RawNotarizedTransaction createNewAccountTransaction() {

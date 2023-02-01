@@ -139,8 +139,8 @@ pub enum Substate {
         /// The Bech32m-encoded human readable version of the component address
         #[serde(rename = "validator_address")]
         validator_address: String,
-        #[serde(rename = "key")]
-        key: Box<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
+        #[serde(rename = "public_key")]
+        public_key: Box<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
         #[serde(rename = "stake_vault")]
         stake_vault: Box<crate::core_api::generated::models::EntityReference>,
         #[serde(rename = "unstake_vault")]

@@ -163,28 +163,29 @@ impl<D: Delta, A: Accumulator<D>> StageTree<D, A> {
         &self.nodes.get(*key).unwrap().delta
     }
 
-    fn recompute_data_recursive(
-        nodes: &mut SlotMap<DerivedStageKey, DerivedStageNode<D, A>>,
-        node_key: DerivedStageKey,
-    ) {
-        let node = nodes.get(node_key).unwrap();
-        let parent_accumulator = node.accumulator.clone();
-        let child_keys = node.child_keys.clone();
-        for child_key in child_keys.iter() {
-            let child_node = nodes.get_mut(*child_key).unwrap();
-            child_node.accumulator = parent_accumulator.clone();
-            child_node.accumulator.accumulate(&child_node.delta);
-            Self::recompute_data_recursive(nodes, *child_key);
-        }
-    }
-
     fn recompute_data(&mut self) {
         self.dead_weight = 0;
+
+        // NOTE: check [`self.delete`] note for more details why this is implemented iteratively instead of recursively
+        let mut stack = Vec::new();
+
         for node_key in self.child_keys.iter() {
             let child_node = self.nodes.get_mut(*node_key).unwrap();
             child_node.accumulator = A::default();
             child_node.accumulator.accumulate(&child_node.delta);
-            Self::recompute_data_recursive(&mut self.nodes, *node_key);
+            stack.extend(child_node.child_keys.clone());
+        }
+
+        while let Some(node_key) = stack.pop() {
+            let node = self.nodes.get(node_key).unwrap();
+            let parent_accumulator = node.accumulator.clone();
+            let child_keys = node.child_keys.clone();
+            for child_key in child_keys.iter() {
+                let child_node = self.nodes.get_mut(*child_key).unwrap();
+                child_node.accumulator = parent_accumulator.clone();
+                child_node.accumulator.accumulate(&child_node.delta);
+                stack.push(*child_key);
+            }
         }
     }
 
@@ -200,38 +201,36 @@ impl<D: Delta, A: Accumulator<D>> StageTree<D, A> {
         removed
     }
 
-    /// Recursively deletes all nodes that are not in new_root_key subtree and returns the
-    /// sum of weights from current root to new_root_key. Updates to ImmutableStore on this
+    /// Iteratively deletes all nodes that are not in new_root_key subtree and returns the
+    /// sum of weights from current root to new_root_key. Updates to [`Accumulator`]s on this
     /// path will persist even after deleting the nodes.
-    fn delete_recursive<CB: FnMut(&DerivedStageKey)>(
+    fn delete<CB: FnMut(&DerivedStageKey)>(
         nodes: &mut SlotMap<DerivedStageKey, DerivedStageNode<D, A>>,
         total_weight: &mut usize,
         new_root_key: &DerivedStageKey,
         callback: &mut CB,
         node_key: &DerivedStageKey,
-        root_path_weight_sum: usize,
     ) -> usize {
-        let node = nodes.get(*node_key).unwrap();
-        let root_path_weight_sum = root_path_weight_sum + node.delta.weight();
-        if *node_key == *new_root_key {
-            return root_path_weight_sum;
-        }
+        // WARNING: This method was originally written recursively, however this caused a SEGFAULT due to stack overflow.
+        // The tree has a depth equal to the transaction depth of staging, which is normally quite small during consensus, but 
+        // is much larger during ledger sync. We were getting a SEGFAULT after depths of roughly 800 transactions, presumably
+        // because a large amount of data was placed on the stack in each stack frame somehow by rustc.
+        let mut stack = Vec::new();
+        stack.push((nodes.get(*node_key).unwrap().delta.weight(), *node_key));
 
         let mut dead_weight = 0;
-        let child_keys = node.child_keys.clone();
-        for child_key in child_keys {
-            // Instead of doing max([0, 0, 0, max, 0,.. 0]) we can do sum()
-            dead_weight += Self::delete_recursive(
-                nodes,
-                total_weight,
-                new_root_key,
-                callback,
-                &child_key,
-                root_path_weight_sum,
-            );
+        while let Some((weight, node_key)) = stack.pop() {
+            if node_key == *new_root_key {
+                dead_weight = weight;
+                continue;
+            } else {
+                let child_keys = nodes.get(node_key).unwrap().child_keys.clone();
+                for child_key in child_keys.iter() {
+                    stack.push((weight + nodes.get(*child_key).unwrap().delta.weight(), *child_key));
+                }
+            }
+            Self::remove_node(nodes, total_weight, callback, &node_key);
         }
-
-        Self::remove_node(nodes, total_weight, callback, node_key);
 
         dead_weight
     }
@@ -263,13 +262,12 @@ impl<D: Delta, A: Accumulator<D>> StageTree<D, A> {
             StageKey::Derived(new_root_key) => {
                 // Delete all nodes that are not in new_root_key subtree
                 for node_key in self.child_keys.iter() {
-                    self.dead_weight += Self::delete_recursive(
+                    self.dead_weight += Self::delete(
                         &mut self.nodes,
                         &mut self.total_weight,
                         &new_root_key,
                         callback,
                         node_key,
-                        0,
                     );
                 }
 
