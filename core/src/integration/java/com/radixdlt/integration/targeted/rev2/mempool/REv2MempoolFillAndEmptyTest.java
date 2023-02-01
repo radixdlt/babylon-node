@@ -119,7 +119,7 @@ public final class REv2MempoolFillAndEmptyTest {
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(100000)),
                         REv2DatabaseConfig.inMemory(),
                         StateComputerConfig.REV2ProposerConfig.mempool(
-                            50, 1000, new MempoolRelayConfig(0, 100))),
+                            50, 50 * 1024 * 1024, 1000, new MempoolRelayConfig(0, 100))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

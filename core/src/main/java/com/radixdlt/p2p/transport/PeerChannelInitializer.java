@@ -64,6 +64,7 @@
 
 package com.radixdlt.p2p.transport;
 
+import com.radixdlt.RadixNodeModule;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
@@ -74,6 +75,7 @@ import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.transport.logging.LogSink;
 import com.radixdlt.p2p.transport.logging.LoggingHandler;
+import com.radixdlt.rev2.REv2TransactionsAndProofReader;
 import com.radixdlt.serialization.Serialization;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
@@ -95,12 +97,40 @@ import org.apache.logging.log4j.Logger;
 public final class PeerChannelInitializer extends ChannelInitializer<SocketChannel> {
   private static final Logger log = LogManager.getLogger();
 
-  // This needs to be larger than proposals / vertices
-  // See also constant/s in REv2TransactionsAndProofReader
-  // TODO - update this number once we have a REP/RNP for these numbers
-  // Current max txn size is 1024*1024 and there are max 10 txns in a proposal
-  // + adding an extra mb for any vertex/proposal/qc overhead
-  private static final int MAX_PACKET_LENGTH = 11 * 1024 * 1024;
+  // This needs to be larger than both:
+  //  - max proposal size (see `MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE` in `RadixNodeModule`)
+  //    note that the constant specifies txns payload size, it doesn't include proposal overhead
+  // (vertex/QCs)
+  //  - max ledger sync response size (see `MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE` in
+  // `REv2TransactionsAndProofReader`)
+  //    similarly, this doesn't include sync response overhead (proof)
+  private static final int MAX_PACKET_LENGTH;
+
+  static {
+    final var baseBufferSize =
+        Math.max(
+            REv2TransactionsAndProofReader.MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
+            RadixNodeModule.MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE);
+    // 2 MiB should be more than enough for any vertex/QCs/proofs/encryption overhead
+    final var additionalBuffer = 2 * 1024 * 1024;
+    final var bufferSize = baseBufferSize + additionalBuffer;
+
+    // Just a sanity check that any changes to the constants used above
+    // don't cause excessive (and unintended) increase of p2p buffers.
+    // Might still be changed, if we decide so, but requires manual intervention.
+    final var maxReasonableBufferSize = 15 * 1024 * 1024;
+
+    //noinspection ConstantConditions
+    if (bufferSize > maxReasonableBufferSize) {
+      throw new RuntimeException(
+          "P2P buffer size exceeds "
+              + maxReasonableBufferSize
+              + ", double-check if this is intentional");
+    }
+
+    MAX_PACKET_LENGTH = bufferSize;
+  }
+
   private static final int FRAME_HEADER_LENGTH = Integer.BYTES;
   private static final int SOCKET_BACKLOG_SIZE = 1024;
 

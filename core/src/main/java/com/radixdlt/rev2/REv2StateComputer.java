@@ -97,7 +97,8 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   private static final Logger log = LogManager.getLogger();
 
   private final RustStateComputer stateComputer;
-  private final int transactionsPerProposalCount;
+  private final int maxNumTransactionsPerProposal;
+  private final int maxProposalTotalTxnsPayloadSize;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher;
 
   private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
@@ -107,14 +108,16 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
   public REv2StateComputer(
       RustStateComputer stateComputer,
-      int transactionsPerProposalCount,
+      int maxNumTransactionsPerProposal,
+      int maxProposalTotalTxnsPayloadSize,
       Hasher hasher,
       EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
       EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
       EventDispatcher<ConsensusByzantineEvent> consensusByzantineEventEventDispatcher,
       Serialization serialization) {
     this.stateComputer = stateComputer;
-    this.transactionsPerProposalCount = transactionsPerProposalCount;
+    this.maxNumTransactionsPerProposal = maxNumTransactionsPerProposal;
+    this.maxProposalTotalTxnsPayloadSize = maxProposalTotalTxnsPayloadSize;
     this.hasher = hasher;
     this.ledgerUpdateEventDispatcher = ledgerUpdateEventDispatcher;
     this.mempoolAddSuccessEventDispatcher = mempoolAddSuccessEventDispatcher;
@@ -148,11 +151,11 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   @Override
   public List<RawNotarizedTransaction> getTransactionsForProposal(
       List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
-    if (transactionsPerProposalCount == 0) {
+    if (maxNumTransactionsPerProposal == 0) {
       return List.of();
     }
 
-    var transactionsNotToInclude =
+    final var transactionsToExclude =
         executedTransactions.stream()
             .flatMap(
                 executedTx ->
@@ -165,7 +168,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     // TODO: Don't include transactions if NextEpoch is to occur
     // TODO: This will require Proposer to simulate a NextRound update before proposing
     return stateComputer.getTransactionsForProposal(
-        transactionsPerProposalCount, transactionsNotToInclude);
+        maxNumTransactionsPerProposal, maxProposalTotalTxnsPayloadSize, transactionsToExclude);
   }
 
   @Override

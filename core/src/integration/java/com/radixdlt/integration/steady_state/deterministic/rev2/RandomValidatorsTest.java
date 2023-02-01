@@ -119,7 +119,7 @@ public final class RandomValidatorsTest {
                         GENESIS,
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         StateComputerConfig.REV2ProposerConfig.mempool(
-                            10, 100, MempoolRelayConfig.of(5, 5))),
+                            10, 10 * 1024 * 1024, 100, MempoolRelayConfig.of(5, 5))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

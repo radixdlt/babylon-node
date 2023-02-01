@@ -110,7 +110,8 @@ public class SanityTest {
                         TransactionBuilder.createGenesisWithNumValidators(
                             4, Decimal.of(1), UInt64.fromNonNegativeLong(100000)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
-                        REV2ProposerConfig.mempool(10, 100, MempoolRelayConfig.of())),
+                        REV2ProposerConfig.mempool(
+                            10, 10 * 1024 * 1024, 100, MempoolRelayConfig.of())),
                     SyncRelayConfig.of(5000, 10, 3000L))))
         .addTestModules(
             ConsensusMonitors.safety(),
