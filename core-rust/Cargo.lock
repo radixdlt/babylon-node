@@ -1138,7 +1138,7 @@ dependencies = [
 [[package]]
 name = "native-sdk"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-owner-rule-639822#63982257020f99310cd647e11452eb19320bdd55"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-1a8cfa#1a8cfa144293f1b730d93ad26ee90de312e38ad6"
 dependencies = [
  "radix-engine-derive",
  "radix-engine-interface",
@@ -1456,7 +1456,7 @@ dependencies = [
 [[package]]
 name = "radix-engine"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-owner-rule-639822#63982257020f99310cd647e11452eb19320bdd55"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-1a8cfa#1a8cfa144293f1b730d93ad26ee90de312e38ad6"
 dependencies = [
  "bitflags",
  "colored",
@@ -1479,12 +1479,12 @@ dependencies = [
 [[package]]
 name = "radix-engine-constants"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-owner-rule-639822#63982257020f99310cd647e11452eb19320bdd55"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-1a8cfa#1a8cfa144293f1b730d93ad26ee90de312e38ad6"
 
 [[package]]
 name = "radix-engine-derive"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-owner-rule-639822#63982257020f99310cd647e11452eb19320bdd55"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-1a8cfa#1a8cfa144293f1b730d93ad26ee90de312e38ad6"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1495,7 +1495,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-interface"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-owner-rule-639822#63982257020f99310cd647e11452eb19320bdd55"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-1a8cfa#1a8cfa144293f1b730d93ad26ee90de312e38ad6"
 dependencies = [
  "bech32",
  "bnum",
@@ -1518,7 +1518,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-stores"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-owner-rule-639822#63982257020f99310cd647e11452eb19320bdd55"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-1a8cfa#1a8cfa144293f1b730d93ad26ee90de312e38ad6"
 dependencies = [
  "itertools",
  "radix-engine",
@@ -1688,7 +1688,7 @@ dependencies = [
 [[package]]
 name = "sbor"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-owner-rule-639822#63982257020f99310cd647e11452eb19320bdd55"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-1a8cfa#1a8cfa144293f1b730d93ad26ee90de312e38ad6"
 dependencies = [
  "const-sha1",
  "indexmap 2.0.0-pre",
@@ -1699,7 +1699,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-owner-rule-639822#63982257020f99310cd647e11452eb19320bdd55"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-1a8cfa#1a8cfa144293f1b730d93ad26ee90de312e38ad6"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -1708,7 +1708,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive-common"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-owner-rule-639822#63982257020f99310cd647e11452eb19320bdd55"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-1a8cfa#1a8cfa144293f1b730d93ad26ee90de312e38ad6"
 dependencies = [
  "const-sha1",
  "proc-macro2",
@@ -1740,7 +1740,7 @@ checksum = "9c8132065adcfd6e02db789d9285a0deb2f3fcb04002865ab67d5fb103533898"
 [[package]]
 name = "scrypto-abi"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-owner-rule-639822#63982257020f99310cd647e11452eb19320bdd55"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-1a8cfa#1a8cfa144293f1b730d93ad26ee90de312e38ad6"
 dependencies = [
  "sbor",
  "serde",
@@ -2300,7 +2300,7 @@ dependencies = [
 [[package]]
 name = "transaction"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-owner-rule-639822#63982257020f99310cd647e11452eb19320bdd55"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-1a8cfa#1a8cfa144293f1b730d93ad26ee90de312e38ad6"
 dependencies = [
  "ed25519-dalek",
  "hex",
@@ -2360,7 +2360,7 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 [[package]]
 name = "utils"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=validator-owner-rule-639822#63982257020f99310cd647e11452eb19320bdd55"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=betanet-v2-1a8cfa#1a8cfa144293f1b730d93ad26ee90de312e38ad6"
 dependencies = [
  "sbor",
  "serde",

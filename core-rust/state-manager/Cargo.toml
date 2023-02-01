@@ -25,13 +25,13 @@ prometheus = { version = "0.13.2", default-features = false, features = [] }
 # 
 # Ensure this version is also identically updated in ../core-api-server/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "validator-owner-rule-639822", features = ["serde", "indexmap"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "validator-owner-rule-639822" }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "validator-owner-rule-639822", features = ["serde"]  }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "validator-owner-rule-639822" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "validator-owner-rule-639822" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "validator-owner-rule-639822" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "validator-owner-rule-639822" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v2-1a8cfa", features = ["serde", "indexmap"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v2-1a8cfa" }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v2-1a8cfa", features = ["serde"]  }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v2-1a8cfa" }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v2-1a8cfa" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v2-1a8cfa" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "betanet-v2-1a8cfa" }
 
 # Non-Radix Engine Dependencies:
 rocksdb = { version = "0.19.0" }
