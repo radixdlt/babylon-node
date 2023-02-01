@@ -189,10 +189,10 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsToRelay(
 #[tracing::instrument(skip_all)]
 fn do_get_transactions_to_relay(
     state_manager: &mut ActualStateManager,
-    _args: (),
+    (max_num_txns, max_payload_size_bytes): (u32, u32),
 ) -> Vec<JavaRawTransaction> {
     state_manager
-        .get_relay_transactions()
+        .get_relay_transactions(max_num_txns.into(), max_payload_size_bytes.into())
         .into_iter()
         .map(|t| t.into())
         .collect()

@@ -151,8 +151,12 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
   }
 
   @Override
-  public List<RawNotarizedTransaction> getTransactionsToRelay() {
-    return getTransactionsToRelayFunc.call(Tuple.tuple());
+  public List<RawNotarizedTransaction> getTransactionsToRelay(
+      int maxNumTxns, int maxTotalTxnsPayloadSize) {
+    return getTransactionsToRelayFunc.call(
+        Tuple.tuple(
+            UInt32.fromNonNegativeInt(maxNumTxns),
+            UInt32.fromNonNegativeInt(maxTotalTxnsPayloadSize)));
   }
 
   @Override
@@ -175,7 +179,8 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
 
   private static native byte[] getTransactionsToRelay(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<StateManager, Tuple.Tuple0, List<RawNotarizedTransaction>>
+  private final NativeCalls.Func1<
+          StateManager, Tuple.Tuple2<UInt32, UInt32>, List<RawNotarizedTransaction>>
       getTransactionsToRelayFunc;
 
   private static native byte[] getCount(Object stateManager, byte[] payload);
