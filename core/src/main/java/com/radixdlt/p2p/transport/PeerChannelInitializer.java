@@ -68,6 +68,7 @@ import com.radixdlt.RadixNodeModule;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.mempool.MempoolRelayer;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeerEvent;
@@ -104,13 +105,16 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
   //  - max ledger sync response size (see `MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE` in
   // `REv2TransactionsAndProofReader`)
   //    similarly, this doesn't include sync response overhead (proof)
+  //  - `MAX_RELAY_TOTAL_TXNS_PAYLOAD_SIZE` in `MempoolRelayer`
   private static final int MAX_PACKET_LENGTH;
 
   static {
     final var baseBufferSize =
         Math.max(
-            REv2TransactionsAndProofReader.MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
-            RadixNodeModule.MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE);
+            Math.max(
+                REv2TransactionsAndProofReader.MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
+                RadixNodeModule.MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE),
+            MempoolRelayer.MAX_RELAY_TOTAL_TXNS_PAYLOAD_SIZE);
     // 2 MiB should be more than enough for any vertex/QCs/proofs/encryption overhead
     final var additionalBuffer = 2 * 1024 * 1024;
     final var bufferSize = baseBufferSize + additionalBuffer;
