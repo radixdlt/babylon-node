@@ -8,9 +8,9 @@ pub(crate) async fn handle_mempool_list(
     let state_manager = state.state_manager.read();
     assert_matching_network(&request.network, &state_manager.network)?;
 
+    let mempool = state_manager.mempool.read();
     Ok(models::MempoolListResponse {
-        contents: state_manager
-            .mempool
+        contents: mempool
             .list_all_hashes()
             .map(
                 |(intent_hash, payload_hash)| models::MempoolTransactionHashes {
