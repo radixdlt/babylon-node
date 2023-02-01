@@ -167,24 +167,18 @@ impl<D: Delta, A: Accumulator<D>> StageTree<D, A> {
         self.dead_weight = 0;
 
         // NOTE: check [`self.delete`] note for more details why this is implemented iteratively instead of recursively
-        let mut stack = Vec::new();
+        let mut stack: Vec<(A, Vec<DerivedStageKey>)> = Vec::new();
 
-        for node_key in self.child_keys.iter() {
-            let child_node = self.nodes.get_mut(*node_key).unwrap();
-            child_node.accumulator = A::default();
-            child_node.accumulator.accumulate(&child_node.delta);
-            stack.extend(child_node.child_keys.clone());
-        }
-
-        while let Some(node_key) = stack.pop() {
-            let node = self.nodes.get(node_key).unwrap();
-            let parent_accumulator = node.accumulator.clone();
-            let child_keys = node.child_keys.clone();
+        stack.push((self.empty_accumulator.clone(), self.child_keys.clone()));
+        while let Some((accumulator, child_keys)) = stack.pop() {
             for child_key in child_keys.iter() {
                 let child_node = self.nodes.get_mut(*child_key).unwrap();
-                child_node.accumulator = parent_accumulator.clone();
+                child_node.accumulator = accumulator.clone();
                 child_node.accumulator.accumulate(&child_node.delta);
-                stack.push(*child_key);
+                stack.push((
+                    child_node.accumulator.clone(),
+                    child_node.child_keys.clone(),
+                ));
             }
         }
     }
@@ -212,7 +206,7 @@ impl<D: Delta, A: Accumulator<D>> StageTree<D, A> {
         node_key: &DerivedStageKey,
     ) -> usize {
         // WARNING: This method was originally written recursively, however this caused a SEGFAULT due to stack overflow.
-        // The tree has a depth equal to the transaction depth of staging, which is normally quite small during consensus, but 
+        // The tree has a depth equal to the transaction depth of staging, which is normally quite small during consensus, but
         // is much larger during ledger sync. We were getting a SEGFAULT after depths of roughly 800 transactions, presumably
         // because a large amount of data was placed on the stack in each stack frame somehow by rustc.
         let mut stack = Vec::new();
@@ -223,11 +217,13 @@ impl<D: Delta, A: Accumulator<D>> StageTree<D, A> {
             if node_key == *new_root_key {
                 dead_weight = weight;
                 continue;
-            } else {
-                let child_keys = nodes.get(node_key).unwrap().child_keys.clone();
-                for child_key in child_keys.iter() {
-                    stack.push((weight + nodes.get(*child_key).unwrap().delta.weight(), *child_key));
-                }
+            }
+            let child_keys = nodes.get(node_key).unwrap().child_keys.clone();
+            for child_key in child_keys.iter() {
+                stack.push((
+                    weight + nodes.get(*child_key).unwrap().delta.weight(),
+                    *child_key,
+                ));
             }
             Self::remove_node(nodes, total_weight, callback, &node_key);
         }
