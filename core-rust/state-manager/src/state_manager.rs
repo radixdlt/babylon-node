@@ -191,7 +191,7 @@ where
     S: ReadableSubstateStore,
 {
     pub fn store(&self) -> &S {
-        &self.execution_cache.staged_store_manager.root
+        &self.execution_cache.root_store
     }
 
     pub fn preview(&self, preview_request: PreviewRequest) -> Result<PreviewResult, PreviewError> {
@@ -822,8 +822,7 @@ where
 {
     pub fn save_vertex_store(&'db mut self, vertex_store: Vec<u8>) {
         self.execution_cache
-            .staged_store_manager
-            .root
+            .root_store
             .save_vertex_store(vertex_store);
     }
 
@@ -947,17 +946,14 @@ where
             }
         }
 
-        self.execution_cache
-            .staged_store_manager
-            .root
-            .commit(CommitBundle {
-                transactions: committed_transaction_bundles,
-                proof_bytes: commit_request.proof,
-                proof_state_version: commit_request.proof_state_version,
-                epoch_boundary,
-                substates: substates_collector.substates,
-                vertex_store: commit_request.vertex_store,
-            });
+        self.execution_cache.root_store.commit(CommitBundle {
+            transactions: committed_transaction_bundles,
+            proof_bytes: commit_request.proof,
+            proof_state_version: commit_request.proof_state_version,
+            epoch_boundary,
+            substates: substates_collector.substates,
+            vertex_store: commit_request.vertex_store,
+        });
 
         self.metrics
             .ledger_state_version

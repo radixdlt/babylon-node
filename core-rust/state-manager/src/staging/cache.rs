@@ -62,25 +62,29 @@
  * permissions under this License.
  */
 
-use super::stage_tree::{StagedSubstateStoreKey, StagedSubstateStoreNodeKey};
-use crate::staging::stage_tree::{StagedSubstateStore, StagedSubstateStoreManager};
+use super::stage_tree::{DerivedStageKey, StageKey};
+use crate::staging::stage_tree::{Accumulator, Delta, StageTree};
 use crate::AccumulatorHash;
-use radix_engine::ledger::ReadableSubstateStore;
-use radix_engine::transaction::TransactionReceipt;
+use im::hashmap::HashMap as ImmutableHashMap;
+use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
+use radix_engine::transaction::{TransactionReceipt, TransactionResult};
+use radix_engine_interface::api::types::SubstateId;
 use sbor::rust::collections::HashMap;
 use slotmap::SecondaryMap;
 
 pub struct ExecutionCache<S: ReadableSubstateStore> {
-    pub staged_store_manager: StagedSubstateStoreManager<S>,
+    pub root_store: S,
+    stage_tree: StageTree<TransactionReceipt, ImmutableStore>,
     root_accumulator_hash: AccumulatorHash,
-    accumulator_hash_to_key: HashMap<AccumulatorHash, StagedSubstateStoreNodeKey>,
-    key_to_accumulator_hash: SecondaryMap<StagedSubstateStoreNodeKey, AccumulatorHash>,
+    accumulator_hash_to_key: HashMap<AccumulatorHash, DerivedStageKey>,
+    key_to_accumulator_hash: SecondaryMap<DerivedStageKey, AccumulatorHash>,
 }
 
 impl<S: ReadableSubstateStore> ExecutionCache<S> {
     pub fn new(root_store: S, root_accumulator_hash: AccumulatorHash) -> Self {
         ExecutionCache {
-            staged_store_manager: StagedSubstateStoreManager::new(root_store),
+            root_store,
+            stage_tree: StageTree::new(),
             root_accumulator_hash,
             accumulator_hash_to_key: HashMap::new(),
             key_to_accumulator_hash: SecondaryMap::new(),
@@ -94,16 +98,18 @@ impl<S: ReadableSubstateStore> ExecutionCache<S> {
         transaction: T,
     ) -> &TransactionReceipt {
         match self.accumulator_hash_to_key.get(new_hash) {
-            Some(new_key) => self.staged_store_manager.get_receipt(new_key),
+            Some(new_key) => self.stage_tree.get_delta(new_key),
             None => {
                 let parent_key = self.get_existing_substore_key(parent_hash);
-                let receipt = transaction(&self.staged_store_manager.get_store(parent_key));
-                let new_key = self
-                    .staged_store_manager
-                    .new_child_node(parent_key, receipt);
+                let staged_store = StagedSubstateStore::new(
+                    &self.root_store,
+                    self.stage_tree.get_accumulator(&parent_key),
+                );
+                let receipt = transaction(&staged_store);
+                let new_key = self.stage_tree.new_child_node(parent_key, receipt);
                 self.key_to_accumulator_hash.insert(new_key, *new_hash);
                 self.accumulator_hash_to_key.insert(*new_hash, new_key);
-                self.staged_store_manager.get_receipt(&new_key)
+                self.stage_tree.get_delta(&new_key)
             }
         }
     }
@@ -111,7 +117,7 @@ impl<S: ReadableSubstateStore> ExecutionCache<S> {
     pub fn progress_root(&mut self, new_root_hash: &AccumulatorHash) {
         let new_root_key = self.get_existing_substore_key(new_root_hash);
         let mut removed_keys = Vec::new();
-        self.staged_store_manager
+        self.stage_tree
             .reparent(new_root_key, &mut |key| removed_keys.push(*key));
         for removed_key in removed_keys {
             self.remove_node(&removed_key);
@@ -119,20 +125,15 @@ impl<S: ReadableSubstateStore> ExecutionCache<S> {
         self.root_accumulator_hash = *new_root_hash;
     }
 
-    fn get_existing_substore_key(
-        &self,
-        accumulator_hash: &AccumulatorHash,
-    ) -> StagedSubstateStoreKey {
+    fn get_existing_substore_key(&self, accumulator_hash: &AccumulatorHash) -> StageKey {
         if *accumulator_hash == self.root_accumulator_hash {
-            StagedSubstateStoreKey::RootStoreKey
+            StageKey::Root
         } else {
-            StagedSubstateStoreKey::InternalNodeStoreKey(
-                *self.accumulator_hash_to_key.get(accumulator_hash).unwrap(),
-            )
+            StageKey::Derived(*self.accumulator_hash_to_key.get(accumulator_hash).unwrap())
         }
     }
 
-    fn remove_node(&mut self, key: &StagedSubstateStoreNodeKey) {
+    fn remove_node(&mut self, key: &DerivedStageKey) {
         // Note: we don't have to remove anything from key_to_accumulator_hash.
         // Since it's a SecondaryMap, it's guaranteed to be removed once the key
         // is removed from the "primary" SlotMap.
@@ -142,5 +143,63 @@ impl<S: ReadableSubstateStore> ExecutionCache<S> {
                 self.accumulator_hash_to_key.remove(accumulator_hash);
             }
         };
+    }
+}
+
+pub struct StagedSubstateStore<'s, S: ReadableSubstateStore> {
+    root: &'s S,
+    overlay: &'s ImmutableStore,
+}
+
+impl<'s, S: ReadableSubstateStore> StagedSubstateStore<'s, S> {
+    pub fn new(root: &'s S, overlay: &'s ImmutableStore) -> Self {
+        Self { root, overlay }
+    }
+}
+
+impl<'s, S: ReadableSubstateStore> ReadableSubstateStore for StagedSubstateStore<'s, S> {
+    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
+        self.overlay
+            .outputs
+            .get(substate_id)
+            .cloned()
+            .or_else(|| self.root.get_substate(substate_id))
+    }
+}
+
+impl Delta for TransactionReceipt {
+    fn weight(&self) -> usize {
+        match &self.result {
+            TransactionResult::Commit(commit) => commit.state_updates.up_substates.len(),
+            TransactionResult::Reject(_) => 0,
+            TransactionResult::Abort(_) => 0,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct ImmutableStore {
+    outputs: ImmutableHashMap<SubstateId, OutputValue>,
+}
+
+impl Default for ImmutableStore {
+    fn default() -> Self {
+        Self {
+            outputs: ImmutableHashMap::new(),
+        }
+    }
+}
+
+impl Accumulator<TransactionReceipt> for ImmutableStore {
+    fn accumulate(&mut self, delta: &TransactionReceipt) {
+        if let TransactionResult::Commit(commit) = &delta.result {
+            commit.state_updates.commit(self);
+        }
+    }
+}
+
+impl WriteableSubstateStore for ImmutableStore {
+    fn put_substate(&mut self, substate_id: SubstateId, output: OutputValue) {
+        self.outputs.insert(substate_id, output);
     }
 }
