@@ -282,9 +282,10 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
     where
         CB: FnMut(&StagedSubstateStoreNodeKey),
     {
-        // NOTE: a rough estimation for length of chain of transactions that might end up being garbage collected is 2x amount of
-        // prepared transactions before committing. Under normal conditions and already synced up this should be 3 vertices * 10 max transactions.
-        // When syncing up, the limit is larger, easily filling up the stack.
+        // WARNING: This method was originally written recursively, however this caused a SEGFAULT due to stack overflow.
+        // The tree has a depth equal to the transaction depth of staging, which is normally quite small during consensus, but 
+        // is much larger during ledger sync. We were getting a SEGFAULT after depths of roughly 800 transactions, presumably
+        // because a large amount of data was placed on the stack in each stack frame somehow by rustc.
         let mut stack = Vec::new();
         stack.push((nodes.get(*node_key).unwrap().weight(), *node_key));
 
