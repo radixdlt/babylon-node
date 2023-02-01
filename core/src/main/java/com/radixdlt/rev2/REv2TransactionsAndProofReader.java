@@ -84,9 +84,9 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
    *    subsequent proof can only be used if its txns fit under this limit */
   private static final int MAX_TXNS_FOR_RESPONSES_SPANNING_MORE_THAN_ONE_PROOF = 1000;
 
-  /* Maximum transaction size (in terms of their total byte size) to return in a single getTransactions response.
+  /* Maximum transactions size (in terms of their total byte size) to return in a single getTransactions response.
    * See also MAX_PACKET_LENGTH in PeerChannelInitializer and OVERRIDE_MAX_PAYLOAD_SIZE for transaction size */
-  private static final int MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE = 10 * 1024 * 1024; // 10MB
+  public static final int MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE = 10 * 1024 * 1024; // 10MB
 
   private final REv2TransactionAndProofStore transactionStore;
   private final Serialization serialization;

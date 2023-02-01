@@ -129,9 +129,13 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForPropo
 #[tracing::instrument(skip_all)]
 fn do_get_transactions_for_proposal(
     state_manager: &ActualStateManager,
-    (count, prepared_transactions): (u32, Vec<JavaPayloadHash>),
+    (max_count, max_payload_size_bytes, transaction_hashes_to_exclude): (
+        u32,
+        u32,
+        Vec<JavaPayloadHash>,
+    ),
 ) -> Vec<JavaRawTransaction> {
-    let prepared_ids: HashSet<UserPayloadHash> = prepared_transactions
+    let user_payload_hashes_to_exclude: HashSet<UserPayloadHash> = transaction_hashes_to_exclude
         .into_iter()
         .map(|id| {
             UserPayloadHash::from_raw_bytes(
@@ -142,7 +146,11 @@ fn do_get_transactions_for_proposal(
 
     state_manager
         .mempool
-        .get_proposal_transactions(count.into(), &prepared_ids)
+        .get_proposal_transactions(
+            max_count.into(),
+            max_payload_size_bytes.into(),
+            &user_payload_hashes_to_exclude,
+        )
         .into_iter()
         .map(|t| t.into())
         .collect()
