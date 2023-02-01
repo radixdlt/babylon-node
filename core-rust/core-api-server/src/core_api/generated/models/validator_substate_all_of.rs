@@ -19,8 +19,8 @@ pub struct ValidatorSubstateAllOf {
     /// The Bech32m-encoded human readable version of the component address
     #[serde(rename = "validator_address")]
     pub validator_address: String,
-    #[serde(rename = "key")]
-    pub key: Box<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
+    #[serde(rename = "public_key")]
+    pub public_key: Box<crate::core_api::generated::models::EcdsaSecp256k1PublicKey>,
     #[serde(rename = "stake_vault")]
     pub stake_vault: Box<crate::core_api::generated::models::EntityReference>,
     #[serde(rename = "unstake_vault")]
@@ -36,11 +36,11 @@ pub struct ValidatorSubstateAllOf {
 }
 
 impl ValidatorSubstateAllOf {
-    pub fn new(epoch_manager_address: String, validator_address: String, key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey, stake_vault: crate::core_api::generated::models::EntityReference, unstake_vault: crate::core_api::generated::models::EntityReference, liquid_stake_unit_resource_address: String, unstake_claim_token_resource_address: String, is_registered: bool) -> ValidatorSubstateAllOf {
+    pub fn new(epoch_manager_address: String, validator_address: String, public_key: crate::core_api::generated::models::EcdsaSecp256k1PublicKey, stake_vault: crate::core_api::generated::models::EntityReference, unstake_vault: crate::core_api::generated::models::EntityReference, liquid_stake_unit_resource_address: String, unstake_claim_token_resource_address: String, is_registered: bool) -> ValidatorSubstateAllOf {
         ValidatorSubstateAllOf {
             epoch_manager_address,
             validator_address,
-            key: Box::new(key),
+            public_key: Box::new(public_key),
             stake_vault: Box::new(stake_vault),
             unstake_vault: Box::new(unstake_vault),
             liquid_stake_unit_resource_address,

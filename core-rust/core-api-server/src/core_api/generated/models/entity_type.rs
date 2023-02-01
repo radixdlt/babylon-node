@@ -12,52 +12,55 @@
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum EntityType {
-    #[serde(rename = "EpochManager")]
-    EpochManager,
-    #[serde(rename = "Validator")]
-    Validator,
-    #[serde(rename = "ResourceManager")]
-    ResourceManager,
+    #[serde(rename = "Global")]
+    Global,
     #[serde(rename = "Component")]
     Component,
     #[serde(rename = "Package")]
     Package,
-    #[serde(rename = "Vault")]
-    Vault,
-    #[serde(rename = "KeyValueStore")]
-    KeyValueStore,
-    #[serde(rename = "Global")]
-    Global,
-    #[serde(rename = "NonFungibleStore")]
-    NonFungibleStore,
+    #[serde(rename = "ResourceManager")]
+    ResourceManager,
+    #[serde(rename = "EpochManager")]
+    EpochManager,
     #[serde(rename = "Clock")]
     Clock,
+    #[serde(rename = "Validator")]
+    Validator,
     #[serde(rename = "AccessController")]
     AccessController,
+    #[serde(rename = "Identity")]
+    Identity,
+    #[serde(rename = "KeyValueStore")]
+    KeyValueStore,
+    #[serde(rename = "NonFungibleStore")]
+    NonFungibleStore,
+    #[serde(rename = "Vault")]
+    Vault,
 
 }
 
 impl ToString for EntityType {
     fn to_string(&self) -> String {
         match self {
-            Self::EpochManager => String::from("EpochManager"),
-            Self::Validator => String::from("Validator"),
-            Self::ResourceManager => String::from("ResourceManager"),
+            Self::Global => String::from("Global"),
             Self::Component => String::from("Component"),
             Self::Package => String::from("Package"),
-            Self::Vault => String::from("Vault"),
-            Self::KeyValueStore => String::from("KeyValueStore"),
-            Self::Global => String::from("Global"),
-            Self::NonFungibleStore => String::from("NonFungibleStore"),
+            Self::ResourceManager => String::from("ResourceManager"),
+            Self::EpochManager => String::from("EpochManager"),
             Self::Clock => String::from("Clock"),
+            Self::Validator => String::from("Validator"),
             Self::AccessController => String::from("AccessController"),
+            Self::Identity => String::from("Identity"),
+            Self::KeyValueStore => String::from("KeyValueStore"),
+            Self::NonFungibleStore => String::from("NonFungibleStore"),
+            Self::Vault => String::from("Vault"),
         }
     }
 }
 
 impl Default for EntityType {
     fn default() -> EntityType {
-        Self::EpochManager
+        Self::Global
     }
 }
 

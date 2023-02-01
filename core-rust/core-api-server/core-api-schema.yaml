@@ -2045,17 +2045,19 @@ components:
     EntityType:
       type: string
       enum:
-        - EpochManager
-        - Validator
-        - ResourceManager
+        - Global
         - Component
         - Package
-        - Vault
-        - KeyValueStore
-        - Global
-        - NonFungibleStore
+        - ResourceManager
+        # Below are Native Components -> Eventually they'll be Component
+        - EpochManager
         - Clock
+        - Validator
         - AccessController
+        - Identity
+        - KeyValueStore
+        - NonFungibleStore
+        - Vault
     Substate:
       type: object
       required:
@@ -2375,7 +2377,7 @@ components:
           required:
             - epoch_manager_address
             - validator_address
-            - key
+            - public_key
             - stake_vault
             - unstake_vault
             - liquid_stake_unit_resource_address
@@ -2386,7 +2388,7 @@ components:
               $ref: '#/components/schemas/ComponentAddress'
             validator_address:
               $ref: '#/components/schemas/ComponentAddress'
-            key:
+            public_key:
               $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
             stake_vault:
               $ref: '#/components/schemas/EntityReference'
