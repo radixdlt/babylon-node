@@ -102,6 +102,8 @@ use std::collections::{BTreeMap, HashMap};
 use std::convert::TryInto;
 
 use radix_engine::ledger::OutputValue;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::{info, warn};
 
@@ -483,20 +485,48 @@ where
         }
     }
 
-    pub fn get_relay_transactions(&mut self) -> Vec<PendingTransaction> {
-        let mut mempool_txns = self.mempool.get_transactions();
+    pub fn get_relay_transactions(
+        &mut self,
+        max_num_txns: u64,
+        max_payload_size_bytes: u64,
+    ) -> Vec<PendingTransaction> {
+        let mut mempool_txns = Vec::from_iter(self.mempool.get_transactions().into_values());
+        mempool_txns.shuffle(&mut thread_rng());
 
+        let mut txns_to_return = Vec::new();
+        let mut payload_size_so_far = 0u64;
+
+        // We (partially) cleanup the mempool on the occasion of getting the relay txns
+        // TODO: move this to a separate job
         let mut txns_to_remove = Vec::new();
-        for data in mempool_txns.values() {
+
+        let mut txns_iter = mempool_txns.into_iter();
+        let mut next_opt = txns_iter.next();
+        while next_opt.is_some() && (txns_to_return.len() as u64) < max_num_txns {
+            let next = next_opt.unwrap();
+
             let (record, was_cached) =
-                self.check_for_rejection_with_caching(&data.transaction.payload);
+                self.check_for_rejection_with_caching(&next.transaction.payload);
             if !was_cached && record.latest_attempt.rejection.is_some() {
-                txns_to_remove.push((data.transaction.intent_hash, data.transaction.payload_hash));
+                // Mark the transaction to be removed from the mempool
+                // (see the comment above about moving this to a separate job)
+                txns_to_remove.push((next.transaction.intent_hash, next.transaction.payload_hash));
+            } else {
+                // Check the payload size limit
+                payload_size_so_far += next.transaction.payload_size;
+                if payload_size_so_far > max_payload_size_bytes {
+                    break;
+                }
+
+                // Add the transaction to response
+                txns_to_return.push(next.transaction)
             }
+
+            next_opt = txns_iter.next();
         }
 
+        // See the comment above about moving this to a separate job
         for txn_to_remove in txns_to_remove {
-            mempool_txns.remove(&txn_to_remove.1);
             if self
                 .mempool
                 .remove_transaction(&txn_to_remove.0, &txn_to_remove.1)
@@ -508,10 +538,7 @@ where
             }
         }
 
-        mempool_txns
-            .into_values()
-            .map(|data| data.transaction)
-            .collect()
+        txns_to_return
     }
 
     // TODO: Update to prepare_system_transaction when we start to support forking
