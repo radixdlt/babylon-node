@@ -89,12 +89,12 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_add)
+    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_add)
 }
 
 #[tracing::instrument(skip_all)]
 fn do_add(
-    state_manager: &mut ActualStateManager,
+    state_manager: &ActualStateManager,
     transaction: JavaRawTransaction,
 ) -> Result<JavaPayloadHash, MempoolAddErrorJava> {
     let notarized_transaction =
