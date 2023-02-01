@@ -83,6 +83,7 @@ use ::transaction::model::{
 };
 use ::transaction::signing::EcdsaSecp256k1PrivateKey;
 use ::transaction::validation::{TestIntentHashManager, ValidationConfig};
+use parking_lot::RwLock;
 use prometheus::Registry;
 use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::model::ValidatorSubstate;
@@ -120,7 +121,7 @@ pub struct StateManagerLoggingConfig {
 }
 
 pub struct StateManager<S: ReadableSubstateStore> {
-    pub mempool: SimpleMempool,
+    pub mempool: RwLock<SimpleMempool>,
     pub network: NetworkDefinition,
     store: S,
     execution_cache: ExecutionCache,
@@ -164,7 +165,7 @@ where
 
         StateManager {
             network,
-            mempool,
+            mempool: RwLock::new(mempool),
             store,
             execution_cache: ExecutionCache::new(accumulator_hash),
             user_transaction_validator,
@@ -334,7 +335,7 @@ where
             .map(|_| {
                 self.metrics
                     .mempool_current_transactions
-                    .set(self.mempool.get_count() as i64);
+                    .set(self.mempool.read().get_count() as i64);
                 self.metrics
                     .mempool_submission_added
                     .with_label(mempool_add_source)
@@ -361,6 +362,7 @@ where
     ) -> Result<(), MempoolAddError> {
         // Quick check to avoid transaction validation if it couldn't be added to the mempool anyway
         self.mempool
+            .write()
             .check_add_would_be_possible(&unvalidated_transaction.user_payload_hash())?;
 
         let (record, was_cached) = self.check_for_rejection_with_caching(&unvalidated_transaction);
@@ -372,6 +374,7 @@ where
             // * Moreover, the engine expects the validated transaction to be presently valid, else panics
             // * Once epoch validation is moved to the executor, we can persist validated transactions in the mempool
             self.mempool
+                .write()
                 .add_transaction(unvalidated_transaction.into())?;
         }
 
@@ -483,6 +486,7 @@ where
         let (remove, mut keep): (Vec<_>, _) = {
             let mempool_txns: Vec<_> = self
                 .mempool
+                .read()
                 .transactions()
                 .values()
                 .map(|x| x.transaction.clone())
@@ -495,14 +499,16 @@ where
             })
         };
 
-        // See the comment above about moving this to a separate job
-        for txn_to_remove in remove {
-            self.mempool
-                .remove_transaction(&txn_to_remove.intent_hash, &txn_to_remove.payload_hash);
+        {
+            let mut mempool = self.mempool.write();
+            // See the comment above about moving this to a separate job
+            for txn_to_remove in remove {
+                mempool.remove_transaction(&txn_to_remove.intent_hash, &txn_to_remove.payload_hash);
+            }
+            self.metrics
+                .mempool_current_transactions
+                .set(mempool.get_count() as i64);
         }
-        self.metrics
-            .mempool_current_transactions
-            .set(self.mempool.get_count() as i64);
 
         keep.shuffle(&mut thread_rng());
         let mut tx_size = 0;
@@ -777,25 +783,27 @@ where
             }
         }
 
-        for (intent_hash, user_payload_hash, invalid_at_epoch, rejection_option) in
-            pending_transaction_results
         {
-            if rejection_option.is_some() {
-                // Removing transactions rejected during prepare from the mempool is a bit of overkill:
-                // just because transactions were rejected in this history doesn't mean this history will be committed.
-                //
-                // But it'll do for now as a defensive measure until we can have a more intelligent mempool.
-                if self
-                    .mempool
-                    .remove_transaction(&intent_hash, &user_payload_hash)
-                    .is_some()
-                {
-                    // TODO - fix this metric to live inside the mempool
-                    self.metrics
-                        .mempool_current_transactions
-                        .set(self.mempool.get_count() as i64);
+            let mut mempool = self.mempool.write();
+            for (intent_hash, user_payload_hash, _, rejection_option) in
+                pending_transaction_results.iter()
+            {
+                if rejection_option.is_some() {
+                    // Removing transactions rejected during prepare from the mempool is a bit of overkill:
+                    // just because transactions were rejected in this history doesn't mean this history will be committed.
+                    //
+                    // But it'll do for now as a defensive measure until we can have a more intelligent mempool.
+                    mempool.remove_transaction(&intent_hash, &user_payload_hash);
                 }
             }
+            self.metrics
+                .mempool_current_transactions
+                .set(mempool.get_count() as i64);
+        }
+
+        for (intent_hash, user_payload_hash, invalid_at_epoch, rejection_option) in
+            pending_transaction_results.into_iter()
+        {
             let attempt = TransactionAttempt {
                 rejection: rejection_option,
                 against_state: AtState::PendingPreparingVertices {
@@ -972,10 +980,13 @@ where
                 .unwrap()
                 .as_secs_f64(),
         );
-        self.mempool.handle_committed_transactions(&intent_hashes);
-        self.metrics
-            .mempool_current_transactions
-            .set(self.mempool.get_count() as i64);
+        {
+            let mut mempool = self.mempool.write();
+            mempool.handle_committed_transactions(&intent_hashes);
+            self.metrics
+                .mempool_current_transactions
+                .set(mempool.get_count() as i64);
+        }
 
         self.pending_transaction_result_cache
             .track_committed_transactions(
