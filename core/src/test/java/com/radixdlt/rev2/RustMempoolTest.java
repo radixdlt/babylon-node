@@ -299,6 +299,7 @@ public final class RustMempoolTest {
       // The assertions below assume txns are of equal size; making sure that it holds
       assertEquals(txnPayloadSize, transaction2.getPayload().length);
       assertEquals(txnPayloadSize, transaction3.getPayload().length);
+
       returnedList = rustMempool.getTransactionsForProposal(3, txnPayloadSize, List.of());
       assertEquals(1, returnedList.size());
 
@@ -343,9 +344,32 @@ public final class RustMempoolTest {
       rustMempool.addTransaction(transaction3);
       assertEquals(3, rustMempool.getCount());
 
-      var returnedList = rustMempool.getTransactionsToRelay();
+      var returnedList = rustMempool.getTransactionsToRelay(3, Integer.MAX_VALUE);
       assertEquals(3, returnedList.size());
       assertTrue(List.of(transaction1, transaction2, transaction3).containsAll(returnedList));
+
+      final var txnPayloadSize = transaction1.getPayload().length;
+      // The assertions below assume txns are of equal size; making sure that it holds
+      assertEquals(txnPayloadSize, transaction2.getPayload().length);
+      assertEquals(txnPayloadSize, transaction3.getPayload().length);
+
+      returnedList = rustMempool.getTransactionsToRelay(3, txnPayloadSize);
+      assertEquals(1, returnedList.size());
+
+      returnedList = rustMempool.getTransactionsToRelay(3, txnPayloadSize - 1);
+      assertEquals(0, returnedList.size());
+
+      returnedList = rustMempool.getTransactionsToRelay(3, txnPayloadSize * 2);
+      assertEquals(2, returnedList.size());
+
+      returnedList = rustMempool.getTransactionsToRelay(3, txnPayloadSize * 2 - 1);
+      assertEquals(1, returnedList.size());
+
+      returnedList = rustMempool.getTransactionsToRelay(3, txnPayloadSize * 3);
+      assertEquals(3, returnedList.size());
+
+      returnedList = rustMempool.getTransactionsToRelay(3, txnPayloadSize * 3 - 1);
+      assertEquals(2, returnedList.size());
     }
   }
 }

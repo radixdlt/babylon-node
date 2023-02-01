@@ -139,7 +139,8 @@ public final class SimpleMempool
   }
 
   @Override
-  public List<RawNotarizedTransaction> getTransactionsToRelay() {
+  public List<RawNotarizedTransaction> getTransactionsToRelay(
+      int maxNumTxns, int maxTotalTxnsPayloadSize) {
     return List.of();
   }
 
