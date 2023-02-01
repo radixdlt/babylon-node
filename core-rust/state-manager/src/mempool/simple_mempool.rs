@@ -240,7 +240,7 @@ impl SimpleMempool {
         }
     }
 
-    pub fn list_all_hashes(&self) -> Vec<(&IntentHash, &UserPayloadHash)> {
+    pub fn list_all_hashes(&self) -> impl Iterator<Item = (&IntentHash, &UserPayloadHash)> {
         self.intent_lookup
             .iter()
             .flat_map(|(intent_hash, payload_hashes)| {
@@ -248,7 +248,6 @@ impl SimpleMempool {
                     .iter()
                     .map(move |payload_hash| (intent_hash, payload_hash))
             })
-            .collect()
     }
 
     pub fn get_payload(&self, payload_hash: &UserPayloadHash) -> Option<&PendingTransaction> {
