@@ -218,28 +218,14 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
         &self.nodes.get(*key).unwrap().receipt
     }
 
-    fn recompute_data_recursive(
-        nodes: &mut SlotMap<StagedSubstateStoreNodeKey, StagedSubstateStoreNode>,
-        node_key: StagedSubstateStoreNodeKey,
-    ) {
-        let parent_store = ImmutableStore::from_parent(&nodes.get(node_key).unwrap().store);
-
-        let children_keys = nodes.get(node_key).unwrap().children_keys.clone();
-        for child_key in children_keys.iter() {
-            let child_node = nodes.get_mut(*child_key).unwrap();
-            child_node.store = parent_store.clone();
-            if let TransactionResult::Commit(commit) = &child_node.receipt.result {
-                commit.state_updates.commit(&mut child_node.store);
-            }
-            Self::recompute_data_recursive(nodes, *child_key);
-        }
-    }
-
     /// Rebuilds ImmutableStores by starting from the root with new, empty ones
     /// and recursively reapplies the [`receipt`]s.
     fn recompute_data(&mut self) {
         // Reset the [`dead_weight`]
         self.dead_weight = 0;
+
+        // NOTE: check [`self.delete`] note for more details why this is implemented iteratively instead of recursively
+        let mut stack = Vec::new();
 
         for node_key in self.children_keys.iter() {
             let node = self.nodes.get_mut(*node_key).unwrap();
@@ -247,7 +233,24 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
             if let TransactionResult::Commit(commit) = &node.receipt.result {
                 commit.state_updates.commit(&mut node.store);
             }
-            Self::recompute_data_recursive(&mut self.nodes, *node_key);
+
+            stack.extend(node.children_keys.clone().into_iter());
+        }
+
+        while let Some(node_key) = stack.pop() {
+            let node = self.nodes.get(node_key).unwrap();
+            let parent_store = ImmutableStore::from_parent(&node.store);
+
+            let children_keys = self.nodes.get(node_key).unwrap().children_keys.clone();
+            for child_key in children_keys.iter() {
+                let child_node = self.nodes.get_mut(*child_key).unwrap();
+                child_node.store = parent_store.clone();
+                if let TransactionResult::Commit(commit) = &child_node.receipt.result {
+                    commit.state_updates.commit(&mut child_node.store);
+                }
+
+                stack.push(*child_key);
+            }
         }
     }
 
@@ -266,40 +269,39 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
         removed
     }
 
-    /// Recursively deletes all nodes that are not in new_root_key subtree and returns the
+    /// Iteratively deletes all nodes that are not in new_root_key subtree and returns the
     /// sum of weights from current root to new_root_key. Updates to ImmutableStore on this
     /// path will persist even after deleting the nodes.
-    fn delete_recursive<CB>(
+    fn delete<CB>(
         nodes: &mut SlotMap<StagedSubstateStoreNodeKey, StagedSubstateStoreNode>,
         total_weight: &mut usize,
         new_root_key: &StagedSubstateStoreNodeKey,
         callback: &mut CB,
         node_key: &StagedSubstateStoreNodeKey,
-        root_path_weight_sum: usize,
     ) -> usize
     where
         CB: FnMut(&StagedSubstateStoreNodeKey),
     {
-        let root_path_weight_sum = root_path_weight_sum + nodes.get(*node_key).unwrap().weight();
-        if *node_key == *new_root_key {
-            return root_path_weight_sum;
-        }
+        // WARNING: This method was originally written recursively, however this caused a SEGFAULT due to stack overflow.
+        // The tree has a depth equal to the transaction depth of staging, which is normally quite small during consensus, but 
+        // is much larger during ledger sync. We were getting a SEGFAULT after depths of roughly 800 transactions, presumably
+        // because a large amount of data was placed on the stack in each stack frame somehow by rustc.
+        let mut stack = Vec::new();
+        stack.push((nodes.get(*node_key).unwrap().weight(), *node_key));
 
         let mut dead_weight = 0;
-        let children_keys = nodes.get(*node_key).unwrap().children_keys.clone();
-        for child_key in children_keys {
-            // Instead of doing max([0, 0, 0, max, 0,.. 0]) we can do sum()
-            dead_weight += Self::delete_recursive(
-                nodes,
-                total_weight,
-                new_root_key,
-                callback,
-                &child_key,
-                root_path_weight_sum,
-            );
+        while let Some((weight, node_key)) = stack.pop() {
+            if node_key == *new_root_key {
+                dead_weight = weight;
+                continue;
+            } else {
+                let children_keys = nodes.get(node_key).unwrap().children_keys.clone();
+                for child_key in children_keys.iter() {
+                    stack.push((weight + nodes.get(*child_key).unwrap().weight(), *child_key));
+                }
+            }
+            Self::remove_node(nodes, total_weight, callback, &node_key);
         }
-
-        Self::remove_node(nodes, total_weight, callback, node_key);
 
         dead_weight
     }
@@ -330,13 +332,12 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
             StagedSubstateStoreKey::InternalNodeStoreKey(new_root_key) => {
                 // Delete all nodes that are not in new_root_key subtree
                 for node_key in self.children_keys.iter() {
-                    self.dead_weight += Self::delete_recursive(
+                    self.dead_weight += Self::delete(
                         &mut self.nodes,
                         &mut self.total_weight,
                         &new_root_key,
                         callback,
                         node_key,
-                        0,
                     );
                 }
 
