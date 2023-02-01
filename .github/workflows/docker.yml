@@ -88,7 +88,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-      pull-requests: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v2
         with:
@@ -121,7 +121,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ needs.build_deb.outputs.tags }}
           labels: ${{ needs.build_deb.outputs.labels }}
-      - name: Add docker tags to PR comment (test)
+      - name: Add docker tags to PR comment
         uses: thollander/actions-comment-pull-request@632cf9ce90574d125be56b5f3405cda41a84e2fd
         with:
           message: | 
