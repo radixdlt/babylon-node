@@ -72,18 +72,16 @@ use radix_engine_interface::api::types::SubstateId;
 use sbor::rust::collections::HashMap;
 use slotmap::SecondaryMap;
 
-pub struct ExecutionCache<S: ReadableSubstateStore> {
-    pub root_store: S,
+pub struct ExecutionCache {
     stage_tree: StageTree<TransactionReceipt, ImmutableStore>,
     root_accumulator_hash: AccumulatorHash,
     accumulator_hash_to_key: HashMap<AccumulatorHash, DerivedStageKey>,
     key_to_accumulator_hash: SecondaryMap<DerivedStageKey, AccumulatorHash>,
 }
 
-impl<S: ReadableSubstateStore> ExecutionCache<S> {
-    pub fn new(root_store: S, root_accumulator_hash: AccumulatorHash) -> Self {
+impl ExecutionCache {
+    pub fn new(root_accumulator_hash: AccumulatorHash) -> Self {
         ExecutionCache {
-            root_store,
             stage_tree: StageTree::new(),
             root_accumulator_hash,
             accumulator_hash_to_key: HashMap::new(),
@@ -91,18 +89,23 @@ impl<S: ReadableSubstateStore> ExecutionCache<S> {
         }
     }
 
-    pub fn execute<T: FnOnce(&StagedSubstateStore<S>) -> TransactionReceipt>(
+    pub fn execute<S, T>(
         &mut self,
+        root_store: &S,
         parent_hash: &AccumulatorHash,
         new_hash: &AccumulatorHash,
         transaction: T,
-    ) -> &TransactionReceipt {
+    ) -> &TransactionReceipt
+    where
+        S: ReadableSubstateStore,
+        T: FnOnce(&StagedSubstateStore<S>) -> TransactionReceipt,
+    {
         match self.accumulator_hash_to_key.get(new_hash) {
             Some(new_key) => self.stage_tree.get_delta(new_key),
             None => {
                 let parent_key = self.get_existing_substore_key(parent_hash);
                 let staged_store = StagedSubstateStore::new(
-                    &self.root_store,
+                    root_store,
                     self.stage_tree.get_accumulator(&parent_key),
                 );
                 let receipt = transaction(&staged_store);
