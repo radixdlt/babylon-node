@@ -425,6 +425,9 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         (SubstateType::Validator, SubstateKeyType::Validator)
                     }
                 },
+                SubstateOffset::Metadata(offset) => match offset {
+                    MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
+                },
                 SubstateOffset::AccessRulesChain(offset) => match offset {
                     AccessRulesChainOffset::AccessRulesChain => (
                         SubstateType::AccessRulesChain,
