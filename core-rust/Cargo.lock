@@ -1973,6 +1973,7 @@ dependencies = [
  "radix-engine-constants",
  "radix-engine-interface",
  "radix-engine-stores",
+ "rand 0.8.5",
  "rocksdb",
  "sbor",
  "slotmap",
