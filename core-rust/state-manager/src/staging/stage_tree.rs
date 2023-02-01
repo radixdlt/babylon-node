@@ -224,6 +224,7 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
         // Reset the [`dead_weight`]
         self.dead_weight = 0;
 
+        // NOTE: check [`self.delete`] note for more details why this is implemented iteratively instead of recursively
         let mut stack = Vec::new();
 
         for node_key in self.children_keys.iter() {
@@ -268,7 +269,7 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
         removed
     }
 
-    /// Iteratively  deletes all nodes that are not in new_root_key subtree and returns the
+    /// Iteratively deletes all nodes that are not in new_root_key subtree and returns the
     /// sum of weights from current root to new_root_key. Updates to ImmutableStore on this
     /// path will persist even after deleting the nodes.
     fn delete<CB>(
@@ -281,6 +282,9 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
     where
         CB: FnMut(&StagedSubstateStoreNodeKey),
     {
+        // NOTE: a rough estimation for length of chain of transactions that might end up being garbage collected is 2x amount of
+        // prepared transactions before committing. Under normal conditions and already synced up this should be 3 vertices * 10 max transactions.
+        // When syncing up, the limit is larger, easily filling up the stack.
         let mut stack = Vec::new();
         stack.push((nodes.get(*node_key).unwrap().weight(), *node_key));
 
