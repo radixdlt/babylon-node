@@ -218,28 +218,13 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
         &self.nodes.get(*key).unwrap().receipt
     }
 
-    fn recompute_data_recursive(
-        nodes: &mut SlotMap<StagedSubstateStoreNodeKey, StagedSubstateStoreNode>,
-        node_key: StagedSubstateStoreNodeKey,
-    ) {
-        let parent_store = ImmutableStore::from_parent(&nodes.get(node_key).unwrap().store);
-
-        let children_keys = nodes.get(node_key).unwrap().children_keys.clone();
-        for child_key in children_keys.iter() {
-            let child_node = nodes.get_mut(*child_key).unwrap();
-            child_node.store = parent_store.clone();
-            if let TransactionResult::Commit(commit) = &child_node.receipt.result {
-                commit.state_updates.commit(&mut child_node.store);
-            }
-            Self::recompute_data_recursive(nodes, *child_key);
-        }
-    }
-
     /// Rebuilds ImmutableStores by starting from the root with new, empty ones
     /// and recursively reapplies the [`receipt`]s.
     fn recompute_data(&mut self) {
         // Reset the [`dead_weight`]
         self.dead_weight = 0;
+
+        let mut stack = Vec::new();
 
         for node_key in self.children_keys.iter() {
             let node = self.nodes.get_mut(*node_key).unwrap();
@@ -247,7 +232,24 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
             if let TransactionResult::Commit(commit) = &node.receipt.result {
                 commit.state_updates.commit(&mut node.store);
             }
-            Self::recompute_data_recursive(&mut self.nodes, *node_key);
+
+            stack.extend(node.children_keys.clone().into_iter());
+        }
+
+        while let Some(node_key) = stack.pop() {
+            let node = self.nodes.get(node_key).unwrap();
+            let parent_store = ImmutableStore::from_parent(&node.store);
+
+            let children_keys = self.nodes.get(node_key).unwrap().children_keys.clone();
+            for child_key in children_keys.iter() {
+                let child_node = self.nodes.get_mut(*child_key).unwrap();
+                child_node.store = parent_store.clone();
+                if let TransactionResult::Commit(commit) = &child_node.receipt.result {
+                    commit.state_updates.commit(&mut child_node.store);
+                }
+
+                stack.push(*child_key);
+            }
         }
     }
 
