@@ -121,7 +121,7 @@ public final class IncreasingValidatorsTest {
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         StateComputerConfig.REV2ProposerConfig.mempool(
-                            2, 100, MempoolRelayConfig.of(5, 5))),
+                            2, 2 * 1024 * 1024, 100, MempoolRelayConfig.of(5, 5))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

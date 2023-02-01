@@ -148,8 +148,9 @@ public class RustStateComputer {
   }
 
   public List<RawNotarizedTransaction> getTransactionsForProposal(
-      int count, List<RawNotarizedTransaction> transactionToExclude) {
-    return this.mempool.getTransactionsForProposal(count, transactionToExclude);
+      int maxCount, int maxPayloadSizeBytes, List<RawNotarizedTransaction> transactionToExclude) {
+    return this.mempool.getTransactionsForProposal(
+        maxCount, maxPayloadSizeBytes, transactionToExclude);
   }
 
   public Result<Tuple.Tuple0, String> verify(RawNotarizedTransaction transaction) {

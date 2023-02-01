@@ -132,7 +132,7 @@ public class REv2RejectedTransactionMempoolTest {
                             1, Decimal.of(1), this.roundsPerEpoch),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         StateComputerConfig.REV2ProposerConfig.mempool(
-                            1, mempoolSize, MempoolRelayConfig.of())))));
+                            1, 1024 * 1024, mempoolSize, MempoolRelayConfig.of())))));
   }
 
   @Test

@@ -95,7 +95,8 @@ import com.radixdlt.transactions.RawNotarizedTransaction;
 
 public final class REv2StateManagerModule extends AbstractModule {
   private final int networkId;
-  private final int transactionsPerProposalCount;
+  private final int maxNumTransactionsPerProposal;
+  private final int maxProposalTotalTxnsPayloadSize;
   private final REv2DatabaseConfig databaseConfig;
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean testing;
@@ -103,13 +104,15 @@ public final class REv2StateManagerModule extends AbstractModule {
 
   private REv2StateManagerModule(
       int networkId,
-      int transactionsPerProposalCount,
+      int maxNumTransactionsPerProposal,
+      int maxProposalTotalTxnsPayloadSize,
       boolean prefixDatabase,
       REv2DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging) {
     this.networkId = networkId;
-    this.transactionsPerProposalCount = transactionsPerProposalCount;
+    this.maxNumTransactionsPerProposal = maxNumTransactionsPerProposal;
+    this.maxProposalTotalTxnsPayloadSize = maxProposalTotalTxnsPayloadSize;
     this.testing = prefixDatabase;
     this.databaseConfig = databaseConfig;
     this.mempoolConfig = mempoolConfig;
@@ -118,21 +121,35 @@ public final class REv2StateManagerModule extends AbstractModule {
 
   public static REv2StateManagerModule create(
       int networkId,
-      int transactionsPerProposalCount,
+      int maxNumTransactionsPerProposal,
+      int maxProposalTotalTxnsPayloadSize,
       REv2DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig) {
     return new REv2StateManagerModule(
-        networkId, transactionsPerProposalCount, false, databaseConfig, mempoolConfig, false);
+        networkId,
+        maxNumTransactionsPerProposal,
+        maxProposalTotalTxnsPayloadSize,
+        false,
+        databaseConfig,
+        mempoolConfig,
+        false);
   }
 
   public static REv2StateManagerModule createForTesting(
       int networkId,
-      int transactionsPerProposalCount,
+      int maxNumTransactionsPerProposal,
+      int maxProposalTotalTxnsPayloadSize,
       REv2DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging) {
     return new REv2StateManagerModule(
-        networkId, transactionsPerProposalCount, true, databaseConfig, mempoolConfig, debugLogging);
+        networkId,
+        maxNumTransactionsPerProposal,
+        maxProposalTotalTxnsPayloadSize,
+        true,
+        databaseConfig,
+        mempoolConfig,
+        debugLogging);
   }
 
   @Override
@@ -189,7 +206,8 @@ public final class REv2StateManagerModule extends AbstractModule {
                 Serialization serialization) {
               return new REv2StateComputer(
                   stateComputer,
-                  transactionsPerProposalCount,
+                  maxNumTransactionsPerProposal,
+                  maxProposalTotalTxnsPayloadSize,
                   hasher,
                   ledgerUpdateEventDispatcher,
                   mempoolAddSuccessEventDispatcher,
