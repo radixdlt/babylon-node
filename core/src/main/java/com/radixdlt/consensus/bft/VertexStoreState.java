@@ -228,32 +228,6 @@ public final class VertexStoreState {
         highQC, headers.getSecond(), root, ImmutableMap.copyOf(seen), vertices);
   }
 
-  public VertexStoreState prune(Hasher hasher) {
-    final var highestQc = highQC.highestQC();
-    var stateProof = highestQc.getCommittedAndLedgerStateProof(hasher);
-    if (stateProof.isPresent()) {
-      var newHeaders = stateProof.get();
-      var header = newHeaders.getFirst();
-
-      if (header.getRound().gt(root.vertex().getRound())) {
-        var newRoot = idToVertex.get(header.getVertexId());
-        var newVertices =
-            ImmutableList.of(
-                idToVertex.get(highestQc.getParentHeader().getVertexId()),
-                idToVertex.get(highestQc.getProposedHeader().getVertexId()));
-        var idToVertexMap =
-            ImmutableMap.of(
-                highestQc.getParentHeader().getVertexId(), newVertices.get(0),
-                highestQc.getProposedHeader().getVertexId(), newVertices.get(1));
-        final var newHighQC = HighQC.from(highestQc, highestQc, highQC.highestTC());
-        final var proof = newHeaders.getSecond();
-        return new VertexStoreState(newHighQC, proof, newRoot, idToVertexMap, newVertices);
-      }
-    }
-
-    return this;
-  }
-
   public SerializedVertexStoreState toSerialized() {
     return new SerializedVertexStoreState(
         this.highQC,

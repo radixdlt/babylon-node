@@ -107,7 +107,7 @@ public final class REv2ConsensusLedgerRecoveryTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
-                            2, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
+                            2, Decimal.of(1), UInt64.fromNonNegativeLong(Long.MAX_VALUE)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                             new REV2TransactionGenerator(), 1)),
@@ -116,7 +116,6 @@ public final class REv2ConsensusLedgerRecoveryTest {
 
   @Test
   public void recovery_should_work_when_consensus_is_behind_ledger() {
-
     try (var test = createTest()) {
       test.startAllNodes();
 
@@ -131,8 +130,8 @@ public final class REv2ConsensusLedgerRecoveryTest {
       test.runNext(
           msg -> msg.message() instanceof Proposal && msg.channelId().isLocal(behindNodeIndex));
 
-      // Assert: Can run bft syncing with no issue
-      test.runForCount(100, onlyBFTSyncEvents());
+      // Assert: Can run consensus with no issue
+      test.runUntilState(allAtOrOverStateVersion(50), 300, onlyConsensusEvents());
     }
   }
 }
