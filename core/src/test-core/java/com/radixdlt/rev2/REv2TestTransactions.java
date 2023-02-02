@@ -167,7 +167,7 @@ public final class REv2TestTransactions {
     return String.format(
         """
                             CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
-                            CREATE_VALIDATOR EcdsaSecp256k1PublicKey("%s");
+                            CREATE_VALIDATOR EcdsaSecp256k1PublicKey("%s") Enum("AccessRule::AllowAll");
                             """,
         faucetAddress, key.toHex());
   }

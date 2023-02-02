@@ -173,23 +173,38 @@ impl SimpleMempool {
 
     pub fn get_proposal_transactions(
         &self,
-        count: u64,
-        prepared_ids: &HashSet<UserPayloadHash>,
+        max_count: u64,
+        max_payload_size_bytes: u64,
+        user_payload_hashes_to_exclude: &HashSet<UserPayloadHash>,
     ) -> Vec<PendingTransaction> {
-        let transactions = self
-            .data
+        let mut payload_size_so_far = 0u64;
+        let mut count_so_far = 0u64;
+        self.data
             .iter()
             .filter_map(|(tid, data)| {
-                if !prepared_ids.contains(tid) {
+                if !user_payload_hashes_to_exclude.contains(tid) {
                     Some(data.transaction.clone())
                 } else {
                     None
                 }
             })
-            .take(count as usize)
-            .collect();
+            .take_while(|tx| {
+                count_so_far += 1;
+                if count_so_far > max_count {
+                    return false;
+                }
 
-        transactions
+                payload_size_so_far += tx.payload_size;
+                if payload_size_so_far > max_payload_size_bytes {
+                    // Note that with this naive approach there might be other txns
+                    // in a mempool that could still fit in the available space.
+                    // This should be good enough for now, but consider optimizing at some point.
+                    return false;
+                }
+
+                true
+            })
+            .collect()
     }
 
     pub fn get_transactions(&self) -> HashMap<UserPayloadHash, MempoolData> {
@@ -307,10 +322,12 @@ mod tests {
         let notarized_transaction = create_fake_notarized_transaction(nonce, sigs_count);
         let payload_hash = notarized_transaction.user_payload_hash();
         let intent_hash = notarized_transaction.intent_hash();
+        let payload_size = notarized_transaction.to_bytes().unwrap().len() as u64;
         PendingTransaction {
             payload: notarized_transaction,
             payload_hash,
             intent_hash,
+            payload_size,
         }
     }
 
@@ -323,7 +340,7 @@ mod tests {
         let mut mp = SimpleMempool::new(MempoolConfig { max_size: 2 });
         assert_eq!(mp.max_size, 2);
         assert_eq!(mp.get_count(), 0);
-        let rc = mp.get_proposal_transactions(3, &HashSet::new());
+        let rc = mp.get_proposal_transactions(3, u64::MAX, &HashSet::new());
         let get = rc;
         assert!(get.is_empty());
 
@@ -332,20 +349,24 @@ mod tests {
         assert_eq!(mp.max_size, 2);
         assert_eq!(mp.get_count(), 1);
         assert!(mp.data.contains_key(&tv1.payload_hash));
-        let rc = mp.get_proposal_transactions(3, &HashSet::new());
+        let rc = mp.get_proposal_transactions(3, u64::MAX, &HashSet::new());
         let get = rc;
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv1));
 
         let rc = mp.get_proposal_transactions(
             3,
+            u64::MAX,
             &HashSet::from([tv1.payload_hash, tv2.payload_hash, tv3.payload_hash]),
         );
         let get = rc;
         assert!(get.is_empty());
 
-        let rc =
-            mp.get_proposal_transactions(3, &HashSet::from([tv2.payload_hash, tv3.payload_hash]));
+        let rc = mp.get_proposal_transactions(
+            3,
+            u64::MAX,
+            &HashSet::from([tv2.payload_hash, tv3.payload_hash]),
+        );
         let get = rc;
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv1));
@@ -361,7 +382,7 @@ mod tests {
         assert!(mp.data.contains_key(&tv1.payload_hash));
         assert!(mp.data.contains_key(&tv2.payload_hash));
 
-        let rc = mp.get_proposal_transactions(3, &HashSet::new());
+        let rc = mp.get_proposal_transactions(3, u64::MAX, &HashSet::new());
         let get = rc;
         assert_eq!(get.len(), 2);
         assert!(get.contains(&tv1));
@@ -369,19 +390,26 @@ mod tests {
 
         let rc = mp.get_proposal_transactions(
             3,
+            u64::MAX,
             &HashSet::from([tv1.payload_hash, tv2.payload_hash, tv3.payload_hash]),
         );
         let get = rc;
         assert!(get.is_empty());
 
-        let rc =
-            mp.get_proposal_transactions(3, &HashSet::from([tv2.payload_hash, tv3.payload_hash]));
+        let rc = mp.get_proposal_transactions(
+            3,
+            u64::MAX,
+            &HashSet::from([tv2.payload_hash, tv3.payload_hash]),
+        );
         let get = rc;
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv1));
 
-        let rc =
-            mp.get_proposal_transactions(3, &HashSet::from([tv1.payload_hash, tv3.payload_hash]));
+        let rc = mp.get_proposal_transactions(
+            3,
+            u64::MAX,
+            &HashSet::from([tv1.payload_hash, tv3.payload_hash]),
+        );
         let get = rc;
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv2));

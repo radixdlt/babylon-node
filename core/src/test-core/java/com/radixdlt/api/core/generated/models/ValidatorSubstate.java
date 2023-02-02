@@ -61,7 +61,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonPropertyOrder({
   ValidatorSubstate.JSON_PROPERTY_EPOCH_MANAGER_ADDRESS,
   ValidatorSubstate.JSON_PROPERTY_VALIDATOR_ADDRESS,
-  ValidatorSubstate.JSON_PROPERTY_KEY,
+  ValidatorSubstate.JSON_PROPERTY_PUBLIC_KEY,
   ValidatorSubstate.JSON_PROPERTY_STAKE_VAULT,
   ValidatorSubstate.JSON_PROPERTY_UNSTAKE_VAULT,
   ValidatorSubstate.JSON_PROPERTY_LIQUID_STAKE_UNIT_RESOURCE_ADDRESS,
@@ -103,8 +103,8 @@ public class ValidatorSubstate extends Substate {
   public static final String JSON_PROPERTY_VALIDATOR_ADDRESS = "validator_address";
   private String validatorAddress;
 
-  public static final String JSON_PROPERTY_KEY = "key";
-  private EcdsaSecp256k1PublicKey key;
+  public static final String JSON_PROPERTY_PUBLIC_KEY = "public_key";
+  private EcdsaSecp256k1PublicKey publicKey;
 
   public static final String JSON_PROPERTY_STAKE_VAULT = "stake_vault";
   private EntityReference stakeVault;
@@ -176,29 +176,29 @@ public class ValidatorSubstate extends Substate {
   }
 
 
-  public ValidatorSubstate key(EcdsaSecp256k1PublicKey key) {
-    this.key = key;
+  public ValidatorSubstate publicKey(EcdsaSecp256k1PublicKey publicKey) {
+    this.publicKey = publicKey;
     return this;
   }
 
    /**
-   * Get key
-   * @return key
+   * Get publicKey
+   * @return publicKey
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EcdsaSecp256k1PublicKey getKey() {
-    return key;
+  public EcdsaSecp256k1PublicKey getPublicKey() {
+    return publicKey;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonProperty(JSON_PROPERTY_PUBLIC_KEY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKey(EcdsaSecp256k1PublicKey key) {
-    this.key = key;
+  public void setPublicKey(EcdsaSecp256k1PublicKey publicKey) {
+    this.publicKey = publicKey;
   }
 
 
@@ -346,7 +346,7 @@ public class ValidatorSubstate extends Substate {
     ValidatorSubstate validatorSubstate = (ValidatorSubstate) o;
     return Objects.equals(this.epochManagerAddress, validatorSubstate.epochManagerAddress) &&
         Objects.equals(this.validatorAddress, validatorSubstate.validatorAddress) &&
-        Objects.equals(this.key, validatorSubstate.key) &&
+        Objects.equals(this.publicKey, validatorSubstate.publicKey) &&
         Objects.equals(this.stakeVault, validatorSubstate.stakeVault) &&
         Objects.equals(this.unstakeVault, validatorSubstate.unstakeVault) &&
         Objects.equals(this.liquidStakeUnitResourceAddress, validatorSubstate.liquidStakeUnitResourceAddress) &&
@@ -357,7 +357,7 @@ public class ValidatorSubstate extends Substate {
 
   @Override
   public int hashCode() {
-    return Objects.hash(epochManagerAddress, validatorAddress, key, stakeVault, unstakeVault, liquidStakeUnitResourceAddress, unstakeClaimTokenResourceAddress, isRegistered, super.hashCode());
+    return Objects.hash(epochManagerAddress, validatorAddress, publicKey, stakeVault, unstakeVault, liquidStakeUnitResourceAddress, unstakeClaimTokenResourceAddress, isRegistered, super.hashCode());
   }
 
   @Override
@@ -367,7 +367,7 @@ public class ValidatorSubstate extends Substate {
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    epochManagerAddress: ").append(toIndentedString(epochManagerAddress)).append("\n");
     sb.append("    validatorAddress: ").append(toIndentedString(validatorAddress)).append("\n");
-    sb.append("    key: ").append(toIndentedString(key)).append("\n");
+    sb.append("    publicKey: ").append(toIndentedString(publicKey)).append("\n");
     sb.append("    stakeVault: ").append(toIndentedString(stakeVault)).append("\n");
     sb.append("    unstakeVault: ").append(toIndentedString(unstakeVault)).append("\n");
     sb.append("    liquidStakeUnitResourceAddress: ").append(toIndentedString(liquidStakeUnitResourceAddress)).append("\n");

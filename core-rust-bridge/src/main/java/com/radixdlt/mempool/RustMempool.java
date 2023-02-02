@@ -129,20 +129,34 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
   }
 
   public List<RawNotarizedTransaction> getTransactionsForProposal(
-      int count, List<RawNotarizedTransaction> preparedTransactions) {
-    if (count <= 0) {
-      throw new IllegalArgumentException("State Manager Mempool: count must be > 0: " + count);
+      int maxCount, int maxPayloadSizeBytes, List<RawNotarizedTransaction> transactionToExclude) {
+    if (maxCount <= 0) {
+      throw new IllegalArgumentException(
+          "State Manager Mempool: maxCount must be > 0: " + maxCount);
     }
 
-    final var hashes =
-        preparedTransactions.stream().map(RawNotarizedTransaction::getPayloadHash).toList();
+    if (maxPayloadSizeBytes <= 0) {
+      throw new IllegalArgumentException(
+          "State Manager Mempool: maxPayloadSizeBytes must be > 0: " + maxPayloadSizeBytes);
+    }
 
-    return getTransactionsForProposalFunc.call(tuple(UInt32.fromNonNegativeInt(count), hashes));
+    final var transactionHashesToExclude =
+        transactionToExclude.stream().map(RawNotarizedTransaction::getPayloadHash).toList();
+
+    return getTransactionsForProposalFunc.call(
+        tuple(
+            UInt32.fromNonNegativeInt(maxCount),
+            UInt32.fromNonNegativeInt(maxPayloadSizeBytes),
+            transactionHashesToExclude));
   }
 
   @Override
-  public List<RawNotarizedTransaction> getTransactionsToRelay() {
-    return getTransactionsToRelayFunc.call(Tuple.tuple());
+  public List<RawNotarizedTransaction> getTransactionsToRelay(
+      int maxNumTxns, int maxTotalTxnsPayloadSize) {
+    return getTransactionsToRelayFunc.call(
+        Tuple.tuple(
+            UInt32.fromNonNegativeInt(maxNumTxns),
+            UInt32.fromNonNegativeInt(maxTotalTxnsPayloadSize)));
   }
 
   @Override
@@ -160,12 +174,13 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
       StateManager stateManager, byte[] payload);
 
   private final NativeCalls.Func1<
-          StateManager, Tuple.Tuple2<UInt32, List<HashCode>>, List<RawNotarizedTransaction>>
+          StateManager, Tuple.Tuple3<UInt32, UInt32, List<HashCode>>, List<RawNotarizedTransaction>>
       getTransactionsForProposalFunc;
 
   private static native byte[] getTransactionsToRelay(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<StateManager, Tuple.Tuple0, List<RawNotarizedTransaction>>
+  private final NativeCalls.Func1<
+          StateManager, Tuple.Tuple2<UInt32, UInt32>, List<RawNotarizedTransaction>>
       getTransactionsToRelayFunc;
 
   private static native byte[] getCount(Object stateManager, byte[] payload);

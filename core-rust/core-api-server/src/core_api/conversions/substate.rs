@@ -729,7 +729,7 @@ pub fn to_api_validator_substate(
     Ok(models::Substate::ValidatorSubstate {
         epoch_manager_address: to_api_component_address(context, manager),
         validator_address: to_api_component_address(context, address),
-        key: Box::new(to_api_ecdsa_secp256k1_public_key(key)),
+        public_key: Box::new(to_api_ecdsa_secp256k1_public_key(key)),
         stake_vault: Box::new(owned_stake_vault_id.into()),
         unstake_vault: Box::new(owned_unstake_vault_id.into()),
         unstake_claim_token_resource_address: to_api_resource_address(context, unstake_nft),

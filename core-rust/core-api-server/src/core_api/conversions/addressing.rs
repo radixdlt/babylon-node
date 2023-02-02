@@ -77,17 +77,19 @@ pub fn to_api_global_address(context: &MappingContext, global_address: &GlobalAd
 pub fn get_entity_type_from_global_address(global_address: &GlobalAddress) -> models::EntityType {
     match global_address {
         GlobalAddress::Component(component) => match component {
+            // Scrypto Components get mapped to EntityType::Component for now
+            ComponentAddress::Normal(_) => models::EntityType::Component,
+            ComponentAddress::Account(_) => models::EntityType::Component,
+            ComponentAddress::EcdsaSecp256k1VirtualAccount(_) => models::EntityType::Component,
+            ComponentAddress::EddsaEd25519VirtualAccount(_) => models::EntityType::Component,
+            // Native Components get mapped to their own EntityType for now - but this will change when we have native packages
             ComponentAddress::EpochManager(_) => models::EntityType::EpochManager,
             ComponentAddress::Clock(_) => models::EntityType::Clock,
             ComponentAddress::Validator(_) => models::EntityType::Validator,
-            ComponentAddress::Normal(_) => models::EntityType::Component,
             ComponentAddress::AccessController(_) => models::EntityType::AccessController,
-            ComponentAddress::Account(_) => models::EntityType::Component,
-            ComponentAddress::Identity(_) => models::EntityType::Component,
-            ComponentAddress::EcdsaSecp256k1VirtualAccount(_) => models::EntityType::Component,
-            ComponentAddress::EddsaEd25519VirtualAccount(_) => models::EntityType::Component,
-            ComponentAddress::EcdsaSecp256k1VirtualIdentity(_) => models::EntityType::Component,
-            ComponentAddress::EddsaEd25519VirtualIdentity(_) => models::EntityType::Component,
+            ComponentAddress::Identity(_) => models::EntityType::Identity,
+            ComponentAddress::EcdsaSecp256k1VirtualIdentity(_) => models::EntityType::Identity,
+            ComponentAddress::EddsaEd25519VirtualIdentity(_) => models::EntityType::Identity,
         },
         GlobalAddress::Package(_) => models::EntityType::Package,
         GlobalAddress::Resource(_) => models::EntityType::ResourceManager,
@@ -135,17 +137,19 @@ impl TryFrom<RENodeId> for MappedEntityId {
         let entity_id_bytes = re_node_id_to_entity_id_bytes(&re_node_id)?;
         let entity_type = match re_node_id {
             RENodeId::Global(_) => EntityType::Global,
+            // Gateway understands "Component" to be "Component with Scrypto Package" for now. This will change when we have Native Packages
             RENodeId::Component(_) => EntityType::Component,
             RENodeId::Package(_) => EntityType::Package,
             RENodeId::ResourceManager(_) => EntityType::ResourceManager,
+            // Native Components
             RENodeId::EpochManager(_) => EntityType::EpochManager,
-            RENodeId::Validator(_) => EntityType::Validator,
             RENodeId::Clock(_) => EntityType::Clock,
+            RENodeId::Validator(_) => EntityType::Validator,
+            RENodeId::AccessController(_) => EntityType::AccessController,
+            RENodeId::Identity(_) => EntityType::Identity,
             RENodeId::KeyValueStore(_) => EntityType::KeyValueStore,
             RENodeId::NonFungibleStore(_) => EntityType::NonFungibleStore,
             RENodeId::Vault(_) => EntityType::Vault,
-            RENodeId::AccessController(_) => EntityType::Component,
-            RENodeId::Identity(_) => EntityType::Component,
             RENodeId::Bucket(_) => return Err(transient_renode_error("Bucket")),
             RENodeId::Proof(_) => return Err(transient_renode_error("Proof")),
             RENodeId::Worktop => return Err(transient_renode_error("Worktop")),
@@ -421,6 +425,9 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         (SubstateType::Validator, SubstateKeyType::Validator)
                     }
                 },
+                SubstateOffset::Metadata(offset) => match offset {
+                    MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
+                },
                 SubstateOffset::AccessRulesChain(offset) => match offset {
                     AccessRulesChainOffset::AccessRulesChain => (
                         SubstateType::AccessRulesChain,
@@ -464,7 +471,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 },
                 _ => return Err(unknown_substate_error("Identity", &substate_id)),
             };
-            (EntityType::Validator, substate_type_key)
+            (EntityType::Identity, substate_type_key)
         }
 
         // TRANSIENT SUBSTATES

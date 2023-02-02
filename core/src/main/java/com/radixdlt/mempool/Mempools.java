@@ -95,7 +95,7 @@ public class Mempools {
       }
 
       @Override
-      public List<RawTx> getTransactionsToRelay() {
+      public List<RawTx> getTransactionsToRelay(int maxNumTxns, int maxTotalTxnsPayloadSize) {
         return List.of();
       }
     };

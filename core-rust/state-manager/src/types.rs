@@ -387,15 +387,18 @@ pub struct PendingTransaction {
     pub payload: NotarizedTransaction,
     pub payload_hash: UserPayloadHash,
     pub intent_hash: IntentHash,
+    pub payload_size: u64,
 }
 
 impl From<NotarizedTransaction> for PendingTransaction {
     fn from(transaction: NotarizedTransaction) -> Self {
         let intent_hash = transaction.intent_hash();
+        let payload_size = transaction.to_bytes().unwrap().len() as u64;
         PendingTransaction {
             payload_hash: transaction.user_payload_hash(),
             intent_hash,
             payload: transaction,
+            payload_size,
         }
     }
 }
