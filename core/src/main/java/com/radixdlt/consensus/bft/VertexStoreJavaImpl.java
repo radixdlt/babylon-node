@@ -156,6 +156,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     this.vertexChildren.clear();
     this.vertexChildren.put(rootVertex.hash(), new HashSet<>());
 
+    // Note that the vertices aren't re-executed at boot. See comment at `getExecutedVertex`
     for (var executedVertex : executedVertices) {
       this.vertices.put(executedVertex.getVertexHash(), executedVertex.getVertexWithHash());
       this.executedVertices.put(executedVertex.getVertexHash(), executedVertex);
@@ -232,6 +233,14 @@ public final class VertexStoreJavaImpl implements VertexStore {
   }
 
   // TODO: reimplement in async way
+  /* Returns an existing ExecutedVertex or executes a vertex that hasn't yet been executed and returns it.
+  This lazy-execution model was introduced to speed up node recovery after it has been restarted
+  while storing a significant number of vertices - for example timeout vertices, if network liveness was lost
+  before the restart. In this scenario, without the lazy-execution mechanism, the node would have to re-execute
+  all those vertices at boot. This could take a significant amount of time and might be pretty wasteful
+  (f.e. if the vertices themselves are empty but their root "path" contains some heavy transactions).
+  Note that the vertices inserted after boot are always executed immediately (including the vertices they depend on),
+  lazy-loading only applies to the initial vertices. */
   @Override
   public Option<ExecutedVertex> getExecutedVertex(HashCode vertexHash) {
     final var existingExecutedVertex = this.executedVertices.get(vertexHash);
