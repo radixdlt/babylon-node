@@ -82,12 +82,26 @@ pub enum StageKey {
 
 /// A change to the accumulated state.
 pub trait Delta {
+    /// Returns an estimated memory impact of this delta (measured in arbitrary units, relative to
+    /// other possible deltas).
+    /// This value is used during decision on amortized "reparenting" of the stage tree.
     fn weight(&self) -> usize;
 }
 
 /// An accumulated state coming from multiple [`Delta`]s.
-pub trait Accumulator<D: Delta>: Default + Clone {
+pub trait Accumulator<D: Delta> {
+    /// Creates a new, empty instance.
+    fn create_empty() -> Self;
+
+    /// Incorporates the changes coming from the given delta into this accumulator.
     fn accumulate(&mut self, delta: &D);
+
+    /// Performs a constant-time (and thus, necessarily, constant-space) clone of this accumulator.
+    /// This is an important runtime characteristic enabling efficient staging. This is the reason
+    /// why we define our own contract here (instead of simply requiring `Clone`).
+    /// For illustration: a toy example of a structure allowing for such clone implementation is
+    /// an append-only linked stack. A real-world case might be e.g. a hash array mapped trie.
+    fn constant_clone(&self) -> Self;
 }
 
 /// The [`children_keys`] are needed in order to traverse the tree.
@@ -123,7 +137,7 @@ pub struct StageTree<D: Delta, A: Accumulator<D>> {
 impl<D: Delta, A: Accumulator<D>> StageTree<D, A> {
     pub fn new() -> Self {
         StageTree {
-            empty_accumulator: A::default(),
+            empty_accumulator: A::create_empty(),
             nodes: SlotMap::with_capacity_and_key(1000),
             child_keys: Vec::new(),
             dead_weight: 0,
@@ -134,10 +148,13 @@ impl<D: Delta, A: Accumulator<D>> StageTree<D, A> {
     pub fn new_child_node(&mut self, parent_key: StageKey, delta: D) -> DerivedStageKey {
         self.total_weight += delta.weight();
         let mut new_accumulator = match parent_key {
-            StageKey::Root => A::default(),
-            StageKey::Derived(parent_key) => {
-                self.nodes.get_mut(parent_key).unwrap().accumulator.clone()
-            }
+            StageKey::Root => A::create_empty(),
+            StageKey::Derived(key) => self
+                .nodes
+                .get_mut(key)
+                .unwrap()
+                .accumulator
+                .constant_clone(),
         };
         new_accumulator.accumulate(&delta);
         let new_node = DerivedStageNode::new(delta, new_accumulator);
@@ -169,14 +186,17 @@ impl<D: Delta, A: Accumulator<D>> StageTree<D, A> {
         // NOTE: check [`self.delete`] note for more details why this is implemented iteratively instead of recursively
         let mut stack: Vec<(A, Vec<DerivedStageKey>)> = Vec::new();
 
-        stack.push((self.empty_accumulator.clone(), self.child_keys.clone()));
+        stack.push((
+            self.empty_accumulator.constant_clone(),
+            self.child_keys.clone(),
+        ));
         while let Some((accumulator, child_keys)) = stack.pop() {
             for child_key in child_keys.iter() {
                 let child_node = self.nodes.get_mut(*child_key).unwrap();
-                child_node.accumulator = accumulator.clone();
+                child_node.accumulator = accumulator.constant_clone();
                 child_node.accumulator.accumulate(&child_node.delta);
                 stack.push((
-                    child_node.accumulator.clone(),
+                    child_node.accumulator.constant_clone(),
                     child_node.child_keys.clone(),
                 ));
             }
@@ -301,14 +321,22 @@ mod tests {
         }
     }
 
-    #[derive(Clone, Default)]
+    #[derive(Clone)]
     struct TestAccumulator(HashMap<u8, u32>);
 
     impl Accumulator<TestDelta> for TestAccumulator {
+        fn create_empty() -> Self {
+            Self(HashMap::new())
+        }
+
         fn accumulate(&mut self, delta: &TestDelta) {
             for (id, value) in delta.0.iter() {
                 self.0.insert(*id, *value);
             }
+        }
+
+        fn constant_clone(&self) -> Self {
+            self.clone()
         }
     }
 
@@ -388,7 +416,8 @@ mod tests {
             );
             child_keys.push(StageKey::Derived(new_child_key));
 
-            let mut expected_accumulator = expected_accumulators[node_data.parent_id].clone();
+            let mut expected_accumulator =
+                expected_accumulators[node_data.parent_id].constant_clone();
             expected_accumulator.0.extend(
                 node_data
                     .updates

@@ -185,19 +185,21 @@ pub struct ImmutableStore {
     outputs: ImmutableHashMap<SubstateId, OutputValue>,
 }
 
-impl Default for ImmutableStore {
-    fn default() -> Self {
+impl Accumulator<TransactionReceipt> for ImmutableStore {
+    fn create_empty() -> Self {
         Self {
             outputs: ImmutableHashMap::new(),
         }
     }
-}
 
-impl Accumulator<TransactionReceipt> for ImmutableStore {
     fn accumulate(&mut self, delta: &TransactionReceipt) {
         if let TransactionResult::Commit(commit) = &delta.result {
             commit.state_updates.commit(self);
         }
+    }
+
+    fn constant_clone(&self) -> Self {
+        self.clone()
     }
 }
 
