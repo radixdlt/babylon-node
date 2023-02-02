@@ -238,10 +238,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     if (existingExecutedVertex != null) {
       return Option.some(existingExecutedVertex);
     } else {
-      final var vertex =
-          this.rootVertex.hash().equals(vertexHash)
-              ? this.rootVertex
-              : this.vertices.get(vertexHash);
+      final var vertex = this.vertices.get(vertexHash);
       if (vertex != null) {
         final var previous =
             vertex.hash().equals(vertex.vertex().getParentVertexId())
@@ -373,8 +370,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     while (executedVertexOpt.isPresent()) {
       final var v = executedVertexOpt.unwrap();
       path.addFirst(v);
-      if (v.getVertexHash().equals(v.vertex().getParentVertexId())
-          || v.getVertexHash().equals(this.rootVertex.hash())) {
+      if (v.getVertexHash().equals(v.vertex().getParentVertexId())) {
         break;
       }
       executedVertexOpt = getExecutedVertex(v.vertex().getParentVertexId());
