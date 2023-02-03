@@ -251,7 +251,7 @@ where
     }
 
     fn execute_with_cache(
-        &mut self,
+        &self,
         parent_accumulator_hash: &AccumulatorHash,
         executable: &Executable,
         payload_hash: &LedgerPayloadHash,
@@ -576,7 +576,7 @@ where
         }
     }
 
-    pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
+    pub fn prepare(&self, prepare_request: PrepareRequest) -> PrepareResult {
         // This intent hash check, and current epoch should eventually live in the executor
         let pending_transaction_base_state_version = self.store().max_state_version();
         let mut already_committed_or_prepared_intent_hashes: HashMap<

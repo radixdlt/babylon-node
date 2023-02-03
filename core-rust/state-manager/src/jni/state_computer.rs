@@ -147,25 +147,21 @@ fn do_prepare_genesis(
 }
 
 #[no_mangle]
+#[tracing::instrument(skip_all)]
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
     env: JNIEnv,
     _class: JClass,
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_prepare)
-}
-
-#[tracing::instrument(skip_all)]
-fn do_prepare(
-    state_manager: &mut ActualStateManager,
-    args: JavaPrepareRequest,
-) -> JavaPrepareResult {
-    let prepare_request = args;
-
-    let result = state_manager.prepare(prepare_request.into());
-
-    result.into()
+    jni_state_manager_sbor_read_call(
+        env,
+        j_state_manager,
+        request_payload,
+        |state_manager, prepare_request: JavaPrepareRequest| {
+            JavaPrepareResult::from(state_manager.prepare(prepare_request.into()))
+        },
+    )
 }
 
 #[no_mangle]
