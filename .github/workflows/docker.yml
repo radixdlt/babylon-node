@@ -32,13 +32,30 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Docker meta release
+      - name: Set target image
+        id: set_variables
+        run: |
+          GH_EVENT_NAME="${{ github.event_name }}"
+          echo "This is a Github event type: $GH_EVENT_NAME"
+          if [[ "$GH_EVENT_NAME" == "release" ]] ;then
+            echo "::set-output name=radixdlt_image::radixdlt/babylon-node"
+            echo "is_release: true"
+            echo "release_version: ${{ github.event.release.tag_name }}"
+            echo "ref: ${{ github.event.release.tag_name }}"
+            echo "radixdlt_image: radixdlt/babylon-node"
+          else
+            echo "::set-output name=radixdlt_image::radixdlt/eu.gcr.io/dev-container-repo/babylon-node"
+            echo "is_release: false"
+            echo "release_version: ${{ github.event.release.tag_name }}"
+            echo "ref: ${{ github.event.release.tag_name }}"
+            echo "radixdlt_image: eu.gcr.io/dev-container-repo/babylon-node"
+          fi 
+      - name: Docker meta
         id: meta
         uses: docker/metadata-action@v4
         with:
           images: |
-            eu.gcr.io/dev-container-repo/babylon-node
-            radixdlt/babylon-node
+            ${{ steps.set_variables.outputs.radixdlt_image }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -46,21 +63,6 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=sha
-        if: github.event_name == 'release'
-      - name: Docker meta other
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: |
-            eu.gcr.io/dev-container-repo/babylon-node
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
-        if: github.event_name != 'release'
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
