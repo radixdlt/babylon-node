@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::core_api::*;
 use state_manager::jni::state_manager::ActualStateManager;
+use state_manager::query::StateManagerSubstateQueries;
 use state_manager::{
     HasUserPayloadHash, LedgerTransactionOutcome, RejectionReason, UserPayloadHash,
 };

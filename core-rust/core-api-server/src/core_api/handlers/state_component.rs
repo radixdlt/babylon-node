@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use crate::core_api::*;
 use radix_engine::model::PersistedSubstate;
 use radix_engine::types::{
@@ -86,8 +88,9 @@ fn handle_state_component_internal(
         substate
     };
 
-    let component_dump = dump_component_state(state_manager.store(), component_address)
-        .map_err(|err| server_error(format!("Error traversing component state: {:?}", err)))?;
+    let component_dump =
+        dump_component_state(state_manager.store().deref().deref(), component_address)
+            .map_err(|err| server_error(format!("Error traversing component state: {:?}", err)))?;
 
     let state_owned_vaults = component_dump
         .vaults

@@ -62,6 +62,8 @@
  * permissions under this License.
  */
 
+use std::ops::{Deref, DerefMut};
+
 use super::stage_tree::{StagedSubstateStoreKey, StagedSubstateStoreNodeKey};
 use crate::staging::stage_tree::{StagedSubstateStore, StagedSubstateStoreManager};
 use crate::AccumulatorHash;
@@ -70,8 +72,22 @@ use radix_engine::transaction::TransactionReceipt;
 use sbor::rust::collections::HashMap;
 use slotmap::SecondaryMap;
 
+impl<S: ReadableSubstateStore> Deref for ExecutionCache<S> {
+    type Target = S;
+
+    fn deref(&self) -> &Self::Target {
+        &self.staged_store_manager.root
+    }
+}
+
+impl<S: ReadableSubstateStore> DerefMut for ExecutionCache<S> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.staged_store_manager.root
+    }
+}
+
 pub struct ExecutionCache<S: ReadableSubstateStore> {
-    pub staged_store_manager: StagedSubstateStoreManager<S>,
+    staged_store_manager: StagedSubstateStoreManager<S>,
     root_accumulator_hash: AccumulatorHash,
     accumulator_hash_to_key: HashMap<AccumulatorHash, StagedSubstateStoreNodeKey>,
     key_to_accumulator_hash: SecondaryMap<StagedSubstateStoreNodeKey, AccumulatorHash>,

@@ -9,6 +9,8 @@ tracing = { version = "0.1" }
 parking_lot = { version = "0.12" }
 prometheus = { version = "0.13.2", default-features = false, features = [] }
 
+delegate = "*"
+
 # DEPENDENCIES ON RADIXDLT-SCRYPTO
 #
 # To make builds reproducible, for merged in node code, please specify a fixed tag below, not a branch.

@@ -63,6 +63,7 @@
  */
 
 use crate::jni::mempool::JavaRawTransaction;
+use crate::query::StateManagerSubstateQueries;
 use crate::transaction::UserTransactionValidator;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;

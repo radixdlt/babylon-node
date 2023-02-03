@@ -83,6 +83,7 @@ use ::transaction::model::{
 };
 use ::transaction::signing::EcdsaSecp256k1PrivateKey;
 use ::transaction::validation::{TestIntentHashManager, ValidationConfig};
+use delegate::delegate;
 use parking_lot::RwLock;
 use prometheus::Registry;
 use radix_engine::engine::ScryptoInterpreter;
@@ -101,6 +102,7 @@ use radix_engine_interface::api::types::{SubstateId, SubstateOffset, ValidatorOf
 use radix_engine_interface::node::NetworkDefinition;
 use std::collections::{BTreeMap, HashMap};
 use std::convert::TryInto;
+use std::ops::Deref;
 
 use radix_engine::ledger::OutputValue;
 use rand::seq::SliceRandom;
@@ -123,7 +125,7 @@ pub struct StateManagerLoggingConfig {
 pub struct StateManager<S: ReadableSubstateStore> {
     pub mempool: RwLock<SimpleMempool>,
     pub network: NetworkDefinition,
-    execution_cache: ExecutionCache<S>,
+    execution_cache: RwLock<ExecutionCache<S>>,
     pub user_transaction_validator: UserTransactionValidator,
     pub ledger_transaction_validator: LedgerTransactionValidator,
     pub pending_transaction_result_cache: RwLock<PendingTransactionResultCache>,
@@ -165,7 +167,7 @@ where
         StateManager {
             network,
             mempool: RwLock::new(mempool),
-            execution_cache: ExecutionCache::new(store, accumulator_hash),
+            execution_cache: RwLock::new(ExecutionCache::new(store, accumulator_hash)),
             user_transaction_validator,
             ledger_transaction_validator: committed_transaction_validator,
             execution_config: ExecutionConfig {
@@ -191,12 +193,23 @@ where
     }
 }
 
+impl<S: QueryableProofStore + ReadableSubstateStore> QueryableProofStore for StateManager<S> {
+    delegate! {
+        to self.execution_cache.read() {
+            fn max_state_version(&self) -> u64;
+            fn get_txns_and_proof(&self, start_state_version_inclusive: u64, max_number_of_txns_if_more_than_one_proof: u32, max_payload_size_in_bytes: u32,) -> Option<(Vec<Vec<u8>>, Vec<u8>)>;
+            fn get_epoch_proof(&self, epoch: u64) -> Option<Vec<u8>>;
+            fn get_last_proof(&self) -> Option<Vec<u8>>;
+        }
+    }
+}
+
 impl<S> StateManager<S>
 where
     S: ReadableSubstateStore,
 {
-    pub fn store(&self) -> &S {
-        &self.execution_cache.staged_store_manager.root
+    pub fn store(&self) -> impl Deref<Target = ExecutionCache<S>> + '_ {
+        self.execution_cache.read()
     }
 
     pub fn preview(&self, preview_request: PreviewRequest) -> Result<PreviewResult, PreviewError> {
@@ -229,7 +242,7 @@ where
         };
 
         execute_preview(
-            self.store(),
+            self.store().deref().deref(),
             &self.scrypto_interpreter,
             &self.intent_hash_manager,
             &self.network,
@@ -242,20 +255,20 @@ where
         parent_accumulator_hash: &AccumulatorHash,
         executable: &Executable,
         payload_hash: &LedgerPayloadHash,
-    ) -> (AccumulatorHash, &TransactionReceipt) {
+    ) -> (AccumulatorHash, TransactionReceipt) {
         let new_accumulator_hash = parent_accumulator_hash.accumulate(payload_hash);
+        let mut execution_cache = self.execution_cache.write();
         let receipt =
-            self.execution_cache
-                .execute(parent_accumulator_hash, &new_accumulator_hash, |store| {
-                    execute_transaction(
-                        store,
-                        &self.scrypto_interpreter,
-                        &self.fee_reserve_config,
-                        &self.execution_config,
-                        executable,
-                    )
-                });
-        (new_accumulator_hash, receipt)
+            execution_cache.execute(parent_accumulator_hash, &new_accumulator_hash, |store| {
+                execute_transaction(
+                    store,
+                    &self.scrypto_interpreter,
+                    &self.fee_reserve_config,
+                    &self.execution_config,
+                    executable,
+                )
+            });
+        (new_accumulator_hash, receipt.clone())
     }
 }
 
@@ -299,7 +312,7 @@ where
         let start = std::time::Instant::now();
 
         let receipt = execute_transaction(
-            self.store(),
+            self.store().deref().deref(),
             &self.scrypto_interpreter,
             &self.fee_reserve_config,
             &self.execution_config,
@@ -417,7 +430,7 @@ where
         let attempt = TransactionAttempt {
             rejection,
             against_state: AtState::Committed {
-                state_version: self.store().max_state_version(),
+                state_version: self.max_state_version(),
             },
             timestamp: current_time,
         };
@@ -841,10 +854,7 @@ where
     S: WriteableVertexStore,
 {
     pub fn save_vertex_store(&'db mut self, vertex_store: Vec<u8>) {
-        self.execution_cache
-            .staged_store_manager
-            .root
-            .save_vertex_store(vertex_store);
+        self.execution_cache.write().save_vertex_store(vertex_store);
     }
 
     pub fn commit(&'db mut self, commit_request: CommitRequest) -> Result<(), CommitError> {
@@ -914,8 +924,6 @@ where
 
             parent_accumulator_hash = current_accumulator_hash;
 
-            let engine_receipt = (*engine_receipt).clone();
-
             let ledger_receipt: LedgerTransactionReceipt = match engine_receipt.result {
                 TransactionResult::Commit(result) => {
                     if let Some((_, next_epoch)) = result.next_epoch {
@@ -958,7 +966,9 @@ where
             committed_transaction_bundles.push((transaction, ledger_receipt, identifiers));
         }
 
-        self.execution_cache.progress_root(&parent_accumulator_hash);
+        self.execution_cache
+            .write()
+            .progress_root(&parent_accumulator_hash);
 
         let mut substates_collector = CommitSubstatesCollector::new();
         for receipt in receipts {
@@ -967,17 +977,14 @@ where
             }
         }
 
-        self.execution_cache
-            .staged_store_manager
-            .root
-            .commit(CommitBundle {
-                transactions: committed_transaction_bundles,
-                proof_bytes: commit_request.proof,
-                proof_state_version: commit_request.proof_state_version,
-                epoch_boundary,
-                substates: substates_collector.substates,
-                vertex_store: commit_request.vertex_store,
-            });
+        self.execution_cache.write().commit(CommitBundle {
+            transactions: committed_transaction_bundles,
+            proof_bytes: commit_request.proof,
+            proof_state_version: commit_request.proof_state_version,
+            epoch_boundary,
+            substates: substates_collector.substates,
+            vertex_store: commit_request.vertex_store,
+        });
 
         self.metrics
             .ledger_state_version
@@ -1016,7 +1023,8 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
         &self,
         component_address: ComponentAddress,
     ) -> Option<HashMap<ResourceAddress, Decimal>> {
-        let mut resource_accounter = ResourceAccounter::new(self.store());
+        let a = self.store();
+        let mut resource_accounter = ResourceAccounter::new(a.deref().deref());
         resource_accounter
             .add_resources(RENodeId::Global(GlobalAddress::Component(
                 component_address,
@@ -1040,9 +1048,14 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
             unstake_resource: validator_substate.unstake_nft,
         }
     }
+}
 
-    pub fn get_epoch(&self) -> u64 {
-        self.store().get_epoch()
+impl<S: ReadableSubstateStore> StateManagerSubstateQueries for StateManager<S> {
+    delegate! {
+        to self.execution_cache.read() {
+            fn global_deref(&self, global_address: GlobalAddress) -> Option<RENodeId>;
+            fn get_epoch(&self) -> u64;
+        }
     }
 }
 

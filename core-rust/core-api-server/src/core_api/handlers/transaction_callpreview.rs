@@ -10,7 +10,7 @@ use radix_engine::{
 };
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use radix_engine_interface::args;
-use state_manager::PreviewRequest;
+use state_manager::{query::StateManagerSubstateQueries, PreviewRequest};
 use transaction::model::{BasicInstruction, PreviewFlags, TransactionManifest};
 
 macro_rules! args_from_bytes_vec {
