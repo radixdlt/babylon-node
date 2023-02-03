@@ -38,13 +38,13 @@ jobs:
           GH_EVENT_NAME="${{ github.event_name }}"
           echo "This is a Github event type: $GH_EVENT_NAME"
           if [[ "$GH_EVENT_NAME" == "release" ]] ;then
-            echo "::set-output name=radixdlt_image::radixdlt/babylon-node"
+            echo "radixdlt_image=radixdlt/babylon-node" >> $GITHUB_OUTPUT
             echo "is_release: true"
             echo "release_version: ${{ github.event.release.tag_name }}"
             echo "ref: ${{ github.event.release.tag_name }}"
             echo "radixdlt_image: radixdlt/babylon-node"
           else
-            echo "::set-output name=radixdlt_image::eu.gcr.io/dev-container-repo/babylon-node"
+            echo "radixdlt_image=eu.gcr.io/dev-container-repo/babylon-node" >> $GITHUB_OUTPUT
             echo "is_release: false"
             echo "release_version: ${{ github.event.release.tag_name }}"
             echo "ref: ${{ github.event.release.tag_name }}"
