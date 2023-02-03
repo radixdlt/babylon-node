@@ -233,14 +233,17 @@ public final class VertexStoreJavaImpl implements VertexStore {
   }
 
   // TODO: reimplement in async way
-  /* Returns an existing ExecutedVertex or executes a vertex that hasn't yet been executed and returns it.
-  This lazy-execution model was introduced to speed up node recovery after it has been restarted
-  while storing a significant number of vertices - for example timeout vertices, if network liveness was lost
-  before the restart. In this scenario, without the lazy-execution mechanism, the node would have to re-execute
-  all those vertices at boot. This could take a significant amount of time and might be pretty wasteful
-  (f.e. if the vertices themselves are empty but their root "path" contains some heavy transactions).
-  Note that the vertices inserted after boot are always executed immediately (including the vertices they depend on),
-  lazy-loading only applies to the initial vertices. */
+  /**
+   * Returns an existing ExecutedVertex or executes a vertex that hasn't yet been executed and
+   * returns it. This lazy-execution model was introduced to speed up node recovery after it has
+   * been restarted while storing a significant number of vertices - for example timeout vertices,
+   * if network liveness was lost before the restart. In this scenario, without the lazy-execution
+   * mechanism, the node would have to re-execute all those vertices at boot. This could take a
+   * significant amount of time and might be pretty wasteful (f.e. if the vertices themselves are
+   * empty but their root "path" contains some heavy transactions). Note that the vertices inserted
+   * after boot are always executed immediately (including the vertices they depend on),
+   * lazy-loading only applies to the initial vertices.
+   */
   @Override
   public Option<ExecutedVertex> getExecutedVertex(HashCode vertexHash) {
     final var existingExecutedVertex = this.executedVertices.get(vertexHash);
@@ -372,9 +375,15 @@ public final class VertexStoreJavaImpl implements VertexStore {
   }
 
   @Override
+  /** Returns a path of vertices up to the root vertex (excluding the root itself) */
   public LinkedList<ExecutedVertex> getPathFromRoot(HashCode vertexId) {
     final LinkedList<ExecutedVertex> path = new LinkedList<>();
 
+    /* TODO: consider throwing an exception if some vertices on path couldn't be executed
+       There might be a corner case when ledger is ahead of vertex store and not-throwing
+       actually allows to still be able to get a path (the issue was more likely when vertex execution happened
+       at init - with async execution bft/ledger sync has a chance to catch up).
+    */
     var executedVertexOpt = getExecutedVertex(vertexId);
     while (executedVertexOpt.isPresent()) {
       final var v = executedVertexOpt.unwrap();
