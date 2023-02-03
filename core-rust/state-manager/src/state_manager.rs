@@ -857,7 +857,7 @@ where
         self.execution_cache.write().save_vertex_store(vertex_store);
     }
 
-    pub fn commit(&'db mut self, commit_request: CommitRequest) -> Result<(), CommitError> {
+    pub fn commit(&self, commit_request: CommitRequest) -> Result<(), CommitError> {
         let commit_request_start_state_version =
             commit_request.proof_state_version - (commit_request.transaction_payloads.len() as u64);
 
@@ -881,6 +881,7 @@ where
             .store()
             .get_top_of_ledger_transaction_identifiers()
             .unwrap_or_else(CommittedTransactionIdentifiers::pre_genesis);
+
         if current_top_of_ledger.state_version != commit_request_start_state_version {
             panic!(
                 "Mismatched state versions - the commit request claims {} but the database thinks we're at {}",
@@ -912,8 +913,7 @@ where
                 .validate_and_create_executable(&transaction)
                 .unwrap_or_else(|error| {
                     panic!(
-                        "Committed transaction is not valid - likely byzantine quorum: {:?}",
-                        error
+                        "Committed transaction is not valid - likely byzantine quorum: {error:?}",
                     );
                 });
 
@@ -924,7 +924,7 @@ where
 
             parent_accumulator_hash = current_accumulator_hash;
 
-            let ledger_receipt: LedgerTransactionReceipt = match engine_receipt.result {
+            let ledger_receipt = match engine_receipt.result {
                 TransactionResult::Commit(result) => {
                     if let Some((_, next_epoch)) = result.next_epoch {
                         let is_last = i == (parsed_txns_len - 1);
@@ -935,7 +935,7 @@ where
                         epoch_boundary = Some(next_epoch);
                     }
 
-                    (result, engine_receipt.execution.fee_summary).into()
+                    LedgerTransactionReceipt::from((result, engine_receipt.execution.fee_summary))
                 }
                 TransactionResult::Reject(error) => {
                     panic!(
@@ -952,8 +952,7 @@ where
             };
 
             if let LedgerTransaction::User(notarized_transaction) = &transaction {
-                let intent_hash = notarized_transaction.intent_hash();
-                intent_hashes.push(intent_hash);
+                intent_hashes.push(notarized_transaction.intent_hash());
             }
 
             current_state_version += 1;
@@ -965,7 +964,10 @@ where
 
             committed_transaction_bundles.push((transaction, ledger_receipt, identifiers));
         }
+
         let mut execution_cache = self.execution_cache.write();
+        let mut mempool = self.mempool.write();
+        let mut pending_transaction_result_cache = self.pending_transaction_result_cache.write();
 
         execution_cache.progress_root(&parent_accumulator_hash);
 
@@ -997,21 +999,17 @@ where
                 .unwrap()
                 .as_secs_f64(),
         );
-        {
-            let mut mempool = self.mempool.write();
-            mempool.handle_committed_transactions(&intent_hashes);
-            self.metrics
-                .mempool_current_transactions
-                .set(mempool.get_count() as i64);
-        }
 
-        self.pending_transaction_result_cache
-            .write()
-            .track_committed_transactions(
-                SystemTime::now(),
-                commit_request_start_state_version,
-                intent_hashes,
-            );
+        mempool.handle_committed_transactions(&intent_hashes);
+        self.metrics
+            .mempool_current_transactions
+            .set(mempool.get_count() as i64);
+
+        pending_transaction_result_cache.track_committed_transactions(
+            SystemTime::now(),
+            commit_request_start_state_version,
+            intent_hashes,
+        );
 
         Ok(())
     }

@@ -163,23 +163,21 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
 }
 
 #[no_mangle]
+#[tracing::instrument(skip_all)]
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
     env: JNIEnv,
     _class: JClass,
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_commit)
-}
-
-#[tracing::instrument(skip_all)]
-fn do_commit(
-    state_manager: &mut ActualStateManager,
-    args: JavaCommitRequest,
-) -> Result<(), CommitError> {
-    let commit_request = args;
-
-    state_manager.commit(commit_request.into())
+    jni_state_manager_sbor_read_call(
+        env,
+        j_state_manager,
+        request_payload,
+        |state_manager, commit_request: JavaCommitRequest| {
+            state_manager.commit(commit_request.into())
+        },
+    )
 }
 
 #[no_mangle]
