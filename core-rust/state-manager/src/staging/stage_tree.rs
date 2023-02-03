@@ -283,7 +283,7 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
         CB: FnMut(&StagedSubstateStoreNodeKey),
     {
         // WARNING: This method was originally written recursively, however this caused a SEGFAULT due to stack overflow.
-        // The tree has a depth equal to the transaction depth of staging, which is normally quite small during consensus, but 
+        // The tree has a depth equal to the transaction depth of staging, which is normally quite small during consensus, but
         // is much larger during ledger sync. We were getting a SEGFAULT after depths of roughly 800 transactions, presumably
         // because a large amount of data was placed on the stack in each stack frame somehow by rustc.
         let mut stack = Vec::new();
