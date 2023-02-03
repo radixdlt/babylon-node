@@ -109,41 +109,39 @@ fn do_verify(state_manager: &ActualStateManager, args: JavaRawTransaction) -> Re
 }
 
 #[no_mangle]
+#[tracing::instrument(skip_all)]
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_saveVertexStore(
     env: JNIEnv,
     _class: JClass,
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_save_vertex_store)
-}
-
-#[tracing::instrument(skip_all)]
-fn do_save_vertex_store(state_manager: &mut ActualStateManager, args: Vec<u8>) {
-    let vertex_store_bytes: Vec<u8> = args;
-    state_manager.save_vertex_store(vertex_store_bytes);
+    jni_state_manager_sbor_read_call(
+        env,
+        j_state_manager,
+        request_payload,
+        |state_manager, vertex_store_bytes| {
+            state_manager.save_vertex_store(vertex_store_bytes);
+        },
+    )
 }
 
 #[no_mangle]
+#[tracing::instrument(skip_all)]
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepareGenesis(
     env: JNIEnv,
     _class: JClass,
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_prepare_genesis)
-}
-
-#[tracing::instrument(skip_all)]
-fn do_prepare_genesis(
-    state_manager: &mut ActualStateManager,
-    args: JavaPrepareGenesisRequest,
-) -> JavaPrepareGenesisResult {
-    let prepare_request = args;
-
-    let result = state_manager.prepare_genesis(prepare_request.into());
-
-    result.into()
+    jni_state_manager_sbor_read_call(
+        env,
+        j_state_manager,
+        request_payload,
+        |state_manager, prepare_request: JavaPrepareGenesisRequest| {
+            JavaPrepareGenesisResult::from(state_manager.prepare_genesis(prepare_request.into()))
+        },
+    )
 }
 
 #[no_mangle]

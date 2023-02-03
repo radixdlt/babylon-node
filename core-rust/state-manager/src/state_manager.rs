@@ -538,7 +538,7 @@ where
     }
 
     // TODO: Update to prepare_system_transaction when we start to support forking
-    pub fn prepare_genesis(&mut self, genesis: PrepareGenesisRequest) -> PrepareGenesisResult {
+    pub fn prepare_genesis(&self, genesis: PrepareGenesisRequest) -> PrepareGenesisResult {
         let parsed_transaction =
             LedgerTransactionValidator::parse_unvalidated_transaction_from_slice(&genesis.genesis)
                 .expect("Already prepared transactions should be decodeable");
@@ -853,7 +853,7 @@ where
     S: QueryableProofStore + QueryableTransactionStore,
     S: WriteableVertexStore,
 {
-    pub fn save_vertex_store(&'db mut self, vertex_store: Vec<u8>) {
+    pub fn save_vertex_store(&self, vertex_store: Vec<u8>) {
         self.execution_cache.write().save_vertex_store(vertex_store);
     }
 
@@ -965,10 +965,9 @@ where
 
             committed_transaction_bundles.push((transaction, ledger_receipt, identifiers));
         }
+        let mut execution_cache = self.execution_cache.write();
 
-        self.execution_cache
-            .write()
-            .progress_root(&parent_accumulator_hash);
+        execution_cache.progress_root(&parent_accumulator_hash);
 
         let mut substates_collector = CommitSubstatesCollector::new();
         for receipt in receipts {
@@ -977,7 +976,7 @@ where
             }
         }
 
-        self.execution_cache.write().commit(CommitBundle {
+        execution_cache.commit(CommitBundle {
             transactions: committed_transaction_bundles,
             proof_bytes: commit_request.proof,
             proof_state_version: commit_request.proof_state_version,
