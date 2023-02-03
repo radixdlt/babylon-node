@@ -62,21 +62,87 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.liveness;
+package com.radixdlt.consensus.bft.processor;
 
-public interface PacemakerTimeoutCalculator {
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.RoundLeaderFailure;
+import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.monitoring.Metrics;
+import java.util.HashSet;
+import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-  /**
-   * Calculates the pacemaker round timeout.
-   *
-   * @param consecutiveUncommittedRounds the number of consecutive uncommitted rounds
-   * @return pacemaker round timeout in milliseconds
-   */
-  long calculateTimeoutMs(long consecutiveUncommittedRounds);
+/**
+ * Verifies that only a single proposal is received in each round. Requires prior validation that
+ * all proposals come from a genuine leader.
+ */
+public final class OneProposalPerRoundVerifier implements BFTEventProcessor {
+  private static final Logger log = LogManager.getLogger();
 
-  /**
-   * Returns the amount of time (in milliseconds) by which the round can be extended if proposal was
-   * received, but hasn't yet been synced up.
-   */
-  long additionalRoundTimeIfProposalReceivedMs();
+  private final BFTEventProcessor forwardTo;
+  private final Metrics metrics;
+
+  private final Set<Round> receivedProposals = new HashSet<>();
+
+  public OneProposalPerRoundVerifier(BFTEventProcessor forwardTo, Metrics metrics) {
+    this.forwardTo = forwardTo;
+    this.metrics = metrics;
+  }
+
+  @Override
+  public void start() {
+    forwardTo.start();
+  }
+
+  @Override
+  public void processRoundUpdate(RoundUpdate roundUpdate) {
+    this.receivedProposals.removeIf(r -> r.lt(roundUpdate.getCurrentRound()));
+    forwardTo.processRoundUpdate(roundUpdate);
+  }
+
+  @Override
+  public void processVote(Vote vote) {
+    forwardTo.processVote(vote);
+  }
+
+  @Override
+  public void processProposal(Proposal proposal) {
+    if (receivedProposals.contains(proposal.getRound())) {
+      this.metrics.bft().duplicateProposalsReceived().inc();
+      log.warn(
+          "Received a duplicate proposal from {} for round {}",
+          proposal.getAuthor(),
+          proposal.getRound());
+      return;
+    }
+
+    receivedProposals.add(proposal.getRound());
+    forwardTo.processProposal(proposal);
+  }
+
+  @Override
+  public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
+    forwardTo.processLocalTimeout(scheduledLocalTimeout);
+  }
+
+  @Override
+  public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
+    forwardTo.processRoundLeaderFailure(roundLeaderFailure);
+  }
+
+  @Override
+  public void processBFTUpdate(BFTInsertUpdate update) {
+    forwardTo.processBFTUpdate(update);
+  }
+
+  @Override
+  public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
+    forwardTo.processBFTRebuildUpdate(update);
+  }
 }

@@ -103,7 +103,7 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
 
   private static final Logger log = LogManager.getLogger();
 
-  private final BFTEventProcessor forwardTo;
+  private final BFTEventProcessorAtCurrentRound forwardTo;
   private final BFTSyncer bftSyncer;
   private final Metrics metrics;
   private final Set<QueuedConsensusEvent> syncingEvents = new HashSet<>();
@@ -111,7 +111,7 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
   private RoundUpdate latestRoundUpdate;
 
   public SyncUpPreprocessor(
-      BFTEventProcessor forwardTo,
+      BFTEventProcessorAtCurrentRound forwardTo,
       BFTSyncer bftSyncer,
       Metrics metrics,
       RoundUpdate initialRoundUpdate) {
@@ -144,18 +144,10 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
   }
 
   private void processRoundCachedEvent(QueuedConsensusEvent queuedEvent) {
-    final var event = queuedEvent.event;
-
     metrics.bft().consensusEventsQueueWait().observe(queuedEvent.stopwatch.elapsed());
-
-    if (event instanceof Proposal) {
-      log.trace("Processing cached proposal {}", event);
-      processProposal((Proposal) event);
-    } else if (event instanceof Vote) {
-      log.trace("Processing cached vote {}", event);
-      processVote((Vote) event);
-    } else {
-      log.error("Ignoring cached ConsensusEvent {}", event);
+    switch (queuedEvent.event) {
+      case Proposal proposal -> syncUpAndProcess(proposal, forwardTo::processProposal);
+      case Vote vote -> syncUpAndProcess(vote, forwardTo::processVote);
     }
   }
 
@@ -208,18 +200,42 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
   @Override
   public void processVote(Vote vote) {
     log.trace("Vote: PreProcessing {}", vote);
-    if (!processVoteInternal(vote)) {
-      log.debug("Vote: Queuing {}, waiting for Sync", vote);
-      syncingEvents.add(new QueuedConsensusEvent(vote, Stopwatch.createStarted()));
+    final Round currentRound = this.latestRoundUpdate.getCurrentRound();
+    if (vote.getRound().gte(currentRound)) {
+      this.forwardTo.preProcessUnsyncedVoteForCurrentOrFutureRound(vote);
+      syncUpAndProcess(vote, forwardTo::processVote);
+    } else {
+      log.trace("Vote: Ignoring for past round {}, current round is {}", vote, currentRound);
     }
   }
 
   @Override
   public void processProposal(Proposal proposal) {
     log.trace("Proposal: PreProcessing {}", proposal);
-    if (!processProposalInternal(proposal)) {
-      log.debug("Proposal: Queuing {}, waiting for Sync", proposal);
-      syncingEvents.add(new QueuedConsensusEvent(proposal, Stopwatch.createStarted()));
+    final Round currentRound = this.latestRoundUpdate.getCurrentRound();
+    if (proposal.getRound().gte(currentRound)) {
+      this.forwardTo.preProcessUnsyncedProposalForCurrentOrFutureRound(proposal);
+      syncUpAndProcess(proposal, forwardTo::processProposal);
+    } else {
+      log.trace(
+          "Proposal: Ignoring for past round {}, current round is {}", proposal, currentRound);
+    }
+  }
+
+  private <T extends ConsensusEvent> void syncUpAndProcess(T event, Consumer<T> processFn) {
+    final Round currentRound = this.latestRoundUpdate.getCurrentRound();
+    if (event.getRound().gte(currentRound)) {
+      final var isSynced =
+          syncUp(
+              event.highQC(),
+              NodeId.fromPublicKey(event.getAuthor().getKey()),
+              () -> processOnCurrentRoundOrCache(event, processFn));
+      if (!isSynced) {
+        log.debug("Queuing {}, waiting for Sync", event);
+        syncingEvents.add(new QueuedConsensusEvent(event, Stopwatch.createStarted()));
+      }
+    } else {
+      log.trace("Ignoring BFT event {} for past round, current round is {}", event, currentRound);
     }
   }
 
@@ -238,53 +254,20 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
     forwardTo.start();
   }
 
-  // TODO: rework processQueuedConsensusEvent(), processVoteInternal() and processProposalInternal()
+  // TODO: rework processQueuedConsensusEvent()
   // avoid code duplication and manual forwarding using instanceof
   // https://radixdlt.atlassian.net/browse/NT-6
-  private boolean processQueuedConsensusEvent(QueuedConsensusEvent queuedEvent) {
-    final var event = queuedEvent.event;
-
+  private void processQueuedConsensusEvent(QueuedConsensusEvent queuedEvent) {
     metrics.bft().consensusEventsQueueWait().observe(queuedEvent.stopwatch.elapsed());
-
-    // Explicitly using switch case method here rather than functional method
-    // to process these events due to much better performance
-    if (event instanceof Proposal proposal) {
-      return processProposalInternal(proposal);
-    }
-
-    if (event instanceof Vote vote) {
-      return processVoteInternal(vote);
-    }
-
-    throw new IllegalStateException("Unexpected consensus event: " + event);
-  }
-
-  private boolean processVoteInternal(Vote vote) {
-    final Round currentRound = this.latestRoundUpdate.getCurrentRound();
-    if (vote.getRound().gte(currentRound)) {
-      log.trace("Vote: PreProcessing {}", vote);
-      return syncUp(
-          vote.highQC(),
-          NodeId.fromPublicKey(vote.getAuthor().getKey()),
-          () -> processOnCurrentRoundOrCache(vote, forwardTo::processVote));
-    } else {
-      log.trace("Vote: Ignoring for past round {}, current round is {}", vote, currentRound);
-      return true;
-    }
-  }
-
-  private boolean processProposalInternal(Proposal proposal) {
-    final Round currentRound = this.latestRoundUpdate.getCurrentRound();
-    if (proposal.getRound().gte(currentRound)) {
-      log.trace("Proposal: PreProcessing {}", proposal);
-      return syncUp(
+    switch (queuedEvent.event) {
+      case Proposal proposal -> syncUp(
           proposal.highQC(),
           NodeId.fromPublicKey(proposal.getAuthor().getKey()),
           () -> processOnCurrentRoundOrCache(proposal, forwardTo::processProposal));
-    } else {
-      log.trace(
-          "Proposal: Ignoring for past round {}, current round is {}", proposal, currentRound);
-      return true;
+      case Vote vote -> syncUp(
+          vote.highQC(),
+          NodeId.fromPublicKey(vote.getAuthor().getKey()),
+          () -> processOnCurrentRoundOrCache(vote, forwardTo::processVote));
     }
   }
 

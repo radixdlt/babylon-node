@@ -64,42 +64,116 @@
 
 package com.radixdlt.consensus.bft.processor;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.RoundLeaderFailure;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.monitoring.MetricsInitializer;
-import org.junit.Before;
-import org.junit.Test;
+import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-public final class BFTEventStatefulVerifierTest {
-  private Metrics metrics;
-  private BFTEventProcessor forwardTo;
-  private BFTEventStatefulVerifier bftEventStatefulVerifier;
+/**
+ * Verifies that the BFT events are being processed at correct rounds. Ensures that
+ * SyncUpPreprocessor works correctly. Consider removing at some point.
+ */
+public final class BFTEventPostSyncUpVerifier implements BFTEventProcessorAtCurrentRound {
+  private static final Logger log = LogManager.getLogger();
 
-  @Before
-  public void setUp() {
-    this.metrics = new MetricsInitializer().initialize();
-    this.forwardTo = mock(BFTEventProcessor.class);
-    this.bftEventStatefulVerifier =
-        new BFTEventStatefulVerifier(this.forwardTo, this.metrics, mock(RoundUpdate.class));
+  private final BFTEventProcessorAtCurrentRound forwardTo;
+  private final Metrics metrics;
+  private RoundUpdate latestRoundUpdate;
+
+  public BFTEventPostSyncUpVerifier(
+      BFTEventProcessorAtCurrentRound forwardTo, Metrics metrics, RoundUpdate initialRoundUpdate) {
+    this.forwardTo = Objects.requireNonNull(forwardTo);
+    this.metrics = Objects.requireNonNull(metrics);
+    this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
   }
 
-  @Test
-  public void when_local_timeout_for_non_current_round__then_ignored() {
-    this.bftEventStatefulVerifier.processLocalTimeout(
-        ScheduledLocalTimeout.create(
-            RoundUpdate.create(
-                Round.of(1),
-                mock(HighQC.class),
-                mock(BFTValidatorId.class),
-                mock(BFTValidatorId.class)),
-            0L));
-    verifyNoMoreInteractions(this.forwardTo);
+  @Override
+  public void start() {
+    forwardTo.start();
+  }
+
+  @Override
+  public void processRoundUpdate(RoundUpdate roundUpdate) {
+    this.latestRoundUpdate = roundUpdate;
+    forwardTo.processRoundUpdate(roundUpdate);
+  }
+
+  @Override
+  public void processVote(Vote vote) {
+    if (!this.latestRoundUpdate.getCurrentRound().equals(vote.getRound())) {
+      this.metrics.bft().preconditionViolations().inc();
+      log.warn(
+          "Precondition violation: ignoring a vote for round {} current round is {}",
+          vote.getRound(),
+          this.latestRoundUpdate.getCurrentRound());
+      return;
+    }
+    forwardTo.processVote(vote);
+  }
+
+  @Override
+  public void processProposal(Proposal proposal) {
+    // This should never happen but adding a guard just in case (e.g. if there's a bug in
+    // SyncUpPreprocessor)
+    if (!this.latestRoundUpdate.getCurrentRound().equals(proposal.getRound())) {
+      this.metrics.bft().preconditionViolations().inc();
+      log.warn(
+          "Precondition violation: ignoring a proposal for round {} current round is {}",
+          proposal.getRound(),
+          this.latestRoundUpdate.getCurrentRound());
+      return;
+    }
+    forwardTo.processProposal(proposal);
+  }
+
+  @Override
+  public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
+    if (!scheduledLocalTimeout.round().equals(this.latestRoundUpdate.getCurrentRound())) {
+      log.trace(
+          "Ignoring ScheduledLocalTimeout event for the past round {}, current is {}",
+          scheduledLocalTimeout.round(),
+          this.latestRoundUpdate.getCurrentRound());
+      return;
+    }
+    forwardTo.processLocalTimeout(scheduledLocalTimeout);
+  }
+
+  @Override
+  public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
+    if (!roundLeaderFailure.round().equals(this.latestRoundUpdate.getCurrentRound())) {
+      log.trace(
+          "Ignoring RoundLeaderFailure event for the past round {}, current is {}",
+          roundLeaderFailure.round(),
+          this.latestRoundUpdate.getCurrentRound());
+      return;
+    }
+    forwardTo.processRoundLeaderFailure(roundLeaderFailure);
+  }
+
+  @Override
+  public void processBFTUpdate(BFTInsertUpdate update) {
+    forwardTo.processBFTUpdate(update);
+  }
+
+  @Override
+  public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
+    forwardTo.processBFTRebuildUpdate(update);
+  }
+
+  @Override
+  public void preProcessUnsyncedVoteForCurrentOrFutureRound(Vote vote) {
+    forwardTo.preProcessUnsyncedVoteForCurrentOrFutureRound(vote);
+  }
+
+  @Override
+  public void preProcessUnsyncedProposalForCurrentOrFutureRound(Proposal proposal) {
+    forwardTo.preProcessUnsyncedProposalForCurrentOrFutureRound(proposal);
   }
 }

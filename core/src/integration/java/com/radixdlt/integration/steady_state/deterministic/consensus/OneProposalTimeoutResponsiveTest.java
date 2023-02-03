@@ -104,16 +104,20 @@ public class OneProposalTimeoutResponsiveTest {
     test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
     long requiredIndirectParents =
-        numValidatorNodes <= 3
-            ? 0 // there are no indirect parents for 3 nodes (QC is always formed)
+        numValidatorNodes <= 4
+            ? 0 // there are no indirect parents for 4 or fewer nodes (QC is always formed)
             : (numRounds - 1) / dropPeriod; // Edge case if dropPeriod a factor of numRounds
 
-    long requiredTimeouts = numRounds / dropPeriod * 2;
+    // Note that some nodes may have fewer timeouts than others,
+    // for example a leader for the round that has its proposal dropped still receives
+    // his own proposal and thus RoundTimeoutModerator can delay their round timeout (while others
+    // form a timeout QC).
+    long maxTimeouts = numRounds / dropPeriod * 2;
 
     long timeoutQuorums =
-        numValidatorNodes <= 3
-            ? 0 // no timeout quorums for 3 nodes
-            : requiredTimeouts / 2; // otherwise, every 2nd timeout forms a TC
+        numValidatorNodes <= 4
+            ? 0 // no timeout quorums for 4 or fewer nodes
+            : maxTimeouts / 2; // otherwise, every 2nd timeout forms a TC
 
     for (int nodeIndex = 0; nodeIndex < numValidatorNodes; ++nodeIndex) {
       Metrics metrics = test.getInstance(nodeIndex, Metrics.class);
@@ -121,7 +125,7 @@ public class OneProposalTimeoutResponsiveTest {
       long totalNumberOfTimeouts = (long) metrics.bft().pacemaker().timeoutsSent().get();
       long totalNumberOfTimeoutQuorums = (long) metrics.bft().timeoutQuorums().get();
       assertThat(numberOfIndirectParents).isEqualTo(requiredIndirectParents);
-      assertThat(totalNumberOfTimeouts).isEqualTo(requiredTimeouts);
+      assertThat(totalNumberOfTimeouts).isLessThanOrEqualTo(maxTimeouts);
       assertThat(totalNumberOfTimeoutQuorums).isBetween(timeoutQuorums - 1, timeoutQuorums);
     }
   }

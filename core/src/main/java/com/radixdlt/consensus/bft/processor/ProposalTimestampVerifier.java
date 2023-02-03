@@ -79,6 +79,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /** Verifies proposal timestamps against the local system time. */
+/*
+TODO: address the following
+Currently max allowed daley time is quite permissive to account for
+processing proposals that take much time to sync/execute.
+Consider moving this verifier before the SyncUp processor.
+That'd require some refactoring though:
+f.e. it would no longer be guaranteed that the proposal is for the current round
+so dispatching a RoundLeaderFailure event would need to change.
+Alternatively, we could record Proposal's reception time at an earlier stage, pass it together
+with the proposal, and use the value here, for verification (in place of timeSupplier).
+*/
 public final class ProposalTimestampVerifier implements BFTEventProcessor {
   private static final Logger log = LogManager.getLogger();
 
@@ -86,9 +97,8 @@ public final class ProposalTimestampVerifier implements BFTEventProcessor {
   the current time (id est, the system time when the proposal message starts being processed).
   Proposals that fall out of bounds are rejected (ignored).
   The acceptable delay is slightly higher to account for network latency.
-  In addition to the delay/rush bounds, the proposal timestamp must be strictly
-  greater than the previous one (see `isProposalTimestampAcceptable`). */
-  static final long MAX_ACCEPTABLE_PROPOSAL_TIMESTAMP_DELAY_MS = 3000;
+  In addition to the delay/rush bounds, timestamps must be non-decreasing (see `processProposal`). */
+  static final long MAX_ACCEPTABLE_PROPOSAL_TIMESTAMP_DELAY_MS = 30_000;
   static final long MAX_ACCEPTABLE_PROPOSAL_TIMESTAMP_RUSH_MS = 2000;
 
   static final long LOG_AT_PROPOSAL_TIMESTAMP_DELAY_MS = 2000;

@@ -157,7 +157,6 @@ public record Metrics(
       Counter successfullyProcessedVotes,
       Counter successfullyProcessedProposals,
       Counter preconditionViolations,
-      Counter proposalsReceivedFromNonLeaders,
       Counter duplicateProposalsReceived,
       Counter eventsReceived,
       Counter committedVertices,

@@ -67,10 +67,14 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.processor.*;
 import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
+import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.utils.TimeSupplier;
 
@@ -80,6 +84,8 @@ public final class BFTBuilder {
   private BFTValidatorSet validatorSet;
   private Hasher hasher;
   private HashVerifier verifier;
+  private PacemakerTimeoutCalculator timeoutCalculator;
+  private ProposerElection proposerElection;
 
   // BFT Stateful objects
   private Pacemaker pacemaker;
@@ -89,6 +95,7 @@ public final class BFTBuilder {
   private EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher;
   private EventDispatcher<NoVote> noVoteEventDispatcher;
   private EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher;
+  private ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutDispatcher;
 
   // Instance specific objects
   private BFTValidatorId self;
@@ -115,6 +122,22 @@ public final class BFTBuilder {
 
   public BFTBuilder roundUpdate(RoundUpdate roundUpdate) {
     this.roundUpdate = roundUpdate;
+    return this;
+  }
+
+  public BFTBuilder timeoutCalculator(PacemakerTimeoutCalculator timeoutCalculator) {
+    this.timeoutCalculator = timeoutCalculator;
+    return this;
+  }
+
+  public BFTBuilder timeoutDispatcher(
+      ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutDispatcher) {
+    this.timeoutDispatcher = timeoutDispatcher;
+    return this;
+  }
+
+  public BFTBuilder proposerElection(ProposerElection proposerElection) {
+    this.proposerElection = proposerElection;
     return this;
   }
 
@@ -198,9 +221,11 @@ public final class BFTBuilder {
     final PendingVotes pendingVotes = new PendingVotes(hasher, doubleVoteEventDispatcher);
 
     /* Setting up the following BFT event processing pipeline:
-    BFTEventStatelessVerifier (verify against stateless parameters [e.g. validator set] and the signatures)
+    BFTEventStatelessVerifier (verify against stateless parameters [e.g. validator set, round leader] and the signatures)
+       -> OneProposalPerRoundVerifier (verify that max 1 genuine proposal is received for each round)
        -> SyncUpPreprocessor (if needed, sync up to match BFT event's round)
-       -> BFTEventStatefulVerifier (verify against the current round state)
+       -> BFTEventPostSyncUpVerifier (verifies that we've synced up to a correct round)
+       -> RoundTimeoutModerator (may modify round timeouts)
        -> ProposalTimestampVerifier (verify proposal timestamp)
        -> BFTEventReducer (actually process the event) */
 
@@ -223,13 +248,26 @@ public final class BFTBuilder {
         new ProposalTimestampVerifier(
             bftEventReducer, timeSupplier, metrics, roundLeaderFailureEventDispatcher);
 
-    final var bftEventStatefulVerifier =
-        new BFTEventStatefulVerifier(proposalTimestampVerifier, metrics, roundUpdate);
+    final var roundTimeoutModerator =
+        new RoundTimeoutModerator(
+            proposalTimestampVerifier, timeoutCalculator, timeoutDispatcher, roundUpdate);
+
+    final var postSyncUpVerifier =
+        new BFTEventPostSyncUpVerifier(roundTimeoutModerator, metrics, roundUpdate);
 
     final var syncUpPreprocessor =
-        new SyncUpPreprocessor(bftEventStatefulVerifier, bftSyncer, metrics, roundUpdate);
+        new SyncUpPreprocessor(postSyncUpVerifier, bftSyncer, metrics, roundUpdate);
+
+    final var oneProposalPerRoundVerifier =
+        new OneProposalPerRoundVerifier(syncUpPreprocessor, metrics);
 
     return new BFTEventStatelessVerifier(
-        validatorSet, syncUpPreprocessor, hasher, verifier, safetyRules, metrics);
+        validatorSet,
+        proposerElection,
+        oneProposalPerRoundVerifier,
+        hasher,
+        verifier,
+        safetyRules,
+        metrics);
   }
 }

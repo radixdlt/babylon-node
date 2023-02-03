@@ -70,126 +70,38 @@ import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.RoundLeaderFailure;
 import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.monitoring.Metrics;
-import java.util.Objects;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 
 /**
- * Verifies BFT events against the current round. Specifically, ensures that received proposals come
- * from a leader for the given round and that at most one such proposal is processed. Warning:
- * depends on a precondition that all received BFT events match the current round, so this processor
- * should always come after the SyncUpPreprocessor.
+ * Moderates the round timeout. More specifically, extends the round duration if a proposal was
+ * received, but takes longer than usual to sync/process.
  */
-public final class BFTEventStatefulVerifier implements BFTEventProcessor {
-  private static final Logger log = LogManager.getLogger();
-
+public final class RoundTimeoutModerator implements BFTEventProcessorAtCurrentRound {
   private final BFTEventProcessor forwardTo;
-  private final Metrics metrics;
+  private final PacemakerTimeoutCalculator timeoutCalculator;
+  private final ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutDispatcher;
 
   private RoundUpdate latestRoundUpdate;
-  private boolean genuineProposalReceived = false;
 
-  public BFTEventStatefulVerifier(
-      BFTEventProcessor forwardTo, Metrics metrics, RoundUpdate initialRoundUpdate) {
-    this.forwardTo = Objects.requireNonNull(forwardTo);
-    this.metrics = Objects.requireNonNull(metrics);
-    this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
-  }
+  /* A flag indicating that a proposal for the current round has been
+  received, but may still require a vertex store sync up. This flag is used to slightly extend
+  the round timeout duration to increase the likelihood of a successful (non-timeout) round - e.g.
+  when proposal takes longer than usual to execute. */
+  private boolean unsyncedProposalForCurrentRoundWasReceived = false;
 
-  @Override
-  public void start() {
-    forwardTo.start();
-  }
+  private boolean canLocalTimeoutStillBeDelayed = true;
 
-  @Override
-  public void processRoundUpdate(RoundUpdate roundUpdate) {
-    this.latestRoundUpdate = roundUpdate;
-
-    // Clear the flag
-    genuineProposalReceived = false;
-
-    forwardTo.processRoundUpdate(roundUpdate);
-  }
-
-  @Override
-  public void processVote(Vote vote) {
-    // This should never happen but adding a guard just in case (e.g. if there's a bug in
-    // SyncUpPreprocessor)
-    if (!this.latestRoundUpdate.getCurrentRound().equals(vote.getRound())) {
-      this.metrics.bft().preconditionViolations().inc();
-      log.warn(
-          "Precondition violation: ignoring a vote for round {} current round is {}",
-          vote.getRound(),
-          this.latestRoundUpdate.getCurrentRound());
-      return;
-    }
-
-    forwardTo.processVote(vote);
-  }
-
-  @Override
-  public void processProposal(Proposal proposal) {
-    // This should never happen but adding a guard just in case (e.g. if there's a bug in
-    // SyncUpPreprocessor)
-    if (!this.latestRoundUpdate.getCurrentRound().equals(proposal.getRound())) {
-      this.metrics.bft().preconditionViolations().inc();
-      log.warn(
-          "Precondition violation: ignoring a proposal for round {} current round is {}",
-          proposal.getRound(),
-          this.latestRoundUpdate.getCurrentRound());
-      return;
-    }
-
-    if (!proposal.getAuthor().equals(latestRoundUpdate.getLeader())) {
-      this.metrics.bft().proposalsReceivedFromNonLeaders().inc();
-      log.warn(
-          "Ignoring a proposal from non-leader node {}, current_leader is {} at round {}",
-          proposal.getAuthor(),
-          latestRoundUpdate.getLeader(),
-          latestRoundUpdate.getCurrentRound());
-      return;
-    }
-
-    if (genuineProposalReceived) {
-      this.metrics.bft().duplicateProposalsReceived().inc();
-      log.warn(
-          "Received a duplicate proposal from {} for round {}",
-          proposal.getAuthor(),
-          proposal.getRound());
-      return;
-    }
-
-    genuineProposalReceived = true;
-
-    forwardTo.processProposal(proposal);
-  }
-
-  @Override
-  public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
-    if (!scheduledLocalTimeout.round().equals(this.latestRoundUpdate.getCurrentRound())) {
-      log.trace(
-          "Ignoring ScheduledLocalTimeout event for the past round {}, current is {}",
-          scheduledLocalTimeout.round(),
-          this.latestRoundUpdate.getCurrentRound());
-      return;
-    }
-
-    forwardTo.processLocalTimeout(scheduledLocalTimeout);
-  }
-
-  @Override
-  public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
-    if (!roundLeaderFailure.round().equals(this.latestRoundUpdate.getCurrentRound())) {
-      log.trace(
-          "Ignoring RoundLeaderFailure event for the past round {}, current is {}",
-          roundLeaderFailure.round(),
-          this.latestRoundUpdate.getCurrentRound());
-      return;
-    }
-
-    forwardTo.processRoundLeaderFailure(roundLeaderFailure);
+  public RoundTimeoutModerator(
+      BFTEventProcessor forwardTo,
+      PacemakerTimeoutCalculator timeoutCalculator,
+      ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutDispatcher,
+      RoundUpdate initialRoundUpdate) {
+    this.forwardTo = forwardTo;
+    this.timeoutCalculator = timeoutCalculator;
+    this.timeoutDispatcher = timeoutDispatcher;
+    this.latestRoundUpdate = initialRoundUpdate;
   }
 
   @Override
@@ -198,7 +110,68 @@ public final class BFTEventStatefulVerifier implements BFTEventProcessor {
   }
 
   @Override
+  public void processRoundUpdate(RoundUpdate roundUpdate) {
+    this.latestRoundUpdate = roundUpdate;
+    this.unsyncedProposalForCurrentRoundWasReceived = false;
+    this.canLocalTimeoutStillBeDelayed = true;
+    forwardTo.processRoundUpdate(roundUpdate);
+  }
+
+  @Override
   public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
     forwardTo.processBFTRebuildUpdate(update);
+  }
+
+  @Override
+  public void processVote(Vote vote) {
+    forwardTo.processVote(vote);
+  }
+
+  @Override
+  public void processProposal(Proposal proposal) {
+    forwardTo.processProposal(proposal);
+  }
+
+  @Override
+  public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
+    final var shouldDelay =
+        this.unsyncedProposalForCurrentRoundWasReceived && this.canLocalTimeoutStillBeDelayed;
+
+    // We won't extend the round more than once or if a timeout event has already been processed,
+    // so setting a flag regardless of whether this event is being delayed or not
+    this.canLocalTimeoutStillBeDelayed = false;
+
+    if (shouldDelay) {
+      // If proposal was received, extend the round time by re-dispatching the same timeout event,
+      // effectively delaying it by additionalRoundTimeIfProposalReceived
+      this.timeoutDispatcher.dispatch(
+          scheduledLocalTimeout, timeoutCalculator.additionalRoundTimeIfProposalReceivedMs());
+    } else {
+      // Nothing we can do. Either there isn't an in-flight proposal for the
+      // current round (so there's no reason to extend the round) or it has already been extended.
+      this.forwardTo.processLocalTimeout(scheduledLocalTimeout);
+    }
+  }
+
+  @Override
+  public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
+    forwardTo.processRoundLeaderFailure(roundLeaderFailure);
+  }
+
+  @Override
+  public void start() {
+    forwardTo.start();
+  }
+
+  @Override
+  public void preProcessUnsyncedVoteForCurrentOrFutureRound(Vote vote) {
+    // no-op
+  }
+
+  @Override
+  public void preProcessUnsyncedProposalForCurrentOrFutureRound(Proposal proposal) {
+    if (proposal.getRound().equals(this.latestRoundUpdate.getCurrentRound())) {
+      this.unsyncedProposalForCurrentRoundWasReceived = true;
+    }
   }
 }
