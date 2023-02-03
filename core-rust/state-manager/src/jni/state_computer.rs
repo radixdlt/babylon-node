@@ -74,7 +74,7 @@ use std::collections::BTreeMap;
 
 use crate::jni::utils::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
-use crate::{CommitError, NextEpoch, PrepareGenesisRequest, PrepareGenesisResult};
+use crate::{NextEpoch, PrepareGenesisRequest, PrepareGenesisResult};
 
 use super::state_manager::ActualStateManager;
 
