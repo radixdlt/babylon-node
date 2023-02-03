@@ -44,7 +44,7 @@ jobs:
             echo "ref: ${{ github.event.release.tag_name }}"
             echo "radixdlt_image: radixdlt/babylon-node"
           else
-            echo "::set-output name=radixdlt_image::radixdlt/eu.gcr.io/dev-container-repo/babylon-node"
+            echo "::set-output name=radixdlt_image::eu.gcr.io/dev-container-repo/babylon-node"
             echo "is_release: false"
             echo "release_version: ${{ github.event.release.tag_name }}"
             echo "ref: ${{ github.event.release.tag_name }}"
