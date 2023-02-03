@@ -63,6 +63,7 @@
  */
 
 mod db;
+mod hash_tree_codec;
 mod in_memory;
 mod rocks_db;
 pub mod traits;

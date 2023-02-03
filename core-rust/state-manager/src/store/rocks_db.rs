@@ -77,6 +77,7 @@ use radix_engine::types::{
     scrypto_decode, scrypto_encode, KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateId,
     SubstateOffset,
 };
+use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReadableTreeStore, TreeNode};
 use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, Direction, IteratorMode, Options, WriteBatch, DB,
 };
@@ -102,11 +103,14 @@ enum RocksDBColumnFamily {
     Substates,
     /// Vertex store
     VertexStore,
+    /// Hash tree nodes
+    HashTreeNodes,
 }
 
+use crate::store::hash_tree_codec::{decode_tree_node, encode_key, encode_node};
 use RocksDBColumnFamily::*;
 
-const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 10] = [
+const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 11] = [
     TxnByStateVersion,
     TxnReceiptByStateVersion,
     TxnAccumulatorHashByStateVersion,
@@ -117,6 +121,7 @@ const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 10] = [
     LedgerProofByEpoch,
     Substates,
     VertexStore,
+    HashTreeNodes,
 ];
 
 impl fmt::Display for RocksDBColumnFamily {
@@ -132,6 +137,7 @@ impl fmt::Display for RocksDBColumnFamily {
             LedgerProofByEpoch => "ledger_proof_by_epoch",
             Substates => "substates",
             VertexStore => "vertex_store",
+            HashTreeNodes => "hash_tree_nodes",
         };
         write!(f, "{}", str)
     }
@@ -305,6 +311,14 @@ impl CommitStore for RocksDBStore {
 
         if let Some(vertex_store) = commit_bundle.vertex_store {
             batch.put_cf(self.cf_handle(&VertexStore), [], vertex_store);
+        }
+
+        for (key, node) in commit_bundle.hash_tree_nodes {
+            batch.put_cf(
+                self.cf_handle(&HashTreeNodes),
+                encode_key(&key),
+                encode_node(&node),
+            );
         }
 
         self.db.write(batch).expect("Commit failed");
@@ -623,6 +637,15 @@ impl ReadableSubstateStore for RocksDBStore {
             )
             .unwrap()
             .map(|pinnable_slice| scrypto_decode(pinnable_slice.as_ref()).unwrap())
+    }
+}
+
+impl ReadableTreeStore for RocksDBStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+        self.db
+            .get_pinned_cf(self.cf_handle(&HashTreeNodes), encode_key(key))
+            .unwrap()
+            .map(|pinnable_slice| decode_tree_node(pinnable_slice.as_ref()))
     }
 }
 

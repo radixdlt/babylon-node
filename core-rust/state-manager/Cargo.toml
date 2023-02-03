@@ -41,3 +41,5 @@ lru = { version = "0.8.0", default-features = false }    # https://docs.rs/lru/l
 slotmap = "1.0.6"
 im = "15.1.0"
 rand = "0.8.5"
+byteorder = "1.4.3"
+bit-vec = "0.6.3"
