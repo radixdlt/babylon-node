@@ -62,243 +62,188 @@
  * permissions under this License.
  */
 
-use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine::{ledger::*, transaction::TransactionResult};
 
-use im::hashmap::HashMap as ImmutableHashMap;
 use sbor::rust::vec::Vec;
 use slotmap::{new_key_type, SlotMap};
 
-/// An immutable/persistent store (i.e a store built from a [`parent`] store
-/// shares data with it). Note: while from the abstract representation point
-/// of view you can delete keys, the underlying data is freed only and only
-/// if there are no references to it (there are no paths from any root reference
-/// to the node representing that (key, value)). For this reason, extra steps
-/// are taken to free up (key, value) pairs accumulating over time.
-/// This is intended as an wrapper/abstraction layer, so that changes to the
-/// ReadableSubstateStore/WriteableSubstateStore traits are easier to maintain.
-#[derive(Clone)]
-struct ImmutableStore {
-    outputs: ImmutableHashMap<SubstateId, OutputValue>,
-}
-
-impl ImmutableStore {
-    fn new() -> Self {
-        ImmutableStore {
-            outputs: ImmutableHashMap::new(),
-        }
-    }
-
-    fn from_parent(parent: &ImmutableStore) -> Self {
-        ImmutableStore {
-            // Note: this clone is O(1), only the root node is actually cloned
-            // Check im::collections::HashMap for details
-            outputs: parent.outputs.clone(),
-        }
-    }
-}
-
-impl WriteableSubstateStore for ImmutableStore {
-    fn put_substate(&mut self, substate_id: SubstateId, output: OutputValue) {
-        self.outputs.insert(substate_id, output);
-    }
-}
-
-impl ReadableSubstateStore for ImmutableStore {
-    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
-        self.outputs.get(substate_id).cloned()
-    }
-}
-
 new_key_type! {
-    pub struct StagedSubstateStoreNodeKey;
+    /// A key to a derived stage.
+    /// "Derived" here means "obtained by applying deltas to the root stage".
+    pub struct DerivedStageKey;
 }
 
-/// Because the root store (which eventually is saved on disk) is not an
-/// StagedSubstateStoreNode/ImmutableStore we need to be able to
-/// distinguish it.
+/// A key to a (root or derived) stage.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum StagedSubstateStoreKey {
-    RootStoreKey,
-    InternalNodeStoreKey(StagedSubstateStoreNodeKey),
+pub enum StageKey {
+    Root,
+    Derived(DerivedStageKey),
 }
 
-/// [`children_keys`] are needed in order to traverse the tree.
-/// [`receipt`] applied to the parent's store, results in this node store.
-/// We need to keep the [`receipt`] to both recompute the stores when doing
+/// A change to the accumulated state.
+pub trait Delta {
+    /// Returns an estimated memory impact of this delta (measured in arbitrary units, relative to
+    /// other possible deltas).
+    /// This value is used during decision on amortized "reparenting" of the stage tree.
+    fn weight(&self) -> usize;
+}
+
+/// An accumulated state coming from multiple [`Delta`]s.
+pub trait Accumulator<D: Delta> {
+    /// Creates a new, empty instance.
+    fn create_empty() -> Self;
+
+    /// Incorporates the changes coming from the given delta into this accumulator.
+    fn accumulate(&mut self, delta: &D);
+
+    /// Performs a constant-time (and thus, necessarily, constant-space) clone of this accumulator.
+    /// This is an important runtime characteristic enabling efficient staging. This is the reason
+    /// why we define our own contract here (instead of simply requiring `Clone`).
+    /// For illustration: a toy example of a structure allowing for such clone implementation is
+    /// an append-only linked stack. A real-world case might be e.g. a hash array mapped trie.
+    fn constant_clone(&self) -> Self;
+}
+
+/// The [`children_keys`] are needed in order to traverse the tree.
+/// The [`delta`] applied to the parent's [`accumulator`] results in this node's [`accumulator`].
+/// We need to keep the [`delta`] to both recompute the stores when doing
 /// the data reconstruction/"garbage collection" but also to retrieve it
-/// when caching.
-pub struct StagedSubstateStoreNode {
-    children_keys: Vec<StagedSubstateStoreNodeKey>,
-    receipt: TransactionReceipt,
-    store: ImmutableStore,
+/// when committing.
+pub struct DerivedStageNode<D: Delta, A: Accumulator<D>> {
+    child_keys: Vec<DerivedStageKey>,
+    delta: D,
+    accumulator: A,
 }
 
-impl StagedSubstateStoreNode {
-    fn new(receipt: TransactionReceipt, mut store: ImmutableStore) -> Self {
-        if let TransactionResult::Commit(commit) = &receipt.result {
-            commit.state_updates.commit(&mut store);
-        }
-        StagedSubstateStoreNode {
-            children_keys: Vec::new(),
-            receipt,
-            store,
-        }
-    }
-
-    /// Weight is defined as the number of changes to the ImmutableStore
-    /// done exclusively by this node.
-    fn weight(&self) -> usize {
-        match &self.receipt.result {
-            // NOTE for future Substate delete support: add down_substates.len()
-            // to the weight as well.
-            TransactionResult::Commit(commit) => commit.state_updates.up_substates.len(),
-            TransactionResult::Reject(_) => 0,
-            TransactionResult::Abort(_) => 0,
+impl<D: Delta, A: Accumulator<D>> DerivedStageNode<D, A> {
+    fn new(delta: D, accumulator: A) -> Self {
+        DerivedStageNode {
+            child_keys: Vec::new(),
+            delta,
+            accumulator,
         }
     }
 }
 
-/// Structure which manages the staged store tree
-pub struct StagedSubstateStoreManager<S: ReadableSubstateStore> {
-    pub root: S,
-    nodes: SlotMap<StagedSubstateStoreNodeKey, StagedSubstateStoreNode>,
-    children_keys: Vec<StagedSubstateStoreNodeKey>,
+/// Stage tree (a manager of the staging nodes).
+pub struct StageTree<D: Delta, A: Accumulator<D>> {
+    empty_accumulator: A,
+    nodes: SlotMap<DerivedStageKey, DerivedStageNode<D, A>>,
+    child_keys: Vec<DerivedStageKey>,
     dead_weight: usize,
     total_weight: usize,
 }
 
-impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
-    pub fn new(root: S) -> Self {
-        StagedSubstateStoreManager {
-            root,
+impl<D: Delta, A: Accumulator<D>> StageTree<D, A> {
+    pub fn new() -> Self {
+        StageTree {
+            empty_accumulator: A::create_empty(),
             nodes: SlotMap::with_capacity_and_key(1000),
-            children_keys: Vec::new(),
+            child_keys: Vec::new(),
             dead_weight: 0,
             total_weight: 0,
         }
     }
 
-    pub fn new_child_node(
-        &mut self,
-        parent_key: StagedSubstateStoreKey,
-        receipt: TransactionReceipt,
-    ) -> StagedSubstateStoreNodeKey {
-        let store = match parent_key {
-            StagedSubstateStoreKey::RootStoreKey => ImmutableStore::new(),
-            StagedSubstateStoreKey::InternalNodeStoreKey(parent_key) => {
-                ImmutableStore::from_parent(&self.nodes.get(parent_key).unwrap().store)
+    pub fn new_child_node(&mut self, parent_key: StageKey, delta: D) -> DerivedStageKey {
+        self.total_weight += delta.weight();
+        let mut new_accumulator = match parent_key {
+            StageKey::Root => A::create_empty(),
+            StageKey::Derived(key) => self
+                .nodes
+                .get_mut(key)
+                .unwrap()
+                .accumulator
+                .constant_clone(),
+        };
+        new_accumulator.accumulate(&delta);
+        let new_node = DerivedStageNode::new(delta, new_accumulator);
+        let new_node_key = self.nodes.insert(new_node);
+        let child_keys = match parent_key {
+            StageKey::Root => &mut self.child_keys,
+            StageKey::Derived(parent_key) => {
+                &mut self.nodes.get_mut(parent_key).unwrap().child_keys
             }
         };
-
-        // Build new node by applying the receipt to the parent store
-        let new_node = StagedSubstateStoreNode::new(receipt, store);
-
-        // Update the `total_weight` of the tree
-        self.total_weight += new_node.weight();
-        let new_node_key = self.nodes.insert(new_node);
-        match parent_key {
-            StagedSubstateStoreKey::RootStoreKey => {
-                self.children_keys.push(new_node_key);
-            }
-            StagedSubstateStoreKey::InternalNodeStoreKey(parent_key) => {
-                let parent_node = self.nodes.get_mut(parent_key).unwrap();
-                parent_node.children_keys.push(new_node_key);
-            }
-        }
+        child_keys.push(new_node_key);
         new_node_key
     }
 
-    pub fn get_store(&self, key: StagedSubstateStoreKey) -> StagedSubstateStore<S> {
-        StagedSubstateStore { manager: self, key }
+    pub fn get_accumulator(&self, key: &StageKey) -> &A {
+        match key {
+            StageKey::Root => &self.empty_accumulator,
+            StageKey::Derived(key) => &self.nodes.get(*key).unwrap().accumulator,
+        }
     }
 
-    pub fn get_receipt(&self, key: &StagedSubstateStoreNodeKey) -> &TransactionReceipt {
-        &self.nodes.get(*key).unwrap().receipt
+    pub fn get_delta(&self, key: &DerivedStageKey) -> &D {
+        &self.nodes.get(*key).unwrap().delta
     }
 
-    /// Rebuilds ImmutableStores by starting from the root with new, empty ones
-    /// and recursively reapplies the [`receipt`]s.
     fn recompute_data(&mut self) {
-        // Reset the [`dead_weight`]
         self.dead_weight = 0;
 
         // NOTE: check [`self.delete`] note for more details why this is implemented iteratively instead of recursively
-        let mut stack = Vec::new();
+        let mut stack: Vec<(A, Vec<DerivedStageKey>)> = Vec::new();
 
-        for node_key in self.children_keys.iter() {
-            let node = self.nodes.get_mut(*node_key).unwrap();
-            node.store = ImmutableStore::new();
-            if let TransactionResult::Commit(commit) = &node.receipt.result {
-                commit.state_updates.commit(&mut node.store);
-            }
-
-            stack.extend(node.children_keys.clone().into_iter());
-        }
-
-        while let Some(node_key) = stack.pop() {
-            let node = self.nodes.get(node_key).unwrap();
-            let parent_store = ImmutableStore::from_parent(&node.store);
-
-            let children_keys = self.nodes.get(node_key).unwrap().children_keys.clone();
-            for child_key in children_keys.iter() {
+        stack.push((
+            self.empty_accumulator.constant_clone(),
+            self.child_keys.clone(),
+        ));
+        while let Some((accumulator, child_keys)) = stack.pop() {
+            for child_key in child_keys.iter() {
                 let child_node = self.nodes.get_mut(*child_key).unwrap();
-                child_node.store = parent_store.clone();
-                if let TransactionResult::Commit(commit) = &child_node.receipt.result {
-                    commit.state_updates.commit(&mut child_node.store);
-                }
-
-                stack.push(*child_key);
+                child_node.accumulator = accumulator.constant_clone();
+                child_node.accumulator.accumulate(&child_node.delta);
+                stack.push((
+                    child_node.accumulator.constant_clone(),
+                    child_node.child_keys.clone(),
+                ));
             }
         }
     }
 
-    fn remove_node<CB>(
-        nodes: &mut SlotMap<StagedSubstateStoreNodeKey, StagedSubstateStoreNode>,
+    fn remove_node<CB: FnMut(&DerivedStageKey)>(
+        nodes: &mut SlotMap<DerivedStageKey, DerivedStageNode<D, A>>,
         total_weight: &mut usize,
         callback: &mut CB,
-        node_key: &StagedSubstateStoreNodeKey,
-    ) -> StagedSubstateStoreNode
-    where
-        CB: FnMut(&StagedSubstateStoreNodeKey),
-    {
+        node_key: &DerivedStageKey,
+    ) -> DerivedStageNode<D, A> {
         let removed = nodes.remove(*node_key).unwrap();
-        *total_weight -= removed.weight();
+        *total_weight -= removed.delta.weight();
         callback(node_key);
         removed
     }
 
     /// Iteratively deletes all nodes that are not in new_root_key subtree and returns the
-    /// sum of weights from current root to new_root_key. Updates to ImmutableStore on this
+    /// sum of weights from current root to new_root_key. Updates to [`Accumulator`]s on this
     /// path will persist even after deleting the nodes.
-    fn delete<CB>(
-        nodes: &mut SlotMap<StagedSubstateStoreNodeKey, StagedSubstateStoreNode>,
+    fn delete<CB: FnMut(&DerivedStageKey)>(
+        nodes: &mut SlotMap<DerivedStageKey, DerivedStageNode<D, A>>,
         total_weight: &mut usize,
-        new_root_key: &StagedSubstateStoreNodeKey,
+        new_root_key: &DerivedStageKey,
         callback: &mut CB,
-        node_key: &StagedSubstateStoreNodeKey,
-    ) -> usize
-    where
-        CB: FnMut(&StagedSubstateStoreNodeKey),
-    {
+        node_key: &DerivedStageKey,
+    ) -> usize {
         // WARNING: This method was originally written recursively, however this caused a SEGFAULT due to stack overflow.
-        // The tree has a depth equal to the transaction depth of staging, which is normally quite small during consensus, but 
+        // The tree has a depth equal to the transaction depth of staging, which is normally quite small during consensus, but
         // is much larger during ledger sync. We were getting a SEGFAULT after depths of roughly 800 transactions, presumably
         // because a large amount of data was placed on the stack in each stack frame somehow by rustc.
         let mut stack = Vec::new();
-        stack.push((nodes.get(*node_key).unwrap().weight(), *node_key));
+        stack.push((nodes.get(*node_key).unwrap().delta.weight(), *node_key));
 
         let mut dead_weight = 0;
         while let Some((weight, node_key)) = stack.pop() {
             if node_key == *new_root_key {
                 dead_weight = weight;
                 continue;
-            } else {
-                let children_keys = nodes.get(node_key).unwrap().children_keys.clone();
-                for child_key in children_keys.iter() {
-                    stack.push((weight + nodes.get(*child_key).unwrap().weight(), *child_key));
-                }
+            }
+            let child_keys = nodes.get(node_key).unwrap().child_keys.clone();
+            for child_key in child_keys.iter() {
+                stack.push((
+                    weight + nodes.get(*child_key).unwrap().delta.weight(),
+                    *child_key,
+                ));
             }
             Self::remove_node(nodes, total_weight, callback, &node_key);
         }
@@ -314,7 +259,7 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
     /// root store is pointing to in order for it to be able to drop no longer relevant branches.
     /// Note that because retroactive deletion for a history of persistent/immutable data
     /// structure is not possible, it is not guaranteed that the chain of state changes
-    /// ([`ImmutableStore`]s. [`StagedSubstateStoreNode`]s however, are always deleted) committed
+    /// ([`Accumulators`]s. [`DerivedStageNode`]s however, are always deleted) committed
     /// to the real store are discarded (every time `reparent` is called).
     /// This does not really matter from a correctness perspective (the staging store
     /// will act as a cache for the real store) but as an memory overhead. The memory
@@ -323,15 +268,16 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
     /// To better understand please check:
     /// Diagram here: https://whimsical.com/persistent-staged-store-amortized-reparenting-Lyc6gRgVXVzLdqWvwVT3v4
     /// And `test_complicated_reparent` unit test
-    pub fn reparent<CB>(&mut self, new_root_key: StagedSubstateStoreKey, callback: &mut CB)
-    where
-        CB: FnMut(&StagedSubstateStoreNodeKey),
-    {
+    pub fn reparent<CB: FnMut(&DerivedStageKey)>(
+        &mut self,
+        new_root_key: StageKey,
+        callback: &mut CB,
+    ) {
         match new_root_key {
-            StagedSubstateStoreKey::RootStoreKey => {}
-            StagedSubstateStoreKey::InternalNodeStoreKey(new_root_key) => {
+            StageKey::Root => {}
+            StageKey::Derived(new_root_key) => {
                 // Delete all nodes that are not in new_root_key subtree
-                for node_key in self.children_keys.iter() {
+                for node_key in self.child_keys.iter() {
                     self.dead_weight += Self::delete(
                         &mut self.nodes,
                         &mut self.total_weight,
@@ -347,7 +293,7 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
                     callback,
                     &new_root_key,
                 );
-                self.children_keys = new_root.children_keys;
+                self.child_keys = new_root.child_keys;
 
                 // If the number of state changes that overlap with the self.root (dead_weight) store is greater
                 // than the number of state changes applied on top of it (total_weight), we recalculate the
@@ -360,138 +306,56 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
     }
 }
 
-pub struct StagedSubstateStore<'t, S: ReadableSubstateStore> {
-    manager: &'t StagedSubstateStoreManager<S>,
-    key: StagedSubstateStoreKey,
-}
-
-impl<'t, S: ReadableSubstateStore> ReadableSubstateStore for StagedSubstateStore<'t, S> {
-    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
-        match self.key {
-            StagedSubstateStoreKey::RootStoreKey => self.manager.root.get_substate(substate_id),
-            StagedSubstateStoreKey::InternalNodeStoreKey(key) => {
-                // NOTE for future Substate delete support: in order to properly reflect
-                // deleted keys, a Sentinel/Tombstone value should be stored instead of
-                // actually removing the key. When querying here, convert the Tombstone back
-                // into a None (Option can be used as the Tombstone).
-                match self
-                    .manager
-                    .nodes
-                    .get(key)
-                    .unwrap()
-                    .store
-                    .get_substate(substate_id)
-                {
-                    Some(output_value) => Some(output_value),
-                    None => self.manager.root.get_substate(substate_id),
-                }
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use radix_engine::engine::ScryptoInterpreter;
-    use radix_engine::fee::FeeSummary;
-    use radix_engine::ledger::{OutputValue, ReadableSubstateStore, TypedInMemorySubstateStore};
-    use radix_engine::model::{PersistedSubstate, Resource, VaultSubstate};
-    use radix_engine::state_manager::StateDiff;
-    use radix_engine::transaction::{
-        CommitResult, EntityChanges, TransactionExecution, TransactionOutcome, TransactionReceipt,
-        TransactionResult,
-    };
     use radix_engine::types::rust::iter::zip;
-    use radix_engine::wasm::DefaultWasmEngine;
-    use radix_engine_interface::api::types::{RENodeId, SubstateId, SubstateOffset, VaultOffset};
-    use radix_engine_interface::math::Decimal;
-    use radix_engine_interface::model::ResourceAddress;
-    use sbor::rust::collections::BTreeMap;
     use sbor::rust::collections::HashMap;
     use sbor::rust::vec::Vec;
 
-    fn build_transaction_receipt_from_state_diff(state_diff: StateDiff) -> TransactionReceipt {
-        TransactionReceipt {
-            execution: TransactionExecution {
-                fee_summary: FeeSummary {
-                    cost_unit_price: Decimal::default(),
-                    tip_percentage: 0,
-                    cost_unit_limit: 10,
-                    cost_unit_consumed: 1,
-                    total_execution_cost_xrd: Decimal::default(),
-                    total_royalty_cost_xrd: Decimal::default(),
-                    bad_debt_xrd: Decimal::default(),
-                    vault_locks: Vec::new(),
-                    vault_payments_xrd: None,
-                    execution_cost_unit_breakdown: HashMap::new(),
-                    royalty_cost_unit_breakdown: HashMap::new(),
-                },
-                events: Vec::new(),
-            },
-            result: TransactionResult::Commit(CommitResult {
-                application_logs: Vec::new(),
-                next_epoch: None,
-                outcome: TransactionOutcome::Success(Vec::new()),
-                state_updates: state_diff,
-                entity_changes: EntityChanges {
-                    new_component_addresses: Vec::new(),
-                    new_package_addresses: Vec::new(),
-                    new_resource_addresses: Vec::new(),
-                },
-                resource_changes: Vec::new(),
-            }),
+    struct TestDelta(Vec<(u8, u32)>);
+
+    impl Delta for TestDelta {
+        fn weight(&self) -> usize {
+            self.0.len()
         }
     }
 
-    fn build_dummy_substate_id(id: [u8; 36]) -> SubstateId {
-        SubstateId(
-            RENodeId::Vault(id),
-            SubstateOffset::Vault(VaultOffset::Vault),
-        )
-    }
+    #[derive(Clone)]
+    struct TestAccumulator(HashMap<u8, u32>);
 
-    fn build_dummy_output_value(version: u32) -> OutputValue {
-        OutputValue {
-            substate: PersistedSubstate::Vault(VaultSubstate(Resource::Fungible {
-                resource_address: ResourceAddress::Normal([2u8; 26]),
-                divisibility: 56,
-                amount: Decimal::one(),
-            })),
-            version,
+    impl Accumulator<TestDelta> for TestAccumulator {
+        fn create_empty() -> Self {
+            Self(HashMap::new())
+        }
+
+        fn accumulate(&mut self, delta: &TestDelta) {
+            for (id, value) in delta.0.iter() {
+                self.0.insert(*id, *value);
+            }
+        }
+
+        fn constant_clone(&self) -> Self {
+            self.clone()
         }
     }
 
     #[derive(Clone)]
     struct TestNodeData {
         parent_id: usize,
-        updates: Vec<(usize, usize)>,
+        updates: Vec<(u8, u32)>,
     }
 
     #[test]
     fn test_complicated_reparent() {
         // Arrange
-        let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-        let store = TypedInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
-        let mut manager = StagedSubstateStoreManager::new(store);
-
-        let substate_ids: Vec<SubstateId> = (0u8..5u8)
-            .into_iter()
-            .map(|id| build_dummy_substate_id([id; 36]))
-            .collect();
-        let output_values: Vec<OutputValue> = (0u32..5u32)
-            .into_iter()
-            .map(build_dummy_output_value)
-            .collect();
+        let mut manager = StageTree::<TestDelta, TestAccumulator>::new();
 
         let node_test_data = [
             TestNodeData {
                 // child_node[1]
                 parent_id: 0, // root
-                updates: [
-                    (0, 1), // manager.get_store(child_node[1]).get_substate(substate_ids[0]) == output_values[1]
-                ]
-                .to_vec(),
+                updates: [(0, 1)].to_vec(),
             },
             TestNodeData {
                 // child_node[2]
@@ -542,47 +406,36 @@ mod tests {
         .to_vec();
 
         let mut expected_total_weight = 0;
-        let mut child_node = [StagedSubstateStoreKey::RootStoreKey].to_vec();
-        let mut expected_node_states = [BTreeMap::new()].to_vec();
+        let mut child_keys = [StageKey::Root].to_vec();
+        let mut expected_accumulators = [TestAccumulator(HashMap::new())].to_vec();
         let mut expected_weights = [0].to_vec();
         for node_data in node_test_data.iter() {
-            let up_substates: BTreeMap<SubstateId, OutputValue> = node_data
-                .updates
-                .iter()
-                .map(|(substate_id, output_id)| {
-                    (
-                        substate_ids[*substate_id].clone(),
-                        output_values[*output_id].clone(),
-                    )
-                })
-                .collect();
-            let state_diff = StateDiff {
-                up_substates: up_substates.clone(),
-                down_substates: Vec::new(),
-            };
-            let new_child_node = manager.new_child_node(
-                child_node[node_data.parent_id],
-                build_transaction_receipt_from_state_diff(state_diff.clone()),
+            let new_child_key = manager.new_child_node(
+                child_keys[node_data.parent_id],
+                TestDelta(node_data.updates.clone()),
             );
-            child_node.push(StagedSubstateStoreKey::InternalNodeStoreKey(new_child_node));
+            child_keys.push(StageKey::Derived(new_child_key));
 
-            let mut expected_node_state = expected_node_states[node_data.parent_id].clone();
-            expected_node_state.extend(up_substates);
+            let mut expected_accumulator =
+                expected_accumulators[node_data.parent_id].constant_clone();
+            expected_accumulator.0.extend(
+                node_data
+                    .updates
+                    .iter()
+                    .map(|(key, value)| (*key, *value))
+                    .collect::<HashMap<u8, u32>>(),
+            );
 
-            expected_node_states.push(expected_node_state);
+            expected_accumulators.push(expected_accumulator);
             expected_weights.push(node_data.updates.len());
             expected_total_weight += node_data.updates.len();
 
             // check that all stores have the expected state
-            for (child_node, expected_node_state) in
-                zip(child_node.iter(), expected_node_states.iter())
+            for (child_key, expected_accumulator) in
+                zip(child_keys.iter(), expected_accumulators.iter())
             {
-                let store = manager.get_store(*child_node);
-                for (substate_id, output_value) in expected_node_state.iter() {
-                    assert_eq!(
-                        store.get_substate(substate_id),
-                        Some((*output_value).clone())
-                    );
+                for (id, value) in expected_accumulator.0.iter() {
+                    assert_eq!(manager.get_accumulator(child_key).0.get(id), Some(value));
                 }
             }
 
@@ -595,7 +448,7 @@ mod tests {
         //      │            └──> 5 -> 6 -> 9 -> 10
         //      └> 7 -> 8
         // After reparenting to 3: 7 and 8 are discarded completely. 1, 2 and 3 discarded but leave dead weight behind
-        manager.reparent(child_node[3], &mut |_| {});
+        manager.reparent(child_keys[3], &mut |_| {});
         let expected_dead_weight = [1, 2, 3]
             .iter()
             .fold(0, |acc, node_id| acc + expected_weights[*node_id]);
@@ -608,7 +461,7 @@ mod tests {
 
         // After reparenting to 5: node 4 gets discarded completely. Node 5 is discarded and added to the dead weight.
         // This should trigger the recomputation/garbage collection.
-        manager.reparent(child_node[5], &mut |_| {});
+        manager.reparent(child_keys[5], &mut |_| {});
         expected_total_weight -= [4, 5]
             .iter()
             .fold(0, |acc, node_id| acc + expected_weights[*node_id]);
