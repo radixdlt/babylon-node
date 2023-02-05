@@ -17,8 +17,6 @@ jobs:
   build_deb:
     name: Build debian package
     runs-on: babylon-runner
-    needs:
-      - test_aws_access_to_secret
     outputs:
       tags: ${{ steps.meta.outputs.tags }}
       labels: ${{ steps.meta.outputs.labels }}
