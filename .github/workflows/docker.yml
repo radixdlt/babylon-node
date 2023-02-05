@@ -32,30 +32,12 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Set target image
-        id: set_variables
-        run: |
-          GH_EVENT_NAME="${{ github.event_name }}"
-          echo "This is a Github event type: $GH_EVENT_NAME"
-          if [[ "$GH_EVENT_NAME" == "release" ]] ;then
-            echo "radixdlt_image=radixdlt/babylon-node" >> $GITHUB_OUTPUT
-            echo "is_release: true"
-            echo "release_version: ${{ github.event.release.tag_name }}"
-            echo "ref: ${{ github.event.release.tag_name }}"
-            echo "radixdlt_image: radixdlt/babylon-node"
-          else
-            echo "radixdlt_image=eu.gcr.io/dev-container-repo/babylon-node" >> $GITHUB_OUTPUT
-            echo "is_release: false"
-            echo "release_version: ${{ github.event.release.tag_name }}"
-            echo "ref: ${{ github.event.release.tag_name }}"
-            echo "radixdlt_image: eu.gcr.io/dev-container-repo/babylon-node"
-          fi 
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v4
         with:
           images: |
-            ${{ steps.set_variables.outputs.radixdlt_image }}
+            eu.gcr.io/dev-container-repo/babylon-node
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -123,12 +105,6 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-        if: github.event_name == 'release'
       - name: 'Register gcloud as Docker credential helper'
         run: |
             gcloud auth configure-docker -q
