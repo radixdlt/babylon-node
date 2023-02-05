@@ -32,7 +32,7 @@ jobs:
         with:
           secret-ids: |
             DOCKER_CREDENTIALS, gh-actions/radixdtl/babylon-node/release-credentials
-          parse-json: true
+          parse-json-secrets: true
       - name: Check if env variable is set after fetching secrets
         run: if [ -z ${DOCKER_CREDENTIALS+x} ]; then echo "DOCKER_CREDENTIALS is unset"; else echo "DOCKER_CREDENTIALS is set to '$DOCKER_CREDENTIALS'"; fi
       - name: Check if env variable is set after fetching secrets
