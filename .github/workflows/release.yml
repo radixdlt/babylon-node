@@ -14,32 +14,7 @@ jobs:
         with:
           access_token: ${{ github.token }}
 
-  test_aws_access_to_secret:
-    name: Test AWS Secret access
-    # These permissions are needed to interact with GitHub's OIDC Token endpoint.
-    permissions:
-      id-token: write
-      contents: read
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Configure AWS credentials"
-        uses: aws-actions/configure-aws-credentials@v1-node16
-        with:
-          role-to-assume: arn:aws:iam::308190735829:role/gh-babylon-node-dockerhub-releaser
-          aws-region: eu-west-2
-      - name: Read secrets from AWS Secrets Manager into environment variables
-        uses: aws-actions/aws-secretsmanager-get-secrets@v1
-        with:
-          secret-ids: |
-            DOCKER_CREDENTIALS, gh-actions/radixdtl/babylon-node/release-credentials
-          parse-json-secrets: true
-      - name: Check if env variable is set after fetching secrets
-        run: if [ -z ${DOCKER_CREDENTIALS+x} ]; then echo "DOCKER_CREDENTIALS is unset"; else echo "DOCKER_CREDENTIALS is set to '$DOCKER_CREDENTIALS'"; fi
-      - name: Check if env variable is set after fetching secrets
-        run: if [ -z ${DOCKER_CREDENTIALS_DOCKERHUB_USERNAME+x} ]; then echo "DOCKER_CREDENTIALS_DOCKERHUB_USERNAME is unset"; else echo "DOCKER_CREDENTIALS_DOCKERHUB_USERNAME is set to '$DOCKER_CREDENTIALS_DOCKERHUB_USERNAME'"; fi
-
   build_deb:
-    environment: release
     name: Build debian package
     runs-on: babylon-runner
     needs:
@@ -104,8 +79,10 @@ jobs:
 
 
   build_push_container:
-    environment: release
     name: Build core node docker container
+    permissions:
+      id-token: write
+      contents: read
     needs:
       - build_deb
     runs-on: ubuntu-22.04
@@ -124,11 +101,22 @@ jobs:
           path: docker
       - name: Display structure of downloaded files
         run: ls -R docker
+      - name: "Configure AWS credentials"
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          role-to-assume: arn:aws:iam::308190735829:role/gh-babylon-node-dockerhub-releaser
+          aws-region: eu-west-2
+      - name: Read secrets from AWS Secrets Manager into environment variables
+        uses: aws-actions/aws-secretsmanager-get-secrets@v1
+        with:
+          secret-ids: |
+            DOCKERHUB, gh-actions/radixdtl/babylon-node/release-credentials
+          parse-json-secrets: true
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{env.DOCKERHUB_USERNAME}}
+          password: ${{env.DOCKERHUB_TOKEN}}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
