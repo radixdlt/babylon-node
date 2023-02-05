@@ -16,6 +16,9 @@ jobs:
           access_token: ${{ github.token }}
 
   test_aws_access_to_secret:
+    name: Test AWS Secret access
+    runs-on: babylon-runner
+    steps:
     - name: "Configure AWS credentials"
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
