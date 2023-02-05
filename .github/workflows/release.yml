@@ -6,7 +6,6 @@ on:
 
 jobs:
   cancel_running_workflows:
-    environment: release
     name: Cancel running workflows
     runs-on: ubuntu-22.04
     steps:
@@ -17,7 +16,7 @@ jobs:
 
   test_aws_access_to_secret:
     name: Test AWS Secret access
-    runs-on: babylon-runner
+    runs-on: ubuntu-latest
     steps:
       - name: "Configure AWS credentials"
         uses: aws-actions/configure-aws-credentials@v1-node16
