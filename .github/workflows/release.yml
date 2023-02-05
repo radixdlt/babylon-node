@@ -16,6 +16,10 @@ jobs:
 
   test_aws_access_to_secret:
     name: Test AWS Secret access
+    # These permissions are needed to interact with GitHub's OIDC Token endpoint.
+    permissions:
+      id-token: write
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: "Configure AWS credentials"
