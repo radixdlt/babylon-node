@@ -80,9 +80,6 @@ jobs:
 
   build_push_container:
     name: Build core node docker container
-    permissions:
-      id-token: write
-      contents: read
     needs:
       - build_deb
     runs-on: ubuntu-22.04
