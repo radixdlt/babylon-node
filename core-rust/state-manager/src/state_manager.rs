@@ -966,6 +966,16 @@ where
         }
 
         {
+            let mut mempool = self.mempool.write();
+            mempool.handle_committed_transactions(&intent_hashes);
+            self.metrics
+                .mempool_current_transactions
+                .set(mempool.get_count() as i64);
+        }
+
+        // XXX this is a gross hack, we should handle_committed_transactions after the part below.
+
+        {
             let mut execution_cache = self.execution_cache.write();
             let mut pending_transaction_result_cache =
                 self.pending_transaction_result_cache.write();
@@ -1000,14 +1010,6 @@ where
                     .unwrap()
                     .as_secs_f64(),
             );
-
-            {
-                let mut mempool = self.mempool.write();
-                mempool.handle_committed_transactions(&intent_hashes);
-                self.metrics
-                    .mempool_current_transactions
-                    .set(mempool.get_count() as i64);
-            }
 
             pending_transaction_result_cache.track_committed_transactions(
                 SystemTime::now(),
