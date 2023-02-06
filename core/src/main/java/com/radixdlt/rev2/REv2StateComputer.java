@@ -65,6 +65,7 @@
 package com.radixdlt.rev2;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -174,6 +175,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
   @Override
   public StateComputerLedger.StateComputerResult prepare(
+      HashCode parentAccumulator,
       List<ExecutedVertex> previousVertices,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
@@ -185,16 +187,11 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                         v.successfulTransactions()
                             .map(StateComputerLedger.ExecutedTransaction::transaction)
                             .toList(),
-                        v.vertex()
-                            .getParentHeader()
-                            .getLedgerHeader()
-                            .getAccumulatorState()
-                            .getAccumulatorHash()
-                            .asBytes(),
                         v.getLedgerHeader().getAccumulatorState().getAccumulatorHash().asBytes()))
             .toList();
     var prepareRequest =
         new PrepareRequest(
+            parentAccumulator.asBytes(),
             mappedPreviousVertices,
             proposedTransactions,
             UInt64.fromNonNegativeLong(roundDetails.epoch()),

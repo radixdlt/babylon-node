@@ -70,10 +70,7 @@ import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.List;
 
-public record PreviousVertex(
-    List<RawLedgerTransaction> transactions,
-    byte[] parentAccumulator,
-    byte[] resultantAccumulator) {
+public record PreviousVertex(List<RawLedgerTransaction> transactions, byte[] resultantAccumulator) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PreviousVertex.class,
@@ -82,8 +79,6 @@ public record PreviousVertex(
                 PreviousVertex::new,
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                (t, encoder) ->
-                    encoder.encode(t.transactions, t.parentAccumulator, t.resultantAccumulator)));
+                (t, encoder) -> encoder.encode(t.transactions, t.resultantAccumulator)));
   }
 }

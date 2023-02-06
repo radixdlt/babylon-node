@@ -66,6 +66,7 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
@@ -128,6 +129,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         List<ExecutedTransaction> executedTransactions);
 
     StateComputerResult prepare(
+        HashCode parentAccumulator,
         List<ExecutedVertex> previous,
         List<RawNotarizedTransaction> proposedTransactions,
         RoundDetails roundDetails);
@@ -272,6 +274,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
       final StateComputerResult result =
           stateComputer.prepare(
+              committedAccumulatorHash,
               verticesInExtension,
               vertex.getTransactions(),
               RoundDetails.fromVertex(vertexWithHash));

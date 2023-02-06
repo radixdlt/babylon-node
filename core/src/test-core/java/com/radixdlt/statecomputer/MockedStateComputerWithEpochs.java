@@ -65,6 +65,7 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.consensus.bft.*;
@@ -114,6 +115,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 
   @Override
   public StateComputerResult prepare(
+      HashCode parentAccumulator,
       List<ExecutedVertex> previousVertices,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
@@ -127,7 +129,8 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
               roundDetails.epoch() + 1,
               validatorSetMapping.apply(roundDetails.epoch() + 1).getValidators()));
     } else {
-      return stateComputer.prepare(previousVertices, proposedTransactions, roundDetails);
+      return stateComputer.prepare(
+          parentAccumulator, previousVertices, proposedTransactions, roundDetails);
     }
   }
 
