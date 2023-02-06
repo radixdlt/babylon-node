@@ -977,9 +977,6 @@ where
 
         {
             let mut execution_cache = self.execution_cache.write();
-            let mut pending_transaction_result_cache =
-                self.pending_transaction_result_cache.write();
-
             execution_cache.progress_root(&parent_accumulator_hash);
 
             let mut substates_collector = CommitSubstatesCollector::new();
@@ -1010,7 +1007,11 @@ where
                     .unwrap()
                     .as_secs_f64(),
             );
+        }
 
+        {
+            let mut pending_transaction_result_cache =
+                self.pending_transaction_result_cache.write();
             pending_transaction_result_cache.track_committed_transactions(
                 SystemTime::now(),
                 commit_request_start_state_version,
