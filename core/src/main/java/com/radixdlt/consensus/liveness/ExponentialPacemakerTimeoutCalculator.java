@@ -71,7 +71,7 @@ import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 
 /** Timeout calculator which exponentially increases based on number of uncommitted rounds. */
 public final class ExponentialPacemakerTimeoutCalculator implements PacemakerTimeoutCalculator {
-  private static final long ADDITIONAL_ROUND_TIME_OF_PROPOSAL_RECEIVED_MS = 30_000;
+  private static final long ADDITIONAL_ROUND_TIME_IF_PROPOSAL_RECEIVED_MS = 30_000;
 
   private final long baseTimeoutMilliseconds;
   private final double rate;
@@ -112,6 +112,6 @@ public final class ExponentialPacemakerTimeoutCalculator implements PacemakerTim
 
   @Override
   public long additionalRoundTimeIfProposalReceivedMs() {
-    return ADDITIONAL_ROUND_TIME_OF_PROPOSAL_RECEIVED_MS;
+    return ADDITIONAL_ROUND_TIME_IF_PROPOSAL_RECEIVED_MS;
   }
 }
