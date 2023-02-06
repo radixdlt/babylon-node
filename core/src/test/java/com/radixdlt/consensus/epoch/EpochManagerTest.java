@@ -71,6 +71,7 @@ import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.*;
 import com.google.inject.Module;
@@ -147,6 +148,7 @@ public class EpochManagerTest {
 
         @Override
         public StateComputerResult prepare(
+            HashCode parentAccumulator,
             List<ExecutedVertex> previousVertices,
             List<RawNotarizedTransaction> proposedTransactions,
             RoundDetails roundDetails) {

@@ -72,6 +72,7 @@ import com.radixdlt.utils.UInt64;
 import java.util.List;
 
 public record PrepareRequest(
+    byte[] parentAccumulator,
     List<PreviousVertex> previous,
     List<RawNotarizedTransaction> proposed,
     UInt64 epoch,
@@ -88,8 +89,14 @@ public record PrepareRequest(
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
+                codecs.of(new TypeToken<>() {}),
                 (t, encoder) ->
                     encoder.encode(
-                        t.previous, t.proposed, t.epoch, t.roundNumber, t.proposerTimestampMs)));
+                        t.parentAccumulator,
+                        t.previous,
+                        t.proposed,
+                        t.epoch,
+                        t.roundNumber,
+                        t.proposerTimestampMs)));
   }
 }

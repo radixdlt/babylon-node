@@ -65,6 +65,7 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.hash.HashCode;
 import com.google.inject.*;
 import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.VertexStoreState;
@@ -144,6 +145,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 
       @Override
       public StateComputerLedger.StateComputerResult prepare(
+          HashCode parentAccumulator,
           List<ExecutedVertex> previousVertices,
           List<RawNotarizedTransaction> proposedTransactions,
           RoundDetails roundDetails) {

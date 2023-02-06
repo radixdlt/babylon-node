@@ -266,6 +266,7 @@ impl From<JavaCommitRequest> for CommitRequest {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPrepareRequest {
+    pub parent_accumulator: Vec<u8>,
     pub prepared_vertices: Vec<JavaPreviousVertex>,
     pub proposed: Vec<JavaRawTransaction>,
     pub consensus_epoch: u64,
@@ -276,6 +277,7 @@ pub struct JavaPrepareRequest {
 impl From<JavaPrepareRequest> for PrepareRequest {
     fn from(prepare_request: JavaPrepareRequest) -> Self {
         PrepareRequest {
+            parent_accumulator: prepare_request.parent_accumulator,
             prepared_vertices: prepare_request
                 .prepared_vertices
                 .into_iter()
@@ -296,7 +298,6 @@ impl From<JavaPrepareRequest> for PrepareRequest {
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPreviousVertex {
     pub transactions: Vec<JavaRawTransaction>,
-    pub parent_accumulator: Vec<u8>,
     pub resultant_accumulator: Vec<u8>,
 }
 
@@ -308,7 +309,6 @@ impl From<JavaPreviousVertex> for PreviousVertex {
                 .into_iter()
                 .map(|v| v.payload)
                 .collect(),
-            parent_accumulator: previous_vertex.parent_accumulator,
             resultant_accumulator: previous_vertex.resultant_accumulator,
         }
     }

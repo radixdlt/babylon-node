@@ -65,6 +65,7 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HighQC;
@@ -116,6 +117,7 @@ public final class MockedStateComputer implements StateComputer {
 
   @Override
   public StateComputerLedger.StateComputerResult prepare(
+      HashCode parentAccumulator,
       List<ExecutedVertex> previousVertices,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
