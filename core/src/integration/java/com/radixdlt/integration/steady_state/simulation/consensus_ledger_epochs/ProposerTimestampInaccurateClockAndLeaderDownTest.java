@@ -126,7 +126,7 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
                 new FunctionalRadixNodeModule(
                     true,
                     FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
-                    ConsensusConfig.of(1000),
+                    ConsensusConfig.of(1000, 0L),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mockedWithEpochs(
                             Round.of(10),

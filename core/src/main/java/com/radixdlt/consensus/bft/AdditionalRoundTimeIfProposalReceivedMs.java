@@ -62,58 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.liveness;
+package com.radixdlt.consensus.bft;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.AdditionalRoundTimeIfProposalReceivedMs;
-import com.radixdlt.consensus.bft.PacemakerBackoffRate;
-import com.radixdlt.consensus.bft.PacemakerBaseTimeoutMs;
-import com.radixdlt.consensus.bft.PacemakerMaxExponent;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/** Timeout calculator which exponentially increases based on number of uncommitted rounds. */
-public final class ExponentialPacemakerTimeoutCalculator implements PacemakerTimeoutCalculator {
-  private final long baseTimeoutMilliseconds;
-  private final double rate;
-  private final int maxExponent;
-  private final long additionalRoundTimeIfProposalReceivedMs;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  @Inject
-  public ExponentialPacemakerTimeoutCalculator(
-      @PacemakerBaseTimeoutMs long baseTimeoutMilliseconds,
-      @PacemakerBackoffRate double rate,
-      @PacemakerMaxExponent int maxExponent,
-      @AdditionalRoundTimeIfProposalReceivedMs long additionalRoundTimeIfProposalReceivedMs) {
-    if (baseTimeoutMilliseconds <= 0) {
-      throw new IllegalArgumentException(
-          "timeoutMilliseconds must be > 0 but was " + baseTimeoutMilliseconds);
-    }
-    if (rate <= 1.0) {
-      throw new IllegalArgumentException("rate must be > 1.0, but was " + rate);
-    }
-    if (maxExponent < 0) {
-      throw new IllegalArgumentException("maxExponent must be >= 0, but was " + maxExponent);
-    }
-    double maxTimeout = baseTimeoutMilliseconds * Math.pow(rate, maxExponent);
-    if (maxTimeout > Long.MAX_VALUE) {
-      throw new IllegalArgumentException(
-          "Maximum timeout value of " + maxTimeout + " is too large");
-    }
-
-    this.baseTimeoutMilliseconds = baseTimeoutMilliseconds;
-    this.rate = rate;
-    this.maxExponent = maxExponent;
-    this.additionalRoundTimeIfProposalReceivedMs = additionalRoundTimeIfProposalReceivedMs;
-  }
-
-  @Override
-  public long calculateTimeoutMs(long consecutiveUncommittedRounds) {
-    double exponential =
-        Math.pow(this.rate, Math.min(this.maxExponent, consecutiveUncommittedRounds));
-    return Math.round(this.baseTimeoutMilliseconds * exponential);
-  }
-
-  @Override
-  public long additionalRoundTimeIfProposalReceivedMs() {
-    return additionalRoundTimeIfProposalReceivedMs;
-  }
-}
+/**
+ * the amount of time (in milliseconds) by which the round can be extended if proposal was received,
+ * but hasn't yet been synced up.
+ */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface AdditionalRoundTimeIfProposalReceivedMs {}
