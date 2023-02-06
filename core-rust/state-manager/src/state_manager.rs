@@ -372,7 +372,7 @@ where
     ) -> Result<(), MempoolAddError> {
         // Quick check to avoid transaction validation if it couldn't be added to the mempool anyway
         self.mempool
-            .write()
+            .read()
             .check_add_would_be_possible(&unvalidated_transaction.user_payload_hash())?;
 
         let (record, was_cached) = self.check_for_rejection_with_caching(&unvalidated_transaction);
