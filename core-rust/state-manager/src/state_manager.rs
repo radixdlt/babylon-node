@@ -965,51 +965,56 @@ where
             committed_transaction_bundles.push((transaction, ledger_receipt, identifiers));
         }
 
-        let mut execution_cache = self.execution_cache.write();
-        let mut mempool = self.mempool.write();
-        let mut pending_transaction_result_cache = self.pending_transaction_result_cache.write();
+        {
+            let mut execution_cache = self.execution_cache.write();
+            let mut pending_transaction_result_cache =
+                self.pending_transaction_result_cache.write();
 
-        execution_cache.progress_root(&parent_accumulator_hash);
+            execution_cache.progress_root(&parent_accumulator_hash);
 
-        let mut substates_collector = CommitSubstatesCollector::new();
-        for receipt in receipts {
-            if let TransactionResult::Commit(commit) = &receipt.result {
-                commit.state_updates.commit(&mut substates_collector);
+            let mut substates_collector = CommitSubstatesCollector::new();
+            for receipt in receipts {
+                if let TransactionResult::Commit(commit) = &receipt.result {
+                    commit.state_updates.commit(&mut substates_collector);
+                }
             }
+
+            execution_cache.commit(CommitBundle {
+                transactions: committed_transaction_bundles,
+                proof_bytes: commit_request.proof,
+                proof_state_version: commit_request.proof_state_version,
+                epoch_boundary,
+                substates: substates_collector.substates,
+                vertex_store: commit_request.vertex_store,
+            });
+
+            self.metrics
+                .ledger_state_version
+                .set(current_state_version as i64);
+            self.metrics
+                .ledger_transactions_committed
+                .inc_by(parsed_txns_len as u64);
+            self.metrics.ledger_last_update_epoch_second.set(
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs_f64(),
+            );
+
+            {
+                let mut mempool = self.mempool.write();
+                mempool.handle_committed_transactions(&intent_hashes);
+                self.metrics
+                    .mempool_current_transactions
+                    .set(mempool.get_count() as i64);
+            }
+
+            pending_transaction_result_cache.track_committed_transactions(
+                SystemTime::now(),
+                commit_request_start_state_version,
+                intent_hashes,
+            );
         }
-
-        execution_cache.commit(CommitBundle {
-            transactions: committed_transaction_bundles,
-            proof_bytes: commit_request.proof,
-            proof_state_version: commit_request.proof_state_version,
-            epoch_boundary,
-            substates: substates_collector.substates,
-            vertex_store: commit_request.vertex_store,
-        });
-
-        self.metrics
-            .ledger_state_version
-            .set(current_state_version as i64);
-        self.metrics
-            .ledger_transactions_committed
-            .inc_by(parsed_txns_len as u64);
-        self.metrics.ledger_last_update_epoch_second.set(
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_secs_f64(),
-        );
-
-        mempool.handle_committed_transactions(&intent_hashes);
-        self.metrics
-            .mempool_current_transactions
-            .set(mempool.get_count() as i64);
-
-        pending_transaction_result_cache.track_committed_transactions(
-            SystemTime::now(),
-            commit_request_start_state_version,
-            intent_hashes,
-        );
 
         Ok(())
     }

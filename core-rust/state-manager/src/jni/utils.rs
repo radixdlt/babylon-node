@@ -170,8 +170,7 @@ fn jni_state_manager_sbor_read_call_inner<Args: JavaStructure, Response: JavaStr
     let state_manager_arc = JNIStateManager::get_state_manager(env, j_state_manager);
     let state_manager = state_manager_arc.read();
 
-    let response = method(&state_manager, args);
-    Ok(response)
+    Ok(method(&state_manager, args))
 }
 
 pub fn jni_state_manager_sbor_call_flatten_result<
