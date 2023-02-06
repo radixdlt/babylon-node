@@ -66,6 +66,7 @@ use super::stage_tree::{DerivedStageKey, StageKey};
 use crate::staging::stage_tree::{Accumulator, Delta, StageTree};
 use crate::AccumulatorHash;
 use im::hashmap::HashMap as ImmutableHashMap;
+use lazy_static::lazy_static;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore};
 use radix_engine::state_manager::StateDiff;
 use radix_engine::transaction::{TransactionReceipt, TransactionResult};
@@ -94,7 +95,6 @@ pub struct ProcessedResult {
     #[allow(dead_code)]
     state_hash: Hash,
     receipt: TransactionReceipt,
-    empty_state_diff: Option<StateDiff>,
     hash_tree_diff: HashTreeDiff,
 }
 
@@ -229,6 +229,10 @@ impl<'s, S: RootStore> ReadableTreeStore for StagedStore<'s, S> {
     }
 }
 
+lazy_static! {
+    static ref EMPTY_STATE_DIFF: StateDiff = StateDiff::new();
+}
+
 impl ProcessedResult {
     fn from_processed<S: RootStore>(
         transaction_receipt: TransactionReceipt,
@@ -255,20 +259,10 @@ impl ProcessedResult {
         let mut collector = CollectingTreeStore::new(store);
         let state_version = store.overlay.state_version;
         let root_hash = put_at_next_version(&mut collector, state_version, &hash_changes);
-        ProcessedResult::new(root_hash, transaction_receipt, collector.diff)
-    }
-
-    fn new(state_hash: Hash, receipt: TransactionReceipt, hash_tree_diff: HashTreeDiff) -> Self {
-        let empty_state_diff = if let TransactionResult::Commit(_) = &receipt.result {
-            None
-        } else {
-            Some(StateDiff::new())
-        };
         Self {
-            state_hash,
-            receipt,
-            empty_state_diff,
-            hash_tree_diff,
+            state_hash: root_hash,
+            receipt: transaction_receipt,
+            hash_tree_diff: collector.diff,
         }
     }
 
@@ -280,7 +274,7 @@ impl ProcessedResult {
         if let TransactionResult::Commit(commit) = &self.receipt.result {
             &commit.state_updates
         } else {
-            self.empty_state_diff.as_ref().unwrap()
+            &EMPTY_STATE_DIFF
         }
     }
 
