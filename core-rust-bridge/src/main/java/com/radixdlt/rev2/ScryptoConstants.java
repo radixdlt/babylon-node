@@ -65,10 +65,8 @@
 package com.radixdlt.rev2;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.exceptions.StateManagerRuntimeError;
-import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
-import com.radixdlt.sbor.NativeCalls;
+import com.radixdlt.sbor.Natives;
 
 public final class ScryptoConstants {
   static {
@@ -77,31 +75,23 @@ public final class ScryptoConstants {
   }
 
   public static final ComponentAddress FAUCET_COMPONENT_ADDRESS =
-      NativeCalls.StaticFunc1.with(
-              new TypeToken<Tuple.Tuple0>() {},
-              new TypeToken<Result<ComponentAddress, StateManagerRuntimeError>>() {},
-              ScryptoConstants::getFaucetComponentAddress)
+      Natives.builder(ScryptoConstants::getFaucetComponentAddress)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, ComponentAddress>>() {})
           .call(Tuple.Tuple0.of());
 
   public static final PackageAddress ACCOUNT_PACKAGE_ADDRESS =
-      NativeCalls.StaticFunc1.with(
-              new TypeToken<Tuple.Tuple0>() {},
-              new TypeToken<Result<PackageAddress, StateManagerRuntimeError>>() {},
-              ScryptoConstants::getAccountPackageAddress)
+      Natives.builder(ScryptoConstants::getAccountPackageAddress)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, PackageAddress>>() {})
           .call(Tuple.Tuple0.of());
 
   public static final ResourceAddress XRD_RESOURCE_ADDRESS =
-      NativeCalls.StaticFunc1.with(
-              new TypeToken<Tuple.Tuple0>() {},
-              new TypeToken<Result<ResourceAddress, StateManagerRuntimeError>>() {},
-              ScryptoConstants::getXrdResourceAddress)
+      Natives.builder(ScryptoConstants::getXrdResourceAddress)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, ResourceAddress>>() {})
           .call(Tuple.Tuple0.of());
 
   public static final ComponentAddress EPOCH_MANAGER_COMPONENT_ADDRESS =
-      NativeCalls.StaticFunc1.with(
-              new TypeToken<Tuple.Tuple0>() {},
-              new TypeToken<Result<ComponentAddress, StateManagerRuntimeError>>() {},
-              ScryptoConstants::getEpochManagerComponentAddress)
+      Natives.builder(ScryptoConstants::getEpochManagerComponentAddress)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, ComponentAddress>>() {})
           .call(Tuple.Tuple0.of());
 
   private static native byte[] getFaucetComponentAddress(byte[] unused);
