@@ -116,7 +116,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
                 RadixNodeModule.MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE),
             MempoolRelayer.MAX_RELAY_TOTAL_TXNS_PAYLOAD_SIZE);
     // 2 MiB should be more than enough for any vertex/QCs/proofs/encryption overhead
-    final var additionalBuffer = 2 * 1024 * 1024;
+    final var additionalBuffer = 5 * 1024 * 1024;
     final var bufferSize = baseBufferSize + additionalBuffer;
 
     // Just a sanity check that any changes to the constants used above
