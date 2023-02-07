@@ -35,6 +35,7 @@ fn handle_transaction_status_internal(
 
     let mut known_pending_payloads = state_manager
         .pending_transaction_result_cache
+        .read()
         .peek_all_known_payloads_for_intent(&intent_hash);
 
     let current_epoch = state_manager.get_epoch();

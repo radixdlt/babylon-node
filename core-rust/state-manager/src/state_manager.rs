@@ -129,7 +129,7 @@ pub struct StateManager<S: ReadableSubstateStore> {
     execution_cache: ExecutionCache,
     pub user_transaction_validator: UserTransactionValidator,
     pub ledger_transaction_validator: LedgerTransactionValidator,
-    pub pending_transaction_result_cache: PendingTransactionResultCache,
+    pub pending_transaction_result_cache: RwLock<PendingTransactionResultCache>,
     pub metrics: StateManagerMetrics,
     pub prometheus_registry: Registry,
     execution_config: ExecutionConfig,
@@ -186,7 +186,9 @@ where
             fee_reserve_config: FeeReserveConfig::standard(),
             intent_hash_manager: TestIntentHashManager::new(),
             logging_config: logging_config.state_manager_config,
-            pending_transaction_result_cache: PendingTransactionResultCache::new(10000, 10000),
+            pending_transaction_result_cache: RwLock::new(PendingTransactionResultCache::new(
+                10000, 10000,
+            )),
             metrics,
             prometheus_registry,
         }
@@ -400,9 +402,12 @@ where
         let payload_hash = transaction.user_payload_hash();
         let invalid_from_epoch = transaction.signed_intent.intent.header.end_epoch_exclusive;
 
-        let record_option = self
-            .pending_transaction_result_cache
-            .get_pending_transaction_record(&intent_hash, &payload_hash, invalid_from_epoch);
+        let mut pending_transaction_result_cache = self.pending_transaction_result_cache.write();
+        let record_option = pending_transaction_result_cache.get_pending_transaction_record(
+            &intent_hash,
+            &payload_hash,
+            invalid_from_epoch,
+        );
 
         if let Some(record) = record_option {
             if !record.should_recalculate(current_time) {
@@ -424,12 +429,16 @@ where
             timestamp: current_time,
         };
         let invalid_from_epoch = transaction.signed_intent.intent.header.end_epoch_exclusive;
-        self.pending_transaction_result_cache
-            .track_transaction_result(intent_hash, payload_hash, invalid_from_epoch, attempt);
+        pending_transaction_result_cache.track_transaction_result(
+            intent_hash,
+            payload_hash,
+            invalid_from_epoch,
+            attempt,
+        );
 
         // Unwrap allowed as we've just put it in the cache, and unless the cache has size 0 it must be there
         (
-            self.pending_transaction_result_cache
+            pending_transaction_result_cache
                 .get_pending_transaction_record(&intent_hash, &payload_hash, invalid_from_epoch)
                 .unwrap(),
             false,
@@ -814,6 +823,7 @@ where
                 timestamp: pending_transaction_timestamp,
             };
             self.pending_transaction_result_cache
+                .write()
                 .track_transaction_result(
                     intent_hash,
                     user_payload_hash,
@@ -991,6 +1001,7 @@ where
         }
 
         self.pending_transaction_result_cache
+            .write()
             .track_committed_transactions(
                 SystemTime::now(),
                 commit_request_start_state_version,
