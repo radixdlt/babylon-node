@@ -793,7 +793,7 @@ where
                     // just because transactions were rejected in this history doesn't mean this history will be committed.
                     //
                     // But it'll do for now as a defensive measure until we can have a more intelligent mempool.
-                    mempool.remove_transaction(&intent_hash, &user_payload_hash);
+                    mempool.remove_transaction(intent_hash, user_payload_hash);
                 }
             }
             self.metrics

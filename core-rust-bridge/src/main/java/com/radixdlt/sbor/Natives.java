@@ -64,83 +64,94 @@
 
 package com.radixdlt.sbor;
 
+import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.exceptions.StateManagerRuntimeException;
 import com.radixdlt.lang.Functions;
 import com.radixdlt.lang.Result;
 import com.radixdlt.sbor.codec.Codec;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 
-public interface NativeCalls {
-  record Func0<StateHoldingObj, Res>(
-      StateHoldingObj stateHoldingObject,
-      Codec<Result<Res, StateManagerRuntimeError>> responseCodec,
-      Functions.Func1<StateHoldingObj, byte[]> nativeFunction) {
-    public static <StateHoldingObj, Res> Func0<StateHoldingObj, Res> with(
-        StateHoldingObj stateHoldingObject,
-        TypeToken<Result<Res, StateManagerRuntimeError>> responseType,
-        Functions.Func1<StateHoldingObj, byte[]> nativeFunction) {
-      return new Func0<>(
-          stateHoldingObject, StateManagerSbor.resolveCodec(responseType), nativeFunction);
+/**
+ * A native call definition utility.
+ *
+ * <p>Usage example:
+ *
+ * <pre>
+ *   private static final Natives.Call1<Address, Resource>> getResourceFunc =
+ *       Natives.builder(resourceManager, ResourceManager::getResource) // specify the target
+ *           .measure(metrics.nativeCalls().resourceGet()) // add metrics and other customizations
+ *           .build(new TypeToken<>() {}); // finalize the build (capturing all the types)
+ *
+ *   ...
+ *
+ *   Resource resource = getResourceFunc.call(address);
+ * </pre>
+ */
+public interface Natives {
+
+  /** A builder for a call definition that takes 1 parameter. */
+  class Builder1 {
+
+    private final Functions.Func1<byte[], byte[]> callable;
+
+    private Builder1(Functions.Func1<byte[], byte[]> callable) {
+      this.callable = callable;
     }
 
-    public Res call() {
-      final var encodedResponse = nativeFunction.apply(stateHoldingObject);
-      return handleStateManagerResponse(StateManagerSbor.decode(encodedResponse, responseCodec));
-    }
-  }
-
-  record Func1<StateHoldingObj, Req, Res>(
-      StateHoldingObj stateHoldingObject,
-      Codec<Req> requestCodec,
-      Codec<Result<Res, StateManagerRuntimeError>> responseCodec,
-      Functions.Func2<StateHoldingObj, byte[], byte[]> nativeFunction) {
-    public static <StateHoldingObj, Req, Res> Func1<StateHoldingObj, Req, Res> with(
-        StateHoldingObj stateHoldingObject,
-        TypeToken<Req> requestType,
-        TypeToken<Result<Res, StateManagerRuntimeError>> responseType,
-        Functions.Func2<StateHoldingObj, byte[], byte[]> nativeFunction) {
-      return new Func1<>(
-          stateHoldingObject,
-          StateManagerSbor.resolveCodec(requestType),
-          StateManagerSbor.resolveCodec(responseType),
-          nativeFunction);
-    }
-
-    public Res call(Req request) {
-      final var encodedRequest = StateManagerSbor.encode(request, requestCodec);
-      final var encodedResponse = nativeFunction.apply(stateHoldingObject, encodedRequest);
-      return handleStateManagerResponse(StateManagerSbor.decode(encodedResponse, responseCodec));
-    }
-  }
-
-  record StaticFunc1<Req, Res>(
-      Codec<Req> requestCodec,
-      Codec<Result<Res, StateManagerRuntimeError>> responseCodec,
-      Functions.Func1<byte[], byte[]> nativeFunction) {
-    public static <Req, Res> StaticFunc1<Req, Res> with(
-        TypeToken<Req> requestType,
-        TypeToken<Result<Res, StateManagerRuntimeError>> responseType,
-        Functions.Func1<byte[], byte[]> nativeFunction) {
-      return new StaticFunc1<>(
-          StateManagerSbor.resolveCodec(requestType),
-          StateManagerSbor.resolveCodec(responseType),
-          nativeFunction);
-    }
-
-    public Res call(Req request) {
-      final var encodedRequest = StateManagerSbor.encode(request, requestCodec);
-      final var encodedResponse = nativeFunction.apply(encodedRequest);
-      return handleStateManagerResponse(StateManagerSbor.decode(encodedResponse, responseCodec));
+    /**
+     * Finalizes the build. The {@link TypeToken} argument is used to resolve the actual parameter
+     * and return types of the underlying function. Typically, its value can be inferred by the
+     * compiler, i.e. the caller may simply pass a {@code new TypeToken<>() {}}.
+     */
+    @SuppressWarnings("unchecked")
+    public <P1, R> Call1<P1, R> build(TypeToken<Call1<P1, R>> typeCapture) {
+      ParameterizedType callType = (ParameterizedType) typeCapture.getType();
+      Type[] types = callType.getActualTypeArguments();
+      Codec<P1> p1Codec = StateManagerSbor.resolveCodec((TypeToken<P1>) TypeToken.of(types[0]));
+      Codec<Result<R, StateManagerRuntimeError>> wrapperCodec =
+          StateManagerSbor.resolveCodec(
+              new TypeToken<Result<R, StateManagerRuntimeError>>() {}.where(
+                  new TypeParameter<>() {}, (TypeToken<R>) TypeToken.of(types[1])));
+      return new Call1<>(this.callable, p1Codec, wrapperCodec);
     }
   }
 
-  static <Res> Res handleStateManagerResponse(Result<Res, StateManagerRuntimeError> result) {
-    // Handle System/Runtime Errors
-    if (result.isError()) {
-      throw new StateManagerRuntimeException(result.unwrapError());
+  /** Starts a native call definition build for a static method taking 1 parameter. */
+  static Builder1 builder(Functions.Func1<byte[], byte[]> staticMethod) {
+    return new Builder1(staticMethod);
+  }
+
+  /** Starts a native call definition build for an instance method taking 1 parameter. */
+  static <I> Builder1 builder(I instance, Functions.Func2<I, byte[], byte[]> method) {
+    return builder(param1 -> method.apply(instance, param1));
+  }
+
+  /** A wrapper allowing to call a native function taking 1 parameter. */
+  class Call1<P1, R> {
+
+    private final Functions.Func1<byte[], byte[]> callable;
+    private final Codec<P1> p1Codec;
+    private final Codec<Result<R, StateManagerRuntimeError>> wrapperCodec;
+
+    private Call1(
+        Functions.Func1<byte[], byte[]> callable,
+        Codec<P1> p1Codec,
+        Codec<Result<R, StateManagerRuntimeError>> wrapperCodec) {
+      this.callable = callable;
+      this.p1Codec = p1Codec;
+      this.wrapperCodec = wrapperCodec;
     }
 
-    return result.unwrap();
+    /** Calls the underlying native function with the given parameter and returns its result. */
+    public R call(P1 p1) {
+      final byte[] encodedP1 = StateManagerSbor.encode(p1, p1Codec);
+      final byte[] encodedWrapper = callable.apply(encodedP1);
+      final Result<R, StateManagerRuntimeError> wrapper =
+          StateManagerSbor.decode(encodedWrapper, wrapperCodec);
+      return wrapper.unwrap(StateManagerRuntimeException::new);
+    }
   }
 }

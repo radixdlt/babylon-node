@@ -72,7 +72,7 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.sbor.NativeCalls;
+import com.radixdlt.sbor.Natives;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt32;
@@ -84,24 +84,14 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
 
   public RustMempool(Metrics metrics, StateManager stateManager) {
     this.metrics = metrics;
-    addFunc =
-        NativeCalls.Func1.with(
-            stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustMempool::add);
+    addFunc = Natives.builder(stateManager, RustMempool::add).build(new TypeToken<>() {});
     getTransactionsForProposalFunc =
-        NativeCalls.Func1.with(
-            stateManager,
-            new TypeToken<>() {},
-            new TypeToken<>() {},
-            RustMempool::getTransactionsForProposal);
+        Natives.builder(stateManager, RustMempool::getTransactionsForProposal)
+            .build(new TypeToken<>() {});
     getTransactionsToRelayFunc =
-        NativeCalls.Func1.with(
-            stateManager,
-            new TypeToken<>() {},
-            new TypeToken<>() {},
-            RustMempool::getTransactionsToRelay);
-    getCountFunc =
-        NativeCalls.Func1.with(
-            stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustMempool::getCount);
+        Natives.builder(stateManager, RustMempool::getTransactionsToRelay)
+            .build(new TypeToken<>() {});
+    getCountFunc = Natives.builder(stateManager, RustMempool::getCount).build(new TypeToken<>() {});
   }
 
   public RawNotarizedTransaction addTransaction(RawNotarizedTransaction transaction)
@@ -166,24 +156,21 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
 
   private static native byte[] add(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<
-          StateManager, RawNotarizedTransaction, Result<HashCode, MempoolError>>
-      addFunc;
+  private final Natives.Call1<RawNotarizedTransaction, Result<HashCode, MempoolError>> addFunc;
 
   private static native byte[] getTransactionsForProposal(
       StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<
-          StateManager, Tuple.Tuple3<UInt32, UInt32, List<HashCode>>, List<RawNotarizedTransaction>>
+  private final Natives.Call1<
+          Tuple.Tuple3<UInt32, UInt32, List<HashCode>>, List<RawNotarizedTransaction>>
       getTransactionsForProposalFunc;
 
   private static native byte[] getTransactionsToRelay(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<
-          StateManager, Tuple.Tuple2<UInt32, UInt32>, List<RawNotarizedTransaction>>
+  private final Natives.Call1<Tuple.Tuple2<UInt32, UInt32>, List<RawNotarizedTransaction>>
       getTransactionsToRelayFunc;
 
   private static native byte[] getCount(Object stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<StateManager, Tuple.Tuple0, Integer> getCountFunc;
+  private final Natives.Call1<Tuple.Tuple0, Integer> getCountFunc;
 }
