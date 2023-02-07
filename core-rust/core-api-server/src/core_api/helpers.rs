@@ -9,15 +9,6 @@ use super::{
     MappingError, ResponseError,
 };
 
-pub(crate) fn core_api_handler_empty_request<Response>(
-    Extension(state): Extension<CoreApiState>,
-    method: impl FnOnce(&mut ActualStateManager) -> Result<Response, ResponseError<()>>,
-) -> Result<Json<Response>, ResponseError<()>> {
-    let mut state_manager = state.state_manager.write();
-
-    method(&mut state_manager).map(Json)
-}
-
 #[tracing::instrument(skip_all)]
 pub(crate) fn core_api_read_handler<Request, Response>(
     Extension(state): Extension<CoreApiState>,

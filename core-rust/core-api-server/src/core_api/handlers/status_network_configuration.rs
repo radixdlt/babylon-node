@@ -1,18 +1,12 @@
 use crate::core_api::*;
 use radix_engine::types::*;
 use radix_engine_interface::address::{EntityType, HrpSet};
-use state_manager::jni::state_manager::ActualStateManager;
 
 #[tracing::instrument(err(Debug), skip(state))]
 pub(crate) async fn handle_status_network_configuration(
-    state: Extension<CoreApiState>,
+    Extension(state): Extension<CoreApiState>,
 ) -> Result<Json<models::NetworkConfigurationResponse>, ResponseError<()>> {
-    core_api_handler_empty_request(state, handle_status_network_configuration_internal)
-}
-
-pub(crate) fn handle_status_network_configuration_internal(
-    state_manager: &mut ActualStateManager,
-) -> Result<models::NetworkConfigurationResponse, ResponseError<()>> {
+    let state_manager = state.state_manager.read();
     let network = state_manager.network.clone();
 
     let bech32_encoder = Bech32Encoder::new(&state_manager.network);
@@ -42,6 +36,7 @@ pub(crate) fn handle_status_network_configuration_internal(
             xrd: bech32_encoder.encode_resource_address_to_string(&RADIX_TOKEN),
         }),
     })
+    .map(Json)
 }
 
 const ALL_ENTITY_TYPES: [EntityType; 13] = [
