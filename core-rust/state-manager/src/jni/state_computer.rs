@@ -130,19 +130,15 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepareGene
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_prepare_genesis)
+    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_prepare_genesis)
 }
 
 #[tracing::instrument(skip_all)]
 fn do_prepare_genesis(
-    state_manager: &mut ActualStateManager,
-    args: JavaPrepareGenesisRequest,
+    state_manager: &ActualStateManager,
+    prepare_request: JavaPrepareGenesisRequest,
 ) -> JavaPrepareGenesisResult {
-    let prepare_request = args;
-
-    let result = state_manager.prepare_genesis(prepare_request.into());
-
-    result.into()
+    state_manager.prepare_genesis(prepare_request.into()).into()
 }
 
 #[no_mangle]
@@ -152,19 +148,15 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_prepare)
+    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_prepare)
 }
 
 #[tracing::instrument(skip_all)]
 fn do_prepare(
-    state_manager: &mut ActualStateManager,
-    args: JavaPrepareRequest,
+    state_manager: &ActualStateManager,
+    prepare_request: JavaPrepareRequest,
 ) -> JavaPrepareResult {
-    let prepare_request = args;
-
-    let result = state_manager.prepare(prepare_request.into());
-
-    result.into()
+    state_manager.prepare(prepare_request.into()).into()
 }
 
 #[no_mangle]

@@ -244,7 +244,7 @@ where
     }
 
     fn execute_with_cache(
-        &mut self,
+        &self,
         parent_accumulator_hash: &AccumulatorHash,
         executable: &Executable,
         payload_hash: &LedgerPayloadHash,
@@ -334,7 +334,7 @@ where
     ///
     /// We look for cached rejections first, to avoid this heavy lifting where we can
     pub fn check_for_rejection_and_add_to_mempool(
-        &mut self,
+        &self,
         mempool_add_source: MempoolAddSource,
         unvalidated_transaction: NotarizedTransaction,
     ) -> Result<(), MempoolAddError> {
@@ -364,7 +364,7 @@ where
     ///
     /// We look for cached rejections first, to avoid this heavy lifting where we can
     fn check_for_rejection_and_add_to_mempool_internal(
-        &mut self,
+        &self,
         unvalidated_transaction: NotarizedTransaction,
     ) -> Result<(), MempoolAddError> {
         // Quick check to avoid transaction validation if it couldn't be added to the mempool anyway
@@ -397,7 +397,7 @@ where
     ///
     /// Its pending transaction record is returned, along with a boolean about whether the last attempt was cached.
     pub fn check_for_rejection_with_caching(
-        &mut self,
+        &self,
         transaction: &NotarizedTransaction,
     ) -> (PendingTransactionRecord, bool) {
         let current_time = SystemTime::now();
@@ -493,7 +493,7 @@ where
     }
 
     pub fn get_relay_transactions(
-        &mut self,
+        &self,
         max_num_txns: u64,
         max_payload_size_bytes: u64,
     ) -> Vec<PendingTransaction> {
@@ -537,7 +537,7 @@ where
     }
 
     // TODO: Update to prepare_system_transaction when we start to support forking
-    pub fn prepare_genesis(&mut self, genesis: PrepareGenesisRequest) -> PrepareGenesisResult {
+    pub fn prepare_genesis(&self, genesis: PrepareGenesisRequest) -> PrepareGenesisResult {
         let parsed_transaction =
             LedgerTransactionValidator::parse_unvalidated_transaction_from_slice(&genesis.genesis)
                 .expect("Already prepared transactions should be decodeable");
@@ -575,7 +575,7 @@ where
         }
     }
 
-    pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
+    pub fn prepare(&self, prepare_request: PrepareRequest) -> PrepareResult {
         // This intent hash check, and current epoch should eventually live in the executor
         let pending_transaction_base_state_version = self.store.max_state_version();
         let mut already_committed_or_prepared_intent_hashes: HashMap<

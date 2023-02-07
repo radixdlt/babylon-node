@@ -124,7 +124,7 @@ impl SimpleMempool {
     }
 
     pub fn check_add_would_be_possible(
-        &mut self,
+        &self,
         payload_hash: &UserPayloadHash,
     ) -> Result<(), MempoolAddError> {
         if self.data.contains_key(payload_hash) {
