@@ -68,7 +68,9 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transactions.RawLedgerTransaction;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public record PreviousVertex(List<RawLedgerTransaction> transactions, byte[] resultantAccumulator) {
   public static void registerCodec(CodecMap codecMap) {
@@ -80,5 +82,31 @@ public record PreviousVertex(List<RawLedgerTransaction> transactions, byte[] res
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
                 (t, encoder) -> encoder.encode(t.transactions, t.resultantAccumulator)));
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    PreviousVertex that = (PreviousVertex) o;
+    return Objects.equals(transactions, that.transactions)
+        && Arrays.equals(resultantAccumulator, that.resultantAccumulator);
+  }
+
+  @Override
+  public int hashCode() {
+    int result = Objects.hash(transactions);
+    result = 31 * result + Arrays.hashCode(resultantAccumulator);
+    return result;
+  }
+
+  @Override
+  public String toString() {
+    return "PreviousVertex{"
+        + "transactions="
+        + transactions
+        + ", resultantAccumulator="
+        + Arrays.toString(resultantAccumulator)
+        + '}';
   }
 }
