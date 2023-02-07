@@ -74,9 +74,26 @@ import com.radixdlt.sbor.codec.Codec;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
-public abstract class Natives {
+/**
+ * A native call definition utility.
+ *
+ * <p>Usage example:
+ *
+ * <pre>
+ *   private static final Natives.Call1<Address, Resource>> getResourceFunc =
+ *       Natives.builder(resourceManager, ResourceManager::getResource) // specify the target
+ *           .measure(metrics.nativeCalls().resourceGet()) // add metrics and other customizations
+ *           .build(new TypeToken<>() {}); // finalize the build (capturing all the types)
+ *
+ *   ...
+ *
+ *   Resource resource = getResourceFunc.call(address);
+ * </pre>
+ */
+public interface Natives {
 
-  public static class Builder1 {
+  /** A builder for a call definition that takes 1 parameter. */
+  class Builder1 {
 
     private final Functions.Func1<byte[], byte[]> callable;
 
@@ -84,6 +101,11 @@ public abstract class Natives {
       this.callable = callable;
     }
 
+    /**
+     * Finalizes the build. The {@link TypeToken} argument is used to resolve the actual parameter
+     * and return types of the underlying function. Typically, its value can be inferred by the
+     * compiler, i.e. the caller may simply pass a {@code new TypeToken<>() {}}.
+     */
     @SuppressWarnings("unchecked")
     public <P1, R> Call1<P1, R> build(TypeToken<Call1<P1, R>> typeCapture) {
       ParameterizedType callType = (ParameterizedType) typeCapture.getType();
@@ -97,21 +119,24 @@ public abstract class Natives {
     }
   }
 
-  public static Builder1 builder(Functions.Func1<byte[], byte[]> staticMethod) {
+  /** Starts a native call definition build for a static method taking 1 parameter. */
+  static Builder1 builder(Functions.Func1<byte[], byte[]> staticMethod) {
     return new Builder1(staticMethod);
   }
 
-  public static <I> Builder1 builder(I instance, Functions.Func2<I, byte[], byte[]> method) {
+  /** Starts a native call definition build for an instance method taking 1 parameter. */
+  static <I> Builder1 builder(I instance, Functions.Func2<I, byte[], byte[]> method) {
     return builder(param1 -> method.apply(instance, param1));
   }
 
-  public static class Call1<P1, R> {
+  /** A wrapper allowing to call a native function taking 1 parameter. */
+  class Call1<P1, R> {
 
     private final Functions.Func1<byte[], byte[]> callable;
     private final Codec<P1> p1Codec;
     private final Codec<Result<R, StateManagerRuntimeError>> wrapperCodec;
 
-    public Call1(
+    private Call1(
         Functions.Func1<byte[], byte[]> callable,
         Codec<P1> p1Codec,
         Codec<Result<R, StateManagerRuntimeError>> wrapperCodec) {
@@ -120,6 +145,7 @@ public abstract class Natives {
       this.wrapperCodec = wrapperCodec;
     }
 
+    /** Calls the underlying native function with the given parameter and returns its result. */
     public R call(P1 p1) {
       final byte[] encodedP1 = StateManagerSbor.encode(p1, p1Codec);
       final byte[] encodedWrapper = callable.apply(encodedP1);
