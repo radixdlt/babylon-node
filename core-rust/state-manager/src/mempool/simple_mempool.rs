@@ -207,8 +207,8 @@ impl SimpleMempool {
             .collect()
     }
 
-    pub fn get_transactions(&self) -> HashMap<UserPayloadHash, MempoolData> {
-        self.data.clone()
+    pub fn transactions(&self) -> &HashMap<UserPayloadHash, MempoolData> {
+        &self.data
     }
 
     pub fn remove_transaction(
@@ -240,7 +240,7 @@ impl SimpleMempool {
         }
     }
 
-    pub fn list_all_hashes(&self) -> Vec<(&IntentHash, &UserPayloadHash)> {
+    pub fn all_hashes_iter(&self) -> impl Iterator<Item = (&IntentHash, &UserPayloadHash)> {
         self.intent_lookup
             .iter()
             .flat_map(|(intent_hash, payload_hashes)| {
@@ -248,7 +248,6 @@ impl SimpleMempool {
                     .iter()
                     .map(move |payload_hash| (intent_hash, payload_hash))
             })
-            .collect()
     }
 
     pub fn get_payload(&self, payload_hash: &UserPayloadHash) -> Option<&PendingTransaction> {

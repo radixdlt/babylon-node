@@ -114,6 +114,7 @@ fn handle_transaction_status_internal(
 
     let mempool_payloads_hashes = state_manager
         .mempool
+        .read()
         .get_payload_hashes_for_intent(&intent_hash);
 
     if !mempool_payloads_hashes.is_empty() {
