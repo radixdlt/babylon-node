@@ -21,7 +21,7 @@ fn handle_mempool_list_internal(
     let payload_hash = extract_payload_hash(request.payload_hash)
         .map_err(|err| err.into_response_error("payload_hash"))?;
 
-    match state_manager.mempool.get_payload(&payload_hash) {
+    match state_manager.mempool.read().get_payload(&payload_hash) {
         Some(pending_transaction) => Ok(models::MempoolTransactionResponse {
             notarized_transaction: Box::new(to_api_notarized_transaction(
                 &mapping_context,
