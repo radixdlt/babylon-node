@@ -192,7 +192,7 @@ public interface P2PConfig {
 
       @Override
       public long peerLivenessCheckInterval() {
-        return properties.get("network.p2p.peer_liveness_check_interval", 100000);
+        return properties.get("network.p2p.peer_liveness_check_interval", 60000);
       }
 
       @Override

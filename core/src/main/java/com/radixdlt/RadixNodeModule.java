@@ -145,7 +145,7 @@ public final class RadixNodeModule extends AbstractModule {
           .unwrap();
 
   // Proposal constants
-  public static final int MAX_TRANSACTIONS_PER_PROPOSAL = 1;
+  public static final int MAX_TRANSACTIONS_PER_PROPOSAL = 2;
   public static final int MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE = 2 * 1024 * 1024;
 
   private static final Logger log = LogManager.getLogger();
