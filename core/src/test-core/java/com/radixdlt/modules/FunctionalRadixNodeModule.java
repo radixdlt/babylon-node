@@ -151,16 +151,14 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
     public static ConsensusConfig of(long pacemakerBaseTimeoutMs) {
       return ConsensusConfig.of(
-        pacemakerBaseTimeoutMs,
-        pacemakerBaseTimeoutMs /* double the timeout if proposal was received */);
+          pacemakerBaseTimeoutMs,
+          pacemakerBaseTimeoutMs /* double the timeout if proposal was received */);
     }
 
-    public static ConsensusConfig of(long pacemakerBaseTimeoutMs, long additionalRoundTimeIfProposalReceivedMs) {
+    public static ConsensusConfig of(
+        long pacemakerBaseTimeoutMs, long additionalRoundTimeIfProposalReceivedMs) {
       return new ConsensusConfig(
-          200,
-          pacemakerBaseTimeoutMs,
-          2.0,
-          additionalRoundTimeIfProposalReceivedMs);
+          200, pacemakerBaseTimeoutMs, 2.0, additionalRoundTimeIfProposalReceivedMs);
     }
 
     public static ConsensusConfig of() {
