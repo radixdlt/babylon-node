@@ -203,18 +203,18 @@ public final class RadixNodeModule extends AbstractModule {
     install(new DispatcherModule());
 
     // Consensus
-    final String useGenesis = properties.get("consensus.use_genesis_for_validator_address");
-    final String validatorAddress = properties.get("consensus.validator_address", (String) null);
-    if (useGenesis != null && validatorAddress != null) {
+    final String useGenesis = properties.get("consensus.use_genesis_for_validator_address", "");
+    final String validatorAddress = properties.get("consensus.validator_address", "");
+    if (!useGenesis.isBlank() && !validatorAddress.isBlank()) {
       throw new IllegalArgumentException(
           "Invalid configuration. Using both consensus.genesis_for_validator_address and"
               + " consensus.validator_address. Please use one.");
-    } else if (validatorAddress != null) {
+    } else if (!validatorAddress.isBlank()) {
       OptionalBinder.newOptionalBinder(binder(), Key.get(ComponentAddress.class, Self.class))
           .setBinding()
           .toInstance(addressing.decodeValidatorAddress(validatorAddress));
       install(new BFTValidatorIdModule());
-    } else if (useGenesis == null || Boolean.parseBoolean(useGenesis)) {
+    } else if (useGenesis.isBlank() || Boolean.parseBoolean(useGenesis)) {
       install(new BFTValidatorIdFromGenesisModule());
     } else {
       OptionalBinder.newOptionalBinder(binder(), Key.get(ComponentAddress.class, Self.class));
