@@ -210,6 +210,7 @@ public final class RadixNodeModule extends AbstractModule {
           "Invalid configuration. Using both consensus.genesis_for_validator_address and"
               + " consensus.validator_address. Please use one.");
     } else if (!validatorAddress.isBlank()) {
+      log.info("Using consensus.validator_address: {}", validatorAddress);
       OptionalBinder.newOptionalBinder(binder(), Key.get(ComponentAddress.class, Self.class))
           .setBinding()
           .toInstance(addressing.decodeValidatorAddress(validatorAddress));
