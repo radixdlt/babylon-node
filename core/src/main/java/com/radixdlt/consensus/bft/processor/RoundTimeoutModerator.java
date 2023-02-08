@@ -159,8 +159,7 @@ public final class RoundTimeoutModerator implements BFTEventProcessorAtCurrentRo
     if (shouldExtendTheTimeout) {
       // If proposal was received, extend the round time by re-dispatching the same timeout event,
       // effectively delaying it by additionalRoundTimeIfProposalReceived
-      this.timeoutDispatcher.dispatch(
-          scheduledLocalTimeout, additionalTime);
+      this.timeoutDispatcher.dispatch(scheduledLocalTimeout, additionalTime);
     } else {
       // Nothing we can do. Either there isn't an in-flight proposal for the
       // current round (so there's no reason to extend the round) or it has already been extended.
