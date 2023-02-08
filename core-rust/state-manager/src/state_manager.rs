@@ -548,13 +548,10 @@ where
             &executable,
             &parsed_transaction.get_hash(),
         );
-        match &receipt.result {
-            TransactionResult::Commit(commit) => match &commit.outcome {
+        match receipt.result {
+            TransactionResult::Commit(commit) => match commit.outcome {
                 TransactionOutcome::Success(..) => PrepareGenesisResult {
-                    validator_set: commit
-                        .next_epoch
-                        .clone()
-                        .map(|(validator_set, _)| validator_set),
+                    validator_set: commit.next_epoch.map(|(validator_set, _)| validator_set),
                 },
                 TransactionOutcome::Failure(error) => {
                     panic!("Genesis failed. Error: {:?}", error)
@@ -627,7 +624,7 @@ where
                 &executable,
                 &parsed_transaction.get_hash(),
             );
-            match &receipt.result {
+            match receipt.result {
                 TransactionResult::Commit(_) => {
                     // TODO: Do we need to check that next epoch request has been prepared?
                     parent_accumulator_hash = new_accumulator_hash;
@@ -746,7 +743,7 @@ where
                 let (new_accumulator_hash, receipt) =
                     self.execute_with_cache(&parent_accumulator_hash, &executable, &hash);
 
-                match &receipt.result {
+                match receipt.result {
                     TransactionResult::Commit(result) => {
                         parent_accumulator_hash = new_accumulator_hash;
 
@@ -760,10 +757,10 @@ where
                             None,
                         ));
 
-                        if let Some(e) = &result.next_epoch {
+                        if let Some((validator_set, epoch)) = result.next_epoch {
                             next_epoch = Some(NextEpoch {
-                                validator_set: e.0.clone(),
-                                epoch: e.1,
+                                validator_set,
+                                epoch,
                             });
                             break;
                         }
