@@ -36,7 +36,7 @@ build-core:
 .PHONY: package
 package: build-core
 	docker compose -f ../docker/node-1.yml build
-	docker tag radixdlt/radixdlt-core:main $(CORE_REPO):$(TAG)
+	docker tag radixdlt/babylon-node:main $(CORE_REPO):$(TAG)
 
 
 .PHONY: publish
