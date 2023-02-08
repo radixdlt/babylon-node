@@ -76,12 +76,16 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Moderates the round timeout. More specifically, extends the round duration if a proposal was
  * received, but takes longer than usual to sync/process.
  */
 public final class RoundTimeoutModerator implements BFTEventProcessorAtCurrentRound {
+  private static final Logger log = LogManager.getLogger();
+
   private final BFTEventProcessor forwardTo;
   private final PacemakerTimeoutCalculator timeoutCalculator;
   private final ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutDispatcher;
@@ -90,7 +94,7 @@ public final class RoundTimeoutModerator implements BFTEventProcessorAtCurrentRo
 
   private final Set<Round> receivedProposalsForFutureRounds;
   private Round highestReceivedRoundQC;
-  private boolean currentRoundTimeoutCanStillBeExtended;
+  private boolean currentRoundTimeoutCanStillBeExtended = true;
 
   public RoundTimeoutModerator(
       BFTEventProcessor forwardTo,
@@ -154,11 +158,19 @@ public final class RoundTimeoutModerator implements BFTEventProcessorAtCurrentRo
     this.currentRoundTimeoutCanStillBeExtended = false;
 
     if (shouldExtendTheTimeout) {
+      log.info(
+          "Extending the timeout for round {} (ev {})",
+          this.latestRoundUpdate.getCurrentRound(),
+          scheduledLocalTimeout.round());
       // If proposal was received, extend the round time by re-dispatching the same timeout event,
       // effectively delaying it by additionalRoundTimeIfProposalReceived
       this.timeoutDispatcher.dispatch(
           scheduledLocalTimeout, timeoutCalculator.additionalRoundTimeIfProposalReceivedMs());
     } else {
+      log.info(
+          "Not extending the timeout for round {} (ev {})",
+          this.latestRoundUpdate.getCurrentRound(),
+          scheduledLocalTimeout.round());
       // Nothing we can do. Either there isn't an in-flight proposal for the
       // current round (so there's no reason to extend the round) or it has already been extended.
       this.forwardTo.processLocalTimeout(scheduledLocalTimeout);
@@ -188,5 +200,9 @@ public final class RoundTimeoutModerator implements BFTEventProcessorAtCurrentRo
     if (proposal.highQC().getHighestRound().gt(this.highestReceivedRoundQC)) {
       this.highestReceivedRoundQC = proposal.highQC().getHighestRound();
     }
+    log.info(
+        "Timeout moderator processing a proposal for round {} and qc for {}",
+        proposal.getRound(),
+        proposal.highQC().getHighestRound());
   }
 }

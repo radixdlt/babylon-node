@@ -214,7 +214,7 @@ public final class Pacemaker {
       final var maybeProposal = generateProposal(latestRoundUpdate.getCurrentRound());
       maybeProposal.ifPresent(
           proposal -> {
-            log.trace("Broadcasting proposal: {}", proposal);
+            log.info("Broadcasting proposal: {}", proposal);
             this.proposalDispatcher.dispatch(this.validatorSet.nodes(), proposal);
             this.metrics.bft().pacemaker().proposalsSent().inc();
           });

@@ -199,7 +199,8 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
 
   @Override
   public void processVote(Vote vote) {
-    log.trace("Vote: PreProcessing {}", vote);
+    log.info(
+        "Vote: PreProcessing {} it holds a qc for round {}", vote, vote.highQC().getHighestRound());
     final Round currentRound = this.latestRoundUpdate.getCurrentRound();
     if (vote.getRound().gte(currentRound)) {
       this.forwardTo.preProcessUnsyncedVoteForCurrentOrFutureRound(vote);
@@ -211,7 +212,11 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
 
   @Override
   public void processProposal(Proposal proposal) {
-    log.trace("Proposal: PreProcessing {}", proposal);
+    log.info(
+        "SyncUpPreprocessor: proposal {} at round {} it holds a qc for round {}",
+        proposal,
+        this.latestRoundUpdate.getCurrentRound(),
+        proposal.highQC().getHighestRound());
     final Round currentRound = this.latestRoundUpdate.getCurrentRound();
     if (proposal.getRound().gte(currentRound)) {
       this.forwardTo.preProcessUnsyncedProposalForCurrentOrFutureRound(proposal);
@@ -274,6 +279,7 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
   private <T extends ConsensusEvent> void processOnCurrentRoundOrCache(
       T event, Consumer<T> processFn) {
     if (latestRoundUpdate.getCurrentRound().equals(event.getRound())) {
+      log.info("BFT event {} synced up, passing for further processing", event);
       processFn.accept(event);
     } else if (latestRoundUpdate.getCurrentRound().lt(event.getRound())) {
       log.trace("Caching {}, current round is {}", event, latestRoundUpdate.getCurrentRound());
