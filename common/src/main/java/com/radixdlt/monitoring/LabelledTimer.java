@@ -65,54 +65,41 @@
 package com.radixdlt.monitoring;
 
 import io.prometheus.client.Summary;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-/** A Prometheus {@link Summary.Child} wrapper specializing its use-case for measuring time. */
-public class Timer {
+/**
+ * A Prometheus {@link Summary} wrapper tailored for time measurement (see {@link Timer}) and
+ * defining a typed set of labels.
+ *
+ * @param <L> A type of record representing a complete set of labels.
+ */
+public class LabelledTimer<L extends Record> {
 
-  /** A conversion factor for high-precision duration representation in (fractional) seconds. */
-  private static final double NANOS_IN_SECOND = TimeUnit.SECONDS.toNanos(1);
+  /** A wrapped {@link Summary}. */
+  private final Summary wrapped;
 
-  /** A wrapped {@link Summary.Child}. */
-  private final Summary.Child wrapped;
+  /** A map of children created for each label set. */
+  private final Map<L, Timer> labelledChildren;
 
   /**
    * A direct constructor.
    *
    * @param wrapped A wrapped summary.
    */
-  public Timer(Summary.Child wrapped) {
+  public LabelledTimer(Summary wrapped) {
     this.wrapped = wrapped;
+    this.labelledChildren = new ConcurrentHashMap<>();
   }
 
   /**
-   * Records an occurrence of an event which took the given time.
+   * Returns a child for the given label set.
    *
-   * @param duration Event's duration.
+   * @param labelRecord A record containing a label set.
+   * @return Child to be used.
    */
-  public void observe(Duration duration) {
-    this.wrapped.observe(duration.toNanos() / Timer.NANOS_IN_SECOND);
-  }
-
-  /**
-   * Executes the given supplier while {@link #observe(Duration) observing} its runtime.
-   *
-   * @param supplier Supplier.
-   * @return Supplier's result.
-   * @param <T> Supplier's return type.
-   */
-  public <T> T measure(Supplier<T> supplier) {
-    return wrapped.time(supplier::get);
-  }
-
-  /**
-   * Executes the given runnable while {@link #observe(Duration) observing} its runtime.
-   *
-   * @param block runnable.
-   */
-  public void measure(Runnable block) {
-    wrapped.time(block);
+  public Timer label(L labelRecord) {
+    return this.labelledChildren.computeIfAbsent(
+        labelRecord, value -> new Timer(this.wrapped.labels(NameRenderer.labelValues(value))));
   }
 }

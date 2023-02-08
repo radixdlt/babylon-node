@@ -67,6 +67,9 @@ package com.radixdlt.transaction;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
+import com.radixdlt.monitoring.LabelledTimer;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.MethodId;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.utils.UInt32;
@@ -76,19 +79,29 @@ import java.util.Objects;
 import java.util.Optional;
 
 public final class REv2TransactionAndProofStore {
-  public REv2TransactionAndProofStore(StateManager stateManager) {
+  public REv2TransactionAndProofStore(Metrics metrics, StateManager stateManager) {
     Objects.requireNonNull(stateManager);
+
+    LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
     this.getTransactionAtStateVersionFunc =
         Natives.builder(stateManager, REv2TransactionAndProofStore::getTransactionAtStateVersion)
+            .measure(
+                timer.label(
+                    new MethodId(
+                        REv2TransactionAndProofStore.class, "getTransactionAtStateVersion")))
             .build(new TypeToken<>() {});
     this.getTxnsAndProof =
         Natives.builder(stateManager, REv2TransactionAndProofStore::getTxnsAndProof)
+            .measure(
+                timer.label(new MethodId(REv2TransactionAndProofStore.class, "getTxnsAndProof")))
             .build(new TypeToken<>() {});
     this.getLastProofFunc =
         Natives.builder(stateManager, REv2TransactionAndProofStore::getLastProof)
+            .measure(timer.label(new MethodId(REv2TransactionAndProofStore.class, "getLastProof")))
             .build(new TypeToken<>() {});
     this.getEpochProofFunc =
         Natives.builder(stateManager, REv2TransactionAndProofStore::getEpochProof)
+            .measure(timer.label(new MethodId(REv2TransactionAndProofStore.class, "getEpochProof")))
             .build(new TypeToken<>() {});
   }
 
