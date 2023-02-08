@@ -13,6 +13,10 @@
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "substate_type")]
 pub enum Substate {
+    #[serde(rename="Account")]
+    AccountSubstate {
+        // TODO(code review): what do we return?
+    },
     #[serde(rename="AccessController")]
     AccessControllerSubstate {
         #[serde(rename = "data_struct")]

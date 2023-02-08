@@ -85,8 +85,6 @@ use ::transaction::signing::EcdsaSecp256k1PrivateKey;
 use ::transaction::validation::{TestIntentHashManager, ValidationConfig};
 use parking_lot::RwLock;
 use prometheus::Registry;
-use radix_engine::engine::ScryptoInterpreter;
-use radix_engine::model::ValidatorSubstate;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
     PreviewResult, TransactionOutcome, TransactionReceipt, TransactionResult,
@@ -97,12 +95,16 @@ use radix_engine::types::{
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
-use radix_engine_interface::api::types::{SubstateId, SubstateOffset, ValidatorOffset};
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::api::types::{
+    NodeModuleId, SubstateId, SubstateOffset, ValidatorOffset,
+};
 use std::collections::{BTreeMap, HashMap};
 use std::convert::TryInto;
 
+use radix_engine::blueprints::epoch_manager::ValidatorSubstate;
+use radix_engine::kernel::ScryptoInterpreter;
 use radix_engine::ledger::OutputValue;
+use radix_engine_interface::network::NetworkDefinition;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -1019,6 +1021,7 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
             .unwrap();
         let substate_id = SubstateId(
             node_id,
+            NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
         );
         let output = self.store.get_substate(&substate_id).unwrap();

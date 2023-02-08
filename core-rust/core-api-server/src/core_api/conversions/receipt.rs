@@ -1,12 +1,12 @@
 use super::addressing::*;
 use crate::core_api::*;
-use radix_engine::model::Validator;
+use radix_engine::blueprints::epoch_manager::Validator;
+use radix_engine::system::kernel_modules::fee::{FeeSummary, RoyaltyReceiver};
 use radix_engine::{
-    fee::{FeeSummary, RoyaltyReceiver},
     ledger::OutputValue,
     types::{hash, scrypto_encode, Decimal, GlobalAddress, RENodeId, SubstateId},
 };
-use radix_engine_interface::model::ComponentAddress;
+use radix_engine_interface::api::component::ComponentAddress;
 use std::collections::BTreeMap;
 
 use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
@@ -165,7 +165,7 @@ pub fn to_api_fee_summary(
         cost_unit_price: to_api_decimal(&fee_summary.cost_unit_price),
         tip_percentage: to_api_u16_as_i32(fee_summary.tip_percentage),
         cost_unit_limit: to_api_u32_as_i64(fee_summary.cost_unit_limit),
-        cost_units_consumed: to_api_u32_as_i64(fee_summary.cost_unit_consumed),
+        cost_units_consumed: to_api_u32_as_i64(fee_summary.total_cost_units_consumed),
         xrd_total_execution_cost: to_api_decimal(&fee_summary.total_execution_cost_xrd),
         xrd_total_royalty_cost: to_api_decimal(&fee_summary.total_royalty_cost_xrd),
         xrd_total_tipped: to_api_decimal(&Decimal::ZERO),
@@ -188,7 +188,8 @@ pub fn to_api_fee_summary(
         cost_unit_execution_breakdown: fee_summary
             .execution_cost_unit_breakdown
             .into_iter()
-            .map(|(key, cost_unit_amount)| (key, to_api_u32_as_i64(cost_unit_amount)))
+            // TODO(code review): the fee summary now uses CostingReason enum; we map it like that?
+            .map(|(key, cost_unit_amount)| (key.to_string(), to_api_u32_as_i64(cost_unit_amount)))
             .collect(),
         cost_unit_royalty_breakdown: fee_summary
             .royalty_cost_unit_breakdown

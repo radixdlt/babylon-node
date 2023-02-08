@@ -26,6 +26,8 @@ pub enum EntityType {
     Clock,
     #[serde(rename = "Validator")]
     Validator,
+    #[serde(rename = "Account")]
+    Account,
     #[serde(rename = "AccessController")]
     AccessController,
     #[serde(rename = "Identity")]
@@ -54,6 +56,7 @@ impl ToString for EntityType {
             Self::KeyValueStore => String::from("KeyValueStore"),
             Self::NonFungibleStore => String::from("NonFungibleStore"),
             Self::Vault => String::from("Vault"),
+            Self::Account => String::from("Account"),
         }
     }
 }

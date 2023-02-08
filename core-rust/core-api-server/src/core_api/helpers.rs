@@ -1,6 +1,7 @@
 use radix_engine::ledger::ReadableSubstateStore;
-use radix_engine::model::PersistedSubstate;
+use radix_engine::system::substates::PersistedSubstate;
 use radix_engine::types::{GlobalAddress, RENodeId, SubstateId, SubstateOffset};
+use radix_engine_interface::api::types::NodeModuleId;
 use state_manager::{jni::state_manager::ActualStateManager, query::StateManagerSubstateQueries};
 
 use super::{
@@ -50,7 +51,7 @@ pub(crate) fn read_known_substate(
     renode_id: RENodeId,
     substate_offset: &SubstateOffset,
 ) -> Result<PersistedSubstate, ResponseError<()>> {
-    let substate_id = SubstateId(renode_id, substate_offset.clone());
+    let substate_id = SubstateId(renode_id, NodeModuleId::SELF, substate_offset.clone());
     let output_value = state_manager
         .store()
         .get_substate(&substate_id)

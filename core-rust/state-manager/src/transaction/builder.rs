@@ -63,15 +63,14 @@
  */
 
 use radix_engine::ledger::create_genesis;
-use radix_engine::types::{
-    AccessRule, PublicKey, Signature, SignatureWithPublicKey, FAUCET_COMPONENT, RADIX_TOKEN,
-};
+use radix_engine::types::{PublicKey, Signature, SignatureWithPublicKey, FAUCET_COMPONENT};
+use radix_engine_interface::api::component::ComponentAddress;
 use radix_engine_interface::args;
+use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::data::scrypto_encode;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::ComponentAddress;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::network::NetworkDefinition;
 use std::collections::BTreeMap;
 
 use crate::transaction::LedgerTransaction;
@@ -106,10 +105,9 @@ pub fn create_new_account_intent_bytes(
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
         .call_method(FAUCET_COMPONENT, "free", args!())
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-            builder.new_account_with_resource(&AccessRule::AllowAll, bucket_id)
-        })
+        .new_account(&AccessRule::AllowAll)
         .build();
+    // TODO(code review): now somehow deposit the worktop to the created account?
 
     let intent = TransactionIntent {
         header: TransactionHeader {

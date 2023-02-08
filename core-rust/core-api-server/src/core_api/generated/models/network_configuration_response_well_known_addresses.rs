@@ -14,8 +14,6 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct NetworkConfigurationResponseWellKnownAddresses {
-    #[serde(rename = "account_package")]
-    pub account_package: String,
     #[serde(rename = "faucet")]
     pub faucet: String,
     #[serde(rename = "epoch_manager")]
@@ -32,9 +30,8 @@ pub struct NetworkConfigurationResponseWellKnownAddresses {
 
 impl NetworkConfigurationResponseWellKnownAddresses {
     /// Key addresses for this network.
-    pub fn new(account_package: String, faucet: String, epoch_manager: String, clock: String, ecdsa_secp256k1: String, eddsa_ed25519: String, xrd: String) -> NetworkConfigurationResponseWellKnownAddresses {
+    pub fn new(faucet: String, epoch_manager: String, clock: String, ecdsa_secp256k1: String, eddsa_ed25519: String, xrd: String) -> NetworkConfigurationResponseWellKnownAddresses {
         NetworkConfigurationResponseWellKnownAddresses {
-            account_package,
             faucet,
             epoch_manager,
             clock,

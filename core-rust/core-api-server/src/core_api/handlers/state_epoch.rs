@@ -1,5 +1,5 @@
 use crate::core_api::*;
-use radix_engine::model::PersistedSubstate;
+use radix_engine::system::substates::PersistedSubstate;
 use radix_engine::types::{EpochManagerOffset, GlobalAddress, SubstateOffset, EPOCH_MANAGER};
 use state_manager::jni::state_manager::ActualStateManager;
 

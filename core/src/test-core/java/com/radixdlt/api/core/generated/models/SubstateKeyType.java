@@ -51,8 +51,6 @@ public enum SubstateKeyType {
   
   RESOURCEMANAGER("ResourceManager"),
   
-  RESOURCEMANAGERVAULTACCESSRULESCHAIN("ResourceManagerVaultAccessRulesChain"),
-  
   EPOCHMANAGER("EpochManager"),
   
   CURRENTVALIDATORSET("CurrentValidatorSet"),

@@ -1,9 +1,11 @@
 use crate::core_api::*;
-use radix_engine::model::PersistedSubstate;
+use radix_engine::system::substates::PersistedSubstate;
 use radix_engine::types::{
-    GlobalAddress, NonFungibleStoreOffset, RENodeId, ResourceManagerOffset, ResourceType,
-    SubstateId, SubstateOffset,
+    GlobalAddress, NonFungibleStoreOffset, RENodeId, ResourceManagerOffset, SubstateId,
+    SubstateOffset,
 };
+use radix_engine_interface::api::types::NodeModuleId;
+use radix_engine_interface::blueprints::resource::ResourceType;
 
 use crate::core_api::models::StateNonFungibleResponse;
 use state_manager::jni::state_manager::ActualStateManager;
@@ -11,7 +13,7 @@ use state_manager::jni::state_manager::ActualStateManager;
 pub(crate) async fn handle_state_non_fungible(
     state: Extension<CoreApiState>,
     request: Json<models::StateNonFungibleRequest>,
-) -> Result<Json<models::StateNonFungibleResponse>, ResponseError<()>> {
+) -> Result<Json<StateNonFungibleResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_state_non_fungible_internal)
 }
 
@@ -77,7 +79,11 @@ fn handle_state_non_fungible_internal(
         substate
     };
 
-    let non_fungible_substate_id = SubstateId(non_fungible_node_id, non_fungible_substate_offset);
+    let non_fungible_substate_id = SubstateId(
+        non_fungible_node_id,
+        NodeModuleId::SELF,
+        non_fungible_substate_offset,
+    );
 
     Ok(StateNonFungibleResponse {
         non_fungible: Some(to_api_non_fungible_substate(

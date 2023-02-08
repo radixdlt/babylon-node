@@ -1,9 +1,9 @@
-use radix_engine::engine::RejectionError;
 use transaction::errors::TransactionValidationError;
 
 use crate::{IntentHash, MempoolAddRejection, UserPayloadHash};
 
 use lru::LruCache;
+use radix_engine::errors::RejectionError;
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
     fmt,

@@ -62,15 +62,17 @@
  * permissions under this License.
  */
 
+use radix_engine::blueprints::kv_store::KeyValueStoreEntrySubstate;
+use radix_engine::blueprints::resource::VaultSubstate;
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
-use radix_engine::model::{
-    GlobalAddressSubstate, KeyValueStoreEntrySubstate, PersistedSubstate, VaultSubstate,
-};
+use radix_engine::system::global::GlobalAddressSubstate;
+use radix_engine::system::substates::PersistedSubstate;
 
 use radix_engine::types::{
     ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, RENodeId, SubstateId,
     SubstateOffset, VaultOffset,
 };
+use radix_engine_interface::api::types::NodeModuleId;
 use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug)]
@@ -127,7 +129,11 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
         self.visitor.visit_node_id(parent, &node_id, depth);
         match node_id {
             RENodeId::Global(GlobalAddress::Component(..)) => {
-                let substate_id = SubstateId(node_id, SubstateOffset::Global(GlobalOffset::Global));
+                let substate_id = SubstateId(
+                    node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Global(GlobalOffset::Global),
+                );
                 let substate = self
                     .substate_store
                     .get_substate(&substate_id)
@@ -140,6 +146,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
             RENodeId::Vault(vault_id) => {
                 let substate_id = SubstateId(
                     RENodeId::Vault(vault_id),
+                    NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::Vault),
                 );
                 if let Some(output_value) = self.substate_store.get_substate(&substate_id) {
@@ -156,6 +163,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                 for (key, v) in map.iter() {
                     let substate_id = SubstateId(
                         RENodeId::KeyValueStore(kv_store_id),
+                        NodeModuleId::SELF,
                         SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key.clone())),
                     );
                     if let PersistedSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(
@@ -175,8 +183,11 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                 }
             }
             RENodeId::Component(..) => {
-                let substate_id =
-                    SubstateId(node_id, SubstateOffset::Component(ComponentOffset::State));
+                let substate_id = SubstateId(
+                    node_id,
+                    NodeModuleId::SELF,
+                    SubstateOffset::Component(ComponentOffset::State),
+                );
                 let output_value = self
                     .substate_store
                     .get_substate(&substate_id)

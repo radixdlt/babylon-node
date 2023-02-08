@@ -1,8 +1,7 @@
 use crate::core_api::*;
-use radix_engine::types::{AccessRulesChainOffset, MetadataOffset};
-use radix_engine::{
-    model::PersistedSubstate,
-    types::{GlobalAddress, ResourceManagerOffset, SubstateOffset},
+use radix_engine::system::substates::PersistedSubstate;
+use radix_engine::types::{
+    AccessRulesChainOffset, GlobalAddress, MetadataOffset, ResourceManagerOffset, SubstateOffset,
 };
 
 use state_manager::jni::state_manager::ActualStateManager;
@@ -58,7 +57,7 @@ fn handle_state_resource_internal(
     };
     let vault_access_rules = {
         let substate_offset =
-            SubstateOffset::VaultAccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
+            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let loaded_substate =
             read_known_substate(state_manager, resource_node_id, &substate_offset)?;
         let PersistedSubstate::AccessRulesChain(substate) = loaded_substate else {

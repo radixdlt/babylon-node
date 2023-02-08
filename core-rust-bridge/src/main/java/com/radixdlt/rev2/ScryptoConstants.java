@@ -79,10 +79,8 @@ public final class ScryptoConstants {
           .build(new TypeToken<Natives.Call1<Tuple.Tuple0, ComponentAddress>>() {})
           .call(Tuple.Tuple0.of());
 
-  public static final PackageAddress ACCOUNT_PACKAGE_ADDRESS =
-      Natives.builder(ScryptoConstants::getAccountPackageAddress)
-          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, PackageAddress>>() {})
-          .call(Tuple.Tuple0.of());
+  // TODO(code review): how to replace this no-longer-existing static address?
+  public static final PackageAddress ACCOUNT_PACKAGE_ADDRESS = new PackageAddress(new byte[27]);
 
   public static final ResourceAddress XRD_RESOURCE_ADDRESS =
       Natives.builder(ScryptoConstants::getXrdResourceAddress)
@@ -95,8 +93,6 @@ public final class ScryptoConstants {
           .call(Tuple.Tuple0.of());
 
   private static native byte[] getFaucetComponentAddress(byte[] unused);
-
-  private static native byte[] getAccountPackageAddress(byte[] unused);
 
   private static native byte[] getXrdResourceAddress(byte[] unused);
 

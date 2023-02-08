@@ -1,8 +1,9 @@
 use crate::core_api::*;
-use radix_engine::model::PersistedSubstate;
+use radix_engine::system::substates::PersistedSubstate;
 use radix_engine::types::{
     AccessRulesChainOffset, GlobalAddress, MetadataOffset, PackageOffset, SubstateOffset,
 };
+use radix_engine_interface::api::types::RoyaltyOffset;
 
 use state_manager::jni::state_manager::ActualStateManager;
 
@@ -36,7 +37,7 @@ fn handle_state_package_internal(
         substate
     };
     let package_royalty_config = {
-        let substate_offset = SubstateOffset::Package(PackageOffset::RoyaltyConfig);
+        let substate_offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig);
         let loaded_substate =
             read_known_substate(state_manager, package_node_id, &substate_offset)?;
         let PersistedSubstate::PackageRoyaltyConfig(substate) = loaded_substate else {
@@ -45,7 +46,7 @@ fn handle_state_package_internal(
         substate
     };
     let package_royalty_accumulator = {
-        let substate_offset = SubstateOffset::Package(PackageOffset::RoyaltyAccumulator);
+        let substate_offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator);
         let loaded_substate =
             read_known_substate(state_manager, package_node_id, &substate_offset)?;
         let PersistedSubstate::PackageRoyaltyAccumulator(substate) = loaded_substate else {

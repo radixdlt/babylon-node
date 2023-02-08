@@ -62,8 +62,8 @@
  * permissions under this License.
  */
 
+use radix_engine::blueprints::resource::VaultSubstate;
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
-use radix_engine::model::VaultSubstate;
 use radix_engine::types::{ComponentAddress, GlobalAddress, RENodeId, SubstateId};
 
 use super::component_state_tree_traverser::*;
