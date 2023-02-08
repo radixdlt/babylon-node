@@ -145,9 +145,8 @@ public final class RadixNodeModule extends AbstractModule {
           .unwrap();
 
   // Proposal constants
-  // A proposal can fit min two large (1 MiB) transactions or up to 4 smaller.
-  public static final int MAX_TRANSACTIONS_PER_PROPOSAL = 4;
-  public static final int MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE = 2 * 1024 * 1024;
+  public static final int MAX_TRANSACTIONS_PER_PROPOSAL = 10;
+  public static final int MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE = 4 * 1024 * 1024;
 
   private static final Logger log = LogManager.getLogger();
 

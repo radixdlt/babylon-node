@@ -148,7 +148,7 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
             new AbstractModule() {
               @Provides
               public TimeSupplier timeSupplier() {
-                return () -> System.currentTimeMillis() + 10000;
+                return () -> System.currentTimeMillis() + 40000;
               }
             });
 
