@@ -122,8 +122,8 @@ jobs:
           context: docker
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ needs.build_deb.outputs.tags }}
+          labels: ${{ needs.build_deb.outputs.labels }}
       - name: Add docker tags to PR comment
         uses: thollander/actions-comment-pull-request@632cf9ce90574d125be56b5f3405cda41a84e2fd
         with:
@@ -182,8 +182,8 @@ jobs:
           context: docker
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ${{ needs.build_deb.outputs.tags }}
-          labels: ${{ needs.build_deb.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
 # TEMPORARILY REMOVE EPHEMERAL TESTS
 # => Until we can change them to only run the "node" tests and not the transaction tests
