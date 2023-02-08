@@ -420,6 +420,7 @@ pub struct PreviewRequest {
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum CommitError {
     MissingEpochProof,
+    CommitInProgress,
 }
 
 #[derive(Debug, Decode, Encode, Categorize)]

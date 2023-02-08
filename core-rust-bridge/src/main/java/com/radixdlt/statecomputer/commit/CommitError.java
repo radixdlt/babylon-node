@@ -75,8 +75,12 @@ public sealed interface CommitError {
         (codecs) ->
             EnumCodec.fromEntries(
                 EnumEntry.noFields(
+                    CommitError.CommitInProgress.class, CommitError.CommitInProgress::new),
+                EnumEntry.noFields(
                     CommitError.MissingEpochProof.class, CommitError.MissingEpochProof::new)));
   }
+
+  record CommitInProgress() implements CommitError {}
 
   record MissingEpochProof() implements CommitError {}
 }

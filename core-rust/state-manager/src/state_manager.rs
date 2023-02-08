@@ -83,7 +83,7 @@ use ::transaction::model::{
 };
 use ::transaction::signing::EcdsaSecp256k1PrivateKey;
 use ::transaction::validation::{TestIntentHashManager, ValidationConfig};
-use parking_lot::RwLock;
+use parking_lot::{Mutex, RwLock};
 use prometheus::Registry;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
@@ -137,6 +137,7 @@ pub struct StateManager<S: ReadableSubstateStore> {
     fee_reserve_config: FeeReserveConfig,
     intent_hash_manager: TestIntentHashManager,
     logging_config: StateManagerLoggingConfig,
+    commit_mutex: Mutex<()>,
 }
 
 impl<S> StateManager<S>
@@ -191,6 +192,7 @@ where
             )),
             metrics,
             prometheus_registry,
+            commit_mutex: Mutex::new(()),
         }
     }
 }
@@ -853,6 +855,10 @@ where
     }
 
     pub fn commit(&'db mut self, commit_request: CommitRequest) -> Result<(), CommitError> {
+        let _ = self
+            .commit_mutex
+            .try_lock()
+            .ok_or(CommitError::CommitInProgress)?;
         let commit_request_start_state_version =
             commit_request.proof_state_version - (commit_request.transaction_payloads.len() as u64);
 
