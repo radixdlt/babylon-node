@@ -74,6 +74,8 @@ import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Moderates the round timeout. More specifically, extends the round duration if a proposal was
@@ -86,9 +88,9 @@ public final class RoundTimeoutModerator implements BFTEventProcessorAtCurrentRo
 
   private RoundUpdate latestRoundUpdate;
 
+  private final Set<Round> receivedProposalsForFutureRounds;
   private Round highestReceivedRoundQC;
-  private Round highestReceivedProposalRound;
-  private boolean currentRoundTimeoutHasBeenExtended;
+  private boolean currentRoundTimeoutCanStillBeExtended;
 
   public RoundTimeoutModerator(
       BFTEventProcessor forwardTo,
@@ -100,7 +102,7 @@ public final class RoundTimeoutModerator implements BFTEventProcessorAtCurrentRo
     this.timeoutDispatcher = timeoutDispatcher;
     this.latestRoundUpdate = initialRoundUpdate;
     this.highestReceivedRoundQC = initialRoundUpdate.getCurrentRound();
-    this.highestReceivedProposalRound = initialRoundUpdate.getCurrentRound();
+    this.receivedProposalsForFutureRounds = new HashSet<>();
   }
 
   @Override
@@ -114,11 +116,8 @@ public final class RoundTimeoutModerator implements BFTEventProcessorAtCurrentRo
     if (this.latestRoundUpdate.getCurrentRound().gt(this.highestReceivedRoundQC)) {
       this.highestReceivedRoundQC = roundUpdate.getCurrentRound();
     }
-    if (this.latestRoundUpdate.getCurrentRound().gt(this.highestReceivedProposalRound)) {
-      this.highestReceivedProposalRound = roundUpdate.getCurrentRound();
-    }
-
-    this.currentRoundTimeoutHasBeenExtended = false;
+    this.receivedProposalsForFutureRounds.removeIf(p -> p.lt(roundUpdate.getCurrentRound()));
+    this.currentRoundTimeoutCanStillBeExtended = true;
     forwardTo.processRoundUpdate(roundUpdate);
   }
 
@@ -139,16 +138,22 @@ public final class RoundTimeoutModerator implements BFTEventProcessorAtCurrentRo
 
   @Override
   public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
-    final var shouldDelay =
-        (this.highestReceivedRoundQC.gte(scheduledLocalTimeout.round())
-                || this.highestReceivedProposalRound.gte(scheduledLocalTimeout.round()))
-            && !this.currentRoundTimeoutHasBeenExtended;
+    final var receivedAnyQcForThisOrHigherRound =
+        this.highestReceivedRoundQC.gte(scheduledLocalTimeout.round());
+
+    final var receivedProposalForThisOrNextRound =
+        this.receivedProposalsForFutureRounds.contains(scheduledLocalTimeout.round())
+            || this.receivedProposalsForFutureRounds.contains(scheduledLocalTimeout.round().next());
+
+    final var shouldExtendTheTimeout =
+        (receivedAnyQcForThisOrHigherRound || receivedProposalForThisOrNextRound)
+            && this.currentRoundTimeoutCanStillBeExtended;
 
     // We won't extend the round more than once or if a timeout event has already been processed,
     // so setting a flag regardless of whether this event is being delayed or not
-    this.currentRoundTimeoutHasBeenExtended = true;
+    this.currentRoundTimeoutCanStillBeExtended = false;
 
-    if (shouldDelay) {
+    if (shouldExtendTheTimeout) {
       // If proposal was received, extend the round time by re-dispatching the same timeout event,
       // effectively delaying it by additionalRoundTimeIfProposalReceived
       this.timeoutDispatcher.dispatch(
@@ -179,11 +184,9 @@ public final class RoundTimeoutModerator implements BFTEventProcessorAtCurrentRo
 
   @Override
   public void preProcessUnsyncedProposalForCurrentOrFutureRound(Proposal proposal) {
+    receivedProposalsForFutureRounds.add(proposal.getRound());
     if (proposal.highQC().getHighestRound().gt(this.highestReceivedRoundQC)) {
       this.highestReceivedRoundQC = proposal.highQC().getHighestRound();
-    }
-    if (proposal.getRound().gt(this.highestReceivedProposalRound)) {
-      this.highestReceivedRoundQC = proposal.getRound();
     }
   }
 }

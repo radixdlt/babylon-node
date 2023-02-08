@@ -197,7 +197,7 @@ public interface P2PConfig {
 
       @Override
       public long pingTimeout() {
-        return properties.get("network.p2p.ping_timeout", 50000);
+        return properties.get("network.p2p.ping_timeout", 30000);
       }
     };
   }

@@ -81,8 +81,8 @@ import javax.inject.Inject;
 /** Relays transactions from the local mempool to node neighbors. */
 @Singleton
 public final class MempoolRelayer {
-  public static final int MAX_NUM_TXNS_TO_RELAY = 6;
-  public static final int MAX_RELAY_TOTAL_TXNS_PAYLOAD_SIZE = 2 * 1024 * 1024;
+  public static final int MAX_NUM_TXNS_TO_RELAY = 10;
+  public static final int MAX_RELAY_TOTAL_TXNS_PAYLOAD_SIZE = 5 * 1024 * 1024;
 
   private final PeersView peersView;
   private final RemoteEventDispatcher<NodeId, MempoolAdd> remoteEventDispatcher;
