@@ -64,18 +64,17 @@
 
 package com.radixdlt.statecomputer.commit;
 
+import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 public record PrepareRequest(
-    byte[] parentAccumulator,
-    List<PreviousVertex> previous,
+    HashCode parentAccumulatorHash,
+    List<PreviousVertex> previousVertices,
     List<RawNotarizedTransaction> proposed,
     UInt64 epoch,
     UInt64 roundNumber,
@@ -86,7 +85,7 @@ public record PrepareRequest(
         codecs ->
             StructCodec.with(
                 PrepareRequest::new,
-                codecs.of(new TypeToken<>() {}),
+                codecs.of(HashCode.class),
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
@@ -94,53 +93,11 @@ public record PrepareRequest(
                 codecs.of(new TypeToken<>() {}),
                 (t, encoder) ->
                     encoder.encode(
-                        t.parentAccumulator,
-                        t.previous,
+                        t.parentAccumulatorHash,
+                        t.previousVertices,
                         t.proposed,
                         t.epoch,
                         t.roundNumber,
                         t.proposerTimestampMs)));
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    PrepareRequest that = (PrepareRequest) o;
-    return Arrays.equals(parentAccumulator, that.parentAccumulator)
-        && Objects.equals(previous, that.previous)
-        && Objects.equals(proposed, that.proposed)
-        && Objects.equals(epoch, that.epoch)
-        && Objects.equals(roundNumber, that.roundNumber)
-        && Objects.equals(proposerTimestampMs, that.proposerTimestampMs);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = Arrays.hashCode(parentAccumulator);
-    result = 31 * result + Objects.hashCode(previous);
-    result = 31 * result + Objects.hashCode(proposed);
-    result = 31 * result + Objects.hashCode(epoch);
-    result = 31 * result + Objects.hashCode(roundNumber);
-    result = 31 * result + Objects.hashCode(proposerTimestampMs);
-    return result;
-  }
-
-  @Override
-  public String toString() {
-    return "PrepareRequest{"
-        + "parentAccumulator="
-        + Arrays.toString(parentAccumulator)
-        + ", previous="
-        + previous
-        + ", proposed="
-        + proposed
-        + ", epoch="
-        + epoch
-        + ", roundNumber="
-        + roundNumber
-        + ", proposerTimestampMs="
-        + proposerTimestampMs
-        + '}';
   }
 }

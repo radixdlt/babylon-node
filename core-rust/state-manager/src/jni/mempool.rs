@@ -96,7 +96,7 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
 fn do_add(
     state_manager: &mut ActualStateManager,
     transaction: JavaRawTransaction,
-) -> Result<JavaPayloadHash, MempoolAddErrorJava> {
+) -> Result<JavaHashCode, MempoolAddErrorJava> {
     let notarized_transaction =
         UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
             &transaction.payload,
@@ -132,7 +132,7 @@ fn do_get_transactions_for_proposal(
     (max_count, max_payload_size_bytes, transaction_hashes_to_exclude): (
         u32,
         u32,
-        Vec<JavaPayloadHash>,
+        Vec<JavaHashCode>,
     ),
 ) -> Vec<JavaRawTransaction> {
     let user_payload_hashes_to_exclude: HashSet<UserPayloadHash> = transaction_hashes_to_exclude
@@ -202,27 +202,27 @@ fn do_get_transactions_to_relay(
 // DTO Models + Mapping
 //
 
-/// Corresponds to the payload_hash
+/// Corresponds to HashCode from Java
 #[derive(Debug, PartialEq, Eq, Categorize, Encode, Decode)]
-pub struct JavaPayloadHash(Vec<u8>);
+pub struct JavaHashCode(pub Vec<u8>);
 
-impl From<LedgerPayloadHash> for JavaPayloadHash {
+impl From<LedgerPayloadHash> for JavaHashCode {
     fn from(payload_hash: LedgerPayloadHash) -> Self {
-        JavaPayloadHash(payload_hash.into_bytes().to_vec())
+        JavaHashCode(payload_hash.into_bytes().to_vec())
     }
 }
 
 #[derive(Debug, Categorize, Encode, Decode)]
 pub struct JavaRawTransaction {
     pub payload: Vec<u8>,
-    pub payload_hash: JavaPayloadHash,
+    pub payload_hash: JavaHashCode,
 }
 
 impl From<PendingTransaction> for JavaRawTransaction {
     fn from(transaction: PendingTransaction) -> Self {
         JavaRawTransaction {
             payload: scrypto_encode(&transaction.payload).unwrap(),
-            payload_hash: JavaPayloadHash(transaction.payload_hash.into_bytes().to_vec()),
+            payload_hash: JavaHashCode(transaction.payload_hash.into_bytes().to_vec()),
         }
     }
 }
