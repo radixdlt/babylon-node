@@ -226,7 +226,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
                 timeSupplier.currentTime()));
       }
 
-      // It's possibly that this function is called with a list of vertices which starts with some
+      // It's possible that this function is called with a list of vertices which starts with some
       // committed vertices
       // By matching on the accumulator, we remove the already committed vertices from the
       // "previous" list

@@ -76,6 +76,7 @@ use crate::jni::utils::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
 use crate::{CommitError, NextEpoch, PrepareGenesisRequest, PrepareGenesisResult};
 
+use super::mempool::JavaHashCode;
 use super::state_manager::ActualStateManager;
 
 //
@@ -264,10 +265,10 @@ impl From<JavaCommitRequest> for CommitRequest {
     }
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Decode, Encode, Categorize)]
 pub struct JavaPrepareRequest {
-    pub parent_accumulator: Vec<u8>,
-    pub prepared_vertices: Vec<JavaPreviousVertex>,
+    pub parent_accumulator_hash: JavaHashCode,
+    pub previous_vertices: Vec<JavaPreviousVertex>,
     pub proposed: Vec<JavaRawTransaction>,
     pub consensus_epoch: u64,
     pub round_number: u64,
@@ -277,9 +278,9 @@ pub struct JavaPrepareRequest {
 impl From<JavaPrepareRequest> for PrepareRequest {
     fn from(prepare_request: JavaPrepareRequest) -> Self {
         PrepareRequest {
-            parent_accumulator: prepare_request.parent_accumulator,
+            parent_accumulator: prepare_request.parent_accumulator_hash.0,
             prepared_vertices: prepare_request
-                .prepared_vertices
+                .previous_vertices
                 .into_iter()
                 .map(|t| t.into())
                 .collect(),
@@ -295,10 +296,10 @@ impl From<JavaPrepareRequest> for PrepareRequest {
     }
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Decode, Encode, Categorize)]
 pub struct JavaPreviousVertex {
     pub transactions: Vec<JavaRawTransaction>,
-    pub resultant_accumulator: Vec<u8>,
+    pub resultant_accumulator_hash: JavaHashCode,
 }
 
 impl From<JavaPreviousVertex> for PreviousVertex {
@@ -309,7 +310,7 @@ impl From<JavaPreviousVertex> for PreviousVertex {
                 .into_iter()
                 .map(|v| v.payload)
                 .collect(),
-            resultant_accumulator: previous_vertex.resultant_accumulator,
+            resultant_accumulator: previous_vertex.resultant_accumulator_hash.0,
         }
     }
 }
