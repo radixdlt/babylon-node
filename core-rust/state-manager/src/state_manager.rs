@@ -496,22 +496,18 @@ where
         &self,
         max_num_txns: u64,
         max_payload_size_bytes: u64,
-    ) -> Vec<PendingTransaction> {
-        let (remove, mut keep): (Vec<_>, _) = {
-            let mempool_txns: Vec<_> = self
-                .mempool
-                .read()
-                .transactions()
-                .values()
-                .map(|x| x.transaction.clone())
-                .collect();
-
+    ) -> impl IntoIterator<Item = PendingTransaction> {
+        let (remove, mut keep): (Vec<_>, _) = self
+            .mempool
+            .read()
+            .transactions()
+            .values()
+            .map(|x| x.transaction.clone())
             // We (partially) cleanup the mempool on the occasion of getting the relay txns
-            mempool_txns.into_iter().partition(|t| {
+            .partition(|t| {
                 let (record, was_cached) = self.check_for_rejection_with_caching(&t.payload);
                 !was_cached && record.latest_attempt.rejection.is_some()
-            })
-        };
+            });
 
         {
             let mut mempool = self.mempool.write();
@@ -529,11 +525,10 @@ where
         keep.into_iter()
             .take(max_num_txns as usize)
             // Check the payload size limit
-            .take_while(|t| {
+            .take_while(move |t| {
                 tx_size += t.payload_size;
                 tx_size <= max_payload_size_bytes
             })
-            .collect()
     }
 
     // TODO: Update to prepare_system_transaction when we start to support forking
