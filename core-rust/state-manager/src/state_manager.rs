@@ -126,7 +126,7 @@ pub struct StateManager<S: ReadableSubstateStore> {
     pub mempool: RwLock<SimpleMempool>,
     pub network: NetworkDefinition,
     store: S,
-    execution_cache: ExecutionCache,
+    execution_cache: RwLock<ExecutionCache>,
     pub user_transaction_validator: UserTransactionValidator,
     pub ledger_transaction_validator: LedgerTransactionValidator,
     pub pending_transaction_result_cache: RwLock<PendingTransactionResultCache>,
@@ -169,7 +169,7 @@ where
             network,
             mempool: RwLock::new(mempool),
             store,
-            execution_cache: ExecutionCache::new(accumulator_hash),
+            execution_cache: RwLock::new(ExecutionCache::new(accumulator_hash)),
             user_transaction_validator,
             ledger_transaction_validator: committed_transaction_validator,
             execution_config: ExecutionConfig {
@@ -246,9 +246,10 @@ where
         parent_accumulator_hash: &AccumulatorHash,
         executable: &Executable,
         payload_hash: &LedgerPayloadHash,
-    ) -> (AccumulatorHash, &TransactionReceipt) {
+    ) -> (AccumulatorHash, TransactionReceipt) {
         let new_accumulator_hash = parent_accumulator_hash.accumulate(payload_hash);
-        let receipt = self.execution_cache.execute(
+        let mut execution_cache = self.execution_cache.write();
+        let receipt = execution_cache.execute(
             &self.store,
             parent_accumulator_hash,
             &new_accumulator_hash,
@@ -262,7 +263,7 @@ where
                 )
             },
         );
-        (new_accumulator_hash, receipt)
+        (new_accumulator_hash, receipt.clone())
     }
 }
 
@@ -911,14 +912,14 @@ where
                     );
                 });
 
-            let payload_hash = transaction.get_hash();
-            let (current_accumulator_hash, engine_receipt) =
-                self.execute_with_cache(&parent_accumulator_hash, &executable, &payload_hash);
+            let (current_accumulator_hash, engine_receipt) = self.execute_with_cache(
+                &parent_accumulator_hash,
+                &executable,
+                &transaction.get_hash(),
+            );
             receipts.push(engine_receipt.clone());
 
             parent_accumulator_hash = current_accumulator_hash;
-
-            let engine_receipt = (*engine_receipt).clone();
 
             let ledger_receipt: LedgerTransactionReceipt = match engine_receipt.result {
                 TransactionResult::Commit(result) => {
@@ -962,7 +963,9 @@ where
             committed_transaction_bundles.push((transaction, ledger_receipt, identifiers));
         }
 
-        self.execution_cache.progress_root(&parent_accumulator_hash);
+        self.execution_cache
+            .write()
+            .progress_root(&parent_accumulator_hash);
 
         let mut substates_collector = CommitSubstatesCollector::new();
         for receipt in receipts {
