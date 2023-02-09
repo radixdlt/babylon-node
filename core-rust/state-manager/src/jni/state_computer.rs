@@ -114,11 +114,11 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_saveVertexS
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_save_vertex_store)
+    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_save_vertex_store)
 }
 
 #[tracing::instrument(skip_all)]
-fn do_save_vertex_store(state_manager: &mut ActualStateManager, args: Vec<u8>) {
+fn do_save_vertex_store(state_manager: &ActualStateManager, args: Vec<u8>) {
     let vertex_store_bytes: Vec<u8> = args;
     state_manager.save_vertex_store(vertex_store_bytes);
 }
@@ -166,12 +166,12 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_commit)
+    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_commit)
 }
 
 #[tracing::instrument(skip_all)]
 fn do_commit(
-    state_manager: &mut ActualStateManager,
+    state_manager: &ActualStateManager,
     args: JavaCommitRequest,
 ) -> Result<(), CommitError> {
     let commit_request = args;

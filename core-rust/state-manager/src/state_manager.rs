@@ -844,11 +844,11 @@ where
     S: QueryableProofStore + QueryableTransactionStore,
     S: WriteableVertexStore,
 {
-    pub fn save_vertex_store(&'db mut self, vertex_store: Vec<u8>) {
+    pub fn save_vertex_store(&self, vertex_store: Vec<u8>) {
         self.store.write().save_vertex_store(vertex_store);
     }
 
-    pub fn commit(&'db mut self, commit_request: CommitRequest) -> Result<(), CommitError> {
+    pub fn commit(&self, commit_request: CommitRequest) -> Result<(), CommitError> {
         let _ = self
             .commit_mutex
             .try_lock()
