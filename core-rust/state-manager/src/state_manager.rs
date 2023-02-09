@@ -100,6 +100,7 @@ use radix_engine_interface::api::types::{
 };
 use std::collections::{BTreeMap, HashMap};
 use std::convert::TryInto;
+use std::ops::Deref;
 
 use radix_engine::blueprints::epoch_manager::ValidatorSubstate;
 use radix_engine::kernel::ScryptoInterpreter;
@@ -125,7 +126,7 @@ pub struct StateManagerLoggingConfig {
 pub struct StateManager<S: ReadableSubstateStore> {
     pub mempool: RwLock<SimpleMempool>,
     pub network: NetworkDefinition,
-    store: S,
+    store: RwLock<S>,
     execution_cache: RwLock<ExecutionCache>,
     pub user_transaction_validator: UserTransactionValidator,
     pub ledger_transaction_validator: LedgerTransactionValidator,
@@ -169,7 +170,7 @@ where
         StateManager {
             network,
             mempool: RwLock::new(mempool),
-            store,
+            store: RwLock::new(store),
             execution_cache: RwLock::new(ExecutionCache::new(accumulator_hash)),
             user_transaction_validator,
             ledger_transaction_validator: committed_transaction_validator,
@@ -201,8 +202,8 @@ impl<S> StateManager<S>
 where
     S: ReadableSubstateStore,
 {
-    pub fn store(&self) -> &S {
-        &self.store
+    pub fn store(&self) -> impl Deref<Target = S> + '_ {
+        self.store.read()
     }
 
     pub fn preview(&self, preview_request: PreviewRequest) -> Result<PreviewResult, PreviewError> {
@@ -235,7 +236,7 @@ where
         };
 
         execute_preview(
-            &self.store,
+            self.store.read().deref(),
             &self.scrypto_interpreter,
             &self.intent_hash_manager,
             &self.network,
@@ -252,7 +253,7 @@ where
         let new_accumulator_hash = parent_accumulator_hash.accumulate(payload_hash);
         let mut execution_cache = self.execution_cache.write();
         let receipt = execution_cache.execute(
-            &self.store,
+            self.store.read().deref(),
             parent_accumulator_hash,
             &new_accumulator_hash,
             |store| {
@@ -309,7 +310,7 @@ where
         let start = std::time::Instant::now();
 
         let receipt = execute_transaction(
-            &self.store,
+            self.store.read().deref(),
             &self.scrypto_interpreter,
             &self.fee_reserve_config,
             &self.execution_config,
@@ -427,7 +428,7 @@ where
         let attempt = TransactionAttempt {
             rejection,
             against_state: AtState::Committed {
-                state_version: self.store.max_state_version(),
+                state_version: self.store.read().max_state_version(),
             },
             timestamp: current_time,
         };
@@ -569,7 +570,7 @@ where
 
     pub fn prepare(&self, prepare_request: PrepareRequest) -> PrepareResult {
         // This intent hash check, and current epoch should eventually live in the executor
-        let pending_transaction_base_state_version = self.store.max_state_version();
+        let pending_transaction_base_state_version = self.store.read().max_state_version();
         let mut already_committed_or_prepared_intent_hashes: HashMap<
             IntentHash,
             AlreadyPreparedTransaction,
@@ -586,6 +587,7 @@ where
                 .map(|validated_transaction| validated_transaction.intent_hash())
                 .and_then(|intent_hash| {
                     self.store
+                        .read()
                         .get_txn_state_version_by_identifier(&intent_hash)
                         .map(|_| (intent_hash, AlreadyPreparedTransaction::Committed))
                 })
@@ -594,7 +596,7 @@ where
         already_committed_or_prepared_intent_hashes
             .extend(already_committed_proposed_payload_hashes);
 
-        let mut parent_accumulator_hash = self.store.get_top_accumulator_hash();
+        let mut parent_accumulator_hash = self.store.read().get_top_accumulator_hash();
 
         for prepared in prepare_request.already_prepared_payloads {
             let parsed_transaction =
@@ -843,7 +845,7 @@ where
     S: WriteableVertexStore,
 {
     pub fn save_vertex_store(&'db mut self, vertex_store: Vec<u8>) {
-        self.store.save_vertex_store(vertex_store);
+        self.store.write().save_vertex_store(vertex_store);
     }
 
     pub fn commit(&'db mut self, commit_request: CommitRequest) -> Result<(), CommitError> {
@@ -972,7 +974,7 @@ where
             }
         }
 
-        self.store.commit(CommitBundle {
+        self.store.write().commit(CommitBundle {
             transactions: committed_transaction_bundles,
             proof_bytes: commit_request.proof,
             proof_state_version: commit_request.proof_state_version,
@@ -1018,7 +1020,8 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
         &self,
         component_address: ComponentAddress,
     ) -> Option<HashMap<ResourceAddress, Decimal>> {
-        let mut resource_accounter = ResourceAccounter::new(&self.store);
+        let store = self.store.read();
+        let mut resource_accounter = ResourceAccounter::new(store.deref());
         resource_accounter
             .add_resources(RENodeId::Global(GlobalAddress::Component(
                 component_address,
@@ -1036,7 +1039,7 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
             NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
         );
-        let output = self.store.get_substate(&substate_id).unwrap();
+        let output = self.store.read().get_substate(&substate_id).unwrap();
         let validator_substate: ValidatorSubstate = output.substate.to_runtime().into();
         JavaValidatorInfo {
             lp_token_address: validator_substate.liquidity_token,
@@ -1045,7 +1048,7 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
     }
 
     pub fn get_epoch(&self) -> u64 {
-        self.store.get_epoch()
+        self.store.read().get_epoch()
     }
 }
 
