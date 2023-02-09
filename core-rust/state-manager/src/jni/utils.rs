@@ -65,7 +65,6 @@
 use jni::JNIEnv;
 use jni::{objects::JObject, sys::jbyteArray};
 use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
-use std::ops::DerefMut;
 
 use crate::jni::state_manager::ActualStateManager;
 use crate::result::{StateManagerError, StateManagerResult, ERRCODE_JNI};
@@ -201,42 +200,5 @@ fn jni_state_manager_sbor_call_inner<Args: JavaStructure, Response: JavaStructur
     let mut state_manager = state_manager_arc.write();
 
     let response = method(&mut state_manager, args);
-    Ok(response)
-}
-
-pub fn jni_state_manager_sbor_call_flatten_result<
-    Args: JavaStructure + ScryptoDecode,
-    Response: JavaStructure + ScryptoEncode + ScryptoDecode + ScryptoCategorize,
->(
-    env: JNIEnv,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-    method: impl FnOnce(&mut ActualStateManager, Args) -> StateManagerResult<Response>,
-) -> jbyteArray {
-    let response_result = jni_state_manager_sbor_call_flatten_result_inner(
-        &env,
-        j_state_manager,
-        request_payload,
-        method,
-    );
-    jni_slice_to_jbytearray(&env, &response_result.to_java().unwrap())
-}
-
-fn jni_state_manager_sbor_call_flatten_result_inner<
-    Args: JavaStructure,
-    Response: JavaStructure,
->(
-    env: &JNIEnv,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-    method: impl FnOnce(&mut ActualStateManager, Args) -> StateManagerResult<Response>,
-) -> StateManagerResult<Response> {
-    let vec_payload = jni_jbytearray_to_vector(env, request_payload)?;
-    let args = Args::from_java(&vec_payload)?;
-
-    let state_manager_arc = JNIStateManager::get_state_manager(env, j_state_manager);
-    let mut state_manager = state_manager_arc.write();
-
-    let response = method(state_manager.deref_mut(), args)?;
     Ok(response)
 }
