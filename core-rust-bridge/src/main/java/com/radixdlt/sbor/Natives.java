@@ -70,6 +70,7 @@ import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.exceptions.StateManagerRuntimeException;
 import com.radixdlt.lang.Functions;
 import com.radixdlt.lang.Result;
+import com.radixdlt.monitoring.Timer;
 import com.radixdlt.sbor.codec.Codec;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -95,10 +96,16 @@ public interface Natives {
   /** A builder for a call definition that takes 1 parameter. */
   class Builder1 {
 
-    private final Functions.Func1<byte[], byte[]> callable;
+    private Functions.Func1<byte[], byte[]> callable;
 
     private Builder1(Functions.Func1<byte[], byte[]> callable) {
       this.callable = callable;
+    }
+
+    /** Configures measurement of this native call's runtimes, using the given {@link Timer}. */
+    public Builder1 measure(Timer timer) {
+      this.callable = measured(this.callable, timer);
+      return this;
     }
 
     /**
@@ -116,6 +123,10 @@ public interface Natives {
               new TypeToken<Result<R, StateManagerRuntimeError>>() {}.where(
                   new TypeParameter<>() {}, (TypeToken<R>) TypeToken.of(types[1])));
       return new Call1<>(this.callable, p1Codec, wrapperCodec);
+    }
+
+    private static <P, R> Functions.Func1<P, R> measured(Functions.Func1<P, R> func, Timer timer) {
+      return param1 -> timer.measure(() -> func.apply(param1));
     }
   }
 

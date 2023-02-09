@@ -66,11 +66,8 @@ package com.radixdlt.monitoring;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
-import io.prometheus.client.Collector;
 import io.prometheus.client.Info;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -79,23 +76,18 @@ import java.util.stream.Stream;
  *
  * @param <I> A type of record representing a complete set of info items.
  */
-public class TypedInfo<I extends Record> extends Collector implements Collector.Describable {
+public class TypedInfo<I extends Record> {
 
   /** A wrapped {@link Info}. */
   private final Info wrapped;
 
-  /** A current value. */
-  private final AtomicReference<I> infoRecord;
-
   /**
    * A direct constructor.
    *
-   * @param name A metric name; will also be used as a description. Please note that the wrapped
-   *     {@link Info} primitive will automatically append the "_info" suffix.
+   * @param wrapped A wrapped info.
    */
-  public TypedInfo(String name) {
-    this.wrapped = Info.build(name, name).create();
-    this.infoRecord = new AtomicReference<>();
+  public TypedInfo(Info wrapped) {
+    this.wrapped = wrapped;
   }
 
   /**
@@ -104,31 +96,11 @@ public class TypedInfo<I extends Record> extends Collector implements Collector.
    * @param infoRecord A record containing info items.
    */
   public void set(I infoRecord) {
-    this.infoRecord.set(infoRecord);
     this.wrapped.info(
         Streams.zip(
                 Stream.of(NameRenderer.labelNames(infoRecord.getClass())),
                 Stream.of(NameRenderer.labelValues(infoRecord)),
                 Maps::immutableEntry)
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
-  }
-
-  /**
-   * Gets the current info items.
-   *
-   * @return Current info items.
-   */
-  public I get() {
-    return this.infoRecord.get();
-  }
-
-  @Override
-  public List<MetricFamilySamples> collect() {
-    return this.wrapped.collect();
-  }
-
-  @Override
-  public List<MetricFamilySamples> describe() {
-    return this.wrapped.describe();
   }
 }
