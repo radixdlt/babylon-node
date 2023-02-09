@@ -187,10 +187,23 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         remainingSizeInUncommittedVertices,
         maxPayloadSize);
 
+    if (maxPayloadSize <= 0) {
+      // no more txns fit
+      return List.of();
+    }
+
     // TODO: Don't include transactions if NextEpoch is to occur
     // TODO: This will require Proposer to simulate a NextRound update before proposing
-    return stateComputer.getTransactionsForProposal(
-        maxNumTransactionsPerProposal, maxPayloadSize, rawPreviousExecutedTransactions);
+    final var res =
+        stateComputer.getTransactionsForProposal(
+            maxNumTransactionsPerProposal, maxPayloadSize, rawPreviousExecutedTransactions);
+
+    final var resSize =
+        res.stream().map(tx -> tx.getPayload().length).reduce(Integer::sum).orElse(0);
+    final var total = resSize + rawPreviousExecutedTransactionsTotalSize;
+    log.info("WWW returning txns for proposal size {}  (total with prev {})", resSize, total);
+
+    return res;
   }
 
   @Override
