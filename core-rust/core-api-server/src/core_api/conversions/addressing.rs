@@ -294,6 +294,15 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 SubstateOffset::Account(offset) => match offset {
                     AccountOffset::Account => (SubstateType::Account, SubstateKeyType::Account),
                 },
+                SubstateOffset::Metadata(offset) => match offset {
+                    MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
+                },
+                SubstateOffset::AccessRulesChain(offset) => match offset {
+                    AccessRulesChainOffset::AccessRulesChain => (
+                        SubstateType::AccessRulesChain,
+                        SubstateKeyType::AccessRulesChain,
+                    ),
+                },
                 _ => return Err(unknown_substate_error("Account", &substate_id)),
             };
             (EntityType::Account, substate_type_key)
