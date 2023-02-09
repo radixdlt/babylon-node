@@ -70,7 +70,6 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
-use parking_lot::RwLock;
 use state_manager::jni::java_structure::JavaStructure;
 use state_manager::jni::state_manager::{ActualStateManager, JNIStateManager};
 use state_manager::jni::utils::*;
@@ -90,7 +89,7 @@ pub struct RunningServer {
 
 pub struct JNICoreApiServer {
     pub config: CoreApiServerConfig,
-    pub state_manager: Arc<RwLock<ActualStateManager>>,
+    pub state_manager: Arc<ActualStateManager>,
     pub running_server: Option<RunningServer>,
 }
 

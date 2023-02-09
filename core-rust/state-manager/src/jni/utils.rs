@@ -156,20 +156,6 @@ pub fn jni_state_manager_sbor_read_call<
     jni_slice_to_jbytearray(&env, &response_result.to_java().unwrap())
 }
 
-pub fn jni_state_manager_sbor_call<
-    Args: JavaStructure + ScryptoDecode,
-    Response: JavaStructure + ScryptoEncode + ScryptoDecode + ScryptoCategorize,
->(
-    env: JNIEnv,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-    method: impl FnOnce(&mut ActualStateManager, Args) -> Response,
-) -> jbyteArray {
-    let response_result =
-        jni_state_manager_sbor_call_inner(&env, j_state_manager, request_payload, method);
-    jni_slice_to_jbytearray(&env, &response_result.to_java().unwrap())
-}
-
 #[tracing::instrument(skip_all)]
 fn jni_state_manager_sbor_read_call_inner<Args: JavaStructure, Response: JavaStructure>(
     env: &JNIEnv,
@@ -180,25 +166,8 @@ fn jni_state_manager_sbor_read_call_inner<Args: JavaStructure, Response: JavaStr
     let vec_payload = jni_jbytearray_to_vector(env, request_payload)?;
     let args = Args::from_java(&vec_payload)?;
 
-    let state_manager_arc = JNIStateManager::get_state_manager(env, j_state_manager);
-    let state_manager = state_manager_arc.read();
+    let state_manager = JNIStateManager::get_state_manager(env, j_state_manager);
 
     let response = method(&state_manager, args);
-    Ok(response)
-}
-
-fn jni_state_manager_sbor_call_inner<Args: JavaStructure, Response: JavaStructure>(
-    env: &JNIEnv,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-    method: impl FnOnce(&mut ActualStateManager, Args) -> Response,
-) -> StateManagerResult<Response> {
-    let vec_payload = jni_jbytearray_to_vector(env, request_payload)?;
-    let args = Args::from_java(&vec_payload)?;
-
-    let state_manager_arc = JNIStateManager::get_state_manager(env, j_state_manager);
-    let mut state_manager = state_manager_arc.write();
-
-    let response = method(&mut state_manager, args);
     Ok(response)
 }

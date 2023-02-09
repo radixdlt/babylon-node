@@ -29,7 +29,7 @@ pub(crate) async fn handle_transaction_callpreview(
     Extension(state): Extension<CoreApiState>,
     Json(request): Json<models::TransactionCallPreviewRequest>,
 ) -> Result<Json<models::TransactionCallPreviewResponse>, ResponseError<()>> {
-    let state_manager = state.state_manager.read();
+    let state_manager = state.state_manager;
 
     let extraction_context = ExtractionContext::new(&state_manager.network);
     let mapping_context = MappingContext::new(&state_manager.network);

@@ -15,7 +15,7 @@ pub(crate) fn core_api_read_handler<Request, Response>(
     Json(request_body): Json<Request>,
     method: impl FnOnce(&ActualStateManager, Request) -> Result<Response, ResponseError<()>>,
 ) -> Result<Json<Response>, ResponseError<()>> {
-    let state_manager = state.state_manager.read();
+    let state_manager = state.state_manager;
 
     method(&state_manager, request_body).map(Json)
 }

@@ -6,7 +6,7 @@ use radix_engine_interface::address::{EntityType, HrpSet};
 pub(crate) async fn handle_status_network_configuration(
     Extension(state): Extension<CoreApiState>,
 ) -> Result<Json<models::NetworkConfigurationResponse>, ResponseError<()>> {
-    let state_manager = state.state_manager.read();
+    let state_manager = state.state_manager;
     let network = state_manager.network.clone();
 
     let bech32_encoder = Bech32Encoder::new(&state_manager.network);

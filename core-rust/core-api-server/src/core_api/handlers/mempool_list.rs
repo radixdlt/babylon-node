@@ -5,7 +5,7 @@ pub(crate) async fn handle_mempool_list(
     Extension(state): Extension<CoreApiState>,
     Json(request): Json<models::MempoolListRequest>,
 ) -> Result<Json<models::MempoolListResponse>, ResponseError<()>> {
-    let state_manager = state.state_manager.read();
+    let state_manager = state.state_manager;
     assert_matching_network(&request.network, &state_manager.network)?;
 
     let mempool = state_manager.mempool.read();

@@ -73,7 +73,6 @@ use crate::store::{DatabaseConfig, StateManagerDatabase};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use parking_lot::RwLock;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
 
@@ -130,7 +129,7 @@ pub struct StateManagerConfig {
 pub type ActualStateManager = StateManager<StateManagerDatabase>;
 
 pub struct JNIStateManager {
-    pub state_manager: Arc<RwLock<ActualStateManager>>,
+    pub state_manager: Arc<ActualStateManager>,
 }
 
 impl JNIStateManager {
@@ -153,12 +152,12 @@ impl JNIStateManager {
         let mempool = SimpleMempool::new(mempool_config);
 
         // Build the state manager.
-        let state_manager = Arc::new(parking_lot::const_rwlock(StateManager::new(
+        let state_manager = Arc::new(StateManager::new(
             config.network_definition,
             mempool,
             store,
             config.logging_config,
-        )));
+        ));
 
         let jni_state_manager = JNIStateManager { state_manager };
 
@@ -174,10 +173,7 @@ impl JNIStateManager {
         drop(jni_state_manager);
     }
 
-    pub fn get_state_manager(
-        env: &JNIEnv,
-        j_state_manager: JObject,
-    ) -> Arc<RwLock<ActualStateManager>> {
+    pub fn get_state_manager(env: &JNIEnv, j_state_manager: JObject) -> Arc<ActualStateManager> {
         let jni_state_manager: MutexGuard<JNIStateManager> = env
             .get_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME)
             .unwrap();
