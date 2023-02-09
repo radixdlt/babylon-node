@@ -3,7 +3,7 @@ use radix_engine::system::substates::PersistedSubstate;
 use radix_engine::types::{
     AccessRulesChainOffset, GlobalAddress, MetadataOffset, PackageOffset, SubstateOffset,
 };
-use radix_engine_interface::api::types::RoyaltyOffset;
+use radix_engine_interface::api::types::{NodeModuleId, RoyaltyOffset};
 
 use state_manager::jni::state_manager::ActualStateManager;
 
@@ -29,8 +29,12 @@ fn handle_state_package_internal(
 
     let package_info = {
         let substate_offset = SubstateOffset::Package(PackageOffset::Info);
-        let loaded_substate =
-            read_known_substate(state_manager, package_node_id, &substate_offset)?;
+        let loaded_substate = read_known_substate(
+            state_manager,
+            package_node_id,
+            NodeModuleId::SELF,
+            &substate_offset,
+        )?;
         let PersistedSubstate::PackageInfo(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
         };
@@ -38,8 +42,12 @@ fn handle_state_package_internal(
     };
     let package_royalty_config = {
         let substate_offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig);
-        let loaded_substate =
-            read_known_substate(state_manager, package_node_id, &substate_offset)?;
+        let loaded_substate = read_known_substate(
+            state_manager,
+            package_node_id,
+            NodeModuleId::PackageRoyalty,
+            &substate_offset,
+        )?;
         let PersistedSubstate::PackageRoyaltyConfig(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
         };
@@ -47,8 +55,12 @@ fn handle_state_package_internal(
     };
     let package_royalty_accumulator = {
         let substate_offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator);
-        let loaded_substate =
-            read_known_substate(state_manager, package_node_id, &substate_offset)?;
+        let loaded_substate = read_known_substate(
+            state_manager,
+            package_node_id,
+            NodeModuleId::PackageRoyalty,
+            &substate_offset,
+        )?;
         let PersistedSubstate::PackageRoyaltyAccumulator(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
         };
@@ -56,8 +68,12 @@ fn handle_state_package_internal(
     };
     let package_metadata = {
         let substate_offset = SubstateOffset::Metadata(MetadataOffset::Metadata);
-        let loaded_substate =
-            read_known_substate(state_manager, package_node_id, &substate_offset)?;
+        let loaded_substate = read_known_substate(
+            state_manager,
+            package_node_id,
+            NodeModuleId::Metadata,
+            &substate_offset,
+        )?;
         let PersistedSubstate::Metadata(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
         };
@@ -66,8 +82,12 @@ fn handle_state_package_internal(
     let package_access_rules = {
         let substate_offset =
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
-        let loaded_substate =
-            read_known_substate(state_manager, package_node_id, &substate_offset)?;
+        let loaded_substate = read_known_substate(
+            state_manager,
+            package_node_id,
+            NodeModuleId::AccessRules,
+            &substate_offset,
+        )?;
         let PersistedSubstate::AccessRulesChain(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
         };

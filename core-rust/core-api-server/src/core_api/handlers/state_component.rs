@@ -4,7 +4,7 @@ use radix_engine::types::{
     AccessRulesChainOffset, ComponentOffset, GlobalAddress, MetadataOffset, RENodeId, SubstateId,
     SubstateOffset,
 };
-use radix_engine_interface::api::types::RoyaltyOffset;
+use radix_engine_interface::api::types::{NodeModuleId, RoyaltyOffset};
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::query::dump_component_state;
 
@@ -33,8 +33,12 @@ fn handle_state_component_internal(
 
     let component_info = {
         let substate_offset = SubstateOffset::Component(ComponentOffset::Info);
-        let loaded_substate =
-            read_known_substate(state_manager, component_node_id, &substate_offset)?;
+        let loaded_substate = read_known_substate(
+            state_manager,
+            component_node_id,
+            NodeModuleId::SELF,
+            &substate_offset,
+        )?;
         let PersistedSubstate::ComponentInfo(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
         };
@@ -42,8 +46,12 @@ fn handle_state_component_internal(
     };
     let component_state = {
         let substate_offset = SubstateOffset::Component(ComponentOffset::State);
-        let loaded_substate =
-            read_known_substate(state_manager, component_node_id, &substate_offset)?;
+        let loaded_substate = read_known_substate(
+            state_manager,
+            component_node_id,
+            NodeModuleId::SELF,
+            &substate_offset,
+        )?;
         let PersistedSubstate::ComponentState(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
         };
@@ -51,8 +59,12 @@ fn handle_state_component_internal(
     };
     let component_royalty_config = {
         let substate_offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig);
-        let loaded_substate =
-            read_known_substate(state_manager, component_node_id, &substate_offset)?;
+        let loaded_substate = read_known_substate(
+            state_manager,
+            component_node_id,
+            NodeModuleId::ComponentRoyalty,
+            &substate_offset,
+        )?;
         let PersistedSubstate::ComponentRoyaltyConfig(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
         };
@@ -60,8 +72,12 @@ fn handle_state_component_internal(
     };
     let component_royalty_accumulator = {
         let substate_offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator);
-        let loaded_substate =
-            read_known_substate(state_manager, component_node_id, &substate_offset)?;
+        let loaded_substate = read_known_substate(
+            state_manager,
+            component_node_id,
+            NodeModuleId::ComponentRoyalty,
+            &substate_offset,
+        )?;
         let PersistedSubstate::ComponentRoyaltyAccumulator(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
         };
@@ -69,8 +85,12 @@ fn handle_state_component_internal(
     };
     let component_metadata = {
         let substate_offset = SubstateOffset::Metadata(MetadataOffset::Metadata);
-        let loaded_substate =
-            read_known_substate(state_manager, component_node_id, &substate_offset)?;
+        let loaded_substate = read_known_substate(
+            state_manager,
+            component_node_id,
+            NodeModuleId::Metadata,
+            &substate_offset,
+        )?;
         let PersistedSubstate::Metadata(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
         };
@@ -79,8 +99,12 @@ fn handle_state_component_internal(
     let component_access_rules = {
         let substate_offset =
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
-        let loaded_substate =
-            read_known_substate(state_manager, component_node_id, &substate_offset)?;
+        let loaded_substate = read_known_substate(
+            state_manager,
+            component_node_id,
+            NodeModuleId::AccessRules,
+            &substate_offset,
+        )?;
         let PersistedSubstate::AccessRulesChain(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
         };

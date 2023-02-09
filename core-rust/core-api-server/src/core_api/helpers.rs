@@ -49,9 +49,10 @@ pub(crate) fn read_derefed_global_node_id(
 pub(crate) fn read_known_substate(
     state_manager: &ActualStateManager,
     renode_id: RENodeId,
+    node_module_id: NodeModuleId,
     substate_offset: &SubstateOffset,
 ) -> Result<PersistedSubstate, ResponseError<()>> {
-    let substate_id = SubstateId(renode_id, NodeModuleId::SELF, substate_offset.clone());
+    let substate_id = SubstateId(renode_id, node_module_id, substate_offset.clone());
     let output_value = state_manager
         .store()
         .get_substate(&substate_id)

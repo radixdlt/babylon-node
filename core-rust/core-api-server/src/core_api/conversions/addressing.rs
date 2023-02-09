@@ -256,7 +256,6 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         SubstateKeyType::ComponentState,
                     ),
                 },
-                // TODO(code review): is this the right mapping?
                 SubstateOffset::Royalty(offset) => match offset {
                     RoyaltyOffset::RoyaltyConfig => (
                         SubstateType::ComponentRoyaltyConfig,
@@ -284,10 +283,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
         SubstateId(RENodeId::Account(_), _, offset) => {
             let substate_type_key = match offset {
                 SubstateOffset::Account(offset) => match offset {
-                    AccountOffset::Account => {
-                        // TODO(code review): I just blindly defined these - correctly?
-                        (SubstateType::Account, SubstateKeyType::Account)
-                    }
+                    AccountOffset::Account => (SubstateType::Account, SubstateKeyType::Account),
                 },
                 _ => return Err(unknown_substate_error("Account", &substate_id)),
             };
@@ -323,7 +319,6 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         (SubstateType::PackageInfo, SubstateKeyType::PackageInfo)
                     }
                 },
-                // TODO(code review): is the right mapping?
                 SubstateOffset::Royalty(offset) => match offset {
                     RoyaltyOffset::RoyaltyConfig => (
                         SubstateType::PackageRoyaltyConfig,

@@ -188,7 +188,6 @@ pub fn to_api_fee_summary(
         cost_unit_execution_breakdown: fee_summary
             .execution_cost_unit_breakdown
             .into_iter()
-            // TODO(code review): the fee summary now uses CostingReason enum; we map it like that?
             .map(|(key, cost_unit_amount)| (key.to_string(), to_api_u32_as_i64(cost_unit_amount)))
             .collect(),
         cost_unit_royalty_breakdown: fee_summary
