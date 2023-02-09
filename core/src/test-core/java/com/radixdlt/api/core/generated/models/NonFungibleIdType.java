@@ -30,7 +30,7 @@ public enum NonFungibleIdType {
   
   STRING("String"),
   
-  NUMBER("Number"),
+  INTEGER("Integer"),
   
   BYTES("Bytes"),
   

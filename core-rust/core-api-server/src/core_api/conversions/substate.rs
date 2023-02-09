@@ -198,7 +198,7 @@ pub fn to_api_resource_manager_substate(
 pub fn to_api_fungible_id_type(id_type: &NonFungibleIdType) -> models::NonFungibleIdType {
     match id_type {
         NonFungibleIdType::String => models::NonFungibleIdType::String,
-        NonFungibleIdType::Integer => models::NonFungibleIdType::Number,
+        NonFungibleIdType::Integer => models::NonFungibleIdType::Integer,
         NonFungibleIdType::Bytes => models::NonFungibleIdType::Bytes,
         NonFungibleIdType::UUID => models::NonFungibleIdType::UUID,
     }
