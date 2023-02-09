@@ -286,17 +286,19 @@ public final class DeterministicNodes implements AutoCloseable {
     if (injector == null) {
       return;
     }
-
+    System.out.println("TESTING 4.1!!!!!!");
     var time = timedNextMsg.time();
     injector.getInstance(ControlledTimeSupplier.class).setTime(time);
 
     ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
     try {
+      System.out.println("TESTING 4.2!!!!!!");
       log.debug("{}: Receive message {}", timedNextMsg.time(), nextMsg);
       nodeInstances
           .get(receiverIndex)
           .getInstance(DeterministicProcessor.class)
           .handleMessage(sender, nextMsg.message(), nextMsg.typeLiteral());
+      System.out.println("TESTING 4.3!!!!!!");
     } catch (Exception e) {
       throw new EventHandleException(nextMsg, e);
     } finally {

@@ -112,6 +112,7 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
       TransactionsAndProofReader transactionsAndProofReader,
       LedgerAccumulator ledgerAccumulator) {
     final var timestamp = 0L; /* TODO: use Olympia end-state timestamp */
+    System.out.println("LAST_PROOF");
     return transactionsAndProofReader
         .getLastProof()
         .orElseGet(
@@ -123,6 +124,7 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
                       .validatorSet()
                       .map(REv2ToConsensus::validatorSet)
                       .or((BFTValidatorSet) null);
+              System.out.println(genesis.getPayloadHash().toString());
               var accumulatorState =
                   ledgerAccumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
               var proof = LedgerProof.genesis(accumulatorState, validatorSet, timestamp, timestamp);

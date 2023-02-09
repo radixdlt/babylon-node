@@ -237,8 +237,12 @@ public final class DeterministicTest implements AutoCloseable {
   }
 
   private void handleMessage(Timed<ControlledMessage> nextMessage) {
+    System.out.println("TESTING 3.1!!!!!!");
     this.stateMonitor.next(nodes.getNodeInjectors(), nextMessage.time(), this.numMessagesProcessed);
+    System.out.println("TESTING 3.2!!!!!!");
+    System.out.println(nextMessage);
     this.nodes.handleMessage(nextMessage);
+    System.out.println("TESTING 3.3!!!!!!");
     this.numMessagesProcessed++;
   }
 
@@ -270,6 +274,7 @@ public final class DeterministicTest implements AutoCloseable {
   }
 
   public void startAllNodes() {
+    System.out.println("TESTING AA 1!!!!!!");
     this.nodes.startAllNodes(this.network.currentTime());
   }
 
@@ -368,10 +373,14 @@ public final class DeterministicTest implements AutoCloseable {
   }
 
   public DeterministicTest runForCount(int count) {
+    System.out.println("TESTING 2.1!!!!!!");
     for (int i = 0; i < count; i++) {
       Timed<ControlledMessage> nextMsg = this.network.nextMessage();
+      System.out.println("TESTING 2.2!!!!!!");
       handleMessage(nextMsg);
+      System.out.println("TESTING 2.3!!!!!!");
     }
+    System.out.println("TESTING 2.4!!!!!!");
 
     return this;
   }

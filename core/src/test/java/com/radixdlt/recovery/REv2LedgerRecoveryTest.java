@@ -134,18 +134,22 @@ public final class REv2LedgerRecoveryTest {
   @Test
   public void on_reboot_should_load_same_last_header() {
     try (var test = createTest()) {
+      System.out.println("TESTING 1!!!!!!");
       // Arrange
       test.startAllNodes();
+      System.out.println("TESTING 1.5!!!!!!");
       test.runForCount(processForCount);
+      System.out.println("TESTING 1.6!!!!!!");
       var reader = test.getInstance(0, TransactionsAndProofReader.class);
       var proof = reader.getLastProof();
-
+      System.out.println("TESTING 2!!!!!!");
       // Act
       test.restartNode(0);
-
+      System.out.println("TESTING 3!!!!!!");
       // Assert
       var restartedReader = test.getInstance(0, TransactionsAndProofReader.class);
       var restartedProof = restartedReader.getLastProof();
+      System.out.println("TESTING 4!!!!!!");
       assertThat(restartedProof).isEqualTo(proof);
     }
   }

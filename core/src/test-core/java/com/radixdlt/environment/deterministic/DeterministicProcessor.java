@@ -104,14 +104,21 @@ public final class DeterministicProcessor {
   private static <T> boolean tryExecute(
       T event, TypeLiteral<?> msgType, EventProcessorOnRunner<?> processor) {
     if (msgType != null) {
+      System.out.println("TESTING 6.1a!!!!!!");
       var typeLiteral = (TypeLiteral<T>) msgType;
       final var maybeProcessor = processor.getProcessor(typeLiteral);
+      System.out.println("TESTING 6.2a!!!!!!");
       maybeProcessor.ifPresent(p -> p.process(event));
+      System.out.println("TESTING 6.4a!!!!!!");
       return maybeProcessor.isPresent();
     } else {
+      System.out.println("TESTING 6.1b!!!!!!");
       final var eventClass = (Class<T>) event.getClass();
       final var maybeProcessor = processor.getProcessor(eventClass);
+      System.out.println("TESTING 6.2b!!!!!!");
+      System.out.println(event);
       maybeProcessor.ifPresent(p -> p.process(event));
+      System.out.println("TESTING 6.4b!!!!!!");
       return maybeProcessor.isPresent();
     }
   }
@@ -127,13 +134,18 @@ public final class DeterministicProcessor {
 
   public void handleMessage(NodeId origin, Object message, TypeLiteral<?> msgType) {
     boolean messageHandled = false;
+    System.out.println("TESTING 5.1!!!!!!");
     if (Objects.equals(self, origin)) {
       for (EventProcessorOnRunner<?> p : processorOnRunners) {
+        System.out.println("TESTING 5.2a!!!!!!");
         messageHandled = tryExecute(message, msgType, p) || messageHandled;
+        System.out.println("TESTING 5.3a!!!!!!");
       }
     } else {
       for (RemoteEventProcessorOnRunner<?, ?> p : remoteProcessorOnRunners) {
+        System.out.println("TESTING 5.2b!!!!!!");
         messageHandled = tryExecute(origin, message, p) || messageHandled;
+        System.out.println("TESTING 5.3b!!!!!!");
       }
     }
 

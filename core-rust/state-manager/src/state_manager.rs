@@ -548,6 +548,8 @@ where
 
         let parent_accumulator_hash = AccumulatorHash::pre_genesis();
 
+        println!("RUST::prepare_genesis: {:?}", parsed_transaction.get_hash());
+
         let (_, receipt) = self.execute_with_cache(
             &parent_accumulator_hash,
             &executable,
@@ -583,6 +585,8 @@ where
             AlreadyPreparedTransaction,
         > = HashMap::new();
 
+        println!("RUST::prepare {:?}", self.store().get_top_of_ledger_transaction_identifiers());
+
         let already_committed_proposed_payload_hashes = prepare_request
             .proposed_payloads
             .iter()
@@ -603,6 +607,9 @@ where
             .extend(already_committed_proposed_payload_hashes);
 
         let mut parent_accumulator_hash = self.store().get_top_accumulator_hash();
+
+        let java_acc_hash = AccumulatorHash::from_raw_bytes(prepare_request.parent_accumulator.as_slice().try_into().unwrap());
+        assert_eq!(parent_accumulator_hash, java_acc_hash);
 
         let already_prepared_payloads: Vec<_> = prepare_request
             .prepared_vertices
@@ -864,6 +871,8 @@ where
         let commit_request_start_state_version =
             commit_request.proof_state_version - (commit_request.transaction_payloads.len() as u64);
 
+        println!("RUST::commit start {:?}", self.store().get_top_of_ledger_transaction_identifiers());
+
         // Whilst we should probably validate intent hash duplicates here, these are checked by validators on prepare already,
         // and the check will move into the engine at some point and we'll get it for free then...
 
@@ -1015,6 +1024,8 @@ where
                 commit_request_start_state_version,
                 intent_hashes,
             );
+
+        println!("RUST::commit end {:?}", self.store().get_top_of_ledger_transaction_identifiers());
 
         Ok(())
     }
