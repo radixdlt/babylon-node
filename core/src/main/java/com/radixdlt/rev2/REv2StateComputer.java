@@ -99,6 +99,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   private final RustStateComputer stateComputer;
   private final int maxNumTransactionsPerProposal;
   private final int maxProposalTotalTxnsPayloadSize;
+  private final int maxTotalTxnPayloadSizeInUncommittedVertices;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher;
 
   private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
@@ -110,6 +111,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
       RustStateComputer stateComputer,
       int maxNumTransactionsPerProposal,
       int maxProposalTotalTxnsPayloadSize,
+      int maxTotalTxnPayloadSizeInUncommittedVertices,
       Hasher hasher,
       EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
       EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
@@ -118,6 +120,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     this.stateComputer = stateComputer;
     this.maxNumTransactionsPerProposal = maxNumTransactionsPerProposal;
     this.maxProposalTotalTxnsPayloadSize = maxProposalTotalTxnsPayloadSize;
+    this.maxTotalTxnPayloadSizeInUncommittedVertices = maxTotalTxnPayloadSizeInUncommittedVertices;
     this.hasher = hasher;
     this.ledgerUpdateEventDispatcher = ledgerUpdateEventDispatcher;
     this.mempoolAddSuccessEventDispatcher = mempoolAddSuccessEventDispatcher;
@@ -150,13 +153,13 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
   @Override
   public List<RawNotarizedTransaction> getTransactionsForProposal(
-      List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
+      List<StateComputerLedger.ExecutedTransaction> previousExecutedTransactions) {
     if (maxNumTransactionsPerProposal == 0) {
       return List.of();
     }
 
-    final var transactionsToExclude =
-        executedTransactions.stream()
+    final var rawPreviousExecutedTransactions =
+        previousExecutedTransactions.stream()
             .flatMap(
                 executedTx ->
                     TransactionBuilder.convertTransactionBytesToNotarizedTransactionBytes(
@@ -165,10 +168,21 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                         .map(RawNotarizedTransaction::create))
             .toList();
 
+    final var rawPreviousExecutedTransactionsTotalSize = rawPreviousExecutedTransactions.stream()
+            .map(tx -> tx.getPayload().length).reduce(Integer::sum).orElse(0);
+    final var remainingSizeInUncommittedVertices =
+      maxTotalTxnPayloadSizeInUncommittedVertices - rawPreviousExecutedTransactionsTotalSize;
+
+    final var maxPayloadSize =
+      Math.min(remainingSizeInUncommittedVertices, maxProposalTotalTxnsPayloadSize);
+
+    log.info("WWW Total size in uncommitted vertices is {}, limit per proposal is {} remaining in uncommitted is {} using a limit of {}",
+            rawPreviousExecutedTransactionsTotalSize, maxProposalTotalTxnsPayloadSize, remainingSizeInUncommittedVertices, maxPayloadSize);
+
     // TODO: Don't include transactions if NextEpoch is to occur
     // TODO: This will require Proposer to simulate a NextRound update before proposing
     return stateComputer.getTransactionsForProposal(
-        maxNumTransactionsPerProposal, maxProposalTotalTxnsPayloadSize, transactionsToExclude);
+        maxNumTransactionsPerProposal, maxPayloadSize, rawPreviousExecutedTransactions);
   }
 
   @Override

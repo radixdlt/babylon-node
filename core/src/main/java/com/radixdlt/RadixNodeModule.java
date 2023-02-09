@@ -147,6 +147,7 @@ public final class RadixNodeModule extends AbstractModule {
   // Proposal constants
   public static final int MAX_TRANSACTIONS_PER_PROPOSAL = 4;
   public static final int MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE = 2 * 1024 * 1024;
+  public static final int MAX_TOTAL_TXN_PAYLOAD_SIZE_IN_UNCOMMITTED_VERTICES = 4 * 1024 * 1024;
 
   private static final Logger log = LogManager.getLogger();
 
@@ -298,6 +299,7 @@ public final class RadixNodeModule extends AbstractModule {
             networkId,
             MAX_TRANSACTIONS_PER_PROPOSAL,
             MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE,
+            MAX_TOTAL_TXN_PAYLOAD_SIZE_IN_UNCOMMITTED_VERTICES,
             databaseConfig,
             Option.some(mempoolConfig)));
 
