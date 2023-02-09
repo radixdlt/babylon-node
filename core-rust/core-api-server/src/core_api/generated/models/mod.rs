@@ -18,6 +18,8 @@ pub mod access_rules_chain_substate;
 pub use self::access_rules_chain_substate::AccessRulesChainSubstate;
 pub mod access_rules_chain_substate_all_of;
 pub use self::access_rules_chain_substate_all_of::AccessRulesChainSubstateAllOf;
+pub mod account_substate;
+pub use self::account_substate::AccountSubstate;
 pub mod active_validator;
 pub use self::active_validator::ActiveValidator;
 pub mod address_type;

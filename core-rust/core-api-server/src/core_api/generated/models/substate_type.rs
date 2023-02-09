@@ -52,6 +52,7 @@ pub enum SubstateType {
     AccessController,
     #[serde(rename = "Account")]
     Account,
+
 }
 
 impl ToString for SubstateType {

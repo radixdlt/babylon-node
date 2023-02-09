@@ -13,10 +13,6 @@
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "substate_type")]
 pub enum Substate {
-    #[serde(rename="Account")]
-    AccountSubstate {
-        // TODO(code review): what do we return?
-    },
     #[serde(rename="AccessController")]
     AccessControllerSubstate {
         #[serde(rename = "data_struct")]
@@ -27,6 +23,11 @@ pub enum Substate {
         /// The layers of access rules applied. 
         #[serde(rename = "chain")]
         chain: Vec<crate::core_api::generated::models::AccessRules>,
+    },
+    #[serde(rename="Account")]
+    AccountSubstate {
+        #[serde(rename = "data_struct")]
+        data_struct: Box<crate::core_api::generated::models::DataStruct>,
     },
     #[serde(rename="ClockCurrentMinute")]
     ClockCurrentMinuteSubstate {

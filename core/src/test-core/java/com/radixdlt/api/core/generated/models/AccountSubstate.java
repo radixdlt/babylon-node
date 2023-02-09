@@ -30,10 +30,11 @@ import com.radixdlt.api.core.generated.models.AccessRulesChainSubstate;
 import com.radixdlt.api.core.generated.models.AccountSubstate;
 import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
 import com.radixdlt.api.core.generated.models.ComponentInfoSubstate;
-import com.radixdlt.api.core.generated.models.ComponentInfoSubstateAllOf;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyConfigSubstate;
 import com.radixdlt.api.core.generated.models.ComponentStateSubstate;
+import com.radixdlt.api.core.generated.models.ComponentStateSubstateAllOf;
+import com.radixdlt.api.core.generated.models.DataStruct;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
 import com.radixdlt.api.core.generated.models.GlobalAddressSubstate;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
@@ -55,11 +56,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * ComponentInfoSubstate
+ * AccountSubstate
  */
 @JsonPropertyOrder({
-  ComponentInfoSubstate.JSON_PROPERTY_PACKAGE_ADDRESS,
-  ComponentInfoSubstate.JSON_PROPERTY_BLUEPRINT_NAME
+  AccountSubstate.JSON_PROPERTY_DATA_STRUCT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -90,70 +90,41 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = VaultSubstate.class, name = "Vault"),
 })
 
-public class ComponentInfoSubstate extends Substate {
-  public static final String JSON_PROPERTY_PACKAGE_ADDRESS = "package_address";
-  private String packageAddress;
+public class AccountSubstate extends Substate {
+  public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
+  private DataStruct dataStruct;
 
-  public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
-  private String blueprintName;
-
-  public ComponentInfoSubstate() { 
+  public AccountSubstate() { 
   }
 
-  public ComponentInfoSubstate packageAddress(String packageAddress) {
-    this.packageAddress = packageAddress;
+  public AccountSubstate dataStruct(DataStruct dataStruct) {
+    this.dataStruct = dataStruct;
     return this;
   }
 
    /**
-   * The Bech32m-encoded human readable version of the package address
-   * @return packageAddress
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the package address")
-  @JsonProperty(JSON_PROPERTY_PACKAGE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getPackageAddress() {
-    return packageAddress;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_PACKAGE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPackageAddress(String packageAddress) {
-    this.packageAddress = packageAddress;
-  }
-
-
-  public ComponentInfoSubstate blueprintName(String blueprintName) {
-    this.blueprintName = blueprintName;
-    return this;
-  }
-
-   /**
-   * Get blueprintName
-   * @return blueprintName
+   * Get dataStruct
+   * @return dataStruct
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
+  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getBlueprintName() {
-    return blueprintName;
+  public DataStruct getDataStruct() {
+    return dataStruct;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
+  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBlueprintName(String blueprintName) {
-    this.blueprintName = blueprintName;
+  public void setDataStruct(DataStruct dataStruct) {
+    this.dataStruct = dataStruct;
   }
 
 
   /**
-   * Return true if this ComponentInfoSubstate object is equal to o.
+   * Return true if this AccountSubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -163,24 +134,22 @@ public class ComponentInfoSubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ComponentInfoSubstate componentInfoSubstate = (ComponentInfoSubstate) o;
-    return Objects.equals(this.packageAddress, componentInfoSubstate.packageAddress) &&
-        Objects.equals(this.blueprintName, componentInfoSubstate.blueprintName) &&
+    AccountSubstate accountSubstate = (AccountSubstate) o;
+    return Objects.equals(this.dataStruct, accountSubstate.dataStruct) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageAddress, blueprintName, super.hashCode());
+    return Objects.hash(dataStruct, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ComponentInfoSubstate {\n");
+    sb.append("class AccountSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
-    sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
+    sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -219,8 +188,8 @@ static {
   mappings.put("Validator", ValidatorSubstate.class);
   mappings.put("ValidatorSet", ValidatorSetSubstate.class);
   mappings.put("Vault", VaultSubstate.class);
-  mappings.put("ComponentInfoSubstate", ComponentInfoSubstate.class);
-  JSON.registerDiscriminator(ComponentInfoSubstate.class, "substate_type", mappings);
+  mappings.put("AccountSubstate", AccountSubstate.class);
+  JSON.registerDiscriminator(AccountSubstate.class, "substate_type", mappings);
 }
 }
 

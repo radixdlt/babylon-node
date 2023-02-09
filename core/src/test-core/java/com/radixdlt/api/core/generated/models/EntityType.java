@@ -44,6 +44,8 @@ public enum EntityType {
   
   ACCESSCONTROLLER("AccessController"),
   
+  ACCOUNT("Account"),
+  
   IDENTITY("Identity"),
   
   KEYVALUESTORE("KeyValueStore"),

@@ -912,10 +912,13 @@ pub fn to_api_access_controller_substate(
 }
 
 pub fn to_api_account_substate(
-    _context: &MappingContext,
-    _substate: &AccountSubstate,
+    context: &MappingContext,
+    substate: &AccountSubstate,
 ) -> Result<models::Substate, MappingError> {
-    let substate = models::Substate::AccountSubstate {};
+    let data = scrypto_encode(substate).unwrap();
+    let substate = models::Substate::AccountSubstate {
+        data_struct: Box::new(to_api_data_struct(context, &data)?),
+    };
     Ok(substate)
 }
 

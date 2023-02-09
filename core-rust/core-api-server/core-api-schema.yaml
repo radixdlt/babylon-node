@@ -2054,6 +2054,7 @@ components:
         - Clock
         - Validator
         - AccessController
+        - Account
         - Identity
         - KeyValueStore
         - NonFungibleStore
@@ -2088,6 +2089,7 @@ components:
           Vault: '#/components/schemas/VaultSubstate'
           NonFungibleStoreEntry: '#/components/schemas/NonFungibleStoreEntrySubstate'
           AccessController: '#/components/schemas/AccessControllerSubstate'
+          Account: '#/components/schemas/AccountSubstate'
     SubstateType:
       type: string
       enum:
@@ -2112,6 +2114,7 @@ components:
         - NonFungibleStoreEntry
         - Vault
         - AccessController
+        - Account
     SubstateKeyType:
       # This corresponds to what's currently referred to as the "SubstateOffset"
       # This is roughly the same as the substate type, but some entities have two of the same substates
@@ -2142,6 +2145,7 @@ components:
         - NonFungibleStoreEntry
         - Vault
         - AccessController
+        - Account
 ### COMMON SUBSTATES
     AccessRulesChainSubstate:
       allOf:
@@ -2480,6 +2484,15 @@ components:
           properties:
             data_struct:
               $ref: '#/components/schemas/DataStruct'
+    AccountSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - data_struct
+          properties:
+            data_struct:
+              $ref: '#/components/schemas/DataStruct'
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################
@@ -2563,6 +2576,7 @@ components:
             - Validator
             - Clock
             - AccessController
+            - Account
         hrp_prefix:
           type: string
         entity_type:

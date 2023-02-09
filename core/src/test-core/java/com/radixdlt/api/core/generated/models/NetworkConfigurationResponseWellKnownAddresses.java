@@ -32,7 +32,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @ApiModel(description = "Key addresses for this network.")
 @JsonPropertyOrder({
-  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_ACCOUNT_PACKAGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_FAUCET,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_EPOCH_MANAGER,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_CLOCK,
@@ -42,9 +41,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class NetworkConfigurationResponseWellKnownAddresses {
-  public static final String JSON_PROPERTY_ACCOUNT_PACKAGE = "account_package";
-  private String accountPackage;
-
   public static final String JSON_PROPERTY_FAUCET = "faucet";
   private String faucet;
 
@@ -65,32 +61,6 @@ public class NetworkConfigurationResponseWellKnownAddresses {
 
   public NetworkConfigurationResponseWellKnownAddresses() { 
   }
-
-  public NetworkConfigurationResponseWellKnownAddresses accountPackage(String accountPackage) {
-    this.accountPackage = accountPackage;
-    return this;
-  }
-
-   /**
-   * Get accountPackage
-   * @return accountPackage
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ACCOUNT_PACKAGE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getAccountPackage() {
-    return accountPackage;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ACCOUNT_PACKAGE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccountPackage(String accountPackage) {
-    this.accountPackage = accountPackage;
-  }
-
 
   public NetworkConfigurationResponseWellKnownAddresses faucet(String faucet) {
     this.faucet = faucet;
@@ -260,8 +230,7 @@ public class NetworkConfigurationResponseWellKnownAddresses {
       return false;
     }
     NetworkConfigurationResponseWellKnownAddresses networkConfigurationResponseWellKnownAddresses = (NetworkConfigurationResponseWellKnownAddresses) o;
-    return Objects.equals(this.accountPackage, networkConfigurationResponseWellKnownAddresses.accountPackage) &&
-        Objects.equals(this.faucet, networkConfigurationResponseWellKnownAddresses.faucet) &&
+    return Objects.equals(this.faucet, networkConfigurationResponseWellKnownAddresses.faucet) &&
         Objects.equals(this.epochManager, networkConfigurationResponseWellKnownAddresses.epochManager) &&
         Objects.equals(this.clock, networkConfigurationResponseWellKnownAddresses.clock) &&
         Objects.equals(this.ecdsaSecp256k1, networkConfigurationResponseWellKnownAddresses.ecdsaSecp256k1) &&
@@ -271,14 +240,13 @@ public class NetworkConfigurationResponseWellKnownAddresses {
 
   @Override
   public int hashCode() {
-    return Objects.hash(accountPackage, faucet, epochManager, clock, ecdsaSecp256k1, eddsaEd25519, xrd);
+    return Objects.hash(faucet, epochManager, clock, ecdsaSecp256k1, eddsaEd25519, xrd);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class NetworkConfigurationResponseWellKnownAddresses {\n");
-    sb.append("    accountPackage: ").append(toIndentedString(accountPackage)).append("\n");
     sb.append("    faucet: ").append(toIndentedString(faucet)).append("\n");
     sb.append("    epochManager: ").append(toIndentedString(epochManager)).append("\n");
     sb.append("    clock: ").append(toIndentedString(clock)).append("\n");
