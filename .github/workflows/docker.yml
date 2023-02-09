@@ -84,7 +84,7 @@ jobs:
           path: "${{ github.workspace }}/docker/*.deb"
 
   build_push_container:
-    name: Build core node docker container
+    name: Build/Push GCR
     needs:
       - build_deb
     runs-on: ubuntu-22.04
@@ -135,7 +135,7 @@ jobs:
 
   build_push_container_dockerhub:
     if: github.event_name == 'release'
-    name: Build core node docker container
+    name: Build/Push Dockerhub
     needs:
       - build_deb
     runs-on: ubuntu-22.04
@@ -171,6 +171,20 @@ jobs:
         with:
           username: ${{env.DOCKERHUB_USERNAME}}
           password: ${{env.DOCKERHUB_TOKEN}}
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            radixdlt/babylon-node
+          tags: |
+            type=ref,event=release
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
+          flavor: |
+            latest=false
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
