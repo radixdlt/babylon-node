@@ -5,7 +5,7 @@ all:
     $(eval GIT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD | sed 's/\//-/g'))
     $(eval GIT_COMMIT=$(shell git log -1 --format=%h ))
     TAG ?= $(GIT_BRANCH)-$(GIT_COMMIT)
-    CORE_REPO ?= $(REGISTRY)/radixdlt-core
+    CORE_REPO ?= $(REGISTRY)/babylon-node
     GOOGLE_ARTIFICAT_REGISTRY ?= europe-west2-docker.pkg.dev
     GAR_CACHE_REPO ?= $(GOOGLE_ARTIFICAT_REGISTRY)/dev-container-repo/eu-cache-repo
 
@@ -36,7 +36,7 @@ build-core:
 .PHONY: package
 package: build-core
 	docker compose -f ../docker/node-1.yml build
-	docker tag radixdlt/radixdlt-core:main $(CORE_REPO):$(TAG)
+	docker tag radixdlt/babylon-node:main $(CORE_REPO):$(TAG)
 
 
 .PHONY: publish
