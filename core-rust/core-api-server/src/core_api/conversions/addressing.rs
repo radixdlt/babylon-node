@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 use crate::core_api::*;
 
+use crate::core_api::models::ModuleType;
 use models::{EntityType, SubstateKeyType, SubstateType};
 use radix_engine::system::global::GlobalAddressSubstate;
 use radix_engine::types::{
@@ -12,7 +13,7 @@ use radix_engine::types::{
     ResourceManagerOffset, SubstateId, SubstateOffset, VaultOffset,
 };
 use radix_engine_interface::api::types::{
-    AccessControllerOffset, AccountOffset, RoyaltyOffset, ValidatorOffset,
+    AccessControllerOffset, AccountOffset, NodeModuleId, RoyaltyOffset, ValidatorOffset,
 };
 use radix_engine_interface::blueprints::resource::{NonFungibleIdType, NonFungibleLocalId};
 
@@ -169,16 +170,24 @@ impl TryFrom<RENodeId> for MappedEntityId {
 }
 
 #[derive(Debug)]
-pub struct MappedSubstateId(EntityType, Vec<u8>, SubstateType, SubstateKeyType, Vec<u8>);
+pub struct MappedSubstateId(
+    EntityType,
+    Vec<u8>,
+    ModuleType,
+    SubstateType,
+    SubstateKeyType,
+    Vec<u8>,
+);
 
 impl From<MappedSubstateId> for models::SubstateId {
     fn from(mapped_substate_id: MappedSubstateId) -> Self {
         models::SubstateId {
             entity_type: mapped_substate_id.0,
             entity_id_hex: to_hex(mapped_substate_id.1),
-            substate_type: mapped_substate_id.2,
-            substate_key_type: mapped_substate_id.3,
-            substate_key_hex: to_hex(mapped_substate_id.4),
+            module_type: mapped_substate_id.2,
+            substate_type: mapped_substate_id.3,
+            substate_key_type: mapped_substate_id.4,
+            substate_key_hex: to_hex(mapped_substate_id.5),
         }
     }
 }
@@ -226,7 +235,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
 
     // Start body of method
     let entity_id_bytes = re_node_id_to_entity_id_bytes(&substate_id.0)?;
-    // TODO(code review): do we need to include the node module id in the MappedSubstateId too?
+    let module_type = node_module_id_to_module_type(&substate_id.1);
     let substate_key_bytes = substate_offset_to_substate_key_bytes(&substate_id.2)?;
 
     // In the below, we nest match statements to ensure we get as much help from the compiler as possible to ensure
@@ -510,6 +519,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
     Ok(MappedSubstateId(
         entity_type,
         entity_id_bytes,
+        module_type,
         substate_type_key.0,
         substate_type_key.1,
         substate_key_bytes,
@@ -570,6 +580,17 @@ pub fn re_node_id_to_entity_id_bytes(re_node_id: &RENodeId) -> Result<Vec<u8>, M
         encode_error: err,
         message: "Could not encode re node id".to_string(),
     })
+}
+
+pub fn node_module_id_to_module_type(node_module_id: &NodeModuleId) -> ModuleType {
+    match node_module_id {
+        NodeModuleId::SELF => ModuleType::_Self,
+        NodeModuleId::Metadata => ModuleType::Metadata,
+        NodeModuleId::AccessRules => ModuleType::AccessRules,
+        NodeModuleId::AccessRules1 => ModuleType::AccessRules1,
+        NodeModuleId::ComponentRoyalty => ModuleType::ComponentRoyalty,
+        NodeModuleId::PackageRoyalty => ModuleType::PackageRoyalty,
+    }
 }
 
 pub fn substate_offset_to_substate_key_bytes(

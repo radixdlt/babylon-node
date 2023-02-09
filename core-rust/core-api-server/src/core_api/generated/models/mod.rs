@@ -228,6 +228,8 @@ pub mod method_auth_mutability_entry;
 pub use self::method_auth_mutability_entry::MethodAuthMutabilityEntry;
 pub mod method_royalty_rule;
 pub use self::method_royalty_rule::MethodRoyaltyRule;
+pub mod module_type;
+pub use self::module_type::ModuleType;
 pub mod network_configuration_response;
 pub use self::network_configuration_response::NetworkConfigurationResponse;
 pub mod network_configuration_response_version;

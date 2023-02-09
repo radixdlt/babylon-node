@@ -1185,6 +1185,7 @@ components:
       required:
         - entity_type
         - entity_id_hex
+        - module_type
         - substate_type
         - substate_key_type
         - substate_key_hex
@@ -1194,6 +1195,8 @@ components:
         entity_id_hex:
           type: string
           description: The hex-encoded bytes of the entity id
+        module_type:
+          $ref: "#/components/schemas/ModuleType"
         substate_type:
           $ref: "#/components/schemas/SubstateType"
         substate_key_type:
@@ -2059,6 +2062,15 @@ components:
         - KeyValueStore
         - NonFungibleStore
         - Vault
+    ModuleType:
+      type: string
+      enum:
+        - Self
+        - Metadata
+        - AccessRules
+        - AccessRules1
+        - ComponentRoyalty
+        - PackageRoyalty
     Substate:
       type: object
       required:
