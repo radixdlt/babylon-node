@@ -117,6 +117,7 @@ impl ExecutionCache {
         }
     }
 
+    #[tracing::instrument(skip_all)]
     pub fn progress_root(&mut self, new_root_hash: &AccumulatorHash) {
         let new_root_key = self.get_existing_substore_key(new_root_hash);
         let mut removed_keys = Vec::new();

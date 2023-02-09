@@ -109,7 +109,7 @@ use radix_engine_interface::network::NetworkDefinition;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tracing::{info, warn};
+use tracing::{info, info_span, warn};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct LoggingConfig {
@@ -244,6 +244,7 @@ where
         )
     }
 
+    #[tracing::instrument(skip_all)]
     fn execute_with_cache(
         &self,
         parent_accumulator_hash: &AccumulatorHash,
