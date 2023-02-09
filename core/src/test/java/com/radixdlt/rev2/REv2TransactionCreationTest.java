@@ -109,10 +109,6 @@ public class REv2TransactionCreationTest {
         String.format(
             "XRD Address: %s",
             addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS)));
-    log.info(
-        String.format(
-            "Account Package Address: %s",
-            addressing.encodePackageAddress(ScryptoConstants.ACCOUNT_PACKAGE_ADDRESS)));
     log.info("===================================");
 
     logTransaction(
@@ -184,7 +180,7 @@ public class REv2TransactionCreationTest {
   public static TransactionInfo constructNewAccountTransactionJava(
       NetworkDefinition networkDefinition, long fromEpoch, long nonce, int numSigs) {
     final var intentBytes =
-        REv2TestTransactions.constructNewAccountIntent(
+        REv2TestTransactions.constructDepositFromFaucetIntent(
             networkDefinition, fromEpoch, nonce, NOTARY.getPublicKey().toPublicKey());
     return createTransaction(intentBytes, createSignatories(numSigs));
   }
@@ -210,7 +206,7 @@ public class REv2TransactionCreationTest {
   public static TransactionInfo constructExecutionInvalidTransaction(
       NetworkDefinition networkDefinition, long fromEpoch, long nonce, int numSigs) {
 
-    final var manifest = REv2TestTransactions.constructNewAccountManifest(networkDefinition);
+    final var manifest = REv2TestTransactions.constructDepositFromFaucetManifest(networkDefinition);
 
     final var insufficientLimit = UInt32.fromNonNegativeInt(1000);
 

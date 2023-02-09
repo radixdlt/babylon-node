@@ -63,10 +63,8 @@
  */
 
 use radix_engine::ledger::create_genesis;
-use radix_engine::types::{PublicKey, Signature, SignatureWithPublicKey, FAUCET_COMPONENT};
+use radix_engine::types::{Signature, SignatureWithPublicKey};
 use radix_engine_interface::api::component::ComponentAddress;
-use radix_engine_interface::args;
-use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::data::scrypto_encode;
 use radix_engine_interface::math::Decimal;
@@ -74,7 +72,6 @@ use radix_engine_interface::network::NetworkDefinition;
 use std::collections::BTreeMap;
 
 use crate::transaction::LedgerTransaction;
-use transaction::builder::ManifestBuilder;
 use transaction::manifest::{compile, CompileError};
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
@@ -96,36 +93,6 @@ pub fn create_genesis_ledger_transaction_bytes(
         num_unstake_epochs,
     );
     scrypto_encode(&LedgerTransaction::System(genesis)).unwrap()
-}
-
-// TODO: deposit the worktop to the newly created account (once the needed scrypto feature merges)
-// (without this instruction, the tests relying on this helper must remain ignored)
-pub fn create_new_account_intent_bytes(
-    network_definition: &NetworkDefinition,
-    public_key: PublicKey,
-) -> Vec<u8> {
-    let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 100.into())
-        .call_method(FAUCET_COMPONENT, "free", args!())
-        .new_account(&AccessRule::AllowAll)
-        .build();
-
-    let intent = TransactionIntent {
-        header: TransactionHeader {
-            version: 1,
-            network_id: network_definition.id,
-            start_epoch_inclusive: 0,
-            end_epoch_exclusive: 100,
-            nonce: 5,
-            notary_public_key: public_key,
-            notary_as_signatory: false,
-            cost_unit_limit: 10_000_000,
-            tip_percentage: 5,
-        },
-        manifest,
-    };
-
-    intent.to_bytes().unwrap()
 }
 
 pub fn create_intent_bytes(

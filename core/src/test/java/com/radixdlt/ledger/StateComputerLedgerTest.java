@@ -116,7 +116,8 @@ public class StateComputerLedgerTest {
   // Doesn't matter what kind of transaction it is, but needs to be a valid tx payload
   // to be able to convert it from NotarizedTransaction to LedgerTransaction.
   private final RawNotarizedTransaction nextTransaction =
-      REv2TestTransactions.constructNewAccountTransaction(NetworkDefinition.LOCAL_SIMULATOR, 0, 0);
+      REv2TestTransactions.constructDepositFromFaucetTransaction(
+          NetworkDefinition.LOCAL_SIMULATOR, 0, 0);
   private final Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
   private final ExecutedTransaction successfulNextTransaction =
       nextTransaction::INCORRECTInterpretDirectlyAsRawLedgerTransaction;
