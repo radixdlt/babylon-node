@@ -181,16 +181,6 @@ public class REv2TransactionCreationTest {
     return createTransaction(intentBytes, createSignatories(numSigs));
   }
 
-  public static TransactionInfo constructNewAccountTransactionRust(
-      NetworkDefinition networkDefinition, int numSigs) {
-
-    final var intentBytes =
-        TransactionBuilder.buildNewAccountIntent(
-            networkDefinition, NOTARY.getPublicKey().toPublicKey());
-
-    return createTransaction(intentBytes, createSignatories(numSigs));
-  }
-
   public static TransactionInfo constructNewAccountTransactionJava(
       NetworkDefinition networkDefinition, long fromEpoch, long nonce, int numSigs) {
     final var intentBytes =

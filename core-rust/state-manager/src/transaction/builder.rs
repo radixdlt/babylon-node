@@ -98,6 +98,8 @@ pub fn create_genesis_ledger_transaction_bytes(
     scrypto_encode(&LedgerTransaction::System(genesis)).unwrap()
 }
 
+// TODO: deposit the worktop to the newly created account (once the needed scrypto feature merges)
+// (without this instruction, the tests relying on this helper must remain ignored)
 pub fn create_new_account_intent_bytes(
     network_definition: &NetworkDefinition,
     public_key: PublicKey,
@@ -107,7 +109,6 @@ pub fn create_new_account_intent_bytes(
         .call_method(FAUCET_COMPONENT, "free", args!())
         .new_account(&AccessRule::AllowAll)
         .build();
-    // TODO(code review): now somehow deposit the worktop to the created account?
 
     let intent = TransactionIntent {
         header: TransactionHeader {

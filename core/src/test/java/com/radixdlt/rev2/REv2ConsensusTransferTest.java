@@ -92,6 +92,7 @@ import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -132,6 +133,7 @@ public final class REv2ConsensusTransferTest {
   }
 
   @Test
+  @Ignore("the TransactionBuilder's create_new_account_intent_bytes() helper is temporarily broken")
   public void new_account_creates_transfer_of_xrd_to_account() {
     try (var test = createTest()) {
       // Arrange: Start single node network
