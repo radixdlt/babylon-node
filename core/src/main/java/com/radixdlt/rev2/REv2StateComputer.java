@@ -168,16 +168,24 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                         .map(RawNotarizedTransaction::create))
             .toList();
 
-    final var rawPreviousExecutedTransactionsTotalSize = rawPreviousExecutedTransactions.stream()
-            .map(tx -> tx.getPayload().length).reduce(Integer::sum).orElse(0);
+    final var rawPreviousExecutedTransactionsTotalSize =
+        rawPreviousExecutedTransactions.stream()
+            .map(tx -> tx.getPayload().length)
+            .reduce(Integer::sum)
+            .orElse(0);
     final var remainingSizeInUncommittedVertices =
-      maxTotalTxnPayloadSizeInUncommittedVertices - rawPreviousExecutedTransactionsTotalSize;
+        maxTotalTxnPayloadSizeInUncommittedVertices - rawPreviousExecutedTransactionsTotalSize;
 
     final var maxPayloadSize =
-      Math.min(remainingSizeInUncommittedVertices, maxProposalTotalTxnsPayloadSize);
+        Math.min(remainingSizeInUncommittedVertices, maxProposalTotalTxnsPayloadSize);
 
-    log.info("WWW Total size in uncommitted vertices is {}, limit per proposal is {} remaining in uncommitted is {} using a limit of {}",
-            rawPreviousExecutedTransactionsTotalSize, maxProposalTotalTxnsPayloadSize, remainingSizeInUncommittedVertices, maxPayloadSize);
+    log.info(
+        "WWW Total size in uncommitted vertices is {}, limit per proposal is {} remaining in"
+            + " uncommitted is {} using a limit of {}",
+        rawPreviousExecutedTransactionsTotalSize,
+        maxProposalTotalTxnsPayloadSize,
+        remainingSizeInUncommittedVertices,
+        maxPayloadSize);
 
     // TODO: Don't include transactions if NextEpoch is to occur
     // TODO: This will require Proposer to simulate a NextRound update before proposing

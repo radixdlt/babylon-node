@@ -79,10 +79,9 @@ import com.radixdlt.store.LastProof;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.TimeSupplier;
+import java.util.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.*;
 
 /** Synchronizes execution */
 public final class StateComputerLedger implements Ledger, ProposalGenerator {
@@ -277,6 +276,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               timeSupplier.currentTime()));
     }
   }
+
   private static final Logger log = LogManager.getLogger();
 
   public EventProcessor<BFTCommittedUpdate> bftCommittedUpdateEventProcessor() {
@@ -289,13 +289,15 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       var proof = committedUpdate.vertexStoreState().getRootHeader();
       var transactionsWithProof = CommittedTransactionsWithProof.create(transactions, proof);
 
-
       if (committedUpdate.committed().size() > 1) {
         long totalSize = 0;
-        for (var tx: transactions) {
+        for (var tx : transactions) {
           totalSize += tx.getPayload().length;
         }
-        log.info("XYZ Committing {} vertices of total txn size {}", committedUpdate.committed().size(), totalSize);
+        log.info(
+            "XYZ Committing {} vertices of total txn size {}",
+            committedUpdate.committed().size(),
+            totalSize);
       }
 
       metrics
