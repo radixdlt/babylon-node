@@ -850,10 +850,14 @@ where
     }
 
     pub fn commit(&self, commit_request: CommitRequest) -> Result<(), CommitError> {
-        let _ = self
-            .commit_mutex
-            .try_lock()
-            .ok_or(CommitError::CommitInProgress)?;
+        let _ = {
+            let span = info_span!("Commit mutex");
+            let _ = span.enter();
+
+            self.commit_mutex
+                .try_lock()
+                .ok_or(CommitError::CommitInProgress)?
+        };
         let commit_request_start_state_version =
             commit_request.proof_state_version - (commit_request.transaction_payloads.len() as u64);
 
