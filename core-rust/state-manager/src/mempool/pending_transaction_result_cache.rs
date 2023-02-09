@@ -415,6 +415,7 @@ impl PendingTransactionResultCache {
         }
     }
 
+    #[tracing::instrument(skip_all)]
     pub fn track_committed_transactions(
         &mut self,
         current_timestamp: SystemTime,

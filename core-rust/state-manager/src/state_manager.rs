@@ -1002,6 +1002,8 @@ where
                 .as_secs_f64(),
         );
         {
+            let span = info_span!("Mempool write");
+            let _ = span.enter();
             let mut mempool = self.mempool.write();
             mempool.handle_committed_transactions(&intent_hashes);
             self.metrics
@@ -1009,13 +1011,17 @@ where
                 .set(mempool.get_count() as i64);
         }
 
-        self.pending_transaction_result_cache
-            .write()
-            .track_committed_transactions(
-                SystemTime::now(),
-                commit_request_start_state_version,
-                intent_hashes,
-            );
+        {
+            let span = info_span!("pending_transaction_result_cache write");
+            let _ = span.enter();
+            self.pending_transaction_result_cache
+                .write()
+                .track_committed_transactions(
+                    SystemTime::now(),
+                    commit_request_start_state_version,
+                    intent_hashes,
+                );
+        }
 
         Ok(())
     }

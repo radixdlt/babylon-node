@@ -89,6 +89,7 @@ impl ExecutionCache {
         }
     }
 
+    #[tracing::instrument(skip_all)]
     pub fn execute<S, T>(
         &mut self,
         root_store: &S,
@@ -129,6 +130,7 @@ impl ExecutionCache {
         self.root_accumulator_hash = *new_root_hash;
     }
 
+    #[tracing::instrument(skip_all)]
     fn get_existing_substore_key(&self, accumulator_hash: &AccumulatorHash) -> StageKey {
         if *accumulator_hash == self.root_accumulator_hash {
             StageKey::Root
@@ -137,6 +139,7 @@ impl ExecutionCache {
         }
     }
 
+    #[tracing::instrument(skip_all)]
     fn remove_node(&mut self, key: &DerivedStageKey) {
         // Note: we don't have to remove anything from key_to_accumulator_hash.
         // Since it's a SecondaryMap, it's guaranteed to be removed once the key

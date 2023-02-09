@@ -136,6 +136,7 @@ impl ReadableSubstateStore for StateManagerDatabase {
 }
 
 impl CommitStore for StateManagerDatabase {
+    #[tracing::instrument(skip_all)]
     fn commit(&mut self, commit_bundle: CommitBundle) {
         match self {
             StateManagerDatabase::InMemory(store) => store.commit(commit_bundle),

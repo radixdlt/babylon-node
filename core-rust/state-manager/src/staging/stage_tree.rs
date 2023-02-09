@@ -268,6 +268,7 @@ impl<D: Delta, A: Accumulator<D>> StageTree<D, A> {
     /// To better understand please check:
     /// Diagram here: https://whimsical.com/persistent-staged-store-amortized-reparenting-Lyc6gRgVXVzLdqWvwVT3v4
     /// And `test_complicated_reparent` unit test
+    #[tracing::instrument(skip_all)]
     pub fn reparent<CB: FnMut(&DerivedStageKey)>(
         &mut self,
         new_root_key: StageKey,
