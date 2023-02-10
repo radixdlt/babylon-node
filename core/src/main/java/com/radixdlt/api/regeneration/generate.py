@@ -51,7 +51,6 @@ def generate_models(package_name, spec_file, api_package, tmp_client_folder, out
          '-i', spec_file,
          '-o', tmp_client_folder,
          '--additional-properties=packageName={},library=native,hideGenerationTimestamp=true,apiPackage={},invokerPackage={},modelPackage={}'.format(package_name, '{}.generated.api'.format(api_package), COMMON_API_PACKAGE, '{}.generated.models'.format(api_package)),
-         '-t', os.path.join(OPENAPI_GENERATION_FOLDER, '5.2.1-template-file-overrides')
          ], should_log=False)
 
     java_code_root = os.path.join(tmp_client_folder, 'src/main/java/{}/generated'.format(api_package.replace(".", "/")))

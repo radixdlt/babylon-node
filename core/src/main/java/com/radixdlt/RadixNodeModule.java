@@ -65,6 +65,7 @@
 package com.radixdlt;
 
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
@@ -205,18 +206,19 @@ public final class RadixNodeModule extends AbstractModule {
     // Consensus
     final String useGenesis = properties.get("consensus.use_genesis_for_validator_address");
     final String validatorAddress = properties.get("consensus.validator_address", (String) null);
-    if (useGenesis != null && validatorAddress != null) {
+    if (!Strings.isNullOrEmpty(useGenesis) && !Strings.isNullOrEmpty(validatorAddress)) {
       throw new IllegalArgumentException(
           "Invalid configuration. Using both consensus.genesis_for_validator_address and"
               + " consensus.validator_address. Please use one.");
-    } else if (validatorAddress != null) {
+    } else if (!Strings.isNullOrEmpty(validatorAddress)) {
       OptionalBinder.newOptionalBinder(binder(), Key.get(ComponentAddress.class, Self.class))
           .setBinding()
           .toInstance(addressing.decodeValidatorAddress(validatorAddress));
       install(new BFTValidatorIdModule());
-    } else if (useGenesis == null || Boolean.parseBoolean(useGenesis)) {
+    } else if (Strings.isNullOrEmpty(useGenesis) || Boolean.parseBoolean(useGenesis)) {
       install(new BFTValidatorIdFromGenesisModule());
     } else {
+      // No validator address provided, and use genesis explicitly disabled
       OptionalBinder.newOptionalBinder(binder(), Key.get(ComponentAddress.class, Self.class));
       install(new BFTValidatorIdModule());
     }

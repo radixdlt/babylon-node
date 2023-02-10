@@ -70,6 +70,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
@@ -91,6 +92,8 @@ import java.util.Random;
 public class EpochsConsensusModule extends AbstractModule {
   @Override
   protected void configure() {
+    OptionalBinder.newOptionalBinder(
+        binder(), EpochManager.class); // So that this is consistent with tests
     bind(EpochManager.class).in(Scopes.SINGLETON);
     var eventBinder =
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
