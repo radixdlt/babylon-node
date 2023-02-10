@@ -253,7 +253,7 @@ where
         payload_hash: &LedgerPayloadHash,
     ) -> (AccumulatorHash, &ProcessedResult) {
         let new_accumulator_hash = parent_accumulator_hash.accumulate(payload_hash);
-        let receipt = self.execution_cache.execute_transaction(
+        let processed_result = self.execution_cache.execute_transaction(
             &self.store,
             parent_accumulator_hash,
             &new_accumulator_hash,
@@ -267,7 +267,7 @@ where
                 )
             },
         );
-        (new_accumulator_hash, receipt)
+        (new_accumulator_hash, processed_result)
     }
 }
 
