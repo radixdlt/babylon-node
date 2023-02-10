@@ -72,7 +72,7 @@ use radix_engine::types::{
     ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, RENodeId, SubstateId,
     SubstateOffset, VaultOffset,
 };
-use radix_engine_interface::api::types::NodeModuleId;
+use radix_engine_interface::api::types::{AccountOffset, NodeModuleId};
 use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug)]
@@ -182,25 +182,29 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                     }
                 }
             }
-            RENodeId::Component(..) => {
-                let substate_id = SubstateId(
-                    node_id,
-                    NodeModuleId::SELF,
-                    SubstateOffset::Component(ComponentOffset::State),
-                );
-                let output_value = self
-                    .substate_store
-                    .get_substate(&substate_id)
-                    .expect("Broken Node Store");
-                let runtime_substate = output_value.substate.to_runtime();
-                let substate_ref = runtime_substate.to_ref();
-                let (_, owned_nodes) = substate_ref.references_and_owned_nodes();
-                for child_node_id in owned_nodes {
-                    self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
+            _ => {
+                let owner_substate_offset = match node_id {
+                    RENodeId::Component(..) => {
+                        Some(SubstateOffset::Component(ComponentOffset::State))
+                    }
+                    RENodeId::Account(..) => Some(SubstateOffset::Account(AccountOffset::Account)),
+                    _ => None,
+                };
+                if let Some(substate_offset) = owner_substate_offset {
+                    let substate_id = SubstateId(node_id, NodeModuleId::SELF, substate_offset);
+                    let output_value = self
+                        .substate_store
+                        .get_substate(&substate_id)
                         .expect("Broken Node Store");
+                    let runtime_substate = output_value.substate.to_runtime();
+                    let substate_ref = runtime_substate.to_ref();
+                    let (_, owned_nodes) = substate_ref.references_and_owned_nodes();
+                    for child_node_id in owned_nodes {
+                        self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
+                            .expect("Broken Node Store");
+                    }
                 }
             }
-            _ => {}
         };
 
         Ok(())

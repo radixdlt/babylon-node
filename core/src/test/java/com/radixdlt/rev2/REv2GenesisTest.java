@@ -137,7 +137,6 @@ public final class REv2GenesisTest {
       final var allocatedAmount =
           stateReader.getComponentXrdAmount(
               Address.virtualAccountAddress(XRD_ALLOC_ACCOUNT_PUB_KEY));
-      // TODO(code review): this now fails due to 0 being staked
       assertThat(allocatedAmount).isEqualTo(XRD_ALLOC_AMOUNT);
 
       var emptyAccountAmount =

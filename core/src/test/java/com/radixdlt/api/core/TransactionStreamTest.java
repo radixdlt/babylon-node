@@ -81,7 +81,6 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
 
       List<CommittedTransaction> alreadyPresentTransactions =
           getStreamApi()
-              // TODO(code review): right now this call returns 500; any ideas welcome!
               .streamTransactionsPost(
                   new StreamTransactionsRequest()
                       .network(networkLogicalName)
