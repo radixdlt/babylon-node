@@ -1,26 +1,42 @@
+use radix_engine::blueprints::access_controller::AccessControllerSubstate;
+use radix_engine::blueprints::account::AccountSubstate;
+use radix_engine::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
+use radix_engine::blueprints::epoch_manager::{
+    EpochManagerSubstate, Validator, ValidatorSetSubstate, ValidatorSubstate,
+};
+use radix_engine::blueprints::kv_store::KeyValueStoreEntrySubstate;
+use radix_engine::blueprints::resource::{
+    NonFungible, NonFungibleSubstate, ResourceManagerSubstate, VaultSubstate,
+};
+use radix_engine::system::component::{
+    ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
+    ComponentStateSubstate,
+};
+use radix_engine::system::global::GlobalAddressSubstate;
+use radix_engine::system::node_modules::auth::AccessRulesChainSubstate;
+use radix_engine::system::node_modules::metadata::MetadataSubstate;
+use radix_engine::system::package::{
+    PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate,
+};
+use radix_engine::system::substates::PersistedSubstate;
 use std::collections::BTreeSet;
 
 use super::*;
 use crate::core_api::models;
 use radix_engine_interface::data::{IndexedScryptoValue, SchemaPath, SchemaSubPath};
 
-use radix_engine::model::{
-    AccessControllerSubstate, AccessRulesChainSubstate, ComponentInfoSubstate,
-    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
-    CurrentTimeRoundedToMinutesSubstate, EpochManagerSubstate, GlobalAddressSubstate,
-    KeyValueStoreEntrySubstate, MetadataSubstate, NonFungible, NonFungibleSubstate,
-    PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate,
-    PersistedSubstate, Resource, ResourceManagerSubstate, Validator, ValidatorSetSubstate,
-    ValidatorSubstate, VaultSubstate,
-};
 use radix_engine::types::{
-    scrypto_encode, AccessRule, AccessRuleEntry, AccessRuleKey, AccessRuleNode, AccessRules,
-    Decimal, GlobalOffset, KeyValueStoreOffset, NonFungibleStoreOffset, ProofRule, RENodeId,
-    ResourceAddress, ResourceType, RoyaltyConfig, SoftCount, SoftDecimal, SoftResource,
-    SoftResourceOrNonFungible, SoftResourceOrNonFungibleList, SubstateId, SubstateOffset,
+    scrypto_encode, Decimal, GlobalOffset, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId,
+    ResourceAddress, RoyaltyConfig, SubstateId, SubstateOffset,
+};
+use radix_engine_interface::api::component::ComponentAddress;
+use radix_engine_interface::api::types::NodeModuleId;
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, AccessRuleEntry, AccessRuleKey, AccessRuleNode, AccessRules, NonFungibleIdType,
+    NonFungibleLocalId, ProofRule, Resource, ResourceType, SoftCount, SoftDecimal, SoftResource,
+    SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use radix_engine_interface::model::{ComponentAddress, NonFungibleIdType, NonFungibleLocalId};
 
 use super::MappingError;
 
@@ -81,6 +97,7 @@ pub fn to_api_substate(
         PersistedSubstate::AccessController(access_controller) => {
             to_api_access_controller_substate(context, access_controller)?
         }
+        PersistedSubstate::Account(account) => to_api_account_substate(context, account)?,
     })
 }
 
@@ -125,6 +142,7 @@ fn to_api_global_address_substate(
     let global_address = match substate_id {
         SubstateId(
             RENodeId::Global(global_address),
+            NodeModuleId::SELF,
             SubstateOffset::Global(GlobalOffset::Global),
         ) => global_address,
         _ => {
@@ -836,6 +854,7 @@ pub fn to_api_non_fungible_substate(
     let nf_id = match substate_id {
         SubstateId(
             RENodeId::NonFungibleStore(..),
+            NodeModuleId::SELF,
             SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(nf_id)),
         ) => nf_id,
         _ => {
@@ -892,6 +911,17 @@ pub fn to_api_access_controller_substate(
     Ok(substate)
 }
 
+pub fn to_api_account_substate(
+    context: &MappingContext,
+    substate: &AccountSubstate,
+) -> Result<models::Substate, MappingError> {
+    let data = scrypto_encode(substate).unwrap();
+    let substate = models::Substate::AccountSubstate {
+        data_struct: Box::new(to_api_data_struct(context, &data)?),
+    };
+    Ok(substate)
+}
+
 fn to_api_key_value_story_entry_substate(
     context: &MappingContext,
     substate_id: &SubstateId,
@@ -900,6 +930,7 @@ fn to_api_key_value_story_entry_substate(
     let key = match substate_id {
         SubstateId(
             RENodeId::KeyValueStore(..),
+            NodeModuleId::SELF,
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
         ) => key,
         _ => {

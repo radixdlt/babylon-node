@@ -64,7 +64,9 @@ public enum SubstateType {
   
   VAULT("Vault"),
   
-  ACCESSCONTROLLER("AccessController");
+  ACCESSCONTROLLER("AccessController"),
+  
+  ACCOUNT("Account");
 
   private String value;
 

@@ -146,6 +146,7 @@ fn do_get_transactions_for_proposal(
 
     state_manager
         .mempool
+        .read()
         .get_proposal_transactions(
             max_count.into(),
             max_payload_size_bytes.into(),
@@ -168,7 +169,7 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getCount(
 
 #[tracing::instrument(skip_all)]
 fn do_get_count(state_manager: &ActualStateManager, _args: ()) -> i32 {
-    state_manager.mempool.get_count().try_into().unwrap()
+    state_manager.mempool.read().get_count().try_into().unwrap()
 }
 
 #[no_mangle]

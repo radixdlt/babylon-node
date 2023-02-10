@@ -33,7 +33,6 @@ pub(crate) fn handle_status_network_configuration_internal(
         network_hrp_suffix: network.hrp_suffix,
         address_types,
         well_known_addresses: Box::new(models::NetworkConfigurationResponseWellKnownAddresses {
-            account_package: bech32_encoder.encode_package_address_to_string(&ACCOUNT_PACKAGE),
             faucet: bech32_encoder.encode_component_address_to_string(&FAUCET_COMPONENT),
             epoch_manager: bech32_encoder.encode_component_address_to_string(&EPOCH_MANAGER),
             clock: bech32_encoder.encode_component_address_to_string(&CLOCK),

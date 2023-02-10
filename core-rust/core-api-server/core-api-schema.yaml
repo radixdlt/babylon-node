@@ -1185,6 +1185,7 @@ components:
       required:
         - entity_type
         - entity_id_hex
+        - module_type
         - substate_type
         - substate_key_type
         - substate_key_hex
@@ -1194,6 +1195,8 @@ components:
         entity_id_hex:
           type: string
           description: The hex-encoded bytes of the entity id
+        module_type:
+          $ref: "#/components/schemas/ModuleType"
         substate_type:
           $ref: "#/components/schemas/SubstateType"
         substate_key_type:
@@ -2054,10 +2057,20 @@ components:
         - Clock
         - Validator
         - AccessController
+        - Account
         - Identity
         - KeyValueStore
         - NonFungibleStore
         - Vault
+    ModuleType:
+      type: string
+      enum:
+        - Self
+        - Metadata
+        - AccessRules
+        - AccessRules1
+        - ComponentRoyalty
+        - PackageRoyalty
     Substate:
       type: object
       required:
@@ -2088,6 +2101,7 @@ components:
           Vault: '#/components/schemas/VaultSubstate'
           NonFungibleStoreEntry: '#/components/schemas/NonFungibleStoreEntrySubstate'
           AccessController: '#/components/schemas/AccessControllerSubstate'
+          Account: '#/components/schemas/AccountSubstate'
     SubstateType:
       type: string
       enum:
@@ -2112,6 +2126,7 @@ components:
         - NonFungibleStoreEntry
         - Vault
         - AccessController
+        - Account
     SubstateKeyType:
       # This corresponds to what's currently referred to as the "SubstateOffset"
       # This is roughly the same as the substate type, but some entities have two of the same substates
@@ -2133,7 +2148,6 @@ components:
         - PackageRoyaltyConfig
         - PackageRoyaltyAccumulator
         - ResourceManager
-        - ResourceManagerVaultAccessRulesChain
         - EpochManager
         - CurrentValidatorSet
         - PreparingValidatorSet
@@ -2143,6 +2157,7 @@ components:
         - NonFungibleStoreEntry
         - Vault
         - AccessController
+        - Account
 ### COMMON SUBSTATES
     AccessRulesChainSubstate:
       allOf:
@@ -2481,6 +2496,15 @@ components:
           properties:
             data_struct:
               $ref: '#/components/schemas/DataStruct'
+    AccountSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - data_struct
+          properties:
+            data_struct:
+              $ref: '#/components/schemas/DataStruct'
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################
@@ -2520,7 +2544,6 @@ components:
           type: object
           description: Key addresses for this network.
           required:
-            - account_package
             - faucet
             - epoch_manager
             - clock
@@ -2528,8 +2551,6 @@ components:
             - eddsa_ed25519
             - xrd
           properties:
-            account_package:
-              type: string
             faucet:
               type: string
             epoch_manager:
@@ -2567,6 +2588,7 @@ components:
             - Validator
             - Clock
             - AccessController
+            - Account
         hrp_prefix:
           type: string
         entity_type:

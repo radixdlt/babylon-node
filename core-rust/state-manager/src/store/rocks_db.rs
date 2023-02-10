@@ -72,12 +72,13 @@ use crate::{
     HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerTransactionReceipt,
 };
 use radix_engine::ledger::{OutputValue, QueryableSubstateStore, ReadableSubstateStore};
-use radix_engine::model::PersistedSubstate;
+use radix_engine::system::substates::PersistedSubstate;
 use radix_engine::types::{
     scrypto_decode, scrypto_encode, KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateId,
     SubstateOffset,
 };
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReadableTreeStore, TreeNode};
+use radix_engine_interface::api::types::NodeModuleId;
 use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, Direction, IteratorMode, Options, WriteBatch, DB,
 };
@@ -656,6 +657,7 @@ impl QueryableSubstateStore for RocksDBStore {
     ) -> HashMap<Vec<u8>, PersistedSubstate> {
         let id = scrypto_encode(&SubstateId(
             RENodeId::KeyValueStore(*kv_store_id),
+            NodeModuleId::SELF,
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(vec![])),
         ))
         .unwrap();
@@ -671,6 +673,7 @@ impl QueryableSubstateStore for RocksDBStore {
             let substate_id: SubstateId = scrypto_decode(&key).unwrap();
             if let SubstateId(
                 RENodeId::KeyValueStore(id),
+                NodeModuleId::SELF,
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
             ) = substate_id
             {

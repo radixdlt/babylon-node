@@ -72,7 +72,7 @@ use crate::{
 
 use crate::store::hash_tree_codec::{decode_tree_node, encode_key, encode_node};
 use radix_engine::ledger::OutputValue;
-use radix_engine::model::PersistedSubstate;
+use radix_engine::system::substates::PersistedSubstate;
 use radix_engine_interface::api::types::{KeyValueStoreId, SubstateId};
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, ReadableTreeStore, TreeNode, WriteableTreeStore,

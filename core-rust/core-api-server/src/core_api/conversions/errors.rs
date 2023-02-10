@@ -1,5 +1,5 @@
 use radix_engine::types::AddressError;
-use radix_engine_interface::model::ParseNonFungibleLocalIdError;
+use radix_engine_interface::blueprints::resource::ParseNonFungibleLocalIdError;
 use sbor::{DecodeError, EncodeError};
 use tracing::warn;
 use transaction::errors::TransactionValidationError;
