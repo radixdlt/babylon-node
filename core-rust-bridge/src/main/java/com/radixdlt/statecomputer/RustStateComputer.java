@@ -70,7 +70,9 @@ import com.radixdlt.lang.Tuple;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.mempool.RustMempool;
+import com.radixdlt.monitoring.LabelledTimer;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.MethodId;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
@@ -93,28 +95,42 @@ public class RustStateComputer {
     Objects.requireNonNull(stateManager);
 
     this.mempool = new RustMempool(metrics, stateManager);
-    this.transactionStore = new REv2TransactionAndProofStore(stateManager);
-    this.vertexStoreRecovery = new VertexStoreRecovery(stateManager);
+    this.transactionStore = new REv2TransactionAndProofStore(metrics, stateManager);
+    this.vertexStoreRecovery = new VertexStoreRecovery(metrics, stateManager);
 
+    LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
     this.verifyFunc =
-        Natives.builder(stateManager, RustStateComputer::verify).build(new TypeToken<>() {});
+        Natives.builder(stateManager, RustStateComputer::verify)
+            .measure(timer.label(new MethodId(RustStateComputer.class, "verify")))
+            .build(new TypeToken<>() {});
     this.saveVertexStoreFunc =
         Natives.builder(stateManager, RustStateComputer::saveVertexStore)
+            .measure(timer.label(new MethodId(RustStateComputer.class, "saveVertexStore")))
             .build(new TypeToken<>() {});
     this.prepareGenesisFunc =
         Natives.builder(stateManager, RustStateComputer::prepareGenesis)
+            .measure(timer.label(new MethodId(RustStateComputer.class, "prepareGenesis")))
             .build(new TypeToken<>() {});
     this.prepareFunc =
-        Natives.builder(stateManager, RustStateComputer::prepare).build(new TypeToken<>() {});
+        Natives.builder(stateManager, RustStateComputer::prepare)
+            .measure(timer.label(new MethodId(RustStateComputer.class, "prepare")))
+            .build(new TypeToken<>() {});
     this.commitFunc =
-        Natives.builder(stateManager, RustStateComputer::commit).build(new TypeToken<>() {});
+        Natives.builder(stateManager, RustStateComputer::commit)
+            .measure(timer.label(new MethodId(RustStateComputer.class, "commit")))
+            .build(new TypeToken<>() {});
     this.componentXrdAmountFunc =
         Natives.builder(stateManager, RustStateComputer::componentXrdAmount)
+            .measure(timer.label(new MethodId(RustStateComputer.class, "componentXrdAmount")))
             .build(new TypeToken<>() {});
     this.validatorInfoFunc =
-        Natives.builder(stateManager, RustStateComputer::validatorInfo).build(new TypeToken<>() {});
+        Natives.builder(stateManager, RustStateComputer::validatorInfo)
+            .measure(timer.label(new MethodId(RustStateComputer.class, "validatorInfo")))
+            .build(new TypeToken<>() {});
     this.epochFunc =
-        Natives.builder(stateManager, RustStateComputer::epoch).build(new TypeToken<>() {});
+        Natives.builder(stateManager, RustStateComputer::epoch)
+            .measure(timer.label(new MethodId(RustStateComputer.class, "epoch")))
+            .build(new TypeToken<>() {});
   }
 
   public VertexStoreRecovery getVertexStoreRecovery() {

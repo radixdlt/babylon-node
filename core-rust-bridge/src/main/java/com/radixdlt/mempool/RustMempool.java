@@ -71,7 +71,9 @@ import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
+import com.radixdlt.monitoring.LabelledTimer;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.MethodId;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -84,14 +86,23 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
 
   public RustMempool(Metrics metrics, StateManager stateManager) {
     this.metrics = metrics;
-    addFunc = Natives.builder(stateManager, RustMempool::add).build(new TypeToken<>() {});
+    LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
+    addFunc =
+        Natives.builder(stateManager, RustMempool::add)
+            .measure(timer.label(new MethodId(RustMempool.class, "add")))
+            .build(new TypeToken<>() {});
     getTransactionsForProposalFunc =
         Natives.builder(stateManager, RustMempool::getTransactionsForProposal)
+            .measure(timer.label(new MethodId(RustMempool.class, "getTransactionsForProposal")))
             .build(new TypeToken<>() {});
     getTransactionsToRelayFunc =
         Natives.builder(stateManager, RustMempool::getTransactionsToRelay)
+            .measure(timer.label(new MethodId(RustMempool.class, "getTransactionsToRelay")))
             .build(new TypeToken<>() {});
-    getCountFunc = Natives.builder(stateManager, RustMempool::getCount).build(new TypeToken<>() {});
+    getCountFunc =
+        Natives.builder(stateManager, RustMempool::getCount)
+            .measure(timer.label(new MethodId(RustMempool.class, "getCount")))
+            .build(new TypeToken<>() {});
   }
 
   public RawNotarizedTransaction addTransaction(RawNotarizedTransaction transaction)

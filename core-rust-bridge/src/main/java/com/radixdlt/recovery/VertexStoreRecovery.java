@@ -67,16 +67,20 @@ package com.radixdlt.recovery;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
+import com.radixdlt.monitoring.LabelledTimer;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.statemanager.StateManager;
 import java.util.Objects;
 import java.util.Optional;
 
 public final class VertexStoreRecovery {
-  public VertexStoreRecovery(StateManager stateManager) {
+  public VertexStoreRecovery(Metrics metrics, StateManager stateManager) {
     Objects.requireNonNull(stateManager);
+    LabelledTimer<Metrics.MethodId> timer = metrics.stateManager().nativeCall();
     this.getVertexStore =
         Natives.builder(stateManager, VertexStoreRecovery::getVertexStore)
+            .measure(timer.label(new Metrics.MethodId(VertexStoreRecovery.class, "getVertexStore")))
             .build(new TypeToken<>() {});
   }
 
