@@ -278,7 +278,7 @@ pub struct JavaPrepareRequest {
 impl From<JavaPrepareRequest> for PrepareRequest {
     fn from(prepare_request: JavaPrepareRequest) -> Self {
         PrepareRequest {
-            parent_accumulator: prepare_request.parent_accumulator_hash.0,
+            parent_accumulator: prepare_request.parent_accumulator_hash.into(),
             prepared_vertices: prepare_request
                 .previous_vertices
                 .into_iter()
@@ -310,7 +310,7 @@ impl From<JavaPreviousVertex> for PreviousVertex {
                 .into_iter()
                 .map(|v| v.payload)
                 .collect(),
-            resultant_accumulator: previous_vertex.resultant_accumulator_hash.0,
+            resultant_accumulator: previous_vertex.resultant_accumulator_hash.into(),
         }
     }
 }

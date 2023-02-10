@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::transaction::LedgerTransaction;
+use crate::{jni::mempool::JavaHashCode, transaction::LedgerTransaction};
 use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine::types::*;
 use std::collections::BTreeMap;
@@ -159,6 +159,12 @@ impl AsRef<[u8]> for LedgerPayloadHash {
 impl From<Hash> for LedgerPayloadHash {
     fn from(hash: Hash) -> Self {
         LedgerPayloadHash(hash.0)
+    }
+}
+
+impl From<JavaHashCode> for AccumulatorHash {
+    fn from(java_hash_code: JavaHashCode) -> Self {
+        AccumulatorHash::from_raw_bytes(java_hash_code.0.as_slice().try_into().unwrap())
     }
 }
 
@@ -432,7 +438,7 @@ pub struct CommitRequest {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareRequest {
-    pub parent_accumulator: Vec<u8>,
+    pub parent_accumulator: AccumulatorHash,
     pub prepared_vertices: Vec<PreviousVertex>,
     pub proposed_payloads: Vec<Vec<u8>>,
     pub consensus_epoch: u64,
@@ -443,7 +449,7 @@ pub struct PrepareRequest {
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PreviousVertex {
     pub transaction_payloads: Vec<Vec<u8>>,
-    pub resultant_accumulator: Vec<u8>,
+    pub resultant_accumulator: AccumulatorHash,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
