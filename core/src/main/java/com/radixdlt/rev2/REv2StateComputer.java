@@ -166,10 +166,6 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   @Override
   public List<RawNotarizedTransaction> getTransactionsForProposal(
       List<StateComputerLedger.ExecutedTransaction> previousExecutedTransactions) {
-    if (maxNumTransactionsPerProposal == 0) {
-      return List.of();
-    }
-
     final var rawPreviousExecutedTransactions =
         previousExecutedTransactions.stream()
             .flatMap(
@@ -193,15 +189,13 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
     metrics.ledger().maxProposalPayloadSize().inc(maxPayloadSize);
 
-    if (maxPayloadSize <= 0) {
-      return List.of();
-    }
-
     // TODO: Don't include transactions if NextEpoch is to occur
     // TODO: This will require Proposer to simulate a NextRound update before proposing
     final var result =
-        stateComputer.getTransactionsForProposal(
-            maxNumTransactionsPerProposal, maxPayloadSize, rawPreviousExecutedTransactions);
+        maxPayloadSize > 0 && maxNumTransactionsPerProposal > 0
+            ? stateComputer.getTransactionsForProposal(
+                maxNumTransactionsPerProposal, maxPayloadSize, rawPreviousExecutedTransactions)
+            : List.<RawNotarizedTransaction>of();
 
     final var resultTotalTxnPayloadSize =
         result.stream().map(tx -> tx.getPayload().length).reduce(0, Integer::sum);
