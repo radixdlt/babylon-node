@@ -14,8 +14,8 @@
 pub enum NonFungibleIdType {
     #[serde(rename = "String")]
     String,
-    #[serde(rename = "Number")]
-    Number,
+    #[serde(rename = "Integer")]
+    Integer,
     #[serde(rename = "Bytes")]
     Bytes,
     #[serde(rename = "UUID")]
@@ -27,7 +27,7 @@ impl ToString for NonFungibleIdType {
     fn to_string(&self) -> String {
         match self {
             Self::String => String::from("String"),
-            Self::Number => String::from("Number"),
+            Self::Integer => String::from("Integer"),
             Self::Bytes => String::from("Bytes"),
             Self::UUID => String::from("UUID"),
         }

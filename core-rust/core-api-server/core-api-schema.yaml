@@ -1885,7 +1885,7 @@ components:
       type: string
       enum:
         - String
-        - Number
+        - Integer
         - Bytes
         - UUID
     NonFungibleId:
