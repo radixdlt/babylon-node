@@ -77,8 +77,10 @@ use radix_engine::types::{
     scrypto_decode, scrypto_encode, KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateId,
     SubstateOffset,
 };
-use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReadableTreeStore, TreeNode};
 use radix_engine_interface::api::types::NodeModuleId;
+use radix_engine_stores::hash_tree::tree_store::{
+    encode_key, NodeKey, ReadableTreeStore, TreeNode,
+};
 use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, Direction, IteratorMode, Options, WriteBatch, DB,
 };
@@ -108,7 +110,6 @@ enum RocksDBColumnFamily {
     HashTreeNodes,
 }
 
-use crate::store::hash_tree_codec::{decode_tree_node, encode_key, encode_node};
 use RocksDBColumnFamily::*;
 
 const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 11] = [
@@ -318,7 +319,7 @@ impl CommitStore for RocksDBStore {
             batch.put_cf(
                 self.cf_handle(&HashTreeNodes),
                 encode_key(&key),
-                encode_node(&node),
+                scrypto_encode(&node).unwrap(),
             );
         }
 
@@ -646,7 +647,7 @@ impl ReadableTreeStore for RocksDBStore {
         self.db
             .get_pinned_cf(self.cf_handle(&HashTreeNodes), encode_key(key))
             .unwrap()
-            .map(|pinnable_slice| decode_tree_node(pinnable_slice.as_ref()))
+            .map(|pinnable_slice| scrypto_decode(pinnable_slice.as_ref()).unwrap())
     }
 }
 

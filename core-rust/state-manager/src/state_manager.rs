@@ -97,16 +97,15 @@ use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
 
 use radix_engine::state_manager::StateDiff;
-use radix_engine_stores::hash_tree::tree_store::ReadableTreeStore;
 use radix_engine_interface::api::types::{
     NodeModuleId, SubstateId, SubstateOffset, ValidatorOffset,
 };
-use std::collections::{BTreeMap, HashMap};
+use radix_engine_stores::hash_tree::tree_store::ReadableTreeStore;
+use std::collections::HashMap;
 use std::convert::TryInto;
 
 use radix_engine::blueprints::epoch_manager::ValidatorSubstate;
 use radix_engine::kernel::ScryptoInterpreter;
-use radix_engine::ledger::OutputValue;
 use radix_engine_interface::network::NetworkDefinition;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
@@ -125,7 +124,7 @@ pub struct StateManagerLoggingConfig {
     pub log_on_transaction_rejection: bool,
 }
 
-pub struct StateManager<S: ReadableSubstateStore> {
+pub struct StateManager<S> {
     pub mempool: RwLock<SimpleMempool>,
     pub network: NetworkDefinition,
     store: S,
@@ -247,14 +246,14 @@ impl<S> StateManager<S>
 where
     S: ReadableSubstateStore + ReadableTreeStore,
 {
-    fn execute_with_cache(
+    fn execute_for_staging_with_cache(
         &mut self,
         parent_accumulator_hash: &AccumulatorHash,
         executable: &Executable,
         payload_hash: &LedgerPayloadHash,
     ) -> (AccumulatorHash, &ProcessedResult) {
         let new_accumulator_hash = parent_accumulator_hash.accumulate(payload_hash);
-        let receipt = self.execution_cache.execute(
+        let receipt = self.execution_cache.execute_transaction(
             &self.store,
             parent_accumulator_hash,
             &new_accumulator_hash,
@@ -544,7 +543,7 @@ where
 
         let parent_accumulator_hash = AccumulatorHash::pre_genesis();
 
-        let (_, executed) = self.execute_with_cache(
+        let (_, executed) = self.execute_for_staging_with_cache(
             &parent_accumulator_hash,
             &executable,
             &parsed_transaction.get_hash(),
@@ -623,7 +622,7 @@ where
             }
             .expect("Already prepared tranasctions should be valid");
 
-            let (new_accumulator_hash, processed) = self.execute_with_cache(
+            let (new_accumulator_hash, processed) = self.execute_for_staging_with_cache(
                 &parent_accumulator_hash,
                 &executable,
                 &parsed_transaction.get_hash(),
@@ -657,7 +656,7 @@ where
         let prepared_txn = validator_transaction.prepare();
         let executable = prepared_txn.to_executable();
         let validator_txn = LedgerTransaction::Validator(validator_transaction);
-        let (new_accumulator_hash, processed) = self.execute_with_cache(
+        let (new_accumulator_hash, processed) = self.execute_for_staging_with_cache(
             &parent_accumulator_hash,
             &executable,
             &validator_txn.get_hash(),
@@ -744,8 +743,11 @@ where
                 let (payload, hash) = LedgerTransaction::User(parsed.clone())
                     .create_payload_and_hash()
                     .unwrap();
-                let (new_accumulator_hash, processed) =
-                    self.execute_with_cache(&parent_accumulator_hash, &executable, &hash);
+                let (new_accumulator_hash, processed) = self.execute_for_staging_with_cache(
+                    &parent_accumulator_hash,
+                    &executable,
+                    &hash,
+                );
 
                 match &processed.receipt().result {
                     TransactionResult::Commit(result) => {
@@ -914,8 +916,11 @@ where
                 });
 
             let payload_hash = transaction.get_hash();
-            let (current_accumulator_hash, processed) =
-                self.execute_with_cache(&parent_accumulator_hash, &executable, &payload_hash);
+            let (current_accumulator_hash, processed) = self.execute_for_staging_with_cache(
+                &parent_accumulator_hash,
+                &executable,
+                &payload_hash,
+            );
 
             parent_accumulator_hash = current_accumulator_hash;
 
@@ -968,7 +973,7 @@ where
             state_diff
                 .up_substates
                 .extend(processed.state_diff().up_substates.clone());
-            hash_tree_diff.extend(processed.hash_tree_diff());
+            hash_tree_diff.extend(processed.hash_tree_diff().clone());
         }
 
         self.execution_cache.progress_root(&parent_accumulator_hash);

@@ -70,16 +70,14 @@ use crate::{
     IntentHash, LedgerPayloadHash, LedgerTransactionReceipt,
 };
 
-use crate::store::hash_tree_codec::{decode_tree_node, encode_key, encode_node};
 use radix_engine::ledger::OutputValue;
 use radix_engine::system::substates::PersistedSubstate;
 use radix_engine_interface::api::types::{KeyValueStoreId, SubstateId};
 use radix_engine_stores::hash_tree::tree_store::{
-    NodeKey, ReadableTreeStore, TreeNode, WriteableTreeStore,
+    NodeKey, ReadableTreeStore, SerializedInMemoryTreeStore, TreeNode, WriteableTreeStore,
 };
 use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 use std::collections::{BTreeMap, HashMap};
-use std::fmt::Debug;
 
 #[derive(Debug)]
 pub struct InMemoryStore {
@@ -228,7 +226,7 @@ impl CommitStore for InMemoryStore {
         }
 
         for (key, node) in commit_bundle.hash_tree_nodes {
-            self.tree_node_store.insert_node(&key, node);
+            self.tree_node_store.insert_node(key, node);
         }
     }
 }
@@ -314,38 +312,5 @@ impl QueryableProofStore for InMemoryStore {
             .iter()
             .next_back()
             .map(|(_, bytes)| bytes.clone())
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-struct SerializedInMemoryTreeStore {
-    memory: HashMap<Vec<u8>, Vec<u8>>,
-    stale_key_buffer: Vec<Vec<u8>>,
-}
-
-impl SerializedInMemoryTreeStore {
-    pub fn new() -> Self {
-        Self {
-            memory: HashMap::new(),
-            stale_key_buffer: Vec::new(),
-        }
-    }
-}
-
-impl ReadableTreeStore for SerializedInMemoryTreeStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
-        self.memory
-            .get(&encode_key(key))
-            .map(|bytes| decode_tree_node(bytes))
-    }
-}
-
-impl WriteableTreeStore for SerializedInMemoryTreeStore {
-    fn insert_node(&mut self, key: &NodeKey, node: TreeNode) {
-        self.memory.insert(encode_key(key), encode_node(&node));
-    }
-
-    fn record_stale_node(&mut self, key: &NodeKey) {
-        self.stale_key_buffer.push(encode_key(key));
     }
 }

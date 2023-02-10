@@ -98,6 +98,7 @@ pub struct ProcessedResult {
     hash_tree_diff: HashTreeDiff,
 }
 
+#[derive(Clone)]
 pub struct HashTreeDiff {
     pub new_hash_tree_nodes: Vec<(NodeKey, TreeNode)>,
     pub stale_hash_tree_node_keys: Vec<NodeKey>,
@@ -113,7 +114,7 @@ impl ExecutionCache {
         }
     }
 
-    pub fn execute<S: RootStore, T: FnOnce(&StagedStore<S>) -> TransactionReceipt>(
+    pub fn execute_transaction<S: RootStore, T: FnOnce(&StagedStore<S>) -> TransactionReceipt>(
         &mut self,
         root_store: &S,
         parent_hash: &AccumulatorHash,
@@ -189,12 +190,12 @@ impl<'s, S: ReadableTreeStore> ReadableTreeStore for CollectingTreeStore<'s, S> 
 }
 
 impl<'s, S: ReadableTreeStore> WriteableTreeStore for CollectingTreeStore<'s, S> {
-    fn insert_node(&mut self, key: &NodeKey, node: TreeNode) {
-        self.diff.new_hash_tree_nodes.push((key.clone(), node));
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode) {
+        self.diff.new_hash_tree_nodes.push((key, node));
     }
 
-    fn record_stale_node(&mut self, key: &NodeKey) {
-        self.diff.stale_hash_tree_node_keys.push(key.clone());
+    fn record_stale_node(&mut self, key: NodeKey) {
+        self.diff.stale_hash_tree_node_keys.push(key);
     }
 }
 
@@ -297,11 +298,10 @@ impl HashTreeDiff {
         }
     }
 
-    pub fn extend(&mut self, other: &HashTreeDiff) {
-        self.new_hash_tree_nodes
-            .extend(other.new_hash_tree_nodes.iter().cloned());
+    pub fn extend(&mut self, other: HashTreeDiff) {
+        self.new_hash_tree_nodes.extend(other.new_hash_tree_nodes);
         self.stale_hash_tree_node_keys
-            .extend(other.stale_hash_tree_node_keys.iter().cloned());
+            .extend(other.stale_hash_tree_node_keys);
     }
 }
 
