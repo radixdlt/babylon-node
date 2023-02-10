@@ -250,7 +250,7 @@ public final class BFTBuilder {
 
     final var roundTimeoutModerator =
         new RoundTimeoutModerator(
-            proposalTimestampVerifier, timeoutCalculator, timeoutDispatcher, roundUpdate);
+            proposalTimestampVerifier, timeoutCalculator, timeoutDispatcher, metrics, roundUpdate);
 
     final var postSyncUpVerifier =
         new BFTEventPostSyncUpVerifier(roundTimeoutModerator, metrics, roundUpdate);

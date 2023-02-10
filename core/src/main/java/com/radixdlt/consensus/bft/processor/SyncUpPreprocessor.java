@@ -199,7 +199,7 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
 
   @Override
   public void processVote(Vote vote) {
-    log.trace("Vote: PreProcessing {}", vote);
+    log.trace("SyncUpPreprocessor: processing vote {}", vote);
     final Round currentRound = this.latestRoundUpdate.getCurrentRound();
     if (vote.getRound().gte(currentRound)) {
       this.forwardTo.preProcessUnsyncedVoteForCurrentOrFutureRound(vote);
@@ -211,7 +211,7 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
 
   @Override
   public void processProposal(Proposal proposal) {
-    log.trace("Proposal: PreProcessing {}", proposal);
+    log.trace("SyncUpPreprocessor: processing proposal {}", proposal);
     final Round currentRound = this.latestRoundUpdate.getCurrentRound();
     if (proposal.getRound().gte(currentRound)) {
       this.forwardTo.preProcessUnsyncedProposalForCurrentOrFutureRound(proposal);

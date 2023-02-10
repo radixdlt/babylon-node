@@ -163,6 +163,7 @@ public record Metrics(
       Counter noVotesSent,
       Counter voteQuorums,
       Counter timeoutQuorums,
+      Counter extendedRoundTimeouts,
       Timer consensusEventsQueueWait,
       LabelledCounter<RejectedConsensusEvent> rejectedConsensusEvents,
       GetterGauge validatorCount,
@@ -213,7 +214,11 @@ public record Metrics(
       Counter syncTransactionsProcessed,
       Counter bftTransactionsProcessed,
       Timer commit,
-      Timer prepare) {}
+      Timer prepare,
+      Counter maxProposalPayloadSize,
+      Counter numTransactionsIncludedInProposal,
+      Counter transactionBytesIncludedInProposal,
+      Counter transactionBytesIncludedInProposalAndPreviousVertices) {}
 
   public record LedgerSync(
       Counter invalidResponsesReceived,

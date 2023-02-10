@@ -77,6 +77,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.RoundDetails;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.*;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
@@ -97,32 +98,46 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   private static final Logger log = LogManager.getLogger();
 
   private final RustStateComputer stateComputer;
+
+  // Maximum number of transactions to include in a proposal
   private final int maxNumTransactionsPerProposal;
+  // Maximum number of transaction payload bytes to include in a proposal
   private final int maxProposalTotalTxnsPayloadSize;
+  // Maximum number of transaction payload bytes to include in a proposal and its previous vertices
+  // chain.
+  // Effectively limits the size of a commit batch (i.e. the size of transactions under a single
+  // proof).
+  private final int maxProposalAndUncommittedVerticesTotalTxnPayloadSize;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher;
 
   private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
   private final EventDispatcher<ConsensusByzantineEvent> consensusByzantineEventEventDispatcher;
   private final Serialization serialization;
   private final Hasher hasher;
+  private final Metrics metrics;
 
   public REv2StateComputer(
       RustStateComputer stateComputer,
       int maxNumTransactionsPerProposal,
       int maxProposalTotalTxnsPayloadSize,
+      int maxProposalAndUncommittedVerticesTotalTxnPayloadSize,
       Hasher hasher,
       EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
       EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
       EventDispatcher<ConsensusByzantineEvent> consensusByzantineEventEventDispatcher,
-      Serialization serialization) {
+      Serialization serialization,
+      Metrics metrics) {
     this.stateComputer = stateComputer;
     this.maxNumTransactionsPerProposal = maxNumTransactionsPerProposal;
     this.maxProposalTotalTxnsPayloadSize = maxProposalTotalTxnsPayloadSize;
+    this.maxProposalAndUncommittedVerticesTotalTxnPayloadSize =
+        maxProposalAndUncommittedVerticesTotalTxnPayloadSize;
     this.hasher = hasher;
     this.ledgerUpdateEventDispatcher = ledgerUpdateEventDispatcher;
     this.mempoolAddSuccessEventDispatcher = mempoolAddSuccessEventDispatcher;
     this.consensusByzantineEventEventDispatcher = consensusByzantineEventEventDispatcher;
     this.serialization = serialization;
+    this.metrics = metrics;
   }
 
   @Override
@@ -150,13 +165,13 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
   @Override
   public List<RawNotarizedTransaction> getTransactionsForProposal(
-      List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
+      List<StateComputerLedger.ExecutedTransaction> previousExecutedTransactions) {
     if (maxNumTransactionsPerProposal == 0) {
       return List.of();
     }
 
-    final var transactionsToExclude =
-        executedTransactions.stream()
+    final var rawPreviousExecutedTransactions =
+        previousExecutedTransactions.stream()
             .flatMap(
                 executedTx ->
                     TransactionBuilder.convertTransactionBytesToNotarizedTransactionBytes(
@@ -165,10 +180,43 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                         .map(RawNotarizedTransaction::create))
             .toList();
 
+    final var rawPreviousExecutedTransactionsTotalSize =
+        rawPreviousExecutedTransactions.stream()
+            .map(tx -> tx.getPayload().length)
+            .reduce(0, Integer::sum);
+    final var remainingSizeInUncommittedVertices =
+        maxProposalAndUncommittedVerticesTotalTxnPayloadSize
+            - rawPreviousExecutedTransactionsTotalSize;
+
+    final var maxPayloadSize =
+        Math.min(remainingSizeInUncommittedVertices, maxProposalTotalTxnsPayloadSize);
+
+    metrics.ledger().maxProposalPayloadSize().inc(maxPayloadSize);
+
+    if (maxPayloadSize <= 0) {
+      return List.of();
+    }
+
     // TODO: Don't include transactions if NextEpoch is to occur
     // TODO: This will require Proposer to simulate a NextRound update before proposing
-    return stateComputer.getTransactionsForProposal(
-        maxNumTransactionsPerProposal, maxProposalTotalTxnsPayloadSize, transactionsToExclude);
+    final var result =
+        stateComputer.getTransactionsForProposal(
+            maxNumTransactionsPerProposal, maxPayloadSize, rawPreviousExecutedTransactions);
+
+    final var resultTotalTxnPayloadSize =
+        result.stream().map(tx -> tx.getPayload().length).reduce(0, Integer::sum);
+
+    final var totalUncommittedTxnBytesIncludingThisProposal =
+        resultTotalTxnPayloadSize + rawPreviousExecutedTransactionsTotalSize;
+
+    metrics.ledger().numTransactionsIncludedInProposal().inc(result.size());
+    metrics.ledger().transactionBytesIncludedInProposal().inc(resultTotalTxnPayloadSize);
+    metrics
+        .ledger()
+        .transactionBytesIncludedInProposalAndPreviousVertices()
+        .inc(totalUncommittedTxnBytesIncludingThisProposal);
+
+    return result;
   }
 
   @Override

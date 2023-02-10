@@ -68,9 +68,13 @@ import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.environment.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Module responsible for sending mempool messages to other nodes. */
 public final class MempoolRelayerModule extends AbstractModule {
+  private static final Logger log = LogManager.getLogger();
+
   private final long mempoolRelayIntervalMs;
 
   public MempoolRelayerModule(long mempoolRelayIntervalMs) {
@@ -96,8 +100,22 @@ public final class MempoolRelayerModule extends AbstractModule {
 
   @ProvidesIntoSet
   private StartProcessorOnRunner mempoolRelayerStart(
-      EventProducer<MempoolRelayTrigger> dispatcher) {
-    return new StartProcessorOnRunner(Runners.MEMPOOL, dispatcher::start);
+      EventProducer<MempoolRelayTrigger> dispatcher, @MempoolRelayMaxPeers int maxPeers) {
+    return new StartProcessorOnRunner(
+        Runners.MEMPOOL,
+        () -> {
+          log.info(
+              "Starting mempool relayer: at most {} txns (or {} txn bytes) will be relayed to at"
+                  + " most {} peers (but no more than {} txn bytes sent to all peers during a"
+                  + " single relaying event) every {} ms.",
+              MempoolRelayer.MAX_RELAY_MSG_NUM_TXNS,
+              MempoolRelayer.MAX_RELAY_MSG_TOTAL_TXN_PAYLOAD_SIZE,
+              maxPeers,
+              MempoolRelayer.MAX_TXN_BYTES_RELAYED_AT_ONCE_TO_ALL_PEERS,
+              mempoolRelayIntervalMs);
+
+          dispatcher.start();
+        });
   }
 
   @ProvidesIntoSet

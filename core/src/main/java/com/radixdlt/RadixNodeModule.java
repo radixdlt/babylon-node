@@ -145,8 +145,10 @@ public final class RadixNodeModule extends AbstractModule {
           .unwrap();
 
   // Proposal constants
-  public static final int MAX_TRANSACTIONS_PER_PROPOSAL = 10;
-  public static final int MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE = 4 * 1024 * 1024;
+  public static final int MAX_TRANSACTIONS_PER_PROPOSAL = 4;
+  public static final int MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE = 2 * 1024 * 1024;
+  public static final int MAX_PROPOSAL_AND_UNCOMMITTED_VERTICES_TOTAL_TXN_PAYLOAD_SIZE =
+      2 * 1024 * 1024;
 
   private static final Logger log = LogManager.getLogger();
 
@@ -229,7 +231,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Mempool Relay
     install(new MempoolRelayConfig(5, 100).asModule());
-    install(new MempoolRelayerModule(10000));
+    install(new MempoolRelayerModule(20000));
 
     // Ledger Sync
     final long syncPatience = properties.get("sync.patience", 5000L);
@@ -298,6 +300,7 @@ public final class RadixNodeModule extends AbstractModule {
             networkId,
             MAX_TRANSACTIONS_PER_PROPOSAL,
             MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE,
+            MAX_PROPOSAL_AND_UNCOMMITTED_VERTICES_TOTAL_TXN_PAYLOAD_SIZE,
             databaseConfig,
             Option.some(mempoolConfig)));
 

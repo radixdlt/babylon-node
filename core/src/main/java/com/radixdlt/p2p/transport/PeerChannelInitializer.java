@@ -99,7 +99,8 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
   private static final Logger log = LogManager.getLogger();
 
   // This needs to be larger than both:
-  //  - max proposal size (see `MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE` in `RadixNodeModule`)
+  //  - max proposal and its previous vertices txn size (see
+  // `MAX_PROPOSAL_AND_UNCOMMITTED_VERTICES_TOTAL_TXN_PAYLOAD_SIZE` in `RadixNodeModule`)
   //    note that the constant specifies txns payload size, it doesn't include proposal overhead
   // (vertex/QCs)
   //  - max ledger sync response size (see `MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE` in
@@ -113,10 +114,10 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
         Math.max(
             Math.max(
                 REv2TransactionsAndProofReader.MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
-                RadixNodeModule.MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE),
-            MempoolRelayer.MAX_RELAY_TOTAL_TXNS_PAYLOAD_SIZE);
-    // 20% should be more than enough for any vertex/QCs/proofs/encryption overhead
-    final var additionalBuffer = (int) (0.2 * baseBufferSize);
+                RadixNodeModule.MAX_PROPOSAL_AND_UNCOMMITTED_VERTICES_TOTAL_TXN_PAYLOAD_SIZE),
+            MempoolRelayer.MAX_RELAY_MSG_TOTAL_TXN_PAYLOAD_SIZE);
+    // 30% should be more than enough for any vertex/QCs/proofs/encryption overhead
+    final var additionalBuffer = (int) (0.3 * baseBufferSize);
     final var bufferSize = baseBufferSize + additionalBuffer;
 
     // Just a sanity check that any changes to the constants used above
