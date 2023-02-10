@@ -16,6 +16,7 @@ fn handle_state_epoch_internal(
     request: models::StateEpochRequest,
 ) -> Result<models::StateEpochResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
+    let mapping_context = MappingContext::new(&state_manager.network);
 
     let node_id =
         read_derefed_global_node_id(state_manager, GlobalAddress::Component(EPOCH_MANAGER))?;
@@ -29,7 +30,24 @@ fn handle_state_epoch_internal(
         substate
     };
 
+    let validator_set_substate = {
+        let substate_offset = SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet);
+        let loaded_substate = read_known_substate(state_manager, node_id, &substate_offset)?;
+        let PersistedSubstate::ValidatorSet(substate) = loaded_substate else {
+            return Err(wrong_substate_type(substate_offset));
+        };
+        substate
+    };
+
     Ok(models::StateEpochResponse {
         epoch: to_api_epoch(epoch_manager_substate.epoch)?,
+        epoch_manager: Some(to_api_epoch_manager_substate(
+            &mapping_context,
+            &epoch_manager_substate,
+        )?),
+        active_validator_set: Some(to_api_validator_set_substate(
+            &mapping_context,
+            &validator_set_substate,
+        )?),
     })
 }

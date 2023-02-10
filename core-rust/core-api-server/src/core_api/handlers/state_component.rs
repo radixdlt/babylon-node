@@ -27,6 +27,13 @@ fn handle_state_component_internal(
         extract_component_address(&extraction_context, &request.component_address)
             .map_err(|err| err.into_response_error("component_address"))?;
 
+    if !request.component_address.starts_with("component_")
+        && !request.component_address.starts_with("account_")
+    {
+        // Until we have improvements to the state model for objects, only components should be supported here
+        return Err(client_error("Only component addresses starting component_ or account_ currently work with this endpoint. Try another endpoint instead."));
+    }
+
     let component_node_id =
         read_derefed_global_node_id(state_manager, GlobalAddress::Component(component_address))?;
 
@@ -131,7 +138,7 @@ fn handle_state_component_internal(
     })
 }
 
-fn map_to_descendent_id(
+pub(crate) fn map_to_descendent_id(
     parent: Option<SubstateId>,
     node: RENodeId,
     depth: u32,

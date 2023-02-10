@@ -1,11 +1,13 @@
 mod mempool_list;
 mod mempool_transaction;
+mod state_access_controller;
 mod state_clock;
 mod state_component;
 mod state_epoch;
 mod state_non_fungible;
 mod state_package;
 mod state_resource;
+mod state_validator;
 mod status_network_configuration;
 mod status_network_status;
 mod stream_transactions;
@@ -18,12 +20,14 @@ mod transaction_submit;
 
 pub(crate) use mempool_list::*;
 pub(crate) use mempool_transaction::*;
+pub(crate) use state_access_controller::*;
 pub(crate) use state_clock::*;
 pub(crate) use state_component::*;
 pub(crate) use state_epoch::*;
 pub(crate) use state_non_fungible::*;
 pub(crate) use state_package::*;
 pub(crate) use state_resource::*;
+pub(crate) use state_validator::*;
 pub(crate) use status_network_configuration::*;
 pub(crate) use status_network_status::*;
 pub(crate) use stream_transactions::*;
