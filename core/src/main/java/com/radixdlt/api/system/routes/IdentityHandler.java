@@ -62,65 +62,85 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
+package com.radixdlt.api.system.routes;
 
-import com.google.inject.*;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.api.common.HandlerRoute;
-import com.radixdlt.api.system.health.HealthInfoService;
-import com.radixdlt.api.system.health.ScheduledStatsCollecting;
-import com.radixdlt.api.system.routes.*;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.Runners;
-import io.undertow.server.HttpHandler;
-import java.util.Map;
+import com.google.inject.Inject;
+import com.radixdlt.addressing.Addressing;
+import com.radixdlt.api.system.SystemGetJsonHandler;
+import com.radixdlt.api.system.generated.models.IdentityResponse;
+import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.epoch.EpochManager;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.p2p.NodeId;
+import com.radixdlt.p2p.RadixNodeUri;
+import java.util.Optional;
 
-public class SystemApiModule extends AbstractModule {
-  private static final int MAXIMUM_CONCURRENT_REQUESTS =
-      Runtime.getRuntime().availableProcessors() * 8; // same as workerThreads = ioThreads * 8
-  private static final int QUEUE_SIZE = 2000;
-  private final String bindAddress;
-  private final int port;
+public final class IdentityHandler extends SystemGetJsonHandler<IdentityResponse> {
 
-  public SystemApiModule(String bindAddress, int port) {
-    this.bindAddress = bindAddress;
-    this.port = port;
+  private final Addressing addressing;
+
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  private final Optional<EpochManager> epochManagerOptional;
+
+  private final RadixNodeUri selfUri;
+  private final ECDSASecp256k1PublicKey selfKey;
+  private final NodeId nodeId;
+  private final String selfName;
+  private final BFTValidatorId validatorId;
+
+  @Inject
+  IdentityHandler(
+      Addressing addressing,
+      @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+          Optional<EpochManager> epochManagerOptional,
+      @Self RadixNodeUri selfUri,
+      @Self ECDSASecp256k1PublicKey selfKey,
+      @Self NodeId nodeId,
+      @Self String selfName,
+      @Self BFTValidatorId validatorId) {
+    super();
+    this.addressing = addressing;
+    this.epochManagerOptional = epochManagerOptional;
+    this.selfUri = selfUri;
+    this.selfKey = selfKey;
+    this.nodeId = nodeId;
+    this.selfName = selfName;
+    this.validatorId = validatorId;
   }
 
   @Override
-  protected void configure() {
-    var eventBinder =
-        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
-            .permitDuplicates();
-    eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
-    bind(HealthInfoService.class).in(Scopes.SINGLETON);
+  public IdentityResponse handleRequest() {
 
-    var binder =
-        MapBinder.newMapBinder(
-            binder(), HandlerRoute.class, HttpHandler.class, SystemApiEndpoints.class);
-    binder.addBinding(HandlerRoute.get("/system/configuration")).to(ConfigurationHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/health")).to(HealthHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/identity")).to(IdentityHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/version")).to(VersionHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/peers")).to(PeersHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/addressbook")).to(AddressBookHandler.class);
-    binder
-        .addBinding(HandlerRoute.get("/system/network-sync-status"))
-        .to(NetworkSyncStatusHandler.class);
+    var validatorAddress =
+        validatorId.getValidatorAddress() == null
+            ? null
+            : addressing.encodeValidatorAddress(validatorId.getValidatorAddress());
+
+    return new IdentityResponse()
+        .publicKeyHex(selfKey.toHex())
+        .nodeAddress(selfUri.nodeAddress())
+        .nodeUri(selfUri.toString())
+        .nodeName(selfName)
+        .nodeId(nodeId.toString())
+        .validatorAddress(validatorAddress)
+        .validatorName(validatorId.toString())
+        .consensusStatus(consensusStatus());
   }
 
-  @ProvidesIntoSet
-  public EventProcessorOnRunner<?> healthInfoService(HealthInfoService healthInfoService) {
-    return new EventProcessorOnRunner<>(
-        Runners.SYSTEM_INFO, ScheduledStatsCollecting.class, healthInfoService.updateStats());
-  }
-
-  @Provides
-  @Singleton
-  public SystemApi systemApi(@SystemApiEndpoints Map<HandlerRoute, HttpHandler> handlers) {
-    return new SystemApi(bindAddress, port, handlers, MAXIMUM_CONCURRENT_REQUESTS, QUEUE_SIZE);
+  private IdentityResponse.ConsensusStatusEnum consensusStatus() {
+    if (this.epochManagerOptional.isEmpty()) {
+      // If executing in tests without epochs, just use this as a default response
+      return IdentityResponse.ConsensusStatusEnum.NOT_CONFIGURED_AS_VALIDATOR;
+    }
+    var epochManager = this.epochManagerOptional.get();
+    return switch (epochManager.validationStatus()) {
+      case NOT_CONFIGURED_AS_VALIDATOR -> IdentityResponse.ConsensusStatusEnum
+          .NOT_CONFIGURED_AS_VALIDATOR;
+      case VALIDATING_IN_CURRENT_EPOCH -> IdentityResponse.ConsensusStatusEnum
+          .VALIDATING_IN_CURRENT_EPOCH;
+      case NOT_VALIDATING_IN_CURRENT_EPOCH -> IdentityResponse.ConsensusStatusEnum
+          .NOT_VALIDATING_IN_CURRENT_EPOCH;
+    };
   }
 }
