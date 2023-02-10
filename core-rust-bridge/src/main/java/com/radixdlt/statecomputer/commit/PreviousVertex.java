@@ -62,113 +62,25 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.statecomputer.commit;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.hash.HashCode;
-import com.google.inject.*;
-import com.radixdlt.consensus.bft.ExecutedVertex;
-import com.radixdlt.consensus.bft.VertexStoreState;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.MockExecuted;
-import com.radixdlt.ledger.RoundDetails;
-import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.p2p.NodeId;
-import com.radixdlt.targeted.mempool.SimpleMempool;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transactions.RawLedgerTransaction;
-import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-/** Simple Mempool state computer */
-public class MockedMempoolStateComputerModule extends AbstractModule {
-  private static final Logger log = LogManager.getLogger();
-
-  private final int mempoolMaxSize;
-
-  public MockedMempoolStateComputerModule(int mempoolMaxSize) {
-    this.mempoolMaxSize = mempoolMaxSize;
-  }
-
-  @Override
-  protected void configure() {
-    bind(new TypeLiteral<Mempool<?, ?>>() {})
-        .to(new TypeLiteral<Mempool<RawNotarizedTransaction, RawNotarizedTransaction>>() {})
-        .in(Scopes.SINGLETON);
-  }
-
-  @Provides
-  @Singleton
-  private Mempool<RawNotarizedTransaction, RawNotarizedTransaction> mempool(
-      Metrics metrics, Random random) {
-    return new SimpleMempool(metrics, mempoolMaxSize, random);
-  }
-
-  @Provides
-  @Singleton
-  private StateComputerLedger.StateComputer stateComputer(
-      Mempool<RawNotarizedTransaction, RawNotarizedTransaction> mempool,
-      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
-      Metrics metrics) {
-    return new StateComputerLedger.StateComputer() {
-      @Override
-      public void addToMempool(MempoolAdd mempoolAdd, @Nullable NodeId origin) {
-        mempoolAdd
-            .transactions()
-            .forEach(
-                txn -> {
-                  try {
-                    mempool.addTransaction(txn);
-                    metrics.v1Mempool().size().set(mempool.getCount());
-                  } catch (MempoolRejectedException e) {
-                    log.error(e);
-                  }
-                });
-      }
-
-      @Override
-      public List<RawNotarizedTransaction> getTransactionsForProposal(
-          List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
-        return mempool.getTransactionsForProposal(1, List.of());
-      }
-
-      @Override
-      public StateComputerLedger.StateComputerResult prepare(
-          HashCode parentAccumulator,
-          List<ExecutedVertex> previousVertices,
-          List<RawNotarizedTransaction> proposedTransactions,
-          RoundDetails roundDetails) {
-        return new StateComputerLedger.StateComputerResult(
-            proposedTransactions.stream()
-                // This is a workaround for the mocking to keep things lightweight
-                .map(tx -> new MockExecuted(tx.INCORRECTInterpretDirectlyAsRawLedgerTransaction()))
-                .collect(Collectors.toList()),
-            Map.of());
-      }
-
-      @Override
-      public void commit(
-          CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
-        mempool.handleTransactionsCommitted(
-            txnsAndProof.getTransactions().stream()
-                // This is a workaround for the mocking to keep things lightweight
-                .map(RawLedgerTransaction::INCORRECTInterpretDirectlyAsRawNotarizedTransaction)
-                .toList());
-        metrics.v1Mempool().size().set(mempool.getCount());
-        var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
-        ledgerUpdateDispatcher.dispatch(ledgerUpdate);
-      }
-    };
+public record PreviousVertex(
+    List<RawLedgerTransaction> transactions, HashCode resultantAccumulatorHash) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        PreviousVertex.class,
+        codecs ->
+            StructCodec.with(
+                PreviousVertex::new,
+                codecs.of(new TypeToken<>() {}),
+                codecs.of(HashCode.class),
+                (t, encoder) -> encoder.encode(t.transactions, t.resultantAccumulatorHash)));
   }
 }

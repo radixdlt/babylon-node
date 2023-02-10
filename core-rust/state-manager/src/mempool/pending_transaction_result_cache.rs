@@ -451,8 +451,8 @@ impl PendingTransactionResultCache {
         }
     }
 
-    pub fn get_pending_transaction_record<'a>(
-        &'a mut self,
+    pub fn get_pending_transaction_record(
+        &mut self,
         intent_hash: &IntentHash,
         payload_hash: &UserPayloadHash,
         invalid_from_epoch: u64,
