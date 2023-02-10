@@ -68,8 +68,8 @@ use radix_engine::model::{
 };
 
 use radix_engine::types::{
-    ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, RENodeId, SubstateId,
-    SubstateOffset, VaultOffset,
+    AccessControllerOffset, ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset,
+    RENodeId, SubstateId, SubstateOffset, ValidatorOffset, VaultOffset,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 
@@ -177,6 +177,40 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
             RENodeId::Component(..) => {
                 let substate_id =
                     SubstateId(node_id, SubstateOffset::Component(ComponentOffset::State));
+                let output_value = self
+                    .substate_store
+                    .get_substate(&substate_id)
+                    .expect("Broken Node Store");
+                let runtime_substate = output_value.substate.to_runtime();
+                let substate_ref = runtime_substate.to_ref();
+                let (_, owned_nodes) = substate_ref.references_and_owned_nodes();
+                for child_node_id in owned_nodes {
+                    self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
+                        .expect("Broken Node Store");
+                }
+            }
+            RENodeId::Validator(..) => {
+                let substate_id = SubstateId(
+                    node_id,
+                    SubstateOffset::Validator(ValidatorOffset::Validator),
+                );
+                let output_value = self
+                    .substate_store
+                    .get_substate(&substate_id)
+                    .expect("Broken Node Store");
+                let runtime_substate = output_value.substate.to_runtime();
+                let substate_ref = runtime_substate.to_ref();
+                let (_, owned_nodes) = substate_ref.references_and_owned_nodes();
+                for child_node_id in owned_nodes {
+                    self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
+                        .expect("Broken Node Store");
+                }
+            }
+            RENodeId::AccessController(..) => {
+                let substate_id = SubstateId(
+                    node_id,
+                    SubstateOffset::AccessController(AccessControllerOffset::AccessController),
+                );
                 let output_value = self
                     .substate_store
                     .get_substate(&substate_id)

@@ -604,6 +604,82 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicErrorResponse"
+  "/state/validator":
+    post:
+      summary: Get Validator Details
+      description: |
+        Reads the validator's substate/s from the top of the current ledger.
+      tags:
+        - State
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StateValidatorRequest"
+      responses:
+        '200':
+          description: Current state response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StateValidatorResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+  "/state/access-controller":
+    post:
+      summary: Get Access Controller Details
+      description: |
+        Reads the access controller's substate/s from the top of the current ledger.
+      tags:
+        - State
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StateAccessControllerRequest"
+      responses:
+        '200':
+          description: Current state response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StateAccessControllerResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
   "/state/resource":
     post:
       summary: Get Resource Details
@@ -3425,9 +3501,9 @@ components:
         payload_hex:
           type: string
           description: The hex-encoded system transaction payload
-############################
+#########################
 # REQUEST: /state/epoch #
-############################
+#########################
     StateEpochRequest:
       type: object
       required:
@@ -3439,6 +3515,8 @@ components:
       type: object
       required:
         - epoch
+        - epoch_manager
+        - active_validator_set
       properties:
         epoch:
           type: integer
@@ -3446,9 +3524,13 @@ components:
           minimum: 0
           maximum: 10000000000
           description: An integer between `0` and `10^10`, marking the current epoch
-############################
+        epoch_manager:
+          $ref: "#/components/schemas/Substate"
+        active_validator_set:
+          $ref: "#/components/schemas/Substate"
+#########################
 # REQUEST: /state/clock #
-############################
+#########################
     StateClockRequest:
       type: object
       required:
@@ -3463,9 +3545,9 @@ components:
       properties:
         current_minute:
           $ref: "#/components/schemas/Substate"
-################################
+#############################
 # REQUEST: /state/component #
-################################
+#############################
     StateComponentRequest:
       type: object
       required:
@@ -3528,9 +3610,85 @@ components:
           format: int32
           minimum: 0
           maximum: 100
-###############################
+#############################
+# REQUEST: /state/validator #
+#############################
+    StateValidatorRequest:
+      type: object
+      required:
+        - network
+        - validator_address
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        validator_address:
+          $ref: "#/components/schemas/ComponentAddress"
+    StateValidatorResponse:
+      type: object
+      required:
+        - state
+        - metadata
+        - access_rules
+        - state_owned_vaults
+        - descendent_ids
+      properties:
+        state:
+          $ref: "#/components/schemas/Substate"
+        metadata:
+          $ref: "#/components/schemas/Substate"
+        access_rules:
+          $ref: "#/components/schemas/Substate"
+        state_owned_vaults:
+          type: array
+          description: Any vaults owned directly or indirectly by the component
+          items:
+            $ref: "#/components/schemas/Substate"
+        descendent_ids:
+          type: array
+          description: Any descendent nodes owned directly or indirectly by the component
+          items:
+            $ref: "#/components/schemas/StateComponentDescendentId"
+#####################################
+# REQUEST: /state/access-controller #
+#####################################
+    StateAccessControllerRequest:
+      type: object
+      required:
+        - network
+        - controller_address
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        controller_address:
+          $ref: "#/components/schemas/ComponentAddress"
+    StateAccessControllerResponse:
+      type: object
+      required:
+        - state
+        - metadata
+        - access_rules
+        - state_owned_vaults
+        - descendent_ids
+      properties:
+        state:
+          $ref: "#/components/schemas/Substate"
+        metadata:
+          $ref: "#/components/schemas/Substate"
+        access_rules:
+          $ref: "#/components/schemas/Substate"
+        state_owned_vaults:
+          type: array
+          description: Any vaults owned directly or indirectly by the component
+          items:
+            $ref: "#/components/schemas/Substate"
+        descendent_ids:
+          type: array
+          description: Any descendent nodes owned directly or indirectly by the component
+          items:
+            $ref: "#/components/schemas/StateComponentDescendentId"
+############################
 # REQUEST: /state/resource #
-###############################
+############################
     StateResourceRequest:
       type: object
       required:
@@ -3558,9 +3716,9 @@ components:
           $ref: "#/components/schemas/Substate"
         vault_access_rules:
           $ref: "#/components/schemas/Substate"
-###################################
+################################
 # REQUEST: /state/non-fungible #
-###################################
+################################
     StateNonFungibleRequest:
       type: object
       required:
@@ -3582,9 +3740,9 @@ components:
       properties:
         non_fungible:
           $ref: "#/components/schemas/Substate"
-##############################
+###########################
 # REQUEST: /state/package #
-##############################
+###########################
     StatePackageRequest:
       type: object
       required:

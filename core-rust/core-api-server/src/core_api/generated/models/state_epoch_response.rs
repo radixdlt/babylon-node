@@ -16,12 +16,18 @@ pub struct StateEpochResponse {
     /// An integer between `0` and `10^10`, marking the current epoch
     #[serde(rename = "epoch")]
     pub epoch: i64,
+    #[serde(rename = "epoch_manager")]
+    pub epoch_manager: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "active_validator_set")]
+    pub active_validator_set: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl StateEpochResponse {
-    pub fn new(epoch: i64) -> StateEpochResponse {
+    pub fn new(epoch: i64, epoch_manager: crate::core_api::generated::models::Substate, active_validator_set: crate::core_api::generated::models::Substate) -> StateEpochResponse {
         StateEpochResponse {
             epoch,
+            epoch_manager: Option::Some(epoch_manager),
+            active_validator_set: Option::Some(active_validator_set),
         }
     }
 }
