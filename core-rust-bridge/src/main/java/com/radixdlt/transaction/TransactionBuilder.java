@@ -161,10 +161,6 @@ public final class TransactionBuilder {
         .unwrap(ManifestCompilationException::new);
   }
 
-  public static byte[] buildNewAccountIntent(NetworkDefinition network, PublicKey notary) {
-    return newAccountIntentFunc.call(tuple(network, notary));
-  }
-
   public static byte[] createIntent(
       NetworkDefinition network, TransactionHeader header, String manifest, List<byte[]> blobs) {
     return createIntentFunc
@@ -201,12 +197,6 @@ public final class TransactionBuilder {
               .build(new TypeToken<>() {});
 
   private static native byte[] createGenesisLedgerTransaction(byte[] requestPayload);
-
-  private static final Natives.Call1<Tuple.Tuple2<NetworkDefinition, PublicKey>, byte[]>
-      newAccountIntentFunc =
-          Natives.builder(TransactionBuilder::newAccountIntent).build(new TypeToken<>() {});
-
-  private static native byte[] newAccountIntent(byte[] requestPayload);
 
   private static final Natives.Call1<
           Tuple.Tuple4<NetworkDefinition, TransactionHeader, String, List<byte[]>>,

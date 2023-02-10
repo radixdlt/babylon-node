@@ -119,25 +119,38 @@ public final class REv2TestTransactions {
     return TransactionBuilder.createIntent(network, header, manifest, List.of());
   }
 
+  public static String constructDepositFromFaucetManifest(NetworkDefinition networkDefinition) {
+    return constructDepositFromFaucetManifest(
+        networkDefinition, Address.virtualAccountAddress(ECKeyPair.generateNew().getPublicKey()));
+  }
+
   public static String constructNewAccountManifest(NetworkDefinition networkDefinition) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var faucetAddress =
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
-    final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
-    final var accountPackageAddress =
-        addressing.encodePackageAddress(ScryptoConstants.ACCOUNT_PACKAGE_ADDRESS);
+    return String.format(
+        """
+                    CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
+                    CREATE_ACCOUNT Enum("AccessRule::AllowAll");
+                    """,
+        faucetAddress);
+  }
 
+  public static String constructDepositFromFaucetManifest(
+      NetworkDefinition networkDefinition, ComponentAddress to) {
+    final var addressing = Addressing.ofNetwork(networkDefinition);
+    final var faucetAddress =
+        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
     return String.format(
         """
                     CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
                     CALL_METHOD ComponentAddress("%s") "free";
-                    TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
-                    CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AccessRule::AllowAll") Bucket("xrd");
+                    CALL_METHOD ComponentAddress("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
                     """,
-        faucetAddress, faucetAddress, xrdAddress, accountPackageAddress);
+        faucetAddress, faucetAddress, addressing.encodeAccountAddress(to));
   }
 
-  public static String constructNewAccountFromAccountManifest(
+  public static String constructDepositFromAccountManifest(
       NetworkDefinition networkDefinition, ComponentAddress from) {
     // NOTE: A test relies on this only being able to be performed once per account
     // So we transfer 900 XRD (which is the majority of the account start amount
@@ -145,17 +158,16 @@ public final class REv2TestTransactions {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var fromAddress = addressing.encodeAccountAddress(from);
     final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
-    final var accountPackageAddress =
-        addressing.encodePackageAddress(ScryptoConstants.ACCOUNT_PACKAGE_ADDRESS);
-
+    final var accountAddress =
+        addressing.encodeAccountAddress(
+            Address.virtualAccountAddress(ECKeyPair.generateNew().getPublicKey()));
     return String.format(
         """
                         CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
                         CALL_METHOD ComponentAddress("%s") "withdraw_by_amount" Decimal("900") ResourceAddress("%s");
-                        TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
-                        CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AccessRule::AllowAll") Bucket("xrd");
+                        CALL_METHOD ComponentAddress("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
                         """,
-        fromAddress, fromAddress, xrdAddress, xrdAddress, accountPackageAddress);
+        fromAddress, fromAddress, xrdAddress, accountAddress);
   }
 
   public static String constructCreateValidatorManifest(
@@ -277,18 +289,9 @@ public final class REv2TestTransactions {
         accountAddress);
   }
 
-  public static RawNotarizedTransaction constructNewAccountFromAccountTransaction(
-      NetworkDefinition networkDefinition, ComponentAddress from, long fromEpoch, long nonce) {
-    var manifest = constructNewAccountFromAccountManifest(networkDefinition, from);
-    var signatories = List.<ECKeyPair>of();
-
-    return constructRawTransaction(
-        networkDefinition, fromEpoch, nonce, manifest, DEFAULT_NOTARY, false, signatories);
-  }
-
-  public static byte[] constructNewAccountIntent(
+  public static byte[] constructDepositFromFaucetIntent(
       NetworkDefinition networkDefinition, long fromEpoch, long nonce, PublicKey notary) {
-    final var manifest = constructNewAccountManifest(networkDefinition);
+    final var manifest = constructDepositFromFaucetManifest(networkDefinition);
     final var header =
         TransactionHeader.defaults(networkDefinition, fromEpoch, 100, nonce, notary, false);
     return TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
@@ -300,7 +303,7 @@ public final class REv2TestTransactions {
       long nonce,
       PublicKey notary,
       int blobsSize) {
-    final var manifest = constructNewAccountManifest(networkDefinition);
+    final var manifest = constructDepositFromFaucetManifest(networkDefinition);
     final var header =
         TransactionHeader.defaults(networkDefinition, fromEpoch, 100, nonce, notary, false);
     final var blobs = List.of(new byte[blobsSize]);
@@ -398,9 +401,9 @@ public final class REv2TestTransactions {
         networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
   }
 
-  public static RawNotarizedTransaction constructNewAccountTransaction(
+  public static RawNotarizedTransaction constructDepositFromFaucetTransaction(
       NetworkDefinition networkDefinition, long fromEpoch, long nonce) {
-    var manifest = constructNewAccountManifest(networkDefinition);
+    var manifest = constructDepositFromFaucetManifest(networkDefinition);
     var signatories = List.<ECKeyPair>of();
 
     return constructRawTransaction(

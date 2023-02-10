@@ -3,7 +3,7 @@ use axum::{
     Json,
 };
 use hyper::StatusCode;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::network::NetworkDefinition;
 
 use super::models;
 

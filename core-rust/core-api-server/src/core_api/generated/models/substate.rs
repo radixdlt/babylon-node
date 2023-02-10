@@ -24,6 +24,11 @@ pub enum Substate {
         #[serde(rename = "chain")]
         chain: Vec<crate::core_api::generated::models::AccessRules>,
     },
+    #[serde(rename="Account")]
+    AccountSubstate {
+        #[serde(rename = "data_struct")]
+        data_struct: Box<crate::core_api::generated::models::DataStruct>,
+    },
     #[serde(rename="ClockCurrentMinute")]
     ClockCurrentMinuteSubstate {
         #[serde(rename = "timestamp_rounded_down_to_minute")]

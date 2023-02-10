@@ -1,5 +1,5 @@
 use radix_engine::types::{Bech32Decoder, Bech32Encoder};
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::network::NetworkDefinition;
 
 pub struct MappingContext {
     pub network_definition: NetworkDefinition,

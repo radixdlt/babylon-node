@@ -63,7 +63,7 @@
  */
 
 use crate::transaction::LedgerTransaction;
-use radix_engine::model::Validator;
+use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine::types::*;
 use std::collections::BTreeMap;
 use std::fmt;
