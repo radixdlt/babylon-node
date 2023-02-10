@@ -1959,6 +1959,7 @@ dependencies = [
  "hex",
  "im",
  "jni",
+ "lazy_static",
  "lru",
  "parking_lot",
  "prometheus",

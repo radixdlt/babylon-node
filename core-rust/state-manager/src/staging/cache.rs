@@ -66,17 +66,42 @@ use super::stage_tree::{DerivedStageKey, StageKey};
 use crate::staging::stage_tree::{Accumulator, Delta, StageTree};
 use crate::AccumulatorHash;
 use im::hashmap::HashMap as ImmutableHashMap;
-use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
+use lazy_static::lazy_static;
+use radix_engine::ledger::{OutputValue, ReadableSubstateStore};
+use radix_engine::state_manager::StateDiff;
 use radix_engine::transaction::{TransactionReceipt, TransactionResult};
 use radix_engine_interface::api::types::SubstateId;
+use radix_engine_interface::crypto::{hash, Hash};
+use radix_engine_interface::data::scrypto_encode;
+use radix_engine_stores::hash_tree::put_at_next_version;
+use radix_engine_stores::hash_tree::tree_store::{
+    NodeKey, ReadableTreeStore, TreeNode, Version, WriteableTreeStore,
+};
 use sbor::rust::collections::HashMap;
 use slotmap::SecondaryMap;
 
+pub trait RootStore: ReadableSubstateStore + ReadableTreeStore {}
+impl<T: ReadableSubstateStore + ReadableTreeStore> RootStore for T {}
+
 pub struct ExecutionCache {
-    stage_tree: StageTree<TransactionReceipt, ImmutableStore>,
+    stage_tree: StageTree<ProcessedResult, ImmutableStore>,
     root_accumulator_hash: AccumulatorHash,
     accumulator_hash_to_key: HashMap<AccumulatorHash, DerivedStageKey>,
     key_to_accumulator_hash: SecondaryMap<DerivedStageKey, AccumulatorHash>,
+}
+
+pub struct ProcessedResult {
+    // the state hash is not yet stored nor exposed (WIP)
+    #[allow(dead_code)]
+    state_hash: Hash,
+    receipt: TransactionReceipt,
+    hash_tree_diff: HashTreeDiff,
+}
+
+#[derive(Clone)]
+pub struct HashTreeDiff {
+    pub new_hash_tree_nodes: Vec<(NodeKey, TreeNode)>,
+    pub stale_hash_tree_node_keys: Vec<NodeKey>,
 }
 
 impl ExecutionCache {
@@ -89,27 +114,22 @@ impl ExecutionCache {
         }
     }
 
-    pub fn execute<S, T>(
+    pub fn execute_transaction<S: RootStore, T: FnOnce(&StagedStore<S>) -> TransactionReceipt>(
         &mut self,
         root_store: &S,
         parent_hash: &AccumulatorHash,
         new_hash: &AccumulatorHash,
         transaction: T,
-    ) -> &TransactionReceipt
-    where
-        S: ReadableSubstateStore,
-        T: FnOnce(&StagedSubstateStore<S>) -> TransactionReceipt,
-    {
+    ) -> &ProcessedResult {
         match self.accumulator_hash_to_key.get(new_hash) {
             Some(new_key) => self.stage_tree.get_delta(new_key),
             None => {
                 let parent_key = self.get_existing_substore_key(parent_hash);
-                let staged_store = StagedSubstateStore::new(
-                    root_store,
-                    self.stage_tree.get_accumulator(&parent_key),
-                );
+                let staged_store =
+                    StagedStore::new(root_store, self.stage_tree.get_accumulator(&parent_key));
                 let receipt = transaction(&staged_store);
-                let new_key = self.stage_tree.new_child_node(parent_key, receipt);
+                let processed = ProcessedResult::from_processed(receipt, &staged_store);
+                let new_key = self.stage_tree.new_child_node(parent_key, processed);
                 self.key_to_accumulator_hash.insert(new_key, *new_hash);
                 self.accumulator_hash_to_key.insert(*new_hash, new_key);
                 self.stage_tree.get_delta(&new_key)
@@ -149,62 +169,177 @@ impl ExecutionCache {
     }
 }
 
-pub struct StagedSubstateStore<'s, S: ReadableSubstateStore> {
+struct CollectingTreeStore<'s, S: ReadableTreeStore> {
+    readable_delegate: &'s S,
+    diff: HashTreeDiff,
+}
+
+impl<'s, S: ReadableTreeStore> CollectingTreeStore<'s, S> {
+    pub fn new(readable_delegate: &'s S) -> Self {
+        Self {
+            readable_delegate,
+            diff: HashTreeDiff::new(),
+        }
+    }
+}
+
+impl<'s, S: ReadableTreeStore> ReadableTreeStore for CollectingTreeStore<'s, S> {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+        self.readable_delegate.get_node(key)
+    }
+}
+
+impl<'s, S: ReadableTreeStore> WriteableTreeStore for CollectingTreeStore<'s, S> {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode) {
+        self.diff.new_hash_tree_nodes.push((key, node));
+    }
+
+    fn record_stale_node(&mut self, key: NodeKey) {
+        self.diff.stale_hash_tree_node_keys.push(key);
+    }
+}
+
+pub struct StagedStore<'s, S: RootStore> {
     root: &'s S,
     overlay: &'s ImmutableStore,
 }
 
-impl<'s, S: ReadableSubstateStore> StagedSubstateStore<'s, S> {
+impl<'s, S: RootStore> StagedStore<'s, S> {
     pub fn new(root: &'s S, overlay: &'s ImmutableStore) -> Self {
         Self { root, overlay }
     }
 }
 
-impl<'s, S: ReadableSubstateStore> ReadableSubstateStore for StagedSubstateStore<'s, S> {
+impl<'s, S: RootStore> ReadableSubstateStore for StagedStore<'s, S> {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
         self.overlay
-            .outputs
+            .substate_values
             .get(substate_id)
             .cloned()
             .or_else(|| self.root.get_substate(substate_id))
     }
 }
 
-impl Delta for TransactionReceipt {
-    fn weight(&self) -> usize {
-        match &self.result {
-            TransactionResult::Commit(commit) => commit.state_updates.up_substates.len(),
-            TransactionResult::Reject(_) => 0,
-            TransactionResult::Abort(_) => 0,
+impl<'s, S: RootStore> ReadableTreeStore for StagedStore<'s, S> {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+        self.overlay
+            .hash_tree_nodes
+            .get(key)
+            .cloned()
+            .or_else(|| ReadableTreeStore::get_node(self.root, key))
+    }
+}
+
+lazy_static! {
+    static ref EMPTY_STATE_DIFF: StateDiff = StateDiff::new();
+}
+
+impl ProcessedResult {
+    fn from_processed<S: RootStore>(
+        transaction_receipt: TransactionReceipt,
+        store: &StagedStore<S>,
+    ) -> ProcessedResult {
+        // TODO: currently, only the hashes of changed (or created) substates are tracked, since
+        // the hash tree wants to stay consistent with the substate store (which does not support
+        // deletes yet). The underlying JMT implementation already supports deletion - and to use
+        // it, we simply can include `down_substates` with `None` hashes in the vector below.
+        let hash_changes = match &transaction_receipt.result {
+            TransactionResult::Commit(commit) => commit
+                .state_updates
+                .up_substates
+                .iter()
+                .map(|(id, value)| {
+                    (
+                        id.clone(),
+                        Some(hash(scrypto_encode(&value.substate).unwrap())),
+                    )
+                })
+                .collect::<Vec<(SubstateId, Option<Hash>)>>(),
+            TransactionResult::Reject(_) | TransactionResult::Abort(_) => Vec::new(),
+        };
+        let mut collector = CollectingTreeStore::new(store);
+        let state_version = store.overlay.state_version;
+        let root_hash = put_at_next_version(&mut collector, state_version, &hash_changes);
+        Self {
+            state_hash: root_hash,
+            receipt: transaction_receipt,
+            hash_tree_diff: collector.diff,
         }
+    }
+
+    pub fn receipt(&self) -> &TransactionReceipt {
+        &self.receipt
+    }
+
+    pub fn state_diff(&self) -> &StateDiff {
+        if let TransactionResult::Commit(commit) = &self.receipt.result {
+            &commit.state_updates
+        } else {
+            &EMPTY_STATE_DIFF
+        }
+    }
+
+    pub fn hash_tree_diff(&self) -> &HashTreeDiff {
+        &self.hash_tree_diff
+    }
+}
+
+impl Delta for ProcessedResult {
+    fn weight(&self) -> usize {
+        self.state_diff().up_substates.len() + self.hash_tree_diff().new_hash_tree_nodes.len()
+    }
+}
+
+impl HashTreeDiff {
+    pub fn new() -> Self {
+        Self {
+            new_hash_tree_nodes: Vec::new(),
+            stale_hash_tree_node_keys: Vec::new(),
+        }
+    }
+
+    pub fn extend(&mut self, other: HashTreeDiff) {
+        self.new_hash_tree_nodes.extend(other.new_hash_tree_nodes);
+        self.stale_hash_tree_node_keys
+            .extend(other.stale_hash_tree_node_keys);
     }
 }
 
 #[derive(Clone)]
 pub struct ImmutableStore {
-    outputs: ImmutableHashMap<SubstateId, OutputValue>,
+    state_version: Option<Version>,
+    substate_values: ImmutableHashMap<SubstateId, OutputValue>,
+    hash_tree_nodes: ImmutableHashMap<NodeKey, TreeNode>,
 }
 
-impl Accumulator<TransactionReceipt> for ImmutableStore {
+impl Accumulator<ProcessedResult> for ImmutableStore {
     fn create_empty() -> Self {
         Self {
-            outputs: ImmutableHashMap::new(),
+            state_version: None,
+            substate_values: ImmutableHashMap::new(),
+            hash_tree_nodes: ImmutableHashMap::new(),
         }
     }
 
-    fn accumulate(&mut self, delta: &TransactionReceipt) {
-        if let TransactionResult::Commit(commit) = &delta.result {
-            commit.state_updates.commit(self);
-        }
+    fn accumulate(&mut self, processed: &ProcessedResult) {
+        self.state_version = Some(self.state_version.unwrap_or(0) + 1);
+        self.substate_values.extend(
+            processed
+                .state_diff()
+                .up_substates
+                .iter()
+                .map(|(id, value)| (id.clone(), value.clone())),
+        );
+        self.hash_tree_nodes.extend(
+            processed
+                .hash_tree_diff()
+                .new_hash_tree_nodes
+                .iter()
+                .cloned(),
+        );
     }
 
     fn constant_clone(&self) -> Self {
         self.clone()
-    }
-}
-
-impl WriteableSubstateStore for ImmutableStore {
-    fn put_substate(&mut self, substate_id: SubstateId, output: OutputValue) {
-        self.outputs.insert(substate_id, output);
     }
 }

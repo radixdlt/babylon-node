@@ -140,6 +140,7 @@ pub mod commit {
     use super::*;
     use radix_engine::ledger::OutputValue;
     use radix_engine_interface::api::types::SubstateId;
+    use radix_engine_stores::hash_tree::tree_store::{NodeKey, TreeNode};
     use std::collections::BTreeMap;
 
     pub struct CommitBundle {
@@ -149,6 +150,7 @@ pub mod commit {
         pub epoch_boundary: Option<u64>,
         pub substates: BTreeMap<SubstateId, OutputValue>,
         pub vertex_store: Option<Vec<u8>>,
+        pub hash_tree_nodes: Vec<(NodeKey, TreeNode)>,
     }
 
     pub trait CommitStore {
