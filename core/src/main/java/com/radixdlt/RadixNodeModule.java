@@ -204,18 +204,22 @@ public final class RadixNodeModule extends AbstractModule {
     install(new DispatcherModule());
 
     // Consensus
-    final String useGenesis = properties.get("consensus.use_genesis_for_validator_address");
+    final String useGenesisProperty = properties.get("consensus.use_genesis_for_validator_address");
+    final Option<Boolean> useGenesis =
+        Strings.isNullOrEmpty(useGenesisProperty)
+            ? Option.none()
+            : Option.some(Boolean.parseBoolean(useGenesisProperty));
     final String validatorAddress = properties.get("consensus.validator_address", (String) null);
-    if (!Strings.isNullOrEmpty(useGenesis) && !Strings.isNullOrEmpty(validatorAddress)) {
+    if (useGenesis.isPresent() && useGenesis.unwrap() && !Strings.isNullOrEmpty(validatorAddress)) {
       throw new IllegalArgumentException(
-          "Invalid configuration. Using both consensus.genesis_for_validator_address and"
+          "Invalid configuration. Using both consensus.use_genesis_for_validator_address=true and"
               + " consensus.validator_address. Please use one.");
     } else if (!Strings.isNullOrEmpty(validatorAddress)) {
       OptionalBinder.newOptionalBinder(binder(), Key.get(ComponentAddress.class, Self.class))
           .setBinding()
           .toInstance(addressing.decodeValidatorAddress(validatorAddress));
       install(new BFTValidatorIdModule());
-    } else if (Strings.isNullOrEmpty(useGenesis) || Boolean.parseBoolean(useGenesis)) {
+    } else if (useGenesis.isEmpty() || (useGenesis.isPresent() && useGenesis.unwrap())) {
       install(new BFTValidatorIdFromGenesisModule());
     } else {
       // No validator address provided, and use genesis explicitly disabled
