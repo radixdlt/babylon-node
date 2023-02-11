@@ -40,7 +40,7 @@ fn handle_state_epoch_internal(
     };
 
     Ok(models::StateEpochResponse {
-        epoch: to_api_epoch(epoch_manager_substate.epoch)?,
+        epoch: to_api_epoch(&mapping_context, epoch_manager_substate.epoch)?,
         epoch_manager: Some(to_api_epoch_manager_substate(
             &mapping_context,
             &epoch_manager_substate,

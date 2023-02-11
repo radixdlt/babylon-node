@@ -38,6 +38,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   TransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_IS_INTENT_REJECTION_PERMANENT,
   TransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_IS_REJECTED_BECAUSE_INTENT_ALREADY_COMMITTED,
   TransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_RECALCULATION_DUE,
+  TransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_RECALCULATION_FROM_EPOCH,
   TransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_INVALID_FROM_EPOCH
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -59,6 +60,9 @@ public class TransactionSubmitRejectedErrorDetailsAllOf {
 
   public static final String JSON_PROPERTY_RECALCULATION_DUE = "recalculation_due";
   private Instant recalculationDue;
+
+  public static final String JSON_PROPERTY_RECALCULATION_FROM_EPOCH = "recalculation_from_epoch";
+  private Long recalculationFromEpoch;
 
   public static final String JSON_PROPERTY_INVALID_FROM_EPOCH = "invalid_from_epoch";
   private Long invalidFromEpoch;
@@ -222,6 +226,34 @@ public class TransactionSubmitRejectedErrorDetailsAllOf {
   }
 
 
+  public TransactionSubmitRejectedErrorDetailsAllOf recalculationFromEpoch(Long recalculationFromEpoch) {
+    this.recalculationFromEpoch = recalculationFromEpoch;
+    return this;
+  }
+
+   /**
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the epoch after which the node will consider recalculating the validity of the transaction. Only present if the rejection is temporary due to a header specifying a \&quot;from epoch\&quot; in the future. 
+   * minimum: 0
+   * maximum: 10000000000
+   * @return recalculationFromEpoch
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "An integer between `0` and `10^10`, marking the epoch after which the node will consider recalculating the validity of the transaction. Only present if the rejection is temporary due to a header specifying a \"from epoch\" in the future. ")
+  @JsonProperty(JSON_PROPERTY_RECALCULATION_FROM_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Long getRecalculationFromEpoch() {
+    return recalculationFromEpoch;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_RECALCULATION_FROM_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setRecalculationFromEpoch(Long recalculationFromEpoch) {
+    this.recalculationFromEpoch = recalculationFromEpoch;
+  }
+
+
   public TransactionSubmitRejectedErrorDetailsAllOf invalidFromEpoch(Long invalidFromEpoch) {
     this.invalidFromEpoch = invalidFromEpoch;
     return this;
@@ -268,12 +300,13 @@ public class TransactionSubmitRejectedErrorDetailsAllOf {
         Objects.equals(this.isIntentRejectionPermanent, transactionSubmitRejectedErrorDetailsAllOf.isIntentRejectionPermanent) &&
         Objects.equals(this.isRejectedBecauseIntentAlreadyCommitted, transactionSubmitRejectedErrorDetailsAllOf.isRejectedBecauseIntentAlreadyCommitted) &&
         Objects.equals(this.recalculationDue, transactionSubmitRejectedErrorDetailsAllOf.recalculationDue) &&
+        Objects.equals(this.recalculationFromEpoch, transactionSubmitRejectedErrorDetailsAllOf.recalculationFromEpoch) &&
         Objects.equals(this.invalidFromEpoch, transactionSubmitRejectedErrorDetailsAllOf.invalidFromEpoch);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(errorMessage, isFresh, isPayloadRejectionPermanent, isIntentRejectionPermanent, isRejectedBecauseIntentAlreadyCommitted, recalculationDue, invalidFromEpoch);
+    return Objects.hash(errorMessage, isFresh, isPayloadRejectionPermanent, isIntentRejectionPermanent, isRejectedBecauseIntentAlreadyCommitted, recalculationDue, recalculationFromEpoch, invalidFromEpoch);
   }
 
   @Override
@@ -286,6 +319,7 @@ public class TransactionSubmitRejectedErrorDetailsAllOf {
     sb.append("    isIntentRejectionPermanent: ").append(toIndentedString(isIntentRejectionPermanent)).append("\n");
     sb.append("    isRejectedBecauseIntentAlreadyCommitted: ").append(toIndentedString(isRejectedBecauseIntentAlreadyCommitted)).append("\n");
     sb.append("    recalculationDue: ").append(toIndentedString(recalculationDue)).append("\n");
+    sb.append("    recalculationFromEpoch: ").append(toIndentedString(recalculationFromEpoch)).append("\n");
     sb.append("    invalidFromEpoch: ").append(toIndentedString(invalidFromEpoch)).append("\n");
     sb.append("}");
     return sb.toString();

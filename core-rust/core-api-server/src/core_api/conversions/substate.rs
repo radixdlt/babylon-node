@@ -702,7 +702,7 @@ pub fn to_api_validator_set_substate(
         .collect();
     Ok(models::Substate::ValidatorSetSubstate {
         validator_set,
-        epoch: to_api_epoch(*epoch)?,
+        epoch: to_api_epoch(context, *epoch)?,
     })
 }
 
@@ -752,10 +752,10 @@ pub fn to_api_epoch_manager_substate(
 
     Ok(models::Substate::EpochManagerSubstate {
         address: to_api_component_address(context, address),
-        epoch: to_api_epoch(*epoch)?,
+        epoch: to_api_epoch(context, *epoch)?,
         round: to_api_round(*round)?,
         rounds_per_epoch: to_api_round(*rounds_per_epoch)?,
-        num_unstake_epochs: to_api_epoch(*num_unstake_epochs)?,
+        num_unstake_epochs: to_api_epoch(context, *num_unstake_epochs)?,
     })
 }
 

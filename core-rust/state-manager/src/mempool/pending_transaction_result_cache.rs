@@ -17,10 +17,6 @@ pub enum RejectionReason {
     FromExecution(Box<RejectionError>),
     ValidationError(TransactionValidationError),
     IntentHashCommitted,
-    /// This is temporary until we get better execution limits
-    ExecutionTookTooLong {
-        time_limit_ms: u32,
-    },
 }
 
 impl RejectionReason {
@@ -52,84 +48,86 @@ impl RejectionReason {
             RejectionReason::FromExecution(rejection_error) => match **rejection_error {
                 RejectionError::SuccessButFeeLoanNotRepaid => RejectionPermanence::Temporary {
                     base_allow_retry_after: Duration::from_secs(2 * 60),
+                    retry_from_epoch: None,
                 },
                 RejectionError::ErrorBeforeFeeLoanRepaid(_) => RejectionPermanence::Temporary {
                     base_allow_retry_after: Duration::from_secs(2 * 60),
+                    retry_from_epoch: None,
                 },
-                RejectionError::TransactionEpochNotYetValid { .. } => {
+                RejectionError::TransactionEpochNotYetValid { valid_from, .. } => {
                     RejectionPermanence::Temporary {
-                        base_allow_retry_after: Duration::from_secs(2 * 60),
+                        base_allow_retry_after: Duration::from_secs(60),
+                        retry_from_epoch: Some(valid_from),
                     }
                 }
                 RejectionError::TransactionEpochNoLongerValid { .. } => {
-                    RejectionPermanence::PermamentForAnyPayloadWithThisIntent
+                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
                 }
             },
             RejectionReason::ValidationError(validation_error) => match validation_error {
                 // The size is a property of the payload, not the intent
                 TransactionValidationError::TransactionTooLarge => {
-                    RejectionPermanence::PermamentForPayload
+                    RejectionPermanence::PermanentForPayload
                 }
                 // The serialization is a property of the payload, not the intent
                 TransactionValidationError::SerializationError(_) => {
-                    RejectionPermanence::PermamentForPayload
+                    RejectionPermanence::PermanentForPayload
                 }
                 // The serialization is a property of the payload, not the intent
                 TransactionValidationError::DeserializationError(_) => {
-                    RejectionPermanence::PermamentForPayload
+                    RejectionPermanence::PermanentForPayload
                 }
                 // The signature validity is a property of the payload, not the intent
                 TransactionValidationError::SignatureValidationError(_) => {
-                    RejectionPermanence::PermamentForPayload
+                    RejectionPermanence::PermanentForPayload
                 }
                 // This isn't actually possible to get on the node - but it would mark a permanent intent rejection
                 TransactionValidationError::IntentHashRejected => {
-                    RejectionPermanence::PermamentForAnyPayloadWithThisIntent
+                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
                 }
                 // This is permanent for the intent - because all intents share the same header
                 TransactionValidationError::HeaderValidationError(_) => {
-                    RejectionPermanence::PermamentForAnyPayloadWithThisIntent
+                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
                 }
                 // This is permanent for the intent - because all intents share the same manifest
                 TransactionValidationError::IdValidationError(_) => {
-                    RejectionPermanence::PermamentForAnyPayloadWithThisIntent
+                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
                 }
                 // This is permanent for the intent - because all intents share the same manifest
                 TransactionValidationError::CallDataValidationError(_) => {
-                    RejectionPermanence::PermamentForAnyPayloadWithThisIntent
+                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
                 }
             },
             RejectionReason::IntentHashCommitted => {
-                RejectionPermanence::PermamentForAnyPayloadWithThisIntent
+                RejectionPermanence::PermanentForAnyPayloadWithThisIntent
             }
-            // Temporary until we have better execution limits
-            RejectionReason::ExecutionTookTooLong { .. } => RejectionPermanence::Temporary {
-                base_allow_retry_after: Duration::from_secs(10 * 60),
-            },
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RejectionPermanence {
-    PermamentForPayload,
-    PermamentForAnyPayloadWithThisIntent,
-    Temporary { base_allow_retry_after: Duration },
+    PermanentForPayload,
+    PermanentForAnyPayloadWithThisIntent,
+    Temporary {
+        base_allow_retry_after: Duration,
+        retry_from_epoch: Option<u64>,
+    },
 }
 
 impl RejectionPermanence {
     pub fn is_permanent_for_payload(&self) -> bool {
         match self {
-            RejectionPermanence::PermamentForPayload => true,
-            RejectionPermanence::PermamentForAnyPayloadWithThisIntent => true,
+            RejectionPermanence::PermanentForPayload => true,
+            RejectionPermanence::PermanentForAnyPayloadWithThisIntent => true,
             RejectionPermanence::Temporary { .. } => false,
         }
     }
 
     pub fn is_permanent_for_intent(&self) -> bool {
         match self {
-            RejectionPermanence::PermamentForPayload => false,
-            RejectionPermanence::PermamentForAnyPayloadWithThisIntent => true,
+            RejectionPermanence::PermanentForPayload => false,
+            RejectionPermanence::PermanentForAnyPayloadWithThisIntent => true,
             RejectionPermanence::Temporary { .. } => false,
         }
     }
@@ -143,12 +141,6 @@ impl fmt::Display for RejectionReason {
                 write!(f, "Validation Error: {:?}", validation_error)
             }
             RejectionReason::IntentHashCommitted => write!(f, "Intent hash already committed"),
-            // Temporary until we have better execution limits
-            RejectionReason::ExecutionTookTooLong { time_limit_ms } => write!(
-                f,
-                "Execution took longer than max time allowed: {}",
-                time_limit_ms
-            ),
         }
     }
 }
@@ -222,6 +214,7 @@ pub enum AtState {
 pub enum RecalculationDue {
     Never,
     From(SystemTime),
+    FromEpoch(u64),
     Whenever,
 }
 
@@ -279,10 +272,13 @@ impl PendingTransactionRecord {
         }
     }
 
-    pub fn should_recalculate(&self, current_timestamp: SystemTime) -> bool {
+    pub fn should_recalculate(&self, current_epoch: u64, current_timestamp: SystemTime) -> bool {
         match self.recalculation_due {
             RecalculationDue::Never => false,
             RecalculationDue::Whenever => true,
+            RecalculationDue::FromEpoch(recalculate_after_epoch) => {
+                recalculate_after_epoch <= current_epoch
+            }
             RecalculationDue::From(recalculate_after) => recalculate_after <= current_timestamp,
         }
     }
@@ -333,7 +329,12 @@ impl PendingTransactionRecord {
             Some(rejection_reason) => {
                 match rejection_reason.permanence() {
                     RejectionPermanence::Temporary {
+                        retry_from_epoch: Some(retry_from_epoch),
+                        ..
+                    } => RecalculationDue::FromEpoch(retry_from_epoch),
+                    RejectionPermanence::Temporary {
                         base_allow_retry_after,
+                        ..
                     } => {
                         // Use exponential back-off.
                         // Previous rejections increase the exponent, previous non-rejections decrease it by half as much
@@ -707,14 +708,28 @@ mod tests {
         let payload_hash_1 = user_payload_hash(1);
         let payload_hash_2 = user_payload_hash(2);
         let payload_hash_3 = user_payload_hash(3);
+        let payload_hash_4 = user_payload_hash(4);
 
         let intent_hash_1 = intent_hash(1);
+        let intent_hash_2 = intent_hash(2);
 
         let attempt_with_temporary_rejection = TransactionAttempt {
             rejection: Some(RejectionReason::FromExecution(Box::new(
                 RejectionError::SuccessButFeeLoanNotRepaid,
             ))),
             against_state: AtState::Committed { state_version: 0 },
+            timestamp: start,
+        };
+        let attempt_with_rejection_until_epoch_10 = TransactionAttempt {
+            rejection: Some(RejectionReason::FromExecution(Box::new(
+                RejectionError::TransactionEpochNotYetValid {
+                    valid_from: 10,
+                    current_epoch: 9,
+                },
+            ))),
+            against_state: AtState::Committed {
+                state_version: 10000,
+            },
             timestamp: start,
         };
         let attempt_with_permanent_rejection = TransactionAttempt {
@@ -740,7 +755,7 @@ mod tests {
         let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_1, 0);
         // Even far in future, a permanent rejection is still there and never ready for recalculation
         assert!(record.is_some());
-        assert!(!record.unwrap().should_recalculate(far_in_future));
+        assert!(!record.unwrap().should_recalculate(0, far_in_future));
 
         // Temporary Rejection
         cache.track_transaction_result(
@@ -752,24 +767,48 @@ mod tests {
         // A little in future, a temporary rejection is not ready for recalculation
         let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_2, 0);
         assert!(record.is_some());
-        assert!(!record.unwrap().should_recalculate(little_in_future));
+        assert!(!record.unwrap().should_recalculate(0, little_in_future));
 
         // Far in future, a temporary rejection is ready for recalculation
         let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_2, 0);
         assert!(record.is_some());
-        assert!(record.unwrap().should_recalculate(far_in_future));
+        assert!(record.unwrap().should_recalculate(0, far_in_future));
 
         // No rejection
         cache.track_transaction_result(intent_hash_1, payload_hash_3, 0, attempt_with_no_rejection);
 
         // A little in future, a no-rejection result is not ready for recalculation
         let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_3, 0);
-        assert!(record.is_none());
-        assert!(!record.unwrap().should_recalculate(little_in_future));
+        assert!(record.is_some());
+        assert!(!record.unwrap().should_recalculate(0, little_in_future));
 
         // Far in future, a no-rejection result is ready for recalculation
         let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_3, 0);
-        assert!(record.is_none());
-        assert!(record.unwrap().should_recalculate(far_in_future));
+        assert!(record.is_some());
+        assert!(record.unwrap().should_recalculate(0, far_in_future));
+
+        // Temporary Rejection with recalculation from epoch 10
+        cache.track_transaction_result(
+            intent_hash_2,
+            payload_hash_4,
+            0,
+            attempt_with_rejection_until_epoch_10,
+        );
+
+        // Still at epoch 9, not yet ready for recalculation
+        let record = cache.get_pending_transaction_record(&intent_hash_2, &payload_hash_4, 0);
+        let current_epoch = 9;
+        assert!(record.is_some());
+        assert!(!record
+            .unwrap()
+            .should_recalculate(current_epoch, little_in_future));
+
+        // Now at epoch 10, now ready for recalculation
+        let record = cache.get_pending_transaction_record(&intent_hash_2, &payload_hash_4, 0);
+        let current_epoch = 10;
+        assert!(record.is_some());
+        assert!(record
+            .unwrap()
+            .should_recalculate(current_epoch, little_in_future));
     }
 }

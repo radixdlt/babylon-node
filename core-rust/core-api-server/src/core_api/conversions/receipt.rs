@@ -149,7 +149,7 @@ pub fn to_api_next_epoch(
     }
 
     let next_epoch = models::NextEpoch {
-        epoch: to_api_epoch(next_epoch.1)?,
+        epoch: to_api_epoch(context, next_epoch.1)?,
         validators,
     };
 

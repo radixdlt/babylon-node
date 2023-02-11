@@ -94,6 +94,10 @@ public final class NodesPredicate {
     return allNodesMatch(NodePredicate.atExactlyStateVersion(stateVersion));
   }
 
+  public static Predicate<List<Injector>> allAtOrOverEpoch(long epoch) {
+    return allNodesMatch(NodePredicate.atOrOverEpoch(epoch));
+  }
+
   public static Predicate<List<Injector>> allCommittedTransaction(
       RawNotarizedTransaction transaction) {
     return allNodesMatch(NodePredicate.committedUserTransaction(transaction));
