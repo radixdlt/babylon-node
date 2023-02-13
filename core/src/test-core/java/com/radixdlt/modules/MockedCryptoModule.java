@@ -70,6 +70,7 @@ import com.google.common.hash.Hashing;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.monitoring.Metrics;
@@ -78,7 +79,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -111,6 +111,8 @@ public class MockedCryptoModule extends AbstractModule {
     AtomicBoolean running = new AtomicBoolean(false);
     Hasher hasher =
         new Hasher() {
+          private final Sha256Hasher hasher = new Sha256Hasher(serialization);
+
           @Override
           public int hashSizeInBytes() {
             return 32;
@@ -118,25 +120,12 @@ public class MockedCryptoModule extends AbstractModule {
 
           @Override
           public HashCode hashDsonEncoded(Object o) {
-            byte[] dson = timeWhinge("Serialization", () -> serialization.toDson(o, Output.HASH));
-            return this.hashBytes(dson);
+            return this.hashBytes(serialization.toDson(o, Output.HASH));
           }
 
           @Override
           public HashCode hashBytes(byte[] bytes) {
-            byte[] hashCode = timeWhinge("Hashing", () -> hashFunction.hashBytes(bytes).asBytes());
-            return HashCode.fromBytes(hashCode);
-          }
-
-          private <T> T timeWhinge(String what, Supplier<T> exec) {
-            long start = System.nanoTime();
-            T result = exec.get();
-            long end = System.nanoTime();
-            long durationMs = (end - start) / 1_000_000L;
-            if (durationMs > 50) {
-              log.warn("{} took {}ms", what, durationMs);
-            }
-            return result;
+            return hasher.hashBytes(bytes);
           }
         };
 
