@@ -74,6 +74,8 @@ import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -81,6 +83,7 @@ public class PacemakerStateTest {
 
   private EventDispatcher<RoundUpdate> roundUpdateSender = rmock(EventDispatcher.class);
   private ProposerElection proposerElection = mock(ProposerElection.class);
+  private Metrics metrics = new MetricsInitializer().initialize();
 
   private PacemakerState pacemakerState;
 
@@ -91,7 +94,8 @@ public class PacemakerStateTest {
         RoundUpdate.create(
             Round.genesis(), mock(HighQC.class), BFTValidatorId.random(), BFTValidatorId.random());
     this.pacemakerState =
-        new PacemakerState(roundUpdate, this.proposerElection, this.roundUpdateSender);
+        new PacemakerState(
+            roundUpdate, this.proposerElection, this.roundUpdateSender, this.metrics);
   }
 
   @Test

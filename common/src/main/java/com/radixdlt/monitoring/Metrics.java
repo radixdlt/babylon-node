@@ -189,7 +189,8 @@ public record Metrics(
         Counter proposedTransactions,
         Counter proposalsSent,
         Counter timedOutRounds,
-        Counter proposalsWithSubstituteTimestamp) {}
+        Counter proposalsWithSubstituteTimestamp,
+        Timer roundDuration) {}
 
     public record Sync(Counter requestsSent, Counter requestsReceived, Counter requestTimeouts) {}
 

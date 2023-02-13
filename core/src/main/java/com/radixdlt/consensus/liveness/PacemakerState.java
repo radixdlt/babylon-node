@@ -65,12 +65,14 @@
 package com.radixdlt.consensus.liveness;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Stopwatch;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.monitoring.Metrics;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
@@ -84,21 +86,26 @@ import org.apache.logging.log4j.Logger;
 public class PacemakerState implements PacemakerReducer {
   private static final Logger log = LogManager.getLogger();
 
-  private final EventDispatcher<RoundUpdate> roundUpdateSender;
   private final ProposerElection proposerElection;
+  private final EventDispatcher<RoundUpdate> roundUpdateSender;
+  private final Metrics metrics;
 
   private Round currentRound;
   private HighQC highQC;
+  private Stopwatch currentRoundStopwatch;
 
   @Inject
   public PacemakerState(
       RoundUpdate roundUpdate,
       ProposerElection proposerElection,
-      EventDispatcher<RoundUpdate> roundUpdateSender) {
+      EventDispatcher<RoundUpdate> roundUpdateSender,
+      Metrics metrics) {
     this.proposerElection = Objects.requireNonNull(proposerElection);
     this.roundUpdateSender = Objects.requireNonNull(roundUpdateSender);
+    this.metrics = metrics;
     this.highQC = roundUpdate.getHighQC();
     this.currentRound = roundUpdate.getCurrentRound();
+    this.currentRoundStopwatch = Stopwatch.createStarted();
   }
 
   @Override
@@ -107,12 +114,14 @@ public class PacemakerState implements PacemakerReducer {
 
     final var highestRoundWithQuorum = highQC.getHighestRound();
     if (highestRoundWithQuorum.gte(this.currentRound)) {
+      metrics.bft().pacemaker().roundDuration().observe(currentRoundStopwatch.elapsed());
       final var nextRound = highestRoundWithQuorum.next();
       final BFTValidatorId leader = this.proposerElection.getProposer(nextRound);
       final BFTValidatorId nextLeader = this.proposerElection.getProposer(nextRound.next());
       final var roundUpdate = RoundUpdate.create(nextRound, highQC, leader, nextLeader);
       this.highQC = highQC;
       this.currentRound = nextRound;
+      this.currentRoundStopwatch = Stopwatch.createStarted();
       roundUpdateSender.dispatch(roundUpdate);
       return Optional.of(roundUpdate);
     } else {
