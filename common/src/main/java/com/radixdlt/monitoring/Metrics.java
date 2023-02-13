@@ -170,7 +170,11 @@ public record Metrics(
       GetterGauge inValidatorSet,
       Pacemaker pacemaker,
       Sync sync,
-      VertexStore vertexStore) {
+      VertexStore vertexStore,
+      Summary leaderMaxProposalPayloadSize,
+      Summary leaderNumTransactionsIncludedInProposal,
+      Summary leaderTransactionBytesIncludedInProposal,
+      Summary leaderTransactionBytesIncludedInProposalAndPreviousVertices) {
 
     public record Pacemaker(
         Counter timeoutsSent,
@@ -214,11 +218,7 @@ public record Metrics(
       Counter syncTransactionsProcessed,
       Counter bftTransactionsProcessed,
       Timer commit,
-      Timer prepare,
-      Counter maxProposalPayloadSize,
-      Counter numTransactionsIncludedInProposal,
-      Counter transactionBytesIncludedInProposal,
-      Counter transactionBytesIncludedInProposalAndPreviousVertices) {}
+      Timer prepare) {}
 
   public record LedgerSync(
       Counter invalidResponsesReceived,

@@ -107,7 +107,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   // chain.
   // Effectively limits the size of a commit batch (i.e. the size of transactions under a single
   // proof).
-  private final int maxProposalAndUncommittedVerticesTotalTxnPayloadSize;
+  private final int maxUncommittedUserTransactionsTotalPayloadSize;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher;
 
   private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
@@ -120,7 +120,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
       RustStateComputer stateComputer,
       int maxNumTransactionsPerProposal,
       int maxProposalTotalTxnsPayloadSize,
-      int maxProposalAndUncommittedVerticesTotalTxnPayloadSize,
+      int maxUncommittedUserTransactionsTotalPayloadSize,
       Hasher hasher,
       EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
       EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
@@ -130,8 +130,8 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     this.stateComputer = stateComputer;
     this.maxNumTransactionsPerProposal = maxNumTransactionsPerProposal;
     this.maxProposalTotalTxnsPayloadSize = maxProposalTotalTxnsPayloadSize;
-    this.maxProposalAndUncommittedVerticesTotalTxnPayloadSize =
-        maxProposalAndUncommittedVerticesTotalTxnPayloadSize;
+    this.maxUncommittedUserTransactionsTotalPayloadSize =
+        maxUncommittedUserTransactionsTotalPayloadSize;
     this.hasher = hasher;
     this.ledgerUpdateEventDispatcher = ledgerUpdateEventDispatcher;
     this.mempoolAddSuccessEventDispatcher = mempoolAddSuccessEventDispatcher;
@@ -181,13 +181,12 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
             .map(tx -> tx.getPayload().length)
             .reduce(0, Integer::sum);
     final var remainingSizeInUncommittedVertices =
-        maxProposalAndUncommittedVerticesTotalTxnPayloadSize
-            - rawPreviousExecutedTransactionsTotalSize;
+        maxUncommittedUserTransactionsTotalPayloadSize - rawPreviousExecutedTransactionsTotalSize;
 
     final var maxPayloadSize =
         Math.min(remainingSizeInUncommittedVertices, maxProposalTotalTxnsPayloadSize);
 
-    metrics.ledger().maxProposalPayloadSize().inc(maxPayloadSize);
+    metrics.bft().leaderMaxProposalPayloadSize().observe(maxPayloadSize);
 
     // TODO: Don't include transactions if NextEpoch is to occur
     // TODO: This will require Proposer to simulate a NextRound update before proposing
@@ -203,12 +202,12 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     final var totalUncommittedTxnBytesIncludingThisProposal =
         resultTotalTxnPayloadSize + rawPreviousExecutedTransactionsTotalSize;
 
-    metrics.ledger().numTransactionsIncludedInProposal().inc(result.size());
-    metrics.ledger().transactionBytesIncludedInProposal().inc(resultTotalTxnPayloadSize);
+    metrics.bft().leaderNumTransactionsIncludedInProposal().observe(result.size());
+    metrics.bft().leaderTransactionBytesIncludedInProposal().observe(resultTotalTxnPayloadSize);
     metrics
-        .ledger()
-        .transactionBytesIncludedInProposalAndPreviousVertices()
-        .inc(totalUncommittedTxnBytesIncludingThisProposal);
+        .bft()
+        .leaderTransactionBytesIncludedInProposalAndPreviousVertices()
+        .observe(totalUncommittedTxnBytesIncludingThisProposal);
 
     return result;
   }

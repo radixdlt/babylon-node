@@ -254,9 +254,6 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
     forwardTo.start();
   }
 
-  // TODO: rework processQueuedConsensusEvent()
-  // avoid code duplication and manual forwarding using instanceof
-  // https://radixdlt.atlassian.net/browse/NT-6
   private void processQueuedConsensusEvent(QueuedConsensusEvent queuedEvent) {
     metrics.bft().consensusEventsQueueWait().observe(queuedEvent.stopwatch.elapsed());
     switch (queuedEvent.event) {

@@ -82,7 +82,7 @@ import org.apache.logging.log4j.Logger;
 /*
 TODO: address the following
 Currently max allowed daley time is quite permissive to account for
-processing proposals that take much time to sync/execute.
+processing proposals that take much time to sync.
 Consider moving this verifier before the SyncUp processor.
 That'd require some refactoring though:
 f.e. it would no longer be guaranteed that the proposal is for the current round

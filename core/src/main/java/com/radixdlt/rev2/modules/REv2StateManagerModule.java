@@ -97,7 +97,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   private final int networkId;
   private final int maxNumTransactionsPerProposal;
   private final int maxProposalTotalTxnsPayloadSize;
-  private final int maxProposalAndUncommittedVerticesTotalTxnPayloadSize;
+  private final int maxUncommittedUserTransactionsTotalPayloadSize;
   private final REv2DatabaseConfig databaseConfig;
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean testing;
@@ -107,7 +107,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       int networkId,
       int maxNumTransactionsPerProposal,
       int maxProposalTotalTxnsPayloadSize,
-      int maxProposalAndUncommittedVerticesTotalTxnPayloadSize,
+      int maxUncommittedUserTransactionsTotalPayloadSize,
       boolean prefixDatabase,
       REv2DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
@@ -115,8 +115,8 @@ public final class REv2StateManagerModule extends AbstractModule {
     this.networkId = networkId;
     this.maxNumTransactionsPerProposal = maxNumTransactionsPerProposal;
     this.maxProposalTotalTxnsPayloadSize = maxProposalTotalTxnsPayloadSize;
-    this.maxProposalAndUncommittedVerticesTotalTxnPayloadSize =
-        maxProposalAndUncommittedVerticesTotalTxnPayloadSize;
+    this.maxUncommittedUserTransactionsTotalPayloadSize =
+        maxUncommittedUserTransactionsTotalPayloadSize;
     this.testing = prefixDatabase;
     this.databaseConfig = databaseConfig;
     this.mempoolConfig = mempoolConfig;
@@ -127,14 +127,14 @@ public final class REv2StateManagerModule extends AbstractModule {
       int networkId,
       int maxNumTransactionsPerProposal,
       int maxProposalTotalTxnsPayloadSize,
-      int maxProposalAndUncommittedVerticesTotalTxnPayloadSize,
+      int maxUncommittedUserTransactionsTotalPayloadSize,
       REv2DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig) {
     return new REv2StateManagerModule(
         networkId,
         maxNumTransactionsPerProposal,
         maxProposalTotalTxnsPayloadSize,
-        maxProposalAndUncommittedVerticesTotalTxnPayloadSize,
+        maxUncommittedUserTransactionsTotalPayloadSize,
         false,
         databaseConfig,
         mempoolConfig,
@@ -216,7 +216,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                   stateComputer,
                   maxNumTransactionsPerProposal,
                   maxProposalTotalTxnsPayloadSize,
-                  maxProposalAndUncommittedVerticesTotalTxnPayloadSize,
+                  maxUncommittedUserTransactionsTotalPayloadSize,
                   hasher,
                   ledgerUpdateEventDispatcher,
                   mempoolAddSuccessEventDispatcher,

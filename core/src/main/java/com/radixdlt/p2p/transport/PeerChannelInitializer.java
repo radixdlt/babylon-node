@@ -114,7 +114,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
         Math.max(
             Math.max(
                 REv2TransactionsAndProofReader.MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE,
-                RadixNodeModule.MAX_PROPOSAL_AND_UNCOMMITTED_VERTICES_TOTAL_TXN_PAYLOAD_SIZE),
+                RadixNodeModule.MAX_UNCOMMITTED_USER_TRANSACTIONS_TOTAL_PAYLOAD_SIZE),
             MempoolRelayer.MAX_RELAY_MSG_TOTAL_TXN_PAYLOAD_SIZE);
     // 30% should be more than enough for any vertex/QCs/proofs/encryption overhead
     final var additionalBuffer = (int) (0.3 * baseBufferSize);

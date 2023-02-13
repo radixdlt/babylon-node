@@ -182,6 +182,9 @@ public class MetricsInitializer {
     if (type == Timer.class) {
       return new Timer(name);
     }
+    if (type == Summary.class) {
+      return Summary.build(name, name).create();
+    }
     if (type == GetterGauge.class) {
       return new GetterGauge(name);
     }

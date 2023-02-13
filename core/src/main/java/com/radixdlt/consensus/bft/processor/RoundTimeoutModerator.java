@@ -142,6 +142,15 @@ public final class RoundTimeoutModerator implements BFTEventProcessorAtCurrentRo
 
   @Override
   public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
+    /* The timeouts for the current round can be extended in three cases:
+    1) we have already received a QC for this round, which hasn't yet been synced-up to:
+       this prevents us from sending timeout votes for rounds that already have a QC,
+       and potentially avoids creating a competing TC for the same round.
+    2) we extend it for round N if we have received a proposal for round N to give us time to process the proposal
+    3) we extend it for round N if we have received a proposal for round N + 1 to give us time to sync up the QC for round N (if it exists)
+    The 3rd case really duplicates the "received QC" condition (as proposal for round N+1 should contain a QC for round N),
+    but adding it explicitly for completeness. */
+
     final var receivedAnyQcForThisOrHigherRound =
         this.highestReceivedRoundQC.gte(scheduledLocalTimeout.round());
 
