@@ -109,13 +109,15 @@ public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule 
       @LastEpochProof LedgerProof proof, BFTValidatorSet validatorSet, Hasher hasher) {
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     VertexWithHash genesisVertex =
-        Vertex.createInitialEpochVertex(LedgerHeader.genesis(accumulatorState, validatorSet, 0, 0))
+        Vertex.createInitialEpochVertex(
+                LedgerHeader.genesis(accumulatorState, HashUtils.zero256(), validatorSet, 0, 0))
             .withId(hasher);
     LedgerHeader nextLedgerHeader =
         LedgerHeader.create(
             proof.getNextEpoch().orElseThrow().getEpoch(),
             Round.genesis(),
             proof.getAccumulatorState(),
+            proof.getStateHash(),
             proof.consensusParentRoundTimestamp(),
             proof.proposerTimestamp());
     final var initialEpochQC =

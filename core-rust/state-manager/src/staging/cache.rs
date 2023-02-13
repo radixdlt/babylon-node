@@ -64,7 +64,7 @@
 
 use super::stage_tree::{DerivedStageKey, StageKey};
 use crate::staging::stage_tree::{Accumulator, Delta, StageTree};
-use crate::AccumulatorHash;
+use crate::{AccumulatorHash, StateHash};
 use im::hashmap::HashMap as ImmutableHashMap;
 use lazy_static::lazy_static;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore};
@@ -91,9 +91,7 @@ pub struct ExecutionCache {
 }
 
 pub struct ProcessedResult {
-    // the state hash is not yet stored nor exposed (WIP)
-    #[allow(dead_code)]
-    state_hash: Hash,
+    state_hash: StateHash,
     receipt: TransactionReceipt,
     hash_tree_diff: HashTreeDiff,
 }
@@ -261,7 +259,7 @@ impl ProcessedResult {
         let state_version = store.overlay.state_version;
         let root_hash = put_at_next_version(&mut collector, state_version, &hash_changes);
         Self {
-            state_hash: root_hash,
+            state_hash: StateHash::from(root_hash),
             receipt: transaction_receipt,
             hash_tree_diff: collector.diff,
         }
@@ -281,6 +279,10 @@ impl ProcessedResult {
 
     pub fn hash_tree_diff(&self) -> &HashTreeDiff {
         &self.hash_tree_diff
+    }
+
+    pub fn state_hash(&self) -> &StateHash {
+        &self.state_hash
     }
 }
 

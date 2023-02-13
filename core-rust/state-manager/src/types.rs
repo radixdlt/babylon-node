@@ -387,6 +387,58 @@ impl HasIntentHash for NotarizedTransaction {
     }
 }
 
+#[derive(
+    PartialEq,
+    Eq,
+    Hash,
+    Clone,
+    Copy,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
+pub struct StateHash([u8; Self::LENGTH]);
+
+impl StateHash {
+    pub const LENGTH: usize = 32;
+
+    pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
+        Self(hash_bytes)
+    }
+
+    pub fn into_bytes(self) -> [u8; Self::LENGTH] {
+        self.0
+    }
+}
+
+impl AsRef<[u8]> for StateHash {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl From<Hash> for StateHash {
+    fn from(hash: Hash) -> Self {
+        Self(hash.0)
+    }
+}
+
+impl fmt::Display for StateHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(self.0))
+    }
+}
+
+impl fmt::Debug for StateHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("StateHash")
+            .field(&hex::encode(self.0))
+            .finish()
+    }
+}
+
 /// An uncommitted user transaction, in eg the mempool
 #[derive(Debug, PartialEq, Eq, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PendingTransaction {
@@ -457,6 +509,7 @@ pub struct PrepareResult {
     pub committed: Vec<Vec<u8>>,
     pub rejected: Vec<(Vec<u8>, String)>,
     pub next_epoch: Option<NextEpoch>,
+    pub state_hash: StateHash,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -473,4 +526,5 @@ pub struct PrepareGenesisRequest {
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareGenesisResult {
     pub validator_set: Option<BTreeMap<ComponentAddress, Validator>>,
+    pub state_hash: StateHash,
 }

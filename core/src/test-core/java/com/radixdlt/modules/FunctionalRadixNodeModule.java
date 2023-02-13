@@ -337,6 +337,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                     new MockedEpochsConsensusRecoveryModule(
                         withEpochs.epochMaxRound(),
                         withEpochs.mapping(),
+                        withEpochs.preGenesisAccumulatorHash(),
                         withEpochs.preGenesisAccumulatorHash()));
               }
             }
@@ -367,13 +368,19 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         Hasher hasher) {
                       var genesisVertex =
                           Vertex.createInitialEpochVertex(
-                                  LedgerHeader.genesis(initialAccumulatorState, validatorSet, 0, 0))
+                                  LedgerHeader.genesis(
+                                      initialAccumulatorState,
+                                      HashUtils.zero256(),
+                                      validatorSet,
+                                      0,
+                                      0))
                               .withId(hasher);
                       var nextLedgerHeader =
                           LedgerHeader.create(
                               proof.getNextEpoch().orElseThrow().getEpoch(),
                               Round.genesis(),
                               proof.getAccumulatorState(),
+                              proof.getStateHash(),
                               proof.consensusParentRoundTimestamp(),
                               proof.proposerTimestamp());
                       var initialEpochQC =

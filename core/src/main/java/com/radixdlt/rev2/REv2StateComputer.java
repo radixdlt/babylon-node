@@ -221,7 +221,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     var nextEpoch = result.nextEpoch().map(REv2ToConsensus::nextEpoch).or((NextEpoch) null);
 
     return new StateComputerLedger.StateComputerResult(
-        committableTransactions, rejectedTransactions, nextEpoch);
+        committableTransactions, rejectedTransactions, nextEpoch, result.stateHash());
   }
 
   @Override
