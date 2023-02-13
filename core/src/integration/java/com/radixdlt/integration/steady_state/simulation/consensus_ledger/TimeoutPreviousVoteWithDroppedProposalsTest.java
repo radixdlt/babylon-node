@@ -65,10 +65,8 @@
 package com.radixdlt.integration.steady_state.simulation.consensus_ledger;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.harness.simulation.NetworkDroppers;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
@@ -82,7 +80,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import java.time.Duration;
-import java.util.stream.LongStream;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
@@ -92,9 +89,13 @@ import org.junit.Test;
  * resulting in moving to a next round (once remaining two nodes also timeout). If the timeout
  * replacement votes are not accepted, then we loose a round because a node can only move to the
  * next round when it hasn't received the original non-timeout vote. This test checks that all nodes
- * only need a single timeout event to proceed to next round, even the node that initially received
- * a non-timeout vote (next leader), meaning that it must have successfully replaced a non-timeout
- * vote with a timeout vote in the same round.
+ * need at most two timeout events to proceed to next round, even the node that initially received a
+ * non-timeout vote (next leader), meaning that it must have successfully replaced a non-timeout
+ * vote with a timeout vote in the same round. The leader for the given round only issues a single
+ * timeout, which is then extended by RoundTimeoutModerator (because the leader receives their own
+ * local proposal). Depending on the duration of leader's extended round, other nodes may require a
+ * single timeout event (if leader's round extension time is less than the regular timeout) or two
+ * timeout events (if leader's round takes more than 2x base timeout).
  */
 public class TimeoutPreviousVoteWithDroppedProposalsTest {
   private final Builder bftTestBuilder =
@@ -127,25 +128,21 @@ public class TimeoutPreviousVoteWithDroppedProposalsTest {
     final var results = runningTest.awaitCompletion();
 
     // Post-Execution Assertions
-    final var statistics =
-        runningTest.getNetwork().getMetrics().values().stream()
-            .map(
-                s ->
-                    LongStream.of(
-                        (long) s.bft().pacemaker().timeoutsSent().get(),
-                        (long) s.bft().pacemaker().timedOutRounds().get()))
-            .map(LongStream::summaryStatistics)
-            .collect(ImmutableList.toImmutableList());
+    runningTest
+        .getNetwork()
+        .getMetrics()
+        .values()
+        .forEach(
+            metrics -> {
+              // to make sure we've processed some rounds
+              assertTrue(metrics.bft().pacemaker().round().get() > 2);
+              final var timeoutsSent = (long) metrics.bft().pacemaker().timeoutsSent().get();
+              final var timedOutRounds = (long) metrics.bft().pacemaker().timedOutRounds().get();
 
-    statistics.forEach(
-        s -> {
-          // to make sure we've processed some rounds
-          assertTrue(s.getMin() > 2);
-
-          // this ensures that we only need a single timeout per round
-          // BFT_PACEMAKER_TIMEOUTS_SENT equal to BFT_PACEMAKER_TIMED_OUT_ROUNDS
-          assertEquals(s.getMin(), s.getMax());
-        });
+              // this ensures that we only need a maximum of two local timeouts per round
+              // BFT_PACEMAKER_TIMEOUTS_SENT not higher than 2x BFT_PACEMAKER_TIMED_OUT_ROUNDS
+              assertTrue(timeoutsSent <= timedOutRounds * 2);
+            });
 
     assertThat(results)
         .allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());

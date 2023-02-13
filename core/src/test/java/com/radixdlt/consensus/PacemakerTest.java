@@ -90,7 +90,7 @@ public final class PacemakerTest {
             new FunctionalRadixNodeModule(
                 false,
                 SafetyRecoveryConfig.mocked(),
-                ConsensusConfig.of(),
+                ConsensusConfig.of(200, 0),
                 LedgerConfig.mocked(1)));
   }
 

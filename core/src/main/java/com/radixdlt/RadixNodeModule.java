@@ -146,10 +146,9 @@ public final class RadixNodeModule extends AbstractModule {
           .unwrap();
 
   // Proposal constants
-  // Up to 20 txns and 5 MiB total payload size for a proposal.
-  // With a txn limit of 1 MiB, a proposal can fit at least 5 txns.
-  public static final int MAX_TRANSACTIONS_PER_PROPOSAL = 20;
-  public static final int MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE = 5 * 1024 * 1024;
+  public static final int MAX_TRANSACTIONS_PER_PROPOSAL = 4;
+  public static final int MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE = 2 * 1024 * 1024;
+  public static final int MAX_UNCOMMITTED_USER_TRANSACTIONS_TOTAL_PAYLOAD_SIZE = 2 * 1024 * 1024;
 
   private static final Logger log = LogManager.getLogger();
 
@@ -192,6 +191,7 @@ public final class RadixNodeModule extends AbstractModule {
     bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(3000L);
     bindConstant().annotatedWith(PacemakerBackoffRate.class).to(1.1);
     bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
+    bindConstant().annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class).to(30_000L);
 
     // System (e.g. time, random)
     install(new SystemModule());
@@ -236,7 +236,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Mempool Relay
     install(new MempoolRelayConfig(5, 100).asModule());
-    install(new MempoolRelayerModule(10000));
+    install(new MempoolRelayerModule(20000));
 
     // Ledger Sync
     final long syncPatience = properties.get("sync.patience", 5000L);
@@ -305,6 +305,7 @@ public final class RadixNodeModule extends AbstractModule {
             networkId,
             MAX_TRANSACTIONS_PER_PROPOSAL,
             MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE,
+            MAX_UNCOMMITTED_USER_TRANSACTIONS_TOTAL_PAYLOAD_SIZE,
             databaseConfig,
             Option.some(mempoolConfig)));
 

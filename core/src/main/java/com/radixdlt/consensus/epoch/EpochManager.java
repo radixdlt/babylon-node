@@ -253,7 +253,9 @@ public final class EpochManager {
             validatorSet,
             initialRoundUpdate,
             safetyRules,
-            nextEpoch);
+            nextEpoch,
+            proposerElection,
+            timeoutCalculator);
 
     this.syncResponseProcessors = Set.of(bftSync.responseProcessor());
     this.syncErrorResponseProcessors = Set.of(bftSync.errorResponseProcessor());

@@ -62,21 +62,26 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.liveness;
+package com.radixdlt.consensus.bft.processor;
 
-public interface PacemakerTimeoutCalculator {
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vote;
+
+/**
+ * Processor of BFT events that are guaranteed to be received at a current round.
+ *
+ * <p>Implementations are not expected to be thread-safe.
+ */
+public interface BFTEventProcessorAtCurrentRound extends BFTEventProcessor {
+  /**
+   * A callback which allows this processor to take action on a vote as soon as it's received,
+   * before BFT fully syncs up to its round.
+   */
+  void preProcessUnsyncedVoteForCurrentOrFutureRound(Vote vote);
 
   /**
-   * Calculates the pacemaker round timeout.
-   *
-   * @param consecutiveUncommittedRounds the number of consecutive uncommitted rounds
-   * @return pacemaker round timeout in milliseconds
+   * A callback which allows this processor to take action on a proposal as soon as it's received,
+   * before BFT fully syncs up to its round.
    */
-  long calculateTimeoutMs(long consecutiveUncommittedRounds);
-
-  /**
-   * Returns the amount of time (in milliseconds) by which the round can be extended if proposal was
-   * received, but hasn't yet been synced up.
-   */
-  long additionalRoundTimeIfProposalReceivedMs();
+  void preProcessUnsyncedProposalForCurrentOrFutureRound(Proposal proposal);
 }

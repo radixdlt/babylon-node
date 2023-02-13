@@ -319,7 +319,8 @@ public class EpochsConsensusModule extends AbstractModule {
       EventDispatcher<NoVote> noVoteEventDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
       RemoteEventDispatcher<NodeId, Vote> voteDispatcher,
-      EventDispatcher<EpochRoundLeaderFailure> roundLeaderFailureEventDispatcher) {
+      EventDispatcher<EpochRoundLeaderFailure> roundLeaderFailureEventDispatcher,
+      ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>> timeoutDispatcher) {
     return (self,
         pacemaker,
         vertexStore,
@@ -328,7 +329,9 @@ public class EpochsConsensusModule extends AbstractModule {
         validatorSet,
         roundUpdate,
         safetyRules,
-        epoch) ->
+        epoch,
+        proposerElection,
+        timeoutCalculator) ->
         BFTBuilder.create()
             .self(self)
             .hasher(hasher)
@@ -357,6 +360,10 @@ public class EpochsConsensusModule extends AbstractModule {
             .bftSyncer(bftSyncer)
             .validatorSet(validatorSet)
             .timeSupplier(timeSupplier)
+            .timeoutDispatcher(
+                (ev, timeout) -> timeoutDispatcher.dispatch(Epoched.from(epoch, ev), timeout))
+            .proposerElection(proposerElection)
+            .timeoutCalculator(timeoutCalculator)
             .metrics(metrics)
             .build();
   }

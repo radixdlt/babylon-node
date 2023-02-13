@@ -180,7 +180,7 @@ public final class ProposerTimestampSanityTest {
     modifyNthNodeTimeSupplier(0, () -> System.currentTimeMillis() - 4000, builder);
 
     /* One node delayed */
-    modifyNthNodeTimeSupplier(1, () -> System.currentTimeMillis() + 4000, builder);
+    modifyNthNodeTimeSupplier(1, () -> System.currentTimeMillis() + 31000, builder);
 
     final var runningTest = builder.build().run();
     final var results = runningTest.awaitCompletion();
