@@ -487,9 +487,9 @@ where
             })?;
 
         match receipt.result {
-            TransactionResult::Reject(reject_result) => {
-                Err(RejectionReason::FromExecution(Box::new(reject_result.error)))
-            }
+            TransactionResult::Reject(reject_result) => Err(RejectionReason::FromExecution(
+                Box::new(reject_result.error),
+            )),
             TransactionResult::Commit(..) => Ok(()),
             TransactionResult::Abort(abort_result) => {
                 // The transaction aborted after the fee loan was repaid - meaning the transaction result would get committed
@@ -520,8 +520,7 @@ where
         while next_opt.is_some() && (txns_to_return.len() as u64) < max_num_txns {
             let next = next_opt.unwrap();
 
-            let (record, _) =
-                self.check_for_rejection_with_caching(&next.transaction.payload);
+            let (record, _) = self.check_for_rejection_with_caching(&next.transaction.payload);
             if record.latest_attempt.rejection.is_some() {
                 // Mark the transaction to be removed from the mempool
                 // (see the comment above about moving this to a separate job)
