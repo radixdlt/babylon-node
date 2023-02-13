@@ -135,15 +135,25 @@ public final class RadixNodeModule extends AbstractModule {
   private static final String DEFAULT_SYSTEM_API_BIND_ADDRESS = "127.0.0.1";
   private static final String DEFAULT_PROMETHEUS_API_BIND_ADDRESS = "127.0.0.1";
 
-  // XRD allocation for testnets
-  private static final Set<Network> XRD_ALLOCATION_NETWORKS =
-      Set.of(Network.NEBUNET, Network.HAMMUNET);
-  private static final Decimal XRD_ALLOCATION_AMOUNT =
+  // Genesis parameters for XRD allocation for testnets
+  private static final Set<Network> GENESIS_NETWORKS_TO_USE_POWERFUL_STAKING_ACCOUNT =
+      Set.of(
+          Network.GILGANET,
+          Network.ENKINET,
+          Network.HAMMUNET,
+          Network.MARDUNET,
+          Network.NERGALNET,
+          Network.NEBUNET);
+  private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE =
       Decimal.of(700_000_000_000L); // 70% XRD_MAX_SUPPLY
-  private static final ECDSASecp256k1PublicKey XRD_ALLOCATION_ACCOUNT_PUBLIC_KEY =
+  private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR =
+      Decimal.of(1_000_000_000L); // 0.1% XRD_MAX_SUPPLY
+  private static final ECDSASecp256k1PublicKey GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY =
       ECDSASecp256k1PublicKey.tryFromHex(
               "026f08db98ef1d0231eb15580da9123db8e25aa1747c8c32e5fd2ec47b8db73d5c")
           .unwrap();
+  private static final Decimal GENESIS_NO_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR =
+      Decimal.of(1); // Allow it to be easily changed in eg tests
 
   // Proposal constants
   public static final int MAX_TRANSACTIONS_PER_PROPOSAL = 4;
@@ -279,14 +289,25 @@ public final class RadixNodeModule extends AbstractModule {
             .toList();
     var validatorSet =
         new HashMap<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>>();
-    final var stakingAccount =
-        Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
+    final var usePowerfulStakingAccount =
+        GENESIS_NETWORKS_TO_USE_POWERFUL_STAKING_ACCOUNT.contains(network);
 
-    initialVset.forEach(k -> validatorSet.put(k, Tuple.tuple(Decimal.of(1), stakingAccount)));
+    final var stakingAccount =
+        usePowerfulStakingAccount
+            ? Address.virtualAccountAddress(GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY)
+            : Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
+    final var stakeAmount =
+        usePowerfulStakingAccount
+            ? GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR
+            : GENESIS_NO_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR;
+
+    initialVset.forEach(k -> validatorSet.put(k, Tuple.tuple(stakeAmount, stakingAccount)));
 
     final Map<ECDSASecp256k1PublicKey, Decimal> xrdAllocations =
-        XRD_ALLOCATION_NETWORKS.contains(network)
-            ? Map.of(XRD_ALLOCATION_ACCOUNT_PUBLIC_KEY, XRD_ALLOCATION_AMOUNT)
+        usePowerfulStakingAccount
+            ? Map.of(
+                GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY,
+                GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE)
             : Map.of();
 
     log.info("Genesis XRD allocations: {}", xrdAllocations.isEmpty() ? "(empty)" : "");
