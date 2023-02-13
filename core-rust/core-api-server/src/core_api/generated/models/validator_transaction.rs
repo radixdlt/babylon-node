@@ -13,17 +13,11 @@
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type")]
 pub enum ValidatorTransaction {
-    #[serde(rename="EpochUpdate")]
-    EpochUpdateValidatorTransaction {
-        /// An integer between `0` and `10^10`, marking the new epoch. Note that currently this is not the same as `consensus_epoch`, but eventually will be. 
-        #[serde(rename = "scrypto_epoch")]
-        scrypto_epoch: i64,
-    },
     #[serde(rename="TimeUpdate")]
     TimeUpdateValidatorTransaction {
         #[serde(rename = "proposer_timestamp")]
         proposer_timestamp: Box<crate::core_api::generated::models::Instant>,
-        /// An integer between `0` and `10^10`, marking the consensus epoch. Note that currently this is not the same as `scrypto_epoch`, but eventually will be. 
+        /// An integer between `0` and `10^10`, marking the consensus epoch. 
         #[serde(rename = "consensus_epoch")]
         consensus_epoch: i64,
         /// An integer between `0` and `10^10`, marking the consensus round in the epoch

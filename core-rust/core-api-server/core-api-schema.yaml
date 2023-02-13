@@ -902,13 +902,17 @@ components:
           format: int64
           minimum: 0
           maximum: 10000000000
-          description: An integer between `0` and `10^10`, marking the epoch from which the transaction can be submitted
+          description: |
+            An integer between `0` and `10^10`, marking the epoch from which the transaction can be submitted.
+            In the case of uncommitted transactions, a value of `10^10` indicates that the epoch was >= `10^10`.
         end_epoch_exclusive:
           type: integer
           format: int64
           minimum: 0
           maximum: 10000000000
-          description: An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be rejected
+          description: |
+            An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be rejected.
+            In the case of uncommitted transactions, a value of `10^10` indicates that the epoch was >= `10^10`.
         nonce:
           type: string
           description: A decimal-string-encoded integer between `0` and `2^64 - 1`, chosen to be unique to allow replay of transaction intents
@@ -1181,7 +1185,7 @@ components:
           format: int64
           minimum: 0
           maximum: 10000000000
-          description: An integer between `0` and `10^10`
+          description: An integer between `0` and `10^10`, marking the new epoch
         validators:
           type: array
           items:
@@ -3018,7 +3022,15 @@ components:
               $ref: "#/components/schemas/Instant"
               description: |
                 The time after which the node will consider recalculating the validity of the transaction.
-                Only present if the rejection isn't permanent.
+                Only present if the rejection is temporary, and not due to the header specifying a "from epoch" in the future.
+            recalculation_from_epoch:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description: |
+                An integer between `0` and `10^10`, marking the epoch after which the node will consider recalculating the validity of the transaction.
+                Only present if the rejection is temporary due to a header specifying a "from epoch" in the future.
             invalid_from_epoch:
               type: integer
               format: int64
@@ -3437,7 +3449,6 @@ components:
       type: string
       description: The type of the validator transaction
       enum:
-        - EpochUpdate
         - TimeUpdate
     ValidatorTransaction:
       type: object
@@ -3450,23 +3461,7 @@ components:
         propertyName: type
         mapping:
           # NOTE: These need to match ValidatorTransactionType
-          EpochUpdate: '#/components/schemas/EpochUpdateValidatorTransaction'
           TimeUpdate: '#/components/schemas/TimeUpdateValidatorTransaction'
-    EpochUpdateValidatorTransaction:
-      allOf:
-        - $ref: "#/components/schemas/ValidatorTransaction"
-        - type: object
-          required:
-            - scrypto_epoch
-          properties:
-            scrypto_epoch:
-              type: integer
-              format: int64
-              minimum: 0
-              maximum: 10000000000
-              description: |
-                An integer between `0` and `10^10`, marking the new epoch.
-                Note that currently this is not the same as `consensus_epoch`, but eventually will be.
     TimeUpdateValidatorTransaction:
       allOf:
         - $ref: "#/components/schemas/ValidatorTransaction"
@@ -3486,7 +3481,6 @@ components:
               maximum: 10000000000
               description: |
                 An integer between `0` and `10^10`, marking the consensus epoch.
-                Note that currently this is not the same as `scrypto_epoch`, but eventually will be.
             round_in_epoch:
               type: integer
               format: int64

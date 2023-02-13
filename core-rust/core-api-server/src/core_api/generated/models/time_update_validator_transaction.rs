@@ -17,7 +17,7 @@ pub struct TimeUpdateValidatorTransaction {
     pub _type: crate::core_api::generated::models::ValidatorTransactionType,
     #[serde(rename = "proposer_timestamp")]
     pub proposer_timestamp: Box<crate::core_api::generated::models::Instant>,
-    /// An integer between `0` and `10^10`, marking the consensus epoch. Note that currently this is not the same as `scrypto_epoch`, but eventually will be. 
+    /// An integer between `0` and `10^10`, marking the consensus epoch. 
     #[serde(rename = "consensus_epoch")]
     pub consensus_epoch: i64,
     /// An integer between `0` and `10^10`, marking the consensus round in the epoch

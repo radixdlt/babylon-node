@@ -136,7 +136,6 @@ impl MetricLabel for MempoolAddError {
                 RejectionReason::FromExecution(_) => "ExecutionError",
                 RejectionReason::ValidationError(_) => "ValidationError",
                 RejectionReason::IntentHashCommitted => "IntentHashCommitted",
-                RejectionReason::ExecutionTookTooLong { .. } => "ExecutionTooLong",
             },
             MempoolAddError::Full { .. } => "MempoolFull",
             MempoolAddError::Duplicate => "Duplicate",

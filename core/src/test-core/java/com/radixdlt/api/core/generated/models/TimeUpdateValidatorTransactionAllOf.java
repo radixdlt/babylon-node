@@ -82,13 +82,13 @@ public class TimeUpdateValidatorTransactionAllOf {
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the consensus epoch. Note that currently this is not the same as &#x60;scrypto_epoch&#x60;, but eventually will be. 
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the consensus epoch. 
    * minimum: 0
    * maximum: 10000000000
    * @return consensusEpoch
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the consensus epoch. Note that currently this is not the same as `scrypto_epoch`, but eventually will be. ")
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the consensus epoch. ")
   @JsonProperty(JSON_PROPERTY_CONSENSUS_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

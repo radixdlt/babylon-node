@@ -29,8 +29,6 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum ValidatorTransactionType {
   
-  EPOCHUPDATE("EpochUpdate"),
-  
   TIMEUPDATE("TimeUpdate");
 
   private String value;

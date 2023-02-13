@@ -25,7 +25,6 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EpochUpdateValidatorTransaction;
 import com.radixdlt.api.core.generated.models.Instant;
 import com.radixdlt.api.core.generated.models.TimeUpdateValidatorTransaction;
 import com.radixdlt.api.core.generated.models.TimeUpdateValidatorTransactionAllOf;
@@ -52,7 +51,6 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = EpochUpdateValidatorTransaction.class, name = "EpochUpdate"),
   @JsonSubTypes.Type(value = TimeUpdateValidatorTransaction.class, name = "TimeUpdate"),
 })
 
@@ -101,13 +99,13 @@ public class TimeUpdateValidatorTransaction extends ValidatorTransaction {
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the consensus epoch. Note that currently this is not the same as &#x60;scrypto_epoch&#x60;, but eventually will be. 
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the consensus epoch. 
    * minimum: 0
    * maximum: 10000000000
    * @return consensusEpoch
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the consensus epoch. Note that currently this is not the same as `scrypto_epoch`, but eventually will be. ")
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the consensus epoch. ")
   @JsonProperty(JSON_PROPERTY_CONSENSUS_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -200,7 +198,6 @@ public class TimeUpdateValidatorTransaction extends ValidatorTransaction {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("EpochUpdate", EpochUpdateValidatorTransaction.class);
   mappings.put("TimeUpdate", TimeUpdateValidatorTransaction.class);
   mappings.put("TimeUpdateValidatorTransaction", TimeUpdateValidatorTransaction.class);
   JSON.registerDiscriminator(TimeUpdateValidatorTransaction.class, "type", mappings);

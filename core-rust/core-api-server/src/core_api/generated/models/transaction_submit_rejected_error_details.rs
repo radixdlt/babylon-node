@@ -32,6 +32,9 @@ pub struct TransactionSubmitRejectedErrorDetails {
     pub is_rejected_because_intent_already_committed: bool,
     #[serde(rename = "recalculation_due", skip_serializing_if = "Option::is_none")]
     pub recalculation_due: Option<Box<crate::core_api::generated::models::Instant>>,
+    /// An integer between `0` and `10^10`, marking the epoch after which the node will consider recalculating the validity of the transaction. Only present if the rejection is temporary due to a header specifying a \"from epoch\" in the future. 
+    #[serde(rename = "recalculation_from_epoch", skip_serializing_if = "Option::is_none")]
+    pub recalculation_from_epoch: Option<i64>,
     /// An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be permanently rejected. Only present if the rejection isn't permanent. 
     #[serde(rename = "invalid_from_epoch", skip_serializing_if = "Option::is_none")]
     pub invalid_from_epoch: Option<i64>,
@@ -47,6 +50,7 @@ impl TransactionSubmitRejectedErrorDetails {
             is_intent_rejection_permanent,
             is_rejected_because_intent_already_committed,
             recalculation_due: None,
+            recalculation_from_epoch: None,
             invalid_from_epoch: None,
         }
     }
