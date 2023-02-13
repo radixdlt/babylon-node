@@ -930,6 +930,7 @@ where
         let mut state_diff = StateDiff::new();
         let mut hash_tree_diff = HashTreeDiff::new();
         let mut intent_hashes = Vec::new();
+        let mut final_state_hash = None;
 
         let parsed_txns_len = parsed_transactions.len();
 
@@ -996,6 +997,7 @@ where
             }
 
             current_state_version += 1;
+            final_state_hash = Some(*processed.state_hash());
 
             let identifiers = CommittedTransactionIdentifiers {
                 state_version: current_state_version,
@@ -1010,6 +1012,15 @@ where
                 .up_substates
                 .extend(processed.state_diff().up_substates.clone());
             hash_tree_diff.extend(processed.hash_tree_diff().clone());
+        }
+
+        if let Some(state_hash) = final_state_hash {
+            if state_hash != commit_request.proof_state_hash {
+                warn!(
+                    "computed state hash at version {} differs from the one in proof ({} != {})",
+                    commit_request.proof_state_version, state_hash, commit_request.proof_state_hash
+                );
+            }
         }
 
         self.execution_cache.progress_root(&parent_accumulator_hash);

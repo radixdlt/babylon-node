@@ -126,13 +126,13 @@ public final class RustMempoolTest {
     var transactionsWithProof = buildGenesis(accumulator);
     var transactions = transactionsWithProof.getTransactions();
     var proof = transactionsWithProof.getProof();
-    var proofBytes = DefaultSerialization.getInstance().toDson(proof, DsonOutput.Output.ALL);
     stateComputer
         .commit(
             new CommitRequest(
                 transactions,
                 UInt64.fromNonNegativeLong(proof.getStateVersion()),
-                proofBytes,
+                proof.getStateHash(),
+                DefaultSerialization.getInstance().toDson(proof, DsonOutput.Output.ALL),
                 Option.none()))
         .unwrap();
   }

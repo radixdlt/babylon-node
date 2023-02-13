@@ -66,8 +66,12 @@ package com.radixdlt.rev2;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.*;
-import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.ConsensusByzantineEvent;
+import com.radixdlt.consensus.NextEpoch;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.ExecutedVertex;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.crypto.Hasher;
@@ -226,7 +230,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
   @Override
   public void commit(CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStore) {
-    var proofBytes = serialization.toDson(txnsAndProof.getProof(), DsonOutput.Output.ALL);
+    var proof = txnsAndProof.getProof();
     final Option<byte[]> vertexStoreBytes;
     if (vertexStore != null) {
       vertexStoreBytes =
@@ -235,10 +239,13 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
       vertexStoreBytes = Option.none();
     }
 
-    var stateVersion = UInt64.fromNonNegativeLong(txnsAndProof.getProof().getStateVersion());
     var commitRequest =
         new CommitRequest(
-            txnsAndProof.getTransactions(), stateVersion, proofBytes, vertexStoreBytes);
+            txnsAndProof.getTransactions(),
+            UInt64.fromNonNegativeLong(proof.getStateVersion()),
+            proof.getStateHash(),
+            serialization.toDson(proof, DsonOutput.Output.ALL),
+            vertexStoreBytes);
 
     var result = stateComputer.commit(commitRequest);
     if (result.isError()) {
