@@ -79,6 +79,7 @@ import com.radixdlt.consensus.bft.RoundLeaderFailure;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.RoundChange.HighQcSource;
 import com.radixdlt.p2p.NodeId;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -229,7 +230,8 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
           syncUp(
               event.highQC(),
               NodeId.fromPublicKey(event.getAuthor().getKey()),
-              () -> processOnCurrentRoundOrCache(event, processFn));
+              () -> processOnCurrentRoundOrCache(event, processFn),
+              HighQcSource.RECEIVED_ALONG_WITH_EVENT);
       if (!isSynced) {
         log.debug("Queuing {}, waiting for Sync", event);
         syncingEvents.add(new QueuedConsensusEvent(event, Stopwatch.createStarted()));
@@ -260,11 +262,11 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
       case Proposal proposal -> syncUp(
           proposal.highQC(),
           NodeId.fromPublicKey(proposal.getAuthor().getKey()),
-          () -> processOnCurrentRoundOrCache(proposal, forwardTo::processProposal));
+          () -> processOnCurrentRoundOrCache(proposal, forwardTo::processProposal), HighQcSource.RECEIVED_ALONG_WITH_PROPOSAL);
       case Vote vote -> syncUp(
           vote.highQC(),
           NodeId.fromPublicKey(vote.getAuthor().getKey()),
-          () -> processOnCurrentRoundOrCache(vote, forwardTo::processVote));
+          () -> processOnCurrentRoundOrCache(vote, forwardTo::processVote), HighQcSource.RECEIVED_ALONG_WITH_VOTE);
     }
   }
 
@@ -283,8 +285,9 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
     }
   }
 
-  private boolean syncUp(HighQC highQC, NodeId author, Runnable whenSynced) {
-    SyncResult syncResult = this.bftSyncer.syncToQC(highQC, author);
+  private boolean syncUp(
+      HighQC highQC, NodeId author, Runnable whenSynced, HighQcSource highQcSource) {
+    SyncResult syncResult = this.bftSyncer.syncToQC(highQC, author, highQcSource);
 
     // TODO: use switch expression and eliminate unnecessary default case
     switch (syncResult) {

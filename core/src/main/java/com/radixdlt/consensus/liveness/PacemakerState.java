@@ -72,6 +72,7 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.environment.EventDispatcher;
 import java.util.Objects;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -101,29 +102,26 @@ public class PacemakerState implements PacemakerReducer {
   }
 
   @Override
-  public void processQC(HighQC highQC) {
-    log.trace("QuorumCertificate: {}", highQC);
+  public Optional<RoundUpdate> processQC(HighQC highQC) {
+    log.trace("HighQC: {}", highQC);
 
-    final var round = highQC.getHighestRound();
-    if (round.gte(this.currentRound)) {
+    final var highestRoundWithQuorum = highQC.getHighestRound();
+    if (highestRoundWithQuorum.gte(this.currentRound)) {
+      final var nextRound = highestRoundWithQuorum.next();
+      final BFTValidatorId leader = this.proposerElection.getProposer(nextRound);
+      final BFTValidatorId nextLeader = this.proposerElection.getProposer(nextRound.next());
+      final var roundUpdate = RoundUpdate.create(nextRound, highQC, leader, nextLeader);
       this.highQC = highQC;
-      this.updateRound(round.next());
+      this.currentRound = nextRound;
+      roundUpdateSender.dispatch(roundUpdate);
+      return Optional.of(roundUpdate);
     } else {
-      log.trace("Ignoring QC for round {}: current round is {}", round, this.currentRound);
+      log.trace(
+          "Ignoring HighQC for round {}, current round is {}",
+          highestRoundWithQuorum,
+          this.currentRound);
+      return Optional.empty();
     }
-  }
-
-  @Override
-  public void updateRound(Round nextRound) {
-    if (nextRound.lte(this.currentRound)) {
-      return;
-    }
-
-    final BFTValidatorId leader = this.proposerElection.getProposer(nextRound);
-    final BFTValidatorId nextLeader = this.proposerElection.getProposer(nextRound.next());
-    this.currentRound = nextRound;
-    roundUpdateSender.dispatch(
-        RoundUpdate.create(this.currentRound, this.highQC, leader, nextLeader));
   }
 
   @VisibleForTesting

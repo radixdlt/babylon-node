@@ -170,7 +170,7 @@ public record Metrics(
       Counter noVotesSent,
       Counter voteQuorums,
       Counter timeoutQuorums,
-      Counter extendedRoundTimeouts,
+      LabelledCounter<RoundChange> roundChanges,
       Timer consensusEventsQueueWait,
       LabelledCounter<RejectedConsensusEvent> rejectedConsensusEvents,
       GetterGauge validatorCount,
@@ -282,6 +282,24 @@ public record Metrics(
               .map(Method::getName)
               .filter(Predicates.equalTo(methodName))
               .collect(MoreCollectors.onlyElement()));
+    }
+  }
+
+  public record RoundChange(
+      String leader, HighQcSource highQcSource, CertificateType certificateType) {
+    public enum HighQcSource {
+      CREATED_ON_RECEIVED_NON_TIMEOUT_VOTE,
+      CREATED_ON_RECEIVED_TIMEOUT_VOTE,
+      RECEIVED_ALONG_WITH_PROPOSAL,
+      RECEIVED_ALONG_WITH_VOTE,
+      RECEIVED_IN_BFT_SYNC_VERTICES_RESPONSE,
+      RECEIVED_IN_BFT_SYNC_VERTICES_ERROR_RESPONSE
+    }
+
+    public enum CertificateType {
+      QC_ON_REGULAR_VERTEX,
+      QC_ON_TIMEOUT_VERTEX,
+      TC
     }
   }
 

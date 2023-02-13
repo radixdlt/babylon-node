@@ -65,7 +65,8 @@
 package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.RoundUpdate;
+import java.util.Optional;
 
 /**
  * Reduces state for a pacemaker given some events TODO: This is currently hack, should move to a
@@ -76,14 +77,7 @@ public interface PacemakerReducer {
    * Signifies to the pacemaker that a quorum has agreed that a round has been completed.
    *
    * @param highQC the sync info for the round
+   * @return a round update event if processing highQC led to a round change, empty otherwise
    */
-  void processQC(HighQC highQC);
-
-  /**
-   * Signifies to the pacemaker that it should move to the next round TODO: Replace or combine with
-   * processQC on implementation of timeout quorum
-   *
-   * @param nextRound the round to move to
-   */
-  void updateRound(Round nextRound);
+  Optional<RoundUpdate> processQC(HighQC highQC);
 }

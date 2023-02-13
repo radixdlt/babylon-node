@@ -64,54 +64,9 @@
 
 package com.radixdlt.consensus.bft;
 
-import java.util.Objects;
+import com.radixdlt.consensus.Vote;
 
 /** A local event message indicating that a round quorum (either QC or TC) has been reached. */
-public final class RoundQuorumReached {
-
-  private final RoundVotingResult votingResult;
-
-  // the author of the last received message that lead to forming a quorum
-  private final BFTValidatorId lastAuthor;
-
-  public RoundQuorumReached(RoundVotingResult votingResult, BFTValidatorId lastAuthor) {
-    this.votingResult = Objects.requireNonNull(votingResult);
-    this.lastAuthor = Objects.requireNonNull(lastAuthor);
-  }
-
-  public BFTValidatorId lastAuthor() {
-    return lastAuthor;
-  }
-
-  public RoundVotingResult votingResult() {
-    return votingResult;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    RoundQuorumReached that = (RoundQuorumReached) o;
-    return Objects.equals(votingResult, that.votingResult)
-        && Objects.equals(lastAuthor, that.lastAuthor);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(votingResult, lastAuthor);
-  }
-
-  @Override
-  public String toString() {
-    return "RoundQuorumReached{"
-        + "votingResult="
-        + votingResult
-        + ", lastAuthor="
-        + lastAuthor
-        + '}';
-  }
-}
+public record RoundQuorumReached(
+    RoundVotingResult votingResult,
+    Vote lastVote /* the last received vote event that led to forming a quorum */) {}

@@ -79,6 +79,8 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.*;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.RoundChange.CertificateType;
+import com.radixdlt.monitoring.Metrics.RoundChange.HighQcSource;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import java.util.*;
@@ -115,9 +117,10 @@ public final class BFTSync implements BFTSyncer {
     private final LedgerProof committedProof;
     private final NodeId author;
     private SyncStage syncStage;
+    private final HighQcSource highQcSource;
     private final LinkedList<VertexWithHash> fetched = new LinkedList<>();
 
-    SyncState(HighQC highQC, NodeId author, Hasher hasher) {
+    SyncState(HighQC highQC, NodeId author, Hasher hasher, HighQcSource highQcSource) {
       this.localSyncId = highQC.highestQC().getProposedHeader().getVertexId();
       var pair =
           highQC
@@ -129,20 +132,18 @@ public final class BFTSync implements BFTSyncer {
       this.highQC = highQC;
       this.author = author;
       this.syncStage = SyncStage.PREPARING;
+      this.highQcSource = highQcSource;
     }
 
     void setSyncStage(SyncStage syncStage) {
       this.syncStage = syncStage;
     }
 
-    HighQC highQC() {
-      return this.highQC;
-    }
-
     @Override
     public String toString() {
       return String.format(
-          "%s{%s syncState=%s}", this.getClass().getSimpleName(), highQC, syncStage);
+          "%s{%s syncState=%s highQcSource=%s}",
+          this.getClass().getSimpleName(), highQC, syncStage, highQcSource);
     }
   }
 
@@ -219,13 +220,19 @@ public final class BFTSync implements BFTSyncer {
             case FormedTC formedTc -> this.vertexStore.highQC().withHighestTC(formedTc.getTC());
           };
 
-      var nodeId = NodeId.fromPublicKey(roundQuorumReached.lastAuthor().getKey());
-      syncToQC(highQC, nodeId);
+      final var nodeId = NodeId.fromPublicKey(roundQuorumReached.lastVote().getAuthor().getKey());
+
+      final var highQcSource =
+          roundQuorumReached.lastVote().isTimeout()
+              ? HighQcSource.CREATED_ON_RECEIVED_TIMEOUT_VOTE
+              : HighQcSource.CREATED_ON_RECEIVED_NON_TIMEOUT_VOTE;
+
+      syncToQC(highQC, nodeId, highQcSource);
     };
   }
 
   @Override
-  public SyncResult syncToQC(HighQC highQC, @Nullable NodeId author) {
+  public SyncResult syncToQC(HighQC highQC, @Nullable NodeId author, HighQcSource highQcSource) {
     this.runOnThreads.add(Thread.currentThread().getName());
     final var qc = highQC.highestQC();
 
@@ -240,8 +247,43 @@ public final class BFTSync implements BFTSyncer {
     return switch (vertexStore.insertQc(qc)) {
       case VertexStore.InsertQcResult.Inserted inserted -> {
         // QC was inserted, try TC too (as it can be higher), and then process a new highQC
-        highQC.highestTC().map(vertexStore::insertTimeoutCertificate);
-        this.pacemakerReducer.processQC(vertexStore.highQC());
+        final var tcAlsoInserted =
+            highQC.highestTC().map(vertexStore::insertTimeoutCertificate).orElse(false);
+
+        this.pacemakerReducer
+            .processQC(vertexStore.highQC())
+            .ifPresent(
+                roundUpdate -> {
+                  CertificateType certificateType;
+                  if (tcAlsoInserted) {
+                    // TC was inserted so its round must be higher than that of a QC, round change
+                    // cert type is then a TC
+                    certificateType = CertificateType.TC;
+                  } else {
+                    // QC was inserted, need to determine whether its corresponding vertex was a
+                    // timeout vertex or not
+                    final var isTimeoutVertex =
+                        vertexStore
+                            .getExecutedVertex(qc.getProposedHeader().getVertexId())
+                            .map(v -> v.vertex().isTimeout())
+                            .orElse(false);
+                    certificateType =
+                        isTimeoutVertex
+                            ? CertificateType.QC_ON_TIMEOUT_VERTEX
+                            : CertificateType.QC_ON_REGULAR_VERTEX;
+                  }
+
+                  metrics
+                      .bft()
+                      .roundChanges()
+                      .label(
+                          new Metrics.RoundChange(
+                              roundUpdate.getNextLeader().toSerializedString(),
+                              highQcSource,
+                              certificateType))
+                      .inc();
+                });
+
         yield SyncResult.SYNCED;
       }
       case VertexStore.InsertQcResult.Ignored ignored -> {
@@ -250,7 +292,19 @@ public final class BFTSync implements BFTSyncer {
             highQC.highestTC().map(vertexStore::insertTimeoutCertificate).orElse(false);
 
         if (insertedTc) {
-          this.pacemakerReducer.processQC(vertexStore.highQC());
+          this.pacemakerReducer
+              .processQC(vertexStore.highQC())
+              .ifPresent(
+                  roundUpdate ->
+                      metrics
+                          .bft()
+                          .roundChanges()
+                          .label(
+                              new Metrics.RoundChange(
+                                  roundUpdate.getNextLeader().toSerializedString(),
+                                  highQcSource,
+                                  CertificateType.TC))
+                          .inc());
         }
         yield SyncResult.SYNCED;
       }
@@ -275,7 +329,7 @@ public final class BFTSync implements BFTSyncer {
           throw new IllegalStateException("Syncing required but author wasn't provided.");
         }
 
-        startSync(highQC, author);
+        startSync(highQC, author, highQcSource);
 
         yield SyncResult.IN_PROGRESS;
       }
@@ -286,8 +340,8 @@ public final class BFTSync implements BFTSyncer {
     return !vertexStore.hasCommittedVertexOrRootAtOrAboveRound(syncState.committedHeader);
   }
 
-  private void startSync(HighQC highQC, NodeId author) {
-    final var syncState = new SyncState(highQC, author, hasher);
+  private void startSync(HighQC highQC, NodeId author, HighQcSource highQcSource) {
+    final var syncState = new SyncState(highQC, author, hasher, highQcSource);
 
     syncing.put(syncState.localSyncId, syncState);
 
@@ -306,7 +360,7 @@ public final class BFTSync implements BFTSyncer {
         Stream.concat(
                 Stream.of(syncState.author),
                 syncState
-                    .highQC()
+                    .highQC
                     .highestQC()
                     .getSigners()
                     .map(v -> NodeId.fromPublicKey(v.getKey()))
@@ -314,7 +368,7 @@ public final class BFTSync implements BFTSyncer {
             .filter(not(n -> n.equals(NodeId.fromPublicKey(this.self.getKey()))))
             .collect(ImmutableList.toImmutableList());
 
-    final var qc = syncState.highQC().highestQC();
+    final var qc = syncState.highQC.highestQC();
     this.sendBFTSyncRequest(
         "QCSync",
         qc.getRound(),
@@ -326,8 +380,8 @@ public final class BFTSync implements BFTSyncer {
 
   private void doCommittedSync(SyncState syncState) {
     final var committedQCId =
-        syncState.highQC().highestCommittedQC().getProposedHeader().getVertexId();
-    final var committedRound = syncState.highQC().highestCommittedQC().getRound();
+        syncState.highQC.highestCommittedQC().getProposedHeader().getVertexId();
+    final var committedRound = syncState.highQC.highestCommittedQC().getRound();
 
     syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
     log.debug(
@@ -338,7 +392,7 @@ public final class BFTSync implements BFTSyncer {
         Stream.concat(
                 Stream.of(syncState.author),
                 syncState
-                    .highQC()
+                    .highQC
                     .highestCommittedQC()
                     .getSigners()
                     .map(v -> NodeId.fromPublicKey(v.getKey()))
@@ -395,7 +449,7 @@ public final class BFTSync implements BFTSyncer {
         throw new IllegalStateException(
             "Inconsistent sync state, please contact Radix team member on Discord. (" + msg + ")");
       } else {
-        syncToQC(syncState.highQC, randomFrom(syncRequestState.authors));
+        syncToQC(syncState.highQC, randomFrom(syncRequestState.authors), syncState.highQcSource);
       }
     }
   }
@@ -454,7 +508,7 @@ public final class BFTSync implements BFTSyncer {
       ImmutableList<VertexWithHash> nonRootVertices =
           syncState.fetched.stream().skip(1).collect(ImmutableList.toImmutableList());
 
-      final var syncStateHighestCommittedQc = syncState.highQC().highestCommittedQC();
+      final var syncStateHighestCommittedQc = syncState.highQC.highestCommittedQC();
       final var syncStateHighestTc = syncState.highQC.highestTC();
       final var currentHighestTc = vertexStore.highQC().highestTC();
       final var highestKnownTc =
@@ -479,7 +533,7 @@ public final class BFTSync implements BFTSyncer {
     // At this point we are guaranteed to be in sync with the committed state
     // Retry sync
     this.syncing.remove(syncState.localSyncId);
-    this.syncToQC(syncState.highQC(), syncState.author);
+    this.syncToQC(syncState.highQC, syncState.author, syncState.highQcSource);
   }
 
   private void processVerticesResponseForCommittedSync(
@@ -527,11 +581,11 @@ public final class BFTSync implements BFTSyncer {
       vertexStore.insertVertexChain(VertexChain.create(syncState.fetched));
       // Finish it off
       this.syncing.remove(syncState.localSyncId);
-      this.syncToQC(syncState.highQC, syncState.author);
+      this.syncToQC(syncState.highQC, syncState.author, syncState.highQcSource);
     } else {
       log.debug(
           "SYNC_VERTICES: Sending further GetVerticesRequest for {} fetched={} root={}",
-          syncState.highQC(),
+          syncState.highQC,
           syncState.fetched.size(),
           vertexStore.getRoot());
 
@@ -581,7 +635,8 @@ public final class BFTSync implements BFTSyncer {
           > 0) {
         // error response indicates that the node has moved on from last sync so try and sync to a
         // new qc
-        syncToQC(response.highQC(), sender);
+        syncToQC(
+            response.highQC(), sender, HighQcSource.RECEIVED_IN_BFT_SYNC_VERTICES_ERROR_RESPONSE);
       }
     }
   }
