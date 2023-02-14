@@ -81,9 +81,17 @@ import javax.inject.Inject;
 /** Relays transactions from the local mempool to node neighbors. */
 @Singleton
 public final class MempoolRelayer {
-  // Relay at most 20 txns with a total size of at most 5 MiB in a single relay message
-  public static final int MAX_NUM_TXNS_TO_RELAY = 20;
-  public static final int MAX_RELAY_TOTAL_TXNS_PAYLOAD_SIZE = 5 * 1024 * 1024;
+  // These two specify the transaction limits for a single relay message (MempoolAdd)
+  public static final int MAX_RELAY_MSG_NUM_TXNS = 10;
+  public static final int MAX_RELAY_MSG_TOTAL_TXN_PAYLOAD_SIZE = 2 * 1024 * 1024;
+
+  // A limit of transaction bytes transferred during a single relaying event summed up for all
+  // chosen peers.
+  // For example, if the relay message size is 1 MiB and this is set to 3 MiB then we can only
+  // relay this message to a maximum of 3 peers (given that maxPeers is also greater than or equal
+  // 3).
+  // This prevents the mempool relayer from excessive bandwidth use.
+  public static final int MAX_TXN_BYTES_RELAYED_AT_ONCE_TO_ALL_PEERS = 6 * 1024 * 1024;
 
   private final PeersView peersView;
   private final RemoteEventDispatcher<NodeId, MempoolAdd> remoteEventDispatcher;
@@ -101,6 +109,7 @@ public final class MempoolRelayer {
       PeersView peersView,
       @MempoolRelayMaxPeers int maxPeers,
       Metrics metrics) {
+
     this.mempoolRelayReader = mempoolRelayReader;
     this.remoteEventDispatcher = Objects.requireNonNull(remoteEventDispatcher);
     this.peersView = Objects.requireNonNull(peersView);
@@ -120,7 +129,7 @@ public final class MempoolRelayer {
     return ev -> {
       final var transactions =
           this.mempoolRelayReader.getTransactionsToRelay(
-              MAX_NUM_TXNS_TO_RELAY, MAX_RELAY_TOTAL_TXNS_PAYLOAD_SIZE);
+              MAX_RELAY_MSG_NUM_TXNS, MAX_RELAY_MSG_TOTAL_TXN_PAYLOAD_SIZE);
       if (!transactions.isEmpty()) {
         relayTransactions(transactions, ImmutableList.of());
       }
@@ -130,12 +139,21 @@ public final class MempoolRelayer {
   private void relayTransactions(
       List<RawNotarizedTransaction> transactions, ImmutableList<NodeId> ignorePeers) {
     final var mempoolAddMsg = MempoolAdd.create(transactions);
+
+    final var totalTxnPayloadSizeInRelayMsg =
+        transactions.stream().map(tx -> tx.getPayload().length).reduce(0, Integer::sum);
+
+    final var maxPeersByTotalTransferSize =
+        MAX_TXN_BYTES_RELAYED_AT_ONCE_TO_ALL_PEERS / totalTxnPayloadSizeInRelayMsg;
+    final var maxPeersToRelayTo = Math.min(maxPeers, maxPeersByTotalTransferSize);
+
     final var peers =
         this.peersView.peers().map(PeersView.PeerInfo::getNodeId).collect(Collectors.toList());
+
     peers.removeAll(ignorePeers);
     Collections.shuffle(peers);
     peers.stream()
-        .limit(maxPeers)
+        .limit(maxPeersToRelayTo)
         .forEach(
             peer -> {
               metrics.v1Mempool().relaysSent().inc(transactions.size());

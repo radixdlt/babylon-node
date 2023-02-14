@@ -209,8 +209,8 @@ pub fn to_api_intent(
         header: Box::new(models::TransactionHeader {
             version: header.version.into(),
             network_id: header.network_id.into(),
-            start_epoch_inclusive: to_api_epoch(header.start_epoch_inclusive)?,
-            end_epoch_exclusive: to_api_epoch(header.end_epoch_exclusive)?,
+            start_epoch_inclusive: to_api_epoch(context, header.start_epoch_inclusive)?,
+            end_epoch_exclusive: to_api_epoch(context, header.end_epoch_exclusive)?,
             nonce: to_api_u64_as_string(header.nonce),
             notary_public_key: Some(to_api_public_key(&header.notary_public_key)),
             notary_as_signatory: header.notary_as_signatory,
@@ -243,7 +243,7 @@ pub fn to_api_manifest(
 }
 
 pub fn to_api_validator_transaction(
-    _context: &MappingContext,
+    context: &MappingContext,
     validator_transaction: &ValidatorTransaction,
 ) -> Result<models::ValidatorTransaction, MappingError> {
     Ok(match validator_transaction {
@@ -251,11 +251,11 @@ pub fn to_api_validator_transaction(
             proposer_timestamp_ms,
             consensus_epoch,
             round_in_epoch,
-        } => models::ValidatorTransaction::TimeUpdateValidatorTransaction {
+        } => models::ValidatorTransaction::RoundUpdateValidatorTransaction {
             proposer_timestamp: Box::new(to_api_instant_from_safe_timestamp(
                 *proposer_timestamp_ms,
             )?),
-            consensus_epoch: to_api_epoch(*consensus_epoch)?,
+            consensus_epoch: to_api_epoch(context, *consensus_epoch)?,
             round_in_epoch: to_api_round(*round_in_epoch)?,
         },
     })

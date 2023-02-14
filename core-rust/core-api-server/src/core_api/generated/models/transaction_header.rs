@@ -18,10 +18,10 @@ pub struct TransactionHeader {
     /// The logical id of the network
     #[serde(rename = "network_id")]
     pub network_id: i32,
-    /// An integer between `0` and `10^10`, marking the epoch from which the transaction can be submitted
+    /// An integer between `0` and `10^10`, marking the epoch from which the transaction can be submitted. In the case of uncommitted transactions, a value of `10^10` indicates that the epoch was >= `10^10`. 
     #[serde(rename = "start_epoch_inclusive")]
     pub start_epoch_inclusive: i64,
-    /// An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be rejected
+    /// An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be rejected. In the case of uncommitted transactions, a value of `10^10` indicates that the epoch was >= `10^10`. 
     #[serde(rename = "end_epoch_exclusive")]
     pub end_epoch_exclusive: i64,
     /// A decimal-string-encoded integer between `0` and `2^64 - 1`, chosen to be unique to allow replay of transaction intents

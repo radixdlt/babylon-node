@@ -204,7 +204,7 @@ public final class MultiNodeRebootTest {
         new FunctionalRadixNodeModule(
             this.epochs,
             safetyRecoveryConfig,
-            ConsensusConfig.of(1000),
+            ConsensusConfig.of(1000, 0L),
             LedgerConfig.stateComputerWithSyncRelay(
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),

@@ -29,6 +29,8 @@ pub(crate) async fn handle_transaction_submit(
 ) -> Result<Json<models::TransactionSubmitResponse>, ResponseError<TransactionSubmitErrorDetails>> {
     let mut state_manager = state.state_manager.write();
 
+    let mapping_context = MappingContext::new_for_uncommitted_data(&state_manager.network);
+
     assert_matching_network(&request.network, &state_manager.network)?;
 
     let notarized_transaction = extract_unvalidated_transaction(&request.notarized_transaction_hex)
@@ -57,23 +59,33 @@ pub(crate) async fn handle_transaction_submit(
                 is_intent_rejection_permanent: rejection.is_permanent_for_intent(),
                 is_rejected_because_intent_already_committed: rejection
                     .is_rejected_because_intent_already_committed(),
-                recalculation_due: match rejection.recalculation_due {
-                    state_manager::RecalculationDue::Never => None,
-                    state_manager::RecalculationDue::From(time) => Some(Box::new(
+                // TODO - Rename to `reexecution_not_before` after the Betanet-V2 Core API compatibility freeze
+                // TODO - Add `result_validity_substate_criteria` once track / mempool is improved
+                retry_not_before: match rejection.retry_from {
+                    state_manager::RetryFrom::Never => None,
+                    state_manager::RetryFrom::FromTime(time) => Some(Box::new(
                         to_api_instant_from_safe_timestamp(to_unix_timestamp_ms(time)?)?,
                     )),
-                    state_manager::RecalculationDue::Whenever => {
+                    state_manager::RetryFrom::FromEpoch(_) => None,
+                    state_manager::RetryFrom::Whenever => {
                         Some(Box::new(to_api_instant_from_safe_timestamp(
                             to_unix_timestamp_ms(std::time::SystemTime::now())?,
                         )?))
                     }
                 },
+                retry_from_epoch: match rejection.retry_from {
+                    state_manager::RetryFrom::FromEpoch(epoch) => {
+                        Some(to_api_epoch(&mapping_context, epoch)?)
+                    }
+                    _ => None,
+                },
                 invalid_from_epoch: if rejection.is_permanent_for_payload() {
                     None
                 } else {
-                    // If it's a temporary rejection, then the transaction must have passed validation...
-                    // So the epoch quoted below must be in a valid range to pass the `to_api_epoch` mapping
-                    Some(to_api_epoch(rejection.invalid_from_epoch)?)
+                    Some(to_api_epoch(
+                        &mapping_context,
+                        rejection.invalid_from_epoch,
+                    )?)
                 },
             },
         )),

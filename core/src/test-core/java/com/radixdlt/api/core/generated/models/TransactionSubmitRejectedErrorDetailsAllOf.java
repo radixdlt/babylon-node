@@ -37,7 +37,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   TransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_IS_PAYLOAD_REJECTION_PERMANENT,
   TransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_IS_INTENT_REJECTION_PERMANENT,
   TransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_IS_REJECTED_BECAUSE_INTENT_ALREADY_COMMITTED,
-  TransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_RECALCULATION_DUE,
+  TransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_RETRY_NOT_BEFORE,
+  TransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_RETRY_FROM_EPOCH,
   TransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_INVALID_FROM_EPOCH
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -57,8 +58,11 @@ public class TransactionSubmitRejectedErrorDetailsAllOf {
   public static final String JSON_PROPERTY_IS_REJECTED_BECAUSE_INTENT_ALREADY_COMMITTED = "is_rejected_because_intent_already_committed";
   private Boolean isRejectedBecauseIntentAlreadyCommitted;
 
-  public static final String JSON_PROPERTY_RECALCULATION_DUE = "recalculation_due";
-  private Instant recalculationDue;
+  public static final String JSON_PROPERTY_RETRY_NOT_BEFORE = "retry_not_before";
+  private Instant retryNotBefore;
+
+  public static final String JSON_PROPERTY_RETRY_FROM_EPOCH = "retry_from_epoch";
+  private Long retryFromEpoch;
 
   public static final String JSON_PROPERTY_INVALID_FROM_EPOCH = "invalid_from_epoch";
   private Long invalidFromEpoch;
@@ -196,29 +200,57 @@ public class TransactionSubmitRejectedErrorDetailsAllOf {
   }
 
 
-  public TransactionSubmitRejectedErrorDetailsAllOf recalculationDue(Instant recalculationDue) {
-    this.recalculationDue = recalculationDue;
+  public TransactionSubmitRejectedErrorDetailsAllOf retryNotBefore(Instant retryNotBefore) {
+    this.retryNotBefore = retryNotBefore;
     return this;
   }
 
    /**
-   * Get recalculationDue
-   * @return recalculationDue
+   * Get retryNotBefore
+   * @return retryNotBefore
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_RECALCULATION_DUE)
+  @JsonProperty(JSON_PROPERTY_RETRY_NOT_BEFORE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Instant getRecalculationDue() {
-    return recalculationDue;
+  public Instant getRetryNotBefore() {
+    return retryNotBefore;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RECALCULATION_DUE)
+  @JsonProperty(JSON_PROPERTY_RETRY_NOT_BEFORE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setRecalculationDue(Instant recalculationDue) {
-    this.recalculationDue = recalculationDue;
+  public void setRetryNotBefore(Instant retryNotBefore) {
+    this.retryNotBefore = retryNotBefore;
+  }
+
+
+  public TransactionSubmitRejectedErrorDetailsAllOf retryFromEpoch(Long retryFromEpoch) {
+    this.retryFromEpoch = retryFromEpoch;
+    return this;
+  }
+
+   /**
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the epoch after which the node will consider recalculating the validity of the transaction. Only present if the rejection is temporary due to a header specifying a \&quot;from epoch\&quot; in the future. 
+   * minimum: 0
+   * maximum: 10000000000
+   * @return retryFromEpoch
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "An integer between `0` and `10^10`, marking the epoch after which the node will consider recalculating the validity of the transaction. Only present if the rejection is temporary due to a header specifying a \"from epoch\" in the future. ")
+  @JsonProperty(JSON_PROPERTY_RETRY_FROM_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Long getRetryFromEpoch() {
+    return retryFromEpoch;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_RETRY_FROM_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setRetryFromEpoch(Long retryFromEpoch) {
+    this.retryFromEpoch = retryFromEpoch;
   }
 
 
@@ -267,13 +299,14 @@ public class TransactionSubmitRejectedErrorDetailsAllOf {
         Objects.equals(this.isPayloadRejectionPermanent, transactionSubmitRejectedErrorDetailsAllOf.isPayloadRejectionPermanent) &&
         Objects.equals(this.isIntentRejectionPermanent, transactionSubmitRejectedErrorDetailsAllOf.isIntentRejectionPermanent) &&
         Objects.equals(this.isRejectedBecauseIntentAlreadyCommitted, transactionSubmitRejectedErrorDetailsAllOf.isRejectedBecauseIntentAlreadyCommitted) &&
-        Objects.equals(this.recalculationDue, transactionSubmitRejectedErrorDetailsAllOf.recalculationDue) &&
+        Objects.equals(this.retryNotBefore, transactionSubmitRejectedErrorDetailsAllOf.retryNotBefore) &&
+        Objects.equals(this.retryFromEpoch, transactionSubmitRejectedErrorDetailsAllOf.retryFromEpoch) &&
         Objects.equals(this.invalidFromEpoch, transactionSubmitRejectedErrorDetailsAllOf.invalidFromEpoch);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(errorMessage, isFresh, isPayloadRejectionPermanent, isIntentRejectionPermanent, isRejectedBecauseIntentAlreadyCommitted, recalculationDue, invalidFromEpoch);
+    return Objects.hash(errorMessage, isFresh, isPayloadRejectionPermanent, isIntentRejectionPermanent, isRejectedBecauseIntentAlreadyCommitted, retryNotBefore, retryFromEpoch, invalidFromEpoch);
   }
 
   @Override
@@ -285,7 +318,8 @@ public class TransactionSubmitRejectedErrorDetailsAllOf {
     sb.append("    isPayloadRejectionPermanent: ").append(toIndentedString(isPayloadRejectionPermanent)).append("\n");
     sb.append("    isIntentRejectionPermanent: ").append(toIndentedString(isIntentRejectionPermanent)).append("\n");
     sb.append("    isRejectedBecauseIntentAlreadyCommitted: ").append(toIndentedString(isRejectedBecauseIntentAlreadyCommitted)).append("\n");
-    sb.append("    recalculationDue: ").append(toIndentedString(recalculationDue)).append("\n");
+    sb.append("    retryNotBefore: ").append(toIndentedString(retryNotBefore)).append("\n");
+    sb.append("    retryFromEpoch: ").append(toIndentedString(retryFromEpoch)).append("\n");
     sb.append("    invalidFromEpoch: ").append(toIndentedString(invalidFromEpoch)).append("\n");
     sb.append("}");
     return sb.toString();

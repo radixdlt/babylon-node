@@ -194,7 +194,7 @@ impl SimpleMempool {
                     return false;
                 }
 
-                payload_size_so_far += tx.payload_size;
+                payload_size_so_far += tx.payload_size as u64;
                 if payload_size_so_far > max_payload_size_bytes {
                     // Note that with this naive approach there might be other txns
                     // in a mempool that could still fit in the available space.
@@ -321,7 +321,7 @@ mod tests {
         let notarized_transaction = create_fake_notarized_transaction(nonce, sigs_count);
         let payload_hash = notarized_transaction.user_payload_hash();
         let intent_hash = notarized_transaction.intent_hash();
-        let payload_size = notarized_transaction.to_bytes().unwrap().len() as u64;
+        let payload_size = notarized_transaction.to_bytes().unwrap().len();
         PendingTransaction {
             payload: notarized_transaction,
             payload_hash,

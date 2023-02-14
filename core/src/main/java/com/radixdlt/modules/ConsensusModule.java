@@ -137,12 +137,15 @@ public final class ConsensusModule extends AbstractModule {
       Hasher hasher,
       HashVerifier verifier,
       TimeSupplier timeSupplier,
+      ProposerElection proposerElection,
+      PacemakerTimeoutCalculator timeoutCalculator,
       Metrics metrics,
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteEventDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
       RemoteEventDispatcher<NodeId, Vote> voteDispatcher,
       EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher,
+      ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutDispatcher,
       RoundUpdate roundUpdate) {
     return BFTBuilder.create()
         .self(self)
@@ -170,6 +173,9 @@ public final class ConsensusModule extends AbstractModule {
         .validatorSet(config.getValidatorSet())
         .timeSupplier(timeSupplier)
         .metrics(metrics)
+        .timeoutDispatcher(timeoutDispatcher)
+        .proposerElection(proposerElection)
+        .timeoutCalculator(timeoutCalculator)
         .build();
   }
 

@@ -92,7 +92,8 @@ public class SyncUpPreprocessorTest {
 
   private SyncUpPreprocessor syncUpPreprocessor;
 
-  private final BFTEventProcessor forwardTo = mock(BFTEventProcessor.class);
+  private final BFTEventProcessorAtCurrentRound forwardTo =
+      mock(BFTEventProcessorAtCurrentRound.class);
   private final BFTSyncer bftSyncer = mock(BFTSyncer.class);
   private final Metrics metrics = new MetricsInitializer().initialize();
   private final RoundUpdate initialRoundUpdate = mock(RoundUpdate.class);

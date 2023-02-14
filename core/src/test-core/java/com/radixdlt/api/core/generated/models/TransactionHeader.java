@@ -136,13 +136,13 @@ public class TransactionHeader {
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the epoch from which the transaction can be submitted
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the epoch from which the transaction can be submitted. In the case of uncommitted transactions, a value of &#x60;10^10&#x60; indicates that the epoch was &gt;&#x3D; &#x60;10^10&#x60;. 
    * minimum: 0
    * maximum: 10000000000
    * @return startEpochInclusive
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the epoch from which the transaction can be submitted")
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the epoch from which the transaction can be submitted. In the case of uncommitted transactions, a value of `10^10` indicates that the epoch was >= `10^10`. ")
   @JsonProperty(JSON_PROPERTY_START_EPOCH_INCLUSIVE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -164,13 +164,13 @@ public class TransactionHeader {
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the epoch from which the transaction will no longer be valid, and be rejected
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the epoch from which the transaction will no longer be valid, and be rejected. In the case of uncommitted transactions, a value of &#x60;10^10&#x60; indicates that the epoch was &gt;&#x3D; &#x60;10^10&#x60;. 
    * minimum: 0
    * maximum: 10000000000
    * @return endEpochExclusive
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be rejected")
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be rejected. In the case of uncommitted transactions, a value of `10^10` indicates that the epoch was >= `10^10`. ")
   @JsonProperty(JSON_PROPERTY_END_EPOCH_EXCLUSIVE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

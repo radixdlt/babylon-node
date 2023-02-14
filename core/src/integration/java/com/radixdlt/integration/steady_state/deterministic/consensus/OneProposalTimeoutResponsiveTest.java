@@ -95,7 +95,7 @@ public class OneProposalTimeoutResponsiveTest {
                 new FunctionalRadixNodeModule(
                     false,
                     SafetyRecoveryConfig.mocked(),
-                    ConsensusConfig.of(),
+                    ConsensusConfig.of(200L, 0L),
                     LedgerConfig.stateComputerNoSync(
                         StateComputerConfig.mockedNoEpochs(
                             numValidatorNodes, MockedMempoolConfig.noMempool()))));
