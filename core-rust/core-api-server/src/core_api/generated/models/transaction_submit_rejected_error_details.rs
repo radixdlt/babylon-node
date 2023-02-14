@@ -30,8 +30,8 @@ pub struct TransactionSubmitRejectedErrorDetails {
     /// Whether the cached rejection of this intent is due to the intent already having been committed. If so, see the /transaction/receipt endpoint for further information. 
     #[serde(rename = "is_rejected_because_intent_already_committed")]
     pub is_rejected_because_intent_already_committed: bool,
-    #[serde(rename = "retry_not_before", skip_serializing_if = "Option::is_none")]
-    pub retry_not_before: Option<Box<crate::core_api::generated::models::Instant>>,
+    #[serde(rename = "retry_from_timestamp", skip_serializing_if = "Option::is_none")]
+    pub retry_from_timestamp: Option<Box<crate::core_api::generated::models::Instant>>,
     /// An integer between `0` and `10^10`, marking the epoch after which the node will consider recalculating the validity of the transaction. Only present if the rejection is temporary due to a header specifying a \"from epoch\" in the future. 
     #[serde(rename = "retry_from_epoch", skip_serializing_if = "Option::is_none")]
     pub retry_from_epoch: Option<i64>,
@@ -49,7 +49,7 @@ impl TransactionSubmitRejectedErrorDetails {
             is_payload_rejection_permanent,
             is_intent_rejection_permanent,
             is_rejected_because_intent_already_committed,
-            retry_not_before: None,
+            retry_from_timestamp: None,
             retry_from_epoch: None,
             invalid_from_epoch: None,
         }

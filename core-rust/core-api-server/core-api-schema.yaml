@@ -3040,7 +3040,7 @@ components:
               description: |
                 Whether the cached rejection of this intent is due to the intent already having been committed.
                 If so, see the /transaction/receipt endpoint for further information.
-            retry_not_before:
+            retry_from_timestamp:
               $ref: "#/components/schemas/Instant"
               description: |
                 The time after which the node will consider recalculating the validity of the transaction.

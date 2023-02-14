@@ -37,7 +37,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   TransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_IS_PAYLOAD_REJECTION_PERMANENT,
   TransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_IS_INTENT_REJECTION_PERMANENT,
   TransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_IS_REJECTED_BECAUSE_INTENT_ALREADY_COMMITTED,
-  TransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_RETRY_NOT_BEFORE,
+  TransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_RETRY_FROM_TIMESTAMP,
   TransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_RETRY_FROM_EPOCH,
   TransactionSubmitRejectedErrorDetailsAllOf.JSON_PROPERTY_INVALID_FROM_EPOCH
 })
@@ -58,8 +58,8 @@ public class TransactionSubmitRejectedErrorDetailsAllOf {
   public static final String JSON_PROPERTY_IS_REJECTED_BECAUSE_INTENT_ALREADY_COMMITTED = "is_rejected_because_intent_already_committed";
   private Boolean isRejectedBecauseIntentAlreadyCommitted;
 
-  public static final String JSON_PROPERTY_RETRY_NOT_BEFORE = "retry_not_before";
-  private Instant retryNotBefore;
+  public static final String JSON_PROPERTY_RETRY_FROM_TIMESTAMP = "retry_from_timestamp";
+  private Instant retryFromTimestamp;
 
   public static final String JSON_PROPERTY_RETRY_FROM_EPOCH = "retry_from_epoch";
   private Long retryFromEpoch;
@@ -200,29 +200,29 @@ public class TransactionSubmitRejectedErrorDetailsAllOf {
   }
 
 
-  public TransactionSubmitRejectedErrorDetailsAllOf retryNotBefore(Instant retryNotBefore) {
-    this.retryNotBefore = retryNotBefore;
+  public TransactionSubmitRejectedErrorDetailsAllOf retryFromTimestamp(Instant retryFromTimestamp) {
+    this.retryFromTimestamp = retryFromTimestamp;
     return this;
   }
 
    /**
-   * Get retryNotBefore
-   * @return retryNotBefore
+   * Get retryFromTimestamp
+   * @return retryFromTimestamp
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_RETRY_NOT_BEFORE)
+  @JsonProperty(JSON_PROPERTY_RETRY_FROM_TIMESTAMP)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Instant getRetryNotBefore() {
-    return retryNotBefore;
+  public Instant getRetryFromTimestamp() {
+    return retryFromTimestamp;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RETRY_NOT_BEFORE)
+  @JsonProperty(JSON_PROPERTY_RETRY_FROM_TIMESTAMP)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setRetryNotBefore(Instant retryNotBefore) {
-    this.retryNotBefore = retryNotBefore;
+  public void setRetryFromTimestamp(Instant retryFromTimestamp) {
+    this.retryFromTimestamp = retryFromTimestamp;
   }
 
 
@@ -299,14 +299,14 @@ public class TransactionSubmitRejectedErrorDetailsAllOf {
         Objects.equals(this.isPayloadRejectionPermanent, transactionSubmitRejectedErrorDetailsAllOf.isPayloadRejectionPermanent) &&
         Objects.equals(this.isIntentRejectionPermanent, transactionSubmitRejectedErrorDetailsAllOf.isIntentRejectionPermanent) &&
         Objects.equals(this.isRejectedBecauseIntentAlreadyCommitted, transactionSubmitRejectedErrorDetailsAllOf.isRejectedBecauseIntentAlreadyCommitted) &&
-        Objects.equals(this.retryNotBefore, transactionSubmitRejectedErrorDetailsAllOf.retryNotBefore) &&
+        Objects.equals(this.retryFromTimestamp, transactionSubmitRejectedErrorDetailsAllOf.retryFromTimestamp) &&
         Objects.equals(this.retryFromEpoch, transactionSubmitRejectedErrorDetailsAllOf.retryFromEpoch) &&
         Objects.equals(this.invalidFromEpoch, transactionSubmitRejectedErrorDetailsAllOf.invalidFromEpoch);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(errorMessage, isFresh, isPayloadRejectionPermanent, isIntentRejectionPermanent, isRejectedBecauseIntentAlreadyCommitted, retryNotBefore, retryFromEpoch, invalidFromEpoch);
+    return Objects.hash(errorMessage, isFresh, isPayloadRejectionPermanent, isIntentRejectionPermanent, isRejectedBecauseIntentAlreadyCommitted, retryFromTimestamp, retryFromEpoch, invalidFromEpoch);
   }
 
   @Override
@@ -318,7 +318,7 @@ public class TransactionSubmitRejectedErrorDetailsAllOf {
     sb.append("    isPayloadRejectionPermanent: ").append(toIndentedString(isPayloadRejectionPermanent)).append("\n");
     sb.append("    isIntentRejectionPermanent: ").append(toIndentedString(isIntentRejectionPermanent)).append("\n");
     sb.append("    isRejectedBecauseIntentAlreadyCommitted: ").append(toIndentedString(isRejectedBecauseIntentAlreadyCommitted)).append("\n");
-    sb.append("    retryNotBefore: ").append(toIndentedString(retryNotBefore)).append("\n");
+    sb.append("    retryFromTimestamp: ").append(toIndentedString(retryFromTimestamp)).append("\n");
     sb.append("    retryFromEpoch: ").append(toIndentedString(retryFromEpoch)).append("\n");
     sb.append("    invalidFromEpoch: ").append(toIndentedString(invalidFromEpoch)).append("\n");
     sb.append("}");

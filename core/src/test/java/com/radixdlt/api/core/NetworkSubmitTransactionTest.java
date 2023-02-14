@@ -186,8 +186,8 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(rejectedDetails.getIsIntentRejectionPermanent()).isFalse();
       assertThat(rejectedDetails.getIsRejectedBecauseIntentAlreadyCommitted()).isFalse();
       assertThat(rejectedDetails.getIsFresh()).isTrue();
-      assertThat(rejectedDetails.getRecalculationDue()).isNull();
-      assertThat(rejectedDetails.getRecalculationFromEpoch()).isEqualTo(2);
+      assertThat(rejectedDetails.getRetryFromTimestamp()).isNull();
+      assertThat(rejectedDetails.getRetryFromEpoch()).isEqualTo(2);
       assertThat(rejectedDetails.getErrorMessage())
           .isEqualTo("TransactionEpochNotYetValid { valid_from: 2, current_epoch: 1 }");
 

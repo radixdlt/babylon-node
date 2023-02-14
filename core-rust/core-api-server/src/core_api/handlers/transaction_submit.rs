@@ -59,9 +59,8 @@ pub(crate) async fn handle_transaction_submit(
                 is_intent_rejection_permanent: rejection.is_permanent_for_intent(),
                 is_rejected_because_intent_already_committed: rejection
                     .is_rejected_because_intent_already_committed(),
-                // TODO - Rename to `reexecution_not_before` after the Betanet-V2 Core API compatibility freeze
                 // TODO - Add `result_validity_substate_criteria` once track / mempool is improved
-                retry_not_before: match rejection.retry_from {
+                retry_from_timestamp: match rejection.retry_from {
                     state_manager::RetryFrom::Never => None,
                     state_manager::RetryFrom::FromTime(time) => Some(Box::new(
                         to_api_instant_from_safe_timestamp(to_unix_timestamp_ms(time)?)?,
