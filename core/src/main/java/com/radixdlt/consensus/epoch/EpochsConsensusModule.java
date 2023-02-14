@@ -72,6 +72,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.*;
@@ -393,7 +394,8 @@ public class EpochsConsensusModule extends AbstractModule {
       Random random,
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
       Metrics metrics,
-      Hasher hasher) {
+      Hasher hasher,
+      Addressing addressing) {
     return (safetyRules, vertexStore, pacemakerState, configuration) ->
         new BFTSync(
             self,
@@ -410,7 +412,8 @@ public class EpochsConsensusModule extends AbstractModule {
             configuration.getVertexStoreState().getRootHeader(),
             random,
             bftSyncPatienceMillis,
-            metrics);
+            metrics,
+            addressing);
   }
 
   @Provides

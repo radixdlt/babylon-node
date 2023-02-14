@@ -287,13 +287,15 @@ public record Metrics(
   }
 
   public record RoundChange(
-      String leader, HighQcSource highQcSource, CertificateType certificateType) {
+      String leaderKey,
+      String leaderComponentAddress,
+      HighQcSource highQcSource,
+      CertificateType certificateType) {
     public enum HighQcSource {
       CREATED_ON_RECEIVED_NON_TIMEOUT_VOTE,
       CREATED_ON_RECEIVED_TIMEOUT_VOTE,
       RECEIVED_ALONG_WITH_PROPOSAL,
       RECEIVED_ALONG_WITH_VOTE,
-      RECEIVED_IN_BFT_SYNC_VERTICES_RESPONSE,
       RECEIVED_IN_BFT_SYNC_VERTICES_ERROR_RESPONSE
     }
 

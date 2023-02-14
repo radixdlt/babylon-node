@@ -69,6 +69,7 @@ import static java.util.function.Predicate.not;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.RoundVotingResult.FormedQC;
@@ -164,11 +165,12 @@ public final class BFTSync implements BFTSyncer {
   private final RemoteEventDispatcher<NodeId, GetVerticesRequest> requestSender;
   private final EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher;
   private final ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher;
-
   private final EventDispatcher<ConsensusByzantineEvent> unexpectedEventEventDispatcher;
   private final Random random;
   private final int bftSyncPatienceMillis;
   private final Metrics metrics;
+  private final Addressing addressing;
+
   private LedgerProof currentLedgerHeader;
 
   // TODO: remove once we figure that out
@@ -192,7 +194,8 @@ public final class BFTSync implements BFTSyncer {
       LedgerProof currentLedgerHeader,
       Random random,
       int bftSyncPatienceMillis,
-      Metrics metrics) {
+      Metrics metrics,
+      Addressing addressing) {
     this.self = self;
     this.syncRequestRateLimiter = Objects.requireNonNull(syncRequestRateLimiter);
     this.vertexStore = vertexStore;
@@ -208,6 +211,7 @@ public final class BFTSync implements BFTSyncer {
     this.random = random;
     this.bftSyncPatienceMillis = bftSyncPatienceMillis;
     this.metrics = Objects.requireNonNull(metrics);
+    this.addressing = Objects.requireNonNull(addressing);
   }
 
   public EventProcessor<RoundQuorumReached> roundQuorumReachedEventProcessor() {
@@ -265,8 +269,10 @@ public final class BFTSync implements BFTSyncer {
                     final var isTimeoutVertex =
                         vertexStore
                             .getExecutedVertex(qc.getProposedHeader().getVertexId())
-                            .map(v -> v.vertex().isTimeout())
-                            .orElse(false);
+                            .orElseThrow(
+                                () -> new RuntimeException("Vertex is missing for inserted QC"))
+                            .vertex()
+                            .isTimeout();
                     certificateType =
                         isTimeoutVertex
                             ? CertificateType.QC_ON_TIMEOUT_VERTEX
@@ -278,7 +284,12 @@ public final class BFTSync implements BFTSyncer {
                       .roundChanges()
                       .label(
                           new Metrics.RoundChange(
-                              roundUpdate.getNextLeader().toSerializedString(),
+                              roundUpdate.getLeader().getKey().toHex(),
+                              roundUpdate
+                                  .getLeader()
+                                  .getValidatorAddress()
+                                  .map(addressing::encodeValidatorAddress)
+                                  .orElse("none"),
                               highQcSource,
                               certificateType))
                       .inc();
@@ -301,7 +312,12 @@ public final class BFTSync implements BFTSyncer {
                           .roundChanges()
                           .label(
                               new Metrics.RoundChange(
-                                  roundUpdate.getNextLeader().toSerializedString(),
+                                  roundUpdate.getLeader().getKey().toHex(),
+                                  roundUpdate
+                                      .getLeader()
+                                      .getValidatorAddress()
+                                      .map(addressing::encodeValidatorAddress)
+                                      .orElse("none"),
                                   highQcSource,
                                   CertificateType.TC))
                           .inc());

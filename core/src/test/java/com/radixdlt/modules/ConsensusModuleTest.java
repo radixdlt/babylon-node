@@ -73,6 +73,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.*;
 import com.google.inject.Module;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
@@ -92,6 +93,7 @@ import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.RoundChange.HighQcSource;
 import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.store.LastProof;
@@ -210,6 +212,7 @@ public class ConsensusModuleTest {
         bind(RateLimiter.class)
             .annotatedWith(GetVerticesRequestRateLimit.class)
             .toInstance(RateLimiter.create(Double.MAX_VALUE));
+        bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
         bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
         bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(1000L);
         bindConstant().annotatedWith(PacemakerBackoffRate.class).to(2.0);
