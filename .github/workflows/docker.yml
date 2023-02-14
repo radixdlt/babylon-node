@@ -145,6 +145,8 @@ jobs:
       contents: read
       pull-requests: write
     steps:
+      - name: Dump context
+        uses: crazy-max/ghaction-dump-context@516dbb0c760f39b4cdd750ae095f1688780f68f4
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -173,18 +175,9 @@ jobs:
           password: ${{env.DOCKERHUB_TOKEN}}
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: |
-            radixdlt/babylon-node
-          tags: |
-            type=ref,event=release
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
-          flavor: |
-            latest=false
+        run: |
+          echo "RELEASE_TAG: radixdlt/babylon-node:${{ github.event.release.tag_name }}"
+          echo "RELEASE_TAG: radixdlt/babylon-node:${{ github.event.release.tag_name }}" >> $GITHUB_ENV
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
@@ -196,8 +189,8 @@ jobs:
           context: docker
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ env.RELEASE_TAG }}
+
 
 # TEMPORARILY REMOVE EPHEMERAL TESTS
 # => Until we can change them to only run the "node" tests and not the transaction tests
