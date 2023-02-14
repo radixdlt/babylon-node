@@ -158,7 +158,7 @@ jobs:
       - name: "Configure AWS credentials"
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.ACCOUNT_NUMBER }}:role/gh-dockerhub-releaser
+          role-to-assume: arn:aws:iam::${{ secrets.GH_ACCOUNT_NUMBER }}:role/gh-dockerhub-releaser
           aws-region: eu-west-2
       - name: Read secrets from AWS Secrets Manager into environment variables
         uses: aws-actions/aws-secretsmanager-get-secrets@v1
