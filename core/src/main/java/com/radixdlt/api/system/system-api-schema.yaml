@@ -36,6 +36,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /identity:
+    get:
+      summary: 'Get Node Identity'
+      responses:
+        '200':
+          description: 'Node Identity'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityResponse'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /health:
     get:
       summary: 'Get Health'
@@ -126,6 +142,52 @@ components:
       properties:
         version:
           type: string
+    IdentityResponse:
+      type: object
+      required:
+        - public_key_hex
+        - node_address
+        - node_uri
+        - node_name
+        - consensus_status
+      properties:
+        public_key_hex:
+          type: string
+          minLength: 66
+          maxLength: 66
+          description: |
+            The hex-encoded compressed ECDSA Secp256k1 public key (33 bytes) which the node is using.
+        node_address:
+          type: string
+          description: |
+            The Bech32m-encoded human readable node address, which is a representation of its public key.
+        node_uri:
+          type: string
+          description: |
+            The Bech32m-encoded human readable node URI, which is a representation of its public key and IP.
+        node_name:
+          type: string
+          description: |
+            The name that the node gives to itself internally, used for (eg) logging.
+        node_id:
+          type: string
+          description: |
+            The id that the node gives to itself internally.
+        validator_address:
+          type: string
+          description: |
+            The Bech32m-encoded human readable validator address which the node believes it is.
+            Depending on node configuration, this was either matched from genesis, or directly configured.
+        validator_name:
+          type: string
+          description: |
+            A shortened representation of the configured validator identity, used for (eg) logging.
+        consensus_status:
+          type: string
+          enum:
+            - VALIDATING_IN_CURRENT_EPOCH
+            - NOT_VALIDATING_IN_CURRENT_EPOCH
+            - NOT_CONFIGURED_AS_VALIDATOR
     HealthResponse:
       type: object
       required:

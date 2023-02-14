@@ -54,13 +54,13 @@ public class NextEpoch {
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the new epoch
    * minimum: 0
    * maximum: 10000000000
    * @return epoch
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`")
+  @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the new epoch")
   @JsonProperty(JSON_PROPERTY_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

@@ -103,6 +103,7 @@ public class REv2StateComputerTest {
             Network.INTEGRATIONTESTNET.getId(),
             10,
             10 * 1024 * 1024,
+            50 * 1024 * 1024,
             REv2DatabaseConfig.inMemory(),
             Option.none()),
         new AbstractModule() {

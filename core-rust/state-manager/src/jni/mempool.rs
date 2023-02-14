@@ -193,7 +193,10 @@ fn do_get_transactions_to_relay(
     (max_num_txns, max_payload_size_bytes): (u32, u32),
 ) -> Vec<JavaRawTransaction> {
     state_manager
-        .get_relay_transactions(max_num_txns.into(), max_payload_size_bytes.into())
+        .get_relay_transactions(
+            max_num_txns.try_into().unwrap(),
+            max_payload_size_bytes.try_into().unwrap(),
+        )
         .into_iter()
         .map(|t| t.into())
         .collect()

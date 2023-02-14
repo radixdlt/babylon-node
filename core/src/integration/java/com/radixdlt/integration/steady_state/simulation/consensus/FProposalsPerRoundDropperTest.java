@@ -124,7 +124,7 @@ public class FProposalsPerRoundDropperTest {
                 new FunctionalRadixNodeModule(
                     false,
                     SafetyRecoveryConfig.mocked(),
-                    ConsensusConfig.of(5000),
+                    ConsensusConfig.of(5000, 0L),
                     LedgerConfig.mocked(numNodes)))
             .addTestModules(
                 ConsensusMonitors.safety(),

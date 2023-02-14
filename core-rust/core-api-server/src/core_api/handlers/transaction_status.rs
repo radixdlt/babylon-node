@@ -26,6 +26,8 @@ fn handle_transaction_status_internal(
 ) -> Result<models::TransactionStatusResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
+    let mapping_context = MappingContext::new_for_uncommitted_data(&state_manager.network);
+
     let intent_hash = extract_intent_hash(request.intent_hash)
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
@@ -50,12 +52,6 @@ fn handle_transaction_status_internal(
         p.1.earliest_permanent_rejection
             .as_ref()
             .map_or(false, |r| r.marks_permanent_rejection_for_intent())
-    });
-
-    let invalid_from_epoch_for_api = invalid_from_epoch.and_then(|maybe_nefarious_epoch| {
-        // This epoch is from an invalid user transaction so it might not fit within the Open API bounds for an epoch
-        // If it falls out of those bounds, just map it to None to avoid throwing an InternalServerError
-        to_api_epoch(maybe_nefarious_epoch).ok()
     });
 
     if let Some(txn_state_version) = txn_state_version_opt {
@@ -142,7 +138,7 @@ fn handle_transaction_status_internal(
         return Ok(models::TransactionStatusResponse {
             intent_status: models::transaction_status_response::IntentStatus::InMempool,
             status_description: "At least one payload for the intent is in this node's mempool. This node believes it's possible the intent might be able to be committed. Whilst the transaction continues to live in the mempool, you can use the /mempool/transaction endpoint to read its payload.".to_owned(),
-            invalid_from_epoch: invalid_from_epoch_for_api,
+            invalid_from_epoch: invalid_from_epoch.map(|epoch| to_api_epoch(&mapping_context, epoch)).transpose()?,
             known_payloads,
         });
     }
@@ -175,7 +171,9 @@ fn handle_transaction_status_internal(
         models::TransactionStatusResponse {
             intent_status: status,
             status_description: description.to_owned(),
-            invalid_from_epoch: invalid_from_epoch_for_api,
+            invalid_from_epoch: invalid_from_epoch
+                .map(|epoch| to_api_epoch(&mapping_context, epoch))
+                .transpose()?,
             known_payloads,
         }
     };

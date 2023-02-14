@@ -65,22 +65,24 @@
 package com.radixdlt.consensus.liveness;
 
 import com.google.inject.Inject;
+import com.radixdlt.consensus.bft.AdditionalRoundTimeIfProposalReceivedMs;
 import com.radixdlt.consensus.bft.PacemakerBackoffRate;
 import com.radixdlt.consensus.bft.PacemakerBaseTimeoutMs;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 
 /** Timeout calculator which exponentially increases based on number of uncommitted rounds. */
 public final class ExponentialPacemakerTimeoutCalculator implements PacemakerTimeoutCalculator {
-
   private final long baseTimeoutMilliseconds;
   private final double rate;
   private final int maxExponent;
+  private final long additionalRoundTimeIfProposalReceivedMs;
 
   @Inject
   public ExponentialPacemakerTimeoutCalculator(
       @PacemakerBaseTimeoutMs long baseTimeoutMilliseconds,
       @PacemakerBackoffRate double rate,
-      @PacemakerMaxExponent int maxExponent) {
+      @PacemakerMaxExponent int maxExponent,
+      @AdditionalRoundTimeIfProposalReceivedMs long additionalRoundTimeIfProposalReceivedMs) {
     if (baseTimeoutMilliseconds <= 0) {
       throw new IllegalArgumentException(
           "timeoutMilliseconds must be > 0 but was " + baseTimeoutMilliseconds);
@@ -100,6 +102,7 @@ public final class ExponentialPacemakerTimeoutCalculator implements PacemakerTim
     this.baseTimeoutMilliseconds = baseTimeoutMilliseconds;
     this.rate = rate;
     this.maxExponent = maxExponent;
+    this.additionalRoundTimeIfProposalReceivedMs = additionalRoundTimeIfProposalReceivedMs;
   }
 
   @Override
@@ -107,5 +110,10 @@ public final class ExponentialPacemakerTimeoutCalculator implements PacemakerTim
     double exponential =
         Math.pow(this.rate, Math.min(this.maxExponent, consecutiveUncommittedRounds));
     return Math.round(this.baseTimeoutMilliseconds * exponential);
+  }
+
+  @Override
+  public long additionalRoundTimeIfProposalReceivedMs() {
+    return additionalRoundTimeIfProposalReceivedMs;
   }
 }

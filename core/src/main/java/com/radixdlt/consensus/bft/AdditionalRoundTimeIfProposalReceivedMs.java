@@ -62,44 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft.processor;
+package com.radixdlt.consensus.bft;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.monitoring.MetricsInitializer;
-import org.junit.Before;
-import org.junit.Test;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-public final class BFTEventStatefulVerifierTest {
-  private Metrics metrics;
-  private BFTEventProcessor forwardTo;
-  private BFTEventStatefulVerifier bftEventStatefulVerifier;
-
-  @Before
-  public void setUp() {
-    this.metrics = new MetricsInitializer().initialize();
-    this.forwardTo = mock(BFTEventProcessor.class);
-    this.bftEventStatefulVerifier =
-        new BFTEventStatefulVerifier(this.forwardTo, this.metrics, mock(RoundUpdate.class));
-  }
-
-  @Test
-  public void when_local_timeout_for_non_current_round__then_ignored() {
-    this.bftEventStatefulVerifier.processLocalTimeout(
-        ScheduledLocalTimeout.create(
-            RoundUpdate.create(
-                Round.of(1),
-                mock(HighQC.class),
-                mock(BFTValidatorId.class),
-                mock(BFTValidatorId.class)),
-            0L));
-    verifyNoMoreInteractions(this.forwardTo);
-  }
-}
+/**
+ * the amount of time (in milliseconds) by which the round can be extended if proposal was received,
+ * but hasn't yet been synced up.
+ */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface AdditionalRoundTimeIfProposalReceivedMs {}

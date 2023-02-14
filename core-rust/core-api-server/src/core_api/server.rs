@@ -142,6 +142,11 @@ pub async fn create_server<F>(
         .route("/state/epoch", post(handle_state_epoch))
         .route("/state/clock", post(handle_state_clock))
         .route("/state/component", post(handle_state_component))
+        .route("/state/validator", post(handle_state_validator))
+        .route(
+            "/state/access-controller",
+            post(handle_state_access_controller),
+        )
         .route("/state/package", post(handle_state_package))
         .route("/state/resource", post(handle_state_resource))
         .route("/state/non-fungible", post(handle_state_non_fungible))

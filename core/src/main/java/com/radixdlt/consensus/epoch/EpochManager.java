@@ -118,6 +118,8 @@ public final class EpochManager {
 
   private EpochChange lastEpochChange;
 
+  private ValidationStatus validationStatus;
+
   private EventProcessor<VertexRequestTimeout> syncTimeoutProcessor;
   private EventProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
   private BFTEventProcessor bftEventProcessor;
@@ -185,8 +187,14 @@ public final class EpochManager {
       this.bftEventProcessor = EmptyBFTEventProcessor.INSTANCE;
       this.syncLedgerUpdateProcessor = update -> {};
       this.syncTimeoutProcessor = timeout -> {};
+      if (self.getValidatorAddress() == null) {
+        this.validationStatus = ValidationStatus.NOT_CONFIGURED_AS_VALIDATOR;
+      } else {
+        this.validationStatus = ValidationStatus.VALIDATING_IN_CURRENT_EPOCH;
+      }
       return;
     }
+    this.validationStatus = ValidationStatus.VALIDATING_IN_CURRENT_EPOCH;
 
     // TODO: Move this filterign into a separate network module
     this.validatorNodeIds.clear();
@@ -245,7 +253,9 @@ public final class EpochManager {
             validatorSet,
             initialRoundUpdate,
             safetyRules,
-            nextEpoch);
+            nextEpoch,
+            proposerElection,
+            timeoutCalculator);
 
     this.syncResponseProcessors = Set.of(bftSync.responseProcessor());
     this.syncErrorResponseProcessors = Set.of(bftSync.errorResponseProcessor());
@@ -257,6 +267,10 @@ public final class EpochManager {
 
   public void start() {
     this.bftEventProcessor.start();
+  }
+
+  public ValidationStatus validationStatus() {
+    return this.validationStatus;
   }
 
   private long currentEpoch() {
