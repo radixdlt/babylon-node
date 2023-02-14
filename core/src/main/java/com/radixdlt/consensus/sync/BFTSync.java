@@ -257,43 +257,11 @@ public final class BFTSync implements BFTSyncer {
         this.pacemakerReducer
             .processQC(vertexStore.highQC())
             .ifPresent(
-                roundUpdate -> {
-                  CertificateType certificateType;
-                  if (tcAlsoInserted) {
-                    // TC was inserted so its round must be higher than that of a QC, round change
-                    // cert type is then a TC
-                    certificateType = CertificateType.TC;
-                  } else {
-                    // QC was inserted, need to determine whether its corresponding vertex was a
-                    // timeout vertex or not
-                    final var isTimeoutVertex =
-                        vertexStore
-                            .getExecutedVertex(qc.getProposedHeader().getVertexId())
-                            .orElseThrow(
-                                () -> new RuntimeException("Vertex is missing for inserted QC"))
-                            .vertex()
-                            .isTimeout();
-                    certificateType =
-                        isTimeoutVertex
-                            ? CertificateType.QC_ON_TIMEOUT_VERTEX
-                            : CertificateType.QC_ON_REGULAR_VERTEX;
-                  }
-
-                  metrics
-                      .bft()
-                      .roundChanges()
-                      .label(
-                          new Metrics.RoundChange(
-                              roundUpdate.getLeader().getKey().toHex(),
-                              roundUpdate
-                                  .getLeader()
-                                  .getValidatorAddress()
-                                  .map(addressing::encodeValidatorAddress)
-                                  .orElse("none"),
-                              highQcSource,
-                              certificateType))
-                      .inc();
-                });
+                roundUpdate ->
+                    updateRoundChangesMetrics(
+                        roundUpdate,
+                        determineCertificateTypeForInsertedQc(qc, tcAlsoInserted),
+                        highQcSource));
 
         yield SyncResult.SYNCED;
       }
@@ -307,20 +275,7 @@ public final class BFTSync implements BFTSyncer {
               .processQC(vertexStore.highQC())
               .ifPresent(
                   roundUpdate ->
-                      metrics
-                          .bft()
-                          .roundChanges()
-                          .label(
-                              new Metrics.RoundChange(
-                                  roundUpdate.getLeader().getKey().toHex(),
-                                  roundUpdate
-                                      .getLeader()
-                                      .getValidatorAddress()
-                                      .map(addressing::encodeValidatorAddress)
-                                      .orElse("none"),
-                                  highQcSource,
-                                  CertificateType.TC))
-                          .inc());
+                      updateRoundChangesMetrics(roundUpdate, CertificateType.TC, highQcSource));
         }
         yield SyncResult.SYNCED;
       }
@@ -350,6 +305,45 @@ public final class BFTSync implements BFTSyncer {
         yield SyncResult.IN_PROGRESS;
       }
     };
+  }
+
+  private CertificateType determineCertificateTypeForInsertedQc(
+      QuorumCertificate insertedQc, boolean wasTcAlsoInserted) {
+    if (wasTcAlsoInserted) {
+      // TC was inserted so its round must be higher than that of a QC, round change
+      // cert type is then a TC
+      return CertificateType.TC;
+    } else {
+      // QC was inserted, need to determine whether its corresponding vertex was a
+      // timeout vertex or not
+      final var isTimeoutVertex =
+          vertexStore
+              .getExecutedVertex(insertedQc.getProposedHeader().getVertexId())
+              .orElseThrow(() -> new RuntimeException("Vertex is missing for inserted QC"))
+              .vertex()
+              .isTimeout();
+      return isTimeoutVertex
+          ? CertificateType.QC_ON_TIMEOUT_VERTEX
+          : CertificateType.QC_ON_REGULAR_VERTEX;
+    }
+  }
+
+  private void updateRoundChangesMetrics(
+      RoundUpdate roundUpdate, CertificateType certificateType, HighQcSource highQcSource) {
+    metrics
+        .bft()
+        .roundChanges()
+        .label(
+            new Metrics.RoundChange(
+                roundUpdate.getLeader().getKey().toHex(),
+                roundUpdate
+                    .getLeader()
+                    .getValidatorAddress()
+                    .map(addressing::encodeValidatorAddress)
+                    .orElse("none"),
+                highQcSource,
+                certificateType))
+        .inc();
   }
 
   private boolean requiresLedgerSync(SyncState syncState) {

@@ -87,6 +87,7 @@ public interface BFTSyncer {
    *
    * @param highQC the {@link HighQC} to sync to
    * @param author the original author of the qc
+   * @param highQcSource the source of highQc, used for updating the metrics
    * @return {@code SyncResult.SYNCED} if already synced
    */
   SyncResult syncToQC(HighQC highQC, @Nullable NodeId author, HighQcSource highQcSource);

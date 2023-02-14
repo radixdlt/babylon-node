@@ -249,7 +249,7 @@ public class EpochsConsensusModule extends AbstractModule {
 
   @Provides
   private PacemakerStateFactory pacemakerStateFactory(
-      EventDispatcher<EpochRoundUpdate> epochRoundUpdateEventDispatcher, Metrics metrics) {
+      EventDispatcher<EpochRoundUpdate> epochRoundUpdateEventDispatcher) {
     return (initialRound, epoch, proposerElection) ->
         new PacemakerState(
             initialRound,
@@ -257,8 +257,7 @@ public class EpochsConsensusModule extends AbstractModule {
             roundUpdate -> {
               EpochRoundUpdate epochRoundUpdate = new EpochRoundUpdate(epoch, roundUpdate);
               epochRoundUpdateEventDispatcher.dispatch(epochRoundUpdate);
-            },
-            metrics);
+            });
   }
 
   @ProvidesIntoSet
