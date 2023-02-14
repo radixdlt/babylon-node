@@ -35,8 +35,6 @@ pub enum SubstateKeyType {
     PackageRoyaltyAccumulator,
     #[serde(rename = "ResourceManager")]
     ResourceManager,
-    #[serde(rename = "ResourceManagerVaultAccessRulesChain")]
-    ResourceManagerVaultAccessRulesChain,
     #[serde(rename = "EpochManager")]
     EpochManager,
     #[serde(rename = "CurrentValidatorSet")]
@@ -55,6 +53,8 @@ pub enum SubstateKeyType {
     Vault,
     #[serde(rename = "AccessController")]
     AccessController,
+    #[serde(rename = "Account")]
+    Account,
 
 }
 
@@ -72,7 +72,6 @@ impl ToString for SubstateKeyType {
             Self::PackageRoyaltyConfig => String::from("PackageRoyaltyConfig"),
             Self::PackageRoyaltyAccumulator => String::from("PackageRoyaltyAccumulator"),
             Self::ResourceManager => String::from("ResourceManager"),
-            Self::ResourceManagerVaultAccessRulesChain => String::from("ResourceManagerVaultAccessRulesChain"),
             Self::EpochManager => String::from("EpochManager"),
             Self::CurrentValidatorSet => String::from("CurrentValidatorSet"),
             Self::PreparingValidatorSet => String::from("PreparingValidatorSet"),
@@ -82,6 +81,7 @@ impl ToString for SubstateKeyType {
             Self::NonFungibleStoreEntry => String::from("NonFungibleStoreEntry"),
             Self::Vault => String::from("Vault"),
             Self::AccessController => String::from("AccessController"),
+            Self::Account => String::from("Account"),
         }
     }
 }

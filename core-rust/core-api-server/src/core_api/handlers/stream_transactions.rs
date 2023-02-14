@@ -251,8 +251,7 @@ pub fn to_api_validator_transaction(
             proposer_timestamp_ms,
             consensus_epoch,
             round_in_epoch,
-            // TODO - update to RoundUpdateValidatorTransaction once the BetanetV2 compatability freeze is over
-        } => models::ValidatorTransaction::TimeUpdateValidatorTransaction {
+        } => models::ValidatorTransaction::RoundUpdateValidatorTransaction {
             proposer_timestamp: Box::new(to_api_instant_from_safe_timestamp(
                 *proposer_timestamp_ms,
             )?),

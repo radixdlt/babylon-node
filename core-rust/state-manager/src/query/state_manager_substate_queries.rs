@@ -1,6 +1,7 @@
-use radix_engine::model::EpochManagerSubstate;
+use radix_engine::blueprints::epoch_manager::EpochManagerSubstate;
 use radix_engine::types::{EpochManagerOffset, SubstateId, EPOCH_MANAGER};
 use radix_engine::types::{GlobalAddress, GlobalOffset, RENodeId, SubstateOffset};
+use radix_engine_interface::api::types::NodeModuleId;
 
 use crate::store::traits::*;
 
@@ -14,6 +15,7 @@ impl<T: ReadableSubstateStore> StateManagerSubstateQueries for T {
         let node_id = self
             .get_substate(&SubstateId(
                 RENodeId::Global(global_address),
+                NodeModuleId::SELF,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))?
             .substate
@@ -32,6 +34,7 @@ impl<T: ReadableSubstateStore> StateManagerSubstateQueries for T {
         let system_substate: EpochManagerSubstate = self
             .get_substate(&SubstateId(
                 epoch_manager_node,
+                NodeModuleId::SELF,
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
             ))
             .expect("Couldn't find Epoch Manager substate!")

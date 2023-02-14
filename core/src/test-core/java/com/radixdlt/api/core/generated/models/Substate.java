@@ -27,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerSubstate;
 import com.radixdlt.api.core.generated.models.AccessRulesChainSubstate;
+import com.radixdlt.api.core.generated.models.AccountSubstate;
 import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
 import com.radixdlt.api.core.generated.models.ComponentInfoSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
@@ -68,6 +69,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = AccessControllerSubstate.class, name = "AccessControllerSubstate"),
   @JsonSubTypes.Type(value = AccessRulesChainSubstate.class, name = "AccessRulesChain"),
   @JsonSubTypes.Type(value = AccessRulesChainSubstate.class, name = "AccessRulesChainSubstate"),
+  @JsonSubTypes.Type(value = AccountSubstate.class, name = "Account"),
+  @JsonSubTypes.Type(value = AccountSubstate.class, name = "AccountSubstate"),
   @JsonSubTypes.Type(value = ClockCurrentMinuteSubstate.class, name = "ClockCurrentMinute"),
   @JsonSubTypes.Type(value = ClockCurrentMinuteSubstate.class, name = "ClockCurrentMinuteSubstate"),
   @JsonSubTypes.Type(value = ComponentInfoSubstate.class, name = "ComponentInfo"),
@@ -184,6 +187,8 @@ static {
   mappings.put("AccessControllerSubstate", AccessControllerSubstate.class);
   mappings.put("AccessRulesChain", AccessRulesChainSubstate.class);
   mappings.put("AccessRulesChainSubstate", AccessRulesChainSubstate.class);
+  mappings.put("Account", AccountSubstate.class);
+  mappings.put("AccountSubstate", AccountSubstate.class);
   mappings.put("ClockCurrentMinute", ClockCurrentMinuteSubstate.class);
   mappings.put("ClockCurrentMinuteSubstate", ClockCurrentMinuteSubstate.class);
   mappings.put("ComponentInfo", ComponentInfoSubstate.class);

@@ -116,7 +116,8 @@ public class StateComputerLedgerTest {
   // Doesn't matter what kind of transaction it is, but needs to be a valid tx payload
   // to be able to convert it from NotarizedTransaction to LedgerTransaction.
   private final RawNotarizedTransaction nextTransaction =
-      REv2TestTransactions.constructNewAccountTransaction(NetworkDefinition.LOCAL_SIMULATOR, 0, 0);
+      REv2TestTransactions.constructDepositFromFaucetTransaction(
+          NetworkDefinition.LOCAL_SIMULATOR, 0, 0);
   private final Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
   private final ExecutedTransaction successfulNextTransaction =
       nextTransaction::INCORRECTInterpretDirectlyAsRawLedgerTransaction;
@@ -192,7 +193,7 @@ public class StateComputerLedgerTest {
   public void should_not_change_accumulator_when_there_is_no_transaction() {
     // Arrange
     genesisIsEndOfEpoch(false);
-    when(stateComputer.prepare(any(), any(), any()))
+    when(stateComputer.prepare(any(), any(), any(), any()))
         .thenReturn(new StateComputerResult(ImmutableList.of(), ImmutableMap.of()));
     var proposedVertex =
         Vertex.create(initialEpochQC, Round.of(1), List.of(), BFTValidatorId.random(), 0L)
@@ -215,7 +216,7 @@ public class StateComputerLedgerTest {
   public void should_not_change_header_when_past_end_of_epoch_even_with_transaction() {
     // Arrange
     genesisIsEndOfEpoch(true);
-    when(stateComputer.prepare(any(), any(), any()))
+    when(stateComputer.prepare(any(), any(), any(), any()))
         .thenReturn(
             new StateComputerResult(
                 ImmutableList.of(successfulNextTransaction), ImmutableMap.of()));
@@ -241,7 +242,7 @@ public class StateComputerLedgerTest {
   public void should_accumulate_when_next_transaction_valid() {
     // Arrange
     genesisIsEndOfEpoch(false);
-    when(stateComputer.prepare(any(), any(), any()))
+    when(stateComputer.prepare(any(), any(), any(), any()))
         .thenReturn(
             new StateComputerResult(
                 ImmutableList.of(successfulNextTransaction), ImmutableMap.of()));
@@ -271,7 +272,7 @@ public class StateComputerLedgerTest {
   public void should_do_nothing_if_committing_lower_state_version() {
     // Arrange
     genesisIsEndOfEpoch(false);
-    when(stateComputer.prepare(any(), any(), any()))
+    when(stateComputer.prepare(any(), any(), any(), any()))
         .thenReturn(
             new StateComputerResult(
                 ImmutableList.of(successfulNextTransaction), ImmutableMap.of()));

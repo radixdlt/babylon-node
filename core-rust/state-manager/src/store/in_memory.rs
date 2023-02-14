@@ -71,8 +71,11 @@ use crate::{
 };
 
 use radix_engine::ledger::OutputValue;
-use radix_engine::model::PersistedSubstate;
+use radix_engine::system::substates::PersistedSubstate;
 use radix_engine_interface::api::types::{KeyValueStoreId, SubstateId};
+use radix_engine_stores::hash_tree::tree_store::{
+    NodeKey, ReadableTreeStore, SerializedInMemoryTreeStore, TreeNode, WriteableTreeStore,
+};
 use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 use std::collections::{BTreeMap, HashMap};
 
@@ -88,6 +91,7 @@ pub struct InMemoryStore {
     epoch_proofs: BTreeMap<u64, Vec<u8>>,
     vertex_store: Option<Vec<u8>>,
     substate_store: SerializedInMemorySubstateStore,
+    tree_node_store: SerializedInMemoryTreeStore,
 }
 
 impl InMemoryStore {
@@ -103,6 +107,7 @@ impl InMemoryStore {
             epoch_proofs: BTreeMap::new(),
             vertex_store: None,
             substate_store: SerializedInMemorySubstateStore::new(),
+            tree_node_store: SerializedInMemoryTreeStore::new(),
         }
     }
 
@@ -184,6 +189,12 @@ impl ReadableSubstateStore for InMemoryStore {
     }
 }
 
+impl ReadableTreeStore for InMemoryStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+        self.tree_node_store.get_node(key)
+    }
+}
+
 impl QueryableSubstateStore for InMemoryStore {
     fn get_kv_store_entries(
         &self,
@@ -212,6 +223,10 @@ impl CommitStore for InMemoryStore {
 
         if let Some(vertex_store) = commit_bundle.vertex_store {
             self.save_vertex_store(vertex_store)
+        }
+
+        for (key, node) in commit_bundle.hash_tree_nodes {
+            self.tree_node_store.insert_node(key, node);
         }
     }
 }

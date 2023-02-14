@@ -138,6 +138,7 @@ public final class StateManagerSbor {
     SignatureWithPublicKey.registerCodec(codecMap);
     PrepareGenesisRequest.registerCodec(codecMap);
     PrepareGenesisResult.registerCodec(codecMap);
+    PreviousVertex.registerCodec(codecMap);
     PrepareRequest.registerCodec(codecMap);
     PrepareResult.registerCodec(codecMap);
     NextEpoch.registerCodec(codecMap);

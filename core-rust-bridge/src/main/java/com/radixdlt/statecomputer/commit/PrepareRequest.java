@@ -64,16 +64,17 @@
 
 package com.radixdlt.statecomputer.commit;
 
+import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 
 public record PrepareRequest(
-    List<RawLedgerTransaction> previous,
+    HashCode parentAccumulatorHash,
+    List<PreviousVertex> previousVertices,
     List<RawNotarizedTransaction> proposed,
     UInt64 epoch,
     UInt64 roundNumber,
@@ -84,6 +85,7 @@ public record PrepareRequest(
         codecs ->
             StructCodec.with(
                 PrepareRequest::new,
+                codecs.of(HashCode.class),
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
@@ -91,6 +93,11 @@ public record PrepareRequest(
                 codecs.of(new TypeToken<>() {}),
                 (t, encoder) ->
                     encoder.encode(
-                        t.previous, t.proposed, t.epoch, t.roundNumber, t.proposerTimestampMs)));
+                        t.parentAccumulatorHash,
+                        t.previousVertices,
+                        t.proposed,
+                        t.epoch,
+                        t.roundNumber,
+                        t.proposerTimestampMs)));
   }
 }

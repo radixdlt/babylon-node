@@ -13,8 +13,8 @@
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type")]
 pub enum ValidatorTransaction {
-    #[serde(rename="TimeUpdate")]
-    TimeUpdateValidatorTransaction {
+    #[serde(rename="RoundUpdate")]
+    RoundUpdateValidatorTransaction {
         #[serde(rename = "proposer_timestamp")]
         proposer_timestamp: Box<crate::core_api::generated::models::Instant>,
         /// An integer between `0` and `10^10`, marking the consensus epoch. 

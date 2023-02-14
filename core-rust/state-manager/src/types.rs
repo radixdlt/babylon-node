@@ -62,8 +62,8 @@
  * permissions under this License.
  */
 
-use crate::transaction::LedgerTransaction;
-use radix_engine::model::Validator;
+use crate::{jni::mempool::JavaHashCode, transaction::LedgerTransaction};
+use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine::types::*;
 use std::collections::BTreeMap;
 use std::fmt;
@@ -159,6 +159,12 @@ impl AsRef<[u8]> for LedgerPayloadHash {
 impl From<Hash> for LedgerPayloadHash {
     fn from(hash: Hash) -> Self {
         LedgerPayloadHash(hash.0)
+    }
+}
+
+impl From<JavaHashCode> for AccumulatorHash {
+    fn from(java_hash_code: JavaHashCode) -> Self {
+        AccumulatorHash::from_raw_bytes(java_hash_code.0.as_slice().try_into().unwrap())
     }
 }
 
@@ -387,13 +393,13 @@ pub struct PendingTransaction {
     pub payload: NotarizedTransaction,
     pub payload_hash: UserPayloadHash,
     pub intent_hash: IntentHash,
-    pub payload_size: u64,
+    pub payload_size: usize,
 }
 
 impl From<NotarizedTransaction> for PendingTransaction {
     fn from(transaction: NotarizedTransaction) -> Self {
         let intent_hash = transaction.intent_hash();
-        let payload_size = transaction.to_bytes().unwrap().len() as u64;
+        let payload_size = transaction.to_bytes().unwrap().len();
         PendingTransaction {
             payload_hash: transaction.user_payload_hash(),
             intent_hash,
@@ -430,13 +436,20 @@ pub struct CommitRequest {
     pub vertex_store: Option<Vec<u8>>,
 }
 
-#[derive(Debug, Decode, Encode, Categorize)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareRequest {
-    pub already_prepared_payloads: Vec<Vec<u8>>,
+    pub parent_accumulator: AccumulatorHash,
+    pub prepared_vertices: Vec<PreviousVertex>,
     pub proposed_payloads: Vec<Vec<u8>>,
     pub consensus_epoch: u64,
     pub round_number: u64,
     pub proposer_timestamp_ms: i64,
+}
+
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct PreviousVertex {
+    pub transaction_payloads: Vec<Vec<u8>>,
+    pub resultant_accumulator: AccumulatorHash,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

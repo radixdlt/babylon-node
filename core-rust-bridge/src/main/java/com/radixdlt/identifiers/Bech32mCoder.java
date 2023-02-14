@@ -71,7 +71,7 @@ import com.radixdlt.exceptions.Bech32DecodeException;
 import com.radixdlt.exceptions.Bech32EncodeException;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
-import com.radixdlt.sbor.NativeCalls;
+import com.radixdlt.sbor.Natives;
 import java.util.Objects;
 
 public final class Bech32mCoder {
@@ -102,17 +102,13 @@ public final class Bech32mCoder {
     return decodeBech32mFunc.call(address).unwrap(Bech32DecodeException::new);
   }
 
-  private static final NativeCalls.StaticFunc1<Tuple.Tuple2<String, byte[]>, Result<String, String>>
-      encodeBech32mFunc =
-          NativeCalls.StaticFunc1.with(
-              new TypeToken<>() {}, new TypeToken<>() {}, Bech32mCoder::encodeBech32m);
+  private static final Natives.Call1<Tuple.Tuple2<String, byte[]>, Result<String, String>>
+      encodeBech32mFunc = Natives.builder(Bech32mCoder::encodeBech32m).build(new TypeToken<>() {});
 
   private static native byte[] encodeBech32m(byte[] requestPayload);
 
-  private static final NativeCalls.StaticFunc1<String, Result<Tuple.Tuple2<String, byte[]>, String>>
-      decodeBech32mFunc =
-          NativeCalls.StaticFunc1.with(
-              new TypeToken<>() {}, new TypeToken<>() {}, Bech32mCoder::decodeBech32m);
+  private static final Natives.Call1<String, Result<Tuple.Tuple2<String, byte[]>, String>>
+      decodeBech32mFunc = Natives.builder(Bech32mCoder::decodeBech32m).build(new TypeToken<>() {});
 
   private static native byte[] decodeBech32m(byte[] requestPayload);
 }

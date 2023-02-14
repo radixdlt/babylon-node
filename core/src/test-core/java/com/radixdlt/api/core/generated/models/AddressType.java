@@ -68,7 +68,9 @@ public class AddressType {
     
     CLOCK("Clock"),
     
-    ACCESSCONTROLLER("AccessController");
+    ACCESSCONTROLLER("AccessController"),
+    
+    ACCOUNT("Account");
 
     private String value;
 

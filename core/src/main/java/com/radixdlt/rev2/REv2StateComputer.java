@@ -65,6 +65,7 @@
 package com.radixdlt.rev2;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -84,6 +85,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.commit.PrepareRequest;
+import com.radixdlt.statecomputer.commit.PreviousVertex;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -214,16 +216,24 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
   @Override
   public StateComputerLedger.StateComputerResult prepare(
-      List<StateComputerLedger.ExecutedTransaction> previous,
+      HashCode parentAccumulatorHash,
+      List<ExecutedVertex> previousVertices,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
-    var previousTransactions =
-        previous.stream()
-            .map(StateComputerLedger.ExecutedTransaction::transaction)
-            .collect(Collectors.toList());
+    var mappedPreviousVertices =
+        previousVertices.stream()
+            .map(
+                v ->
+                    new PreviousVertex(
+                        v.successfulTransactions()
+                            .map(StateComputerLedger.ExecutedTransaction::transaction)
+                            .toList(),
+                        v.getLedgerHeader().getAccumulatorState().getAccumulatorHash()))
+            .toList();
     var prepareRequest =
         new PrepareRequest(
-            previousTransactions,
+            parentAccumulatorHash,
+            mappedPreviousVertices,
             proposedTransactions,
             UInt64.fromNonNegativeLong(roundDetails.epoch()),
             UInt64.fromNonNegativeLong(roundDetails.roundNumber()),

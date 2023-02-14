@@ -64,9 +64,7 @@
 
 package com.radixdlt.monitoring;
 
-import io.prometheus.client.Collector;
 import io.prometheus.client.Counter;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -75,7 +73,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @param <L> A type of record representing a complete set of labels.
  */
-public class LabelledCounter<L extends Record> extends Collector implements Collector.Describable {
+public class LabelledCounter<L extends Record> {
 
   /** A wrapped {@link Counter}. */
   private final Counter wrapped;
@@ -86,12 +84,10 @@ public class LabelledCounter<L extends Record> extends Collector implements Coll
   /**
    * A direct constructor.
    *
-   * @param name A metric name; will also be used as a description.
-   * @param labelClass A class of a {@link Record} representing a complete set of labels.
+   * @param wrapped A wrapped counter.
    */
-  public LabelledCounter(String name, Class<L> labelClass) {
-    this.wrapped =
-        Counter.build(name, name).labelNames(NameRenderer.labelNames(labelClass)).create();
+  public LabelledCounter(Counter wrapped) {
+    this.wrapped = wrapped;
     this.labelledChildren = new ConcurrentHashMap<>();
   }
 
@@ -104,15 +100,5 @@ public class LabelledCounter<L extends Record> extends Collector implements Coll
   public Counter.Child label(L labelRecord) {
     return this.labelledChildren.computeIfAbsent(
         labelRecord, value -> this.wrapped.labels(NameRenderer.labelValues(value)));
-  }
-
-  @Override
-  public List<MetricFamilySamples> collect() {
-    return this.wrapped.collect();
-  }
-
-  @Override
-  public List<MetricFamilySamples> describe() {
-    return this.wrapped.describe();
   }
 }

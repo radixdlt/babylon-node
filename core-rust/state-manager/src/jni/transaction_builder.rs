@@ -66,8 +66,7 @@ use crate::jni::java_structure::JavaStructure;
 use crate::result::StateManagerResult;
 use crate::transaction::{
     create_genesis_ledger_transaction_bytes, create_intent_bytes, create_manifest,
-    create_new_account_intent_bytes, create_notarized_bytes, create_signed_intent_bytes,
-    LedgerTransaction,
+    create_notarized_bytes, create_signed_intent_bytes, LedgerTransaction,
 };
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
@@ -75,10 +74,10 @@ use jni::JNIEnv;
 use radix_engine::types::{
     scrypto_decode, scrypto_encode, PublicKey, Signature, SignatureWithPublicKey,
 };
+use radix_engine_interface::api::component::ComponentAddress;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::ComponentAddress;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
 use std::collections::BTreeMap;
 use transaction::model::{
@@ -136,21 +135,6 @@ fn do_create_genesis_ledger_transaction(
         rounds_per_epoch,
         num_unstake_epochs,
     )
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_newAccountIntent(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, do_create_new_account_intent)
-}
-
-fn do_create_new_account_intent(
-    (network_definition, public_key): (NetworkDefinition, PublicKey),
-) -> Vec<u8> {
-    create_new_account_intent_bytes(&network_definition, public_key)
 }
 
 #[no_mangle]

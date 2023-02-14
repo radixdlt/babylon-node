@@ -1,9 +1,11 @@
 use crate::core_api::*;
-use radix_engine::model::PersistedSubstate;
+use radix_engine::system::substates::PersistedSubstate;
 use radix_engine::types::{
-    GlobalAddress, NonFungibleStoreOffset, RENodeId, ResourceManagerOffset, ResourceType,
-    SubstateId, SubstateOffset,
+    GlobalAddress, NonFungibleStoreOffset, RENodeId, ResourceManagerOffset, SubstateId,
+    SubstateOffset,
 };
+use radix_engine_interface::api::types::NodeModuleId;
+use radix_engine_interface::blueprints::resource::ResourceType;
 
 use crate::core_api::models::StateNonFungibleResponse;
 use state_manager::jni::state_manager::ActualStateManager;
@@ -11,7 +13,7 @@ use state_manager::jni::state_manager::ActualStateManager;
 pub(crate) async fn handle_state_non_fungible(
     state: Extension<CoreApiState>,
     request: Json<models::StateNonFungibleRequest>,
-) -> Result<Json<models::StateNonFungibleResponse>, ResponseError<()>> {
+) -> Result<Json<StateNonFungibleResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_state_non_fungible_internal)
 }
 
@@ -33,8 +35,12 @@ fn handle_state_non_fungible_internal(
     let resource_manager = {
         let substate_offset =
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let loaded_substate =
-            read_known_substate(state_manager, resource_node_id, &substate_offset)?;
+        let loaded_substate = read_known_substate(
+            state_manager,
+            resource_node_id,
+            NodeModuleId::SELF,
+            &substate_offset,
+        )?;
         let PersistedSubstate::ResourceManager(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
         };
@@ -69,15 +75,23 @@ fn handle_state_non_fungible_internal(
 
     let non_fungible = {
         let substate_offset = non_fungible_substate_offset.clone();
-        let loaded_substate =
-            read_known_substate(state_manager, non_fungible_node_id, &substate_offset)?;
+        let loaded_substate = read_known_substate(
+            state_manager,
+            non_fungible_node_id,
+            NodeModuleId::SELF,
+            &substate_offset,
+        )?;
         let PersistedSubstate::NonFungible(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
         };
         substate
     };
 
-    let non_fungible_substate_id = SubstateId(non_fungible_node_id, non_fungible_substate_offset);
+    let non_fungible_substate_id = SubstateId(
+        non_fungible_node_id,
+        NodeModuleId::SELF,
+        non_fungible_substate_offset,
+    );
 
     Ok(StateNonFungibleResponse {
         non_fungible: Some(to_api_non_fungible_substate(

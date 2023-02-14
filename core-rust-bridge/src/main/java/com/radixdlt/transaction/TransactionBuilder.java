@@ -77,7 +77,7 @@ import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionHeader;
-import com.radixdlt.sbor.NativeCalls;
+import com.radixdlt.sbor.Natives;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
@@ -161,10 +161,6 @@ public final class TransactionBuilder {
         .unwrap(ManifestCompilationException::new);
   }
 
-  public static byte[] buildNewAccountIntent(NetworkDefinition network, PublicKey notary) {
-    return newAccountIntentFunc.call(tuple(network, notary));
-  }
-
   public static byte[] createIntent(
       NetworkDefinition network, TransactionHeader header, String manifest, List<byte[]> blobs) {
     return createIntentFunc
@@ -181,15 +177,14 @@ public final class TransactionBuilder {
     return createNotarizedBytesFunc.call(tuple(signedIntent, signature));
   }
 
-  private static final NativeCalls.StaticFunc1<
+  private static final Natives.Call1<
           Tuple.Tuple3<NetworkDefinition, String, List<byte[]>>, Result<byte[], String>>
       compileManifestFunc =
-          NativeCalls.StaticFunc1.with(
-              new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::compileManifest);
+          Natives.builder(TransactionBuilder::compileManifest).build(new TypeToken<>() {});
 
   private static native byte[] compileManifest(byte[] payload);
 
-  private static final NativeCalls.StaticFunc1<
+  private static final Natives.Call1<
           Tuple.Tuple5<
               Map<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>>,
               Map<ECDSASecp256k1PublicKey, Decimal>,
@@ -198,43 +193,28 @@ public final class TransactionBuilder {
               UInt64>,
           byte[]>
       createGenesisFunc =
-          NativeCalls.StaticFunc1.with(
-              new TypeToken<>() {},
-              new TypeToken<>() {},
-              TransactionBuilder::createGenesisLedgerTransaction);
+          Natives.builder(TransactionBuilder::createGenesisLedgerTransaction)
+              .build(new TypeToken<>() {});
 
   private static native byte[] createGenesisLedgerTransaction(byte[] requestPayload);
 
-  private static final NativeCalls.StaticFunc1<Tuple.Tuple2<NetworkDefinition, PublicKey>, byte[]>
-      newAccountIntentFunc =
-          NativeCalls.StaticFunc1.with(
-              new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::newAccountIntent);
-
-  private static native byte[] newAccountIntent(byte[] requestPayload);
-
-  private static final NativeCalls.StaticFunc1<
+  private static final Natives.Call1<
           Tuple.Tuple4<NetworkDefinition, TransactionHeader, String, List<byte[]>>,
           Result<byte[], String>>
       createIntentFunc =
-          NativeCalls.StaticFunc1.with(
-              new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::createIntent);
+          Natives.builder(TransactionBuilder::createIntent).build(new TypeToken<>() {});
 
   private static native byte[] createIntent(byte[] requestPayload);
 
-  private static final NativeCalls.StaticFunc1<
-          Tuple.Tuple2<byte[], List<SignatureWithPublicKey>>, byte[]>
+  private static final Natives.Call1<Tuple.Tuple2<byte[], List<SignatureWithPublicKey>>, byte[]>
       createSignedIntentBytesFunc =
-          NativeCalls.StaticFunc1.with(
-              new TypeToken<>() {},
-              new TypeToken<>() {},
-              TransactionBuilder::createSignedIntentBytes);
+          Natives.builder(TransactionBuilder::createSignedIntentBytes).build(new TypeToken<>() {});
 
   private static native byte[] createSignedIntentBytes(byte[] requestPayload);
 
-  private static final NativeCalls.StaticFunc1<Tuple.Tuple2<byte[], Signature>, byte[]>
+  private static final Natives.Call1<Tuple.Tuple2<byte[], Signature>, byte[]>
       createNotarizedBytesFunc =
-          NativeCalls.StaticFunc1.with(
-              new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::createNotarizedBytes);
+          Natives.builder(TransactionBuilder::createNotarizedBytes).build(new TypeToken<>() {});
 
   private static native byte[] createNotarizedBytes(byte[] requestPayload);
 
@@ -247,16 +227,13 @@ public final class TransactionBuilder {
     return transactionBytesToNotarizedTransactionBytesFn.call(transactionBytes);
   }
 
-  private static final NativeCalls.StaticFunc1<byte[], byte[]> userTransactionToLedger =
-      NativeCalls.StaticFunc1.with(
-          new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::userTransactionToLedger);
+  private static final Natives.Call1<byte[], byte[]> userTransactionToLedger =
+      Natives.builder(TransactionBuilder::userTransactionToLedger).build(new TypeToken<>() {});
 
-  private static final NativeCalls.StaticFunc1<byte[], Option<byte[]>>
+  private static final Natives.Call1<byte[], Option<byte[]>>
       transactionBytesToNotarizedTransactionBytesFn =
-          NativeCalls.StaticFunc1.with(
-              new TypeToken<>() {},
-              new TypeToken<>() {},
-              TransactionBuilder::transactionBytesToNotarizedTransactionBytes);
+          Natives.builder(TransactionBuilder::transactionBytesToNotarizedTransactionBytes)
+              .build(new TypeToken<>() {});
 
   private static native byte[] userTransactionToLedger(byte[] requestPayload);
 

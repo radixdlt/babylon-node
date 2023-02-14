@@ -17,7 +17,6 @@ import java.util.Objects;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.HashMap;
-import io.swagger.annotations.ApiModel;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -25,55 +24,25 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Slightly different to the SubstateType - some entities have two of the same substate (eg ResouceManager AccessRuleChains) 
+ * Gets or Sets ModuleType
  */
-public enum SubstateKeyType {
+public enum ModuleType {
+  
+  SELF("Self"),
   
   METADATA("Metadata"),
   
-  ACCESSRULESCHAIN("AccessRulesChain"),
+  ACCESSRULES("AccessRules"),
   
-  GLOBALADDRESS("GlobalAddress"),
+  ACCESSRULES1("AccessRules1"),
   
-  COMPONENTINFO("ComponentInfo"),
+  COMPONENTROYALTY("ComponentRoyalty"),
   
-  COMPONENTSTATE("ComponentState"),
-  
-  COMPONENTROYALTYCONFIG("ComponentRoyaltyConfig"),
-  
-  COMPONENTROYALTYACCUMULATOR("ComponentRoyaltyAccumulator"),
-  
-  PACKAGEINFO("PackageInfo"),
-  
-  PACKAGEROYALTYCONFIG("PackageRoyaltyConfig"),
-  
-  PACKAGEROYALTYACCUMULATOR("PackageRoyaltyAccumulator"),
-  
-  RESOURCEMANAGER("ResourceManager"),
-  
-  EPOCHMANAGER("EpochManager"),
-  
-  CURRENTVALIDATORSET("CurrentValidatorSet"),
-  
-  PREPARINGVALIDATORSET("PreparingValidatorSet"),
-  
-  VALIDATOR("Validator"),
-  
-  CLOCKCURRENTMINUTE("ClockCurrentMinute"),
-  
-  KEYVALUESTOREENTRY("KeyValueStoreEntry"),
-  
-  NONFUNGIBLESTOREENTRY("NonFungibleStoreEntry"),
-  
-  VAULT("Vault"),
-  
-  ACCESSCONTROLLER("AccessController"),
-  
-  ACCOUNT("Account");
+  PACKAGEROYALTY("PackageRoyalty");
 
   private String value;
 
-  SubstateKeyType(String value) {
+  ModuleType(String value) {
     this.value = value;
   }
 
@@ -88,8 +57,8 @@ public enum SubstateKeyType {
   }
 
   @JsonCreator
-  public static SubstateKeyType fromValue(String value) {
-    for (SubstateKeyType b : SubstateKeyType.values()) {
+  public static ModuleType fromValue(String value) {
+    for (ModuleType b : ModuleType.values()) {
       if (b.value.equals(value)) {
         return b;
       }

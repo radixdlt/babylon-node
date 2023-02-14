@@ -75,7 +75,7 @@ use std::path::PathBuf;
 use crate::types::UserPayloadHash;
 
 use radix_engine::ledger::{OutputValue, QueryableSubstateStore, ReadableSubstateStore};
-use radix_engine::model::PersistedSubstate;
+use radix_engine::system::substates::PersistedSubstate;
 
 use crate::store::traits::RecoverableVertexStore;
 use crate::transaction::LedgerTransaction;
@@ -84,6 +84,7 @@ use crate::{
     LedgerTransactionReceipt,
 };
 use radix_engine::types::{KeyValueStoreId, SubstateId};
+use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReadableTreeStore, TreeNode};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub enum DatabaseConfig {
@@ -130,6 +131,16 @@ impl ReadableSubstateStore for StateManagerDatabase {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_substate(substate_id),
             StateManagerDatabase::RocksDB(store) => store.get_substate(substate_id),
+            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
+        }
+    }
+}
+
+impl ReadableTreeStore for StateManagerDatabase {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+        match self {
+            StateManagerDatabase::InMemory(store) => store.get_node(key),
+            StateManagerDatabase::RocksDB(store) => store.get_node(key),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }

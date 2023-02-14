@@ -25,7 +25,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.TimeUpdateValidatorTransaction;
+import com.radixdlt.api.core.generated.models.RoundUpdateValidatorTransaction;
 import com.radixdlt.api.core.generated.models.ValidatorTransactionType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -46,8 +46,8 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = TimeUpdateValidatorTransaction.class, name = "TimeUpdate"),
-  @JsonSubTypes.Type(value = TimeUpdateValidatorTransaction.class, name = "TimeUpdateValidatorTransaction"),
+  @JsonSubTypes.Type(value = RoundUpdateValidatorTransaction.class, name = "RoundUpdate"),
+  @JsonSubTypes.Type(value = RoundUpdateValidatorTransaction.class, name = "RoundUpdateValidatorTransaction"),
 })
 
 public class ValidatorTransaction {
@@ -126,8 +126,8 @@ public class ValidatorTransaction {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("TimeUpdate", TimeUpdateValidatorTransaction.class);
-  mappings.put("TimeUpdateValidatorTransaction", TimeUpdateValidatorTransaction.class);
+  mappings.put("RoundUpdate", RoundUpdateValidatorTransaction.class);
+  mappings.put("RoundUpdateValidatorTransaction", RoundUpdateValidatorTransaction.class);
   mappings.put("ValidatorTransaction", ValidatorTransaction.class);
   JSON.registerDiscriminator(ValidatorTransaction.class, "type", mappings);
 }

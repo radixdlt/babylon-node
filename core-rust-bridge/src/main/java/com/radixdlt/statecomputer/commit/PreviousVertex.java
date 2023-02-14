@@ -62,127 +62,25 @@
  * permissions under this License.
  */
 
-use std::sync::{Arc, MutexGuard};
+package com.radixdlt.statecomputer.commit;
 
-use crate::jni::java_structure::JavaStructure;
-use crate::jni::utils::*;
-use crate::mempool::simple_mempool::SimpleMempool;
-use crate::mempool::MempoolConfig;
-use crate::state_manager::{LoggingConfig, StateManager};
-use crate::store::{DatabaseConfig, StateManagerDatabase};
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use parking_lot::RwLock;
-use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::*;
+import com.google.common.hash.HashCode;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.transactions.RawLedgerTransaction;
+import java.util.List;
 
-const POINTER_JNI_FIELD_NAME: &str = "rustStateManagerPointer";
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statemanager_StateManager_init(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-    j_config: jbyteArray,
-) {
-    JNIStateManager::init(&env, j_state_manager, j_config);
+public record PreviousVertex(
+    List<RawLedgerTransaction> transactions, HashCode resultantAccumulatorHash) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        PreviousVertex.class,
+        codecs ->
+            StructCodec.with(
+                PreviousVertex::new,
+                codecs.of(new TypeToken<>() {}),
+                codecs.of(HashCode.class),
+                (t, encoder) -> encoder.encode(t.transactions, t.resultantAccumulatorHash)));
+  }
 }
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-) {
-    JNIStateManager::cleanup(&env, j_state_manager);
-}
-
-fn do_prometheus_metrics(state_manager: &ActualStateManager, _args: ()) -> String {
-    use prometheus::Encoder;
-    let encoder = prometheus::TextEncoder::new();
-    let mut buffer = vec![];
-    encoder
-        .encode(&state_manager.prometheus_registry.gather(), &mut buffer)
-        .unwrap();
-
-    String::from_utf8(buffer).unwrap()
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_prometheus_StateManagerPrometheus_prometheusMetrics(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-    args: jbyteArray,
-) -> jbyteArray {
-    jni_state_manager_sbor_read_call(env, j_state_manager, args, do_prometheus_metrics)
-}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct StateManagerConfig {
-    pub network_definition: NetworkDefinition,
-    pub mempool_config: Option<MempoolConfig>,
-    pub db_config: DatabaseConfig,
-    pub logging_config: LoggingConfig,
-}
-
-pub type ActualStateManager = StateManager<StateManagerDatabase>;
-
-pub struct JNIStateManager {
-    pub state_manager: Arc<RwLock<ActualStateManager>>,
-}
-
-impl JNIStateManager {
-    pub fn init(env: &JNIEnv, j_state_manager: JObject, j_config: jbyteArray) {
-        let config_bytes: Vec<u8> = jni_jbytearray_to_vector(env, j_config).unwrap();
-        let config = StateManagerConfig::from_java(&config_bytes).unwrap();
-
-        // Build the basic subcomponents.
-        let mempool_config = match config.mempool_config {
-            Some(mempool_config) => mempool_config,
-            None =>
-            // in general, missing mempool config should mean that mempool isn't needed
-            // but for now just using a default
-            {
-                MempoolConfig { max_size: 10 }
-            }
-        };
-
-        let store = StateManagerDatabase::from_config(config.db_config);
-        let mempool = SimpleMempool::new(mempool_config);
-
-        // Build the state manager.
-        let state_manager = Arc::new(parking_lot::const_rwlock(StateManager::new(
-            config.network_definition,
-            mempool,
-            store,
-            config.logging_config,
-        )));
-
-        let jni_state_manager = JNIStateManager { state_manager };
-
-        env.set_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME, jni_state_manager)
-            .unwrap();
-    }
-
-    pub fn cleanup(env: &JNIEnv, j_state_manager: JObject) {
-        let jni_state_manager: JNIStateManager = env
-            .take_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME)
-            .unwrap();
-
-        drop(jni_state_manager);
-    }
-
-    pub fn get_state_manager(
-        env: &JNIEnv,
-        j_state_manager: JObject,
-    ) -> Arc<RwLock<ActualStateManager>> {
-        let jni_state_manager: MutexGuard<JNIStateManager> = env
-            .get_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME)
-            .unwrap();
-        jni_state_manager.state_manager.clone()
-    }
-}
-
-pub fn export_extern_functions() {}

@@ -29,15 +29,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * TimeUpdateValidatorTransactionAllOf
+ * RoundUpdateValidatorTransactionAllOf
  */
 @JsonPropertyOrder({
-  TimeUpdateValidatorTransactionAllOf.JSON_PROPERTY_PROPOSER_TIMESTAMP,
-  TimeUpdateValidatorTransactionAllOf.JSON_PROPERTY_CONSENSUS_EPOCH,
-  TimeUpdateValidatorTransactionAllOf.JSON_PROPERTY_ROUND_IN_EPOCH
+  RoundUpdateValidatorTransactionAllOf.JSON_PROPERTY_PROPOSER_TIMESTAMP,
+  RoundUpdateValidatorTransactionAllOf.JSON_PROPERTY_CONSENSUS_EPOCH,
+  RoundUpdateValidatorTransactionAllOf.JSON_PROPERTY_ROUND_IN_EPOCH
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class TimeUpdateValidatorTransactionAllOf {
+public class RoundUpdateValidatorTransactionAllOf {
   public static final String JSON_PROPERTY_PROPOSER_TIMESTAMP = "proposer_timestamp";
   private Instant proposerTimestamp;
 
@@ -47,10 +47,10 @@ public class TimeUpdateValidatorTransactionAllOf {
   public static final String JSON_PROPERTY_ROUND_IN_EPOCH = "round_in_epoch";
   private Long roundInEpoch;
 
-  public TimeUpdateValidatorTransactionAllOf() { 
+  public RoundUpdateValidatorTransactionAllOf() { 
   }
 
-  public TimeUpdateValidatorTransactionAllOf proposerTimestamp(Instant proposerTimestamp) {
+  public RoundUpdateValidatorTransactionAllOf proposerTimestamp(Instant proposerTimestamp) {
     this.proposerTimestamp = proposerTimestamp;
     return this;
   }
@@ -76,7 +76,7 @@ public class TimeUpdateValidatorTransactionAllOf {
   }
 
 
-  public TimeUpdateValidatorTransactionAllOf consensusEpoch(Long consensusEpoch) {
+  public RoundUpdateValidatorTransactionAllOf consensusEpoch(Long consensusEpoch) {
     this.consensusEpoch = consensusEpoch;
     return this;
   }
@@ -104,7 +104,7 @@ public class TimeUpdateValidatorTransactionAllOf {
   }
 
 
-  public TimeUpdateValidatorTransactionAllOf roundInEpoch(Long roundInEpoch) {
+  public RoundUpdateValidatorTransactionAllOf roundInEpoch(Long roundInEpoch) {
     this.roundInEpoch = roundInEpoch;
     return this;
   }
@@ -133,7 +133,7 @@ public class TimeUpdateValidatorTransactionAllOf {
 
 
   /**
-   * Return true if this TimeUpdateValidatorTransaction_allOf object is equal to o.
+   * Return true if this RoundUpdateValidatorTransaction_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -143,10 +143,10 @@ public class TimeUpdateValidatorTransactionAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TimeUpdateValidatorTransactionAllOf timeUpdateValidatorTransactionAllOf = (TimeUpdateValidatorTransactionAllOf) o;
-    return Objects.equals(this.proposerTimestamp, timeUpdateValidatorTransactionAllOf.proposerTimestamp) &&
-        Objects.equals(this.consensusEpoch, timeUpdateValidatorTransactionAllOf.consensusEpoch) &&
-        Objects.equals(this.roundInEpoch, timeUpdateValidatorTransactionAllOf.roundInEpoch);
+    RoundUpdateValidatorTransactionAllOf roundUpdateValidatorTransactionAllOf = (RoundUpdateValidatorTransactionAllOf) o;
+    return Objects.equals(this.proposerTimestamp, roundUpdateValidatorTransactionAllOf.proposerTimestamp) &&
+        Objects.equals(this.consensusEpoch, roundUpdateValidatorTransactionAllOf.consensusEpoch) &&
+        Objects.equals(this.roundInEpoch, roundUpdateValidatorTransactionAllOf.roundInEpoch);
   }
 
   @Override
@@ -157,7 +157,7 @@ public class TimeUpdateValidatorTransactionAllOf {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TimeUpdateValidatorTransactionAllOf {\n");
+    sb.append("class RoundUpdateValidatorTransactionAllOf {\n");
     sb.append("    proposerTimestamp: ").append(toIndentedString(proposerTimestamp)).append("\n");
     sb.append("    consensusEpoch: ").append(toIndentedString(consensusEpoch)).append("\n");
     sb.append("    roundInEpoch: ").append(toIndentedString(roundInEpoch)).append("\n");

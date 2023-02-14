@@ -12,7 +12,9 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct TimeUpdateValidatorTransactionAllOf {
+pub struct RoundUpdateValidatorTransaction {
+    #[serde(rename = "type")]
+    pub _type: crate::core_api::generated::models::ValidatorTransactionType,
     #[serde(rename = "proposer_timestamp")]
     pub proposer_timestamp: Box<crate::core_api::generated::models::Instant>,
     /// An integer between `0` and `10^10`, marking the consensus epoch. 
@@ -23,9 +25,10 @@ pub struct TimeUpdateValidatorTransactionAllOf {
     pub round_in_epoch: i64,
 }
 
-impl TimeUpdateValidatorTransactionAllOf {
-    pub fn new(proposer_timestamp: crate::core_api::generated::models::Instant, consensus_epoch: i64, round_in_epoch: i64) -> TimeUpdateValidatorTransactionAllOf {
-        TimeUpdateValidatorTransactionAllOf {
+impl RoundUpdateValidatorTransaction {
+    pub fn new(_type: crate::core_api::generated::models::ValidatorTransactionType, proposer_timestamp: crate::core_api::generated::models::Instant, consensus_epoch: i64, round_in_epoch: i64) -> RoundUpdateValidatorTransaction {
+        RoundUpdateValidatorTransaction {
+            _type,
             proposer_timestamp: Box::new(proposer_timestamp),
             consensus_epoch,
             round_in_epoch,
