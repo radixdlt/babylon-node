@@ -176,8 +176,8 @@ jobs:
       - name: Docker meta
         id: meta
         run: |
-          echo "RELEASE_TAG: radixdlt/babylon-node:${{ github.event.release.tag_name }}"
-          echo "RELEASE_TAG: radixdlt/babylon-node:${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+          echo "RELEASE_TAG=radixdlt/babylon-node:${{ github.event.release.tag_name }}"
+          echo "RELEASE_TAG=radixdlt/babylon-node:${{ github.event.release.tag_name }}" >> $GITHUB_ENV
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
