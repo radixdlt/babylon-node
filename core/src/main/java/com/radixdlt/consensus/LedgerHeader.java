@@ -110,7 +110,7 @@ public final class LedgerHeader {
   private final AccumulatorState accumulatorState;
 
   @JsonProperty("state_hash")
-  @DsonOutput(Output.ALL)
+  @DsonOutput(value = Output.HASH, include = false)
   private final HashCode stateHash;
 
   @JsonProperty("consensus_parent_round_timestamp_ms")
