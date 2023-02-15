@@ -164,20 +164,24 @@ public record Metrics(
       Counter successfullyProcessedVotes,
       Counter successfullyProcessedProposals,
       Counter preconditionViolations,
-      Counter proposalsReceivedFromNonLeaders,
       Counter duplicateProposalsReceived,
       Counter eventsReceived,
       Counter committedVertices,
       Counter noVotesSent,
       Counter voteQuorums,
       Counter timeoutQuorums,
+      Counter extendedRoundTimeouts,
       Timer consensusEventsQueueWait,
       LabelledCounter<RejectedConsensusEvent> rejectedConsensusEvents,
       GetterGauge validatorCount,
       GetterGauge inValidatorSet,
       Pacemaker pacemaker,
       Sync sync,
-      VertexStore vertexStore) {
+      VertexStore vertexStore,
+      Summary leaderMaxProposalPayloadSize,
+      Summary leaderNumTransactionsIncludedInProposal,
+      Summary leaderTransactionBytesIncludedInProposal,
+      Summary leaderTransactionBytesIncludedInProposalAndPreviousVertices) {
 
     public record Pacemaker(
         Counter timeoutsSent,

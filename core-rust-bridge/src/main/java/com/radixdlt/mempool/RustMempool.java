@@ -130,7 +130,7 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
   }
 
   public List<RawNotarizedTransaction> getTransactionsForProposal(
-      int maxCount, int maxPayloadSizeBytes, List<RawNotarizedTransaction> transactionToExclude) {
+      int maxCount, int maxPayloadSizeBytes, List<RawNotarizedTransaction> transactionsToExclude) {
     if (maxCount <= 0) {
       throw new IllegalArgumentException(
           "State Manager Mempool: maxCount must be > 0: " + maxCount);
@@ -142,7 +142,7 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
     }
 
     final var transactionHashesToExclude =
-        transactionToExclude.stream().map(RawNotarizedTransaction::getPayloadHash).toList();
+        transactionsToExclude.stream().map(RawNotarizedTransaction::getPayloadHash).toList();
 
     return getTransactionsForProposalFunc.call(
         tuple(

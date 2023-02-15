@@ -107,6 +107,10 @@ public abstract class DeterministicCoreApiTestBase {
   }
 
   protected DeterministicTest buildRunningServerTest() {
+    return buildRunningServerTest(1000000);
+  }
+
+  protected DeterministicTest buildRunningServerTest(int roundsPerEpoch) {
     var test =
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
@@ -124,14 +128,14 @@ public abstract class DeterministicCoreApiTestBase {
                 })
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
-                    false,
+                    true,
                     FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
                     FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                         StateComputerConfig.rev2(
                             Network.INTEGRATIONTESTNET.getId(),
                             TransactionBuilder.createGenesisWithNumValidators(
-                                1, Decimal.of(1), UInt64.fromNonNegativeLong(10000000)),
+                                1, Decimal.of(1), UInt64.fromNonNegativeLong(roundsPerEpoch)),
                             REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                             StateComputerConfig.REV2ProposerConfig.mempool(
                                 50, 50 * 1024 * 1024, 1000, MempoolRelayConfig.of())),

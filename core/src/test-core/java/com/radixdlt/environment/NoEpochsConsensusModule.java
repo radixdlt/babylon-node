@@ -67,11 +67,13 @@ package com.radixdlt.environment;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
+import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
@@ -86,6 +88,8 @@ import com.radixdlt.p2p.NodeId;
 public class NoEpochsConsensusModule extends AbstractModule {
   @Override
   public void configure() {
+    OptionalBinder.newOptionalBinder(
+        binder(), EpochManager.class); // So that this is consistent with tests
     var eventBinder =
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
             .permitDuplicates();

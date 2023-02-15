@@ -70,6 +70,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
@@ -91,6 +92,8 @@ import java.util.Random;
 public class EpochsConsensusModule extends AbstractModule {
   @Override
   protected void configure() {
+    OptionalBinder.newOptionalBinder(
+        binder(), EpochManager.class); // So that this is consistent with tests
     bind(EpochManager.class).in(Scopes.SINGLETON);
     var eventBinder =
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
@@ -316,7 +319,8 @@ public class EpochsConsensusModule extends AbstractModule {
       EventDispatcher<NoVote> noVoteEventDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
       RemoteEventDispatcher<NodeId, Vote> voteDispatcher,
-      EventDispatcher<EpochRoundLeaderFailure> roundLeaderFailureEventDispatcher) {
+      EventDispatcher<EpochRoundLeaderFailure> roundLeaderFailureEventDispatcher,
+      ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>> timeoutDispatcher) {
     return (self,
         pacemaker,
         vertexStore,
@@ -325,7 +329,9 @@ public class EpochsConsensusModule extends AbstractModule {
         validatorSet,
         roundUpdate,
         safetyRules,
-        epoch) ->
+        epoch,
+        proposerElection,
+        timeoutCalculator) ->
         BFTBuilder.create()
             .self(self)
             .hasher(hasher)
@@ -354,6 +360,10 @@ public class EpochsConsensusModule extends AbstractModule {
             .bftSyncer(bftSyncer)
             .validatorSet(validatorSet)
             .timeSupplier(timeSupplier)
+            .timeoutDispatcher(
+                (ev, timeout) -> timeoutDispatcher.dispatch(Epoched.from(epoch, ev), timeout))
+            .proposerElection(proposerElection)
+            .timeoutCalculator(timeoutCalculator)
             .metrics(metrics)
             .build();
   }

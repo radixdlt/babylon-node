@@ -13,7 +13,7 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct NextEpoch {
-    /// An integer between `0` and `10^10`
+    /// An integer between `0` and `10^10`, marking the new epoch
     #[serde(rename = "epoch")]
     pub epoch: i64,
     /// Validators are sorted by descending stake amount

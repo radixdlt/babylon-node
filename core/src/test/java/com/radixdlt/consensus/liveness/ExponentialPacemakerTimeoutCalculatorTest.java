@@ -84,7 +84,7 @@ public class ExponentialPacemakerTimeoutCalculatorTest {
   @Test
   public void timeout_should_grow_exponentially() {
     final ExponentialPacemakerTimeoutCalculator calculator =
-        new ExponentialPacemakerTimeoutCalculator(1000L, 2.0, 6);
+        new ExponentialPacemakerTimeoutCalculator(1000L, 2.0, 6, 0L);
 
     final Map<Long, Long> expectedTimeouts =
         Map.of(
@@ -103,7 +103,8 @@ public class ExponentialPacemakerTimeoutCalculatorTest {
 
   private void checkConstructionParams(
       long timeout, double rate, int maxExponent, String exceptionMessage) {
-    assertThatThrownBy(() -> new ExponentialPacemakerTimeoutCalculator(timeout, rate, maxExponent))
+    assertThatThrownBy(
+            () -> new ExponentialPacemakerTimeoutCalculator(timeout, rate, maxExponent, 0L))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageStartingWith(exceptionMessage);
   }

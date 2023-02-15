@@ -124,26 +124,50 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     private final int bftSyncPatienceMillis;
     private final long pacemakerBaseTimeoutMs;
     private final double pacemakerBackoffRate;
+    private final long additionalRoundTimeIfProposalReceivedMs;
 
     private ConsensusConfig(
-        int bftSyncPatienceMillis, long pacemakerBaseTimeoutMs, double pacemakerBackoffRate) {
+        int bftSyncPatienceMillis,
+        long pacemakerBaseTimeoutMs,
+        double pacemakerBackoffRate,
+        long additionalRoundTimeIfProposalReceivedMs) {
       this.bftSyncPatienceMillis = bftSyncPatienceMillis;
       this.pacemakerBaseTimeoutMs = pacemakerBaseTimeoutMs;
       this.pacemakerBackoffRate = pacemakerBackoffRate;
+      this.additionalRoundTimeIfProposalReceivedMs = additionalRoundTimeIfProposalReceivedMs;
     }
 
     public static ConsensusConfig of(
-        int bftSyncPatienceMillis, long pacemakerBaseTimeoutMs, double pacemakerBackoffRate) {
+        int bftSyncPatienceMillis,
+        long pacemakerBaseTimeoutMs,
+        double pacemakerBackoffRate,
+        long additionalRoundTimeIfProposalReceivedMs) {
       return new ConsensusConfig(
-          bftSyncPatienceMillis, pacemakerBaseTimeoutMs, pacemakerBackoffRate);
+          bftSyncPatienceMillis,
+          pacemakerBaseTimeoutMs,
+          pacemakerBackoffRate,
+          additionalRoundTimeIfProposalReceivedMs);
     }
 
     public static ConsensusConfig of(long pacemakerBaseTimeoutMs) {
-      return new ConsensusConfig(200, pacemakerBaseTimeoutMs, 2.0);
+      return ConsensusConfig.of(
+          pacemakerBaseTimeoutMs,
+          pacemakerBaseTimeoutMs /* double the timeout if proposal was received */);
+    }
+
+    public static ConsensusConfig of(
+        long pacemakerBaseTimeoutMs, long additionalRoundTimeIfProposalReceivedMs) {
+      return new ConsensusConfig(
+          200, pacemakerBaseTimeoutMs, 2.0, additionalRoundTimeIfProposalReceivedMs);
     }
 
     public static ConsensusConfig of() {
-      return new ConsensusConfig(200, 12 * 50, 2.0);
+      final var pacemakerBaseTimeoutMs = 12 * 50;
+      return new ConsensusConfig(
+          200,
+          pacemakerBaseTimeoutMs,
+          2.0,
+          pacemakerBaseTimeoutMs /* double the timeout if proposal was received */);
     }
 
     private AbstractModule asModule() {
@@ -153,6 +177,9 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(bftSyncPatienceMillis);
           bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(pacemakerBaseTimeoutMs);
           bindConstant().annotatedWith(PacemakerBackoffRate.class).to(pacemakerBackoffRate);
+          bindConstant()
+              .annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class)
+              .to(additionalRoundTimeIfProposalReceivedMs);
           bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
         }
       };

@@ -73,4 +73,10 @@ public interface PacemakerTimeoutCalculator {
    * @return pacemaker round timeout in milliseconds
    */
   long calculateTimeoutMs(long consecutiveUncommittedRounds);
+
+  /**
+   * Returns the amount of time (in milliseconds) by which the round can be extended if proposal was
+   * received, but hasn't yet been synced up.
+   */
+  long additionalRoundTimeIfProposalReceivedMs();
 }

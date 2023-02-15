@@ -323,7 +323,6 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               .collect(ImmutableList.toImmutableList());
       var proof = committedUpdate.vertexStoreState().getRootHeader();
       var transactionsWithProof = CommittedTransactionsWithProof.create(transactions, proof);
-
       metrics
           .ledger()
           .commit()

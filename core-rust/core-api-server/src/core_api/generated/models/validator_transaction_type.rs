@@ -13,25 +13,22 @@
 /// The type of the validator transaction
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum ValidatorTransactionType {
-    #[serde(rename = "EpochUpdate")]
-    EpochUpdate,
-    #[serde(rename = "TimeUpdate")]
-    TimeUpdate,
+    #[serde(rename = "RoundUpdate")]
+    RoundUpdate,
 
 }
 
 impl ToString for ValidatorTransactionType {
     fn to_string(&self) -> String {
         match self {
-            Self::EpochUpdate => String::from("EpochUpdate"),
-            Self::TimeUpdate => String::from("TimeUpdate"),
+            Self::RoundUpdate => String::from("RoundUpdate"),
         }
     }
 }
 
 impl Default for ValidatorTransactionType {
     fn default() -> ValidatorTransactionType {
-        Self::EpochUpdate
+        Self::RoundUpdate
     }
 }
 

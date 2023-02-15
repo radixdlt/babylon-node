@@ -46,7 +46,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   TransactionSubmitRejectedErrorDetails.JSON_PROPERTY_IS_PAYLOAD_REJECTION_PERMANENT,
   TransactionSubmitRejectedErrorDetails.JSON_PROPERTY_IS_INTENT_REJECTION_PERMANENT,
   TransactionSubmitRejectedErrorDetails.JSON_PROPERTY_IS_REJECTED_BECAUSE_INTENT_ALREADY_COMMITTED,
-  TransactionSubmitRejectedErrorDetails.JSON_PROPERTY_RECALCULATION_DUE,
+  TransactionSubmitRejectedErrorDetails.JSON_PROPERTY_RETRY_FROM_TIMESTAMP,
+  TransactionSubmitRejectedErrorDetails.JSON_PROPERTY_RETRY_FROM_EPOCH,
   TransactionSubmitRejectedErrorDetails.JSON_PROPERTY_INVALID_FROM_EPOCH
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -76,8 +77,11 @@ public class TransactionSubmitRejectedErrorDetails extends TransactionSubmitErro
   public static final String JSON_PROPERTY_IS_REJECTED_BECAUSE_INTENT_ALREADY_COMMITTED = "is_rejected_because_intent_already_committed";
   private Boolean isRejectedBecauseIntentAlreadyCommitted;
 
-  public static final String JSON_PROPERTY_RECALCULATION_DUE = "recalculation_due";
-  private Instant recalculationDue;
+  public static final String JSON_PROPERTY_RETRY_FROM_TIMESTAMP = "retry_from_timestamp";
+  private Instant retryFromTimestamp;
+
+  public static final String JSON_PROPERTY_RETRY_FROM_EPOCH = "retry_from_epoch";
+  private Long retryFromEpoch;
 
   public static final String JSON_PROPERTY_INVALID_FROM_EPOCH = "invalid_from_epoch";
   private Long invalidFromEpoch;
@@ -215,29 +219,57 @@ public class TransactionSubmitRejectedErrorDetails extends TransactionSubmitErro
   }
 
 
-  public TransactionSubmitRejectedErrorDetails recalculationDue(Instant recalculationDue) {
-    this.recalculationDue = recalculationDue;
+  public TransactionSubmitRejectedErrorDetails retryFromTimestamp(Instant retryFromTimestamp) {
+    this.retryFromTimestamp = retryFromTimestamp;
     return this;
   }
 
    /**
-   * Get recalculationDue
-   * @return recalculationDue
+   * Get retryFromTimestamp
+   * @return retryFromTimestamp
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_RECALCULATION_DUE)
+  @JsonProperty(JSON_PROPERTY_RETRY_FROM_TIMESTAMP)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Instant getRecalculationDue() {
-    return recalculationDue;
+  public Instant getRetryFromTimestamp() {
+    return retryFromTimestamp;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RECALCULATION_DUE)
+  @JsonProperty(JSON_PROPERTY_RETRY_FROM_TIMESTAMP)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setRecalculationDue(Instant recalculationDue) {
-    this.recalculationDue = recalculationDue;
+  public void setRetryFromTimestamp(Instant retryFromTimestamp) {
+    this.retryFromTimestamp = retryFromTimestamp;
+  }
+
+
+  public TransactionSubmitRejectedErrorDetails retryFromEpoch(Long retryFromEpoch) {
+    this.retryFromEpoch = retryFromEpoch;
+    return this;
+  }
+
+   /**
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the epoch after which the node will consider recalculating the validity of the transaction. Only present if the rejection is temporary due to a header specifying a \&quot;from epoch\&quot; in the future. 
+   * minimum: 0
+   * maximum: 10000000000
+   * @return retryFromEpoch
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "An integer between `0` and `10^10`, marking the epoch after which the node will consider recalculating the validity of the transaction. Only present if the rejection is temporary due to a header specifying a \"from epoch\" in the future. ")
+  @JsonProperty(JSON_PROPERTY_RETRY_FROM_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public Long getRetryFromEpoch() {
+    return retryFromEpoch;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_RETRY_FROM_EPOCH)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setRetryFromEpoch(Long retryFromEpoch) {
+    this.retryFromEpoch = retryFromEpoch;
   }
 
 
@@ -286,14 +318,15 @@ public class TransactionSubmitRejectedErrorDetails extends TransactionSubmitErro
         Objects.equals(this.isPayloadRejectionPermanent, transactionSubmitRejectedErrorDetails.isPayloadRejectionPermanent) &&
         Objects.equals(this.isIntentRejectionPermanent, transactionSubmitRejectedErrorDetails.isIntentRejectionPermanent) &&
         Objects.equals(this.isRejectedBecauseIntentAlreadyCommitted, transactionSubmitRejectedErrorDetails.isRejectedBecauseIntentAlreadyCommitted) &&
-        Objects.equals(this.recalculationDue, transactionSubmitRejectedErrorDetails.recalculationDue) &&
+        Objects.equals(this.retryFromTimestamp, transactionSubmitRejectedErrorDetails.retryFromTimestamp) &&
+        Objects.equals(this.retryFromEpoch, transactionSubmitRejectedErrorDetails.retryFromEpoch) &&
         Objects.equals(this.invalidFromEpoch, transactionSubmitRejectedErrorDetails.invalidFromEpoch) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(errorMessage, isFresh, isPayloadRejectionPermanent, isIntentRejectionPermanent, isRejectedBecauseIntentAlreadyCommitted, recalculationDue, invalidFromEpoch, super.hashCode());
+    return Objects.hash(errorMessage, isFresh, isPayloadRejectionPermanent, isIntentRejectionPermanent, isRejectedBecauseIntentAlreadyCommitted, retryFromTimestamp, retryFromEpoch, invalidFromEpoch, super.hashCode());
   }
 
   @Override
@@ -306,7 +339,8 @@ public class TransactionSubmitRejectedErrorDetails extends TransactionSubmitErro
     sb.append("    isPayloadRejectionPermanent: ").append(toIndentedString(isPayloadRejectionPermanent)).append("\n");
     sb.append("    isIntentRejectionPermanent: ").append(toIndentedString(isIntentRejectionPermanent)).append("\n");
     sb.append("    isRejectedBecauseIntentAlreadyCommitted: ").append(toIndentedString(isRejectedBecauseIntentAlreadyCommitted)).append("\n");
-    sb.append("    recalculationDue: ").append(toIndentedString(recalculationDue)).append("\n");
+    sb.append("    retryFromTimestamp: ").append(toIndentedString(retryFromTimestamp)).append("\n");
+    sb.append("    retryFromEpoch: ").append(toIndentedString(retryFromEpoch)).append("\n");
     sb.append("    invalidFromEpoch: ").append(toIndentedString(invalidFromEpoch)).append("\n");
     sb.append("}");
     return sb.toString();

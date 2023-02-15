@@ -72,6 +72,7 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.VoteTimeout;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -93,6 +94,7 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
   private static final Logger log = LogManager.getLogger();
 
   private final BFTValidatorSet validatorSet;
+  private final ProposerElection proposerElection;
   private final BFTEventProcessor forwardTo;
   private final Hasher hasher;
   private final HashVerifier verifier;
@@ -101,12 +103,14 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
 
   public BFTEventStatelessVerifier(
       BFTValidatorSet validatorSet,
+      ProposerElection proposerElection,
       BFTEventProcessor forwardTo,
       Hasher hasher,
       HashVerifier verifier,
       SafetyRules safetyRules,
       Metrics metrics) {
     this.validatorSet = Objects.requireNonNull(validatorSet);
+    this.proposerElection = Objects.requireNonNull(proposerElection);
     this.hasher = Objects.requireNonNull(hasher);
     this.verifier = Objects.requireNonNull(verifier);
     this.forwardTo = Objects.requireNonNull(forwardTo);
@@ -182,7 +186,8 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
 
   @Override
   public void processProposal(Proposal proposal) {
-    if (!isAuthorInValidatorSet(proposal)) {
+    final var expectedAuthor = proposerElection.getProposer(proposal.getRound());
+    if (!proposal.getAuthor().equals(expectedAuthor)) {
       metrics
           .bft()
           .rejectedConsensusEvents()
@@ -190,7 +195,11 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
               new Metrics.RejectedConsensusEvent(
                   Type.PROPOSAL, Metrics.RejectedConsensusEvent.Invalidity.AUTHOR))
           .inc();
-      log.warn("Ignoring a proposal from {}: not a validator", proposal.getAuthor());
+      log.warn(
+          "Ignoring a proposal from non-leader node {} at round {}, leader for this round is {}",
+          proposal.getAuthor(),
+          proposal.getRound(),
+          expectedAuthor);
       return;
     }
 

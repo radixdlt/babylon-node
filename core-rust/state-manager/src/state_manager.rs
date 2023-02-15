@@ -86,8 +86,8 @@ use ::transaction::validation::{TestIntentHashManager, ValidationConfig};
 use parking_lot::RwLock;
 use prometheus::Registry;
 use radix_engine::transaction::{
-    execute_preview, execute_transaction, ExecutionConfig, FeeReserveConfig, PreviewError,
-    PreviewResult, TransactionOutcome, TransactionReceipt, TransactionResult,
+    execute_preview, execute_transaction, AbortReason, ExecutionConfig, FeeReserveConfig,
+    PreviewError, PreviewResult, TransactionOutcome, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::{
     scrypto_encode, Categorize, ComponentAddress, Decimal, Decode, Encode, GlobalAddress,
@@ -109,7 +109,7 @@ use radix_engine::kernel::ScryptoInterpreter;
 use radix_engine_interface::network::NetworkDefinition;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use tracing::{info, warn};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
@@ -124,6 +124,9 @@ pub struct StateManagerLoggingConfig {
     pub log_on_transaction_rejection: bool,
 }
 
+const UP_TO_FEE_LOAN_TRANSACTION_WARN_TIME_LIMIT_MS: u32 = 100;
+const FULL_TRANSACTION_WARN_TIME_LIMIT_MS: u32 = 500;
+
 pub struct StateManager<S> {
     pub mempool: RwLock<SimpleMempool>,
     pub network: NetworkDefinition,
@@ -135,6 +138,7 @@ pub struct StateManager<S> {
     pub metrics: StateManagerMetrics,
     pub prometheus_registry: Registry,
     execution_config: ExecutionConfig,
+    execution_config_for_pending_transactions: ExecutionConfig,
     scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
     fee_reserve_config: FeeReserveConfig,
     intent_hash_manager: TestIntentHashManager,
@@ -179,6 +183,12 @@ where
                 trace: logging_config.engine_trace,
                 max_sys_call_trace_depth: 1,
                 abort_when_loan_repaid: false,
+            },
+            execution_config_for_pending_transactions: ExecutionConfig {
+                max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+                trace: logging_config.engine_trace,
+                max_sys_call_trace_depth: 1,
+                abort_when_loan_repaid: true,
             },
             scrypto_interpreter: ScryptoInterpreter {
                 wasm_engine: DefaultWasmEngine::default(),
@@ -232,13 +242,26 @@ where
             },
         };
 
-        execute_preview(
+        let start = std::time::Instant::now();
+
+        let result = execute_preview(
             &self.store,
             &self.scrypto_interpreter,
             &self.intent_hash_manager,
             &self.network,
             preview_intent,
-        )
+        );
+
+        let elapsed_millis: u32 = start.elapsed().as_millis().try_into().unwrap_or(u32::MAX);
+
+        if elapsed_millis > FULL_TRANSACTION_WARN_TIME_LIMIT_MS {
+            warn!(
+                "Preview execution took {}ms, above warning threshold of {}ms",
+                elapsed_millis, FULL_TRANSACTION_WARN_TIME_LIMIT_MS
+            );
+        }
+
+        result
     }
 }
 
@@ -258,28 +281,34 @@ where
             parent_accumulator_hash,
             &new_accumulator_hash,
             |store| {
-                execute_transaction(
+                let start = Instant::now();
+
+                let result = execute_transaction(
                     store,
                     &self.scrypto_interpreter,
                     &self.fee_reserve_config,
                     &self.execution_config,
                     executable,
-                )
+                );
+
+                let elapsed_millis: u32 = start.elapsed().as_millis().try_into().unwrap_or(u32::MAX);
+
+                if elapsed_millis > FULL_TRANSACTION_WARN_TIME_LIMIT_MS {
+                    warn!(
+                        "Transaction execution took {}ms, above warning threshold of {}ms (ledger payload hash: {}, accumulator hash: {})",
+                        elapsed_millis, FULL_TRANSACTION_WARN_TIME_LIMIT_MS, payload_hash, parent_accumulator_hash
+                    );
+                }
+
+                result
             },
         );
         (new_accumulator_hash, processed_result)
     }
 }
 
-pub const VALIDATION_MAX_EXECUTION_MS: u32 = 500;
-
 pub enum StateManagerRejectReason {
     TransactionValidationError(TransactionValidationError),
-    /// This is temporary until we get better execution limits
-    ExecutionTookTooLong {
-        time_taken_ms: u32,
-        time_limit_ms: u32,
-    },
 }
 
 #[derive(Debug)]
@@ -293,12 +322,11 @@ impl<S> StateManager<S>
 where
     S: ReadableSubstateStore + ReadableTreeStore,
     S: for<'a> TransactionIndex<&'a IntentHash> + QueryableTransactionStore,
-    S: ReadableSubstateStore + QueryableSubstateStore, // Temporary - can remove when epoch validation moves to executor
     S: QueryableProofStore + QueryableAccumulatorHash,
 {
     /// Performs static-validation, and then executes the transaction.
     /// By checking the TransactionReceipt, you can see if the transaction is presently commitable.
-    fn validate_and_test_execute_transaction(
+    fn validate_and_test_execute_transaction_up_to_fee_loan(
         &self,
         transaction: &NotarizedTransaction,
         payload_size: usize,
@@ -314,17 +342,17 @@ where
             &self.store,
             &self.scrypto_interpreter,
             &self.fee_reserve_config,
-            &self.execution_config,
+            &self.execution_config_for_pending_transactions,
             &executable,
         );
 
         let elapsed_millis: u32 = start.elapsed().as_millis().try_into().unwrap_or(u32::MAX);
 
-        if elapsed_millis > VALIDATION_MAX_EXECUTION_MS {
-            return Err(StateManagerRejectReason::ExecutionTookTooLong {
-                time_taken_ms: elapsed_millis,
-                time_limit_ms: VALIDATION_MAX_EXECUTION_MS,
-            });
+        if elapsed_millis > UP_TO_FEE_LOAN_TRANSACTION_WARN_TIME_LIMIT_MS {
+            warn!(
+                "Pending transaction execution up to fee loan took {}ms, above warning threshold of {}ms",
+                elapsed_millis, UP_TO_FEE_LOAN_TRANSACTION_WARN_TIME_LIMIT_MS
+            );
         }
 
         Ok(receipt)
@@ -403,6 +431,7 @@ where
         transaction: &NotarizedTransaction,
     ) -> (PendingTransactionRecord, bool) {
         let current_time = SystemTime::now();
+        let current_epoch = self.store().get_epoch();
         let intent_hash = transaction.intent_hash();
         let payload_hash = transaction.user_payload_hash();
         let invalid_from_epoch = transaction.signed_intent.intent.header.end_epoch_exclusive;
@@ -412,7 +441,7 @@ where
             .get_pending_transaction_record(&intent_hash, &payload_hash, invalid_from_epoch);
 
         if let Some(record) = record_option {
-            if !record.should_recalculate(current_time) {
+            if !record.should_recalculate(current_epoch, current_time) {
                 return (record, true);
             }
         }
@@ -456,79 +485,91 @@ where
             return Err(RejectionReason::IntentHashCommitted);
         }
 
-        // TODO: Only run transaction up to the loan
         let receipt = self
-            .validate_and_test_execute_transaction(transaction, payload_size)
+            .validate_and_test_execute_transaction_up_to_fee_loan(transaction, payload_size)
             .map_err(|reason| match reason {
                 StateManagerRejectReason::TransactionValidationError(validation_error) => {
                     RejectionReason::ValidationError(validation_error)
                 }
-                StateManagerRejectReason::ExecutionTookTooLong {
-                    time_taken_ms,
-                    time_limit_ms,
-                } => {
-                    warn!(
-                        "Transaction execution took {}ms, above limit of {}ms, so rejecting",
-                        time_taken_ms, time_limit_ms
-                    );
-                    RejectionReason::ExecutionTookTooLong { time_limit_ms }
-                }
             })?;
 
         match receipt.result {
-            TransactionResult::Reject(result) => {
-                Err(RejectionReason::FromExecution(Box::new(result.error)))
-            }
+            TransactionResult::Reject(reject_result) => Err(RejectionReason::FromExecution(
+                Box::new(reject_result.error),
+            )),
             TransactionResult::Commit(..) => Ok(()),
-            TransactionResult::Abort(_) => {
-                // TODO: Should remove this
-                panic!("Should not be aborting");
+            TransactionResult::Abort(abort_result) => {
+                // The transaction aborted after the fee loan was repaid - meaning the transaction result would get committed
+                match abort_result.reason {
+                    AbortReason::ConfiguredAbortTriggeredOnFeeLoanRepayment => Ok(()),
+                }
             }
         }
     }
 
     pub fn get_relay_transactions(
         &mut self,
-        max_num_txns: u64,
-        max_payload_size_bytes: u64,
+        max_num_txns: usize,
+        max_payload_size_bytes: usize,
     ) -> Vec<PendingTransaction> {
-        let (remove, mut keep): (Vec<_>, _) = {
-            let mempool_txns: Vec<_> = self
-                .mempool
+        let mut mempool_transaction_data: Vec<_> = {
+            // Explicit scope to ensure the lock is dropped
+            self.mempool
                 .read()
                 .transactions()
                 .values()
-                .map(|x| x.transaction.clone())
-                .collect();
-
-            // We (partially) cleanup the mempool on the occasion of getting the relay txns
-            mempool_txns.into_iter().partition(|t| {
-                let (record, was_cached) = self.check_for_rejection_with_caching(&t.payload);
-                !was_cached && record.latest_attempt.rejection.is_some()
-            })
+                .cloned()
+                .collect()
         };
+        mempool_transaction_data.shuffle(&mut thread_rng());
 
-        {
-            let mut mempool = self.mempool.write();
-            // See the comment above about moving this to a separate job
-            for txn_to_remove in remove {
-                mempool.remove_transaction(&txn_to_remove.intent_hash, &txn_to_remove.payload_hash);
+        let mut transactions_to_return = Vec::new();
+        let mut payload_size_so_far = 0usize;
+
+        // We (partially) cleanup the mempool on the occasion of getting the relay txns
+        // TODO: move this to a separate job
+        let mut transactions_to_remove = Vec::new();
+
+        for transaction_data in mempool_transaction_data.into_iter() {
+            let (record, _) =
+                self.check_for_rejection_with_caching(&transaction_data.transaction.payload);
+            if record.latest_attempt.rejection.is_some() {
+                // Mark the transaction to be removed from the mempool
+                // (see the comment above about moving this to a separate job)
+                transactions_to_remove.push((
+                    transaction_data.transaction.intent_hash,
+                    transaction_data.transaction.payload_hash,
+                ));
+            } else {
+                // Check the payload size limit
+                payload_size_so_far += transaction_data.transaction.payload_size;
+                if payload_size_so_far > max_payload_size_bytes {
+                    break;
+                }
+
+                // Add the transaction to response
+                transactions_to_return.push(transaction_data.transaction);
+                if transactions_to_return.len() >= max_num_txns {
+                    break;
+                }
             }
-            self.metrics
-                .mempool_current_transactions
-                .set(mempool.get_count() as i64);
         }
 
-        keep.shuffle(&mut thread_rng());
-        let mut tx_size = 0;
-        keep.into_iter()
-            .take(max_num_txns as usize)
-            // Check the payload size limit
-            .take_while(|t| {
-                tx_size += t.payload_size;
-                tx_size <= max_payload_size_bytes
-            })
-            .collect()
+        // See the comment above about moving this to a separate job
+        for transaction_to_remove in transactions_to_remove {
+            if self
+                .mempool
+                .write()
+                .remove_transaction(&transaction_to_remove.0, &transaction_to_remove.1)
+                .is_some()
+            {
+                self.metrics
+                    .mempool_current_transactions
+                    .set(self.mempool.read().get_count() as i64);
+            }
+        }
+
+        transactions_to_return
     }
 
     // TODO: Update to prepare_system_transaction when we start to support forking
@@ -565,21 +606,22 @@ where
                 panic!("Genesis rejected. Result: {:?}", reject_result)
             }
             TransactionResult::Abort(_) => {
-                // TODO: Should remove this
-                panic!("Genesis aborted.");
+                panic!("Genesis aborted. This should not be possible");
             }
         }
     }
 
     pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
-        // This intent hash check, and current epoch should eventually live in the executor
         let pending_transaction_base_state_version = self.store.max_state_version();
+
+        // This hashmap is used to check for any proposed intents which have already been commited (or prepared)
+        // in order to exclude them. This check will eventually live in the engine/executor.
         let mut already_committed_or_prepared_intent_hashes: HashMap<
             IntentHash,
             AlreadyPreparedTransaction,
         > = HashMap::new();
 
-        let already_committed_proposed_payload_hashes = prepare_request
+        let already_committed_proposed_intent_hashes = prepare_request
             .proposed_payloads
             .iter()
             .filter_map(|proposed_payload| {
@@ -596,7 +638,7 @@ where
             });
 
         already_committed_or_prepared_intent_hashes
-            .extend(already_committed_proposed_payload_hashes);
+            .extend(already_committed_proposed_intent_hashes);
 
         let mut state_tracker = StateTracker::initial(self.store.get_top_accumulator_hash());
 
