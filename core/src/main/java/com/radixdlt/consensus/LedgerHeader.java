@@ -110,6 +110,10 @@ public final class LedgerHeader {
   private final AccumulatorState accumulatorState;
 
   @JsonProperty("state_hash")
+  // TODO: restore `Output.ALL` after fixing non-determinism bugs
+  // One such bug is exposed by `recovery_should_work_when_consensus_is_behind_ledger()` test.
+  // For this reason, the state hash cannot be currently included in the DSON-based hashing (used
+  // e.g. in `QuorumCertificate` to get a hash of `VoteData`).
   @DsonOutput(value = Output.HASH, include = false)
   private final HashCode stateHash;
 
