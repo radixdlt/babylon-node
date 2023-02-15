@@ -299,7 +299,7 @@ public final class LedgerHeader {
   @Override
   public String toString() {
     return String.format(
-        "%s{accumulator=%s stateHash=&s consensus_parent_round_timestamp=%s proposer_timestamp=%s"
+        "%s{accumulator=%s stateHash=%s consensus_parent_round_timestamp=%s proposer_timestamp=%s"
             + " epoch=%s round=%s nextEpoch=%s}",
         getClass().getSimpleName(),
         this.accumulatorState,
