@@ -238,7 +238,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
       case QuorumReached quorumReached -> {
         this.hasReachedQuorum = true;
         roundQuorumReachedEventDispatcher.dispatch(
-            new RoundQuorumReached(quorumReached.getRoundVotingResult(), vote.getAuthor()));
+            new RoundQuorumReached(quorumReached.getRoundVotingResult(), vote));
       }
     }
 

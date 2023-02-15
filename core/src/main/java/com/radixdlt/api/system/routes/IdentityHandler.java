@@ -111,11 +111,8 @@ public final class IdentityHandler extends SystemGetJsonHandler<IdentityResponse
 
   @Override
   public IdentityResponse handleRequest() {
-
-    var validatorAddress =
-        validatorId.getValidatorAddress() == null
-            ? null
-            : addressing.encodeValidatorAddress(validatorId.getValidatorAddress());
+    final var validatorAddress =
+        validatorId.getValidatorAddress().map(addressing::encodeValidatorAddress).orElse(null);
 
     return new IdentityResponse()
         .publicKeyHex(selfKey.toHex())
