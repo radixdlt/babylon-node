@@ -68,12 +68,18 @@ import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.times;
 
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.RoundChange.CertificateType;
+import com.radixdlt.monitoring.Metrics.RoundChange.HighQcSource;
+import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.networks.Network;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -81,6 +87,12 @@ public class PacemakerStateTest {
 
   private EventDispatcher<RoundUpdate> roundUpdateSender = rmock(EventDispatcher.class);
   private ProposerElection proposerElection = mock(ProposerElection.class);
+  private Metrics metrics = new MetricsInitializer().initialize();
+  private Addressing addressing = Addressing.ofNetwork(Network.LOCALNET);
+
+  // Used just for updating the metrics, value doesn't matter
+  private final HighQcSource highQcSource = HighQcSource.CREATED_ON_RECEIVED_NON_TIMEOUT_VOTE;
+  private final CertificateType certificateType = CertificateType.QC_ON_REGULAR_VERTEX;
 
   private PacemakerState pacemakerState;
 
@@ -91,7 +103,8 @@ public class PacemakerStateTest {
         RoundUpdate.create(
             Round.genesis(), mock(HighQC.class), BFTValidatorId.random(), BFTValidatorId.random());
     this.pacemakerState =
-        new PacemakerState(roundUpdate, this.proposerElection, this.roundUpdateSender);
+        new PacemakerState(
+            roundUpdate, this.proposerElection, this.roundUpdateSender, metrics, addressing);
   }
 
   @Test
@@ -100,9 +113,9 @@ public class PacemakerStateTest {
     when(highQC.getHighestRound()).thenReturn(Round.of(1));
 
     // Move ahead for a bit so we can send in a QC for a lower round
-    this.pacemakerState.processQC(highQCFor(Round.of(0)));
-    this.pacemakerState.processQC(highQCFor(Round.of(1)));
-    this.pacemakerState.processQC(highQCFor(Round.of(2)));
+    this.pacemakerState.processQC(highQCFor(Round.of(0)), highQcSource, certificateType);
+    this.pacemakerState.processQC(highQCFor(Round.of(1)), highQcSource, certificateType);
+    this.pacemakerState.processQC(highQCFor(Round.of(2)), highQcSource, certificateType);
 
     verify(roundUpdateSender, times(1))
         .dispatch(argThat(v -> v.getCurrentRound().equals(Round.of(1))));
@@ -111,7 +124,7 @@ public class PacemakerStateTest {
     verify(roundUpdateSender, times(1))
         .dispatch(argThat(v -> v.getCurrentRound().equals(Round.of(3))));
 
-    this.pacemakerState.processQC(highQC);
+    this.pacemakerState.processQC(highQC, highQcSource, certificateType);
     verifyNoMoreInteractions(roundUpdateSender);
   }
 
@@ -120,12 +133,12 @@ public class PacemakerStateTest {
     HighQC highQC = mock(HighQC.class);
     when(highQC.getHighestRound()).thenReturn(Round.of(0));
 
-    this.pacemakerState.processQC(highQC);
+    this.pacemakerState.processQC(highQC, highQcSource, certificateType);
     verify(roundUpdateSender, times(1))
         .dispatch(argThat(v -> v.getCurrentRound().equals(Round.of(1))));
 
     when(highQC.getHighestRound()).thenReturn(Round.of(1));
-    this.pacemakerState.processQC(highQC);
+    this.pacemakerState.processQC(highQC, highQcSource, certificateType);
     verify(roundUpdateSender, times(1))
         .dispatch(argThat(v -> v.getCurrentRound().equals(Round.of(2))));
   }
@@ -138,7 +151,7 @@ public class PacemakerStateTest {
     when(highQC.getHighestRound()).thenReturn(Round.of(5));
     when(highQC.highestCommittedQC()).thenReturn(qc);
 
-    this.pacemakerState.processQC(highQC);
+    this.pacemakerState.processQC(highQC, highQcSource, certificateType);
     verify(roundUpdateSender, times(1))
         .dispatch(argThat(v -> v.getCurrentRound().equals(Round.of(6))));
   }

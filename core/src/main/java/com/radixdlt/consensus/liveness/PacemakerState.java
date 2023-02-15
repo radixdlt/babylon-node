@@ -66,13 +66,16 @@ package com.radixdlt.consensus.liveness;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.RoundChange.CertificateType;
+import com.radixdlt.monitoring.Metrics.RoundChange.HighQcSource;
 import java.util.Objects;
-import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -86,6 +89,8 @@ public class PacemakerState implements PacemakerReducer {
 
   private final ProposerElection proposerElection;
   private final EventDispatcher<RoundUpdate> roundUpdateSender;
+  private final Metrics metrics;
+  private final Addressing addressing;
 
   private Round currentRound;
   private HighQC highQC;
@@ -94,15 +99,19 @@ public class PacemakerState implements PacemakerReducer {
   public PacemakerState(
       RoundUpdate roundUpdate,
       ProposerElection proposerElection,
-      EventDispatcher<RoundUpdate> roundUpdateSender) {
+      EventDispatcher<RoundUpdate> roundUpdateSender,
+      Metrics metrics,
+      Addressing addressing) {
     this.proposerElection = Objects.requireNonNull(proposerElection);
     this.roundUpdateSender = Objects.requireNonNull(roundUpdateSender);
+    this.metrics = Objects.requireNonNull(metrics);
+    this.addressing = Objects.requireNonNull(addressing);
     this.highQC = roundUpdate.getHighQC();
     this.currentRound = roundUpdate.getCurrentRound();
   }
 
   @Override
-  public Optional<RoundUpdate> processQC(HighQC highQC) {
+  public void processQC(HighQC highQC, HighQcSource highQcSource, CertificateType certificateType) {
     log.trace("HighQC: {}", highQC);
 
     final var highestRoundWithQuorum = highQC.getHighestRound();
@@ -111,17 +120,35 @@ public class PacemakerState implements PacemakerReducer {
       final BFTValidatorId leader = this.proposerElection.getProposer(nextRound);
       final BFTValidatorId nextLeader = this.proposerElection.getProposer(nextRound.next());
       final var roundUpdate = RoundUpdate.create(nextRound, highQC, leader, nextLeader);
+      updateRoundChangesMetrics(roundUpdate, certificateType, highQcSource);
       this.highQC = highQC;
       this.currentRound = nextRound;
       roundUpdateSender.dispatch(roundUpdate);
-      return Optional.of(roundUpdate);
     } else {
       log.trace(
           "Ignoring HighQC for round {}, current round is {}",
           highestRoundWithQuorum,
           this.currentRound);
-      return Optional.empty();
     }
+  }
+
+  private void updateRoundChangesMetrics(
+      RoundUpdate roundUpdate, CertificateType certificateType, HighQcSource highQcSource) {
+    final var leaderOfTheCompletedRound =
+        proposerElection.getProposer(roundUpdate.getCurrentRound().previous());
+    metrics
+        .bft()
+        .roundChanges()
+        .label(
+            new Metrics.RoundChange(
+                leaderOfTheCompletedRound.getKey().toHex(),
+                leaderOfTheCompletedRound
+                    .getValidatorAddress()
+                    .map(addressing::encodeValidatorAddress)
+                    .orElse("none"),
+                highQcSource,
+                certificateType))
+        .inc();
   }
 
   @VisibleForTesting

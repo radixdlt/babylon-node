@@ -67,7 +67,6 @@ package com.radixdlt.modules;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
@@ -239,8 +238,7 @@ public final class ConsensusModule extends AbstractModule {
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
       Hasher hasher,
       SafetyRules safetyRules,
-      Metrics metrics,
-      Addressing addressing) {
+      Metrics metrics) {
     return new BFTSync(
         self,
         syncRequestRateLimiter,
@@ -256,8 +254,7 @@ public final class ConsensusModule extends AbstractModule {
         ledgerLastProof,
         random,
         bftSyncPatienceMillis,
-        metrics,
-        addressing);
+        metrics);
   }
 
   @Provides

@@ -170,6 +170,7 @@ public record Metrics(
       Counter noVotesSent,
       Counter voteQuorums,
       Counter timeoutQuorums,
+      Counter extendedRoundTimeouts,
       LabelledCounter<RoundChange> roundChanges,
       Timer consensusEventsQueueWait,
       LabelledCounter<RejectedConsensusEvent> rejectedConsensusEvents,

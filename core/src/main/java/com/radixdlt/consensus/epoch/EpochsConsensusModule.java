@@ -249,7 +249,9 @@ public class EpochsConsensusModule extends AbstractModule {
 
   @Provides
   private PacemakerStateFactory pacemakerStateFactory(
-      EventDispatcher<EpochRoundUpdate> epochRoundUpdateEventDispatcher) {
+      EventDispatcher<EpochRoundUpdate> epochRoundUpdateEventDispatcher,
+      Metrics metrics,
+      Addressing addressing) {
     return (initialRound, epoch, proposerElection) ->
         new PacemakerState(
             initialRound,
@@ -257,7 +259,9 @@ public class EpochsConsensusModule extends AbstractModule {
             roundUpdate -> {
               EpochRoundUpdate epochRoundUpdate = new EpochRoundUpdate(epoch, roundUpdate);
               epochRoundUpdateEventDispatcher.dispatch(epochRoundUpdate);
-            });
+            },
+            metrics,
+            addressing);
   }
 
   @ProvidesIntoSet
@@ -393,8 +397,7 @@ public class EpochsConsensusModule extends AbstractModule {
       Random random,
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
       Metrics metrics,
-      Hasher hasher,
-      Addressing addressing) {
+      Hasher hasher) {
     return (safetyRules, vertexStore, pacemakerState, configuration) ->
         new BFTSync(
             self,
@@ -411,8 +414,7 @@ public class EpochsConsensusModule extends AbstractModule {
             configuration.getVertexStoreState().getRootHeader(),
             random,
             bftSyncPatienceMillis,
-            metrics,
-            addressing);
+            metrics);
   }
 
   @Provides

@@ -69,7 +69,6 @@ import static java.util.function.Predicate.not;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
-import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.RoundVotingResult.FormedQC;
@@ -169,7 +168,6 @@ public final class BFTSync implements BFTSyncer {
   private final Random random;
   private final int bftSyncPatienceMillis;
   private final Metrics metrics;
-  private final Addressing addressing;
 
   private LedgerProof currentLedgerHeader;
 
@@ -194,8 +192,7 @@ public final class BFTSync implements BFTSyncer {
       LedgerProof currentLedgerHeader,
       Random random,
       int bftSyncPatienceMillis,
-      Metrics metrics,
-      Addressing addressing) {
+      Metrics metrics) {
     this.self = self;
     this.syncRequestRateLimiter = Objects.requireNonNull(syncRequestRateLimiter);
     this.vertexStore = vertexStore;
@@ -211,7 +208,6 @@ public final class BFTSync implements BFTSyncer {
     this.random = random;
     this.bftSyncPatienceMillis = bftSyncPatienceMillis;
     this.metrics = Objects.requireNonNull(metrics);
-    this.addressing = Objects.requireNonNull(addressing);
   }
 
   public EventProcessor<RoundQuorumReached> roundQuorumReachedEventProcessor() {
@@ -251,31 +247,17 @@ public final class BFTSync implements BFTSyncer {
     return switch (vertexStore.insertQc(qc)) {
       case VertexStore.InsertQcResult.Inserted inserted -> {
         // QC was inserted, try TC too (as it can be higher), and then process a new highQC
-        final var tcAlsoInserted =
-            highQC.highestTC().map(vertexStore::insertTimeoutCertificate).orElse(false);
-
-        this.pacemakerReducer
-            .processQC(vertexStore.highQC())
-            .ifPresent(
-                roundUpdate ->
-                    updateRoundChangesMetrics(
-                        roundUpdate,
-                        determineCertificateTypeForInsertedQc(qc, tcAlsoInserted),
-                        highQcSource));
-
+        highQC.highestTC().map(vertexStore::insertTimeoutCertificate);
+        this.pacemakerReducer.processQC(
+            vertexStore.highQC(), highQcSource, determineCertificateType(qc, highQC.highestTC()));
         yield SyncResult.SYNCED;
       }
       case VertexStore.InsertQcResult.Ignored ignored -> {
         // QC was ignored, try inserting TC and if that works process a new highQC
         final var insertedTc =
             highQC.highestTC().map(vertexStore::insertTimeoutCertificate).orElse(false);
-
         if (insertedTc) {
-          this.pacemakerReducer
-              .processQC(vertexStore.highQC())
-              .ifPresent(
-                  roundUpdate ->
-                      updateRoundChangesMetrics(roundUpdate, CertificateType.TC, highQcSource));
+          this.pacemakerReducer.processQC(vertexStore.highQC(), highQcSource, CertificateType.TC);
         }
         yield SyncResult.SYNCED;
       }
@@ -307,43 +289,21 @@ public final class BFTSync implements BFTSyncer {
     };
   }
 
-  private CertificateType determineCertificateTypeForInsertedQc(
-      QuorumCertificate insertedQc, boolean wasTcAlsoInserted) {
-    if (wasTcAlsoInserted) {
-      // TC was inserted so its round must be higher than that of a QC, round change
-      // cert type is then a TC
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  private CertificateType determineCertificateType(
+      QuorumCertificate highestQc, Optional<TimeoutCertificate> highestTc) {
+    if (highestTc.stream().anyMatch(tc -> tc.getRound().gt(highestQc.getRound()))) {
       return CertificateType.TC;
     } else {
-      // QC was inserted, need to determine whether its corresponding vertex was a
-      // timeout vertex or not
       final var isTimeoutVertex =
           vertexStore
-              .getExecutedVertex(insertedQc.getProposedHeader().getVertexId())
-              .orElseThrow(() -> new RuntimeException("Vertex is missing for inserted QC"))
-              .vertex()
-              .isTimeout();
+              .getExecutedVertex(highestQc.getProposedHeader().getVertexId())
+              .map(v -> v.vertex().isTimeout())
+              .orElse(false);
       return isTimeoutVertex
           ? CertificateType.QC_ON_TIMEOUT_VERTEX
           : CertificateType.QC_ON_REGULAR_VERTEX;
     }
-  }
-
-  private void updateRoundChangesMetrics(
-      RoundUpdate roundUpdate, CertificateType certificateType, HighQcSource highQcSource) {
-    metrics
-        .bft()
-        .roundChanges()
-        .label(
-            new Metrics.RoundChange(
-                roundUpdate.getLeader().getKey().toHex(),
-                roundUpdate
-                    .getLeader()
-                    .getValidatorAddress()
-                    .map(addressing::encodeValidatorAddress)
-                    .orElse("none"),
-                highQcSource,
-                certificateType))
-        .inc();
   }
 
   private boolean requiresLedgerSync(SyncState syncState) {
@@ -534,7 +494,10 @@ public final class BFTSync implements BFTSyncer {
               hasher);
       if (vertexStore.tryRebuild(vertexStoreState)) {
         // TODO: Move pacemaker outside of sync
-        pacemakerReducer.processQC(vertexStoreState.getHighQC());
+        pacemakerReducer.processQC(
+            vertexStoreState.getHighQC(),
+            syncState.highQcSource,
+            determineCertificateType(syncStateHighestCommittedQc, highestKnownTc));
       }
     } else {
       log.debug("SYNC_STATE: skipping rebuild");

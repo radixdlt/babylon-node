@@ -226,12 +226,19 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
   private <T extends ConsensusEvent> void syncUpAndProcess(T event, Consumer<T> processFn) {
     final Round currentRound = this.latestRoundUpdate.getCurrentRound();
     if (event.getRound().gte(currentRound)) {
+      final var highQcSource =
+          switch (event) {
+            case Vote vote -> HighQcSource.RECEIVED_ALONG_WITH_VOTE;
+            case Proposal proposal -> HighQcSource.RECEIVED_ALONG_WITH_PROPOSAL;
+            default -> throw new IllegalStateException(
+                "T is a sealed ConsensusEvent, this shouldn't be needed, but Java...");
+          };
       final var isSynced =
           syncUp(
               event.highQC(),
               NodeId.fromPublicKey(event.getAuthor().getKey()),
               () -> processOnCurrentRoundOrCache(event, processFn),
-              HighQcSource.RECEIVED_ALONG_WITH_EVENT);
+              highQcSource);
       if (!isSynced) {
         log.debug("Queuing {}, waiting for Sync", event);
         syncingEvents.add(new QueuedConsensusEvent(event, Stopwatch.createStarted()));
@@ -262,11 +269,13 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
       case Proposal proposal -> syncUp(
           proposal.highQC(),
           NodeId.fromPublicKey(proposal.getAuthor().getKey()),
-          () -> processOnCurrentRoundOrCache(proposal, forwardTo::processProposal), HighQcSource.RECEIVED_ALONG_WITH_PROPOSAL);
+          () -> processOnCurrentRoundOrCache(proposal, forwardTo::processProposal),
+          HighQcSource.RECEIVED_ALONG_WITH_PROPOSAL);
       case Vote vote -> syncUp(
           vote.highQC(),
           NodeId.fromPublicKey(vote.getAuthor().getKey()),
-          () -> processOnCurrentRoundOrCache(vote, forwardTo::processVote), HighQcSource.RECEIVED_ALONG_WITH_VOTE);
+          () -> processOnCurrentRoundOrCache(vote, forwardTo::processVote),
+          HighQcSource.RECEIVED_ALONG_WITH_VOTE);
     }
   }
 
