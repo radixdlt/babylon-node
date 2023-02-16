@@ -64,6 +64,7 @@
 
 package com.radixdlt.api.core;
 
+import static com.radixdlt.harness.predicates.NodesPredicate.allAtOrOverEpoch;
 import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransaction;
 import static org.assertj.core.api.Assertions.*;
 
@@ -150,6 +151,71 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(rejectedDetails.getIsRejectedBecauseIntentAlreadyCommitted()).isFalse();
       assertThat(rejectedDetails.getIsFresh()).isTrue();
       assertThat(rejectedDetails.getErrorMessage()).isEqualTo("SuccessButFeeLoanNotRepaid");
+    }
+  }
+
+  @Test
+  public void
+      test_valid_but_future_epoch_transaction_should_be_rejected_but_resubmittable_immediately_when_epoch_reached()
+          throws Exception {
+    try (var test = buildRunningServerTest(100)) {
+      var transaction = REv2TestTransactions.constructValidTransaction(2, 0);
+      var rawTransaction = transaction.constructRawTransaction();
+      var intentHash = transaction.hashedIntent().asBytes();
+
+      var response =
+          assertErrorResponseOfType(
+              () ->
+                  getTransactionApi()
+                      .transactionSubmitPost(
+                          new TransactionSubmitRequest()
+                              .network(networkLogicalName)
+                              .notarizedTransactionHex(
+                                  Bytes.toHexString(rawTransaction.getPayload()))),
+              TransactionSubmitErrorResponse.class);
+
+      var details = response.getDetails();
+      assertThat(details).isNotNull();
+
+      assertThat(details).isInstanceOfAny(TransactionSubmitRejectedErrorDetails.class);
+      var rejectedDetails = (TransactionSubmitRejectedErrorDetails) details;
+
+      assertThat(response.getCode()).isEqualTo(400);
+      assertThat(rejectedDetails).isNotNull();
+      assertThat(rejectedDetails.getIsPayloadRejectionPermanent()).isFalse();
+      assertThat(rejectedDetails.getIsIntentRejectionPermanent()).isFalse();
+      assertThat(rejectedDetails.getIsRejectedBecauseIntentAlreadyCommitted()).isFalse();
+      assertThat(rejectedDetails.getIsFresh()).isTrue();
+      assertThat(rejectedDetails.getRetryFromTimestamp()).isNull();
+      assertThat(rejectedDetails.getRetryFromEpoch()).isEqualTo(2);
+      assertThat(rejectedDetails.getErrorMessage())
+          .isEqualTo("TransactionEpochNotYetValid { valid_from: 2, current_epoch: 1 }");
+
+      // Now we run consensus up to epoch 2
+      test.runUntilState(allAtOrOverEpoch(2), 10000);
+
+      // And we resubmit, as the Gateway would - this time it should be submittable
+      var response2 =
+          getTransactionApi()
+              .transactionSubmitPost(
+                  new TransactionSubmitRequest()
+                      .network(networkLogicalName)
+                      .notarizedTransactionHex(Bytes.toHexString(rawTransaction.getPayload())));
+      assertThat(response2.getDuplicate()).isFalse();
+
+      // And get committed...
+      test.runUntilState(allCommittedTransaction(rawTransaction), 1000);
+
+      // Check the status response again to check it's been marked as committed
+      var statusResponse2 =
+          getTransactionApi()
+              .transactionStatusPost(
+                  new TransactionStatusRequest()
+                      .network(networkLogicalName)
+                      .intentHash(Bytes.toHexString(intentHash)));
+
+      assertThat(statusResponse2.getIntentStatus())
+          .isEqualTo(TransactionStatusResponse.IntentStatusEnum.COMMITTEDSUCCESS);
     }
   }
 }

@@ -62,24 +62,87 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.bft.processor;
 
-import static org.mockito.Mockito.mock;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.RoundLeaderFailure;
+import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.monitoring.Metrics;
+import java.util.HashSet;
+import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimeoutCertificate;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+/**
+ * Verifies that only a single proposal is received in each round. Requires prior validation that
+ * all proposals come from a genuine leader.
+ */
+public final class OneProposalPerRoundVerifier implements BFTEventProcessor {
+  private static final Logger log = LogManager.getLogger();
 
-public class RoundQuorumReachedTest {
+  private final BFTEventProcessor forwardTo;
+  private final Metrics metrics;
 
-  @Test
-  public void equalsTest() {
-    EqualsVerifier.forClass(RoundQuorumReached.class)
-        .withPrefabValues(
-            RoundVotingResult.class,
-            new RoundVotingResult.FormedQC(mock(QuorumCertificate.class)),
-            new RoundVotingResult.FormedTC(mock(TimeoutCertificate.class)))
-        .verify();
+  private final Set<Round> receivedProposals = new HashSet<>();
+
+  public OneProposalPerRoundVerifier(BFTEventProcessor forwardTo, Metrics metrics) {
+    this.forwardTo = forwardTo;
+    this.metrics = metrics;
+  }
+
+  @Override
+  public void start() {
+    forwardTo.start();
+  }
+
+  @Override
+  public void processRoundUpdate(RoundUpdate roundUpdate) {
+    this.receivedProposals.removeIf(r -> r.lt(roundUpdate.getCurrentRound()));
+    forwardTo.processRoundUpdate(roundUpdate);
+  }
+
+  @Override
+  public void processVote(Vote vote) {
+    forwardTo.processVote(vote);
+  }
+
+  @Override
+  public void processProposal(Proposal proposal) {
+    if (receivedProposals.contains(proposal.getRound())) {
+      this.metrics.bft().duplicateProposalsReceived().inc();
+      log.warn(
+          "Received a duplicate proposal from {} for round {}",
+          proposal.getAuthor(),
+          proposal.getRound());
+      return;
+    }
+
+    receivedProposals.add(proposal.getRound());
+    forwardTo.processProposal(proposal);
+  }
+
+  @Override
+  public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
+    forwardTo.processLocalTimeout(scheduledLocalTimeout);
+  }
+
+  @Override
+  public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
+    forwardTo.processRoundLeaderFailure(roundLeaderFailure);
+  }
+
+  @Override
+  public void processBFTUpdate(BFTInsertUpdate update) {
+    forwardTo.processBFTUpdate(update);
+  }
+
+  @Override
+  public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
+    forwardTo.processBFTRebuildUpdate(update);
   }
 }

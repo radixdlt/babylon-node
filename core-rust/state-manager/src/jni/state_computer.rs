@@ -322,7 +322,7 @@ pub struct JavaPrepareResult {
     pub committed: Vec<Vec<u8>>,
     pub rejected: Vec<(Vec<u8>, String)>,
     pub next_epoch: Option<NextEpoch>,
-    pub state_hash: StateHash,
+    pub state_hash: JavaStateHash,
 }
 
 impl From<PrepareResult> for JavaPrepareResult {
@@ -331,7 +331,7 @@ impl From<PrepareResult> for JavaPrepareResult {
             committed: prepare_results.committed,
             rejected: prepare_results.rejected,
             next_epoch: prepare_results.next_epoch,
-            state_hash: prepare_results.state_hash,
+            state_hash: prepare_results.state_hash.into(),
         }
     }
 }

@@ -70,6 +70,7 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.utils.Bytes;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * A node in a BFT network which can run BFT validation
@@ -141,8 +142,8 @@ public final class BFTValidatorId {
     return key;
   }
 
-  public ComponentAddress getValidatorAddress() {
-    return validatorAddress;
+  public Optional<ComponentAddress> getValidatorAddress() {
+    return Optional.ofNullable(validatorAddress);
   }
 
   @Override

@@ -73,6 +73,7 @@ import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
@@ -93,6 +94,7 @@ public class BFTEventStatelessVerifierTest {
   private BFTEventStatelessVerifier eventVerifier;
   private SafetyRules safetyRules;
   private TimeSupplier timeSupplier;
+  private ProposerElection proposerElection;
   private Metrics metrics;
 
   @Before
@@ -103,10 +105,11 @@ public class BFTEventStatelessVerifierTest {
     this.verifier = mock(HashVerifier.class);
     this.safetyRules = mock(SafetyRules.class);
     this.timeSupplier = mock(TimeSupplier.class);
+    this.proposerElection = mock(ProposerElection.class);
     this.metrics = new MetricsInitializer().initialize();
     this.eventVerifier =
         new BFTEventStatelessVerifier(
-            validatorSet, forwardTo, hasher, verifier, safetyRules, metrics);
+            validatorSet, proposerElection, forwardTo, hasher, verifier, safetyRules, metrics);
   }
 
   @Test
@@ -133,6 +136,7 @@ public class BFTEventStatelessVerifierTest {
   public void when_process_correct_proposal_then_should_be_forwarded() {
     Proposal proposal = mock(Proposal.class);
     BFTValidatorId author = mock(BFTValidatorId.class);
+    when(proposal.getRound()).thenReturn(Round.of(2L));
     when(proposal.getAuthor()).thenReturn(author);
     when(proposal.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
     when(timeSupplier.currentTime()).thenReturn(5L);
@@ -142,6 +146,7 @@ public class BFTEventStatelessVerifierTest {
     when(validatorSet.containsNode(eq(author))).thenReturn(true);
     when(verifier.verify(any(), any(), any())).thenReturn(true);
     when(safetyRules.verifyHighQcAgainstTheValidatorSet(any())).thenReturn(true);
+    when(proposerElection.getProposer(proposal.getRound())).thenReturn(author);
     eventVerifier.processProposal(proposal);
     verify(forwardTo, times(1)).processProposal(eq(proposal));
   }

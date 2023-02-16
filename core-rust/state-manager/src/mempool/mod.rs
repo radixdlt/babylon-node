@@ -98,7 +98,7 @@ pub enum MempoolAddError {
 pub struct MempoolAddRejection {
     pub reason: RejectionReason,
     pub against_state: AtState,
-    pub recalculation_due: RecalculationDue,
+    pub retry_from: RetryFrom,
     pub was_cached: bool,
     /// The epoch when the payload will definitely be permanently rejected
     pub invalid_from_epoch: u64,
@@ -136,7 +136,6 @@ impl MetricLabel for MempoolAddError {
                 RejectionReason::FromExecution(_) => "ExecutionError",
                 RejectionReason::ValidationError(_) => "ValidationError",
                 RejectionReason::IntentHashCommitted => "IntentHashCommitted",
-                RejectionReason::ExecutionTookTooLong { .. } => "ExecutionTooLong",
             },
             MempoolAddError::Full { .. } => "MempoolFull",
             MempoolAddError::Duplicate => "Duplicate",

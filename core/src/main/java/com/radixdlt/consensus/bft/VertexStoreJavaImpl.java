@@ -95,8 +95,9 @@ public final class VertexStoreJavaImpl implements VertexStore {
   private final Hasher hasher;
   private final Ledger ledger;
 
-  private final Map<HashCode, ExecutedVertex> vertices = new HashMap<>();
+  private final Map<HashCode, VertexWithHash> vertices = new HashMap<>();
   private final Map<HashCode, Set<HashCode>> vertexChildren = new HashMap<>();
+  private final Map<HashCode, ExecutedVertex> executedVertices = new HashMap<>();
 
   // These should never be null
   private VertexWithHash rootVertex;
@@ -113,34 +114,15 @@ public final class VertexStoreJavaImpl implements VertexStore {
 
   public static VertexStoreJavaImpl create(
       VertexStoreState vertexStoreState, Ledger ledger, Hasher hasher) {
-    var vertexStore =
+    final var vertexStore =
         new VertexStoreJavaImpl(
             ledger, hasher, vertexStoreState.getRoot(), vertexStoreState.getHighQC());
 
     for (var vertexWithHash : vertexStoreState.getVertices()) {
-      var previous = vertexStore.getPathFromRoot(vertexWithHash.vertex().getParentVertexId());
-      var executedVertexMaybe = ledger.prepare(previous, vertexWithHash);
-      if (executedVertexMaybe.isEmpty()) {
-        // Try pruning to see if that helps catching up to the ledger
-        // This can occur if a node crashes between persisting a new QC and committing
-        // TODO: Cleanup and remove
-        var pruned = vertexStoreState.prune(hasher);
-        if (!pruned.equals(vertexStoreState)) {
-          return create(pruned, ledger, hasher);
-        }
-
-        // FIXME: If this occurs then it means that our highQC may not have an associated vertex
-        // FIXME: so should save executedVertex
-        logger.warn("VertexStore initialized with missing vertices.");
-
-        break;
-      } else {
-        var executedVertex = executedVertexMaybe.get();
-        vertexStore.vertices.put(executedVertex.getVertexHash(), executedVertex);
-        vertexStore.vertexChildren.put(executedVertex.getVertexHash(), new HashSet<>());
-        var siblings = vertexStore.vertexChildren.get(executedVertex.getParentId());
-        siblings.add(executedVertex.getVertexHash());
-      }
+      vertexStore.vertices.put(vertexWithHash.hash(), vertexWithHash);
+      vertexStore.vertexChildren.put(vertexWithHash.hash(), new HashSet<>());
+      var siblings = vertexStore.vertexChildren.get(vertexWithHash.vertex().getParentVertexId());
+      siblings.add(vertexWithHash.hash());
     }
 
     return vertexStore;
@@ -170,11 +152,14 @@ public final class VertexStoreJavaImpl implements VertexStore {
     this.rootVertex = vertexStoreState.getRoot();
     this.highQC = vertexStoreState.getHighQC();
     this.vertices.clear();
+    this.executedVertices.clear();
     this.vertexChildren.clear();
     this.vertexChildren.put(rootVertex.hash(), new HashSet<>());
 
+    // Note that the vertices aren't re-executed at boot. See comment at `getExecutedVertex`
     for (var executedVertex : executedVertices) {
-      this.vertices.put(executedVertex.getVertexHash(), executedVertex);
+      this.vertices.put(executedVertex.getVertexHash(), executedVertex.getVertexWithHash());
+      this.executedVertices.put(executedVertex.getVertexHash(), executedVertex);
       this.vertexChildren.put(executedVertex.getVertexHash(), new HashSet<>());
       Set<HashCode> siblings = vertexChildren.get(executedVertex.getParentId());
       siblings.add(executedVertex.getVertexHash());
@@ -191,7 +176,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
   @Override
   public InsertQcResult insertQc(QuorumCertificate qc) {
     if (!this.containsVertex(qc.getProposedHeader().getVertexId())) {
-      return new VertexStore.InsertQcResult.VertexIsMissing(); // false
+      return new VertexStore.InsertQcResult.VertexIsMissing();
     }
 
     final var hasAnyChildren = !vertexChildren.get(qc.getProposedHeader().getVertexId()).isEmpty();
@@ -225,7 +210,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     }
 
     for (HashCode childId : childrenIds) {
-      VertexWithHash v = vertices.get(childId).getVertexWithHash();
+      final var v = vertices.get(childId);
       builder.add(v);
       getChildrenVerticesList(v, builder);
     }
@@ -248,9 +233,41 @@ public final class VertexStoreJavaImpl implements VertexStore {
   }
 
   // TODO: reimplement in async way
+  /**
+   * Returns an existing ExecutedVertex or executes a vertex that hasn't yet been executed and
+   * returns it. This lazy-execution model was introduced to speed up node recovery after it has
+   * been restarted while storing a significant number of vertices - for example timeout vertices,
+   * if network liveness was lost before the restart. In this scenario, without the lazy-execution
+   * mechanism, the node would have to re-execute all those vertices at boot. This could take a
+   * significant amount of time and might be pretty wasteful (f.e. if the vertices themselves are
+   * empty but their root "path" contains some heavy transactions). Note that the vertices inserted
+   * after boot are always executed immediately (including the vertices they depend on),
+   * lazy-loading only applies to the initial vertices.
+   */
   @Override
   public Option<ExecutedVertex> getExecutedVertex(HashCode vertexHash) {
-    return Option.option(vertices.get(vertexHash));
+    final var existingExecutedVertex = this.executedVertices.get(vertexHash);
+    if (existingExecutedVertex != null) {
+      return Option.some(existingExecutedVertex);
+    } else {
+      final var vertex = this.vertices.get(vertexHash);
+      if (vertex != null) {
+        final var previous =
+            vertex.hash().equals(vertex.vertex().getParentVertexId())
+                ? new LinkedList<ExecutedVertex>()
+                : getPathFromRoot(vertex.vertex().getParentVertexId());
+        final var executedVertexMaybe = ledger.prepare(previous, vertex);
+        if (executedVertexMaybe.isEmpty()) {
+          logger.warn("VertexStore contains a vertex {} but it couldn't be executed", vertex);
+          return Option.none();
+        } else {
+          this.executedVertices.put(vertexHash, executedVertexMaybe.get());
+          return Option.some(executedVertexMaybe.get());
+        }
+      } else {
+        return Option.empty();
+      }
+    }
   }
 
   @Override
@@ -278,8 +295,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
 
   @Override
   public Option<BFTInsertUpdate> insertVertex(VertexWithHash vertexWithHash) {
-    ExecutedVertex v = vertices.get(vertexWithHash.hash());
-    if (v != null) {
+    if (vertices.containsKey(vertexWithHash.hash())) {
       return Option.empty();
     }
 
@@ -297,7 +313,8 @@ public final class VertexStoreJavaImpl implements VertexStore {
     final var executedVertexOption = Option.from(ledger.prepare(previous, vertexWithHash));
     return executedVertexOption.map(
         executedVertex -> {
-          vertices.put(executedVertex.getVertexHash(), executedVertex);
+          vertices.put(executedVertex.getVertexHash(), executedVertex.getVertexWithHash());
+          executedVertices.put(executedVertex.getVertexHash(), executedVertex);
           vertexChildren.put(executedVertex.getVertexHash(), new HashSet<>());
           Set<HashCode> siblings = vertexChildren.get(executedVertex.getParentId());
           siblings.add(executedVertex.getVertexHash());
@@ -309,6 +326,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
 
   private void removeVertexAndPruneInternal(HashCode vertexId, HashCode skip) {
     vertices.remove(vertexId);
+    executedVertices.remove(vertexId);
 
     if (this.rootVertex.hash().equals(vertexId)) {
       return;
@@ -336,7 +354,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     }
 
     final HashCode vertexId = header.getVertexId();
-    final VertexWithHash tipVertex = vertices.get(vertexId).getVertexWithHash();
+    final VertexWithHash tipVertex = vertices.get(vertexId);
 
     /* removeVertexAndPruneInternal skips children removal for the rootVertex, so we need to
     keep a reference to the previous root and prune it *after* new rootVertex is set.
@@ -357,13 +375,23 @@ public final class VertexStoreJavaImpl implements VertexStore {
   }
 
   @Override
+  /** Returns a path of vertices up to the root vertex (excluding the root itself) */
   public LinkedList<ExecutedVertex> getPathFromRoot(HashCode vertexId) {
     final LinkedList<ExecutedVertex> path = new LinkedList<>();
 
-    ExecutedVertex vertex = vertices.get(vertexId);
-    while (vertex != null) {
-      path.addFirst(vertex);
-      vertex = vertices.get(vertex.getParentId());
+    /* TODO: consider throwing an exception if some vertices on path couldn't be executed
+       There might be a corner case when ledger is ahead of vertex store and not-throwing
+       actually allows to still be able to get a path (the issue was more likely when vertex execution happened
+       at init - with async execution bft/ledger sync has a chance to catch up).
+    */
+    var executedVertexOpt = getExecutedVertex(vertexId);
+    while (executedVertexOpt.isPresent()) {
+      final var v = executedVertexOpt.unwrap();
+      path.addFirst(v);
+      if (v.getVertexHash().equals(v.vertex().getParentVertexId())) {
+        break;
+      }
+      executedVertexOpt = getExecutedVertex(v.vertex().getParentVertexId());
     }
 
     return path;
@@ -383,8 +411,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
       if (nextId.equals(rootVertex.hash())) {
         vertexWithHash = rootVertex;
       } else if (this.vertices.containsKey(nextId)) {
-        final ExecutedVertex executedVertex = this.vertices.get(nextId);
-        vertexWithHash = executedVertex.getVertexWithHash();
+        vertexWithHash = this.vertices.get(nextId);
       } else {
         return Option.empty();
       }

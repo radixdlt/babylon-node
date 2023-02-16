@@ -65,6 +65,7 @@
 package com.radixdlt;
 
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
@@ -134,21 +135,30 @@ public final class RadixNodeModule extends AbstractModule {
   private static final String DEFAULT_SYSTEM_API_BIND_ADDRESS = "127.0.0.1";
   private static final String DEFAULT_PROMETHEUS_API_BIND_ADDRESS = "127.0.0.1";
 
-  // XRD allocation for testnets
-  private static final Set<Network> XRD_ALLOCATION_NETWORKS =
-      Set.of(Network.NEBUNET, Network.HAMMUNET);
-  private static final Decimal XRD_ALLOCATION_AMOUNT =
+  // Genesis parameters for XRD allocation for testnets
+  private static final Set<Network> GENESIS_NETWORKS_TO_USE_POWERFUL_STAKING_ACCOUNT =
+      Set.of(
+          Network.GILGANET,
+          Network.ENKINET,
+          Network.HAMMUNET,
+          Network.MARDUNET,
+          Network.NERGALNET,
+          Network.NEBUNET);
+  private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE =
       Decimal.of(700_000_000_000L); // 70% XRD_MAX_SUPPLY
-  private static final ECDSASecp256k1PublicKey XRD_ALLOCATION_ACCOUNT_PUBLIC_KEY =
+  private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR =
+      Decimal.of(1_000_000_000L); // 0.1% XRD_MAX_SUPPLY
+  private static final ECDSASecp256k1PublicKey GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY =
       ECDSASecp256k1PublicKey.tryFromHex(
               "026f08db98ef1d0231eb15580da9123db8e25aa1747c8c32e5fd2ec47b8db73d5c")
           .unwrap();
+  private static final Decimal GENESIS_NO_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR =
+      Decimal.of(1); // Allow it to be easily changed in eg tests
 
   // Proposal constants
-  // Up to 20 txns and 5 MiB total payload size for a proposal.
-  // With a txn limit of 1 MiB, a proposal can fit at least 5 txns.
-  public static final int MAX_TRANSACTIONS_PER_PROPOSAL = 20;
-  public static final int MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE = 5 * 1024 * 1024;
+  public static final int MAX_TRANSACTIONS_PER_PROPOSAL = 4;
+  public static final int MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE = 2 * 1024 * 1024;
+  public static final int MAX_UNCOMMITTED_USER_TRANSACTIONS_TOTAL_PAYLOAD_SIZE = 2 * 1024 * 1024;
 
   private static final Logger log = LogManager.getLogger();
 
@@ -191,6 +201,7 @@ public final class RadixNodeModule extends AbstractModule {
     bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(3000L);
     bindConstant().annotatedWith(PacemakerBackoffRate.class).to(1.1);
     bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
+    bindConstant().annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class).to(30_000L);
 
     // System (e.g. time, random)
     install(new SystemModule());
@@ -203,20 +214,25 @@ public final class RadixNodeModule extends AbstractModule {
     install(new DispatcherModule());
 
     // Consensus
-    final String useGenesis = properties.get("consensus.use_genesis_for_validator_address");
+    final String useGenesisProperty = properties.get("consensus.use_genesis_for_validator_address");
+    final Option<Boolean> useGenesis =
+        Strings.isNullOrEmpty(useGenesisProperty)
+            ? Option.none()
+            : Option.some(Boolean.parseBoolean(useGenesisProperty));
     final String validatorAddress = properties.get("consensus.validator_address", (String) null);
-    if (useGenesis != null && validatorAddress != null) {
+    if (useGenesis.isPresent() && useGenesis.unwrap() && !Strings.isNullOrEmpty(validatorAddress)) {
       throw new IllegalArgumentException(
-          "Invalid configuration. Using both consensus.genesis_for_validator_address and"
+          "Invalid configuration. Using both consensus.use_genesis_for_validator_address=true and"
               + " consensus.validator_address. Please use one.");
-    } else if (validatorAddress != null) {
+    } else if (!Strings.isNullOrEmpty(validatorAddress)) {
       OptionalBinder.newOptionalBinder(binder(), Key.get(ComponentAddress.class, Self.class))
           .setBinding()
           .toInstance(addressing.decodeValidatorAddress(validatorAddress));
       install(new BFTValidatorIdModule());
-    } else if (useGenesis == null || Boolean.parseBoolean(useGenesis)) {
+    } else if (useGenesis.isEmpty() || (useGenesis.isPresent() && useGenesis.unwrap())) {
       install(new BFTValidatorIdFromGenesisModule());
     } else {
+      // No validator address provided, and use genesis explicitly disabled
       OptionalBinder.newOptionalBinder(binder(), Key.get(ComponentAddress.class, Self.class));
       install(new BFTValidatorIdModule());
     }
@@ -230,7 +246,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Mempool Relay
     install(new MempoolRelayConfig(5, 100).asModule());
-    install(new MempoolRelayerModule(10000));
+    install(new MempoolRelayerModule(20000));
 
     // Ledger Sync
     final long syncPatience = properties.get("sync.patience", 5000L);
@@ -273,14 +289,25 @@ public final class RadixNodeModule extends AbstractModule {
             .toList();
     var validatorSet =
         new HashMap<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>>();
-    final var stakingAccount =
-        Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
+    final var usePowerfulStakingAccount =
+        GENESIS_NETWORKS_TO_USE_POWERFUL_STAKING_ACCOUNT.contains(network);
 
-    initialVset.forEach(k -> validatorSet.put(k, Tuple.tuple(Decimal.of(1), stakingAccount)));
+    final var stakingAccount =
+        usePowerfulStakingAccount
+            ? Address.virtualAccountAddress(GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY)
+            : Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
+    final var stakeAmount =
+        usePowerfulStakingAccount
+            ? GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR
+            : GENESIS_NO_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR;
+
+    initialVset.forEach(k -> validatorSet.put(k, Tuple.tuple(stakeAmount, stakingAccount)));
 
     final Map<ECDSASecp256k1PublicKey, Decimal> xrdAllocations =
-        XRD_ALLOCATION_NETWORKS.contains(network)
-            ? Map.of(XRD_ALLOCATION_ACCOUNT_PUBLIC_KEY, XRD_ALLOCATION_AMOUNT)
+        usePowerfulStakingAccount
+            ? Map.of(
+                GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY,
+                GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE)
             : Map.of();
 
     log.info("Genesis XRD allocations: {}", xrdAllocations.isEmpty() ? "(empty)" : "");
@@ -299,6 +326,7 @@ public final class RadixNodeModule extends AbstractModule {
             networkId,
             MAX_TRANSACTIONS_PER_PROPOSAL,
             MAX_PROPOSAL_TOTAL_TXNS_PAYLOAD_SIZE,
+            MAX_UNCOMMITTED_USER_TRANSACTIONS_TOTAL_PAYLOAD_SIZE,
             databaseConfig,
             Option.some(mempoolConfig)));
 

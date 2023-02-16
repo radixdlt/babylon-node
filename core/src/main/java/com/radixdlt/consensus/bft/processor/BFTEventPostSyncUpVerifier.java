@@ -77,22 +77,18 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Verifies BFT events against the current round. Specifically, ensures that received proposals come
- * from a leader for the given round and that at most one such proposal is processed. Warning:
- * depends on a precondition that all received BFT events match the current round, so this processor
- * should always come after the SyncUpPreprocessor.
+ * Verifies that the BFT events are being processed at correct rounds. Ensures that
+ * SyncUpPreprocessor works correctly. Consider removing at some point.
  */
-public final class BFTEventStatefulVerifier implements BFTEventProcessor {
+public final class BFTEventPostSyncUpVerifier implements BFTEventProcessorAtCurrentRound {
   private static final Logger log = LogManager.getLogger();
 
-  private final BFTEventProcessor forwardTo;
+  private final BFTEventProcessorAtCurrentRound forwardTo;
   private final Metrics metrics;
-
   private RoundUpdate latestRoundUpdate;
-  private boolean genuineProposalReceived = false;
 
-  public BFTEventStatefulVerifier(
-      BFTEventProcessor forwardTo, Metrics metrics, RoundUpdate initialRoundUpdate) {
+  public BFTEventPostSyncUpVerifier(
+      BFTEventProcessorAtCurrentRound forwardTo, Metrics metrics, RoundUpdate initialRoundUpdate) {
     this.forwardTo = Objects.requireNonNull(forwardTo);
     this.metrics = Objects.requireNonNull(metrics);
     this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
@@ -106,17 +102,11 @@ public final class BFTEventStatefulVerifier implements BFTEventProcessor {
   @Override
   public void processRoundUpdate(RoundUpdate roundUpdate) {
     this.latestRoundUpdate = roundUpdate;
-
-    // Clear the flag
-    genuineProposalReceived = false;
-
     forwardTo.processRoundUpdate(roundUpdate);
   }
 
   @Override
   public void processVote(Vote vote) {
-    // This should never happen but adding a guard just in case (e.g. if there's a bug in
-    // SyncUpPreprocessor)
     if (!this.latestRoundUpdate.getCurrentRound().equals(vote.getRound())) {
       this.metrics.bft().preconditionViolations().inc();
       log.warn(
@@ -125,7 +115,6 @@ public final class BFTEventStatefulVerifier implements BFTEventProcessor {
           this.latestRoundUpdate.getCurrentRound());
       return;
     }
-
     forwardTo.processVote(vote);
   }
 
@@ -141,28 +130,6 @@ public final class BFTEventStatefulVerifier implements BFTEventProcessor {
           this.latestRoundUpdate.getCurrentRound());
       return;
     }
-
-    if (!proposal.getAuthor().equals(latestRoundUpdate.getLeader())) {
-      this.metrics.bft().proposalsReceivedFromNonLeaders().inc();
-      log.warn(
-          "Ignoring a proposal from non-leader node {}, current_leader is {} at round {}",
-          proposal.getAuthor(),
-          latestRoundUpdate.getLeader(),
-          latestRoundUpdate.getCurrentRound());
-      return;
-    }
-
-    if (genuineProposalReceived) {
-      this.metrics.bft().duplicateProposalsReceived().inc();
-      log.warn(
-          "Received a duplicate proposal from {} for round {}",
-          proposal.getAuthor(),
-          proposal.getRound());
-      return;
-    }
-
-    genuineProposalReceived = true;
-
     forwardTo.processProposal(proposal);
   }
 
@@ -175,7 +142,6 @@ public final class BFTEventStatefulVerifier implements BFTEventProcessor {
           this.latestRoundUpdate.getCurrentRound());
       return;
     }
-
     forwardTo.processLocalTimeout(scheduledLocalTimeout);
   }
 
@@ -188,7 +154,6 @@ public final class BFTEventStatefulVerifier implements BFTEventProcessor {
           this.latestRoundUpdate.getCurrentRound());
       return;
     }
-
     forwardTo.processRoundLeaderFailure(roundLeaderFailure);
   }
 
@@ -200,5 +165,15 @@ public final class BFTEventStatefulVerifier implements BFTEventProcessor {
   @Override
   public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
     forwardTo.processBFTRebuildUpdate(update);
+  }
+
+  @Override
+  public void preProcessUnsyncedVoteForCurrentOrFutureRound(Vote vote) {
+    forwardTo.preProcessUnsyncedVoteForCurrentOrFutureRound(vote);
+  }
+
+  @Override
+  public void preProcessUnsyncedProposalForCurrentOrFutureRound(Proposal proposal) {
+    forwardTo.preProcessUnsyncedProposalForCurrentOrFutureRound(proposal);
   }
 }

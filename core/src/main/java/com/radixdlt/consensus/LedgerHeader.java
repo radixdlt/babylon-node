@@ -110,7 +110,11 @@ public final class LedgerHeader {
   private final AccumulatorState accumulatorState;
 
   @JsonProperty("state_hash")
-  @DsonOutput(Output.ALL)
+  // TODO: restore `Output.ALL` after fixing non-determinism bugs
+  // One such bug is exposed by `recovery_should_work_when_consensus_is_behind_ledger()` test.
+  // For this reason, the state hash cannot be currently included in the DSON-based hashing (used
+  // e.g. in `QuorumCertificate` to get a hash of `VoteData`).
+  @DsonOutput(value = Output.HASH, include = false)
   private final HashCode stateHash;
 
   @JsonProperty("consensus_parent_round_timestamp_ms")
@@ -299,7 +303,7 @@ public final class LedgerHeader {
   @Override
   public String toString() {
     return String.format(
-        "%s{accumulator=%s stateHash=&s consensus_parent_round_timestamp=%s proposer_timestamp=%s"
+        "%s{accumulator=%s stateHash=%s consensus_parent_round_timestamp=%s proposer_timestamp=%s"
             + " epoch=%s round=%s nextEpoch=%s}",
         getClass().getSimpleName(),
         this.accumulatorState,

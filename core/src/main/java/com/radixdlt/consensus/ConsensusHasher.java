@@ -90,8 +90,9 @@ public final class ConsensusHasher {
         outputStream.writeLong(header.getRound().number()); // 8 bytes
         outputStream.writeLong(header.consensusParentRoundTimestamp()); // 8 bytes
         outputStream.writeLong(header.proposerTimestamp()); // 8 bytes
-        if (header.getNextEpoch().isPresent()) {
-          var nextEpoch = header.getNextEpoch().get();
+        var optNextEpoch = header.getNextEpoch();
+        if (optNextEpoch.isPresent()) {
+          var nextEpoch = optNextEpoch.get();
           outputStream.writeByte(1); // 1 byte
           outputStream.writeInt(nextEpoch.getValidators().size()); // 4 bytes
           outputStream.writeLong(nextEpoch.getEpoch()); // 8 bytes

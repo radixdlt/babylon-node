@@ -75,6 +75,7 @@ import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.*;
 import com.google.inject.Module;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.*;
@@ -101,6 +102,7 @@ import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.LedgerModule;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
@@ -225,6 +227,7 @@ public class EpochManagerTest {
         bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
         bind(ProposalGenerator.class).toInstance(proposalGenerator);
         bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
+        bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
         bind(Mempool.class).toInstance(mempool);
         bind(StateComputer.class).toInstance(stateComputer);
         bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
@@ -235,6 +238,7 @@ public class EpochManagerTest {
         bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(10L);
         bindConstant().annotatedWith(PacemakerBackoffRate.class).to(2.0);
         bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
+        bindConstant().annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class).to(10L);
         bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 
         bind(new TypeLiteral<Consumer<EpochRoundUpdate>>() {}).toInstance(rmock(Consumer.class));

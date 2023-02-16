@@ -103,6 +103,7 @@ public class SystemApiModule extends AbstractModule {
             binder(), HandlerRoute.class, HttpHandler.class, SystemApiEndpoints.class);
     binder.addBinding(HandlerRoute.get("/system/configuration")).to(ConfigurationHandler.class);
     binder.addBinding(HandlerRoute.get("/system/health")).to(HealthHandler.class);
+    binder.addBinding(HandlerRoute.get("/system/identity")).to(IdentityHandler.class);
     binder.addBinding(HandlerRoute.get("/system/version")).to(VersionHandler.class);
     binder.addBinding(HandlerRoute.get("/system/peers")).to(PeersHandler.class);
     binder.addBinding(HandlerRoute.get("/system/addressbook")).to(AddressBookHandler.class);

@@ -139,7 +139,7 @@ public final class EventLoggerModule extends AbstractModule {
         EpochLocalTimeoutOccurrence.class,
         t ->
             logger.warn(
-                "bft_timout{epoch={} round={} leader={} nextLeader={} count={}}",
+                "bft_timeout{epoch={} round={} leader={} nextLeader={} count={}}",
                 t.getEpochRound().getEpoch(),
                 t.getEpochRound().getRound().number(),
                 nodeString.apply(t.getLeader()),

@@ -65,7 +65,8 @@
 package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.monitoring.Metrics.RoundChange.CertificateType;
+import com.radixdlt.monitoring.Metrics.RoundChange.HighQcSource;
 
 /**
  * Reduces state for a pacemaker given some events TODO: This is currently hack, should move to a
@@ -76,14 +77,8 @@ public interface PacemakerReducer {
    * Signifies to the pacemaker that a quorum has agreed that a round has been completed.
    *
    * @param highQC the sync info for the round
+   * @param highQcSource the source of highQc, used for updating the metrics
+   * @param certificateType the type of the certificate to process, used for updating the metrics
    */
-  void processQC(HighQC highQC);
-
-  /**
-   * Signifies to the pacemaker that it should move to the next round TODO: Replace or combine with
-   * processQC on implementation of timeout quorum
-   *
-   * @param nextRound the round to move to
-   */
-  void updateRound(Round nextRound);
+  void processQC(HighQC highQC, HighQcSource highQcSource, CertificateType certificateType);
 }

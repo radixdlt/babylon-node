@@ -183,6 +183,9 @@ public class MetricsInitializer {
       Summary summary = buildTimeMeasuringSummary(name).create();
       return new LeafWithCollector(new Timer(summary.labels()), summary);
     }
+    if (type == Summary.class) {
+      return new LeafWithCollector(Summary.build(name, name).create());
+    }
     if (type == GetterGauge.class) {
       return new LeafWithCollector(new GetterGauge(name));
     }

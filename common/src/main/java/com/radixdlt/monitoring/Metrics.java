@@ -164,20 +164,25 @@ public record Metrics(
       Counter successfullyProcessedVotes,
       Counter successfullyProcessedProposals,
       Counter preconditionViolations,
-      Counter proposalsReceivedFromNonLeaders,
       Counter duplicateProposalsReceived,
       Counter eventsReceived,
       Counter committedVertices,
       Counter noVotesSent,
       Counter voteQuorums,
       Counter timeoutQuorums,
+      Counter extendedRoundTimeouts,
+      LabelledCounter<RoundChange> roundChanges,
       Timer consensusEventsQueueWait,
       LabelledCounter<RejectedConsensusEvent> rejectedConsensusEvents,
       GetterGauge validatorCount,
       GetterGauge inValidatorSet,
       Pacemaker pacemaker,
       Sync sync,
-      VertexStore vertexStore) {
+      VertexStore vertexStore,
+      Summary leaderMaxProposalPayloadSize,
+      Summary leaderNumTransactionsIncludedInProposal,
+      Summary leaderTransactionBytesIncludedInProposal,
+      Summary leaderTransactionBytesIncludedInProposalAndPreviousVertices) {
 
     public record Pacemaker(
         Counter timeoutsSent,
@@ -185,7 +190,8 @@ public record Metrics(
         Counter proposedTransactions,
         Counter proposalsSent,
         Counter timedOutRounds,
-        Counter proposalsWithSubstituteTimestamp) {}
+        Counter proposalsWithSubstituteTimestamp,
+        Timer roundDuration) {}
 
     public record Sync(Counter requestsSent, Counter requestsReceived, Counter requestTimeouts) {}
 
@@ -278,6 +284,26 @@ public record Metrics(
               .map(Method::getName)
               .filter(Predicates.equalTo(methodName))
               .collect(MoreCollectors.onlyElement()));
+    }
+  }
+
+  public record RoundChange(
+      String leaderKey,
+      String leaderComponentAddress,
+      HighQcSource highQcSource,
+      CertificateType certificateType) {
+    public enum HighQcSource {
+      CREATED_ON_RECEIVED_NON_TIMEOUT_VOTE,
+      CREATED_ON_RECEIVED_TIMEOUT_VOTE,
+      RECEIVED_ALONG_WITH_PROPOSAL,
+      RECEIVED_ALONG_WITH_VOTE,
+      RECEIVED_IN_BFT_SYNC_VERTICES_ERROR_RESPONSE
+    }
+
+    public enum CertificateType {
+      QC_ON_REGULAR_VERTEX,
+      QC_ON_TIMEOUT_VERTEX,
+      TC
     }
   }
 

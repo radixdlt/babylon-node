@@ -155,7 +155,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
                 new FunctionalRadixNodeModule(
                     false,
                     SafetyRecoveryConfig.mocked(),
-                    ConsensusConfig.of(pacemakerTimeout),
+                    ConsensusConfig.of(pacemakerTimeout, 0L),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                         StateComputerConfig.mockedNoEpochs(
                             numValidatorNodes, MockedMempoolConfig.noMempool()))));
