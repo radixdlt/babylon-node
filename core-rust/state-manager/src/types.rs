@@ -387,18 +387,7 @@ impl HasIntentHash for NotarizedTransaction {
     }
 }
 
-#[derive(
-    PartialEq,
-    Eq,
-    Hash,
-    Clone,
-    Copy,
-    PartialOrd,
-    Ord,
-    ScryptoCategorize,
-    ScryptoEncode,
-    ScryptoDecode,
-)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Categorize, Encode, Decode)]
 pub struct StateHash([u8; Self::LENGTH]);
 
 impl StateHash {
@@ -480,7 +469,7 @@ pub enum CommitError {
     MissingEpochProof,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Categorize, Encode, Decode)]
 pub struct CommitRequest {
     pub transaction_payloads: Vec<Vec<u8>>,
     pub proof_state_version: u64, // TODO: Use actual proof to get the state version...
