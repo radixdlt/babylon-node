@@ -518,7 +518,7 @@ public class SborTest {
   }
 
   @Test
-  public void objectTreeCanBeEncodedAndDecodedWithEitherStructCodec() {
+  public void objectTreeCanBeEncodedAndDecodedWithAnyStructCodec() {
     var testValue = new SimpleRecord(1234567, "Some string", Either.left(4567L), some(false));
 
     // PART 1 - We use codec variant 1 (StructCodec.with)
@@ -548,6 +548,20 @@ public class SborTest {
     var decoded2 = sborUsingFromFields.decode_payload(encoded2, SimpleRecord.class);
 
     assertEquals(testValue, decoded2);
+
+    // PART 3 - We use codec variant 3 (StructCodec.fromRecordComponents), and check they match
+    var sborUsingFromRecordComponents =
+        new BasicSbor(
+            new CodecMap()
+                .register(SimpleRecord::registerCodecUsingStructCodecFromRecordComponents));
+
+    var encoded3 = sborUsingFromRecordComponents.encode_payload(testValue, SimpleRecord.class);
+
+    assertArrayEquals(encoded2, encoded3);
+
+    var decoded3 = sborUsingFromRecordComponents.decode_payload(encoded3, SimpleRecord.class);
+
+    assertEquals(testValue, decoded3);
   }
 
   @Test

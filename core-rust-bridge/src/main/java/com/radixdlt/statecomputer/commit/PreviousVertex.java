@@ -65,7 +65,6 @@
 package com.radixdlt.statecomputer.commit;
 
 import com.google.common.hash.HashCode;
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transactions.RawLedgerTransaction;
@@ -76,11 +75,6 @@ public record PreviousVertex(
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PreviousVertex.class,
-        codecs ->
-            StructCodec.with(
-                PreviousVertex::new,
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(HashCode.class),
-                (t, encoder) -> encoder.encode(t.transactions, t.resultantAccumulatorHash)));
+        codecs -> StructCodec.fromRecordComponents(PreviousVertex.class, codecs));
   }
 }

@@ -65,7 +65,6 @@
 package com.radixdlt.statecomputer.commit;
 
 import com.google.common.hash.HashCode;
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.sbor.codec.CodecMap;
@@ -80,13 +79,6 @@ public record PrepareResult(
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PrepareResult.class,
-        codecs ->
-            StructCodec.with(
-                PrepareResult::new,
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                (t, encoder) -> encoder.encode(t.committed, t.rejected, t.nextEpoch, t.stateHash)));
+        codecs -> StructCodec.fromRecordComponents(PrepareResult.class, codecs));
   }
 }

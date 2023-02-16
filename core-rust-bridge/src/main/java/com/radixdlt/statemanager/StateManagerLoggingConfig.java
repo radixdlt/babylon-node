@@ -64,7 +64,6 @@
 
 package com.radixdlt.statemanager;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
@@ -72,11 +71,7 @@ public record StateManagerLoggingConfig(boolean logOnTransactionRejection) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         StateManagerLoggingConfig.class,
-        codecs ->
-            StructCodec.with(
-                StateManagerLoggingConfig::new,
-                codecs.of(new TypeToken<>() {}),
-                (s, encoder) -> encoder.encode(s.logOnTransactionRejection)));
+        codecs -> StructCodec.fromRecordComponents(StateManagerLoggingConfig.class, codecs));
   }
 
   public static StateManagerLoggingConfig getDefault() {

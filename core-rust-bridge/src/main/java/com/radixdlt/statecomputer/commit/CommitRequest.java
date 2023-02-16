@@ -65,7 +65,6 @@
 package com.radixdlt.statecomputer.commit;
 
 import com.google.common.hash.HashCode;
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
@@ -84,21 +83,7 @@ public record CommitRequest(
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         CommitRequest.class,
-        codecs ->
-            StructCodec.with(
-                CommitRequest::new,
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(UInt64.class),
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                (t, encoder) ->
-                    encoder.encode(
-                        t.transactions,
-                        t.stateVersion,
-                        t.stateHash,
-                        t.proofBytes,
-                        t.postCommitVertexStoreBytes)));
+        codecs -> StructCodec.fromRecordComponents(CommitRequest.class, codecs));
   }
 
   @Override

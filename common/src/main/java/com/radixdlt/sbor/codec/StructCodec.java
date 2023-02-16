@@ -64,11 +64,17 @@
 
 package com.radixdlt.sbor.codec;
 
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Functions;
 import com.radixdlt.sbor.codec.FieldsEncoders.*;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.RecordComponent;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 @SuppressWarnings("unused")
 public interface StructCodec<T> extends Codec<T> {
@@ -416,5 +422,58 @@ public interface StructCodec<T> extends Codec<T> {
         Fields.of(
             creator, field1, field2, field3, field4, field5, field6, field7, field8, field9,
             field10, field11, field12));
+  }
+
+  // Convenience methods for using Variant 2 (Fields) with Records.
+
+  static <R extends Record> StructCodec<R> fromRecordComponents(
+      Class<R> recordClass, CodecMap.CodecResolver codecs) {
+    return fromRecordComponents(TypeToken.of(recordClass), codecs);
+  }
+
+  @SuppressWarnings("unchecked")
+  static <R extends Record> StructCodec<R> fromRecordComponents(
+      TypeToken<R> recordType, CodecMap.CodecResolver codecs) {
+    RecordComponent[] components = recordType.getRawType().getRecordComponents();
+    List<? extends Field<R, ?>> fields =
+        Stream.of(components).map(component -> toField(recordType, codecs, component)).toList();
+    Constructor<? super R> recordConstructor;
+    try {
+      recordConstructor =
+          recordType
+              .getRawType()
+              .getConstructor(
+                  Stream.of(components).map(RecordComponent::getType).toArray(Class<?>[]::new));
+    } catch (NoSuchMethodException nsme) {
+      throw new IllegalStateException(
+          "guaranteed canonical Record constructor not found on %s".formatted(recordType), nsme);
+    }
+    Functions.Func1<List<?>, R> constructor =
+        argumentList -> {
+          try {
+            return (R) recordConstructor.newInstance(argumentList.toArray());
+          } catch (ReflectiveOperationException roe) {
+            throw new IllegalStateException(
+                "failed to invoke %s with %s".formatted(recordConstructor, argumentList), roe);
+          }
+        };
+    return of(Fields.arbitrary(constructor, (List<Field<R, ?>>) fields));
+  }
+
+  @SuppressWarnings("unchecked")
+  private static <R, C> Field<R, C> toField(
+      TypeToken<R> recordType, CodecMap.CodecResolver codecs, RecordComponent component) {
+    Function<R, C> componentGetter =
+        record -> {
+          try {
+            return (C) component.getAccessor().invoke(record);
+          } catch (ReflectiveOperationException roe) {
+            throw new IllegalStateException(
+                "failed to invoke %s on %s".formatted(component.getAccessor(), record), roe);
+          }
+        };
+    TypeToken<C> componentType = (TypeToken<C>) recordType.resolveType(component.getGenericType());
+    Codec<C> componentCodec = codecs.of(componentType);
+    return Field.of(componentGetter, componentCodec);
   }
 }
