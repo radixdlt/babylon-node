@@ -630,6 +630,23 @@ public class SborTest {
     assertArrayEquals(encodedEnumTwo, encodedEnumTwoV2);
     var decodedEnumTwoV2 = sborUsingFromEntries.decode_payload(encodedEnumTwo, SimpleEnum.class);
     assertEquals(decodedEnumTwoV2, decodedEnumTwo);
+
+    // PART 2 - We use codec variant 2 (EnumEntry.fromEntries)
+    var sborUsingPermRecSubcls =
+        new BasicSbor(
+            new CodecMap().register(SimpleEnum::registerCodecUsingPermittedRecordSubclasses));
+
+    // Check Enum 1
+    var encodedEnumOneV3 = sborUsingPermRecSubcls.encode_payload(enumOne, SimpleEnum.class);
+    assertArrayEquals(encodedEnumOne, encodedEnumOneV3);
+    var decodedEnumOneV3 = sborUsingPermRecSubcls.decode_payload(encodedEnumOne, SimpleEnum.class);
+    assertEquals(decodedEnumOneV3, decodedEnumOne);
+
+    // Check Enum 2
+    var encodedEnumTwoV3 = sborUsingPermRecSubcls.encode_payload(enumTwo, SimpleEnum.class);
+    assertArrayEquals(encodedEnumTwo, encodedEnumTwoV3);
+    var decodedEnumTwoV3 = sborUsingPermRecSubcls.decode_payload(encodedEnumTwo, SimpleEnum.class);
+    assertEquals(decodedEnumTwoV3, decodedEnumTwo);
   }
 
   private record SborTestCase<T>(T value, TypeToken<T> type) {}

@@ -121,6 +121,12 @@ public sealed interface SimpleEnum {
                     B.class, B::new, Field.of(B::param1, codecs.of(new TypeToken<>() {})))));
   }
 
+  static void registerCodecUsingPermittedRecordSubclasses(CodecMap codecMap) {
+    codecMap.registerForSealedClassAndSubclasses(
+        SimpleEnum.class,
+        codecs -> EnumCodec.fromPermittedRecordSubclasses(SimpleEnum.class, codecs));
+  }
+
   record A(int first, String second) implements SimpleEnum {}
 
   record B(Either<Long, String> param1) implements SimpleEnum {}
