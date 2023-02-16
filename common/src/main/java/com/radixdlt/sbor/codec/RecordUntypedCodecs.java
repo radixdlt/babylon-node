@@ -68,25 +68,22 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Functions;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.RecordComponent;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 /** Static utilities for creating {@link UntypedCodec}s of {@link Record} classes. */
-public abstract class RecordUntypedCodecs {
-
-  private RecordUntypedCodecs() {}
+public interface RecordUntypedCodecs {
 
   /**
    * Creates a {@link Fields}-based codec that directly infers all the component types from the
    * structure of the given {@link Record} class.
    */
   @SuppressWarnings("unchecked")
-  public static <R extends Record> UntypedCodec<R> create(
+  static <R extends Record> UntypedCodec<R> create(
       TypeToken<R> recordType, CodecMap.CodecResolver codecs) {
     RecordComponent[] components = recordType.getRawType().getRecordComponents();
-    List<? extends Field<R, ?>> fields =
-        Stream.of(components).map(component -> toField(recordType, codecs, component)).toList();
     Constructor<? super R> recordConstructor;
     try {
       recordConstructor =
@@ -107,19 +104,24 @@ public abstract class RecordUntypedCodecs {
                 "failed to invoke %s with %s".formatted(recordConstructor, argumentList), roe);
           }
         };
-    return Fields.arbitrary(constructor, (List<Field<R, ?>>) fields);
+    Field<R, ?>[] fields =
+        (Field<R, ?>[])
+            Stream.of(components)
+                .map(component -> toField(recordType, codecs, component))
+                .toArray(Field<?, ?>[]::new);
+    return Fields.arbitrary(constructor, Arrays.asList(fields));
   }
 
   @SuppressWarnings("unchecked")
   private static <R, C> Field<R, C> toField(
       TypeToken<R> recordType, CodecMap.CodecResolver codecs, RecordComponent component) {
     Function<R, C> componentGetter =
-        record -> {
+        recordObject -> {
           try {
-            return (C) component.getAccessor().invoke(record);
+            return (C) component.getAccessor().invoke(recordObject);
           } catch (ReflectiveOperationException roe) {
             throw new IllegalStateException(
-                "failed to invoke %s on %s".formatted(component.getAccessor(), record), roe);
+                "failed to invoke %s on %s".formatted(component.getAccessor(), recordObject), roe);
           }
         };
     TypeToken<C> componentType = (TypeToken<C>) recordType.resolveType(component.getGenericType());
