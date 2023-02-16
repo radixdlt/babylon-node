@@ -69,6 +69,7 @@ import com.google.common.hash.HashCode;
 import com.google.inject.*;
 import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.VertexStoreState;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -154,7 +155,8 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
                 // This is a workaround for the mocking to keep things lightweight
                 .map(tx -> new MockExecuted(tx.INCORRECTInterpretDirectlyAsRawLedgerTransaction()))
                 .collect(Collectors.toList()),
-            Map.of());
+            Map.of(),
+            HashUtils.zero256());
       }
 
       @Override

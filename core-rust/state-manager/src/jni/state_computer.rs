@@ -74,7 +74,7 @@ use std::collections::BTreeMap;
 
 use crate::jni::utils::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
-use crate::{CommitError, NextEpoch, PrepareGenesisRequest, PrepareGenesisResult};
+use crate::{CommitError, NextEpoch, PrepareGenesisRequest, PrepareGenesisResult, StateHash};
 
 use super::mempool::JavaHashCode;
 use super::state_manager::ActualStateManager;
@@ -320,6 +320,7 @@ pub struct JavaPrepareResult {
     pub committed: Vec<Vec<u8>>,
     pub rejected: Vec<(Vec<u8>, String)>,
     pub next_epoch: Option<NextEpoch>,
+    pub state_hash: JavaStateHash,
 }
 
 impl From<PrepareResult> for JavaPrepareResult {
@@ -328,6 +329,7 @@ impl From<PrepareResult> for JavaPrepareResult {
             committed: prepare_results.committed,
             rejected: prepare_results.rejected,
             next_epoch: prepare_results.next_epoch,
+            state_hash: prepare_results.state_hash.into(),
         }
     }
 }
@@ -348,13 +350,24 @@ impl From<JavaPrepareGenesisRequest> for PrepareGenesisRequest {
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPrepareGenesisResult {
     pub validator_set: Option<BTreeMap<ComponentAddress, Validator>>,
+    pub state_hash: JavaStateHash,
 }
 
 impl From<PrepareGenesisResult> for JavaPrepareGenesisResult {
-    fn from(prepare_results: PrepareGenesisResult) -> Self {
+    fn from(prepare_result: PrepareGenesisResult) -> Self {
         JavaPrepareGenesisResult {
-            validator_set: prepare_results.validator_set,
+            validator_set: prepare_result.validator_set,
+            state_hash: prepare_result.state_hash.into(),
         }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Categorize, Encode, Decode)]
+pub struct JavaStateHash(Vec<u8>);
+
+impl From<StateHash> for JavaStateHash {
+    fn from(state_hash: StateHash) -> Self {
+        Self(state_hash.into_bytes().to_vec())
     }
 }
 

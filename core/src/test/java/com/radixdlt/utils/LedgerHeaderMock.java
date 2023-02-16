@@ -72,6 +72,11 @@ import com.radixdlt.ledger.AccumulatorState;
 public class LedgerHeaderMock {
   public static LedgerHeader get() {
     return LedgerHeader.create(
-        0, Round.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0, 0);
+        0,
+        Round.genesis(),
+        new AccumulatorState(0, HashUtils.zero256()),
+        HashUtils.zero256(),
+        0,
+        0);
   }
 }

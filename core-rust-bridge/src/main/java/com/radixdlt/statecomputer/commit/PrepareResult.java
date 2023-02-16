@@ -64,6 +64,7 @@
 
 package com.radixdlt.statecomputer.commit;
 
+import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
@@ -74,7 +75,8 @@ import java.util.List;
 public record PrepareResult(
     List<byte[]> committed,
     List<Tuple.Tuple2<byte[], String>> rejected,
-    Option<NextEpoch> nextEpoch) {
+    Option<NextEpoch> nextEpoch,
+    HashCode stateHash) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PrepareResult.class,
@@ -84,6 +86,7 @@ public record PrepareResult(
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
-                (t, encoder) -> encoder.encode(t.committed, t.rejected, t.nextEpoch)));
+                codecs.of(new TypeToken<>() {}),
+                (t, encoder) -> encoder.encode(t.committed, t.rejected, t.nextEpoch, t.stateHash)));
   }
 }

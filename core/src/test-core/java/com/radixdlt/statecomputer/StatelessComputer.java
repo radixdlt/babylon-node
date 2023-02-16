@@ -73,6 +73,7 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
@@ -150,7 +151,8 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
     successCount += successfulTransactions.size();
     invalidCount += invalidTransactions.size();
 
-    return new StateComputerLedger.StateComputerResult(successfulTransactions, invalidTransactions);
+    return new StateComputerLedger.StateComputerResult(
+        successfulTransactions, invalidTransactions, HashUtils.zero256());
   }
 
   private LedgerUpdate generateLedgerUpdate(CommittedTransactionsWithProof txnsAndProof) {
@@ -168,6 +170,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
                           nextEpoch.getEpoch(),
                           Round.genesis(),
                           header.getAccumulatorState(),
+                          header.getStateHash(),
                           header.consensusParentRoundTimestamp(),
                           header.proposerTimestamp());
                   QuorumCertificate initialEpochQC =

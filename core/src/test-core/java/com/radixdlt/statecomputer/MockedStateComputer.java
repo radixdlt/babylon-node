@@ -80,6 +80,7 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
@@ -127,7 +128,8 @@ public final class MockedStateComputer implements StateComputer {
         proposedTransactions.stream()
             .map(tx -> new MockExecuted(tx.INCORRECTInterpretDirectlyAsRawLedgerTransaction()))
             .collect(Collectors.toList()),
-        Map.of());
+        Map.of(),
+        HashUtils.zero256());
   }
 
   @Override
@@ -147,6 +149,7 @@ public final class MockedStateComputer implements StateComputer {
                           nextEpoch.getEpoch(),
                           Round.genesis(),
                           header.getAccumulatorState(),
+                          header.getStateHash(),
                           header.consensusParentRoundTimestamp(),
                           header.proposerTimestamp());
                   QuorumCertificate initialEpochQC =

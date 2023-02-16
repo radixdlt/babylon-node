@@ -584,18 +584,19 @@ where
 
         let parent_accumulator_hash = AccumulatorHash::pre_genesis();
 
-        let (_, executed) = self.execute_for_staging_with_cache(
+        let (_, processed) = self.execute_for_staging_with_cache(
             &parent_accumulator_hash,
             &executable,
             &parsed_transaction.get_hash(),
         );
-        match &executed.receipt().result {
+        match &processed.receipt().result {
             TransactionResult::Commit(commit) => match &commit.outcome {
                 TransactionOutcome::Success(..) => PrepareGenesisResult {
                     validator_set: commit
                         .next_epoch
                         .clone()
                         .map(|(validator_set, _)| validator_set),
+                    state_hash: *processed.state_hash(),
                 },
                 TransactionOutcome::Failure(error) => {
                     panic!("Genesis failed. Error: {:?}", error)
@@ -639,7 +640,7 @@ where
         already_committed_or_prepared_intent_hashes
             .extend(already_committed_proposed_intent_hashes);
 
-        let mut parent_accumulator_hash = self.store.get_top_accumulator_hash();
+        let mut state_tracker = StateTracker::initial(self.store.get_top_accumulator_hash());
 
         let already_prepared_payloads: Vec<_> = prepare_request
             .prepared_vertices
@@ -671,14 +672,14 @@ where
             .expect("Already prepared tranasctions should be valid");
 
             let (new_accumulator_hash, processed) = self.execute_for_staging_with_cache(
-                &parent_accumulator_hash,
+                state_tracker.accumulator_hash(),
                 &executable,
                 &parsed_transaction.get_hash(),
             );
             match &processed.receipt().result {
                 TransactionResult::Commit(_) => {
                     // TODO: Do we need to check that next epoch request has been prepared?
-                    parent_accumulator_hash = new_accumulator_hash;
+                    state_tracker.update(new_accumulator_hash, *processed.state_hash());
                 }
                 TransactionResult::Reject(reject_result) => {
                     panic!(
@@ -705,7 +706,7 @@ where
         let executable = prepared_txn.to_executable();
         let validator_txn = LedgerTransaction::Validator(validator_transaction);
         let (new_accumulator_hash, processed) = self.execute_for_staging_with_cache(
-            &parent_accumulator_hash,
+            state_tracker.accumulator_hash(),
             &executable,
             &validator_txn.get_hash(),
         );
@@ -715,7 +716,7 @@ where
                     panic!("Validator txn failed: {:?}", error);
                 }
 
-                parent_accumulator_hash = new_accumulator_hash;
+                state_tracker.update(new_accumulator_hash, *processed.state_hash());
                 committed.push(scrypto_encode(&validator_txn).unwrap());
 
                 commit_result.next_epoch.clone().map(|e| NextEpoch {
@@ -792,14 +793,14 @@ where
                     .create_payload_and_hash()
                     .unwrap();
                 let (new_accumulator_hash, processed) = self.execute_for_staging_with_cache(
-                    &parent_accumulator_hash,
+                    state_tracker.accumulator_hash(),
                     &executable,
                     &hash,
                 );
 
                 match &processed.receipt().result {
                     TransactionResult::Commit(result) => {
-                        parent_accumulator_hash = new_accumulator_hash;
+                        state_tracker.update(new_accumulator_hash, *processed.state_hash());
 
                         already_committed_or_prepared_intent_hashes
                             .insert(intent_hash, AlreadyPreparedTransaction::Proposed);
@@ -884,7 +885,36 @@ where
             committed,
             rejected: rejected_payloads,
             next_epoch,
+            state_hash: state_tracker.into_final_state_hash(),
         }
+    }
+}
+
+struct StateTracker {
+    accumulator_hash: AccumulatorHash,
+    state_hash: Option<StateHash>,
+}
+
+impl StateTracker {
+    pub fn initial(accumulator_hash: AccumulatorHash) -> Self {
+        Self {
+            accumulator_hash,
+            state_hash: None,
+        }
+    }
+
+    pub fn accumulator_hash(&self) -> &AccumulatorHash {
+        &self.accumulator_hash
+    }
+
+    pub fn update(&mut self, accumulator_hash: AccumulatorHash, state_hash: StateHash) {
+        self.accumulator_hash = accumulator_hash;
+        self.state_hash = Some(state_hash);
+    }
+
+    pub fn into_final_state_hash(self) -> StateHash {
+        self.state_hash
+            .expect("at least round update transaction must have succeeded")
     }
 }
 

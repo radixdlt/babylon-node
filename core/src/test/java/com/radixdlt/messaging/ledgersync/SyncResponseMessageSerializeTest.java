@@ -81,7 +81,7 @@ public class SyncResponseMessageSerializeTest extends SerializeMessageObject<Syn
     return new SyncResponseMessage(
         new CommittedTransactionsWithProofDto(
             ImmutableList.of(),
-            LedgerProof.genesis(accumulatorState, null, 0, 0).toDto(),
-            LedgerProof.genesis(accumulatorState, null, 0, 0).toDto()));
+            LedgerProof.genesis(accumulatorState, HashUtils.zero256(), null, 0, 0).toDto(),
+            LedgerProof.genesis(accumulatorState, HashUtils.zero256(), null, 0, 0).toDto()));
   }
 }

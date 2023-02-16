@@ -69,8 +69,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.crypto.HashUtils;
@@ -91,10 +91,7 @@ import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -137,7 +134,7 @@ public class StateComputerLedgerTest {
     this.accumulatorVerifier = new SimpleLedgerAccumulatorAndVerifier(hasher);
 
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    this.ledgerHeader = LedgerHeader.genesis(accumulatorState, null, 0, 0);
+    this.ledgerHeader = LedgerHeader.genesis(accumulatorState, HashUtils.zero256(), null, 0, 0);
     this.genesisVertex = Vertex.createInitialEpochVertex(ledgerHeader).withId(hasher);
     this.initialEpochQC = QuorumCertificate.createInitialEpochQC(genesisVertex, ledgerHeader);
     this.currentLedgerHeader =
@@ -163,6 +160,7 @@ public class StateComputerLedgerTest {
             genesisEpoch,
             Round.of(5),
             new AccumulatorState(genesisStateVersion, HashUtils.zero256()),
+            HashUtils.zero256(),
             12345,
             12345,
             endOfEpoch
@@ -194,7 +192,7 @@ public class StateComputerLedgerTest {
     // Arrange
     genesisIsEndOfEpoch(false);
     when(stateComputer.prepare(any(), any(), any(), any()))
-        .thenReturn(new StateComputerResult(ImmutableList.of(), ImmutableMap.of()));
+        .thenReturn(new StateComputerResult(ImmutableList.of(), Map.of(), HashUtils.zero256()));
     var proposedVertex =
         Vertex.create(initialEpochQC, Round.of(1), List.of(), BFTValidatorId.random(), 0L)
             .withId(hasher);
@@ -219,7 +217,7 @@ public class StateComputerLedgerTest {
     when(stateComputer.prepare(any(), any(), any(), any()))
         .thenReturn(
             new StateComputerResult(
-                ImmutableList.of(successfulNextTransaction), ImmutableMap.of()));
+                ImmutableList.of(successfulNextTransaction), Map.of(), HashUtils.zero256()));
     var proposedVertex =
         Vertex.create(
                 initialEpochQC, Round.of(1), List.of(nextTransaction), BFTValidatorId.random(), 0)
@@ -245,7 +243,7 @@ public class StateComputerLedgerTest {
     when(stateComputer.prepare(any(), any(), any(), any()))
         .thenReturn(
             new StateComputerResult(
-                ImmutableList.of(successfulNextTransaction), ImmutableMap.of()));
+                ImmutableList.of(successfulNextTransaction), Map.of(), HashUtils.zero256()));
 
     // Act
     var proposedVertex =
@@ -269,17 +267,38 @@ public class StateComputerLedgerTest {
   }
 
   @Test
+  public void should_propagate_state_hash_from_result() {
+    // Arrange
+    HashCode stateHash = HashUtils.random256();
+    when(stateComputer.prepare(any(), any(), any(), any()))
+        .thenReturn(
+            new StateComputerResult(
+                ImmutableList.of(successfulNextTransaction), Map.of(), stateHash));
+
+    // Act
+    var proposedVertex =
+        Vertex.create(
+                initialEpochQC, Round.of(1), List.of(nextTransaction), BFTValidatorId.random(), 0)
+            .withId(hasher);
+    ExecutedVertex nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex).get();
+
+    // Assert
+    assertThat(nextPrepared.getLedgerHeader().getStateHash()).isEqualTo(stateHash);
+  }
+
+  @Test
   public void should_do_nothing_if_committing_lower_state_version() {
     // Arrange
     genesisIsEndOfEpoch(false);
     when(stateComputer.prepare(any(), any(), any(), any()))
         .thenReturn(
             new StateComputerResult(
-                ImmutableList.of(successfulNextTransaction), ImmutableMap.of()));
+                ImmutableList.of(successfulNextTransaction), Map.of(), HashUtils.zero256()));
     final AccumulatorState accumulatorState =
         new AccumulatorState(genesisStateVersion - 1, HashUtils.zero256());
     final LedgerHeader ledgerHeader =
-        LedgerHeader.create(genesisEpoch, Round.of(2), accumulatorState, 1234, 1234);
+        LedgerHeader.create(
+            genesisEpoch, Round.of(2), accumulatorState, HashUtils.zero256(), 1234, 1234);
     final LedgerProof header =
         new LedgerProof(HashUtils.random256(), ledgerHeader, new TimestampedECDSASignatures());
     var verified =
