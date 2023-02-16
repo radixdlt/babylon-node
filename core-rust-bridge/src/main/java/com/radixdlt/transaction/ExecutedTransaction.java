@@ -64,7 +64,6 @@
 
 package com.radixdlt.transaction;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.ResourceAddress;
 import com.radixdlt.sbor.codec.CodecMap;
@@ -84,21 +83,7 @@ public record ExecutedTransaction(
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         ExecutedTransaction.class,
-        codecs ->
-            StructCodec.with(
-                ExecutedTransaction::new,
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                (t, encoder) ->
-                    encoder.encode(
-                        t.status,
-                        t.ledgerReceiptBytes,
-                        t.transactionBytes,
-                        t.newComponentAddresses,
-                        t.newResourceAddresses)));
+        codecs -> StructCodec.fromRecordComponents(ExecutedTransaction.class, codecs));
   }
 
   public RawLedgerTransaction rawTransaction() {

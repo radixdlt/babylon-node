@@ -72,13 +72,7 @@ public record NetworkDefinition(byte id, String logical_name, String hrp_suffix)
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         NetworkDefinition.class,
-        codecs ->
-            StructCodec.with(
-                NetworkDefinition::new,
-                codecs.of(byte.class),
-                codecs.of(String.class),
-                codecs.of(String.class),
-                (t, encoder) -> encoder.encode(t.id, t.logical_name, t.hrp_suffix)));
+        codecs -> StructCodec.fromRecordComponents(NetworkDefinition.class, codecs));
   }
 
   public static NetworkDefinition from(Network network) {

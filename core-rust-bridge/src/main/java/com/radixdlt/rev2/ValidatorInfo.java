@@ -71,11 +71,6 @@ public record ValidatorInfo(ResourceAddress lpTokenAddress, ResourceAddress unst
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         ValidatorInfo.class,
-        codecs ->
-            StructCodec.with(
-                ValidatorInfo::new,
-                codecs.of(ResourceAddress.class),
-                codecs.of(ResourceAddress.class),
-                (t, encoder) -> encoder.encode(t.lpTokenAddress, t.unstakeResource)));
+        codecs -> StructCodec.fromRecordComponents(ValidatorInfo.class, codecs));
   }
 }
