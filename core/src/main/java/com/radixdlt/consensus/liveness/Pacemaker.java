@@ -64,6 +64,7 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.*;
@@ -109,6 +110,7 @@ public final class Pacemaker {
   private final TimeSupplier timeSupplier;
   private final Metrics metrics;
 
+  private final Stopwatch currentRoundStopwatch = Stopwatch.createUnstarted();
   private RoundUpdate latestRoundUpdate;
   private RoundStatus roundStatus = RoundStatus.UNDISTURBED;
 
@@ -168,6 +170,7 @@ public final class Pacemaker {
 
     this.latestRoundUpdate = roundUpdate;
     this.metrics.bft().pacemaker().round().set(roundUpdate.getCurrentRound().number());
+    this.metrics.bft().pacemaker().roundDuration().observe(currentRoundStopwatch.elapsed());
 
     this.startRound();
   }
@@ -201,6 +204,9 @@ public final class Pacemaker {
   }
 
   private void startRound() {
+    currentRoundStopwatch.reset();
+    currentRoundStopwatch.start();
+
     this.roundStatus = RoundStatus.UNDISTURBED;
     this.vertexIdForLeaderFailure = Optional.empty();
 
