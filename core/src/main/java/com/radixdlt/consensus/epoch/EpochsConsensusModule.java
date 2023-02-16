@@ -77,6 +77,8 @@ import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.*;
 import com.radixdlt.consensus.sync.*;
+import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
+import com.radixdlt.consensus.vertexstore.VertexStoreJavaImpl;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.*;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -100,7 +102,7 @@ public class EpochsConsensusModule extends AbstractModule {
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
             .permitDuplicates();
     eventBinder.addBinding().toInstance(EpochRoundUpdate.class);
-    eventBinder.addBinding().toInstance(EpochRoundLeaderFailure.class);
+    eventBinder.addBinding().toInstance(EpochProposalRejected.class);
     eventBinder.addBinding().toInstance(VertexRequestTimeout.class);
     eventBinder.addBinding().toInstance(LedgerUpdate.class);
     eventBinder.addBinding().toInstance(Epoched.class);
@@ -162,12 +164,11 @@ public class EpochsConsensusModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private EventProcessorOnRunner<?> epochRoundLeaderFailureEventProcessor(
-      EpochManager epochManager) {
+  private EventProcessorOnRunner<?> epochProposalRejectedEventProcessor(EpochManager epochManager) {
     return new EventProcessorOnRunner<>(
         Runners.CONSENSUS,
-        EpochRoundLeaderFailure.class,
-        epochManager.epochRoundLeaderFailureEventProcessor());
+        EpochProposalRejected.class,
+        epochManager.epochProposalRejectedEventProcessor());
   }
 
   @ProvidesIntoSet
@@ -283,7 +284,7 @@ public class EpochsConsensusModule extends AbstractModule {
       ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>> localTimeoutSender,
       RemoteEventDispatcher<NodeId, Proposal> proposalDispatcher,
       RemoteEventDispatcher<NodeId, Vote> voteDispatcher,
-      EventDispatcher<EpochRoundLeaderFailure> roundLeaderFailureEventDispatcher,
+      EventDispatcher<NoVote> noVoteDispatcher,
       TimeSupplier timeSupplier) {
     return (validatorSet, vertexStore, timeoutCalculator, safetyRules, initialRoundUpdate, epoch) ->
         new Pacemaker(
@@ -305,9 +306,7 @@ public class EpochsConsensusModule extends AbstractModule {
               var nodeId = NodeId.fromPublicKey(n.getKey());
               voteDispatcher.dispatch(nodeId, m);
             },
-            roundLeaderFailure ->
-                roundLeaderFailureEventDispatcher.dispatch(
-                    new EpochRoundLeaderFailure(epoch, roundLeaderFailure)),
+            noVoteDispatcher,
             hasher,
             timeSupplier,
             initialRoundUpdate,
@@ -321,54 +320,39 @@ public class EpochsConsensusModule extends AbstractModule {
       TimeSupplier timeSupplier,
       Metrics metrics,
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
-      EventDispatcher<NoVote> noVoteEventDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
-      RemoteEventDispatcher<NodeId, Vote> voteDispatcher,
-      EventDispatcher<EpochRoundLeaderFailure> roundLeaderFailureEventDispatcher,
-      ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>> timeoutDispatcher) {
+      EventDispatcher<EpochProposalRejected> proposalRejectedDispatcher) {
     return (self,
         pacemaker,
-        vertexStore,
         bftSyncer,
         roundQuorumReachedEventProcessor,
         validatorSet,
         roundUpdate,
         safetyRules,
         epoch,
-        proposerElection,
-        timeoutCalculator) ->
+        proposerElection) ->
         BFTBuilder.create()
             .self(self)
             .hasher(hasher)
             .verifier(verifier)
-            .voteDispatcher(
-                (n, v) -> {
-                  var nodeId = NodeId.fromPublicKey(n.getKey());
-                  voteDispatcher.dispatch(nodeId, v);
-                })
-            .roundLeaderFailureEventDispatcher(
-                roundLeaderFailure ->
-                    roundLeaderFailureEventDispatcher.dispatch(
-                        new EpochRoundLeaderFailure(epoch, roundLeaderFailure)))
+            .proposalRejectedDispatcher(
+                proposalRejected ->
+                    proposalRejectedDispatcher.dispatch(
+                        new EpochProposalRejected(epoch, proposalRejected)))
             .safetyRules(safetyRules)
             .pacemaker(pacemaker)
-            .vertexStore(vertexStore)
             .roundQuorumReachedEventDispatcher(
                 roundQuorumReached -> {
                   // FIXME: a hack for now until replacement of epochmanager factories
                   roundQuorumReachedEventProcessor.process(roundQuorumReached);
                   roundQuorumReachedEventDispatcher.dispatch(roundQuorumReached);
                 })
-            .noVoteEventDispatcher(noVoteEventDispatcher)
             .doubleVoteEventDispatcher(doubleVoteEventDispatcher)
             .roundUpdate(roundUpdate)
             .bftSyncer(bftSyncer)
             .validatorSet(validatorSet)
             .timeSupplier(timeSupplier)
-            .timeoutDispatcher(
-                (ev, timeout) -> timeoutDispatcher.dispatch(Epoched.from(epoch, ev), timeout))
             .proposerElection(proposerElection)
-            .timeoutCalculator(timeoutCalculator)
             .metrics(metrics)
             .build();
   }

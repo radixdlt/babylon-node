@@ -74,6 +74,7 @@ import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.lang.Option;

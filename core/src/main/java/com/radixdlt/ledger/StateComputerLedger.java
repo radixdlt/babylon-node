@@ -71,6 +71,8 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.consensus.vertexstore.ExecutedVertex;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.mempool.MempoolAdd;

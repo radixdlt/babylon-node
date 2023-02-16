@@ -62,15 +62,59 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.vertexstore;
 
-/** An exception indicating a failure in inserting a vertex into a VertexStore */
-public class VertexInsertionException extends Exception {
-  VertexInsertionException(String message) {
-    super(message);
+import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.VertexWithHash;
+import java.util.List;
+import java.util.Objects;
+import javax.annotation.concurrent.Immutable;
+
+/** A chain of vertices verified to have correct parent links. */
+@Immutable
+public final class VertexChain {
+  private final ImmutableList<VertexWithHash> vertices;
+
+  private VertexChain(ImmutableList<VertexWithHash> vertices) {
+    this.vertices = vertices;
   }
 
-  VertexInsertionException(String message, Exception cause) {
-    super(message, cause);
+  public static VertexChain create(List<VertexWithHash> vertices) {
+    if (vertices.size() >= 2) {
+      for (int index = 1; index < vertices.size(); index++) {
+        HashCode parentId = vertices.get(index - 1).hash();
+        HashCode parentIdCheck = vertices.get(index).vertex().getParentVertexId();
+        if (!parentId.equals(parentIdCheck)) {
+          throw new IllegalArgumentException(String.format("Invalid chain: %s", vertices));
+        }
+      }
+    }
+
+    return new VertexChain(ImmutableList.copyOf(vertices));
+  }
+
+  public ImmutableList<VertexWithHash> getVertices() {
+    return vertices;
+  }
+
+  @Override
+  public String toString() {
+    return String.format("%s{vertices=%s}", this.getClass().getSimpleName(), this.vertices);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(vertices);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof VertexChain)) {
+      return false;
+    }
+
+    VertexChain other = (VertexChain) o;
+    return Objects.equals(this.vertices, other.vertices);
   }
 }

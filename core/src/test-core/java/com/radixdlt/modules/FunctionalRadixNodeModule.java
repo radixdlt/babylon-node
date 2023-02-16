@@ -75,6 +75,7 @@ import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.NoEpochsConsensusModule;

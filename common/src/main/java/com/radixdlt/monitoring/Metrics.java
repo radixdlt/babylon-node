@@ -162,6 +162,7 @@ public record Metrics(
 
   public record Bft(
       Counter successfullyProcessedVotes,
+      LabelledCounter<IgnoredVote> ignoredVotes,
       Counter successfullyProcessedProposals,
       Counter preconditionViolations,
       Counter duplicateProposalsReceived,
@@ -170,7 +171,8 @@ public record Metrics(
       Counter noVotesSent,
       Counter voteQuorums,
       Counter timeoutQuorums,
-      Counter extendedRoundTimeouts,
+      Counter prolongedRoundTimeouts,
+      Counter obsoleteEventsIgnored,
       LabelledCounter<RoundChange> roundChanges,
       Timer consensusEventsQueueWait,
       LabelledCounter<RejectedConsensusEvent> rejectedConsensusEvents,
@@ -183,6 +185,13 @@ public record Metrics(
       Summary leaderNumTransactionsIncludedInProposal,
       Summary leaderTransactionBytesIncludedInProposal,
       Summary leaderTransactionBytesIncludedInProposalAndPreviousVertices) {
+
+    public record IgnoredVote(VoteIgnoreReason reason) {}
+
+    public enum VoteIgnoreReason {
+      QUORUM_ALREADY_REACHED,
+      UNEXPECTED_VOTE
+    }
 
     public record Pacemaker(
         Counter timeoutsSent,

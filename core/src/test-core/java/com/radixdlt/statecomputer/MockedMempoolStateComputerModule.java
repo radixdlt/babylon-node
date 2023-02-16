@@ -68,7 +68,7 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.hash.HashCode;
 import com.google.inject.*;
 import com.radixdlt.consensus.bft.ExecutedVertex;
-import com.radixdlt.consensus.bft.VertexStoreState;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;

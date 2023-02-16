@@ -65,6 +65,8 @@
 package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.vertexstore.ExecutedVertex;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 
 /** Vertex Store update of committed vertices */
 public record BFTCommittedUpdate(

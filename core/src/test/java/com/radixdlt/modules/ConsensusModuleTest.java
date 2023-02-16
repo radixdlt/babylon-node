@@ -82,6 +82,9 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.sync.*;
+import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
+import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
@@ -177,7 +180,7 @@ public class ConsensusModuleTest {
             .toInstance(rmock(ScheduledEventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<RoundQuorumReached>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<EventDispatcher<RoundLeaderFailure>>() {})
+        bind(new TypeLiteral<EventDispatcher<ProposalRejected>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<RemoteEventDispatcher<NodeId, Vote>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));

@@ -71,7 +71,7 @@ import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.epoch.EpochRoundLeaderFailure;
+import com.radixdlt.consensus.epoch.EpochProposalRejected;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
@@ -195,12 +195,12 @@ public class DispatcherModule extends AbstractModule {
         .toProvider(Dispatchers.dispatcherProvider(EpochLocalTimeoutOccurrence.class))
         .in(Scopes.SINGLETON);
 
-    final var roundLeaderFailureKey = new TypeLiteral<EventProcessor<RoundLeaderFailure>>() {};
-    Multibinder.newSetBinder(binder(), roundLeaderFailureKey, ProcessOnDispatch.class);
-    Multibinder.newSetBinder(binder(), roundLeaderFailureKey);
+    final var proposalRejectedKey = new TypeLiteral<EventProcessor<ProposalRejected>>() {};
+    Multibinder.newSetBinder(binder(), proposalRejectedKey, ProcessOnDispatch.class);
+    Multibinder.newSetBinder(binder(), proposalRejectedKey);
 
-    bind(new TypeLiteral<EventDispatcher<EpochRoundLeaderFailure>>() {})
-        .toProvider(Dispatchers.dispatcherProvider(EpochRoundLeaderFailure.class))
+    bind(new TypeLiteral<EventDispatcher<EpochProposalRejected>>() {})
+        .toProvider(Dispatchers.dispatcherProvider(EpochProposalRejected.class))
         .in(Scopes.SINGLETON);
 
     final var roundUpdateKey = new TypeLiteral<EventProcessor<RoundUpdate>>() {};
@@ -452,13 +452,13 @@ public class DispatcherModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher(
-      @ProcessOnDispatch Set<EventProcessor<RoundLeaderFailure>> processors,
+  private EventDispatcher<ProposalRejected> proposalRejectedDispatcher(
+      @ProcessOnDispatch Set<EventProcessor<ProposalRejected>> processors,
       Environment environment) {
-    final var dispatcher = environment.getDispatcher(RoundLeaderFailure.class);
-    return roundLeaderFailure -> {
-      processors.forEach(e -> e.process(roundLeaderFailure));
-      dispatcher.dispatch(roundLeaderFailure);
+    final var dispatcher = environment.getDispatcher(ProposalRejected.class);
+    return proposalRejected -> {
+      processors.forEach(e -> e.process(proposalRejected));
+      dispatcher.dispatch(proposalRejected);
     };
   }
 }

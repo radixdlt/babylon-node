@@ -70,9 +70,9 @@ import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents
 import static com.radixdlt.harness.predicates.NodesPredicate.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;

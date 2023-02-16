@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.vertexstore;
 
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.assertj.core.api.Assertions.*;
@@ -80,6 +80,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.*;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;

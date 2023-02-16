@@ -62,84 +62,110 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.bft.processor;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimeoutCertificate;
-import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.lang.Option;
-import java.util.List;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.ProposalRejected;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.monitoring.Metrics;
+import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-/** Manages the BFT Vertex chain. TODO: Move this logic into ledger package. */
-public interface VertexStore {
-  record CommittedUpdate(ImmutableList<ExecutedVertex> committedVertices) {}
+/** Filters out obsolete BFT events. */
+public final class ObsoleteEventsFilter implements BFTEventProcessor {
+  private static final Logger log = LogManager.getLogger();
 
-  sealed interface InsertQcResult {
-    record Inserted(
-        HighQC newHighQc,
-        // TODO: remove me once vertex store persistence and commit on the java side are gone
-        VertexStoreState vertexStoreState,
-        Option<CommittedUpdate> committedUpdate)
-        implements InsertQcResult {}
+  private final BFTEventProcessor forwardTo;
+  private final Metrics metrics;
+  private RoundUpdate latestRoundUpdate;
 
-    record Ignored() implements InsertQcResult {}
-
-    record VertexIsMissing() implements InsertQcResult {}
+  public ObsoleteEventsFilter(
+      BFTEventProcessor forwardTo, Metrics metrics, RoundUpdate initialRoundUpdate) {
+    this.forwardTo = Objects.requireNonNull(forwardTo);
+    this.metrics = Objects.requireNonNull(metrics);
+    this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
   }
 
-  record InsertVertexChainResult(
-      List<InsertQcResult.Inserted> insertedQcs, List<BFTInsertUpdate> insertUpdates) {}
+  @Override
+  public void start() {
+    forwardTo.start();
+  }
 
-  InsertQcResult insertQc(QuorumCertificate qc);
+  @Override
+  public void processRoundUpdate(RoundUpdate roundUpdate) {
+    // FIXME: Check is required for now since Deterministic tests can randomize local messages
+    if (roundUpdate.getCurrentRound().gt(currentRound())) {
+      this.latestRoundUpdate = roundUpdate;
+      forwardTo.processRoundUpdate(roundUpdate);
+    } else {
+      metrics.bft().obsoleteEventsIgnored().inc();
+    }
+  }
 
-  /**
-   * Inserts a timeout certificate into the store.
-   *
-   * @param timeoutCertificate the timeout certificate
-   * @return true if the timeout certificate was inserted, false if it was ignored because it's not
-   *     the highest
-   */
-  boolean insertTimeoutCertificate(TimeoutCertificate timeoutCertificate);
+  @Override
+  public void processBFTUpdate(BFTInsertUpdate update) {
+    forwardTo.processBFTUpdate(update);
+  }
 
-  /**
-   * Inserts a vertex and then attempts to create the next header.
-   *
-   * @param vertexWithHash vertex to insert
-   */
-  Option<BFTInsertUpdate> insertVertex(VertexWithHash vertexWithHash);
+  @Override
+  public void processBFTRebuildUpdate(BFTRebuildUpdate rebuildUpdate) {
+    forwardTo.processBFTRebuildUpdate(rebuildUpdate);
+  }
 
-  InsertVertexChainResult insertVertexChain(VertexChain vertexChain);
+  @Override
+  public void processVote(Vote vote) {
+    if (vote.getRound().gte(currentRound())) {
+      this.forwardTo.processVote(vote);
+    } else {
+      metrics.bft().obsoleteEventsIgnored().inc();
+      log.trace("Vote: Ignoring for past round {}, current round is {}", vote, currentRound());
+    }
+  }
 
-  Option<VertexStoreState> tryRebuild(VertexStoreState vertexStoreState);
+  @Override
+  public void processProposal(Proposal proposal) {
+    if (proposal.getRound().gte(currentRound())) {
+      forwardTo.processProposal(proposal);
+    } else {
+      metrics.bft().obsoleteEventsIgnored().inc();
+      log.trace(
+          "Proposal: Ignoring for past round {}, current round is {}", proposal, currentRound());
+    }
+  }
 
-  boolean containsVertex(HashCode vertexId);
+  @Override
+  public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
+    if (scheduledLocalTimeout.round().equals(currentRound())) {
+      forwardTo.processLocalTimeout(scheduledLocalTimeout);
+    } else {
+      metrics.bft().obsoleteEventsIgnored().inc();
+      log.trace(
+          "Ignoring ScheduledLocalTimeout event for round {}, current round is {}",
+          scheduledLocalTimeout.round(),
+          currentRound());
+    }
+  }
 
-  HighQC highQC();
+  @Override
+  public void processProposalRejected(ProposalRejected proposalRejected) {
+    if (proposalRejected.round().equals(currentRound())) {
+      forwardTo.processProposalRejected(proposalRejected);
+    } else {
+      metrics.bft().obsoleteEventsIgnored().inc();
+      log.trace(
+          "Ignoring ProposalRejected event for round {}, current round is {}",
+          proposalRejected.round(),
+          currentRound());
+    }
+  }
 
-  VertexWithHash getRoot();
-
-  List<ExecutedVertex> getPathFromRoot(HashCode vertexId);
-
-  /**
-   * Returns the vertex with specified id or empty if not exists.
-   *
-   * @param vertexHash the id of a vertex
-   * @return the specified vertex or empty
-   */
-  Option<ExecutedVertex> getExecutedVertex(HashCode vertexHash);
-
-  /**
-   * Retrieves list of vertices starting with the given vertexId and then proceeding to its
-   * ancestors.
-   *
-   * <p>if the store does not contain some vertex then will return an empty list.
-   *
-   * @param vertexHash the id of the vertex
-   * @param count the number of vertices to retrieve
-   * @return the list of vertices if all found, otherwise an empty list
-   */
-  Option<ImmutableList<VertexWithHash>> getVertices(HashCode vertexHash, int count);
+  private Round currentRound() {
+    return this.latestRoundUpdate.getCurrentRound();
+  }
 }

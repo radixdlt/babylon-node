@@ -64,8 +64,8 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.bft.VertexStoreAdapter;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.p2p.NodeId;
 

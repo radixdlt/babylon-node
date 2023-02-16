@@ -71,6 +71,7 @@ import static org.mockito.Mockito.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.*;
 import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -101,7 +102,8 @@ public final class PacemakerGenerateProposalTest {
   private ProposalGenerator proposalGenerator;
   private RemoteEventDispatcher<BFTValidatorId, Proposal> proposalDispatcher;
   private RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher;
-  private EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher;
+  private EventDispatcher<ProposalRejected> proposalRejectedDispatcher;
+  private EventDispatcher<NoVote> noVoteDispatcher;
   private Hasher hasher;
   private TimeSupplier timeSupplier;
   private RoundUpdate initialRoundUpdate;
@@ -126,11 +128,13 @@ public final class PacemakerGenerateProposalTest {
     this.proposalGenerator = mock(ProposalGenerator.class);
     this.proposalDispatcher = rmock(RemoteEventDispatcher.class);
     this.voteDispatcher = rmock(RemoteEventDispatcher.class);
-    this.roundLeaderFailureDispatcher = rmock(EventDispatcher.class);
+    this.noVoteDispatcher = rmock(EventDispatcher.class);
     this.hasher = new Sha256Hasher(DefaultSerialization.getInstance());
     this.timeSupplier = mock(TimeSupplier.class);
+    final var initialHighQc = mock(HighQC.class);
+    when(initialHighQc.getHighestRound()).thenReturn(Round.of(0L));
     this.initialRoundUpdate =
-        RoundUpdate.create(Round.of(1L), mock(HighQC.class), validator1, validator2);
+        RoundUpdate.create(Round.of(1L), initialHighQc, validator1, validator2);
 
     this.sut =
         new Pacemaker(
@@ -144,7 +148,7 @@ public final class PacemakerGenerateProposalTest {
             proposalGenerator,
             proposalDispatcher,
             voteDispatcher,
-            roundLeaderFailureDispatcher,
+            noVoteDispatcher,
             hasher,
             timeSupplier,
             initialRoundUpdate,
