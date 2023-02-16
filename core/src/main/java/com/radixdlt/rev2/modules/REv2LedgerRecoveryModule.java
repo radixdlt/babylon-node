@@ -128,10 +128,13 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
               var proof =
                   LedgerProof.genesis(
                       accumulatorState, result.stateHash(), validatorSet, timestamp, timestamp);
-              var proofBytes = serialization.toDson(proof, DsonOutput.Output.ALL);
-              var stateVersion = UInt64.fromNonNegativeLong(proof.getStateVersion());
               var commitRequest =
-                  new CommitRequest(List.of(genesis), stateVersion, proofBytes, Option.none());
+                  new CommitRequest(
+                      List.of(genesis),
+                      UInt64.fromNonNegativeLong(proof.getStateVersion()),
+                      proof.getStateHash(),
+                      serialization.toDson(proof, DsonOutput.Output.ALL),
+                      Option.none());
               var commitResult = stateComputer.commit(commitRequest);
               commitResult.unwrap();
 

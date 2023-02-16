@@ -246,6 +246,7 @@ pub fn export_extern_functions() {}
 pub struct JavaCommitRequest {
     pub transactions: Vec<JavaRawTransaction>,
     pub state_version: u64,
+    pub state_hash: JavaStateHash,
     pub proof: Vec<u8>,
     pub vertex_store: Option<Vec<u8>>,
 }
@@ -259,6 +260,7 @@ impl From<JavaCommitRequest> for CommitRequest {
                 .map(|t| t.payload)
                 .collect(),
             proof_state_version: commit_request.state_version,
+            proof_state_hash: commit_request.state_hash.into(),
             proof: commit_request.proof,
             vertex_store: commit_request.vertex_store,
         }
@@ -368,6 +370,12 @@ pub struct JavaStateHash(Vec<u8>);
 impl From<StateHash> for JavaStateHash {
     fn from(state_hash: StateHash) -> Self {
         Self(state_hash.into_bytes().to_vec())
+    }
+}
+
+impl From<JavaStateHash> for StateHash {
+    fn from(java_state_hash: JavaStateHash) -> Self {
+        StateHash::from_raw_bytes(java_state_hash.0.try_into().expect("incorrect hash length"))
     }
 }
 
