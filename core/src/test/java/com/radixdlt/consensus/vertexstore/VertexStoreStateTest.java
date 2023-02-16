@@ -62,84 +62,18 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.vertexstore;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimeoutCertificate;
-import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.lang.Option;
-import java.util.List;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/** Manages the BFT Vertex chain. TODO: Move this logic into ledger package. */
-public interface VertexStore {
-  record CommittedUpdate(ImmutableList<ExecutedVertex> committedVertices) {}
-
-  sealed interface InsertQcResult {
-    record Inserted(
-        HighQC newHighQc,
-        // TODO: remove me once vertex store persistence and commit on the java side are gone
-        VertexStoreState vertexStoreState,
-        Option<CommittedUpdate> committedUpdate)
-        implements InsertQcResult {}
-
-    record Ignored() implements InsertQcResult {}
-
-    record VertexIsMissing() implements InsertQcResult {}
+public class VertexStoreStateTest {
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(VertexStoreState.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
   }
-
-  record InsertVertexChainResult(
-      List<InsertQcResult.Inserted> insertedQcs, List<BFTInsertUpdate> insertUpdates) {}
-
-  InsertQcResult insertQc(QuorumCertificate qc);
-
-  /**
-   * Inserts a timeout certificate into the store.
-   *
-   * @param timeoutCertificate the timeout certificate
-   * @return true if the timeout certificate was inserted, false if it was ignored because it's not
-   *     the highest
-   */
-  boolean insertTimeoutCertificate(TimeoutCertificate timeoutCertificate);
-
-  /**
-   * Inserts a vertex and then attempts to create the next header.
-   *
-   * @param vertexWithHash vertex to insert
-   */
-  Option<BFTInsertUpdate> insertVertex(VertexWithHash vertexWithHash);
-
-  InsertVertexChainResult insertVertexChain(VertexChain vertexChain);
-
-  Option<VertexStoreState> tryRebuild(VertexStoreState vertexStoreState);
-
-  boolean containsVertex(HashCode vertexId);
-
-  HighQC highQC();
-
-  VertexWithHash getRoot();
-
-  List<ExecutedVertex> getPathFromRoot(HashCode vertexId);
-
-  /**
-   * Returns the vertex with specified id or empty if not exists.
-   *
-   * @param vertexHash the id of a vertex
-   * @return the specified vertex or empty
-   */
-  Option<ExecutedVertex> getExecutedVertex(HashCode vertexHash);
-
-  /**
-   * Retrieves list of vertices starting with the given vertexId and then proceeding to its
-   * ancestors.
-   *
-   * <p>if the store does not contain some vertex then will return an empty list.
-   *
-   * @param vertexHash the id of the vertex
-   * @param count the number of vertices to retrieve
-   * @return the list of vertices if all found, otherwise an empty list
-   */
-  Option<ImmutableList<VertexWithHash>> getVertices(HashCode vertexHash, int count);
 }

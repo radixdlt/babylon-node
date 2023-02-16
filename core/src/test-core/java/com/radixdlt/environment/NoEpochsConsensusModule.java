@@ -95,7 +95,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
             .permitDuplicates();
     eventBinder.addBinding().toInstance(ScheduledLocalTimeout.class);
     eventBinder.addBinding().toInstance(VertexRequestTimeout.class);
-    eventBinder.addBinding().toInstance(RoundLeaderFailure.class);
+    eventBinder.addBinding().toInstance(ProposalRejected.class);
     eventBinder.addBinding().toInstance(RoundUpdate.class);
     eventBinder.addBinding().toInstance(LedgerUpdate.class);
   }
@@ -152,9 +152,9 @@ public class NoEpochsConsensusModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private EventProcessorOnRunner<?> roundLeaderFailureProcessor(BFTEventProcessor processor) {
+  private EventProcessorOnRunner<?> proposalRejectedProcessor(BFTEventProcessor processor) {
     return new EventProcessorOnRunner<>(
-        Runners.CONSENSUS, RoundLeaderFailure.class, processor::processRoundLeaderFailure);
+        Runners.CONSENSUS, ProposalRejected.class, processor::processProposalRejected);
   }
 
   @ProvidesIntoSet

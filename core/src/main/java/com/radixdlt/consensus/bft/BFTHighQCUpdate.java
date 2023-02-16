@@ -65,6 +65,7 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import java.util.Objects;
 
 /** An event emitted when the high qc has been updated */

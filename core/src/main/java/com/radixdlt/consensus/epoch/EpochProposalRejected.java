@@ -62,12 +62,54 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.epoch;
 
-/** An event indicating that a leader failed their BFT round. */
-public record RoundLeaderFailure(Round round, RoundLeaderFailureReason reason) {
+import com.radixdlt.consensus.bft.ProposalRejected;
+import java.util.Objects;
+
+/** A wrapper for a ProposalRejected message that also holds epoch. */
+public final class EpochProposalRejected {
+
+  private final long epoch;
+  private final ProposalRejected proposalRejected;
+
+  public EpochProposalRejected(long epoch, ProposalRejected proposalRejected) {
+    this.epoch = epoch;
+    this.proposalRejected = Objects.requireNonNull(proposalRejected);
+  }
+
+  public long epoch() {
+    return epoch;
+  }
+
+  public ProposalRejected proposalRejected() {
+    return proposalRejected;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    EpochProposalRejected that = (EpochProposalRejected) o;
+    return epoch == that.epoch && Objects.equals(proposalRejected, that.proposalRejected);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(epoch, proposalRejected);
+  }
+
   @Override
   public String toString() {
-    return "RoundLeaderFailure{" + "round=" + round + ", reason=" + reason + '}';
+    return "EpochProposalRejected{"
+        + "epoch="
+        + epoch
+        + ", proposalRejected="
+        + proposalRejected
+        + '}';
   }
 }

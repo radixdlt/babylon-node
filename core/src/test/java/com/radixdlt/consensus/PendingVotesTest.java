@@ -88,13 +88,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class PendingVotesTest {
-  private PendingVotes pendingVotes;
   private Hasher hasher;
 
   @Before
   public void setup() {
     this.hasher = new RandomHasher();
-    this.pendingVotes = new PendingVotes(hasher, e -> {});
   }
 
   @Test
@@ -113,13 +111,15 @@ public class PendingVotesTest {
     BFTValidatorSet validatorSet =
         BFTValidatorSet.from(
             Collections.singleton(BFTValidator.from(vote1.getAuthor(), UInt256.ONE)));
+    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
+
     VoteData voteData = mock(VoteData.class);
     BFTHeader proposed = vote1.getVoteData().getProposed();
     when(voteData.getProposed()).thenReturn(proposed);
 
     assertEquals(
         VoteProcessingResult.rejected(VoteRejectedReason.INVALID_AUTHOR),
-        this.pendingVotes.insertVote(vote2, validatorSet));
+        pendingVotes.insertVote(vote2));
   }
 
   @Test
@@ -140,9 +140,9 @@ public class PendingVotesTest {
     BFTHeader proposed = vote.getVoteData().getProposed();
     when(voteData.getProposed()).thenReturn(proposed);
 
-    assertTrue(
-        this.pendingVotes.insertVote(vote, validatorSet)
-            instanceof VoteProcessingResult.QuorumReached);
+    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
+
+    assertTrue(pendingVotes.insertVote(vote) instanceof VoteProcessingResult.QuorumReached);
   }
 
   @Test
@@ -162,11 +162,11 @@ public class PendingVotesTest {
                 BFTValidator.from(vote1.getAuthor(), UInt256.ONE),
                 BFTValidator.from(vote2.getAuthor(), UInt256.ONE)));
 
-    assertTrue(
-        this.pendingVotes.insertVote(vote1, validatorSet)
-            instanceof VoteProcessingResult.VoteAccepted);
+    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
 
-    VoteProcessingResult result2 = this.pendingVotes.insertVote(vote2, validatorSet);
+    assertTrue(pendingVotes.insertVote(vote1) instanceof VoteProcessingResult.VoteAccepted);
+
+    VoteProcessingResult result2 = pendingVotes.insertVote(vote2);
 
     assertTrue(result2 instanceof VoteProcessingResult.QuorumReached);
 
@@ -192,17 +192,18 @@ public class PendingVotesTest {
     BFTHeader proposed = vote.getVoteData().getProposed();
     when(voteData.getProposed()).thenReturn(proposed);
 
+    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
+
     // Preconditions
-    assertEquals(VoteProcessingResult.accepted(), this.pendingVotes.insertVote(vote, validatorSet));
-    assertEquals(1, this.pendingVotes.voteStateSize());
-    assertEquals(1, this.pendingVotes.previousVotesSize());
+    assertEquals(VoteProcessingResult.accepted(), pendingVotes.insertVote(vote));
+    assertEquals(1, pendingVotes.voteStateSize());
+    assertEquals(1, pendingVotes.previousVotesSize());
 
     Vote vote2 = makeSignedVoteFor(author, Round.of(1), HashUtils.random256());
     // Need a different hash for this (different) vote
-    assertEquals(
-        VoteProcessingResult.accepted(), this.pendingVotes.insertVote(vote2, validatorSet));
-    assertEquals(1, this.pendingVotes.voteStateSize());
-    assertEquals(1, this.pendingVotes.previousVotesSize());
+    assertEquals(VoteProcessingResult.accepted(), pendingVotes.insertVote(vote2));
+    assertEquals(1, pendingVotes.voteStateSize());
+    assertEquals(1, pendingVotes.previousVotesSize());
   }
 
   @Test
@@ -224,19 +225,20 @@ public class PendingVotesTest {
     BFTHeader proposed = vote.getVoteData().getProposed();
     when(voteData.getProposed()).thenReturn(proposed);
 
+    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
+
     // Preconditions
-    assertEquals(VoteProcessingResult.accepted(), this.pendingVotes.insertVote(vote, validatorSet));
-    assertEquals(1, this.pendingVotes.voteStateSize());
-    assertEquals(1, this.pendingVotes.timeoutVoteStateSize());
-    assertEquals(1, this.pendingVotes.previousVotesSize());
+    assertEquals(VoteProcessingResult.accepted(), pendingVotes.insertVote(vote));
+    assertEquals(1, pendingVotes.voteStateSize());
+    assertEquals(1, pendingVotes.timeoutVoteStateSize());
+    assertEquals(1, pendingVotes.previousVotesSize());
 
     Vote vote2 = makeSignedVoteFor(author, Round.of(1), HashUtils.random256());
     // Need a different hash for this (different) vote
-    assertEquals(
-        VoteProcessingResult.accepted(), this.pendingVotes.insertVote(vote2, validatorSet));
-    assertEquals(1, this.pendingVotes.voteStateSize());
-    assertEquals(0, this.pendingVotes.timeoutVoteStateSize());
-    assertEquals(1, this.pendingVotes.previousVotesSize());
+    assertEquals(VoteProcessingResult.accepted(), pendingVotes.insertVote(vote2));
+    assertEquals(1, pendingVotes.voteStateSize());
+    assertEquals(0, pendingVotes.timeoutVoteStateSize());
+    assertEquals(1, pendingVotes.previousVotesSize());
   }
 
   @Test
@@ -256,25 +258,24 @@ public class PendingVotesTest {
                 BFTValidator.from(vote1.getAuthor(), UInt256.ONE),
                 BFTValidator.from(vote2.getAuthor(), UInt256.ONE)));
 
-    assertTrue(
-        this.pendingVotes.insertVote(vote1, validatorSet)
-            instanceof VoteProcessingResult.VoteAccepted);
+    final var pendingVotes = new PendingVotes(hasher, e -> {}, validatorSet);
+
+    assertTrue(pendingVotes.insertVote(vote1) instanceof VoteProcessingResult.VoteAccepted);
 
     // submit duplicate vote, should fail
     assertEquals(
         VoteProcessingResult.rejected(VoteRejectedReason.DUPLICATE_VOTE),
-        this.pendingVotes.insertVote(vote1, validatorSet));
+        pendingVotes.insertVote(vote1));
 
     // submit again, but this time with a timeout
     when(vote1.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASecp256k1Signature.class)));
     when(vote1.isTimeout()).thenReturn(true);
 
     // should be accepted
-    assertEquals(
-        VoteProcessingResult.accepted(), this.pendingVotes.insertVote(vote1, validatorSet));
+    assertEquals(VoteProcessingResult.accepted(), pendingVotes.insertVote(vote1));
 
     // insert another timeout vote
-    final var result2 = this.pendingVotes.insertVote(vote2, validatorSet);
+    final var result2 = pendingVotes.insertVote(vote2);
 
     // and form a TC
     assertTrue(result2 instanceof VoteProcessingResult.QuorumReached);

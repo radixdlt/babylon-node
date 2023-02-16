@@ -247,15 +247,13 @@ public final class EpochManager {
         bftFactory.create(
             self,
             pacemaker,
-            vertexStore,
             bftSync,
             bftSync.roundQuorumReachedEventProcessor(),
             validatorSet,
             initialRoundUpdate,
             safetyRules,
             nextEpoch,
-            proposerElection,
-            timeoutCalculator);
+            proposerElection);
 
     this.syncResponseProcessors = Set.of(bftSync.responseProcessor());
     this.syncErrorResponseProcessors = Set.of(bftSync.errorResponseProcessor());
@@ -393,12 +391,12 @@ public final class EpochManager {
     };
   }
 
-  public EventProcessor<EpochRoundLeaderFailure> epochRoundLeaderFailureEventProcessor() {
-    return epochRoundLeaderFailure -> {
-      if (epochRoundLeaderFailure.getEpoch() != this.currentEpoch()) {
+  public EventProcessor<EpochProposalRejected> epochProposalRejectedEventProcessor() {
+    return epochProposalRejected -> {
+      if (epochProposalRejected.epoch() != this.currentEpoch()) {
         return;
       }
-      bftEventProcessor.processRoundLeaderFailure(epochRoundLeaderFailure.getRoundLeaderFailure());
+      bftEventProcessor.processProposalRejected(epochProposalRejected.proposalRejected());
     };
   }
 
