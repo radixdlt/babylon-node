@@ -66,24 +66,12 @@ package com.radixdlt.crypto;
 
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
-import com.radixdlt.sbor.codec.EnumEntry;
 
 public sealed interface PublicKey {
   static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PublicKey.class,
-        (codecs) ->
-            EnumCodec.fromEntries(
-                EnumEntry.with(
-                    EcdsaSecp256k1.class,
-                    EcdsaSecp256k1::new,
-                    codecs.of(ECDSASecp256k1PublicKey.class),
-                    (t, encoder) -> encoder.encode(t.key)),
-                EnumEntry.with(
-                    EddsaEd25519.class,
-                    EddsaEd25519::new,
-                    codecs.of(EdDSAEd25519PublicKey.class),
-                    (t, encoder) -> encoder.encode(t.key))));
+        codecs -> EnumCodec.fromPermittedRecordSubclasses(PublicKey.class, codecs));
   }
 
   record EcdsaSecp256k1(ECDSASecp256k1PublicKey key) implements PublicKey {}
