@@ -203,7 +203,7 @@ public class PacemakerTest {
     when(vertexStoreState.getHighQC()).thenReturn(highQC);
     when(bftInsertUpdate.getInserted()).thenReturn(executedVertex);
     when(bftInsertUpdate.getVertexStoreState()).thenReturn(vertexStoreState);
-    final var vertexHash = hasher.hashDsonEncoded(Vertex.createTimeout(highestQc, round, leader));
+    final var vertexHash = hasher.hashDsonEncoded(Vertex.createFallback(highestQc, round, leader));
     when(executedVertex.getVertexHash()).thenReturn(vertexHash);
 
     when(this.safetyRules.getLastVote(round)).thenReturn(Optional.empty());
