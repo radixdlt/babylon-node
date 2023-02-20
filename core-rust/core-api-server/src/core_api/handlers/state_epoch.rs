@@ -1,6 +1,7 @@
 use crate::core_api::*;
-use radix_engine::model::PersistedSubstate;
+use radix_engine::system::substates::PersistedSubstate;
 use radix_engine::types::{EpochManagerOffset, GlobalAddress, SubstateOffset, EPOCH_MANAGER};
+use radix_engine_interface::api::types::NodeModuleId;
 use state_manager::jni::state_manager::ActualStateManager;
 
 #[tracing::instrument(skip(state), err(Debug))]
@@ -23,7 +24,8 @@ fn handle_state_epoch_internal(
 
     let epoch_manager_substate = {
         let substate_offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
-        let loaded_substate = read_known_substate(state_manager, node_id, &substate_offset)?;
+        let loaded_substate =
+            read_known_substate(state_manager, node_id, NodeModuleId::SELF, &substate_offset)?;
         let PersistedSubstate::EpochManager(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
         };
@@ -32,7 +34,8 @@ fn handle_state_epoch_internal(
 
     let validator_set_substate = {
         let substate_offset = SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet);
-        let loaded_substate = read_known_substate(state_manager, node_id, &substate_offset)?;
+        let loaded_substate =
+            read_known_substate(state_manager, node_id, NodeModuleId::SELF, &substate_offset)?;
         let PersistedSubstate::ValidatorSet(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
         };

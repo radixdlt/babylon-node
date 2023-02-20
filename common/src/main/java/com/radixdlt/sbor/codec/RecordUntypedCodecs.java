@@ -62,24 +62,70 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.sbor.codec;
 
-import static org.mockito.Mockito.mock;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.lang.Functions;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.RecordComponent;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimeoutCertificate;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+/** Static utilities for creating {@link UntypedCodec}s of {@link Record} classes. */
+public interface RecordUntypedCodecs {
 
-public class RoundQuorumReachedTest {
+  /**
+   * Creates a {@link Fields}-based codec that directly infers all the component types from the
+   * structure of the given {@link Record} class.
+   */
+  @SuppressWarnings("unchecked")
+  static <R extends Record> UntypedCodec<R> create(
+      TypeToken<R> recordType, CodecMap.CodecResolver codecs) {
+    RecordComponent[] components = recordType.getRawType().getRecordComponents();
+    Constructor<? super R> recordConstructor;
+    try {
+      recordConstructor =
+          recordType
+              .getRawType()
+              .getConstructor(
+                  Stream.of(components).map(RecordComponent::getType).toArray(Class<?>[]::new));
+    } catch (NoSuchMethodException nsme) {
+      throw new IllegalStateException(
+          "guaranteed canonical Record constructor not found on %s".formatted(recordType), nsme);
+    }
+    Functions.Func1<List<?>, R> constructor =
+        argumentList -> {
+          try {
+            return (R) recordConstructor.newInstance(argumentList.toArray());
+          } catch (ReflectiveOperationException roe) {
+            throw new IllegalStateException(
+                "failed to invoke %s with %s".formatted(recordConstructor, argumentList), roe);
+          }
+        };
+    Field<R, ?>[] fields =
+        (Field<R, ?>[])
+            Stream.of(components)
+                .map(component -> toField(recordType, codecs, component))
+                .toArray(Field<?, ?>[]::new);
+    return Fields.arbitrary(constructor, Arrays.asList(fields));
+  }
 
-  @Test
-  public void equalsTest() {
-    EqualsVerifier.forClass(RoundQuorumReached.class)
-        .withPrefabValues(
-            RoundVotingResult.class,
-            new RoundVotingResult.FormedQC(mock(QuorumCertificate.class)),
-            new RoundVotingResult.FormedTC(mock(TimeoutCertificate.class)))
-        .verify();
+  @SuppressWarnings("unchecked")
+  private static <R, C> Field<R, C> toField(
+      TypeToken<R> recordType, CodecMap.CodecResolver codecs, RecordComponent component) {
+    Function<R, C> componentGetter =
+        recordObject -> {
+          try {
+            return (C) component.getAccessor().invoke(recordObject);
+          } catch (ReflectiveOperationException roe) {
+            throw new IllegalStateException(
+                "failed to invoke %s on %s".formatted(component.getAccessor(), recordObject), roe);
+          }
+        };
+    TypeToken<C> componentType = (TypeToken<C>) recordType.resolveType(component.getGenericType());
+    Codec<C> componentCodec = codecs.of(componentType);
+    return Field.of(componentGetter, componentCodec);
   }
 }

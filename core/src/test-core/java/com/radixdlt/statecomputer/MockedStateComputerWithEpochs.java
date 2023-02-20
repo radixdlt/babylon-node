@@ -65,10 +65,12 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
@@ -114,7 +116,8 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 
   @Override
   public StateComputerResult prepare(
-      List<ExecutedTransaction> previous,
+      HashCode parentAccumulator,
+      List<ExecutedVertex> previousVertices,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     if (roundDetails.roundNumber() >= epochMaxRound.number()) {
@@ -125,9 +128,11 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
           ImmutableMap.of(),
           NextEpoch.create(
               roundDetails.epoch() + 1,
-              validatorSetMapping.apply(roundDetails.epoch() + 1).getValidators()));
+              validatorSetMapping.apply(roundDetails.epoch() + 1).getValidators()),
+          HashUtils.zero256());
     } else {
-      return stateComputer.prepare(previous, proposedTransactions, roundDetails);
+      return stateComputer.prepare(
+          parentAccumulator, previousVertices, proposedTransactions, roundDetails);
     }
   }
 

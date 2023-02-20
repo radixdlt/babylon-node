@@ -191,7 +191,6 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ env.RELEASE_TAG }}
 
-
 # TEMPORARILY REMOVE EPHEMERAL TESTS
 # => Until we can change them to only run the "node" tests and not the transaction tests
 # ephemeral-deploy-and-test:

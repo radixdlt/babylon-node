@@ -62,20 +62,20 @@
  * permissions under this License.
  */
 
+use radix_engine::blueprints::resource::VaultSubstate;
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
-use radix_engine::model::{
-    GlobalAddressSubstate, KeyValueStoreEntrySubstate, PersistedSubstate, VaultSubstate,
-};
+use radix_engine::system::substates::PersistedSubstate;
 
 use radix_engine::types::{
-    AccessControllerOffset, ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset,
+    AccessControllerOffset, ComponentOffset, EpochManagerOffset, GlobalOffset, KeyValueStoreOffset,
     RENodeId, SubstateId, SubstateOffset, ValidatorOffset, VaultOffset,
 };
-use radix_engine_interface::data::IndexedScryptoValue;
+use radix_engine_interface::api::types::{AccountOffset, NodeModuleId};
 
 #[derive(Debug)]
 pub enum StateTreeTraverserError {
-    RENodeNotFound(RENodeId),
+    ExpectedNodeSubstateNotInStore(SubstateId),
+    UnexpectedPersistedNode(RENodeId),
     MaxDepthExceeded,
 }
 
@@ -126,106 +126,124 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
         }
         self.visitor.visit_node_id(parent, &node_id, depth);
         match node_id {
-            RENodeId::Global(GlobalAddress::Component(..)) => {
-                let substate_id = SubstateId(node_id, SubstateOffset::Global(GlobalOffset::Global));
-                let substate = self
-                    .substate_store
-                    .get_substate(&substate_id)
-                    .ok_or(StateTreeTraverserError::RENodeNotFound(node_id))?;
-                let global: GlobalAddressSubstate = substate.substate.to_runtime().into();
-                let derefed = global.node_deref();
-                self.traverse_recursive(Some(&substate_id), derefed, depth + 1)
-                    .expect("Broken Node Store");
+            RENodeId::Global(..) => {
+                self.recurse_via_self_substate(
+                    node_id,
+                    SubstateOffset::Global(GlobalOffset::Global),
+                    depth,
+                )?;
             }
-            RENodeId::Vault(vault_id) => {
+            RENodeId::Vault(..) => {
                 let substate_id = SubstateId(
-                    RENodeId::Vault(vault_id),
+                    node_id,
+                    NodeModuleId::SELF,
                     SubstateOffset::Vault(VaultOffset::Vault),
                 );
-                if let Some(output_value) = self.substate_store.get_substate(&substate_id) {
-                    let vault_substate: VaultSubstate = output_value.substate.into();
-
-                    self.visitor
-                        .visit_vault(Some(&substate_id), &vault_substate);
-                } else {
-                    return Err(StateTreeTraverserError::RENodeNotFound(node_id));
-                }
+                let substate = self.read_substate(&substate_id)?;
+                self.visitor
+                    .visit_vault(Some(&substate_id), substate.vault());
             }
             RENodeId::KeyValueStore(kv_store_id) => {
                 let map = self.substate_store.get_kv_store_entries(&kv_store_id);
-                for (key, v) in map.iter() {
+                for (key, substate) in map.into_iter() {
                     let substate_id = SubstateId(
-                        RENodeId::KeyValueStore(kv_store_id),
-                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key.clone())),
+                        node_id,
+                        NodeModuleId::SELF,
+                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
                     );
-                    if let PersistedSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(
-                        Some(entry),
-                    )) = v
-                    {
-                        let value = IndexedScryptoValue::from_slice(entry)
-                            .expect("Key Value Store Entry should be parseable.");
-                        for child_node_id in value
-                            .owned_node_ids()
-                            .expect("Should be able to read node ids")
-                        {
-                            self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
-                                .expect("Broken Node Store");
-                        }
-                    }
+                    self.recurse_via_loaded_substate(&substate_id, substate, depth)?;
                 }
             }
             RENodeId::Component(..) => {
-                let substate_id =
-                    SubstateId(node_id, SubstateOffset::Component(ComponentOffset::State));
-                let output_value = self
-                    .substate_store
-                    .get_substate(&substate_id)
-                    .expect("Broken Node Store");
-                let runtime_substate = output_value.substate.to_runtime();
-                let substate_ref = runtime_substate.to_ref();
-                let (_, owned_nodes) = substate_ref.references_and_owned_nodes();
-                for child_node_id in owned_nodes {
-                    self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
-                        .expect("Broken Node Store");
-                }
+                self.recurse_via_self_substate(
+                    node_id,
+                    SubstateOffset::Component(ComponentOffset::State),
+                    depth,
+                )?;
+            }
+            RENodeId::Account(..) => {
+                self.recurse_via_self_substate(
+                    node_id,
+                    SubstateOffset::Account(AccountOffset::Account),
+                    depth,
+                )?;
             }
             RENodeId::Validator(..) => {
-                let substate_id = SubstateId(
+                self.recurse_via_self_substate(
                     node_id,
                     SubstateOffset::Validator(ValidatorOffset::Validator),
-                );
-                let output_value = self
-                    .substate_store
-                    .get_substate(&substate_id)
-                    .expect("Broken Node Store");
-                let runtime_substate = output_value.substate.to_runtime();
-                let substate_ref = runtime_substate.to_ref();
-                let (_, owned_nodes) = substate_ref.references_and_owned_nodes();
-                for child_node_id in owned_nodes {
-                    self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
-                        .expect("Broken Node Store");
-                }
+                    depth,
+                )?;
             }
             RENodeId::AccessController(..) => {
-                let substate_id = SubstateId(
+                self.recurse_via_self_substate(
                     node_id,
                     SubstateOffset::AccessController(AccessControllerOffset::AccessController),
-                );
-                let output_value = self
-                    .substate_store
-                    .get_substate(&substate_id)
-                    .expect("Broken Node Store");
-                let runtime_substate = output_value.substate.to_runtime();
-                let substate_ref = runtime_substate.to_ref();
-                let (_, owned_nodes) = substate_ref.references_and_owned_nodes();
-                for child_node_id in owned_nodes {
-                    self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
-                        .expect("Broken Node Store");
-                }
+                    depth,
+                )?;
             }
-            _ => {}
+            RENodeId::EpochManager(_) => {
+                self.recurse_via_self_substate(
+                    node_id,
+                    SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
+                    depth,
+                )?;
+            }
+            RENodeId::Clock(_) => {}            // Contains no children
+            RENodeId::Identity(_) => {}         // Contains no children
+            RENodeId::NonFungibleStore(_) => {} // Contains no children
+            RENodeId::ResourceManager(_) => {}  // Contains no children
+            RENodeId::Package(_) => {}          // Contains no children
+            // TRANSIENT
+            RENodeId::Bucket(_)
+            | RENodeId::Proof(_)
+            | RENodeId::AuthZoneStack
+            | RENodeId::FeeReserve(_)
+            | RENodeId::Worktop
+            | RENodeId::Logger
+            | RENodeId::TransactionRuntime => {
+                return Err(StateTreeTraverserError::UnexpectedPersistedNode(node_id))
+            } // END - NB - we list all types so that we get a compile error if a new type is added
         };
 
+        Ok(())
+    }
+
+    fn recurse_via_self_substate(
+        &mut self,
+        node_id: RENodeId,
+        substate_offset: SubstateOffset,
+        depth: u32,
+    ) -> Result<(), StateTreeTraverserError> {
+        let substate_id = SubstateId(node_id, NodeModuleId::SELF, substate_offset);
+        let substate = self.read_substate(&substate_id)?;
+        self.recurse_via_loaded_substate(&substate_id, substate, depth)
+    }
+
+    fn read_substate(
+        &self,
+        substate_id: &SubstateId,
+    ) -> Result<PersistedSubstate, StateTreeTraverserError> {
+        let substate = self
+            .substate_store
+            .get_substate(substate_id)
+            .ok_or_else(|| {
+                StateTreeTraverserError::ExpectedNodeSubstateNotInStore(substate_id.clone())
+            })?
+            .substate;
+        Ok(substate)
+    }
+
+    fn recurse_via_loaded_substate(
+        &mut self,
+        substate_id: &SubstateId,
+        substate: PersistedSubstate,
+        depth: u32,
+    ) -> Result<(), StateTreeTraverserError> {
+        let (_, owned_nodes) = substate.to_runtime().to_ref().references_and_owned_nodes();
+        for child_node_id in owned_nodes {
+            self.traverse_recursive(Some(substate_id), child_node_id, depth + 1)?;
+        }
         Ok(())
     }
 }

@@ -64,7 +64,7 @@
 
 package com.radixdlt.statecomputer.commit;
 
-import com.google.common.reflect.TypeToken;
+import com.google.common.hash.HashCode;
 import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
@@ -77,24 +77,13 @@ import java.util.Objects;
 public record CommitRequest(
     List<RawLedgerTransaction> transactions,
     UInt64 stateVersion,
+    HashCode stateHash,
     byte[] proofBytes,
     Option<byte[]> postCommitVertexStoreBytes) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         CommitRequest.class,
-        codecs ->
-            StructCodec.with(
-                CommitRequest::new,
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(UInt64.class),
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                (t, encoder) ->
-                    encoder.encode(
-                        t.transactions,
-                        t.stateVersion,
-                        t.proofBytes,
-                        t.postCommitVertexStoreBytes)));
+        codecs -> StructCodec.fromRecordComponents(CommitRequest.class, codecs));
   }
 
   @Override
@@ -104,13 +93,14 @@ public record CommitRequest(
     CommitRequest that = (CommitRequest) o;
     return Objects.equals(transactions, that.transactions)
         && Objects.equals(stateVersion, that.stateVersion)
+        && Objects.equals(stateHash, that.stateHash)
         && Arrays.equals(proofBytes, that.proofBytes)
         && Objects.equals(postCommitVertexStoreBytes, that.postCommitVertexStoreBytes);
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(transactions, stateVersion, postCommitVertexStoreBytes);
+    int result = Objects.hash(transactions, stateVersion, stateHash, postCommitVertexStoreBytes);
     result = 31 * result + Arrays.hashCode(proofBytes);
     return result;
   }
@@ -122,6 +112,8 @@ public record CommitRequest(
         + transactions
         + ", stateVersion="
         + stateVersion
+        + ", stateHash="
+        + stateHash
         + ", proofBytes="
         + Arrays.toString(proofBytes)
         + ", postCommitVertexStoreBytes="

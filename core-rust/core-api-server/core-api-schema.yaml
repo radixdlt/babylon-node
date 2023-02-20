@@ -43,7 +43,7 @@ openapi: 3.1.0
 # => Hex-encoded hashes should end _hash
 # => Hex-encoded bytes/payload should end _hex and not include _bytes
 info:
-  version: '0.2.0'
+  version: '0.3.0'
   title: 'Babylon Core API'
   license:
     name: The Radix License, Version 1.0
@@ -1265,6 +1265,7 @@ components:
       required:
         - entity_type
         - entity_id_hex
+        - module_type
         - substate_type
         - substate_key_type
         - substate_key_hex
@@ -1274,6 +1275,8 @@ components:
         entity_id_hex:
           type: string
           description: The hex-encoded bytes of the entity id
+        module_type:
+          $ref: "#/components/schemas/ModuleType"
         substate_type:
           $ref: "#/components/schemas/SubstateType"
         substate_key_type:
@@ -1962,7 +1965,7 @@ components:
       type: string
       enum:
         - String
-        - Number
+        - Integer
         - Bytes
         - UUID
     NonFungibleId:
@@ -2134,10 +2137,20 @@ components:
         - Clock
         - Validator
         - AccessController
+        - Account
         - Identity
         - KeyValueStore
         - NonFungibleStore
         - Vault
+    ModuleType:
+      type: string
+      enum:
+        - Self
+        - Metadata
+        - AccessRules
+        - AccessRules1
+        - ComponentRoyalty
+        - PackageRoyalty
     Substate:
       type: object
       required:
@@ -2168,6 +2181,7 @@ components:
           Vault: '#/components/schemas/VaultSubstate'
           NonFungibleStoreEntry: '#/components/schemas/NonFungibleStoreEntrySubstate'
           AccessController: '#/components/schemas/AccessControllerSubstate'
+          Account: '#/components/schemas/AccountSubstate'
     SubstateType:
       type: string
       enum:
@@ -2192,6 +2206,7 @@ components:
         - NonFungibleStoreEntry
         - Vault
         - AccessController
+        - Account
     SubstateKeyType:
       # This corresponds to what's currently referred to as the "SubstateOffset"
       # This is roughly the same as the substate type, but some entities have two of the same substates
@@ -2213,7 +2228,6 @@ components:
         - PackageRoyaltyConfig
         - PackageRoyaltyAccumulator
         - ResourceManager
-        - ResourceManagerVaultAccessRulesChain
         - EpochManager
         - CurrentValidatorSet
         - PreparingValidatorSet
@@ -2223,6 +2237,7 @@ components:
         - NonFungibleStoreEntry
         - Vault
         - AccessController
+        - Account
 ### COMMON SUBSTATES
     AccessRulesChainSubstate:
       allOf:
@@ -2561,6 +2576,15 @@ components:
           properties:
             data_struct:
               $ref: '#/components/schemas/DataStruct'
+    AccountSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - data_struct
+          properties:
+            data_struct:
+              $ref: '#/components/schemas/DataStruct'
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################
@@ -2600,7 +2624,6 @@ components:
           type: object
           description: Key addresses for this network.
           required:
-            - account_package
             - faucet
             - epoch_manager
             - clock
@@ -2608,8 +2631,6 @@ components:
             - eddsa_ed25519
             - xrd
           properties:
-            account_package:
-              type: string
             faucet:
               type: string
             epoch_manager:
@@ -2647,6 +2668,7 @@ components:
             - Validator
             - Clock
             - AccessController
+            - Account
         hrp_prefix:
           type: string
         entity_type:
@@ -3018,12 +3040,12 @@ components:
               description: |
                 Whether the cached rejection of this intent is due to the intent already having been committed.
                 If so, see the /transaction/receipt endpoint for further information.
-            recalculation_due:
+            retry_from_timestamp:
               $ref: "#/components/schemas/Instant"
               description: |
                 The time after which the node will consider recalculating the validity of the transaction.
                 Only present if the rejection is temporary, and not due to the header specifying a "from epoch" in the future.
-            recalculation_from_epoch:
+            retry_from_epoch:
               type: integer
               format: int64
               minimum: 0
@@ -3449,7 +3471,7 @@ components:
       type: string
       description: The type of the validator transaction
       enum:
-        - TimeUpdate
+        - RoundUpdate
     ValidatorTransaction:
       type: object
       required:
@@ -3461,8 +3483,8 @@ components:
         propertyName: type
         mapping:
           # NOTE: These need to match ValidatorTransactionType
-          TimeUpdate: '#/components/schemas/TimeUpdateValidatorTransaction'
-    TimeUpdateValidatorTransaction:
+          RoundUpdate: '#/components/schemas/RoundUpdateValidatorTransaction'
+    RoundUpdateValidatorTransaction:
       allOf:
         - $ref: "#/components/schemas/ValidatorTransaction"
         - type: object

@@ -65,7 +65,7 @@
 use crate::jni::state_computer::JavaValidatorInfo;
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::query::*;
-use crate::staging::ExecutionCache;
+use crate::staging::{ExecutionCache, HashTreeDiff, ProcessedResult};
 use crate::store::traits::*;
 use crate::transaction::{
     LedgerTransaction, LedgerTransactionValidator, UserTransactionValidator, ValidatorTransaction,
@@ -83,9 +83,8 @@ use ::transaction::model::{
 };
 use ::transaction::signing::EcdsaSecp256k1PrivateKey;
 use ::transaction::validation::{TestIntentHashManager, ValidationConfig};
+use parking_lot::RwLock;
 use prometheus::Registry;
-use radix_engine::engine::ScryptoInterpreter;
-use radix_engine::model::ValidatorSubstate;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, AbortReason, ExecutionConfig, FeeReserveConfig,
     PreviewError, PreviewResult, TransactionOutcome, TransactionReceipt, TransactionResult,
@@ -96,15 +95,21 @@ use radix_engine::types::{
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
-use radix_engine_interface::api::types::{SubstateId, SubstateOffset, ValidatorOffset};
-use radix_engine_interface::node::NetworkDefinition;
-use std::collections::{BTreeMap, HashMap};
+
+use radix_engine::state_manager::StateDiff;
+use radix_engine_interface::api::types::{
+    NodeModuleId, SubstateId, SubstateOffset, ValidatorOffset,
+};
+use radix_engine_stores::hash_tree::tree_store::ReadableTreeStore;
+use std::collections::HashMap;
 use std::convert::TryInto;
 
-use radix_engine::ledger::OutputValue;
+use radix_engine::blueprints::epoch_manager::ValidatorSubstate;
+use radix_engine::kernel::ScryptoInterpreter;
+use radix_engine_interface::network::NetworkDefinition;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use tracing::{info, warn};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
@@ -122,10 +127,11 @@ pub struct StateManagerLoggingConfig {
 const UP_TO_FEE_LOAN_TRANSACTION_WARN_TIME_LIMIT_MS: u32 = 100;
 const FULL_TRANSACTION_WARN_TIME_LIMIT_MS: u32 = 500;
 
-pub struct StateManager<S: ReadableSubstateStore> {
-    pub mempool: SimpleMempool,
+pub struct StateManager<S> {
+    pub mempool: RwLock<SimpleMempool>,
     pub network: NetworkDefinition,
-    execution_cache: ExecutionCache<S>,
+    store: S,
+    execution_cache: ExecutionCache,
     pub user_transaction_validator: UserTransactionValidator,
     pub ledger_transaction_validator: LedgerTransactionValidator,
     pub pending_transaction_result_cache: PendingTransactionResultCache,
@@ -167,8 +173,9 @@ where
 
         StateManager {
             network,
-            mempool,
-            execution_cache: ExecutionCache::new(store, accumulator_hash),
+            mempool: RwLock::new(mempool),
+            store,
+            execution_cache: ExecutionCache::new(accumulator_hash),
             user_transaction_validator,
             ledger_transaction_validator: committed_transaction_validator,
             execution_config: ExecutionConfig {
@@ -203,7 +210,7 @@ where
     S: ReadableSubstateStore,
 {
     pub fn store(&self) -> &S {
-        &self.execution_cache.staged_store_manager.root
+        &self.store
     }
 
     pub fn preview(&self, preview_request: PreviewRequest) -> Result<PreviewResult, PreviewError> {
@@ -238,7 +245,7 @@ where
         let start = std::time::Instant::now();
 
         let result = execute_preview(
-            self.store(),
+            &self.store,
             &self.scrypto_interpreter,
             &self.intent_hash_manager,
             &self.network,
@@ -256,39 +263,47 @@ where
 
         result
     }
+}
 
-    fn execute_with_cache(
+impl<S> StateManager<S>
+where
+    S: ReadableSubstateStore + ReadableTreeStore,
+{
+    fn execute_for_staging_with_cache(
         &mut self,
         parent_accumulator_hash: &AccumulatorHash,
         executable: &Executable,
         payload_hash: &LedgerPayloadHash,
-    ) -> (AccumulatorHash, &TransactionReceipt) {
+    ) -> (AccumulatorHash, &ProcessedResult) {
         let new_accumulator_hash = parent_accumulator_hash.accumulate(payload_hash);
-        let receipt =
-            self.execution_cache
-                .execute(parent_accumulator_hash, &new_accumulator_hash, |store| {
-                    let start = std::time::Instant::now();
+        let processed_result = self.execution_cache.execute_transaction(
+            &self.store,
+            parent_accumulator_hash,
+            &new_accumulator_hash,
+            |store| {
+                let start = Instant::now();
 
-                    let result = execute_transaction(
-                        store,
-                        &self.scrypto_interpreter,
-                        &self.fee_reserve_config,
-                        &self.execution_config,
-                        executable,
+                let result = execute_transaction(
+                    store,
+                    &self.scrypto_interpreter,
+                    &self.fee_reserve_config,
+                    &self.execution_config,
+                    executable,
+                );
+
+                let elapsed_millis: u32 = start.elapsed().as_millis().try_into().unwrap_or(u32::MAX);
+
+                if elapsed_millis > FULL_TRANSACTION_WARN_TIME_LIMIT_MS {
+                    warn!(
+                        "Transaction execution took {}ms, above warning threshold of {}ms (ledger payload hash: {}, accumulator hash: {})",
+                        elapsed_millis, FULL_TRANSACTION_WARN_TIME_LIMIT_MS, payload_hash, parent_accumulator_hash
                     );
+                }
 
-                    let elapsed_millis: u32 = start.elapsed().as_millis().try_into().unwrap_or(u32::MAX);
-
-                    if elapsed_millis > FULL_TRANSACTION_WARN_TIME_LIMIT_MS {
-                        warn!(
-                            "Transaction execution took {}ms, above warning threshold of {}ms (ledger payload hash: {}, accumulator hash: {})",
-                            elapsed_millis, FULL_TRANSACTION_WARN_TIME_LIMIT_MS, payload_hash, parent_accumulator_hash
-                        );
-                    }
-
-                    result
-                });
-        (new_accumulator_hash, receipt)
+                result
+            },
+        );
+        (new_accumulator_hash, processed_result)
     }
 }
 
@@ -305,7 +320,7 @@ enum AlreadyPreparedTransaction {
 
 impl<S> StateManager<S>
 where
-    S: ReadableSubstateStore,
+    S: ReadableSubstateStore + ReadableTreeStore,
     S: for<'a> TransactionIndex<&'a IntentHash> + QueryableTransactionStore,
     S: QueryableProofStore + QueryableAccumulatorHash,
 {
@@ -324,7 +339,7 @@ where
         let start = std::time::Instant::now();
 
         let receipt = execute_transaction(
-            self.store(),
+            &self.store,
             &self.scrypto_interpreter,
             &self.fee_reserve_config,
             &self.execution_config_for_pending_transactions,
@@ -357,7 +372,7 @@ where
             .map(|_| {
                 self.metrics
                     .mempool_current_transactions
-                    .set(self.mempool.get_count() as i64);
+                    .set(self.mempool.read().get_count() as i64);
                 self.metrics
                     .mempool_submission_added
                     .with_label(mempool_add_source)
@@ -384,6 +399,7 @@ where
     ) -> Result<(), MempoolAddError> {
         // Quick check to avoid transaction validation if it couldn't be added to the mempool anyway
         self.mempool
+            .write()
             .check_add_would_be_possible(&unvalidated_transaction.user_payload_hash())?;
 
         let (record, was_cached) = self.check_for_rejection_with_caching(&unvalidated_transaction);
@@ -395,6 +411,7 @@ where
             // * Moreover, the engine expects the validated transaction to be presently valid, else panics
             // * Once epoch validation is moved to the executor, we can persist validated transactions in the mempool
             self.mempool
+                .write()
                 .add_transaction(unvalidated_transaction.into())?;
         }
 
@@ -404,8 +421,9 @@ where
     /// Reads the transaction rejection status from the cache, else calculates it fresh, by
     /// statically validating the transaction and then attempting to run it.
     ///
-    /// The result is stored in the cache. If the transaction is freshly rejected,
-    /// it is also removed from the mempool if it exists.
+    /// The result is stored in the cache.
+    /// If the transaction is freshly rejected, the caller should perform additional cleanup,
+    /// e.g. removing the transaction from the mempool
     ///
     /// Its pending transaction record is returned, along with a boolean about whether the last attempt was cached.
     pub fn check_for_rejection_with_caching(
@@ -430,25 +448,14 @@ where
 
         // TODO: Remove and use some sort of cache to store size
         let payload_size = scrypto_encode(transaction).unwrap().len();
-        let new_status = self.check_for_rejection_uncached(transaction, payload_size);
-
-        if new_status.is_err() {
-            // If it's been rejected, let's remove it from the mempool, if it's present
-            if self
-                .mempool
-                .remove_transaction(&intent_hash, &payload_hash)
-                .is_some()
-            {
-                self.metrics
-                    .mempool_current_transactions
-                    .set(self.mempool.get_count() as i64);
-            }
-        }
+        let rejection = self
+            .check_for_rejection_uncached(transaction, payload_size)
+            .err();
 
         let attempt = TransactionAttempt {
-            rejection: new_status.as_ref().err().cloned(),
+            rejection,
             against_state: AtState::Committed {
-                state_version: self.store().max_state_version(),
+                state_version: self.store.max_state_version(),
             },
             timestamp: current_time,
         };
@@ -471,7 +478,7 @@ where
         payload_size: usize,
     ) -> Result<(), RejectionReason> {
         if self
-            .store()
+            .store
             .get_txn_state_version_by_identifier(&transaction.intent_hash())
             .is_some()
         {
@@ -502,57 +509,67 @@ where
 
     pub fn get_relay_transactions(
         &mut self,
-        max_num_txns: u64,
-        max_payload_size_bytes: u64,
+        max_num_txns: usize,
+        max_payload_size_bytes: usize,
     ) -> Vec<PendingTransaction> {
-        let mut mempool_txns = Vec::from_iter(self.mempool.get_transactions().into_values());
-        mempool_txns.shuffle(&mut thread_rng());
+        let mut mempool_transaction_data: Vec<_> = {
+            // Explicit scope to ensure the lock is dropped
+            self.mempool
+                .read()
+                .transactions()
+                .values()
+                .cloned()
+                .collect()
+        };
+        mempool_transaction_data.shuffle(&mut thread_rng());
 
-        let mut txns_to_return = Vec::new();
-        let mut payload_size_so_far = 0u64;
+        let mut transactions_to_return = Vec::new();
+        let mut payload_size_so_far = 0usize;
 
         // We (partially) cleanup the mempool on the occasion of getting the relay txns
         // TODO: move this to a separate job
-        let mut txns_to_remove = Vec::new();
+        let mut transactions_to_remove = Vec::new();
 
-        let mut txns_iter = mempool_txns.into_iter();
-        let mut next_opt = txns_iter.next();
-        while next_opt.is_some() && (txns_to_return.len() as u64) < max_num_txns {
-            let next = next_opt.unwrap();
-
-            let (record, _) = self.check_for_rejection_with_caching(&next.transaction.payload);
+        for transaction_data in mempool_transaction_data.into_iter() {
+            let (record, _) =
+                self.check_for_rejection_with_caching(&transaction_data.transaction.payload);
             if record.latest_attempt.rejection.is_some() {
                 // Mark the transaction to be removed from the mempool
                 // (see the comment above about moving this to a separate job)
-                txns_to_remove.push((next.transaction.intent_hash, next.transaction.payload_hash));
+                transactions_to_remove.push((
+                    transaction_data.transaction.intent_hash,
+                    transaction_data.transaction.payload_hash,
+                ));
             } else {
                 // Check the payload size limit
-                payload_size_so_far += next.transaction.payload_size;
+                payload_size_so_far += transaction_data.transaction.payload_size;
                 if payload_size_so_far > max_payload_size_bytes {
                     break;
                 }
 
                 // Add the transaction to response
-                txns_to_return.push(next.transaction)
+                transactions_to_return.push(transaction_data.transaction);
+                if transactions_to_return.len() >= max_num_txns {
+                    break;
+                }
             }
-
-            next_opt = txns_iter.next();
         }
 
         // See the comment above about moving this to a separate job
-        for txn_to_remove in txns_to_remove {
+        for transaction_to_remove in transactions_to_remove {
             if self
                 .mempool
-                .remove_transaction(&txn_to_remove.0, &txn_to_remove.1)
+                .write()
+                .remove_transaction(&transaction_to_remove.0, &transaction_to_remove.1)
                 .is_some()
             {
                 self.metrics
                     .mempool_current_transactions
-                    .set(self.mempool.get_count() as i64);
+                    .set(self.mempool.read().get_count() as i64);
             }
         }
 
-        txns_to_return
+        transactions_to_return
     }
 
     // TODO: Update to prepare_system_transaction when we start to support forking
@@ -567,18 +584,19 @@ where
 
         let parent_accumulator_hash = AccumulatorHash::pre_genesis();
 
-        let (_, receipt) = self.execute_with_cache(
+        let (_, processed) = self.execute_for_staging_with_cache(
             &parent_accumulator_hash,
             &executable,
             &parsed_transaction.get_hash(),
         );
-        match &receipt.result {
+        match &processed.receipt().result {
             TransactionResult::Commit(commit) => match &commit.outcome {
                 TransactionOutcome::Success(..) => PrepareGenesisResult {
                     validator_set: commit
                         .next_epoch
                         .clone()
                         .map(|(validator_set, _)| validator_set),
+                    state_hash: *processed.state_hash(),
                 },
                 TransactionOutcome::Failure(error) => {
                     panic!("Genesis failed. Error: {:?}", error)
@@ -594,14 +612,16 @@ where
     }
 
     pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
-        // This intent hash check, and current epoch should eventually live in the executor
-        let pending_transaction_base_state_version = self.store().max_state_version();
+        let pending_transaction_base_state_version = self.store.max_state_version();
+
+        // This hashmap is used to check for any proposed intents which have already been commited (or prepared)
+        // in order to exclude them. This check will eventually live in the engine/executor.
         let mut already_committed_or_prepared_intent_hashes: HashMap<
             IntentHash,
             AlreadyPreparedTransaction,
         > = HashMap::new();
 
-        let already_committed_proposed_payload_hashes = prepare_request
+        let already_committed_proposed_intent_hashes = prepare_request
             .proposed_payloads
             .iter()
             .filter_map(|proposed_payload| {
@@ -611,18 +631,24 @@ where
                 .ok()
                 .map(|validated_transaction| validated_transaction.intent_hash())
                 .and_then(|intent_hash| {
-                    self.store()
+                    self.store
                         .get_txn_state_version_by_identifier(&intent_hash)
                         .map(|_| (intent_hash, AlreadyPreparedTransaction::Committed))
                 })
             });
 
         already_committed_or_prepared_intent_hashes
-            .extend(already_committed_proposed_payload_hashes);
+            .extend(already_committed_proposed_intent_hashes);
 
-        let mut parent_accumulator_hash = self.store().get_top_accumulator_hash();
+        let mut state_tracker = StateTracker::initial(self.store.get_top_accumulator_hash());
 
-        for prepared in prepare_request.already_prepared_payloads {
+        let already_prepared_payloads: Vec<_> = prepare_request
+            .prepared_vertices
+            .into_iter()
+            .flat_map(|v| v.transaction_payloads)
+            .collect();
+
+        for prepared in already_prepared_payloads {
             let parsed_transaction =
                 LedgerTransactionValidator::parse_unvalidated_transaction_from_slice(&prepared)
                     .expect("Already prepared transactions should be decodeable");
@@ -645,15 +671,15 @@ where
             }
             .expect("Already prepared tranasctions should be valid");
 
-            let (new_accumulator_hash, receipt) = self.execute_with_cache(
-                &parent_accumulator_hash,
+            let (new_accumulator_hash, processed) = self.execute_for_staging_with_cache(
+                state_tracker.accumulator_hash(),
                 &executable,
                 &parsed_transaction.get_hash(),
             );
-            match &receipt.result {
+            match &processed.receipt().result {
                 TransactionResult::Commit(_) => {
                     // TODO: Do we need to check that next epoch request has been prepared?
-                    parent_accumulator_hash = new_accumulator_hash;
+                    state_tracker.update(new_accumulator_hash, *processed.state_hash());
                 }
                 TransactionResult::Reject(reject_result) => {
                     panic!(
@@ -679,18 +705,18 @@ where
         let prepared_txn = validator_transaction.prepare();
         let executable = prepared_txn.to_executable();
         let validator_txn = LedgerTransaction::Validator(validator_transaction);
-        let (new_accumulator_hash, receipt) = self.execute_with_cache(
-            &parent_accumulator_hash,
+        let (new_accumulator_hash, processed) = self.execute_for_staging_with_cache(
+            state_tracker.accumulator_hash(),
             &executable,
             &validator_txn.get_hash(),
         );
-        let mut next_epoch = match &receipt.result {
+        let mut next_epoch = match &processed.receipt().result {
             TransactionResult::Commit(commit_result) => {
                 if let TransactionOutcome::Failure(error) = &commit_result.outcome {
                     panic!("Validator txn failed: {:?}", error);
                 }
 
-                parent_accumulator_hash = new_accumulator_hash;
+                state_tracker.update(new_accumulator_hash, *processed.state_hash());
                 committed.push(scrypto_encode(&validator_txn).unwrap());
 
                 commit_result.next_epoch.clone().map(|e| NextEpoch {
@@ -766,12 +792,15 @@ where
                 let (payload, hash) = LedgerTransaction::User(parsed.clone())
                     .create_payload_and_hash()
                     .unwrap();
-                let (new_accumulator_hash, receipt) =
-                    self.execute_with_cache(&parent_accumulator_hash, &executable, &hash);
+                let (new_accumulator_hash, processed) = self.execute_for_staging_with_cache(
+                    state_tracker.accumulator_hash(),
+                    &executable,
+                    &hash,
+                );
 
-                match &receipt.result {
+                match &processed.receipt().result {
                     TransactionResult::Commit(result) => {
-                        parent_accumulator_hash = new_accumulator_hash;
+                        state_tracker.update(new_accumulator_hash, *processed.state_hash());
 
                         already_committed_or_prepared_intent_hashes
                             .insert(intent_hash, AlreadyPreparedTransaction::Proposed);
@@ -815,25 +844,27 @@ where
             }
         }
 
-        for (intent_hash, user_payload_hash, invalid_at_epoch, rejection_option) in
-            pending_transaction_results
         {
-            if rejection_option.is_some() {
-                // Removing transactions rejected during prepare from the mempool is a bit of overkill:
-                // just because transactions were rejected in this history doesn't mean this history will be committed.
-                //
-                // But it'll do for now as a defensive measure until we can have a more intelligent mempool.
-                if self
-                    .mempool
-                    .remove_transaction(&intent_hash, &user_payload_hash)
-                    .is_some()
-                {
-                    // TODO - fix this metric to live inside the mempool
-                    self.metrics
-                        .mempool_current_transactions
-                        .set(self.mempool.get_count() as i64);
+            let mut mempool = self.mempool.write();
+            for (intent_hash, user_payload_hash, _, rejection_option) in
+                pending_transaction_results.iter()
+            {
+                if rejection_option.is_some() {
+                    // Removing transactions rejected during prepare from the mempool is a bit of overkill:
+                    // just because transactions were rejected in this history doesn't mean this history will be committed.
+                    //
+                    // But it'll do for now as a defensive measure until we can have a more intelligent mempool.
+                    mempool.remove_transaction(intent_hash, user_payload_hash);
                 }
             }
+            self.metrics
+                .mempool_current_transactions
+                .set(mempool.get_count() as i64);
+        }
+
+        for (intent_hash, user_payload_hash, invalid_at_epoch, rejection_option) in
+            pending_transaction_results.into_iter()
+        {
             let attempt = TransactionAttempt {
                 rejection: rejection_option,
                 against_state: AtState::PendingPreparingVertices {
@@ -854,24 +885,54 @@ where
             committed,
             rejected: rejected_payloads,
             next_epoch,
+            state_hash: state_tracker.into_final_state_hash(),
         }
+    }
+}
+
+struct StateTracker {
+    accumulator_hash: AccumulatorHash,
+    state_hash: Option<StateHash>,
+}
+
+impl StateTracker {
+    pub fn initial(accumulator_hash: AccumulatorHash) -> Self {
+        Self {
+            accumulator_hash,
+            state_hash: None,
+        }
+    }
+
+    pub fn accumulator_hash(&self) -> &AccumulatorHash {
+        &self.accumulator_hash
+    }
+
+    pub fn update(&mut self, accumulator_hash: AccumulatorHash, state_hash: StateHash) {
+        self.accumulator_hash = accumulator_hash;
+        self.state_hash = Some(state_hash);
+    }
+
+    pub fn into_final_state_hash(self) -> StateHash {
+        self.state_hash
+            .expect("at least round update transaction must have succeeded")
+    }
+}
+
+impl<'db, S> StateManager<S>
+where
+    S: WriteableVertexStore,
+{
+    pub fn save_vertex_store(&'db mut self, vertex_store: Vec<u8>) {
+        self.store.save_vertex_store(vertex_store);
     }
 }
 
 impl<'db, S> StateManager<S>
 where
     S: CommitStore,
-    S: ReadableSubstateStore,
+    S: ReadableSubstateStore + ReadableTreeStore,
     S: QueryableProofStore + QueryableTransactionStore,
-    S: WriteableVertexStore,
 {
-    pub fn save_vertex_store(&'db mut self, vertex_store: Vec<u8>) {
-        self.execution_cache
-            .staged_store_manager
-            .root
-            .save_vertex_store(vertex_store);
-    }
-
     pub fn commit(&'db mut self, commit_request: CommitRequest) -> Result<(), CommitError> {
         let commit_request_start_state_version =
             commit_request.proof_state_version - (commit_request.transaction_payloads.len() as u64);
@@ -907,10 +968,11 @@ where
         let mut current_state_version = current_top_of_ledger.state_version;
         let mut parent_accumulator_hash = current_top_of_ledger.accumulator_hash;
         let mut epoch_boundary = None;
-        let mut receipts = Vec::new();
-
         let mut committed_transaction_bundles = Vec::new();
+        let mut state_diff = StateDiff::new();
+        let mut hash_tree_diff = HashTreeDiff::new();
         let mut intent_hashes = Vec::new();
+        let mut final_state_hash = None;
 
         let parsed_txns_len = parsed_transactions.len();
 
@@ -933,15 +995,15 @@ where
                 });
 
             let payload_hash = transaction.get_hash();
-            let (current_accumulator_hash, engine_receipt) =
-                self.execute_with_cache(&parent_accumulator_hash, &executable, &payload_hash);
-            receipts.push(engine_receipt.clone());
+            let (current_accumulator_hash, processed) = self.execute_for_staging_with_cache(
+                &parent_accumulator_hash,
+                &executable,
+                &payload_hash,
+            );
 
             parent_accumulator_hash = current_accumulator_hash;
 
-            let engine_receipt = (*engine_receipt).clone();
-
-            let ledger_receipt: LedgerTransactionReceipt = match engine_receipt.result {
+            let commit_result = match &processed.receipt().result {
                 TransactionResult::Commit(result) => {
                     if let Some((_, next_epoch)) = result.next_epoch {
                         let is_last = i == (parsed_txns_len - 1);
@@ -951,8 +1013,7 @@ where
                         // TODO: Use actual result and verify proof validator set matches transaction receipt validator set
                         epoch_boundary = Some(next_epoch);
                     }
-
-                    (result, engine_receipt.execution.fee_summary).into()
+                    result.clone()
                 }
                 TransactionResult::Reject(error) => {
                     panic!(
@@ -967,6 +1028,10 @@ where
                     );
                 }
             };
+            let ledger_receipt = LedgerTransactionReceipt::from((
+                commit_result,
+                processed.receipt().execution.fee_summary.clone(),
+            ));
 
             if let LedgerTransaction::User(notarized_transaction) = &transaction {
                 let intent_hash = notarized_transaction.intent_hash();
@@ -974,6 +1039,7 @@ where
             }
 
             current_state_version += 1;
+            final_state_hash = Some(*processed.state_hash());
 
             let identifiers = CommittedTransactionIdentifiers {
                 state_version: current_state_version,
@@ -981,28 +1047,35 @@ where
             };
 
             committed_transaction_bundles.push((transaction, ledger_receipt, identifiers));
+
+            // TODO: the StateDiff below should really have its own complete .extend() method (see
+            // HashTreeDiff's), and this would come handy once we support substate deletes.
+            state_diff
+                .up_substates
+                .extend(processed.state_diff().up_substates.clone());
+            hash_tree_diff.extend(processed.hash_tree_diff().clone());
+        }
+
+        if let Some(state_hash) = final_state_hash {
+            if state_hash != commit_request.proof_state_hash {
+                warn!(
+                    "computed state hash at version {} differs from the one in proof ({} != {})",
+                    commit_request.proof_state_version, state_hash, commit_request.proof_state_hash
+                );
+            }
         }
 
         self.execution_cache.progress_root(&parent_accumulator_hash);
 
-        let mut substates_collector = CommitSubstatesCollector::new();
-        for receipt in receipts {
-            if let TransactionResult::Commit(commit) = &receipt.result {
-                commit.state_updates.commit(&mut substates_collector);
-            }
-        }
-
-        self.execution_cache
-            .staged_store_manager
-            .root
-            .commit(CommitBundle {
-                transactions: committed_transaction_bundles,
-                proof_bytes: commit_request.proof,
-                proof_state_version: commit_request.proof_state_version,
-                epoch_boundary,
-                substates: substates_collector.substates,
-                vertex_store: commit_request.vertex_store,
-            });
+        self.store.commit(CommitBundle {
+            transactions: committed_transaction_bundles,
+            proof_bytes: commit_request.proof,
+            proof_state_version: commit_request.proof_state_version,
+            epoch_boundary,
+            substates: state_diff.up_substates,
+            vertex_store: commit_request.vertex_store,
+            hash_tree_nodes: hash_tree_diff.new_hash_tree_nodes,
+        });
 
         self.metrics
             .ledger_state_version
@@ -1016,10 +1089,13 @@ where
                 .unwrap()
                 .as_secs_f64(),
         );
-        self.mempool.handle_committed_transactions(&intent_hashes);
-        self.metrics
-            .mempool_current_transactions
-            .set(self.mempool.get_count() as i64);
+        {
+            let mut mempool = self.mempool.write();
+            mempool.handle_committed_transactions(&intent_hashes);
+            self.metrics
+                .mempool_current_transactions
+                .set(mempool.get_count() as i64);
+        }
 
         self.pending_transaction_result_cache
             .track_committed_transactions(
@@ -1037,7 +1113,7 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
         &self,
         component_address: ComponentAddress,
     ) -> Option<HashMap<ResourceAddress, Decimal>> {
-        let mut resource_accounter = ResourceAccounter::new(self.store());
+        let mut resource_accounter = ResourceAccounter::new(&self.store);
         resource_accounter
             .add_resources(RENodeId::Global(GlobalAddress::Component(
                 component_address,
@@ -1052,9 +1128,10 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
             .unwrap();
         let substate_id = SubstateId(
             node_id,
+            NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
         );
-        let output = self.store().get_substate(&substate_id).unwrap();
+        let output = self.store.get_substate(&substate_id).unwrap();
         let validator_substate: ValidatorSubstate = output.substate.to_runtime().into();
         JavaValidatorInfo {
             lp_token_address: validator_substate.liquidity_token,
@@ -1063,24 +1140,6 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
     }
 
     pub fn get_epoch(&self) -> u64 {
-        self.store().get_epoch()
-    }
-}
-
-struct CommitSubstatesCollector {
-    pub substates: BTreeMap<SubstateId, OutputValue>,
-}
-
-impl CommitSubstatesCollector {
-    pub fn new() -> CommitSubstatesCollector {
-        CommitSubstatesCollector {
-            substates: BTreeMap::new(),
-        }
-    }
-}
-
-impl WriteableSubstateStore for CommitSubstatesCollector {
-    fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
-        self.substates.insert(substate_id, substate);
+        self.store.get_epoch()
     }
 }

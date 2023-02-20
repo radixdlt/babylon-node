@@ -106,4 +106,9 @@ public record SimpleRecord(
                 Field.of(SimpleRecord::third, codecs.of(new TypeToken<>() {})),
                 Field.of(SimpleRecord::fourth, codecs.of(new TypeToken<>() {}))));
   }
+
+  public static void registerCodecUsingStructCodecFromRecordComponents(CodecMap codecMap) {
+    codecMap.register(
+        SimpleRecord.class, codecs -> StructCodec.fromRecordComponents(SimpleRecord.class, codecs));
+  }
 }

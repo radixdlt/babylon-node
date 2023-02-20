@@ -72,6 +72,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.*;
@@ -248,7 +249,9 @@ public class EpochsConsensusModule extends AbstractModule {
 
   @Provides
   private PacemakerStateFactory pacemakerStateFactory(
-      EventDispatcher<EpochRoundUpdate> epochRoundUpdateEventDispatcher) {
+      EventDispatcher<EpochRoundUpdate> epochRoundUpdateEventDispatcher,
+      Metrics metrics,
+      Addressing addressing) {
     return (initialRound, epoch, proposerElection) ->
         new PacemakerState(
             initialRound,
@@ -256,7 +259,9 @@ public class EpochsConsensusModule extends AbstractModule {
             roundUpdate -> {
               EpochRoundUpdate epochRoundUpdate = new EpochRoundUpdate(epoch, roundUpdate);
               epochRoundUpdateEventDispatcher.dispatch(epochRoundUpdate);
-            });
+            },
+            metrics,
+            addressing);
   }
 
   @ProvidesIntoSet

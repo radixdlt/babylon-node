@@ -85,16 +85,17 @@ public sealed interface StateComputerConfig {
   static StateComputerConfig mockedWithEpochs(
       Round epochMaxRound, EpochNodeWeightMapping mapping, MockedMempoolConfig mempoolType) {
     return new MockedStateComputerConfigWithEpochs(
-        epochMaxRound, mapping, HashUtils.zero256(), mempoolType);
+        epochMaxRound, mapping, HashUtils.zero256(), HashUtils.zero256(), mempoolType);
   }
 
   static StateComputerConfig mockedWithEpochs(
       Round epochMaxRound,
       EpochNodeWeightMapping mapping,
       HashCode preGenesisAccumulatorHash,
+      HashCode preGenesisStateHash,
       MockedMempoolConfig mempoolType) {
     return new MockedStateComputerConfigWithEpochs(
-        epochMaxRound, mapping, preGenesisAccumulatorHash, mempoolType);
+        epochMaxRound, mapping, preGenesisAccumulatorHash, preGenesisStateHash, mempoolType);
   }
 
   static StateComputerConfig mockedNoEpochs(int numValidators, MockedMempoolConfig mempoolType) {
@@ -139,6 +140,7 @@ public sealed interface StateComputerConfig {
       Round epochMaxRound,
       EpochNodeWeightMapping mapping,
       HashCode preGenesisAccumulatorHash,
+      HashCode preGenesisStateHash,
       MockedMempoolConfig mempoolType)
       implements MockedStateComputerConfig {
     @Override

@@ -104,7 +104,7 @@ public class MetricsInitializer {
    * @return Initialized instance.
    */
   public Metrics initialize() {
-    return createCollectorHierarchy("rn", Metrics.class);
+    return createHierarchy("rn", Metrics.class);
   }
 
   /**
@@ -117,8 +117,7 @@ public class MetricsInitializer {
    * @param <R> A record type.
    */
   @SuppressWarnings("unchecked")
-  private <R extends Record> R createCollectorHierarchy(
-      @Nullable String namePrefix, Class<R> recordClass) {
+  private <R extends Record> R createHierarchy(@Nullable String namePrefix, Class<R> recordClass) {
     Constructor<?> constructor = recordClass.getConstructors()[0];
     Object[] rowValues =
         Stream.of(recordClass.getRecordComponents())
@@ -140,7 +139,7 @@ public class MetricsInitializer {
    * Instantiates a specific component of a record, which may either be:
    *
    * <ul>
-   *   <li>a sub-record (i.e. recursing into {@link #createCollectorHierarchy(String, Class)});
+   *   <li>a sub-record (i.e. recursing into {@link #createHierarchy(String, Class)});
    *   <li>or a leaf collector. It will be registered with Prometheus under the given name, unless
    *       the record component is explicitly annotated as {@link NotExposed}.
    * </ul>
@@ -153,55 +152,88 @@ public class MetricsInitializer {
   private Object createComponentValue(String name, RecordComponent component) {
     Type componentType = component.getGenericType();
     if (componentType instanceof Class<?> rowClass && rowClass.isRecord()) {
-      return createCollectorHierarchy(name, (Class<? extends Record>) rowClass);
+      return createHierarchy(name, (Class<? extends Record>) rowClass);
     }
-    Collector collector = instantiateCollector(name, componentType);
+    LeafWithCollector leaf = instantiateLeaf(name, componentType);
     if (!component.isAnnotationPresent(NotExposed.class)) {
-      registry.register(collector);
+      registry.register(leaf.collector());
     }
-    return collector;
+    return leaf.leaf();
   }
 
   /**
-   * Resolves a required collector from the given type and instantiates it with the given name.
-   * Supports a subset of standard Prometheus collectors and our type-safe label-support wrappers
-   * (see {@link Metrics}).
+   * Resolves a required leaf from the given type and instantiates it with the given name. Supports
+   * a subset of standard Prometheus collectors and our type-safe label-support wrappers (see {@link
+   * Metrics}).
    *
    * @param name A name.
    * @param type A type.
-   * @return Collector.
+   * @return Leaf, returned together with its underlying {@link Collector} (to be registered with
+   *     Prometheus).
    */
   @SuppressWarnings("unchecked")
-  private Collector instantiateCollector(String name, Type type) {
+  private LeafWithCollector instantiateLeaf(String name, Type type) {
     if (type == Counter.class) {
-      return Counter.build(name, name).create();
+      return new LeafWithCollector(Counter.build(name, name).create());
     }
     if (type == Gauge.class) {
-      return Gauge.build(name, name).create();
+      return new LeafWithCollector(Gauge.build(name, name).create());
     }
     if (type == Timer.class) {
-      return new Timer(name);
+      Summary summary = buildTimeMeasuringSummary(name).create();
+      return new LeafWithCollector(new Timer(summary.labels()), summary);
     }
     if (type == Summary.class) {
-      return Summary.build(name, name).create();
+      return new LeafWithCollector(Summary.build(name, name).create());
     }
     if (type == GetterGauge.class) {
-      return new GetterGauge(name);
+      return new LeafWithCollector(new GetterGauge(name));
     }
     if (type instanceof ParameterizedType generic) {
       Class<? extends Record> labelClass =
           (Class<? extends Record>) generic.getActualTypeArguments()[0];
+      String[] labels = NameRenderer.labelNames(labelClass);
       if (generic.getRawType() == LabelledCounter.class) {
-        return new LabelledCounter<>(name, labelClass);
+        Counter counter = Counter.build(name, name).labelNames(labels).create();
+        return new LeafWithCollector(new LabelledCounter<>(counter), counter);
       }
       if (generic.getRawType() == LabelledGauge.class) {
-        return new LabelledGauge<>(name, labelClass);
+        Gauge gauge = Gauge.build(name, name).labelNames(labels).create();
+        return new LeafWithCollector(new LabelledGauge<>(gauge), gauge);
       }
       if (generic.getRawType() == TypedInfo.class) {
-        return new TypedInfo<>(name);
+        Info info = Info.build(name, name).create();
+        return new LeafWithCollector(new TypedInfo<>(info), info);
+      }
+      if (generic.getRawType() == LabelledTimer.class) {
+        Summary summary = buildTimeMeasuringSummary(name).labelNames(labels).create();
+        return new LeafWithCollector(new LabelledTimer<>(summary), summary);
       }
     }
     throw new IllegalArgumentException(
-        "unknown collector type %s used for metric %s".formatted(type.getTypeName(), name));
+        "unknown type %s used for metric %s".formatted(type.getTypeName(), name));
+  }
+
+  /**
+   * Starts a build of a {@link Summary} tailored for time measurement.
+   *
+   * @param name Metric name.
+   * @return Unfinished builder.
+   */
+  private static Summary.Builder buildTimeMeasuringSummary(String name) {
+    return Summary.build(name.concat("_seconds"), name).unit("seconds");
+  }
+
+  private record LeafWithCollector(Object leaf, Collector collector) {
+
+    /**
+     * A convenience constructor for cases where we use Prometheus measurement primitive directly as
+     * a leaf in our hierarchy.
+     *
+     * @param directCollector Collector.
+     */
+    public LeafWithCollector(Collector directCollector) {
+      this(directCollector, directCollector);
+    }
   }
 }

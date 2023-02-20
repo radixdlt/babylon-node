@@ -59,22 +59,21 @@ pub(crate) async fn handle_transaction_submit(
                 is_intent_rejection_permanent: rejection.is_permanent_for_intent(),
                 is_rejected_because_intent_already_committed: rejection
                     .is_rejected_because_intent_already_committed(),
-                // TODO - Rename to `reexecution_not_before` after the Betanet-V2 Core API compatibility freeze
                 // TODO - Add `result_validity_substate_criteria` once track / mempool is improved
-                recalculation_due: match rejection.recalculation_due {
-                    state_manager::RecalculationDue::Never => None,
-                    state_manager::RecalculationDue::From(time) => Some(Box::new(
+                retry_from_timestamp: match rejection.retry_from {
+                    state_manager::RetryFrom::Never => None,
+                    state_manager::RetryFrom::FromTime(time) => Some(Box::new(
                         to_api_instant_from_safe_timestamp(to_unix_timestamp_ms(time)?)?,
                     )),
-                    state_manager::RecalculationDue::FromEpoch(_) => None,
-                    state_manager::RecalculationDue::Whenever => {
+                    state_manager::RetryFrom::FromEpoch(_) => None,
+                    state_manager::RetryFrom::Whenever => {
                         Some(Box::new(to_api_instant_from_safe_timestamp(
                             to_unix_timestamp_ms(std::time::SystemTime::now())?,
                         )?))
                     }
                 },
-                recalculation_from_epoch: match rejection.recalculation_due {
-                    state_manager::RecalculationDue::FromEpoch(epoch) => {
+                retry_from_epoch: match rejection.retry_from {
+                    state_manager::RetryFrom::FromEpoch(epoch) => {
                         Some(to_api_epoch(&mapping_context, epoch)?)
                     }
                     _ => None,

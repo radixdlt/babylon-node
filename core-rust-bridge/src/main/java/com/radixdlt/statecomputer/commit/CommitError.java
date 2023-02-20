@@ -66,16 +66,12 @@ package com.radixdlt.statecomputer.commit;
 
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
-import com.radixdlt.sbor.codec.EnumEntry;
 
 public sealed interface CommitError {
   static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         CommitError.class,
-        (codecs) ->
-            EnumCodec.fromEntries(
-                EnumEntry.noFields(
-                    CommitError.MissingEpochProof.class, CommitError.MissingEpochProof::new)));
+        codecs -> EnumCodec.fromPermittedRecordSubclasses(CommitError.class, codecs));
   }
 
   record MissingEpochProof() implements CommitError {}

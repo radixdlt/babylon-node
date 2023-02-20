@@ -64,7 +64,6 @@
 
 package com.radixdlt.statecomputer.commit;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transactions.RawLedgerTransaction;
@@ -73,10 +72,6 @@ public record PrepareGenesisRequest(RawLedgerTransaction genesis) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PrepareGenesisRequest.class,
-        codecs ->
-            StructCodec.with(
-                PrepareGenesisRequest::new,
-                codecs.of(new TypeToken<>() {}),
-                (t, encoder) -> encoder.encode(t.genesis)));
+        codecs -> StructCodec.fromRecordComponents(PrepareGenesisRequest.class, codecs));
   }
 }

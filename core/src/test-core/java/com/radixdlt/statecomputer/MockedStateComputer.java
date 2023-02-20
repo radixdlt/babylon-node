@@ -65,6 +65,7 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HighQC;
@@ -74,10 +75,12 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
@@ -115,14 +118,18 @@ public final class MockedStateComputer implements StateComputer {
 
   @Override
   public StateComputerLedger.StateComputerResult prepare(
-      List<StateComputerLedger.ExecutedTransaction> previous,
+      HashCode parentAccumulator,
+      List<ExecutedVertex> previousVertices,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
+    final var previousTransactions =
+        previousVertices.stream().flatMap(ExecutedVertex::successfulTransactions).toList();
     return new StateComputerLedger.StateComputerResult(
         proposedTransactions.stream()
             .map(tx -> new MockExecuted(tx.INCORRECTInterpretDirectlyAsRawLedgerTransaction()))
             .collect(Collectors.toList()),
-        Map.of());
+        Map.of(),
+        HashUtils.zero256());
   }
 
   @Override
@@ -142,6 +149,7 @@ public final class MockedStateComputer implements StateComputer {
                           nextEpoch.getEpoch(),
                           Round.genesis(),
                           header.getAccumulatorState(),
+                          header.getStateHash(),
                           header.consensusParentRoundTimestamp(),
                           header.proposerTimestamp());
                   QuorumCertificate initialEpochQC =

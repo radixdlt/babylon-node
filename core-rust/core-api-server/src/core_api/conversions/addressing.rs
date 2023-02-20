@@ -3,20 +3,19 @@ use std::str::FromStr;
 
 use crate::core_api::*;
 
+use crate::core_api::models::ModuleType;
 use models::{EntityType, SubstateKeyType, SubstateType};
+use radix_engine::system::global::GlobalAddressSubstate;
 use radix_engine::types::{
-    ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, NonFungibleStoreOffset,
-    PackageOffset, ResourceManagerOffset, SubstateOffset, VaultOffset,
+    scrypto_encode, AccessRulesChainOffset, ClockOffset, ComponentAddress, ComponentOffset,
+    EpochManagerOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, MetadataOffset,
+    NonFungibleStoreOffset, PackageAddress, PackageOffset, RENodeId, ResourceAddress,
+    ResourceManagerOffset, SubstateId, SubstateOffset, VaultOffset,
 };
-use radix_engine::{
-    model::GlobalAddressSubstate,
-    types::{
-        scrypto_encode, AccessRulesChainOffset, ClockOffset, ComponentAddress, EpochManagerOffset,
-        MetadataOffset, PackageAddress, RENodeId, ResourceAddress, SubstateId,
-    },
+use radix_engine_interface::api::types::{
+    AccessControllerOffset, AccountOffset, NodeModuleId, RoyaltyOffset, ValidatorOffset,
 };
-use radix_engine_interface::api::types::{AccessControllerOffset, ValidatorOffset};
-use radix_engine_interface::model::{NonFungibleIdType, NonFungibleLocalId};
+use radix_engine_interface::blueprints::resource::{NonFungibleIdType, NonFungibleLocalId};
 
 pub fn to_api_component_address(
     context: &MappingContext,
@@ -150,12 +149,13 @@ impl TryFrom<RENodeId> for MappedEntityId {
             RENodeId::KeyValueStore(_) => EntityType::KeyValueStore,
             RENodeId::NonFungibleStore(_) => EntityType::NonFungibleStore,
             RENodeId::Vault(_) => EntityType::Vault,
+            RENodeId::Account(_) => EntityType::Account,
             RENodeId::Bucket(_) => return Err(transient_renode_error("Bucket")),
             RENodeId::Proof(_) => return Err(transient_renode_error("Proof")),
             RENodeId::Worktop => return Err(transient_renode_error("Worktop")),
-            RENodeId::AuthZoneStack(_) => return Err(transient_renode_error("AuthZoneStack")),
+            RENodeId::AuthZoneStack => return Err(transient_renode_error("AuthZoneStack")),
             RENodeId::FeeReserve(_) => return Err(transient_renode_error("FeeReserve")),
-            RENodeId::TransactionRuntime(_) => {
+            RENodeId::TransactionRuntime => {
                 return Err(transient_renode_error("TransactionRuntime"))
             }
             RENodeId::Logger => return Err(transient_renode_error("Logger")),
@@ -170,16 +170,24 @@ impl TryFrom<RENodeId> for MappedEntityId {
 }
 
 #[derive(Debug)]
-pub struct MappedSubstateId(EntityType, Vec<u8>, SubstateType, SubstateKeyType, Vec<u8>);
+pub struct MappedSubstateId(
+    EntityType,
+    Vec<u8>,
+    ModuleType,
+    SubstateType,
+    SubstateKeyType,
+    Vec<u8>,
+);
 
 impl From<MappedSubstateId> for models::SubstateId {
     fn from(mapped_substate_id: MappedSubstateId) -> Self {
         models::SubstateId {
             entity_type: mapped_substate_id.0,
             entity_id_hex: to_hex(mapped_substate_id.1),
-            substate_type: mapped_substate_id.2,
-            substate_key_type: mapped_substate_id.3,
-            substate_key_hex: to_hex(mapped_substate_id.4),
+            module_type: mapped_substate_id.2,
+            substate_type: mapped_substate_id.3,
+            substate_key_type: mapped_substate_id.4,
+            substate_key_hex: to_hex(mapped_substate_id.5),
         }
     }
 }
@@ -227,13 +235,14 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
 
     // Start body of method
     let entity_id_bytes = re_node_id_to_entity_id_bytes(&substate_id.0)?;
-    let substate_key_bytes = substate_offset_to_substate_key_bytes(&substate_id.1)?;
+    let module_type = node_module_id_to_module_type(&substate_id.1);
+    let substate_key_bytes = substate_offset_to_substate_key_bytes(&substate_id.2)?;
 
     // In the below, we nest match statements to ensure we get as much help from the compiler as possible to ensure
     //   we capture all possible substate types at compile time...
     // We can't capture new offset types under an RENode though - check nodes.rs after each merge to check we're not missing any
     let (entity_type, substate_type_key) = match &substate_id {
-        SubstateId(RENodeId::Global(_), offset) => {
+        SubstateId(RENodeId::Global(_), _, offset) => {
             let substate_type_key = match offset {
                 SubstateOffset::Global(offset) => match offset {
                     GlobalOffset::Global => {
@@ -245,7 +254,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::Global, substate_type_key)
         }
 
-        SubstateId(RENodeId::Component(_), offset) => {
+        SubstateId(RENodeId::Component(_), _, offset) => {
             let substate_type_key = match offset {
                 SubstateOffset::Component(offset) => match offset {
                     ComponentOffset::Info => {
@@ -255,11 +264,13 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         SubstateType::ComponentState,
                         SubstateKeyType::ComponentState,
                     ),
-                    ComponentOffset::RoyaltyConfig => (
+                },
+                SubstateOffset::Royalty(offset) => match offset {
+                    RoyaltyOffset::RoyaltyConfig => (
                         SubstateType::ComponentRoyaltyConfig,
                         SubstateKeyType::ComponentRoyaltyConfig,
                     ),
-                    ComponentOffset::RoyaltyAccumulator => (
+                    RoyaltyOffset::RoyaltyAccumulator => (
                         SubstateType::ComponentRoyaltyAccumulator,
                         SubstateKeyType::ComponentRoyaltyAccumulator,
                     ),
@@ -277,7 +288,27 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             };
             (EntityType::Component, substate_type_key)
         }
-        SubstateId(RENodeId::AccessController(_), offset) => {
+
+        SubstateId(RENodeId::Account(_), _, offset) => {
+            let substate_type_key = match offset {
+                SubstateOffset::Account(offset) => match offset {
+                    AccountOffset::Account => (SubstateType::Account, SubstateKeyType::Account),
+                },
+                SubstateOffset::Metadata(offset) => match offset {
+                    MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
+                },
+                SubstateOffset::AccessRulesChain(offset) => match offset {
+                    AccessRulesChainOffset::AccessRulesChain => (
+                        SubstateType::AccessRulesChain,
+                        SubstateKeyType::AccessRulesChain,
+                    ),
+                },
+                _ => return Err(unknown_substate_error("Account", &substate_id)),
+            };
+            (EntityType::Account, substate_type_key)
+        }
+
+        SubstateId(RENodeId::AccessController(_), _, offset) => {
             let substate_type_key = match offset {
                 SubstateOffset::AccessController(offset) => match offset {
                     AccessControllerOffset::AccessController => (
@@ -299,17 +330,19 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::AccessController, substate_type_key)
         }
 
-        SubstateId(RENodeId::Package(_), offset) => {
+        SubstateId(RENodeId::Package(_), _, offset) => {
             let substate_type_key = match offset {
                 SubstateOffset::Package(offset) => match offset {
                     PackageOffset::Info => {
                         (SubstateType::PackageInfo, SubstateKeyType::PackageInfo)
                     }
-                    PackageOffset::RoyaltyConfig => (
+                },
+                SubstateOffset::Royalty(offset) => match offset {
+                    RoyaltyOffset::RoyaltyConfig => (
                         SubstateType::PackageRoyaltyConfig,
                         SubstateKeyType::PackageRoyaltyConfig,
                     ),
-                    PackageOffset::RoyaltyAccumulator => (
+                    RoyaltyOffset::RoyaltyAccumulator => (
                         SubstateType::PackageRoyaltyAccumulator,
                         SubstateKeyType::PackageRoyaltyAccumulator,
                     ),
@@ -328,7 +361,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::Package, substate_type_key)
         }
 
-        SubstateId(RENodeId::ResourceManager(_), offset) => {
+        SubstateId(RENodeId::ResourceManager(_), _, offset) => {
             let substate_type_key = match offset {
                 SubstateOffset::ResourceManager(offset) => match offset {
                     ResourceManagerOffset::ResourceManager => (
@@ -345,18 +378,12 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         SubstateKeyType::AccessRulesChain,
                     ),
                 },
-                SubstateOffset::VaultAccessRulesChain(offset) => match offset {
-                    AccessRulesChainOffset::AccessRulesChain => (
-                        SubstateType::AccessRulesChain,
-                        SubstateKeyType::ResourceManagerVaultAccessRulesChain,
-                    ),
-                },
                 _ => return Err(unknown_substate_error("ResourceManager", &substate_id)),
             };
             (EntityType::ResourceManager, substate_type_key)
         }
 
-        SubstateId(RENodeId::NonFungibleStore(_), offset) => {
+        SubstateId(RENodeId::NonFungibleStore(_), _, offset) => {
             let substate_type_key = match offset {
                 SubstateOffset::NonFungibleStore(offset) => match offset {
                     NonFungibleStoreOffset::Entry(_) => (
@@ -369,7 +396,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::NonFungibleStore, substate_type_key)
         }
 
-        SubstateId(RENodeId::KeyValueStore(_), offset) => {
+        SubstateId(RENodeId::KeyValueStore(_), _, offset) => {
             let substate_type_key = match offset {
                 SubstateOffset::KeyValueStore(offset) => match offset {
                     KeyValueStoreOffset::Entry(_) => (
@@ -382,7 +409,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::KeyValueStore, substate_type_key)
         }
 
-        SubstateId(RENodeId::Vault(_), offset) => {
+        SubstateId(RENodeId::Vault(_), _, offset) => {
             let substate_type_key = match offset {
                 SubstateOffset::Vault(offset) => match offset {
                     VaultOffset::Vault => (SubstateType::Vault, SubstateKeyType::Vault),
@@ -392,7 +419,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::Vault, substate_type_key)
         }
 
-        SubstateId(RENodeId::EpochManager(_), offset) => {
+        SubstateId(RENodeId::EpochManager(_), _, offset) => {
             let substate_type_key = match offset {
                 SubstateOffset::EpochManager(offset) => match offset {
                     EpochManagerOffset::EpochManager => {
@@ -418,7 +445,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::EpochManager, substate_type_key)
         }
 
-        SubstateId(RENodeId::Validator(_), offset) => {
+        SubstateId(RENodeId::Validator(_), _, offset) => {
             let substate_type_key = match offset {
                 SubstateOffset::Validator(offset) => match offset {
                     ValidatorOffset::Validator => {
@@ -439,7 +466,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::Validator, substate_type_key)
         }
 
-        SubstateId(RENodeId::Clock(_), offset) => {
+        SubstateId(RENodeId::Clock(_), _, offset) => {
             let substate_type_key = match offset {
                 SubstateOffset::Clock(offset) => match offset {
                     ClockOffset::CurrentTimeRoundedToMinutes => (
@@ -458,7 +485,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::Clock, substate_type_key)
         }
 
-        SubstateId(RENodeId::Identity(_), offset) => {
+        SubstateId(RENodeId::Identity(_), _, offset) => {
             let substate_type_key = match offset {
                 SubstateOffset::Metadata(offset) => match offset {
                     MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
@@ -475,25 +502,25 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
         }
 
         // TRANSIENT SUBSTATES
-        SubstateId(RENodeId::Bucket(..), _) => {
+        SubstateId(RENodeId::Bucket(..), ..) => {
             return Err(transient_substate_error("Bucket", &substate_id))
         }
-        SubstateId(RENodeId::Proof(..), _) => {
+        SubstateId(RENodeId::Proof(..), ..) => {
             return Err(transient_substate_error("Proof", &substate_id))
         }
-        SubstateId(RENodeId::Worktop, _) => {
+        SubstateId(RENodeId::Worktop, ..) => {
             return Err(transient_substate_error("Worktop", &substate_id))
         }
-        SubstateId(RENodeId::AuthZoneStack(_), _) => {
+        SubstateId(RENodeId::AuthZoneStack, ..) => {
             return Err(transient_substate_error("AuthZoneStack", &substate_id))
         }
-        SubstateId(RENodeId::FeeReserve(_), _) => {
+        SubstateId(RENodeId::FeeReserve(_), ..) => {
             return Err(transient_substate_error("FeeReserve", &substate_id))
         }
-        SubstateId(RENodeId::TransactionRuntime(..), _) => {
+        SubstateId(RENodeId::TransactionRuntime, ..) => {
             return Err(transient_substate_error("TransactionRuntime", &substate_id))
         }
-        SubstateId(RENodeId::Logger, _) => {
+        SubstateId(RENodeId::Logger, ..) => {
             return Err(transient_substate_error("Logger", &substate_id))
         }
     };
@@ -501,6 +528,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
     Ok(MappedSubstateId(
         entity_type,
         entity_id_bytes,
+        module_type,
         substate_type_key.0,
         substate_type_key.1,
         substate_key_bytes,
@@ -561,6 +589,17 @@ pub fn re_node_id_to_entity_id_bytes(re_node_id: &RENodeId) -> Result<Vec<u8>, M
         encode_error: err,
         message: "Could not encode re node id".to_string(),
     })
+}
+
+pub fn node_module_id_to_module_type(node_module_id: &NodeModuleId) -> ModuleType {
+    match node_module_id {
+        NodeModuleId::SELF => ModuleType::_Self,
+        NodeModuleId::Metadata => ModuleType::Metadata,
+        NodeModuleId::AccessRules => ModuleType::AccessRules,
+        NodeModuleId::AccessRules1 => ModuleType::AccessRules1,
+        NodeModuleId::ComponentRoyalty => ModuleType::ComponentRoyalty,
+        NodeModuleId::PackageRoyalty => ModuleType::PackageRoyalty,
+    }
 }
 
 pub fn substate_offset_to_substate_key_bytes(

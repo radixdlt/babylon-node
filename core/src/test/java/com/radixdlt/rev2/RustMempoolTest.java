@@ -110,7 +110,10 @@ public final class RustMempoolTest {
             UInt64.fromNonNegativeLong(1));
     var accumulatorState =
         accumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
-    var proof = LedgerProof.genesis(accumulatorState, BFTValidatorSet.from(Stream.of()), 0, 0);
+    // The accumulator state is computed correctly, but we cannot easily do the same for state hash
+    var stateHash = HashUtils.random256();
+    var proof =
+        LedgerProof.genesis(accumulatorState, stateHash, BFTValidatorSet.from(Stream.of()), 0, 0);
     return CommittedTransactionsWithProof.create(List.of(genesis), proof);
   }
 
@@ -123,13 +126,13 @@ public final class RustMempoolTest {
     var transactionsWithProof = buildGenesis(accumulator);
     var transactions = transactionsWithProof.getTransactions();
     var proof = transactionsWithProof.getProof();
-    var proofBytes = DefaultSerialization.getInstance().toDson(proof, DsonOutput.Output.ALL);
     stateComputer
         .commit(
             new CommitRequest(
                 transactions,
                 UInt64.fromNonNegativeLong(proof.getStateVersion()),
-                proofBytes,
+                proof.getStateHash(),
+                DefaultSerialization.getInstance().toDson(proof, DsonOutput.Output.ALL),
                 Option.none()))
         .unwrap();
   }

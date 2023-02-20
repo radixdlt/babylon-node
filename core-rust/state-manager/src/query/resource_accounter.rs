@@ -62,8 +62,8 @@
  * permissions under this License.
  */
 
+use radix_engine::blueprints::resource::VaultSubstate;
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
-use radix_engine::model::VaultSubstate;
 use radix_engine::types::{Decimal, RENodeId, ResourceAddress, SubstateId};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;

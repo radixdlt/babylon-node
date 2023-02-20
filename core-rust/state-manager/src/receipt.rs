@@ -1,16 +1,18 @@
+use radix_engine::blueprints::epoch_manager::Validator;
 use std::collections::BTreeMap;
 
-use radix_engine::engine::RuntimeError;
-use radix_engine::fee::FeeSummary;
+use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::OutputValue;
-use radix_engine::model::{ResourceChange, Validator};
 use radix_engine::state_manager::StateDiff;
+use radix_engine::system::kernel_modules::execution_trace::ResourceChange;
+use radix_engine::system::kernel_modules::fee::FeeSummary;
 use radix_engine::transaction::{
     CommitResult, EntityChanges, TransactionOutcome,
     TransactionReceipt as EngineTransactionReceipt, TransactionResult,
 };
-use radix_engine::types::{hash, scrypto_encode, Hash, Level, SubstateId};
-use radix_engine_interface::model::ComponentAddress;
+use radix_engine::types::{hash, scrypto_encode, Hash, SubstateId};
+use radix_engine_interface::api::component::ComponentAddress;
+use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::*;
 
 use crate::AccumulatorHash;

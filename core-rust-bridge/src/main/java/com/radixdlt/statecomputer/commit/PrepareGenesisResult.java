@@ -64,7 +64,7 @@
 
 package com.radixdlt.statecomputer.commit;
 
-import com.google.common.reflect.TypeToken;
+import com.google.common.hash.HashCode;
 import com.radixdlt.lang.Option;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.sbor.codec.CodecMap;
@@ -72,14 +72,10 @@ import com.radixdlt.sbor.codec.StructCodec;
 import java.util.Map;
 
 public record PrepareGenesisResult(
-    Option<Map<ComponentAddress, ActiveValidatorInfo>> validatorSet) {
+    Option<Map<ComponentAddress, ActiveValidatorInfo>> validatorSet, HashCode stateHash) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PrepareGenesisResult.class,
-        codecs ->
-            StructCodec.with(
-                PrepareGenesisResult::new,
-                codecs.of(new TypeToken<>() {}),
-                (t, encoder) -> encoder.encode(t.validatorSet)));
+        codecs -> StructCodec.fromRecordComponents(PrepareGenesisResult.class, codecs));
   }
 }

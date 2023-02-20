@@ -62,8 +62,8 @@
  * permissions under this License.
  */
 
-use crate::transaction::LedgerTransaction;
-use radix_engine::model::Validator;
+use crate::{jni::mempool::JavaHashCode, transaction::LedgerTransaction};
+use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine::types::*;
 use std::collections::BTreeMap;
 use std::fmt;
@@ -159,6 +159,12 @@ impl AsRef<[u8]> for LedgerPayloadHash {
 impl From<Hash> for LedgerPayloadHash {
     fn from(hash: Hash) -> Self {
         LedgerPayloadHash(hash.0)
+    }
+}
+
+impl From<JavaHashCode> for AccumulatorHash {
+    fn from(java_hash_code: JavaHashCode) -> Self {
+        AccumulatorHash::from_raw_bytes(java_hash_code.0.as_slice().try_into().unwrap())
     }
 }
 
@@ -381,19 +387,60 @@ impl HasIntentHash for NotarizedTransaction {
     }
 }
 
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Categorize, Encode, Decode)]
+pub struct StateHash([u8; Self::LENGTH]);
+
+impl StateHash {
+    pub const LENGTH: usize = 32;
+
+    pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
+        Self(hash_bytes)
+    }
+
+    pub fn into_bytes(self) -> [u8; Self::LENGTH] {
+        self.0
+    }
+}
+
+impl AsRef<[u8]> for StateHash {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl From<Hash> for StateHash {
+    fn from(hash: Hash) -> Self {
+        Self(hash.0)
+    }
+}
+
+impl fmt::Display for StateHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(self.0))
+    }
+}
+
+impl fmt::Debug for StateHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("StateHash")
+            .field(&hex::encode(self.0))
+            .finish()
+    }
+}
+
 /// An uncommitted user transaction, in eg the mempool
 #[derive(Debug, PartialEq, Eq, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PendingTransaction {
     pub payload: NotarizedTransaction,
     pub payload_hash: UserPayloadHash,
     pub intent_hash: IntentHash,
-    pub payload_size: u64,
+    pub payload_size: usize,
 }
 
 impl From<NotarizedTransaction> for PendingTransaction {
     fn from(transaction: NotarizedTransaction) -> Self {
         let intent_hash = transaction.intent_hash();
-        let payload_size = transaction.to_bytes().unwrap().len() as u64;
+        let payload_size = transaction.to_bytes().unwrap().len();
         PendingTransaction {
             payload_hash: transaction.user_payload_hash(),
             intent_hash,
@@ -422,17 +469,19 @@ pub enum CommitError {
     MissingEpochProof,
 }
 
-#[derive(Debug, Decode, Encode, Categorize)]
+#[derive(Debug, Categorize, Encode, Decode)]
 pub struct CommitRequest {
     pub transaction_payloads: Vec<Vec<u8>>,
-    pub proof_state_version: u64, // TODO: Use actual proof to get this info
+    pub proof_state_version: u64, // TODO: Use actual proof to get the state version...
+    pub proof_state_hash: StateHash, // TODO: ... and the state hash
     pub proof: Vec<u8>,
     pub vertex_store: Option<Vec<u8>>,
 }
 
-#[derive(Debug, Decode, Encode, Categorize)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareRequest {
-    pub already_prepared_payloads: Vec<Vec<u8>>,
+    pub parent_accumulator: AccumulatorHash,
+    pub prepared_vertices: Vec<PreviousVertex>,
     pub proposed_payloads: Vec<Vec<u8>>,
     pub consensus_epoch: u64,
     pub round_number: u64,
@@ -440,10 +489,17 @@ pub struct PrepareRequest {
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct PreviousVertex {
+    pub transaction_payloads: Vec<Vec<u8>>,
+    pub resultant_accumulator: AccumulatorHash,
+}
+
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareResult {
     pub committed: Vec<Vec<u8>>,
     pub rejected: Vec<(Vec<u8>, String)>,
     pub next_epoch: Option<NextEpoch>,
+    pub state_hash: StateHash,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -460,4 +516,5 @@ pub struct PrepareGenesisRequest {
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareGenesisResult {
     pub validator_set: Option<BTreeMap<ComponentAddress, Validator>>,
+    pub state_hash: StateHash,
 }

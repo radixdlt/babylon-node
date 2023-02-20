@@ -66,6 +66,7 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
@@ -92,24 +93,32 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     private final List<ExecutedTransaction> executedTransactions;
     private final Map<RawNotarizedTransaction, Exception> failedTransactions;
     private final NextEpoch nextEpoch;
+    private final HashCode stateHash;
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
         Map<RawNotarizedTransaction, Exception> failedTransactions,
-        NextEpoch nextEpoch) {
+        NextEpoch nextEpoch,
+        HashCode stateHash) {
       this.executedTransactions = Objects.requireNonNull(executedTransactions);
       this.failedTransactions = Objects.requireNonNull(failedTransactions);
       this.nextEpoch = nextEpoch;
+      this.stateHash = stateHash;
     }
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
-        Map<RawNotarizedTransaction, Exception> failedTransactions) {
-      this(executedTransactions, failedTransactions, null);
+        Map<RawNotarizedTransaction, Exception> failedTransactions,
+        HashCode stateHash) {
+      this(executedTransactions, failedTransactions, null, stateHash);
     }
 
     public Optional<NextEpoch> getNextEpoch() {
       return Optional.ofNullable(nextEpoch);
+    }
+
+    public HashCode getStateHash() {
+      return stateHash;
     }
 
     public List<ExecutedTransaction> getSuccessfullyExecutedTransactions() {
@@ -128,7 +137,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         List<ExecutedTransaction> executedTransactions);
 
     StateComputerResult prepare(
-        List<ExecutedTransaction> previous,
+        HashCode parentAccumulator,
+        List<ExecutedVertex> previous,
         List<RawNotarizedTransaction> proposedTransactions,
         RoundDetails roundDetails);
 
@@ -204,10 +214,6 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     final var vertex = vertexWithHash.vertex();
     final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
     final AccumulatorState parentAccumulatorState = parentHeader.getAccumulatorState();
-    final ImmutableList<ExecutedTransaction> prevTransactions =
-        previous.stream()
-            .flatMap(ExecutedVertex::successfulTransactions)
-            .collect(ImmutableList.toImmutableList());
 
     synchronized (lock) {
       if (this.currentLedgerHeader.getStateVersion() > parentAccumulatorState.getStateVersion()) {
@@ -228,24 +234,56 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
                 timeSupplier.currentTime()));
       }
 
-      final var executedTransactionsOptional =
-          this.verifier.verifyAndGetExtension(
-              this.currentLedgerHeader.getAccumulatorState(),
-              prevTransactions,
-              p -> p.transaction().getPayloadHash(),
-              parentAccumulatorState);
+      // It's possible that this function is called with a list of vertices which starts with some
+      // committed vertices
+      // By matching on the accumulator, we remove the already committed vertices from the
+      // "previous" list
+      final var committedAccumulatorHash =
+          this.currentLedgerHeader.getAccumulatorState().getAccumulatorHash();
+      var committedAccumulatorHasMatchedStartOfAVertex =
+          committedAccumulatorHash.equals(parentAccumulatorState.getAccumulatorHash());
+      var verticesInExtension = new ArrayList<ExecutedVertex>();
+      for (var previousVertex : previous) {
+        var previousVertexParentAccumulatorHash =
+            previousVertex
+                .vertex()
+                .getParentHeader()
+                .getLedgerHeader()
+                .getAccumulatorState()
+                .getAccumulatorHash();
+        if (committedAccumulatorHash.equals(previousVertexParentAccumulatorHash)) {
+          committedAccumulatorHasMatchedStartOfAVertex = true;
+        }
+        if (committedAccumulatorHasMatchedStartOfAVertex) {
+          verticesInExtension.add(previousVertex);
+        }
+      }
 
-      // TODO: Write a test to get here
-      // Can possibly get here without maliciousness if parent vertex isn't locked by everyone else
-      if (executedTransactionsOptional.isEmpty()) {
+      if (!committedAccumulatorHasMatchedStartOfAVertex) {
+        // This could trigger if the "previous" vertices don't line up with the committed state.
+        // In other words, they don't provide a valid partial path from the committed state to the
+        // start of the proposal.
         return Optional.empty();
       }
 
-      final var executedTransactions = executedTransactionsOptional.get();
+      // Now we verify the payload hashes of the extension match the start of the proposal
+      var extensionMatchesAccumulator =
+          this.verifier.verify(
+              this.currentLedgerHeader.getAccumulatorState(),
+              verticesInExtension.stream()
+                  .flatMap(
+                      v -> v.successfulTransactions().map(t -> t.transaction().getPayloadHash()))
+                  .collect(ImmutableList.toImmutableList()),
+              parentAccumulatorState);
+
+      if (!extensionMatchesAccumulator) {
+        return Optional.empty();
+      }
 
       final StateComputerResult result =
           stateComputer.prepare(
-              executedTransactions,
+              committedAccumulatorHash,
+              verticesInExtension,
               vertex.getTransactions(),
               RoundDetails.fromVertex(vertexWithHash));
 
@@ -261,6 +299,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               parentHeader.getEpoch(),
               vertex.getRound(),
               accumulatorState,
+              result.getStateHash(),
               vertex.getQCToParent().getWeightedTimestampOfSignatures(),
               vertex.proposerTimestamp(),
               result.getNextEpoch().orElse(null));
