@@ -359,7 +359,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
   private void voteForFallbackVertexOrInsertIfMissing(RoundUpdate roundUpdate) {
     final var highQC = this.latestRoundUpdate.getHighQC();
     final var vertex =
-        Vertex.createTimeout(
+        Vertex.createFallback(
                 highQC.highestQC(), roundUpdate.getCurrentRound(), roundUpdate.getLeader())
             .withId(hasher);
 

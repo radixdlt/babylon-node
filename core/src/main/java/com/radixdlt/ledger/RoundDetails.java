@@ -72,7 +72,6 @@ public record RoundDetails(
     long roundNumber,
     long previousQcRoundNumber,
     BFTValidatorId roundProposer,
-    boolean roundWasTimeout,
     long consensusParentRoundTimestampMs,
     long proposerTimestampMs) {
 
@@ -83,7 +82,6 @@ public record RoundDetails(
         vertex.getRound().number(),
         vertex.getParentHeader().getRound().number(),
         vertex.getProposer(),
-        vertex.isTimeout(),
         vertex.getQCToParent().getWeightedTimestampOfSignatures(),
         vertex.proposerTimestamp());
   }
