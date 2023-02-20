@@ -62,106 +62,68 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft.processor;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static com.radixdlt.utils.TypedMocks.rmock;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
-import org.assertj.core.api.Condition;
+import com.radixdlt.consensus.*;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
+import org.junit.Before;
 import org.junit.Test;
 
-/** Verifies pacemaker functionality */
-public final class PacemakerTest {
-  private DeterministicTest createTest() {
-    return DeterministicTest.builder()
-        .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(1))
-        .messageSelector(MessageSelector.firstSelector())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                false,
-                SafetyRecoveryConfig.mocked(),
-                ConsensusConfig.of(200, 0),
-                LedgerConfig.mocked(1)));
+public final class BFTQuorumAssemblerTest {
+  private BFTValidatorId self = mock(BFTValidatorId.class);
+  private Metrics metrics = new MetricsInitializer().initialize();
+  private PendingVotes pendingVotes = mock(PendingVotes.class);
+  private VertexStoreAdapter vertexStore = mock(VertexStoreAdapter.class);
+  private Pacemaker pacemaker = mock(Pacemaker.class);
+  private EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher =
+      rmock(EventDispatcher.class);
+
+  private BFTQuorumAssembler bftQuorumAssembler;
+
+  @Before
+  public void setUp() {
+    this.bftQuorumAssembler =
+        new BFTQuorumAssembler(
+            this.pacemaker,
+            this.self,
+            this.roundQuorumReachedEventDispatcher,
+            this.metrics,
+            this.pendingVotes,
+            mock(RoundUpdate.class));
   }
 
   @Test
-  public void on_startup_pacemaker_should_schedule_timeouts() {
-    // Arrange
-    try (var test = createTest()) {
+  public void when_process_vote_with_quorum__then_processed() {
+    BFTValidatorId author = mock(BFTValidatorId.class);
+    Vote vote = mock(Vote.class);
+    when(vote.getAuthor()).thenReturn(author);
 
-      // Act
-      test.startAllNodes();
+    QuorumCertificate qc = mock(QuorumCertificate.class);
+    HighQC highQc = mock(HighQC.class);
+    QuorumCertificate highestCommittedQc = mock(QuorumCertificate.class);
+    when(highQc.highestCommittedQC()).thenReturn(highestCommittedQc);
+    when(vote.getRound()).thenReturn(Round.of(1));
 
-      // Assert
-      assertThat(test.getNetwork().allMessages())
-          .hasSize(2)
-          .haveExactly(
-              1,
-              new Condition<>(
-                  msg -> msg.message() instanceof ScheduledLocalTimeout,
-                  "A single scheduled timeout update has been emitted"))
-          .haveExactly(
-              1,
-              new Condition<>(
-                  msg -> msg.message() instanceof Proposal, "A proposal has been emitted"));
-    }
-  }
+    when(this.pendingVotes.insertVote(any())).thenReturn(VoteProcessingResult.qcQuorum(qc));
+    when(this.vertexStore.highQC()).thenReturn(highQc);
 
-  @Test
-  public void on_timeout_pacemaker_should_send_vote_with_timeout() {
-    // Arrange
-    try (var test = createTest()) {
-      test.startAllNodes();
+    // Move to round 1
+    this.bftQuorumAssembler.processRoundUpdate(
+        RoundUpdate.create(Round.of(1), highQc, mock(BFTValidatorId.class), this.self));
 
-      // Act
-      test.runNext(e -> e.message() instanceof ScheduledLocalTimeout);
-      test.runNext(e -> e.message() instanceof BFTInsertUpdate);
+    this.bftQuorumAssembler.processVote(vote);
 
-      // Assert
-      assertThat(test.getNetwork().allMessages())
-          .haveExactly(
-              1,
-              new Condition<>(
-                  msg -> (msg.message() instanceof Vote) && ((Vote) msg.message()).isTimeout(),
-                  "A remote timeout vote has been emitted"));
-    }
-  }
-
-  @Test
-  public void on_round_timeout_quorum_pacemaker_should_move_to_next_round() {
-    // Arrange
-    try (var test = createTest()) {
-      test.startAllNodes();
-      test.runNext(e -> e.message() instanceof ScheduledLocalTimeout);
-      test.runNext(e -> e.message() instanceof BFTInsertUpdate);
-
-      // Act
-      test.runNext(e -> (e.message() instanceof Vote) && ((Vote) e.message()).isTimeout());
-
-      // Assert
-      assertThat(test.getNetwork().allMessages())
-          .haveExactly(
-              1,
-              new Condition<>(
-                  msg -> msg.message() instanceof RoundUpdate,
-                  "A remote round timeout has been emitted"));
-      var nextRoundUpdate =
-          test.getNetwork().allMessages().stream()
-              .filter(msg -> msg.message() instanceof RoundUpdate)
-              .map(msg -> (RoundUpdate) msg.message())
-              .findAny()
-              .orElseThrow();
-      assertThat(nextRoundUpdate.getCurrentRound()).isEqualTo(Round.genesis().next().next());
-    }
+    verify(this.roundQuorumReachedEventDispatcher, times(1)).dispatch(any());
+    verify(this.pendingVotes, times(1)).insertVote(eq(vote));
+    verifyNoMoreInteractions(this.pendingVotes);
   }
 }
