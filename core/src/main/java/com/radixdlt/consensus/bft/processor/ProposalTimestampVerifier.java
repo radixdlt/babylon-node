@@ -78,7 +78,10 @@ import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/** Verifies proposal timestamps against the local system time. */
+/**
+ * Verifies proposal timestamps against the local system time. Warning: operates under the
+ * assumption that all received events are for the current round.
+ */
 /*
 TODO: address the following
 Currently max allowed daley time is quite permissive to account for

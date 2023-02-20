@@ -222,7 +222,7 @@ public class PacemakerTest {
     this.pacemaker.processBFTUpdate(bftInsertUpdate);
 
     verify(this.voteDispatcher, times(1)).dispatch(eq(validators), eq(emptyVoteWithTimeout));
-    verify(this.safetyRules, times(1)).getLastVote(round);
+    verify(this.safetyRules, times(2)).getLastVote(round);
     verify(this.safetyRules, times(1)).createVote(any(), any(), anyLong(), any());
     verify(this.safetyRules, times(1)).timeoutVote(emptyVote);
     verifyNoMoreInteractions(this.safetyRules);
