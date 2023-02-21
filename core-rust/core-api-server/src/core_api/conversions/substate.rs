@@ -231,7 +231,9 @@ pub fn to_api_package_type_info_substate(
     _context: &MappingContext,
     _substate: &TypeInfoSubstate,
 ) -> Result<models::Substate, MappingError> {
-    // TODO: Expand this
+    // TODO: Clean this up, this substate will be refactored/removed relatively soon
+    // TODO: on the scrypto-lib side so not worth building a whole schema for it when
+    // TODO: it is not that interesting for the end user
     Ok(models::Substate::PackageTypeInfoSubstate {})
 }
 
