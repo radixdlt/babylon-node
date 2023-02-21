@@ -348,19 +348,18 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
     this.safetyRules
         .getLastVote(currentRound())
         .map(this.safetyRules::timeoutVote)
-        .ifPresentOrElse(
-            this::dispatchVote,
-            () -> voteForFallbackVertexOrInsertIfMissing(this.latestRoundUpdate));
+        .ifPresentOrElse(this::dispatchVote, this::voteForFallbackVertex);
   }
 
   /**
    * A helper for `resendPreviousVoteWithTimeoutOrVoteForFallbackVertex`, see its doc for details
    */
-  private void voteForFallbackVertexOrInsertIfMissing(RoundUpdate roundUpdate) {
-    final var highQC = this.latestRoundUpdate.getHighQC();
+  private void voteForFallbackVertex() {
     final var vertex =
         Vertex.createFallback(
-                highQC.highestQC(), roundUpdate.getCurrentRound(), roundUpdate.getLeader())
+                this.latestRoundUpdate.getHighQC().highestQC(),
+                this.latestRoundUpdate.getCurrentRound(),
+                this.latestRoundUpdate.getLeader())
             .withId(hasher);
 
     this.vertexStore
@@ -368,7 +367,9 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
         .ifPresentOrElse(
             this::attemptVoteOnVertex,
             () -> {
-              // Fallback vertex doesn't yet exist, so try inserting one
+              // Fallback vertex doesn't yet exist, so try inserting one.
+              // We'll vote for it once received in an async BFTInsertUpdate event (see:
+              // `processBFTUpdate`).
 
               // FIXME: This (try-catch) is a temporary fix so that we can continue
               // if the vertex store is too far ahead of the pacemaker
