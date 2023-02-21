@@ -65,7 +65,7 @@
 use crate::jni::state_computer::JavaValidatorInfo;
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::query::*;
-use crate::staging::{ExecutionCache, HashTreeDiff, ProcessedResult};
+use crate::staging::{ExecutionCache, ProcessedResult};
 use crate::store::traits::*;
 use crate::transaction::{
     LedgerTransaction, LedgerTransactionValidator, UserTransactionValidator, ValidatorTransaction,
@@ -961,7 +961,7 @@ where
                 .map(|payload| {
                     LedgerTransactionValidator::parse_unvalidated_transaction_from_slice(&payload)
                         .unwrap_or_else(|error| {
-                            panic!("Committed transaction cannot be decoded - likely byzantine quorum: {:?}", error);
+                            panic!("Committed transaction cannot be decoded - likely byzantine quorum: {error:?}");
                         })
                     // TODO - will want to validate when non-user transactions (eg round/epoch change intents) occur
                 })
@@ -982,7 +982,7 @@ where
         let mut epoch_boundary = None;
         let mut committed_transaction_bundles = Vec::new();
         let mut state_diff = StateDiff::new();
-        let mut hash_tree_diff = HashTreeDiff::new();
+        let mut state_hash_tree_update = HashTreeUpdate::new();
         let mut intent_hashes = Vec::new();
 
         for (i, transaction) in parsed_transactions.into_iter().enumerate() {
@@ -1058,7 +1058,7 @@ where
             state_diff
                 .up_substates
                 .extend(processed.state_diff().up_substates.clone());
-            hash_tree_diff.extend(processed.hash_tree_diff().clone());
+            state_hash_tree_update.add(current_state_version, processed.hash_tree_diff().clone());
         }
 
         if *state_tracker.latest_state_hash() != commit_request.proof_state_hash {
@@ -1081,7 +1081,7 @@ where
             epoch_boundary,
             substates: state_diff.up_substates,
             vertex_store: commit_request.vertex_store,
-            hash_tree_nodes: hash_tree_diff.new_hash_tree_nodes,
+            state_hash_tree_update,
         });
 
         self.metrics
