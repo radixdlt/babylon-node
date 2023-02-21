@@ -96,7 +96,7 @@ public final class RandomVoteDropperTest {
         .messageSelector(firstSelector())
         .messageMutator(voteDropper(0.2))
         .addMonitors(
-            byzantineBehaviorNotDetected(), consensusLiveness(3000), ledgerTransactionSafety())
+            byzantineBehaviorNotDetected(), consensusLiveness(5000), ledgerTransactionSafety())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 true,

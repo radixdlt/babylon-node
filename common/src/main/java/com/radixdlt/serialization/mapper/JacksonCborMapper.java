@@ -71,7 +71,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.common.hash.HashCode;
@@ -86,7 +85,6 @@ import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -96,32 +94,20 @@ import java.util.function.Function;
 public class JacksonCborMapper extends ObjectMapper {
   private static final long serialVersionUID = 4917479892309630214L;
 
-  public static JacksonCborMapper create(
-      SerializerIds idLookup, FilterProvider filterProvider, boolean sortProperties) {
-    return new JacksonCborMapper(idLookup, filterProvider, sortProperties, Optional.empty());
-  }
-
   /**
    * Create an {@link RadixObjectMapperConfigurator} that will serialize to/from CBOR encoded DSON.
    *
    * @param idLookup A {@link SerializerIds} used to perform serializer ID lookup
    * @param filterProvider A {@link FilterProvider} to use for filtering serialized fields
-   * @param serializationModifier optional BeanSerializerModifier to mix in the serialization
    * @return A freshly created {@link JacksonCborMapper}
    */
   public static JacksonCborMapper create(
-      SerializerIds idLookup,
-      FilterProvider filterProvider,
-      boolean sortProperties,
-      Optional<BeanSerializerModifier> serializationModifier) {
-    return new JacksonCborMapper(idLookup, filterProvider, sortProperties, serializationModifier);
+      SerializerIds idLookup, FilterProvider filterProvider, boolean sortProperties) {
+    return new JacksonCborMapper(idLookup, filterProvider, sortProperties);
   }
 
   private JacksonCborMapper(
-      SerializerIds idLookup,
-      FilterProvider filterProvider,
-      boolean sortProperties,
-      Optional<BeanSerializerModifier> serializationModifier) {
+      SerializerIds idLookup, FilterProvider filterProvider, boolean sortProperties) {
     super(new RadixCBORFactory());
     RadixObjectMapperConfigurator.configure(this, idLookup, filterProvider, sortProperties);
     var cborModule = new SimpleModule();
@@ -226,8 +212,6 @@ public class JacksonCborMapper extends ObjectMapper {
             return TID.from(key.substring(JacksonCodecConstants.STR_VALUE_LEN));
           }
         });
-
-    serializationModifier.ifPresent(cborModule::setSerializerModifier);
 
     registerModule(cborModule);
   }

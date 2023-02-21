@@ -91,7 +91,7 @@ public class VertexStoreStateCreationTest {
 
   @Before
   public void setup() {
-    this.hasher = new Sha256Hasher(DefaultSerialization.getInstance());
+    this.hasher = new Blake2b256Hasher(DefaultSerialization.getInstance());
     this.genesisVertex = Vertex.createInitialEpochVertex(MOCKED_HEADER).withId(hasher);
     this.genesisHash = genesisVertex.hash();
   }
