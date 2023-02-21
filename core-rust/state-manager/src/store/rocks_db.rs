@@ -144,7 +144,7 @@ impl fmt::Display for RocksDBColumnFamily {
             StateHashTreeNodes => "state_hash_tree_nodes",
             StaleStateHashTreeNodeKeysByStateVersion => "stale_state_hash_tree_node_keys",
         };
-        write!(f, "{str}")
+        write!(f, "{}", str)
     }
 }
 

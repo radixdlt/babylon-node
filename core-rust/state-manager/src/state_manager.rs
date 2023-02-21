@@ -961,7 +961,7 @@ where
                 .map(|payload| {
                     LedgerTransactionValidator::parse_unvalidated_transaction_from_slice(&payload)
                         .unwrap_or_else(|error| {
-                            panic!("Committed transaction cannot be decoded - likely byzantine quorum: {error:?}");
+                            panic!("Committed transaction cannot be decoded - likely byzantine quorum: {:?}", error);
                         })
                     // TODO - will want to validate when non-user transactions (eg round/epoch change intents) occur
                 })
