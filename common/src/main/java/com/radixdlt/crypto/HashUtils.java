@@ -91,6 +91,8 @@ public final class HashUtils {
 
   private static final SHAHashHandler shaHashHandler = new SHAHashHandler();
 
+  private static final Blake2BHashHandler blake2BHashHandler = new Blake2BHashHandler();
+
   private static final HashCode ZERO_256 = zero(32);
 
   /** Returns a hash consisting of 32 zero bytes. */
@@ -130,6 +132,10 @@ public final class HashUtils {
    */
   public static HashCode sha256Twice(byte[] dataToBeHashed, int offset, int length) {
     return HashCode.fromBytes(shaHashHandler.sha256Twice(dataToBeHashed, offset, length));
+  }
+
+  public static HashCode blake2b(byte[] dataToBeHashed, int offset, int length) {
+    return HashCode.fromBytes(blake2BHashHandler.blake2b256(dataToBeHashed, offset, length));
   }
 
   /**
