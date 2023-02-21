@@ -299,12 +299,6 @@ impl HashTreeDiff {
             stale_hash_tree_node_keys: Vec::new(),
         }
     }
-
-    pub fn extend(&mut self, other: HashTreeDiff) {
-        self.new_hash_tree_nodes.extend(other.new_hash_tree_nodes);
-        self.stale_hash_tree_node_keys
-            .extend(other.stale_hash_tree_node_keys);
-    }
 }
 
 #[derive(Clone)]
