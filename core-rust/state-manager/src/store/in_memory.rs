@@ -71,13 +71,13 @@ use crate::{
 };
 
 use radix_engine::ledger::OutputValue;
-use radix_engine::system::substates::PersistedSubstate;
 use radix_engine_interface::api::types::{KeyValueStoreId, SubstateId};
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, ReadableTreeStore, SerializedInMemoryTreeStore, TreeNode, WriteableTreeStore,
 };
 use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 use std::collections::{BTreeMap, HashMap};
+use radix_engine::system::node_substates::PersistedSubstate;
 
 #[derive(Debug)]
 pub struct InMemoryStore {

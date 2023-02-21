@@ -37,15 +37,18 @@ import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
 import com.radixdlt.api.core.generated.models.GlobalAddressSubstate;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.MetadataSubstate;
+import com.radixdlt.api.core.generated.models.NativeCodeSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageInfoSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyConfigSubstate;
+import com.radixdlt.api.core.generated.models.PackageTypeInfoSubstate;
 import com.radixdlt.api.core.generated.models.ResourceManagerSubstate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.ValidatorSetSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorSubstate;
 import com.radixdlt.api.core.generated.models.VaultSubstate;
+import com.radixdlt.api.core.generated.models.WasmCodeSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -89,6 +92,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = KeyValueStoreEntrySubstate.class, name = "KeyValueStoreEntrySubstate"),
   @JsonSubTypes.Type(value = MetadataSubstate.class, name = "Metadata"),
   @JsonSubTypes.Type(value = MetadataSubstate.class, name = "MetadataSubstate"),
+  @JsonSubTypes.Type(value = NativeCodeSubstate.class, name = "NativeCode"),
+  @JsonSubTypes.Type(value = NativeCodeSubstate.class, name = "NativeCodeSubstate"),
   @JsonSubTypes.Type(value = NonFungibleStoreEntrySubstate.class, name = "NonFungibleStoreEntry"),
   @JsonSubTypes.Type(value = NonFungibleStoreEntrySubstate.class, name = "NonFungibleStoreEntrySubstate"),
   @JsonSubTypes.Type(value = PackageInfoSubstate.class, name = "PackageInfo"),
@@ -97,6 +102,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageRoyaltyAccumulatorSubstate.class, name = "PackageRoyaltyAccumulatorSubstate"),
   @JsonSubTypes.Type(value = PackageRoyaltyConfigSubstate.class, name = "PackageRoyaltyConfig"),
   @JsonSubTypes.Type(value = PackageRoyaltyConfigSubstate.class, name = "PackageRoyaltyConfigSubstate"),
+  @JsonSubTypes.Type(value = PackageTypeInfoSubstate.class, name = "PackageTypeInfo"),
+  @JsonSubTypes.Type(value = PackageTypeInfoSubstate.class, name = "PackageTypeInfoSubstate"),
   @JsonSubTypes.Type(value = ResourceManagerSubstate.class, name = "ResourceManager"),
   @JsonSubTypes.Type(value = ResourceManagerSubstate.class, name = "ResourceManagerSubstate"),
   @JsonSubTypes.Type(value = ValidatorSubstate.class, name = "Validator"),
@@ -105,6 +112,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = ValidatorSubstate.class, name = "ValidatorSubstate"),
   @JsonSubTypes.Type(value = VaultSubstate.class, name = "Vault"),
   @JsonSubTypes.Type(value = VaultSubstate.class, name = "VaultSubstate"),
+  @JsonSubTypes.Type(value = WasmCodeSubstate.class, name = "WasmCode"),
+  @JsonSubTypes.Type(value = WasmCodeSubstate.class, name = "WasmCodeSubstate"),
 })
 
 public class Substate {
@@ -207,6 +216,8 @@ static {
   mappings.put("KeyValueStoreEntrySubstate", KeyValueStoreEntrySubstate.class);
   mappings.put("Metadata", MetadataSubstate.class);
   mappings.put("MetadataSubstate", MetadataSubstate.class);
+  mappings.put("NativeCode", NativeCodeSubstate.class);
+  mappings.put("NativeCodeSubstate", NativeCodeSubstate.class);
   mappings.put("NonFungibleStoreEntry", NonFungibleStoreEntrySubstate.class);
   mappings.put("NonFungibleStoreEntrySubstate", NonFungibleStoreEntrySubstate.class);
   mappings.put("PackageInfo", PackageInfoSubstate.class);
@@ -215,6 +226,8 @@ static {
   mappings.put("PackageRoyaltyAccumulatorSubstate", PackageRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageRoyaltyConfig", PackageRoyaltyConfigSubstate.class);
   mappings.put("PackageRoyaltyConfigSubstate", PackageRoyaltyConfigSubstate.class);
+  mappings.put("PackageTypeInfo", PackageTypeInfoSubstate.class);
+  mappings.put("PackageTypeInfoSubstate", PackageTypeInfoSubstate.class);
   mappings.put("ResourceManager", ResourceManagerSubstate.class);
   mappings.put("ResourceManagerSubstate", ResourceManagerSubstate.class);
   mappings.put("Validator", ValidatorSubstate.class);
@@ -223,6 +236,8 @@ static {
   mappings.put("ValidatorSubstate", ValidatorSubstate.class);
   mappings.put("Vault", VaultSubstate.class);
   mappings.put("VaultSubstate", VaultSubstate.class);
+  mappings.put("WasmCode", WasmCodeSubstate.class);
+  mappings.put("WasmCodeSubstate", WasmCodeSubstate.class);
   mappings.put("Substate", Substate.class);
   JSON.registerDiscriminator(Substate.class, "substate_type", mappings);
 }

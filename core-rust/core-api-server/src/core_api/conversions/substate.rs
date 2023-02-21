@@ -4,22 +4,15 @@ use radix_engine::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
 use radix_engine::blueprints::epoch_manager::{
     EpochManagerSubstate, Validator, ValidatorSetSubstate, ValidatorSubstate,
 };
-use radix_engine::blueprints::kv_store::KeyValueStoreEntrySubstate;
 use radix_engine::blueprints::resource::{
     NonFungible, NonFungibleSubstate, ResourceManagerSubstate, VaultSubstate,
-};
-use radix_engine::system::component::{
-    ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
-    ComponentStateSubstate,
 };
 use radix_engine::system::global::GlobalAddressSubstate;
 use radix_engine::system::node_modules::auth::AccessRulesChainSubstate;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
-use radix_engine::system::package::{
-    PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate,
-};
-use radix_engine::system::substates::PersistedSubstate;
 use std::collections::BTreeSet;
+use radix_engine::system::node_substates::PersistedSubstate;
+use radix_engine::system::type_info::TypeInfoSubstate;
 
 use super::*;
 use crate::core_api::models;
@@ -29,7 +22,8 @@ use radix_engine::types::{
     scrypto_encode, Decimal, GlobalOffset, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId,
     ResourceAddress, RoyaltyConfig, SubstateId, SubstateOffset,
 };
-use radix_engine_interface::api::component::ComponentAddress;
+use radix_engine_interface::api::component::{ComponentAddress, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate, KeyValueStoreEntrySubstate};
+use radix_engine_interface::api::package::{NativeCodeSubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate, WasmCodeSubstate};
 use radix_engine_interface::api::types::NodeModuleId;
 use radix_engine_interface::blueprints::resource::{
     AccessRule, AccessRuleEntry, AccessRuleKey, AccessRuleNode, AccessRules, NonFungibleIdType,
@@ -71,6 +65,9 @@ pub fn to_api_substate(
             to_api_resource_manager_substate(context, resource_manager)?
         }
         PersistedSubstate::PackageInfo(package) => to_api_package_info_substate(context, package)?,
+        PersistedSubstate::TypeInfo(type_info) => to_api_package_type_info_substate(context, type_info)?,
+        PersistedSubstate::WasmCode(wasm_code) => to_api_wasm_code_substate(context, wasm_code)?,
+        PersistedSubstate::NativePackageInfo(native_code) => to_api_native_code_substate(context, native_code)?,
         PersistedSubstate::PackageRoyaltyConfig(substate) => {
             to_api_package_royalty_config_substate(context, substate)?
         }
@@ -217,6 +214,16 @@ pub fn to_api_component_info_substate(
     Ok(models::Substate::ComponentInfoSubstate {
         package_address: to_api_package_address(context, package_address),
         blueprint_name: blueprint_name.to_string(),
+    })
+}
+
+pub fn to_api_package_type_info_substate(
+    _context: &MappingContext,
+    _substate: &TypeInfoSubstate,
+) -> Result<models::Substate, MappingError> {
+
+    // TODO: Expand this
+    Ok(models::Substate::PackageTypeInfoSubstate {
     })
 }
 
@@ -648,12 +655,20 @@ pub fn to_api_package_info_substate(
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
     let PackageInfoSubstate {
-        code,
         blueprint_abis,
+        dependent_resources,
+        dependent_components,
     } = substate;
 
     Ok(models::Substate::PackageInfoSubstate {
-        code_hex: to_hex(code),
+        dependent_resources: dependent_resources
+            .iter()
+            .map(|address| to_api_resource_address(context, address))
+            .collect(),
+        dependent_components: dependent_components
+            .iter()
+            .map(|address| to_api_component_address(context, address))
+            .collect(),
         blueprints: blueprint_abis
             .iter()
             .map(|(blueprint_name, abi)| {
@@ -669,6 +684,34 @@ pub fn to_api_package_info_substate(
                 Ok((blueprint_name.to_owned(), blueprint_data))
             })
             .collect::<Result<_, _>>()?,
+    })
+}
+
+pub fn to_api_wasm_code_substate(
+    _context: &MappingContext,
+    substate: &WasmCodeSubstate,
+) -> Result<models::Substate, MappingError> {
+    // Use compiler to unpack to ensure we map all fields
+    let WasmCodeSubstate {
+        code,
+    } = substate;
+
+    Ok(models::Substate::WasmCodeSubstate {
+        code_hex: to_hex(code),
+    })
+}
+
+pub fn to_api_native_code_substate(
+    _context: &MappingContext,
+    substate: &NativeCodeSubstate,
+) -> Result<models::Substate, MappingError> {
+    // Use compiler to unpack to ensure we map all fields
+    let NativeCodeSubstate {
+        native_package_code_id,
+    } = substate;
+
+    Ok(models::Substate::NativeCodeSubstate {
+        native_package_code_id: to_api_u8_as_i32(*native_package_code_id),
     })
 }
 
@@ -941,13 +984,13 @@ fn to_api_key_value_story_entry_substate(
         }
     };
 
-    Ok(match &key_value_store_entry.0 {
-        Some(data) => models::Substate::KeyValueStoreEntrySubstate {
+    Ok(match key_value_store_entry {
+        KeyValueStoreEntrySubstate::Some(_key, value) => models::Substate::KeyValueStoreEntrySubstate {
             key_hex: to_hex(key),
             is_deleted: false,
-            data_struct: Some(Box::new(to_api_data_struct(context, data)?)),
+            data_struct: Some(Box::new(to_api_data_struct(context, &scrypto_encode(&value).unwrap())?)),
         },
-        None => models::Substate::KeyValueStoreEntrySubstate {
+        KeyValueStoreEntrySubstate::None => models::Substate::KeyValueStoreEntrySubstate {
             key_hex: to_hex(key),
             is_deleted: true,
             data_struct: None,
