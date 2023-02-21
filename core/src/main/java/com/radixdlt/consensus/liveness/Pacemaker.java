@@ -273,14 +273,12 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
 
     maybeBaseVote.ifPresentOrElse(
         baseVote -> {
-          // A timeout flag is included if:
-          // a) any scheduled timeout event was observed (even if in the end the round was
-          // prolonged)
-          // b) a proposal has been rejected (which implicitly means that this must be a vote on a
-          // fallback vertex)
-          final var includeTimeoutFlag =
-              this.scheduledRoundTimeoutHasOccurred || roundStatus == RoundStatus.PROPOSAL_REJECTED;
-          final var vote = includeTimeoutFlag ? this.safetyRules.timeoutVote(baseVote) : baseVote;
+          // A timeout flag is included if any scheduled timeout
+          // event was observed (even if in the end the round was prolonged)
+          final var vote =
+              this.scheduledRoundTimeoutHasOccurred
+                  ? this.safetyRules.timeoutVote(baseVote)
+                  : baseVote;
           dispatchVote(vote);
         },
         () -> this.noVoteDispatcher.dispatch(NoVote.create(executedVertex.getVertexWithHash())));
