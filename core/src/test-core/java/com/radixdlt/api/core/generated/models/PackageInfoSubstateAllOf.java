@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.BlueprintData;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,45 +36,23 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * PackageInfoSubstateAllOf
  */
 @JsonPropertyOrder({
-  PackageInfoSubstateAllOf.JSON_PROPERTY_CODE_HEX,
-  PackageInfoSubstateAllOf.JSON_PROPERTY_BLUEPRINTS
+  PackageInfoSubstateAllOf.JSON_PROPERTY_BLUEPRINTS,
+  PackageInfoSubstateAllOf.JSON_PROPERTY_DEPENDENT_RESOURCES,
+  PackageInfoSubstateAllOf.JSON_PROPERTY_DEPENDENT_COMPONENTS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PackageInfoSubstateAllOf {
-  public static final String JSON_PROPERTY_CODE_HEX = "code_hex";
-  private String codeHex;
-
   public static final String JSON_PROPERTY_BLUEPRINTS = "blueprints";
   private Map<String, BlueprintData> blueprints = new HashMap<>();
 
+  public static final String JSON_PROPERTY_DEPENDENT_RESOURCES = "dependent_resources";
+  private List<String> dependentResources = new ArrayList<>();
+
+  public static final String JSON_PROPERTY_DEPENDENT_COMPONENTS = "dependent_components";
+  private List<String> dependentComponents = new ArrayList<>();
+
   public PackageInfoSubstateAllOf() { 
   }
-
-  public PackageInfoSubstateAllOf codeHex(String codeHex) {
-    this.codeHex = codeHex;
-    return this;
-  }
-
-   /**
-   * The hex-encoded package code
-   * @return codeHex
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded package code")
-  @JsonProperty(JSON_PROPERTY_CODE_HEX)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getCodeHex() {
-    return codeHex;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_CODE_HEX)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCodeHex(String codeHex) {
-    this.codeHex = codeHex;
-  }
-
 
   public PackageInfoSubstateAllOf blueprints(Map<String, BlueprintData> blueprints) {
     this.blueprints = blueprints;
@@ -106,6 +85,68 @@ public class PackageInfoSubstateAllOf {
   }
 
 
+  public PackageInfoSubstateAllOf dependentResources(List<String> dependentResources) {
+    this.dependentResources = dependentResources;
+    return this;
+  }
+
+  public PackageInfoSubstateAllOf addDependentResourcesItem(String dependentResourcesItem) {
+    this.dependentResources.add(dependentResourcesItem);
+    return this;
+  }
+
+   /**
+   * Get dependentResources
+   * @return dependentResources
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_DEPENDENT_RESOURCES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<String> getDependentResources() {
+    return dependentResources;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_DEPENDENT_RESOURCES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setDependentResources(List<String> dependentResources) {
+    this.dependentResources = dependentResources;
+  }
+
+
+  public PackageInfoSubstateAllOf dependentComponents(List<String> dependentComponents) {
+    this.dependentComponents = dependentComponents;
+    return this;
+  }
+
+  public PackageInfoSubstateAllOf addDependentComponentsItem(String dependentComponentsItem) {
+    this.dependentComponents.add(dependentComponentsItem);
+    return this;
+  }
+
+   /**
+   * Get dependentComponents
+   * @return dependentComponents
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_DEPENDENT_COMPONENTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<String> getDependentComponents() {
+    return dependentComponents;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_DEPENDENT_COMPONENTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setDependentComponents(List<String> dependentComponents) {
+    this.dependentComponents = dependentComponents;
+  }
+
+
   /**
    * Return true if this PackageInfoSubstate_allOf object is equal to o.
    */
@@ -118,21 +159,23 @@ public class PackageInfoSubstateAllOf {
       return false;
     }
     PackageInfoSubstateAllOf packageInfoSubstateAllOf = (PackageInfoSubstateAllOf) o;
-    return Objects.equals(this.codeHex, packageInfoSubstateAllOf.codeHex) &&
-        Objects.equals(this.blueprints, packageInfoSubstateAllOf.blueprints);
+    return Objects.equals(this.blueprints, packageInfoSubstateAllOf.blueprints) &&
+        Objects.equals(this.dependentResources, packageInfoSubstateAllOf.dependentResources) &&
+        Objects.equals(this.dependentComponents, packageInfoSubstateAllOf.dependentComponents);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(codeHex, blueprints);
+    return Objects.hash(blueprints, dependentResources, dependentComponents);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageInfoSubstateAllOf {\n");
-    sb.append("    codeHex: ").append(toIndentedString(codeHex)).append("\n");
     sb.append("    blueprints: ").append(toIndentedString(blueprints)).append("\n");
+    sb.append("    dependentResources: ").append(toIndentedString(dependentResources)).append("\n");
+    sb.append("    dependentComponents: ").append(toIndentedString(dependentComponents)).append("\n");
     sb.append("}");
     return sb.toString();
   }

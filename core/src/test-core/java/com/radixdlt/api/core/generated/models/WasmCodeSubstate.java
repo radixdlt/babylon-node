@@ -28,7 +28,6 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerSubstate;
 import com.radixdlt.api.core.generated.models.AccessRulesChainSubstate;
 import com.radixdlt.api.core.generated.models.AccountSubstate;
-import com.radixdlt.api.core.generated.models.BlueprintRoyaltyConfig;
 import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
 import com.radixdlt.api.core.generated.models.ComponentInfoSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
@@ -43,7 +42,6 @@ import com.radixdlt.api.core.generated.models.NonFungibleStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageInfoSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyConfigSubstate;
-import com.radixdlt.api.core.generated.models.PackageRoyaltyConfigSubstateAllOf;
 import com.radixdlt.api.core.generated.models.PackageTypeInfoSubstate;
 import com.radixdlt.api.core.generated.models.ResourceManagerSubstate;
 import com.radixdlt.api.core.generated.models.Substate;
@@ -52,19 +50,18 @@ import com.radixdlt.api.core.generated.models.ValidatorSetSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorSubstate;
 import com.radixdlt.api.core.generated.models.VaultSubstate;
 import com.radixdlt.api.core.generated.models.WasmCodeSubstate;
+import com.radixdlt.api.core.generated.models.WasmCodeSubstateAllOf;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * PackageRoyaltyConfigSubstate
+ * WasmCodeSubstate
  */
 @JsonPropertyOrder({
-  PackageRoyaltyConfigSubstate.JSON_PROPERTY_BLUEPRINT_ROYALTIES
+  WasmCodeSubstate.JSON_PROPERTY_CODE_HEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -98,46 +95,41 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = WasmCodeSubstate.class, name = "WasmCode"),
 })
 
-public class PackageRoyaltyConfigSubstate extends Substate {
-  public static final String JSON_PROPERTY_BLUEPRINT_ROYALTIES = "blueprint_royalties";
-  private List<BlueprintRoyaltyConfig> blueprintRoyalties = new ArrayList<>();
+public class WasmCodeSubstate extends Substate {
+  public static final String JSON_PROPERTY_CODE_HEX = "code_hex";
+  private String codeHex;
 
-  public PackageRoyaltyConfigSubstate() { 
+  public WasmCodeSubstate() { 
   }
 
-  public PackageRoyaltyConfigSubstate blueprintRoyalties(List<BlueprintRoyaltyConfig> blueprintRoyalties) {
-    this.blueprintRoyalties = blueprintRoyalties;
-    return this;
-  }
-
-  public PackageRoyaltyConfigSubstate addBlueprintRoyaltiesItem(BlueprintRoyaltyConfig blueprintRoyaltiesItem) {
-    this.blueprintRoyalties.add(blueprintRoyaltiesItem);
+  public WasmCodeSubstate codeHex(String codeHex) {
+    this.codeHex = codeHex;
     return this;
   }
 
    /**
-   * Get blueprintRoyalties
-   * @return blueprintRoyalties
+   * The hex-encoded package code
+   * @return codeHex
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_ROYALTIES)
+  @ApiModelProperty(required = true, value = "The hex-encoded package code")
+  @JsonProperty(JSON_PROPERTY_CODE_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<BlueprintRoyaltyConfig> getBlueprintRoyalties() {
-    return blueprintRoyalties;
+  public String getCodeHex() {
+    return codeHex;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_ROYALTIES)
+  @JsonProperty(JSON_PROPERTY_CODE_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBlueprintRoyalties(List<BlueprintRoyaltyConfig> blueprintRoyalties) {
-    this.blueprintRoyalties = blueprintRoyalties;
+  public void setCodeHex(String codeHex) {
+    this.codeHex = codeHex;
   }
 
 
   /**
-   * Return true if this PackageRoyaltyConfigSubstate object is equal to o.
+   * Return true if this WasmCodeSubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -147,22 +139,22 @@ public class PackageRoyaltyConfigSubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    PackageRoyaltyConfigSubstate packageRoyaltyConfigSubstate = (PackageRoyaltyConfigSubstate) o;
-    return Objects.equals(this.blueprintRoyalties, packageRoyaltyConfigSubstate.blueprintRoyalties) &&
+    WasmCodeSubstate wasmCodeSubstate = (WasmCodeSubstate) o;
+    return Objects.equals(this.codeHex, wasmCodeSubstate.codeHex) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blueprintRoyalties, super.hashCode());
+    return Objects.hash(codeHex, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class PackageRoyaltyConfigSubstate {\n");
+    sb.append("class WasmCodeSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    blueprintRoyalties: ").append(toIndentedString(blueprintRoyalties)).append("\n");
+    sb.append("    codeHex: ").append(toIndentedString(codeHex)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -204,8 +196,8 @@ static {
   mappings.put("ValidatorSet", ValidatorSetSubstate.class);
   mappings.put("Vault", VaultSubstate.class);
   mappings.put("WasmCode", WasmCodeSubstate.class);
-  mappings.put("PackageRoyaltyConfigSubstate", PackageRoyaltyConfigSubstate.class);
-  JSON.registerDiscriminator(PackageRoyaltyConfigSubstate.class, "substate_type", mappings);
+  mappings.put("WasmCodeSubstate", WasmCodeSubstate.class);
+  JSON.registerDiscriminator(WasmCodeSubstate.class, "substate_type", mappings);
 }
 }
 

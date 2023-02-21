@@ -72,7 +72,6 @@ use crate::{
     HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerTransactionReceipt,
 };
 use radix_engine::ledger::{OutputValue, QueryableSubstateStore, ReadableSubstateStore};
-use radix_engine::system::substates::PersistedSubstate;
 use radix_engine::types::{
     scrypto_decode, scrypto_encode, KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateId,
     SubstateOffset,
@@ -85,6 +84,7 @@ use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, Direction, IteratorMode, Options, WriteBatch, DB,
 };
 use std::path::PathBuf;
+use radix_engine::system::node_substates::PersistedSubstate;
 use tracing::{error, warn};
 
 use crate::transaction::LedgerTransaction;

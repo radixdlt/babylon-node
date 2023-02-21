@@ -38,19 +38,23 @@ import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
 import com.radixdlt.api.core.generated.models.GlobalAddressSubstate;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.MetadataSubstate;
+import com.radixdlt.api.core.generated.models.NativeCodeSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageInfoSubstate;
 import com.radixdlt.api.core.generated.models.PackageInfoSubstateAllOf;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyConfigSubstate;
+import com.radixdlt.api.core.generated.models.PackageTypeInfoSubstate;
 import com.radixdlt.api.core.generated.models.ResourceManagerSubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.ValidatorSetSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorSubstate;
 import com.radixdlt.api.core.generated.models.VaultSubstate;
+import com.radixdlt.api.core.generated.models.WasmCodeSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,8 +66,9 @@ import com.radixdlt.api.core.generated.client.JSON;
  * PackageInfoSubstate
  */
 @JsonPropertyOrder({
-  PackageInfoSubstate.JSON_PROPERTY_CODE_HEX,
-  PackageInfoSubstate.JSON_PROPERTY_BLUEPRINTS
+  PackageInfoSubstate.JSON_PROPERTY_BLUEPRINTS,
+  PackageInfoSubstate.JSON_PROPERTY_DEPENDENT_RESOURCES,
+  PackageInfoSubstate.JSON_PROPERTY_DEPENDENT_COMPONENTS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -84,51 +89,31 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = GlobalAddressSubstate.class, name = "GlobalAddress"),
   @JsonSubTypes.Type(value = KeyValueStoreEntrySubstate.class, name = "KeyValueStoreEntry"),
   @JsonSubTypes.Type(value = MetadataSubstate.class, name = "Metadata"),
+  @JsonSubTypes.Type(value = NativeCodeSubstate.class, name = "NativeCode"),
   @JsonSubTypes.Type(value = NonFungibleStoreEntrySubstate.class, name = "NonFungibleStoreEntry"),
   @JsonSubTypes.Type(value = PackageInfoSubstate.class, name = "PackageInfo"),
   @JsonSubTypes.Type(value = PackageRoyaltyAccumulatorSubstate.class, name = "PackageRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageRoyaltyConfigSubstate.class, name = "PackageRoyaltyConfig"),
+  @JsonSubTypes.Type(value = PackageTypeInfoSubstate.class, name = "PackageTypeInfo"),
   @JsonSubTypes.Type(value = ResourceManagerSubstate.class, name = "ResourceManager"),
   @JsonSubTypes.Type(value = ValidatorSubstate.class, name = "Validator"),
   @JsonSubTypes.Type(value = ValidatorSetSubstate.class, name = "ValidatorSet"),
   @JsonSubTypes.Type(value = VaultSubstate.class, name = "Vault"),
+  @JsonSubTypes.Type(value = WasmCodeSubstate.class, name = "WasmCode"),
 })
 
 public class PackageInfoSubstate extends Substate {
-  public static final String JSON_PROPERTY_CODE_HEX = "code_hex";
-  private String codeHex;
-
   public static final String JSON_PROPERTY_BLUEPRINTS = "blueprints";
   private Map<String, BlueprintData> blueprints = new HashMap<>();
 
+  public static final String JSON_PROPERTY_DEPENDENT_RESOURCES = "dependent_resources";
+  private List<String> dependentResources = new ArrayList<>();
+
+  public static final String JSON_PROPERTY_DEPENDENT_COMPONENTS = "dependent_components";
+  private List<String> dependentComponents = new ArrayList<>();
+
   public PackageInfoSubstate() { 
   }
-
-  public PackageInfoSubstate codeHex(String codeHex) {
-    this.codeHex = codeHex;
-    return this;
-  }
-
-   /**
-   * The hex-encoded package code
-   * @return codeHex
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded package code")
-  @JsonProperty(JSON_PROPERTY_CODE_HEX)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getCodeHex() {
-    return codeHex;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_CODE_HEX)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCodeHex(String codeHex) {
-    this.codeHex = codeHex;
-  }
-
 
   public PackageInfoSubstate blueprints(Map<String, BlueprintData> blueprints) {
     this.blueprints = blueprints;
@@ -161,6 +146,68 @@ public class PackageInfoSubstate extends Substate {
   }
 
 
+  public PackageInfoSubstate dependentResources(List<String> dependentResources) {
+    this.dependentResources = dependentResources;
+    return this;
+  }
+
+  public PackageInfoSubstate addDependentResourcesItem(String dependentResourcesItem) {
+    this.dependentResources.add(dependentResourcesItem);
+    return this;
+  }
+
+   /**
+   * Get dependentResources
+   * @return dependentResources
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_DEPENDENT_RESOURCES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<String> getDependentResources() {
+    return dependentResources;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_DEPENDENT_RESOURCES)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setDependentResources(List<String> dependentResources) {
+    this.dependentResources = dependentResources;
+  }
+
+
+  public PackageInfoSubstate dependentComponents(List<String> dependentComponents) {
+    this.dependentComponents = dependentComponents;
+    return this;
+  }
+
+  public PackageInfoSubstate addDependentComponentsItem(String dependentComponentsItem) {
+    this.dependentComponents.add(dependentComponentsItem);
+    return this;
+  }
+
+   /**
+   * Get dependentComponents
+   * @return dependentComponents
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_DEPENDENT_COMPONENTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public List<String> getDependentComponents() {
+    return dependentComponents;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_DEPENDENT_COMPONENTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setDependentComponents(List<String> dependentComponents) {
+    this.dependentComponents = dependentComponents;
+  }
+
+
   /**
    * Return true if this PackageInfoSubstate object is equal to o.
    */
@@ -173,14 +220,15 @@ public class PackageInfoSubstate extends Substate {
       return false;
     }
     PackageInfoSubstate packageInfoSubstate = (PackageInfoSubstate) o;
-    return Objects.equals(this.codeHex, packageInfoSubstate.codeHex) &&
-        Objects.equals(this.blueprints, packageInfoSubstate.blueprints) &&
+    return Objects.equals(this.blueprints, packageInfoSubstate.blueprints) &&
+        Objects.equals(this.dependentResources, packageInfoSubstate.dependentResources) &&
+        Objects.equals(this.dependentComponents, packageInfoSubstate.dependentComponents) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(codeHex, blueprints, super.hashCode());
+    return Objects.hash(blueprints, dependentResources, dependentComponents, super.hashCode());
   }
 
   @Override
@@ -188,8 +236,9 @@ public class PackageInfoSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageInfoSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    codeHex: ").append(toIndentedString(codeHex)).append("\n");
     sb.append("    blueprints: ").append(toIndentedString(blueprints)).append("\n");
+    sb.append("    dependentResources: ").append(toIndentedString(dependentResources)).append("\n");
+    sb.append("    dependentComponents: ").append(toIndentedString(dependentComponents)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -220,14 +269,17 @@ static {
   mappings.put("GlobalAddress", GlobalAddressSubstate.class);
   mappings.put("KeyValueStoreEntry", KeyValueStoreEntrySubstate.class);
   mappings.put("Metadata", MetadataSubstate.class);
+  mappings.put("NativeCode", NativeCodeSubstate.class);
   mappings.put("NonFungibleStoreEntry", NonFungibleStoreEntrySubstate.class);
   mappings.put("PackageInfo", PackageInfoSubstate.class);
   mappings.put("PackageRoyaltyAccumulator", PackageRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageRoyaltyConfig", PackageRoyaltyConfigSubstate.class);
+  mappings.put("PackageTypeInfo", PackageTypeInfoSubstate.class);
   mappings.put("ResourceManager", ResourceManagerSubstate.class);
   mappings.put("Validator", ValidatorSubstate.class);
   mappings.put("ValidatorSet", ValidatorSetSubstate.class);
   mappings.put("Vault", VaultSubstate.class);
+  mappings.put("WasmCode", WasmCodeSubstate.class);
   mappings.put("PackageInfoSubstate", PackageInfoSubstate.class);
   JSON.registerDiscriminator(PackageInfoSubstate.class, "substate_type", mappings);
 }

@@ -4,8 +4,8 @@ use std::collections::BTreeMap;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::OutputValue;
 use radix_engine::state_manager::StateDiff;
+use radix_engine::system::kernel_modules::costing::FeeSummary;
 use radix_engine::system::kernel_modules::execution_trace::ResourceChange;
-use radix_engine::system::kernel_modules::fee::FeeSummary;
 use radix_engine::transaction::{
     CommitResult, EntityChanges, TransactionOutcome,
     TransactionReceipt as EngineTransactionReceipt, TransactionResult,

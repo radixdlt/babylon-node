@@ -13,19 +13,21 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct PackageInfoSubstateAllOf {
-    /// The hex-encoded package code
-    #[serde(rename = "code_hex")]
-    pub code_hex: String,
     /// A map from the blueprint name to BlueprintData
     #[serde(rename = "blueprints")]
     pub blueprints: ::std::collections::HashMap<String, crate::core_api::generated::models::BlueprintData>,
+    #[serde(rename = "dependent_resources")]
+    pub dependent_resources: Vec<String>,
+    #[serde(rename = "dependent_components")]
+    pub dependent_components: Vec<String>,
 }
 
 impl PackageInfoSubstateAllOf {
-    pub fn new(code_hex: String, blueprints: ::std::collections::HashMap<String, crate::core_api::generated::models::BlueprintData>) -> PackageInfoSubstateAllOf {
+    pub fn new(blueprints: ::std::collections::HashMap<String, crate::core_api::generated::models::BlueprintData>, dependent_resources: Vec<String>, dependent_components: Vec<String>) -> PackageInfoSubstateAllOf {
         PackageInfoSubstateAllOf {
-            code_hex,
             blueprints,
+            dependent_resources,
+            dependent_components,
         }
     }
 }

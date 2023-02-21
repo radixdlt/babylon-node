@@ -1,15 +1,13 @@
 use radix_engine::types::*;
 
-use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
-use radix_engine_interface::blueprints::clock::ClockSetCurrentTimeInvocation;
-use radix_engine_interface::blueprints::epoch_manager::EpochManagerNextRoundInvocation;
+use radix_engine_interface::blueprints::clock::{CLOCK_SET_CURRENT_TIME_IDENT, ClockSetCurrentTimeInput};
+use radix_engine_interface::blueprints::epoch_manager::{EPOCH_MANAGER_NEXT_ROUND_IDENT, EpochManagerNextRoundInput};
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto_encode;
 use std::collections::BTreeSet;
-use transaction::model::{
-    AuthZoneParams, Executable, ExecutionContext, FeePayment, Instruction, InstructionList,
-};
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use transaction::model::{AuthZoneParams, BasicInstruction, Executable, ExecutionContext, FeePayment, Instruction, InstructionList};
 
 #[derive(Debug, Copy, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub enum ValidatorTransaction {
@@ -34,22 +32,25 @@ impl ValidatorTransaction {
                 round_in_epoch,
                 ..
             } => {
-                let update_time = NativeInvocation::Clock(ClockInvocation::SetCurrentTime(
-                    ClockSetCurrentTimeInvocation {
-                        receiver: CLOCK,
+                let update_time = BasicInstruction::CallMethod {
+                    component_address: CLOCK,
+                    method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
+                    args: scrypto_encode(&ClockSetCurrentTimeInput {
                         current_time_ms: *timestamp_ms,
-                    },
-                ));
-                let update_round = NativeInvocation::EpochManager(
-                    EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
-                        receiver: EPOCH_MANAGER,
+                    }).unwrap(),
+                };
+
+                let update_round = BasicInstruction::CallMethod {
+                    component_address: EPOCH_MANAGER,
+                    method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+                    args: scrypto_encode(&EpochManagerNextRoundInput {
                         round: *round_in_epoch,
-                    }),
-                );
+                    }).unwrap(),
+                };
 
                 vec![
-                    Instruction::System(update_time),
-                    Instruction::System(update_round),
+                    Instruction::Basic(update_time),
+                    Instruction::Basic(update_round),
                 ]
             }
         };

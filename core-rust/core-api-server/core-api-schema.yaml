@@ -2151,6 +2151,8 @@ components:
         - AccessRules1
         - ComponentRoyalty
         - PackageRoyalty
+        - PackageTypeInfo
+        - ComponentTypeInfo
     Substate:
       type: object
       required:
@@ -2170,6 +2172,9 @@ components:
           ComponentRoyaltyConfig: '#/components/schemas/ComponentRoyaltyConfigSubstate'
           ComponentRoyaltyAccumulator: '#/components/schemas/ComponentRoyaltyAccumulatorSubstate'
           PackageInfo: '#/components/schemas/PackageInfoSubstate'
+          PackageTypeInfo: '#/components/schemas/PackageTypeInfoSubstate'
+          WasmCode: '#/components/schemas/WasmCodeSubstate'
+          NativeCode: '#/components/schemas/NativeCodeSubstate'
           PackageRoyaltyConfig: '#/components/schemas/PackageRoyaltyConfigSubstate'
           PackageRoyaltyAccumulator: '#/components/schemas/PackageRoyaltyAccumulatorSubstate'
           ResourceManager: '#/components/schemas/ResourceManagerSubstate'
@@ -2195,6 +2200,9 @@ components:
         - ComponentRoyaltyConfig
         - ComponentRoyaltyAccumulator
         - PackageInfo
+        - PackageTypeInfo
+        - WasmCode
+        - NativeCode
         - PackageRoyaltyConfig
         - PackageRoyaltyAccumulator
         - ResourceManager
@@ -2225,6 +2233,9 @@ components:
         - ComponentRoyaltyConfig
         - ComponentRoyaltyAccumulator
         - PackageInfo
+        - PackageTypeInfo
+        - WasmCode
+        - NativeCode
         - PackageRoyaltyConfig
         - PackageRoyaltyAccumulator
         - ResourceManager
@@ -2348,17 +2359,46 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - code_hex
             - blueprints
+            - dependent_resources
+            - dependent_components
           properties:
-            code_hex:
-              type: string
-              description: The hex-encoded package code
             blueprints:
               type: object
               description: A map from the blueprint name to BlueprintData
               additionalProperties:
                 $ref: '#/components/schemas/BlueprintData'
+            dependent_resources:
+              type: array
+              items:
+                $ref: '#/components/schemas/ResourceAddress'
+            dependent_components:
+              type: array
+              items:
+                $ref: '#/components/schemas/ComponentAddress'
+    PackageTypeInfoSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+    WasmCodeSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - code_hex
+          properties:
+            code_hex:
+              type: string
+              description: The hex-encoded package code
+    NativeCodeSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - native_package_code_id
+          properties:
+            native_package_code_id:
+              type: integer
     BlueprintData:
       type: object
       required:

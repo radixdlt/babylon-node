@@ -12,9 +12,7 @@ use radix_engine::types::{
     NonFungibleStoreOffset, PackageAddress, PackageOffset, RENodeId, ResourceAddress,
     ResourceManagerOffset, SubstateId, SubstateOffset, VaultOffset,
 };
-use radix_engine_interface::api::types::{
-    AccessControllerOffset, AccountOffset, NodeModuleId, RoyaltyOffset, ValidatorOffset,
-};
+use radix_engine_interface::api::types::{AccessControllerOffset, AccountOffset, ComponentTypeInfoOffset, NodeModuleId, RoyaltyOffset, ValidatorOffset};
 use radix_engine_interface::blueprints::resource::{NonFungibleIdType, NonFungibleLocalId};
 
 pub fn to_api_component_address(
@@ -154,7 +152,6 @@ impl TryFrom<RENodeId> for MappedEntityId {
             RENodeId::Proof(_) => return Err(transient_renode_error("Proof")),
             RENodeId::Worktop => return Err(transient_renode_error("Worktop")),
             RENodeId::AuthZoneStack => return Err(transient_renode_error("AuthZoneStack")),
-            RENodeId::FeeReserve(_) => return Err(transient_renode_error("FeeReserve")),
             RENodeId::TransactionRuntime => {
                 return Err(transient_renode_error("TransactionRuntime"))
             }
@@ -256,11 +253,13 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
 
         SubstateId(RENodeId::Component(_), _, offset) => {
             let substate_type_key = match offset {
-                SubstateOffset::Component(offset) => match offset {
-                    ComponentOffset::Info => {
+                SubstateOffset::ComponentTypeInfo(offset) => match offset {
+                    ComponentTypeInfoOffset::TypeInfo => {
                         (SubstateType::ComponentInfo, SubstateKeyType::ComponentInfo)
                     }
-                    ComponentOffset::State => (
+                }
+                SubstateOffset::Component(offset) => match offset {
+                    ComponentOffset::State0 => (
                         SubstateType::ComponentState,
                         SubstateKeyType::ComponentState,
                     ),
@@ -335,6 +334,12 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 SubstateOffset::Package(offset) => match offset {
                     PackageOffset::Info => {
                         (SubstateType::PackageInfo, SubstateKeyType::PackageInfo)
+                    }
+                    PackageOffset::WasmCode => {
+                        (SubstateType::WasmCode, SubstateKeyType::WasmCode)
+                    }
+                    PackageOffset::NativeCode => {
+                        (SubstateType::NativeCode, SubstateKeyType::NativeCode)
                     }
                 },
                 SubstateOffset::Royalty(offset) => match offset {
@@ -514,9 +519,6 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
         SubstateId(RENodeId::AuthZoneStack, ..) => {
             return Err(transient_substate_error("AuthZoneStack", &substate_id))
         }
-        SubstateId(RENodeId::FeeReserve(_), ..) => {
-            return Err(transient_substate_error("FeeReserve", &substate_id))
-        }
         SubstateId(RENodeId::TransactionRuntime, ..) => {
             return Err(transient_substate_error("TransactionRuntime", &substate_id))
         }
@@ -599,6 +601,8 @@ pub fn node_module_id_to_module_type(node_module_id: &NodeModuleId) -> ModuleTyp
         NodeModuleId::AccessRules1 => ModuleType::AccessRules1,
         NodeModuleId::ComponentRoyalty => ModuleType::ComponentRoyalty,
         NodeModuleId::PackageRoyalty => ModuleType::PackageRoyalty,
+        NodeModuleId::PackageTypeInfo => ModuleType::PackageTypeInfo,
+        NodeModuleId::ComponentTypeInfo => ModuleType::ComponentTypeInfo,
     }
 }
 

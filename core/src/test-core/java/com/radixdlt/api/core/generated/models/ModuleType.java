@@ -38,7 +38,11 @@ public enum ModuleType {
   
   COMPONENTROYALTY("ComponentRoyalty"),
   
-  PACKAGEROYALTY("PackageRoyalty");
+  PACKAGEROYALTY("PackageRoyalty"),
+  
+  PACKAGETYPEINFO("PackageTypeInfo"),
+  
+  COMPONENTTYPEINFO("ComponentTypeInfo");
 
   private String value;
 
