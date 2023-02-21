@@ -114,6 +114,11 @@ public final class Vertex {
   @DsonOutput(Output.ALL)
   private final List<byte[]> transactions;
 
+  /* Fallback vertices are created locally by non-leader validators who haven't received
+   * a valid proposal for the given round. Since they don't contain any transactions, they should
+   * be exactly the same on all nodes (that created them independently), allowing for QC formation.
+   * This allows 3-chain to continue, even if the leader is down. This is just an optimization though,
+   * if validators fail to form a QC on a fallback vertex, they resort to timeout certificate. */
   // TODO: rename this JSON property (or remove it entirely?)
   @JsonProperty("tout")
   @DsonOutput(Output.ALL)
