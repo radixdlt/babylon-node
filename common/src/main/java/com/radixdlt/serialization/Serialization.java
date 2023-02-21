@@ -81,7 +81,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -139,10 +138,7 @@ public class Serialization {
 
     JacksonCborMapper apiDsonMapper =
         JacksonCborMapper.create(
-            idLookup,
-            filterProviderFor(policy.getIncludedFields(Output.API)),
-            true,
-            Optional.of(new ApiSerializationModifier(hashDsonMapper)));
+            idLookup, filterProviderFor(policy.getIncludedFields(Output.API)), true);
 
     dsonBuilder.put(Output.HASH, hashDsonMapper);
     dsonBuilder.put(Output.API, apiDsonMapper);
@@ -163,10 +159,7 @@ public class Serialization {
             idLookup, filterProviderFor(policy.getIncludedFields(Output.HASH)), false);
     var apiJsonMapper =
         JacksonJsonMapper.create(
-            idLookup,
-            filterProviderFor(policy.getIncludedFields(Output.API)),
-            false,
-            Optional.of(new ApiSerializationModifier(hashDsonMapper)));
+            idLookup, filterProviderFor(policy.getIncludedFields(Output.API)), false);
 
     jsonBuilder.put(Output.HASH, hashJsonMapper);
     jsonBuilder.put(Output.API, apiJsonMapper);

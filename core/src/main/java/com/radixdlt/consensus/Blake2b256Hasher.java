@@ -62,62 +62,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.serialization;
+package com.radixdlt.consensus;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializationConfig;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.serialization.mapper.JacksonCborMapper;
-import java.io.IOException;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.Serialization;
 
-/**
- * A Jackson bean serialization modifier that handles adding the "hid" property to output data for
- * classes annotated with @SerializeWithHid annotation.
- */
-public class ApiSerializationModifier extends BeanSerializerModifier {
+/** A Hasher implementation that uses Blake2b hashing algorithm. */
+public class Blake2b256Hasher implements Hasher {
 
-  private final JacksonCborMapper hashDsonMapper;
+  private final Serialization serialization;
 
-  public ApiSerializationModifier(JacksonCborMapper hashDsonMapper) {
-    this.hashDsonMapper = hashDsonMapper;
+  public Blake2b256Hasher(Serialization serialization) {
+    this.serialization = serialization;
   }
 
   @Override
-  @SuppressWarnings("unchecked")
-  public JsonSerializer<?> modifySerializer(
-      final SerializationConfig serializationConfig,
-      final BeanDescription beanDescription,
-      final JsonSerializer<?> jsonSerializer) {
-    return new SerializerWithHid((JsonSerializer<Object>) jsonSerializer);
+  public int hashSizeInBytes() {
+    return 32;
   }
 
-  private class SerializerWithHid extends JsonSerializer<Object> {
+  @Override
+  public HashCode hashDsonEncoded(Object o) {
+    return HashUtils.blake2b256(serialization.toDson(o, DsonOutput.Output.HASH));
+  }
 
-    private final JsonSerializer<Object> serializer;
-
-    SerializerWithHid(JsonSerializer<Object> jsonSerializer) {
-      this.serializer = jsonSerializer;
-    }
-
-    @Override
-    public void serialize(
-        Object o, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
-        throws IOException {
-      if (o.getClass().isAnnotationPresent(SerializeWithHid.class)) {
-        jsonGenerator.writeStartObject();
-        serializer.unwrappingSerializer(null).serialize(o, jsonGenerator, serializerProvider);
-        byte[] bytesToHash = hashDsonMapper.writeValueAsBytes(o);
-        HashCode hash = HashUtils.sha256Twice(bytesToHash);
-        jsonGenerator.writeObjectField("hid", hash);
-        jsonGenerator.writeEndObject();
-      } else {
-        serializer.serialize(o, jsonGenerator, serializerProvider);
-      }
-    }
+  @Override
+  public HashCode hashBytes(byte[] bytes) {
+    return HashUtils.blake2b256(bytes);
   }
 }

@@ -10,9 +10,9 @@ use radix_engine::blueprints::resource::{
 use radix_engine::system::global::GlobalAddressSubstate;
 use radix_engine::system::node_modules::auth::AccessRulesChainSubstate;
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
-use std::collections::BTreeSet;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::system::type_info::TypeInfoSubstate;
+use std::collections::BTreeSet;
 
 use super::*;
 use crate::core_api::models;
@@ -22,8 +22,14 @@ use radix_engine::types::{
     scrypto_encode, Decimal, GlobalOffset, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId,
     ResourceAddress, RoyaltyConfig, SubstateId, SubstateOffset,
 };
-use radix_engine_interface::api::component::{ComponentAddress, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate, KeyValueStoreEntrySubstate};
-use radix_engine_interface::api::package::{NativeCodeSubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate, WasmCodeSubstate};
+use radix_engine_interface::api::component::{
+    ComponentAddress, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
+    ComponentRoyaltyConfigSubstate, ComponentStateSubstate, KeyValueStoreEntrySubstate,
+};
+use radix_engine_interface::api::package::{
+    NativeCodeSubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate,
+    PackageRoyaltyConfigSubstate, WasmCodeSubstate,
+};
 use radix_engine_interface::api::types::NodeModuleId;
 use radix_engine_interface::blueprints::resource::{
     AccessRule, AccessRuleEntry, AccessRuleKey, AccessRuleNode, AccessRules, NonFungibleIdType,
@@ -65,9 +71,13 @@ pub fn to_api_substate(
             to_api_resource_manager_substate(context, resource_manager)?
         }
         PersistedSubstate::PackageInfo(package) => to_api_package_info_substate(context, package)?,
-        PersistedSubstate::TypeInfo(type_info) => to_api_package_type_info_substate(context, type_info)?,
+        PersistedSubstate::TypeInfo(type_info) => {
+            to_api_package_type_info_substate(context, type_info)?
+        }
         PersistedSubstate::WasmCode(wasm_code) => to_api_wasm_code_substate(context, wasm_code)?,
-        PersistedSubstate::NativePackageInfo(native_code) => to_api_native_code_substate(context, native_code)?,
+        PersistedSubstate::NativePackageInfo(native_code) => {
+            to_api_native_code_substate(context, native_code)?
+        }
         PersistedSubstate::PackageRoyaltyConfig(substate) => {
             to_api_package_royalty_config_substate(context, substate)?
         }
@@ -221,10 +231,8 @@ pub fn to_api_package_type_info_substate(
     _context: &MappingContext,
     _substate: &TypeInfoSubstate,
 ) -> Result<models::Substate, MappingError> {
-
     // TODO: Expand this
-    Ok(models::Substate::PackageTypeInfoSubstate {
-    })
+    Ok(models::Substate::PackageTypeInfoSubstate {})
 }
 
 pub fn to_api_access_rules(
@@ -692,9 +700,7 @@ pub fn to_api_wasm_code_substate(
     substate: &WasmCodeSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
-    let WasmCodeSubstate {
-        code,
-    } = substate;
+    let WasmCodeSubstate { code } = substate;
 
     Ok(models::Substate::WasmCodeSubstate {
         code_hex: to_hex(code),
@@ -985,11 +991,16 @@ fn to_api_key_value_story_entry_substate(
     };
 
     Ok(match key_value_store_entry {
-        KeyValueStoreEntrySubstate::Some(_key, value) => models::Substate::KeyValueStoreEntrySubstate {
-            key_hex: to_hex(key),
-            is_deleted: false,
-            data_struct: Some(Box::new(to_api_data_struct(context, &scrypto_encode(&value).unwrap())?)),
-        },
+        KeyValueStoreEntrySubstate::Some(_key, value) => {
+            models::Substate::KeyValueStoreEntrySubstate {
+                key_hex: to_hex(key),
+                is_deleted: false,
+                data_struct: Some(Box::new(to_api_data_struct(
+                    context,
+                    &scrypto_encode(&value).unwrap(),
+                )?)),
+            }
+        }
         KeyValueStoreEntrySubstate::None => models::Substate::KeyValueStoreEntrySubstate {
             key_hex: to_hex(key),
             is_deleted: true,

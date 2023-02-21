@@ -78,7 +78,6 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.common.hash.HashCode;
@@ -90,7 +89,6 @@ import com.radixdlt.serialization.SerializerIds;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import java.io.IOException;
-import java.util.Optional;
 import org.bouncycastle.util.encoders.Hex;
 
 /**
@@ -100,11 +98,6 @@ import org.bouncycastle.util.encoders.Hex;
 public class JacksonJsonMapper extends ObjectMapper {
   private static final long serialVersionUID = 4917479892309630214L;
 
-  public static JacksonJsonMapper create(
-      SerializerIds idLookup, FilterProvider filterProvider, boolean sortProperties) {
-    return new JacksonJsonMapper(idLookup, filterProvider, sortProperties, Optional.empty());
-  }
-
   /**
    * Create an {@link RadixObjectMapperConfigurator} that will serialize to/from the JSON format
    * that radix requires.
@@ -113,22 +106,15 @@ public class JacksonJsonMapper extends ObjectMapper {
    * @param filterProvider A {@link FilterProvider} to use for filtering serialized fields
    * @param sortProperties {@code true} if JSON output properties should be sorted in
    *     lexicographical order
-   * @param serializationModifier optional BeanSerializerModifier to mix in the serialization
    * @return A freshly created {@link JacksonJsonMapper}
    */
   public static JacksonJsonMapper create(
-      SerializerIds idLookup,
-      FilterProvider filterProvider,
-      boolean sortProperties,
-      Optional<BeanSerializerModifier> serializationModifier) {
-    return new JacksonJsonMapper(idLookup, filterProvider, sortProperties, serializationModifier);
+      SerializerIds idLookup, FilterProvider filterProvider, boolean sortProperties) {
+    return new JacksonJsonMapper(idLookup, filterProvider, sortProperties);
   }
 
   private JacksonJsonMapper(
-      SerializerIds idLookup,
-      FilterProvider filterProvider,
-      boolean sortProperties,
-      Optional<BeanSerializerModifier> serializationModifier) {
+      SerializerIds idLookup, FilterProvider filterProvider, boolean sortProperties) {
     super(new JsonFactory());
     RadixObjectMapperConfigurator.configure(this, idLookup, filterProvider, sortProperties);
     SimpleModule jsonModule = new SimpleModule();
@@ -238,8 +224,6 @@ public class JacksonJsonMapper extends ObjectMapper {
             };
           }
         });
-
-    serializationModifier.ifPresent(jsonModule::setSerializerModifier);
 
     registerModule(jsonModule);
   }

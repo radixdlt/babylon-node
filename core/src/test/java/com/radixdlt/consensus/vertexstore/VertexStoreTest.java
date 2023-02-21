@@ -115,7 +115,7 @@ public class VertexStoreTest {
   private EventDispatcher<BFTRebuildUpdate> rebuildUpdateEventDispatcher;
   private EventDispatcher<BFTHighQCUpdate> bftHighQCUpdateEventDispatcher;
   private EventDispatcher<BFTCommittedUpdate> committedSender;
-  private Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
+  private Hasher hasher = new Blake2b256Hasher(DefaultSerialization.getInstance());
 
   private static final LedgerHeader MOCKED_HEADER =
       LedgerHeader.create(

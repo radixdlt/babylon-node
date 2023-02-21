@@ -116,7 +116,7 @@ public class StateComputerLedgerTest {
   private final RawNotarizedTransaction nextTransaction =
       REv2TestTransactions.constructDepositFromFaucetTransaction(
           NetworkDefinition.LOCAL_SIMULATOR, 0, 0);
-  private final Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
+  private final Hasher hasher = new Blake2b256Hasher(DefaultSerialization.getInstance());
   private final ExecutedTransaction successfulNextTransaction =
       nextTransaction::INCORRECTInterpretDirectlyAsRawLedgerTransaction;
 

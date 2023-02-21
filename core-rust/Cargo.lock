@@ -330,6 +330,7 @@ name = "core-api-server"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "blake2",
  "chrono",
  "futures",
  "hex",
@@ -343,7 +344,7 @@ dependencies = [
  "radix-engine-constants",
  "radix-engine-interface",
  "radix-engine-stores",
- "sbor 0.9.0",
+ "sbor",
  "serde",
  "serde_json",
  "state-manager",
@@ -353,7 +354,7 @@ dependencies = [
  "tracing-opentelemetry",
  "tracing-subscriber",
  "transaction",
- "utils 0.9.0",
+ "utils",
 ]
 
 [[package]]
@@ -1142,12 +1143,12 @@ dependencies = [
 [[package]]
 name = "native-sdk"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-0d1054#0d10544bf42229bd92d8c67d448fc0ecf54578de"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-create-account-f1160a#f1160a391fe761f1f1690f6392d393716def7295"
 dependencies = [
  "radix-engine-derive",
  "radix-engine-interface",
- "sbor 0.9.0",
- "utils 0.9.0",
+ "sbor",
+ "utils",
 ]
 
 [[package]]
@@ -1448,7 +1449,7 @@ dependencies = [
 [[package]]
 name = "radix-engine"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-0d1054#0d10544bf42229bd92d8c67d448fc0ecf54578de"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-create-account-f1160a#f1160a391fe761f1f1690f6392d393716def7295"
 dependencies = [
  "bitflags",
  "colored",
@@ -1458,10 +1459,10 @@ dependencies = [
  "parity-wasm",
  "radix-engine-constants",
  "radix-engine-interface",
- "sbor 0.9.0",
+ "sbor",
  "strum",
  "transaction",
- "utils 0.9.0",
+ "utils",
  "wasm-instrument",
  "wasmi",
  "wasmi-validation",
@@ -1470,23 +1471,23 @@ dependencies = [
 [[package]]
 name = "radix-engine-constants"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-0d1054#0d10544bf42229bd92d8c67d448fc0ecf54578de"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-create-account-f1160a#f1160a391fe761f1f1690f6392d393716def7295"
 
 [[package]]
 name = "radix-engine-derive"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-0d1054#0d10544bf42229bd92d8c67d448fc0ecf54578de"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-create-account-f1160a#f1160a391fe761f1f1690f6392d393716def7295"
 dependencies = [
  "proc-macro2",
  "quote",
- "sbor-derive-common 0.9.0",
+ "sbor-derive-common",
  "syn",
 ]
 
 [[package]]
 name = "radix-engine-interface"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-0d1054#0d10544bf42229bd92d8c67d448fc0ecf54578de"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-create-account-f1160a#f1160a391fe761f1f1690f6392d393716def7295"
 dependencies = [
  "bech32",
  "blake2",
@@ -1497,23 +1498,23 @@ dependencies = [
  "num-traits",
  "paste",
  "radix-engine-derive",
- "sbor 0.9.0",
+ "sbor",
  "scrypto-abi",
  "serde",
  "serde_with",
  "strum",
- "utils 0.9.0",
+ "utils",
 ]
 
 [[package]]
 name = "radix-engine-stores"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-0d1054#0d10544bf42229bd92d8c67d448fc0ecf54578de"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-create-account-f1160a#f1160a391fe761f1f1690f6392d393716def7295"
 dependencies = [
  "itertools",
  "radix-engine",
  "radix-engine-interface",
- "sbor 0.9.0",
+ "sbor",
 ]
 
 [[package]]
@@ -1677,59 +1678,28 @@ dependencies = [
 
 [[package]]
 name = "sbor"
-version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-baf0142b2#baf0142b2946475da628fb6ae12cd3c7aee9ab98"
-dependencies = [
- "const-sha1",
- "indexmap 2.0.0-pre",
- "sbor-derive 0.8.0",
- "serde",
-]
-
-[[package]]
-name = "sbor"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-0d1054#0d10544bf42229bd92d8c67d448fc0ecf54578de"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-create-account-f1160a#f1160a391fe761f1f1690f6392d393716def7295"
 dependencies = [
  "const-sha1",
  "indexmap 2.0.0-pre",
- "sbor-derive 0.9.0",
+ "sbor-derive",
  "serde",
 ]
 
 [[package]]
 name = "sbor-derive"
-version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-baf0142b2#baf0142b2946475da628fb6ae12cd3c7aee9ab98"
-dependencies = [
- "proc-macro2",
- "sbor-derive-common 0.8.0",
-]
-
-[[package]]
-name = "sbor-derive"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-0d1054#0d10544bf42229bd92d8c67d448fc0ecf54578de"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-create-account-f1160a#f1160a391fe761f1f1690f6392d393716def7295"
 dependencies = [
  "proc-macro2",
- "sbor-derive-common 0.9.0",
-]
-
-[[package]]
-name = "sbor-derive-common"
-version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-baf0142b2#baf0142b2946475da628fb6ae12cd3c7aee9ab98"
-dependencies = [
- "const-sha1",
- "proc-macro2",
- "quote",
- "syn",
+ "sbor-derive-common",
 ]
 
 [[package]]
 name = "sbor-derive-common"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-0d1054#0d10544bf42229bd92d8c67d448fc0ecf54578de"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-create-account-f1160a#f1160a391fe761f1f1690f6392d393716def7295"
 dependencies = [
  "const-sha1",
  "proc-macro2",
@@ -1761,9 +1731,9 @@ checksum = "9c8132065adcfd6e02db789d9285a0deb2f3fcb04002865ab67d5fb103533898"
 [[package]]
 name = "scrypto-abi"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-0d1054#0d10544bf42229bd92d8c67d448fc0ecf54578de"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-create-account-f1160a#f1160a391fe761f1f1690f6392d393716def7295"
 dependencies = [
- "sbor 0.9.0",
+ "sbor",
  "serde",
 ]
 
@@ -1969,6 +1939,7 @@ name = "state-manager"
 version = "0.1.0"
 dependencies = [
  "bech32",
+ "blake2",
  "hex",
  "im",
  "jni",
@@ -1982,11 +1953,11 @@ dependencies = [
  "radix-engine-stores",
  "rand 0.8.5",
  "rocksdb",
- "sbor 0.9.0",
+ "sbor",
  "slotmap",
  "tracing",
  "transaction",
- "utils 0.8.0",
+ "utils",
 ]
 
 [[package]]
@@ -2308,27 +2279,27 @@ dependencies = [
 [[package]]
 name = "transaction"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-0d1054#0d10544bf42229bd92d8c67d448fc0ecf54578de"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-create-account-f1160a#f1160a391fe761f1f1690f6392d393716def7295"
 dependencies = [
  "ed25519-dalek",
  "hex",
  "lazy_static",
  "radix-engine-constants",
  "radix-engine-interface",
- "sbor 0.9.0",
+ "sbor",
  "secp256k1",
  "transaction-derive",
- "utils 0.9.0",
+ "utils",
 ]
 
 [[package]]
 name = "transaction-derive"
 version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-0d1054#0d10544bf42229bd92d8c67d448fc0ecf54578de"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-create-account-f1160a#f1160a391fe761f1f1690f6392d393716def7295"
 dependencies = [
  "proc-macro2",
  "quote",
- "sbor-derive-common 0.9.0",
+ "sbor-derive-common",
  "syn",
 ]
 
@@ -2379,18 +2350,10 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 
 [[package]]
 name = "utils"
-version = "0.8.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-baf0142b2#baf0142b2946475da628fb6ae12cd3c7aee9ab98"
-dependencies = [
- "sbor 0.8.0",
-]
-
-[[package]]
-name = "utils"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-0d1054#0d10544bf42229bd92d8c67d448fc0ecf54578de"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-create-account-f1160a#f1160a391fe761f1f1690f6392d393716def7295"
 dependencies = [
- "sbor 0.9.0",
+ "sbor",
  "serde",
 ]
 

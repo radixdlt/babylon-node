@@ -68,8 +68,8 @@ import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.consensus.Blake2b256Hasher;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.serialization.DefaultSerialization;
@@ -87,7 +87,7 @@ public final class CryptoModule extends AbstractModule {
   @Provides
   Hasher hasher(Serialization serialization, Metrics metrics) {
     return new Hasher() {
-      private Sha256Hasher hasher = new Sha256Hasher(serialization);
+      private Blake2b256Hasher hasher = new Blake2b256Hasher(serialization);
 
       @Override
       public int hashSizeInBytes() {

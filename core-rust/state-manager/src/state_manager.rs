@@ -105,11 +105,11 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 
 use radix_engine::blueprints::epoch_manager::ValidatorSubstate;
+use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine_interface::network::NetworkDefinition;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
-use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use tracing::{info, warn};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]

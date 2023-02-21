@@ -115,7 +115,7 @@ public class ConsensusModuleTest {
 
   @Inject private VertexStoreAdapter vertexStore;
 
-  private Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
+  private Hasher hasher = new Blake2b256Hasher(DefaultSerialization.getInstance());
 
   private ECKeyPair validatorKeyPair;
 
