@@ -237,8 +237,8 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
   }
 
   @Override
-  public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
-    forwardTo.processRoundLeaderFailure(roundLeaderFailure);
+  public void processProposalRejected(ProposalRejected proposalRejected) {
+    forwardTo.processProposalRejected(proposalRejected);
   }
 
   @Override

@@ -64,7 +64,7 @@
 
 package com.radixdlt.consensus.sync;
 
-import com.radixdlt.consensus.bft.VertexStoreAdapter;
+import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.monitoring.Metrics;

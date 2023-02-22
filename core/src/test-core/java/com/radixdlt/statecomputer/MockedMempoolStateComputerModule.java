@@ -66,7 +66,7 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.inject.*;
-import com.radixdlt.consensus.bft.VertexStoreState;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;

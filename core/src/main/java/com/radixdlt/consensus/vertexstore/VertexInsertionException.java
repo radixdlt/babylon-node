@@ -62,9 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.vertexstore;
 
-public enum RoundLeaderFailureReason {
-  PROPOSED_TIMESTAMP_UNACCEPTABLE,
-  ROUND_TIMEOUT
+/** An exception indicating a failure in inserting a vertex into a VertexStore */
+public class VertexInsertionException extends Exception {
+  VertexInsertionException(String message) {
+    super(message);
+  }
+
+  VertexInsertionException(String message, Exception cause) {
+    super(message, cause);
+  }
 }

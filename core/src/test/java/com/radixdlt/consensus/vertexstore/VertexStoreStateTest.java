@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.vertexstore;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;

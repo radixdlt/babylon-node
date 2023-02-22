@@ -62,84 +62,68 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.bft.processor;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimeoutCertificate;
-import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.lang.Option;
-import java.util.List;
+import static com.radixdlt.utils.TypedMocks.rmock;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
-/** Manages the BFT Vertex chain. TODO: Move this logic into ledger package. */
-public interface VertexStore {
-  record CommittedUpdate(ImmutableList<ExecutedVertex> committedVertices) {}
+import com.radixdlt.consensus.*;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
+import org.junit.Before;
+import org.junit.Test;
 
-  sealed interface InsertQcResult {
-    record Inserted(
-        HighQC newHighQc,
-        // TODO: remove me once vertex store persistence and commit on the java side are gone
-        VertexStoreState vertexStoreState,
-        Option<CommittedUpdate> committedUpdate)
-        implements InsertQcResult {}
+public final class BFTQuorumAssemblerTest {
+  private BFTValidatorId self = mock(BFTValidatorId.class);
+  private Metrics metrics = new MetricsInitializer().initialize();
+  private PendingVotes pendingVotes = mock(PendingVotes.class);
+  private VertexStoreAdapter vertexStore = mock(VertexStoreAdapter.class);
+  private Pacemaker pacemaker = mock(Pacemaker.class);
+  private EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher =
+      rmock(EventDispatcher.class);
 
-    record Ignored() implements InsertQcResult {}
+  private BFTQuorumAssembler bftQuorumAssembler;
 
-    record VertexIsMissing() implements InsertQcResult {}
+  @Before
+  public void setUp() {
+    this.bftQuorumAssembler =
+        new BFTQuorumAssembler(
+            this.pacemaker,
+            this.self,
+            this.roundQuorumReachedEventDispatcher,
+            this.metrics,
+            this.pendingVotes,
+            mock(RoundUpdate.class));
   }
 
-  record InsertVertexChainResult(
-      List<InsertQcResult.Inserted> insertedQcs, List<BFTInsertUpdate> insertUpdates) {}
+  @Test
+  public void when_process_vote_with_quorum__then_processed() {
+    BFTValidatorId author = mock(BFTValidatorId.class);
+    Vote vote = mock(Vote.class);
+    when(vote.getAuthor()).thenReturn(author);
 
-  InsertQcResult insertQc(QuorumCertificate qc);
+    QuorumCertificate qc = mock(QuorumCertificate.class);
+    HighQC highQc = mock(HighQC.class);
+    QuorumCertificate highestCommittedQc = mock(QuorumCertificate.class);
+    when(highQc.highestCommittedQC()).thenReturn(highestCommittedQc);
+    when(vote.getRound()).thenReturn(Round.of(1));
 
-  /**
-   * Inserts a timeout certificate into the store.
-   *
-   * @param timeoutCertificate the timeout certificate
-   * @return true if the timeout certificate was inserted, false if it was ignored because it's not
-   *     the highest
-   */
-  boolean insertTimeoutCertificate(TimeoutCertificate timeoutCertificate);
+    when(this.pendingVotes.insertVote(any())).thenReturn(VoteProcessingResult.qcQuorum(qc));
+    when(this.vertexStore.highQC()).thenReturn(highQc);
 
-  /**
-   * Inserts a vertex and then attempts to create the next header.
-   *
-   * @param vertexWithHash vertex to insert
-   */
-  Option<BFTInsertUpdate> insertVertex(VertexWithHash vertexWithHash);
+    // Move to round 1
+    this.bftQuorumAssembler.processRoundUpdate(
+        RoundUpdate.create(Round.of(1), highQc, mock(BFTValidatorId.class), this.self));
 
-  InsertVertexChainResult insertVertexChain(VertexChain vertexChain);
+    this.bftQuorumAssembler.processVote(vote);
 
-  Option<VertexStoreState> tryRebuild(VertexStoreState vertexStoreState);
-
-  boolean containsVertex(HashCode vertexId);
-
-  HighQC highQC();
-
-  VertexWithHash getRoot();
-
-  List<ExecutedVertex> getPathFromRoot(HashCode vertexId);
-
-  /**
-   * Returns the vertex with specified id or empty if not exists.
-   *
-   * @param vertexHash the id of a vertex
-   * @return the specified vertex or empty
-   */
-  Option<ExecutedVertex> getExecutedVertex(HashCode vertexHash);
-
-  /**
-   * Retrieves list of vertices starting with the given vertexId and then proceeding to its
-   * ancestors.
-   *
-   * <p>if the store does not contain some vertex then will return an empty list.
-   *
-   * @param vertexHash the id of the vertex
-   * @param count the number of vertices to retrieve
-   * @return the list of vertices if all found, otherwise an empty list
-   */
-  Option<ImmutableList<VertexWithHash>> getVertices(HashCode vertexHash, int count);
+    verify(this.roundQuorumReachedEventDispatcher, times(1)).dispatch(any());
+    verify(this.pendingVotes, times(1)).insertVote(eq(vote));
+    verifyNoMoreInteractions(this.pendingVotes);
+  }
 }

@@ -73,6 +73,9 @@ import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
 import com.radixdlt.consensus.liveness.*;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.*;
+import com.radixdlt.consensus.vertexstore.VertexStore;
+import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
+import com.radixdlt.consensus.vertexstore.VertexStoreJavaImpl;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.LocalEvents;
@@ -131,51 +134,37 @@ public final class ConsensusModule extends AbstractModule {
       @Self BFTValidatorId self,
       BFTConfiguration config,
       Pacemaker pacemaker,
-      VertexStoreAdapter vertexStore,
       BFTSync bftSync,
       SafetyRules safetyRules,
       Hasher hasher,
       HashVerifier verifier,
       TimeSupplier timeSupplier,
       ProposerElection proposerElection,
-      PacemakerTimeoutCalculator timeoutCalculator,
       Metrics metrics,
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
-      EventDispatcher<NoVote> noVoteEventDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
-      RemoteEventDispatcher<NodeId, Vote> voteDispatcher,
-      EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher,
-      ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutDispatcher,
+      EventDispatcher<ProposalRejected> proposalRejectedDispatcher,
       RoundUpdate roundUpdate) {
     return BFTBuilder.create()
         .self(self)
         .hasher(hasher)
         .verifier(verifier)
-        .voteDispatcher(
-            (n, m) -> {
-              var nodeId = NodeId.fromPublicKey(n.getKey());
-              voteDispatcher.dispatch(nodeId, m);
-            })
-        .roundLeaderFailureEventDispatcher(roundLeaderFailureEventDispatcher)
+        .proposalRejectedDispatcher(proposalRejectedDispatcher)
         .safetyRules(safetyRules)
         .pacemaker(pacemaker)
-        .vertexStore(vertexStore)
         .roundQuorumReachedEventDispatcher(
             roundQuorumReached -> {
               // FIXME: a hack for now until replacement of epochmanager factories
               bftSync.roundQuorumReachedEventProcessor().process(roundQuorumReached);
               roundQuorumReachedEventDispatcher.dispatch(roundQuorumReached);
             })
-        .noVoteEventDispatcher(noVoteEventDispatcher)
         .doubleVoteEventDispatcher(doubleVoteEventDispatcher)
         .roundUpdate(roundUpdate)
         .bftSyncer(bftSync)
         .validatorSet(config.getValidatorSet())
         .timeSupplier(timeSupplier)
         .metrics(metrics)
-        .timeoutDispatcher(timeoutDispatcher)
         .proposerElection(proposerElection)
-        .timeoutCalculator(timeoutCalculator)
         .build();
   }
 
@@ -193,7 +182,7 @@ public final class ConsensusModule extends AbstractModule {
       Hasher hasher,
       RemoteEventDispatcher<NodeId, Proposal> proposalDispatcher,
       RemoteEventDispatcher<NodeId, Vote> voteDispatcher,
-      EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher,
+      EventDispatcher<NoVote> noVoteDispatcher,
       TimeSupplier timeSupplier,
       RoundUpdate initialRoundUpdate,
       Metrics metrics) {
@@ -215,7 +204,7 @@ public final class ConsensusModule extends AbstractModule {
           var nodeId = NodeId.fromPublicKey(n.getKey());
           voteDispatcher.dispatch(nodeId, m);
         },
-        roundLeaderFailureEventDispatcher,
+        noVoteDispatcher,
         hasher,
         timeSupplier,
         initialRoundUpdate,

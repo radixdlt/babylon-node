@@ -69,10 +69,8 @@ import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.RoundQuorumReached;
 import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.bft.VertexStoreAdapter;
 import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.environment.EventProcessor;
@@ -87,13 +85,11 @@ public interface BFTFactory {
   BFTEventProcessor create(
       BFTValidatorId self,
       Pacemaker pacemaker,
-      VertexStoreAdapter vertexStore,
       BFTSyncer bftSyncer,
       EventProcessor<RoundQuorumReached> roundQuorumReachedEventProcessor,
       BFTValidatorSet validatorSet,
       RoundUpdate roundUpdate,
       SafetyRules safetyRules,
       long nextEpoch,
-      ProposerElection proposerElection,
-      PacemakerTimeoutCalculator timeoutCalculator);
+      ProposerElection proposerElection);
 }

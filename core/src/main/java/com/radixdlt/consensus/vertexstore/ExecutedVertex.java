@@ -62,15 +62,110 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.vertexstore;
 
-/** An exception indicating a failure in inserting a vertex into a VertexStore */
-public class VertexInsertionException extends Exception {
-  VertexInsertionException(String message) {
-    super(message);
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexWithHash;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.Pair;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
+
+/**
+ * A Vertex which has been executed by the engine.
+ *
+ * <p>In particular, a system transaction has been added, and user-transactions have been executed.
+ * Some of these may fail, this is captured in transactionsWhichRaisedAnException. The system
+ * transaction and user-transactions are captured in executedTransactions.
+ *
+ * <p>The ledger header captures an overview of the resultant state after ingesting these
+ * transactions.
+ */
+public final class ExecutedVertex {
+  private final long timeOfExecution;
+  private final VertexWithHash vertexWithHash;
+
+  private final LedgerHeader ledgerHeader;
+
+  private final List<ExecutedTransaction> executedTransactions;
+  private final Map<RawNotarizedTransaction, Exception> transactionsWhichRaisedAnException;
+
+  public ExecutedVertex(
+      VertexWithHash vertexWithHash,
+      LedgerHeader ledgerHeader,
+      List<ExecutedTransaction> executedTransactions,
+      Map<RawNotarizedTransaction, Exception> transactionsWhichRaisedAnException,
+      long timeOfExecution) {
+    this.vertexWithHash = Objects.requireNonNull(vertexWithHash);
+    this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
+    this.executedTransactions = Objects.requireNonNull(executedTransactions);
+    this.transactionsWhichRaisedAnException =
+        Objects.requireNonNull(transactionsWhichRaisedAnException);
+    this.timeOfExecution = timeOfExecution;
   }
 
-  VertexInsertionException(String message, Exception cause) {
-    super(message, cause);
+  public Vertex vertex() {
+    return this.vertexWithHash.vertex();
+  }
+
+  public long getTimeOfExecution() {
+    return timeOfExecution;
+  }
+
+  public HashCode getVertexHash() {
+    return vertexWithHash.hash();
+  }
+
+  public HashCode getParentId() {
+    return vertex().getParentVertexId();
+  }
+
+  public Round getRound() {
+    return vertex().getRound();
+  }
+
+  public Stream<ExecutedTransaction> successfulTransactions() {
+    return executedTransactions.stream();
+  }
+
+  public Stream<Pair<RawNotarizedTransaction, Exception>> errorTransactions() {
+    return transactionsWhichRaisedAnException.entrySet().stream()
+        .map(e -> Pair.of(e.getKey(), e.getValue()));
+  }
+
+  public Stream<RawLedgerTransaction> getTransactions() {
+    return successfulTransactions().map(ExecutedTransaction::transaction);
+  }
+
+  /**
+   * Retrieve the resulting header which is to be persisted on ledger
+   *
+   * @return the header
+   */
+  public LedgerHeader getLedgerHeader() {
+    return ledgerHeader;
+  }
+
+  /**
+   * Retrieve the vertex which was executed
+   *
+   * @return the executed vertex
+   */
+  public VertexWithHash getVertexWithHash() {
+    return vertexWithHash;
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{vertex=%s ledgerHeader=%s}",
+        this.getClass().getSimpleName(), this.vertex(), this.ledgerHeader);
   }
 }

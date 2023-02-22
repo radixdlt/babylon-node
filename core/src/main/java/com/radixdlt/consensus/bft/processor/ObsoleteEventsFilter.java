@@ -62,59 +62,110 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.bft.processor;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.VertexWithHash;
-import java.util.List;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.ProposalRejected;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.monitoring.Metrics;
 import java.util.Objects;
-import javax.annotation.concurrent.Immutable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-/** A chain of vertices verified to have correct parent links. */
-@Immutable
-public final class VertexChain {
-  private final ImmutableList<VertexWithHash> vertices;
+/** Filters out obsolete BFT events. */
+public final class ObsoleteEventsFilter implements BFTEventProcessor {
+  private static final Logger log = LogManager.getLogger();
 
-  private VertexChain(ImmutableList<VertexWithHash> vertices) {
-    this.vertices = vertices;
+  private final BFTEventProcessor forwardTo;
+  private final Metrics metrics;
+  private RoundUpdate latestRoundUpdate;
+
+  public ObsoleteEventsFilter(
+      BFTEventProcessor forwardTo, Metrics metrics, RoundUpdate initialRoundUpdate) {
+    this.forwardTo = Objects.requireNonNull(forwardTo);
+    this.metrics = Objects.requireNonNull(metrics);
+    this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
   }
 
-  public static VertexChain create(List<VertexWithHash> vertices) {
-    if (vertices.size() >= 2) {
-      for (int index = 1; index < vertices.size(); index++) {
-        HashCode parentId = vertices.get(index - 1).hash();
-        HashCode parentIdCheck = vertices.get(index).vertex().getParentVertexId();
-        if (!parentId.equals(parentIdCheck)) {
-          throw new IllegalArgumentException(String.format("Invalid chain: %s", vertices));
-        }
-      }
+  @Override
+  public void start() {
+    forwardTo.start();
+  }
+
+  @Override
+  public void processRoundUpdate(RoundUpdate roundUpdate) {
+    // FIXME: Check is required for now since Deterministic tests can randomize local messages
+    if (roundUpdate.getCurrentRound().gt(currentRound())) {
+      this.latestRoundUpdate = roundUpdate;
+      forwardTo.processRoundUpdate(roundUpdate);
+    } else {
+      metrics.bft().obsoleteEventsIgnored().inc();
     }
-
-    return new VertexChain(ImmutableList.copyOf(vertices));
-  }
-
-  public ImmutableList<VertexWithHash> getVertices() {
-    return vertices;
   }
 
   @Override
-  public String toString() {
-    return String.format("%s{vertices=%s}", this.getClass().getSimpleName(), this.vertices);
+  public void processBFTUpdate(BFTInsertUpdate update) {
+    forwardTo.processBFTUpdate(update);
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hashCode(vertices);
+  public void processBFTRebuildUpdate(BFTRebuildUpdate rebuildUpdate) {
+    forwardTo.processBFTRebuildUpdate(rebuildUpdate);
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof VertexChain)) {
-      return false;
+  public void processVote(Vote vote) {
+    if (vote.getRound().gte(currentRound())) {
+      this.forwardTo.processVote(vote);
+    } else {
+      metrics.bft().obsoleteEventsIgnored().inc();
+      log.trace("Vote: Ignoring for past round {}, current round is {}", vote, currentRound());
     }
+  }
 
-    VertexChain other = (VertexChain) o;
-    return Objects.equals(this.vertices, other.vertices);
+  @Override
+  public void processProposal(Proposal proposal) {
+    if (proposal.getRound().gte(currentRound())) {
+      forwardTo.processProposal(proposal);
+    } else {
+      metrics.bft().obsoleteEventsIgnored().inc();
+      log.trace(
+          "Proposal: Ignoring for past round {}, current round is {}", proposal, currentRound());
+    }
+  }
+
+  @Override
+  public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
+    if (scheduledLocalTimeout.round().equals(currentRound())) {
+      forwardTo.processLocalTimeout(scheduledLocalTimeout);
+    } else {
+      metrics.bft().obsoleteEventsIgnored().inc();
+      log.trace(
+          "Ignoring ScheduledLocalTimeout event for round {}, current round is {}",
+          scheduledLocalTimeout.round(),
+          currentRound());
+    }
+  }
+
+  @Override
+  public void processProposalRejected(ProposalRejected proposalRejected) {
+    if (proposalRejected.round().equals(currentRound())) {
+      forwardTo.processProposalRejected(proposalRejected);
+    } else {
+      metrics.bft().obsoleteEventsIgnored().inc();
+      log.trace(
+          "Ignoring ProposalRejected event for round {}, current round is {}",
+          proposalRejected.round(),
+          currentRound());
+    }
+  }
+
+  private Round currentRound() {
+    return this.latestRoundUpdate.getCurrentRound();
   }
 }

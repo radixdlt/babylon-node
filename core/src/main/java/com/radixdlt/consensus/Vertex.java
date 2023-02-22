@@ -114,9 +114,15 @@ public final class Vertex {
   @DsonOutput(Output.ALL)
   private final List<byte[]> transactions;
 
+  /* Fallback vertices are created locally by non-leader validators who haven't received
+   * a valid proposal for the given round. Since they don't contain any transactions, they should
+   * be exactly the same on all nodes (that created them independently), allowing for QC formation.
+   * This allows 3-chain to continue, even if the leader is down. This is just an optimization though,
+   * if validators fail to form a QC on a fallback vertex, they resort to timeout certificate. */
+  // TODO: rename this JSON property (or remove it entirely?)
   @JsonProperty("tout")
   @DsonOutput(Output.ALL)
-  private final Boolean proposerTimedOut;
+  private final Boolean isFallback;
 
   @JsonProperty("proposer_timestamp")
   @DsonOutput(Output.ALL)
@@ -130,13 +136,13 @@ public final class Vertex {
       Round round,
       List<byte[]> transactions,
       BFTValidatorId proposer,
-      Boolean proposerTimedOut,
+      Boolean isFallback,
       long proposerTimestamp) {
     this.qcToParent = requireNonNull(qcToParent);
     this.round = requireNonNull(round);
 
-    if (proposerTimedOut != null && proposerTimedOut && !transactions.isEmpty()) {
-      throw new IllegalArgumentException("Transactions must be empty if timeout");
+    if (isFallback != null && isFallback && !transactions.isEmpty()) {
+      throw new IllegalArgumentException("Fallback vertices can't have any transactions");
     }
 
     if (transactions != null) {
@@ -145,7 +151,7 @@ public final class Vertex {
 
     this.transactions = transactions;
     this.proposer = proposer;
-    this.proposerTimedOut = proposerTimedOut;
+    this.isFallback = isFallback;
     this.proposerTimestamp = proposerTimestamp;
   }
 
@@ -155,7 +161,7 @@ public final class Vertex {
       @JsonProperty("round") long roundNumber,
       @JsonProperty("txns") List<byte[]> transactions,
       @JsonProperty("p") String proposer,
-      @JsonProperty("tout") Boolean proposerTimedOut,
+      @JsonProperty("tout") Boolean isFallback,
       @JsonProperty("proposer_timestamp") long proposerTimestamp)
       throws PublicKeyException {
     return new Vertex(
@@ -163,7 +169,7 @@ public final class Vertex {
         Round.of(roundNumber),
         transactions == null ? List.of() : transactions,
         proposer != null ? BFTValidatorId.fromSerializedString(proposer) : null,
-        proposerTimedOut,
+        isFallback,
         proposerTimestamp);
   }
 
@@ -176,10 +182,10 @@ public final class Vertex {
         parentQC, Round.genesis(), null, null, false, ledgerHeader.proposerTimestamp());
   }
 
-  public static Vertex createTimeout(
+  public static Vertex createFallback(
       QuorumCertificate parentQC, Round round, BFTValidatorId proposer) {
-    /* Timeout vertices simply reuse the previous timestamp. This makes sure that
-    all validators (that participate in a timeout quorum) agree on the same timestamp. */
+    /* Fallback vertices simply reuse the previous timestamp. This makes sure that
+    all validators (that participate in a fallback quorum) agree on the same timestamp. */
     final var prevTimestamp = parentQC.getProposedHeader().getLedgerHeader().proposerTimestamp();
     return new Vertex(parentQC, round, List.of(), proposer, true, prevTimestamp);
   }
@@ -211,10 +217,6 @@ public final class Vertex {
 
   public BFTValidatorId getProposer() {
     return proposer;
-  }
-
-  public boolean isTimeout() {
-    return proposerTimedOut != null && proposerTimedOut;
   }
 
   public QuorumCertificate getQCToParent() {
@@ -290,8 +292,7 @@ public final class Vertex {
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-        qcToParent, proposer, round, transactions, proposerTimedOut, proposerTimestamp);
+    return Objects.hash(qcToParent, proposer, round, transactions, isFallback, proposerTimestamp);
   }
 
   @Override
@@ -301,7 +302,7 @@ public final class Vertex {
     }
 
     return Objects.equals(v.round, this.round)
-        && Objects.equals(v.proposerTimedOut, this.proposerTimedOut)
+        && Objects.equals(v.isFallback, this.isFallback)
         && Objects.equals(v.proposer, this.proposer)
         && Objects.equals(v.getTransactions(), this.getTransactions())
         && Objects.equals(v.qcToParent, this.qcToParent)

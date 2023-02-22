@@ -62,54 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.bft.RoundLeaderFailure;
-import java.util.Objects;
-
-/** A wrapper for a RoundLeaderFailure message that also holds epoch. */
-public final class EpochRoundLeaderFailure {
-
-  private final long epoch;
-  private final RoundLeaderFailure roundLeaderFailure;
-
-  public EpochRoundLeaderFailure(long epoch, RoundLeaderFailure roundLeaderFailure) {
-    this.epoch = epoch;
-    this.roundLeaderFailure = Objects.requireNonNull(roundLeaderFailure);
-  }
-
-  public long getEpoch() {
-    return epoch;
-  }
-
-  public RoundLeaderFailure getRoundLeaderFailure() {
-    return roundLeaderFailure;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    EpochRoundLeaderFailure that = (EpochRoundLeaderFailure) o;
-    return epoch == that.epoch && Objects.equals(roundLeaderFailure, that.roundLeaderFailure);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(epoch, roundLeaderFailure);
-  }
-
-  @Override
-  public String toString() {
-    return "EpochRoundLeaderFailure{"
-        + "epoch="
-        + epoch
-        + ", roundLeaderFailure="
-        + roundLeaderFailure
-        + '}';
-  }
-}
+/** An event indicating that a proposal has been rejected */
+public record ProposalRejected(Round round) {}

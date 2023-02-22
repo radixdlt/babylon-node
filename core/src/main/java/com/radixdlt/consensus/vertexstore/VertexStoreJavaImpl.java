@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.vertexstore;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -73,6 +73,8 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.VertexWithHash;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.MissingParentException;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.lang.Option;
 import java.util.ArrayList;

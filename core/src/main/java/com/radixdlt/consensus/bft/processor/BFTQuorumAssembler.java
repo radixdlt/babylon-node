@@ -64,49 +64,65 @@
 
 package com.radixdlt.consensus.bft.processor;
 
+import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.RoundLeaderFailure;
+import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.consensus.bft.ProposalRejected;
+import com.radixdlt.consensus.bft.RoundQuorumReached;
 import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
+import com.radixdlt.consensus.bft.VoteProcessingResult.QuorumReached;
+import com.radixdlt.consensus.bft.VoteProcessingResult.VoteAccepted;
+import com.radixdlt.consensus.bft.VoteProcessingResult.VoteRejected;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.monitoring.Metrics;
-import java.util.HashSet;
-import java.util.Set;
+import com.radixdlt.monitoring.Metrics.Bft.IgnoredVote;
+import com.radixdlt.monitoring.Metrics.Bft.VoteIgnoreReason;
+import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
- * Moderates the round timeout. More specifically, extends the round duration if a proposal was
- * received, but takes longer than usual to sync/process.
+ * Processes BFT Vote events and assembles a quorum (either a regular or timeout quorum). Warning:
+ * operates under the assumption that all received events are for the current round.
  */
-public final class RoundTimeoutModerator implements BFTEventProcessorAtCurrentRound {
-  private final BFTEventProcessor forwardTo;
-  private final PacemakerTimeoutCalculator timeoutCalculator;
-  private final ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutDispatcher;
+public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound {
+  private static final Logger log = LogManager.getLogger();
+
+  private final BFTEventProcessorAtCurrentRound forwardTo;
+  private final BFTValidatorId self;
+  private final EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher;
   private final Metrics metrics;
+  private final PendingVotes pendingVotes;
 
   private RoundUpdate latestRoundUpdate;
 
-  private final Set<Round> receivedProposalsForFutureRounds;
-  private Round highestReceivedRoundQC;
-  private boolean currentRoundTimeoutCanStillBeExtended = true;
+  /* Indicates whether the quorum (QC or TC) has already been formed for the current round.
+   * If the quorum has been reached (but round hasn't yet been updated), subsequent votes are ignored. */
+  private boolean hasReachedQuorum = false;
 
-  public RoundTimeoutModerator(
-      BFTEventProcessor forwardTo,
-      PacemakerTimeoutCalculator timeoutCalculator,
-      ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutDispatcher,
+  public BFTQuorumAssembler(
+      BFTEventProcessorAtCurrentRound forwardTo,
+      BFTValidatorId self,
+      EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       Metrics metrics,
+      PendingVotes pendingVotes,
       RoundUpdate initialRoundUpdate) {
-    this.forwardTo = forwardTo;
-    this.timeoutCalculator = timeoutCalculator;
-    this.timeoutDispatcher = timeoutDispatcher;
-    this.metrics = metrics;
-    this.latestRoundUpdate = initialRoundUpdate;
-    this.highestReceivedRoundQC = initialRoundUpdate.getCurrentRound();
-    this.receivedProposalsForFutureRounds = new HashSet<>();
+    this.forwardTo = Objects.requireNonNull(forwardTo);
+    this.self = Objects.requireNonNull(self);
+    this.roundQuorumReachedEventDispatcher =
+        Objects.requireNonNull(roundQuorumReachedEventDispatcher);
+    this.metrics = Objects.requireNonNull(metrics);
+    this.pendingVotes = Objects.requireNonNull(pendingVotes);
+    this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
+  }
+
+  @Override
+  public void start() {
+    forwardTo.start();
   }
 
   @Override
@@ -117,11 +133,7 @@ public final class RoundTimeoutModerator implements BFTEventProcessorAtCurrentRo
   @Override
   public void processRoundUpdate(RoundUpdate roundUpdate) {
     this.latestRoundUpdate = roundUpdate;
-    if (this.latestRoundUpdate.getCurrentRound().gt(this.highestReceivedRoundQC)) {
-      this.highestReceivedRoundQC = roundUpdate.getCurrentRound();
-    }
-    this.receivedProposalsForFutureRounds.removeIf(p -> p.lt(roundUpdate.getCurrentRound()));
-    this.currentRoundTimeoutCanStillBeExtended = true;
+    this.hasReachedQuorum = false;
     forwardTo.processRoundUpdate(roundUpdate);
   }
 
@@ -132,7 +144,48 @@ public final class RoundTimeoutModerator implements BFTEventProcessorAtCurrentRo
 
   @Override
   public void processVote(Vote vote) {
+    log.trace("Vote: Processing {}", vote);
+    processVoteInternal(vote);
     forwardTo.processVote(vote);
+  }
+
+  private void processVoteInternal(Vote vote) {
+    final var currentRound = this.latestRoundUpdate.getCurrentRound();
+
+    if (this.hasReachedQuorum) {
+      metrics
+          .bft()
+          .ignoredVotes()
+          .label(new IgnoredVote(VoteIgnoreReason.QUORUM_ALREADY_REACHED))
+          .inc();
+      log.trace(
+          "Vote: Ignoring vote from {} for round {}, quorum has already been reached",
+          vote.getAuthor(),
+          currentRound);
+      return;
+    }
+
+    if (!this.self.equals(this.latestRoundUpdate.getNextLeader()) && !vote.isTimeout()) {
+      metrics.bft().ignoredVotes().label(new IgnoredVote(VoteIgnoreReason.UNEXPECTED_VOTE)).inc();
+      log.trace(
+          "Vote: Ignoring vote from {} for round {}, unexpected vote",
+          vote.getAuthor(),
+          currentRound);
+      return;
+    }
+
+    switch (this.pendingVotes.insertVote(vote)) {
+      case VoteAccepted ignored -> log.trace("Vote has been processed but didn't form a quorum");
+      case VoteRejected voteRejected -> log.trace(
+          "Vote has been rejected because of: {}", voteRejected.getReason());
+      case QuorumReached quorumReached -> {
+        this.hasReachedQuorum = true;
+        roundQuorumReachedEventDispatcher.dispatch(
+            new RoundQuorumReached(quorumReached.getRoundVotingResult(), vote.getAuthor()));
+      }
+    }
+
+    metrics.bft().successfullyProcessedVotes().inc();
   }
 
   @Override
@@ -142,67 +195,21 @@ public final class RoundTimeoutModerator implements BFTEventProcessorAtCurrentRo
 
   @Override
   public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
-    /* The timeouts for the current round can be extended in three cases:
-    1) we have already received a QC for this round, which hasn't yet been synced-up to:
-       this prevents us from sending timeout votes for rounds that already have a QC,
-       and potentially avoids creating a competing TC for the same round.
-    2) we extend it for round N if we have received a proposal for round N to give us time to process the proposal
-    3) we extend it for round N if we have received a proposal for round N + 1 to give us time to sync up the QC for round N (if it exists)
-    The 3rd case really duplicates the "received QC" condition (as proposal for round N+1 should contain a QC for round N),
-    but adding it explicitly for completeness. */
-
-    final var receivedAnyQcForThisOrHigherRound =
-        this.highestReceivedRoundQC.gte(scheduledLocalTimeout.round());
-
-    final var receivedProposalForThisOrNextRound =
-        this.receivedProposalsForFutureRounds.contains(scheduledLocalTimeout.round())
-            || this.receivedProposalsForFutureRounds.contains(scheduledLocalTimeout.round().next());
-
-    final var additionalTime = timeoutCalculator.additionalRoundTimeIfProposalReceivedMs();
-
-    final var shouldExtendTheTimeout =
-        (receivedAnyQcForThisOrHigherRound || receivedProposalForThisOrNextRound)
-            && this.currentRoundTimeoutCanStillBeExtended
-            && additionalTime > 0;
-
-    // We won't extend the round more than once or if a timeout event has already been processed,
-    // so setting a flag regardless of whether this timeout event is being delayed or not
-    this.currentRoundTimeoutCanStillBeExtended = false;
-
-    if (shouldExtendTheTimeout) {
-      // If proposal was received, extend the round time by re-dispatching the same timeout event,
-      // effectively delaying it by additionalRoundTimeIfProposalReceived
-      metrics.bft().extendedRoundTimeouts().inc();
-      this.timeoutDispatcher.dispatch(scheduledLocalTimeout, additionalTime);
-    } else {
-      // Nothing we can do. Either there isn't an in-flight proposal for the
-      // current round (so there's no reason to extend the round) or it has already been extended.
-      this.forwardTo.processLocalTimeout(scheduledLocalTimeout);
-    }
+    forwardTo.processLocalTimeout(scheduledLocalTimeout);
   }
 
   @Override
-  public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
-    forwardTo.processRoundLeaderFailure(roundLeaderFailure);
-  }
-
-  @Override
-  public void start() {
-    forwardTo.start();
+  public void processProposalRejected(ProposalRejected proposalRejected) {
+    forwardTo.processProposalRejected(proposalRejected);
   }
 
   @Override
   public void preProcessUnsyncedVoteForCurrentOrFutureRound(Vote vote) {
-    if (vote.highQC().getHighestRound().gt(this.highestReceivedRoundQC)) {
-      this.highestReceivedRoundQC = vote.highQC().getHighestRound();
-    }
+    forwardTo.preProcessUnsyncedVoteForCurrentOrFutureRound(vote);
   }
 
   @Override
   public void preProcessUnsyncedProposalForCurrentOrFutureRound(Proposal proposal) {
-    receivedProposalsForFutureRounds.add(proposal.getRound());
-    if (proposal.highQC().getHighestRound().gt(this.highestReceivedRoundQC)) {
-      this.highestReceivedRoundQC = proposal.highQC().getHighestRound();
-    }
+    forwardTo.preProcessUnsyncedProposalForCurrentOrFutureRound(proposal);
   }
 }
