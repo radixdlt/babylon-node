@@ -143,6 +143,10 @@ public class BFTEventStatelessVerifierTest {
     final var vertex =
         vertexWithProposerTimestamps(timeSupplier.currentTime() - 1, timeSupplier.currentTime());
     when(proposal.getVertex()).thenReturn(vertex);
+    when(proposal.getRound()).thenReturn(Round.of(3));
+    final var highQc = mock(HighQC.class);
+    when(highQc.getHighestRound()).thenReturn(Round.of(2));
+    when(proposal.highQC()).thenReturn(highQc);
     when(validatorSet.containsNode(eq(author))).thenReturn(true);
     when(verifier.verify(any(), any(), any())).thenReturn(true);
     when(safetyRules.verifyHighQcAgainstTheValidatorSet(any())).thenReturn(true);
@@ -157,6 +161,10 @@ public class BFTEventStatelessVerifierTest {
     BFTValidatorId author = mock(BFTValidatorId.class);
     when(proposal.getAuthor()).thenReturn(author);
     when(proposal.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
+    when(proposal.getRound()).thenReturn(Round.of(2));
+    final var highQc = mock(HighQC.class);
+    when(highQc.getHighestRound()).thenReturn(Round.of(1));
+    when(proposal.highQC()).thenReturn(highQc);
     when(validatorSet.containsNode(eq(author))).thenReturn(false);
     when(verifier.verify(any(), any(), any())).thenReturn(true);
     eventVerifier.processProposal(proposal);
@@ -168,13 +176,39 @@ public class BFTEventStatelessVerifierTest {
     Proposal proposal = mock(Proposal.class);
     BFTValidatorId author = mock(BFTValidatorId.class);
     when(proposal.getAuthor()).thenReturn(author);
+    when(proposerElection.getProposer(Round.of(2))).thenReturn(author);
     when(proposal.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
     when(timeSupplier.currentTime()).thenReturn(5L);
     final var vertex =
         vertexWithProposerTimestamps(timeSupplier.currentTime() - 1, timeSupplier.currentTime());
     when(proposal.getVertex()).thenReturn(vertex);
+    when(vertex.getRound()).thenReturn(Round.of(2));
+    when(proposal.getRound()).thenReturn(Round.of(2));
+    final var highQc = mock(HighQC.class);
+    when(highQc.getHighestRound()).thenReturn(Round.of(1));
+    when(proposal.highQC()).thenReturn(highQc);
     when(validatorSet.containsNode(eq(author))).thenReturn(true);
     when(verifier.verify(any(), any(), any())).thenReturn(false);
+    eventVerifier.processProposal(proposal);
+    verify(forwardTo, never()).processProposal(any());
+  }
+
+  @Test
+  public void when_process_proposal_with_high_qc_for_a_wrong_round_then_should_not_be_forwarded() {
+    final var proposal = mock(Proposal.class);
+    final var author = mock(BFTValidatorId.class);
+    when(proposerElection.getProposer(Round.of(2))).thenReturn(author);
+    when(proposal.getAuthor()).thenReturn(author);
+    when(proposal.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
+    when(timeSupplier.currentTime()).thenReturn(5L);
+    final var vertex =
+        vertexWithProposerTimestamps(timeSupplier.currentTime() - 1, timeSupplier.currentTime());
+    when(proposal.getVertex()).thenReturn(vertex);
+    when(vertex.getRound()).thenReturn(Round.of(2));
+    when(proposal.getRound()).thenReturn(Round.of(2));
+    final var highQc = mock(HighQC.class);
+    when(highQc.getHighestRound()).thenReturn(Round.of(0));
+    when(proposal.highQC()).thenReturn(highQc);
     eventVerifier.processProposal(proposal);
     verify(forwardTo, never()).processProposal(any());
   }
