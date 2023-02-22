@@ -20,8 +20,6 @@ RUN apt-get -y update > /dev/null && \
     apt-get clean > /dev/null && \
     rm -rf /var/lib/apt/lists/* /var/tmp/* /tmp/*
 
-COPY scripts/fix-vulnerabilities.sh /tmp
-
 RUN apt-get -y update > /dev/null && \
     apt-get -y --no-install-recommends install \
     openjdk-17-jre-headless \
@@ -30,6 +28,7 @@ RUN apt-get -y update > /dev/null && \
     apt autoremove -y > /dev/null && \
     rm -rf /var/lib/apt/lists/* /var/tmp/* /tmp/*
     
+COPY scripts/fix-vulnerabilities.sh /tmp
 RUN /tmp/fix-vulnerabilities.sh
 
 # set entrypoint and default command
