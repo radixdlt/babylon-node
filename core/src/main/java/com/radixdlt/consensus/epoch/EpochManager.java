@@ -190,7 +190,7 @@ public final class EpochManager {
       if (self.getValidatorAddress() == null) {
         this.validationStatus = ValidationStatus.NOT_CONFIGURED_AS_VALIDATOR;
       } else {
-        this.validationStatus = ValidationStatus.VALIDATING_IN_CURRENT_EPOCH;
+        this.validationStatus = ValidationStatus.NOT_VALIDATING_IN_CURRENT_EPOCH;
       }
       return;
     }
