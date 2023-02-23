@@ -19,7 +19,7 @@ on:
         type: string
       cache_repo:
         description: 'The repository to store the cache image in'
-        required: true
+        required: false
         type: string
       cache_tag_suffix:
         description: 'The tag of the cache image'
@@ -72,6 +72,16 @@ on:
         description: 'The path to the dockerfile to build'
         required: true
         type: string
+      enable_dockerhub:
+        description: 'Wether to log into dockerhub'
+        required: false
+        type: string
+        default: "false"
+      enable_gcr:
+        description: 'Wether to log into google cloud registry'
+        required: false
+        type: string
+        default: "true"
 
 jobs:
   build-and-push:
@@ -89,34 +99,40 @@ jobs:
         with:
           dockerfile: ${{ inputs.dockerfile }}
           no-fail: true
-      - name: Download generated debian package
+      - if: inputs.restore_artifact == "true"
+        name: Download artifact
         uses: actions/download-artifact@v3
         with:
           name: ${{ inputs.artifact_name }}
           path: ${{ inputs.artifact_location }}
       - name: Display structure of downloaded files
         run: ls -R ${{ inputs.artifact_location }}
-      - id: gcr-auth
+      - if: inputs.enable_gcr == "true"
+        id: gcr-auth
         uses: google-github-actions/auth@a61909d048e0be579b6c15b27088d19668493851
         with:
           workload_identity_provider: ${{ secrets.workload_identity_provider }}
           service_account: ${{ secrets.service_account }}
           create_credentials_file: true
-      - name: 'Register gcloud as Docker credential helper'
+      - if: inputs.enable_gcr == "true"
+        name: 'Register gcloud as Docker credential helper'
         run: |
             gcloud auth configure-docker -q
-      - name: "Configure AWS credentials"
+      - if: inputs.enable_dockerhub == "true"
+        name: "Configure AWS credentials"
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           role-to-assume: ${{ inputs.role_to_assume }}
           aws-region: eu-west-2
-      - name: Read secrets from AWS Secrets Manager into environment variables
+      - if: inputs.enable_dockerhub == "true"
+        name: Read secrets from AWS Secrets Manager into environment variables
         uses: aws-actions/aws-secretsmanager-get-secrets@v1
         with:
           secret-ids: |
             DOCKERHUB, github-actions/rdxworks/dockerhub-images/release-credentials
           parse-json-secrets: true
-      - name: Login to Docker Hub
+      - if: inputs.enable_dockerhub == "true"
+        name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{env.DOCKERHUB_USERNAME}}
@@ -139,15 +155,16 @@ jobs:
           tags: |
             ${{ inputs.image_registry }}/${{ inputs.image_organization }}/${{ inputs.image_name }}:${{ inputs.tag }}
           labels: ${{ inputs.labels }}
-      - name: Add docker tags to PR comment
+      - if: github.event_name == 'pull_request'
+        name: Add docker tags to PR comment
         uses: thollander/actions-comment-pull-request@632cf9ce90574d125be56b5f3405cda41a84e2fd
         with:
           message: |
             Docker tags
             ${{ inputs.image_registry }}/${{ inputs.image_organization }}/${{ inputs.image_name }}:${{ inputs.tag }}
           comment_tag: dockerTags
-        if: github.event_name == 'pull_request'
-      - name: Run Trivy vulnerability scanner
+      - if: inputs.enable_dockerhub == "true"
+        name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: '${{ inputs.image_registry }}/${{ inputs.image_organization }}/${{ inputs.image_name }}:${{ inputs.tag }}'
@@ -159,7 +176,8 @@ jobs:
           severity: 'CRITICAL,HIGH'
         env:
           GOOGLE_APPLICATION_CREDENTIAL: ${{ steps.gcr-auth.outputs.credentials_file_path }}
-      - name: Upload Trivy scan results to GitHub Security tab
+      - if: inputs.enable_dockerhub == "true"
+        name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: 'trivy-results.sarif'
@@ -171,22 +189,29 @@ jobs:
 # ToDo: use metadata tags action and clarify its usage
 # ToDo: make loading of artifact optional
 # ToDo: check against dotnet based docker builds
-# ToDo: actually test it
-# deploy-dev:
-#   uses: radixdlt/iac-resuable-artifacts/.github/workflows/docker-build.yml@DO-1214/docker-build-action
-#   with:
-#     environment: ""
-#     platforms: "linux/amd64"
-#     cache_repo: "eu.gcr.io/dev-container-repo/babylon-node"
-#     cache_tag_suffix: "build_cache"
-#     tag: "pr-32"
-#     labels: ""
-#     image_name: "babylon-node"
-#     image_organization: "dev-container-repo"
-#     image_registry: "eu.gcr.io"
-#     restore_artifact: "true"
-#     artifact_name: "deb4docker"
-#     artifact_location: "docker"
-#     role_to_assume: "arn:aws:iam::308190735829:role/gh-dockerhub-releaser"
-#     context: "docker"
-#     dockerfile: "./docker/Dockerfile.core"
+  # build_push_container:
+  #   needs: 
+  #     - build_deb
+  #   uses: radixdlt/babylon-node/.github/workflows/docker-build.yml@DO-1214/docker-build-action
+  #   with:
+  #     environment: "release"
+  #     # image information
+  #     image_registry: "eu.gcr.io"
+  #     image_organization: "dev-container-repo"
+  #     image_name: "babylon-node"
+  #     tag: "DO-1214"
+  #     labels: ""
+  #     # build information
+  #     restore_artifact: "true"
+  #     artifact_name: "deb4docker"
+  #     artifact_location: "docker"
+  #     context: "docker"
+  #     dockerfile: "./docker/Dockerfile.core"
+  #     platforms: "linux/amd64"
+  #     # optimizations
+  #     cache_repo: "radixdlt/build-cache"
+  #     cache_tag_suffix: "babylon-node-pr"
+  #     role_to_assume: "arn:aws:iam::308190735829:role/gh-dockerhub-releaser"
+  #   secrets:
+  #     workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
+  #     service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
