@@ -103,6 +103,10 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.workload_identity_provider }}
           service_account: ${{ secrets.service_account }}
+      - name: 'Register gcloud as Docker credential helper'
+        if: inputs.image_registry == 'eu.gcr.io'
+        run: |
+            gcloud auth configure-docker -q
       - if: inputs.image_registry == 'docker.io'
         name: 'Register gcloud as Docker credential helper'
         run: |
