@@ -116,6 +116,7 @@ task buildRustForDocker(type: Exec) {
         def outputDir="core-rust/target/$target"
         def rustBuilderRepo = "eu.gcr.io/dev-container-repo/rust-builder-base"
         def rustCacheRepo = "eu.gcr.io/dev-container-repo/rust-cache-packages"
+        def rustProdBuildRepo = "eu.gcr.io/dev-container-repo/rust-prod-build"
         def env_rust_profile =
                 (project.property("rustBinaryBuildType") == "" || project.property("rustBinaryBuildType") == null) ? "release"
                 : project.property("rustBinaryBuildType") == "debug" ? "dev"
@@ -128,20 +129,29 @@ task buildRustForDocker(type: Exec) {
              export DOCKER_BUILDKIT=1
              docker pull $rustBuilderRepo:$cacheTag || true
              docker pull $rustCacheRepo:$cacheTag || true
+             docker pull $rustProdBuildRepo:$cacheTag || true
              docker build -f docker/rust-builder/Dockerfile \\
                  --target=base --build-arg TARGET=$target --build-arg RUST_PROFILE=$env_rust_profile --build-arg BUILDKIT_INLINE_CACHE=1 \\
                  --cache-from=$rustBuilderRepo:$cacheTag \\
                  --tag $rustBuilderRepo:$cacheTag .
+
              docker build -f docker/rust-builder/Dockerfile \\
                  --target=cache-packages --build-arg TARGET=$target --build-arg RUST_PROFILE=$env_rust_profile --build-arg BUILDKIT_INLINE_CACHE=1 \\
                  --cache-from=$rustBuilderRepo:$cacheTag --cache-from=$rustCacheRepo:$cacheTag  \\
                  --tag $rustCacheRepo:$cacheTag .
+            
+            docker build -f docker/rust-builder/Dockerfile \\
+                 --target=prod-builder --build-arg TARGET=$target --build-arg RUST_PROFILE=$env_rust_profile --build-arg BUILDKIT_INLINE_CACHE=1 \\
+                 --cache-from=$rustCacheRepo:$cacheTag --cache-from=$rustProdBuildRepo:$cacheTag \\
+                 --tag $rustProdBuildRepo:$cacheTag .
+                 
              docker build -f docker/rust-builder/Dockerfile \\
                --target=artifact --build-arg TARGET=$target --build-arg RUST_PROFILE=$env_rust_profile --build-arg BUILDKIT_INLINE_CACHE=1 \\
-               --cache-from=$rustBuilderRepo:$cacheTag --cache-from=$rustCacheRepo:$cacheTag  \\
+               --cache-from=$rustProdBuildRepo:$cacheTag --cache-from=$rustBuilderRepo:$cacheTag --cache-from=$rustCacheRepo:$cacheTag  \\
                --output type=local,dest=core-rust/target/$target/${project.property("rustBinaryBuildType")}/ .
              docker push $rustBuilderRepo:$cacheTag || true
              docker push $rustCacheRepo:$cacheTag || true
+             docker push $rustProdBuildRepo:$cacheTag || true
              [ -f $outputDir/${project.property("rustBinaryBuildType")}/libcorerust.so ]
                 """
 

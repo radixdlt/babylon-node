@@ -53,7 +53,7 @@ buildx-driver:
 build-push-using-remote-cache:  buildx-driver gcloud-token build-core
 	echo "Building and pushing image $(CORE_REPO):$(TAG)"
 	$(shell cd ../docker && DOCKER_BUILDKIT=1 docker buildx build \
-          --cache-from=type=registry,ref=$(GAR_CACHE_REPO)/build-core-cache,mode=max \
+          --cache-from=type=registry,ref=$(GAR_CACHE_REPO)/build-core-cache \
           --cache-to=type=registry,ref=$(GAR_CACHE_REPO)/build-core-cache,mode=max \
           --tag $(CORE_REPO):$(TAG) -f Dockerfile.core . --push)
 
