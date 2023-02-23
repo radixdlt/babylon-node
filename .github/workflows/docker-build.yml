@@ -57,7 +57,7 @@ on:
         type: string
       role_to_assume:
         description: 'The role to assume to fetch registry credentials'
-        required: true
+        required: false
         type: string
       context:
         description: 'The folder from which to execute the build command'
