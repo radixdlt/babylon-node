@@ -97,16 +97,11 @@ jobs:
       - name: Display structure of downloaded files
         run: ls -R ${{ inputs.artifact_location }}
       - id: gcr-auth
-        if: inputs.image_registry == 'eu.gcr.io'
-        # ToDo: CHange auth method away from repo secrets
         uses: google-github-actions/auth@a61909d048e0be579b6c15b27088d19668493851
         with:
           workload_identity_provider: ${{ secrets.workload_identity_provider }}
           service_account: ${{ secrets.service_account }}
-      - name: 'Register gcloud as Docker credential helper'
-        if: inputs.image_registry == 'eu.gcr.io'
-        run: |
-            gcloud auth configure-docker -q
+          create_credentials_file: true
       - name: 'Register gcloud as Docker credential helper'
         run: |
             gcloud auth configure-docker -q
@@ -156,11 +151,18 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: '${{ inputs.image_registry }}/${{ inputs.image_organization }}/${{ inputs.image_name }}:${{ inputs.tag }}'
-          format: 'table'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
           exit-code: '0'
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+        env:
+          GOOGLE_APPLICATION_CREDENTIAL: ${{ steps.gcr-auth.outputs.credentials_file_path }}
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: 'trivy-results.sarif'
 
 
 # Example Usage
