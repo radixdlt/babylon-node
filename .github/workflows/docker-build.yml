@@ -5,12 +5,8 @@ on:
     secrets:
       workload_identity_provider:
         description: 'Auth for gcr'
-        required: false
-        type: string
       service_account:
         description: 'Auth for gcr'
-        required: false
-        type: string
     inputs:
       environment:
         description: "Name of environment that will enforce manual approval"
