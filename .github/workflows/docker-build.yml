@@ -144,7 +144,7 @@ jobs:
           cache-from: |
             type=registry,ref=${{ inputs.cache_repo }}:build-cache-${{ inputs.cache_tag_suffix }},mode=max 
           cache-to: |
-            type=registry,ref=${{ inputs.cache_repo }}:build-cache-${{ inputs.cache_tag_suffix }},mode=max 
+            type=registry,ref=${{ inputs.cache_repo }}:build-cache-${{ inputs.cache_tag_suffix }}-new,mode=max 
           tags: |
             ${{ inputs.image_registry }}/${{ inputs.image_organization }}/${{ inputs.image_name }}:${{ github.sha }}
             ${{ inputs.image_registry }}/${{ inputs.image_organization }}/${{ inputs.image_name }}:${{ inputs.tag }}
