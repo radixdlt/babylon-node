@@ -87,6 +87,11 @@ on:
         required: false
         type: string
         default: "false"
+      enable_pr_comment:
+        description: 'Wether to scan image for vulnerability'
+        required: false
+        type: string
+        default: "true"
 
 jobs:
   build-and-push:
@@ -160,7 +165,7 @@ jobs:
           tags: |
             ${{ inputs.image_registry }}/${{ inputs.image_organization }}/${{ inputs.image_name }}:${{ inputs.tag }}
           labels: ${{ inputs.labels }}
-      - if: github.event_name == 'pull_request'
+      - if: github.event_name == 'pull_request' && inputs.enable_pr_comment == 'true'
         name: Add docker tags to PR comment
         uses: thollander/actions-comment-pull-request@632cf9ce90574d125be56b5f3405cda41a84e2fd
         with:
