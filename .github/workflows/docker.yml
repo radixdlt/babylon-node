@@ -71,7 +71,7 @@ jobs:
       - build_deb
     uses: radixdlt/babylon-node/.github/workflows/docker-build.yml@DO-1214/docker-build-action
     with:
-      environment: ""
+      environment: "release"
       # image information
       image_registry: "eu.gcr.io"
       image_organization: "dev-container-repo"
@@ -86,8 +86,8 @@ jobs:
       dockerfile: "./docker/Dockerfile.core"
       platforms: "linux/amd64"
       # optimizations
-      cache_repo: "eu.gcr.io/dev-container-repo/babylon-node"
-      cache_tag_suffix: "pr"
+      cache_repo: "radixdlt/build-cache"
+      cache_tag_suffix: "babylon-node-pr"
       # role_to_assume: "arn:aws:iam::308190735829:role/gh-dockerhub-releaser"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
