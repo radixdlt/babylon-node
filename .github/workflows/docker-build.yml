@@ -144,9 +144,9 @@ jobs:
           cache-from: |
             type=registry,ref=${{ inputs.cache_repo }}:build-cache-${{ inputs.cache_tag_suffix }},mode=max 
           cache-to: |
-            type=registry,ref=${{ inputs.cache_repo }}:build-cache-${{ inputs.cache_tag_suffix }}-new,mode=max 
+            type=registry,ref=${{ inputs.cache_repo }}:build-cache-${{ inputs.cache_tag_suffix }},mode=max 
           tags: |
-            ${{ inputs.image_registry }}/${{ inputs.image_organization }}/${{ inputs.image_name }}:${{ github.sha }}
+            ${{ inputs.image_registry }}/${{ inputs.image_organization }}/${{ inputs.image_name }}:${GITHUB_SHA::7}
             ${{ inputs.image_registry }}/${{ inputs.image_organization }}/${{ inputs.image_name }}:${{ inputs.tag }}
           labels: ${{ inputs.labels }}
       - name: Add docker tags to PR comment
@@ -154,14 +154,14 @@ jobs:
         with:
           message: |
             Docker tags
-            ${{ inputs.image_registry }}/${{ inputs.image_organization }}/${{ inputs.image_name }}:${{ github.sha }}
+            ${{ inputs.image_registry }}/${{ inputs.image_organization }}/${{ inputs.image_name }}:${GITHUB_SHA::7}
             ${{ inputs.image_registry }}/${{ inputs.image_organization }}/${{ inputs.image_name }}:${{ inputs.tag }}
           comment_tag: dockerTags
         if: github.event_name == 'pull_request'
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: '${{ inputs.image_registry }}/${{ inputs.image_organization }}/${{ inputs.image_name }}:${{ github.sha }}'
+          image-ref: '${{ inputs.image_registry }}/${{ inputs.image_organization }}/${{ inputs.image_name }}:${GITHUB_SHA::7}
           format: 'table'
           exit-code: '0'
           ignore-unfixed: true
