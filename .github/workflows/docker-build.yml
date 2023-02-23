@@ -118,7 +118,7 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.workload_identity_provider }}
           service_account: ${{ secrets.service_account }}
-          token_format: "access_token"
+          create_credentials_file: true
       - if: inputs.enable_gcr == 'true'
         name: 'Register gcloud as Docker credential helper'
         run: |
@@ -180,7 +180,7 @@ jobs:
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcr-auth.outputs.access_token }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
       - if: inputs.enable_trivy == 'true'
         name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v1
