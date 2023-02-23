@@ -2,6 +2,15 @@ name: build-and-push-docker
 
 on:
   workflow_call:
+    secrets:
+      workload_identity_provider:
+        description: 'Auth for gcr'
+        required: false
+        type: string
+      service_account:
+        description: 'Auth for gcr'
+        required: false
+        type: string
     inputs:
       environment:
         description: "Name of environment that will enforce manual approval"
@@ -67,14 +76,6 @@ on:
         description: 'The path to the dockerfile to build'
         required: true
         type: string
-      workload_identity_provider:
-        description: 'Auth for gcr'
-        required: false
-        type: string
-      service_account:
-        description: 'Auth for gcr'
-        required: false
-        type: string
 
 jobs:
   build-and-push:
@@ -104,8 +105,8 @@ jobs:
         # ToDo: CHange auth method away from repo secrets
         uses: google-github-actions/auth@a61909d048e0be579b6c15b27088d19668493851
         with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ secrets.workload_identity_provider }}
+          service_account: ${{ secrets.service_account }}
       - if: inputs.image_registry == 'docker.io'
         name: 'Register gcloud as Docker credential helper'
         run: |
