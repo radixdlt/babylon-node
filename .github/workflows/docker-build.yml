@@ -67,7 +67,14 @@ on:
         description: 'The path to the dockerfile to build'
         required: true
         type: string
-      
+      workload_identity_provider:
+        description: 'Auth for gcr'
+        required: false
+        type: string
+      service_account:
+        description: 'Auth for gcr'
+        required: false
+        type: string
 
 jobs:
   build-and-push:
