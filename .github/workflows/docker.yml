@@ -88,7 +88,7 @@ jobs:
       # optimizations
       cache_repo: "radixdlt/build-cache"
       cache_tag_suffix: "babylon-node-pr"
-      # role_to_assume: "arn:aws:iam::308190735829:role/gh-dockerhub-releaser"
+      role_to_assume: "arn:aws:iam::308190735829:role/gh-dockerhub-releaser"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
