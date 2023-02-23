@@ -2,9 +2,6 @@ name: build-and-push-docker
 
 on:
   workflow_call:
-# Env variables/ Build args to pass on
-# pre-build command
-# (optional) labels
     inputs:
       environment:
         description: "Name of environment that will enforce manual approval"
@@ -73,17 +70,13 @@ on:
       
 
 jobs:
-
   build-and-push:
     permissions:
       id-token: write
       contents: read
       pull-requests: read
-
     environment: ${{ inputs.environment }}
-
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3.1.0
         with:
