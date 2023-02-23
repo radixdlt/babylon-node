@@ -65,8 +65,10 @@ jobs:
         with:
           name: deb4docker
           path: "${{ github.workspace }}/docker/*.deb"
-          
+
   build_push_container:
+    needs: 
+      - build_deb
     uses: radixdlt/babylon-node/.github/workflows/docker-build.yml@DO-1214/docker-build-action
     with:
       environment: ""
