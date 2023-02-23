@@ -144,7 +144,7 @@ task buildRustForDocker(type: Exec) {
                --cache-to=type=registry,ref=$rustCacheRepo:$cacheTag,mode=max \\
                --output type=local,dest=core-rust/target/$target/${project.property("rustBinaryBuildType")}/ .
              docker push $rustBuilderRepo:$cacheTag || true
-             docker push $rustCacheRepo:$cacheTag || true
+            //  docker push $rustCacheRepo:$cacheTag || true
              [ -f $outputDir/${project.property("rustBinaryBuildType")}/libcorerust.so ]
                 """
 
