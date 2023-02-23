@@ -128,17 +128,17 @@ task buildRustForDocker(type: Exec) {
              export DOCKER_BUILDKIT=1
              docker pull $rustBuilderRepo:$cacheTag || true
              docker pull $rustCacheRepo:$cacheTag || true
-             docker build -f docker/rust-builder/Dockerfile \\
+             docker buildx build -f docker/rust-builder/Dockerfile \\
                  --target=base --build-arg TARGET=$target --build-arg RUST_PROFILE=$env_rust_profile --build-arg BUILDKIT_INLINE_CACHE=1 \\
                  --cache-from=$rustBuilderRepo:$cacheTag \\
                  --cache-to=type=registry,ref=$rustCacheRepo:$cacheTag,mode=max \\
                  --tag $rustBuilderRepo:$cacheTag .
-             docker build -f docker/rust-builder/Dockerfile \\
+             docker buildx build -f docker/rust-builder/Dockerfile \\
                  --target=cache-packages --build-arg TARGET=$target --build-arg RUST_PROFILE=$env_rust_profile --build-arg BUILDKIT_INLINE_CACHE=1 \\
                  --cache-from=$rustBuilderRepo:$cacheTag --cache-from=$rustCacheRepo:$cacheTag  \\
                  --cache-to=type=registry,ref=$rustCacheRepo:$cacheTag,mode=max \\
                  --tag $rustCacheRepo:$cacheTag .
-             docker build -f docker/rust-builder/Dockerfile \\
+             docker buildx build -f docker/rust-builder/Dockerfile \\
                --output type=local,dest=core-rust/target/$target/${project.property("rustBinaryBuildType")}/ .
              docker push $rustBuilderRepo:$cacheTag || true
              [ -f $outputDir/${project.property("rustBinaryBuildType")}/libcorerust.so ]
