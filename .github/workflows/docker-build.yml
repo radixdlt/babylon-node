@@ -93,30 +93,30 @@ jobs:
       - name: Display structure of downloaded files
         run: ls -R ${{ inputs.artifact_location }}
       - id: gcr-auth
-        if: inputs.image_registry == "eu.gcr.io"
+        if: inputs.image_registry == 'eu.gcr.io'
         # ToDo: CHange auth method away from repo secrets
         uses: google-github-actions/auth@a61909d048e0be579b6c15b27088d19668493851
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-      - if: inputs.image_registry == "docker.io"
+      - if: inputs.image_registry == 'docker.io'
         name: 'Register gcloud as Docker credential helper'
         run: |
             gcloud auth configure-docker -q
-      - if: inputs.image_registry == "docker.io"
+      - if: inputs.image_registry == 'docker.io'
         name: "Configure AWS credentials"
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
-          role-to-assume: ${{ input.role_to_assume }}
+          role-to-assume: ${{ inputs.role_to_assume }}
           aws-region: eu-west-2
-      - if: inputs.image_registry == "docker.io"
+      - if: inputs.image_registry == 'docker.io'
         name: Read secrets from AWS Secrets Manager into environment variables
         uses: aws-actions/aws-secretsmanager-get-secrets@v1
         with:
           secret-ids: |
             DOCKERHUB, github-actions/rdxworks/dockerhub-images/release-credentials
           parse-json-secrets: true
-      - if: inputs.image_registry == "docker.io"
+      - if: inputs.image_registry == 'docker.io'
         name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
