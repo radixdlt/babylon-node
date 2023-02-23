@@ -84,11 +84,10 @@ jobs:
           path: "${{ github.workspace }}/docker/*.deb"
 
   build_push_container:
-    name: Build/Push GCR
     needs:
       - build_deb
     runs-on: ubuntu-22.04
-    uses: radixdlt/iac-resuable-artifacts/.github/workflows/docker-build.yml@DO-1214/docker-build-action
+    uses: radixdlt/babylon-node/.github/workflows/docker-build.yml@DO-1214/docker-build-action
     with:
       environment: ""
       # image information
