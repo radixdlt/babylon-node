@@ -83,31 +83,31 @@ jobs:
           name: deb4docker
           path: "${{ github.workspace }}/docker/*.deb"
 
-    deploy-dev:
-      name: Build/Push GCR
-      needs:
-        - build_deb
-      runs-on: ubuntu-22.04
-      uses: radixdlt/iac-resuable-artifacts/.github/workflows/docker-build.yml@DO-1214/docker-build-action
-      with:
-        environment: ""
-        # image information
-        image_registry: "eu.gcr.io"
-        image_organization: "dev-container-repo"
-        image_name: "babylon-node"
-        tag: "DO-1214"
-        labels: ""
-        # build information
-        restore_artifact: "true"
-        artifact_name: "deb4docker"
-        artifact_location: "docker"
-        context: "docker"
-        dockerfile: "./docker/Dockerfile.core"
-        platforms: "linux/amd64"
-        # optimizations
-        cache_repo: "eu.gcr.io/dev-container-repo/babylon-node"
-        cache_tag_suffix: "pr"
-        # role_to_assume: "arn:aws:iam::308190735829:role/gh-dockerhub-releaser"
+  build_push_container:
+    name: Build/Push GCR
+    needs:
+      - build_deb
+    runs-on: ubuntu-22.04
+    uses: radixdlt/iac-resuable-artifacts/.github/workflows/docker-build.yml@DO-1214/docker-build-action
+    with:
+      environment: ""
+      # image information
+      image_registry: "eu.gcr.io"
+      image_organization: "dev-container-repo"
+      image_name: "babylon-node"
+      tag: "DO-1214"
+      labels: ""
+      # build information
+      restore_artifact: "true"
+      artifact_name: "deb4docker"
+      artifact_location: "docker"
+      context: "docker"
+      dockerfile: "./docker/Dockerfile.core"
+      platforms: "linux/amd64"
+      # optimizations
+      cache_repo: "eu.gcr.io/dev-container-repo/babylon-node"
+      cache_tag_suffix: "pr"
+      # role_to_assume: "arn:aws:iam::308190735829:role/gh-dockerhub-releaser"
 #  please start
 
   # build_push_container:
