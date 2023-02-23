@@ -83,55 +83,81 @@ jobs:
           name: deb4docker
           path: "${{ github.workspace }}/docker/*.deb"
 
-  build_push_container:
-    name: Build/Push GCR
-    needs:
-      - build_deb
-    runs-on: ubuntu-22.04
-    permissions:
-      id-token: write
-      contents: read
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Download generated debian package
-        uses: actions/download-artifact@v3
-        with:
-          name: deb4docker
-          path: docker
-      - name: Display structure of downloaded files
-        run: ls -R docker
-      - id: auth
-        uses: google-github-actions/auth@a61909d048e0be579b6c15b27088d19668493851
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-      - name: 'Register gcloud as Docker credential helper'
-        run: |
-            gcloud auth configure-docker -q
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Build and push
-        uses: docker/build-push-action@v2
-        with:
-          file: ./docker/Dockerfile.core
-          context: docker
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ needs.build_deb.outputs.tags }}
-          labels: ${{ needs.build_deb.outputs.labels }}
-      - name: Add docker tags to PR comment
-        uses: thollander/actions-comment-pull-request@632cf9ce90574d125be56b5f3405cda41a84e2fd
-        with:
-          message: |
-            Docker tags
-            ${{ needs.build_deb.outputs.tags }}
-          comment_tag: dockerTags
-        if: github.event_name == 'pull_request'
+    deploy-dev:
+      name: Build/Push GCR
+      needs:
+        - build_deb
+      runs-on: ubuntu-22.04
+      uses: radixdlt/iac-resuable-artifacts/.github/workflows/docker-build.yml@DO-1214/docker-build-action
+      with:
+        environment: ""
+        # image information
+        image_registry: "eu.gcr.io"
+        image_organization: "dev-container-repo"
+        image_name: "babylon-node"
+        tag: "DO-1214"
+        labels: ""
+        # build information
+        restore_artifact: "true"
+        artifact_name: "deb4docker"
+        artifact_location: "docker"
+        context: "docker"
+        dockerfile: "./docker/Dockerfile.core"
+        platforms: "linux/amd64"
+        # optimizations
+        cache_repo: "eu.gcr.io/dev-container-repo/babylon-node"
+        cache_tag_suffix: "pr"
+        # role_to_assume: "arn:aws:iam::308190735829:role/gh-dockerhub-releaser"
+
+  # build_push_container:
+  #   name: Build/Push GCR
+  #   needs:
+  #     - build_deb
+  #   runs-on: ubuntu-22.04
+  #   permissions:
+  #     id-token: write
+  #     contents: read
+  #     pull-requests: write
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
+  #     - name: Download generated debian package
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: deb4docker
+  #         path: docker
+  #     - name: Display structure of downloaded files
+  #       run: ls -R docker
+  #     - id: auth
+  #       uses: google-github-actions/auth@a61909d048e0be579b6c15b27088d19668493851
+  #       with:
+  #         workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
+  #         service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+  #     - name: 'Register gcloud as Docker credential helper'
+  #       run: |
+  #           gcloud auth configure-docker -q
+  #     - name: Set up QEMU
+  #       uses: docker/setup-qemu-action@v2
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v2
+  #     - name: Build and push
+  #       uses: docker/build-push-action@v2
+  #       with:
+  #         file: ./docker/Dockerfile.core
+  #         context: docker
+  #         push: true
+  #         platforms: linux/amd64,linux/arm64
+  #         tags: ${{ needs.build_deb.outputs.tags }}
+  #         labels: ${{ needs.build_deb.outputs.labels }}
+  #     - name: Add docker tags to PR comment
+  #       uses: thollander/actions-comment-pull-request@632cf9ce90574d125be56b5f3405cda41a84e2fd
+  #       with:
+  #         message: |
+  #           Docker tags
+  #           ${{ needs.build_deb.outputs.tags }}
+  #         comment_tag: dockerTags
+  #       if: github.event_name == 'pull_request'
 
   build_push_container_dockerhub:
     if: github.event_name == 'release'
