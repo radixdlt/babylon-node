@@ -95,7 +95,7 @@ jobs:
       contents: read
       pull-requests: read
     environment: ${{ inputs.environment }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3.1.0
         with:
@@ -180,7 +180,7 @@ jobs:
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
         env:
-          GOOGLE_APPLICATION_CREDENTIAL: ${{ steps.gcr-auth.outputs.access_token }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcr-auth.outputs.access_token }}
       - if: inputs.enable_trivy == 'true'
         name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v1
