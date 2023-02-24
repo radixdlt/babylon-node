@@ -271,15 +271,17 @@ where
 {
     fn execute_for_staging_with_cache(
         &mut self,
-        parent_state: &StateSummary,
+        parent_transaction_identifiers: &CommittedTransactionIdentifiers,
         executable: &Executable,
         payload_hash: &LedgerPayloadHash,
     ) -> (AccumulatorHash, &ProcessedResult) {
-        let new_accumulator_hash = parent_state.accumulator_hash.accumulate(payload_hash);
+        let new_accumulator_hash = parent_transaction_identifiers
+            .accumulator_hash
+            .accumulate(payload_hash);
         let processed_result = self.execution_cache.execute_transaction(
             &self.store,
-            Some(parent_state.state_version).filter(|version| *version > 0),
-            &parent_state.accumulator_hash,
+            Some(parent_transaction_identifiers.state_version).filter(|version| *version > 0),
+            &parent_transaction_identifiers.accumulator_hash,
             &new_accumulator_hash,
             |store| {
                 let start = Instant::now();
@@ -297,7 +299,7 @@ where
                 if elapsed_millis > FULL_TRANSACTION_WARN_TIME_LIMIT_MS {
                     warn!(
                         "Transaction execution took {}ms, above warning threshold of {}ms (ledger payload hash: {}, accumulator hash: {})",
-                        elapsed_millis, FULL_TRANSACTION_WARN_TIME_LIMIT_MS, payload_hash, parent_state.accumulator_hash
+                        elapsed_millis, FULL_TRANSACTION_WARN_TIME_LIMIT_MS, payload_hash, parent_transaction_identifiers.accumulator_hash
                     );
                 }
 
@@ -583,10 +585,8 @@ where
             .validate_and_create_executable(&parsed_transaction)
             .expect("Failed to validate genesis");
 
-        let parent_state = StateSummary::pre_genesis();
-
         let (_, processed) = self.execute_for_staging_with_cache(
-            &parent_state,
+            &CommittedTransactionIdentifiers::pre_genesis(),
             &executable,
             &parsed_transaction.get_hash(),
         );
@@ -613,8 +613,10 @@ where
     }
 
     pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
-        let base_ledger_state =
-            StateSummary::from(self.store.get_top_of_ledger_transaction_identifiers());
+        let base_transaction_identifiers = self
+            .store
+            .get_top_of_ledger_transaction_identifiers()
+            .unwrap_or_else(CommittedTransactionIdentifiers::pre_genesis);
 
         // This hashmap is used to check for any proposed intents which have already been commited (or prepared)
         // in order to exclude them. This check will eventually live in the engine/executor.
@@ -643,10 +645,10 @@ where
             .extend(already_committed_proposed_intent_hashes);
 
         let pending_transaction_base_state = AtState::PendingPreparingVertices {
-            base_committed_state_version: base_ledger_state.state_version,
+            base_committed_state_version: base_transaction_identifiers.state_version,
         };
 
-        let mut state_tracker = StateTracker::initial(base_ledger_state);
+        let mut state_tracker = StateTracker::initial(base_transaction_identifiers);
 
         let already_prepared_payloads: Vec<_> = prepare_request
             .prepared_vertices
@@ -678,7 +680,7 @@ where
             .expect("Already prepared tranasctions should be valid");
 
             let (new_accumulator_hash, processed) = self.execute_for_staging_with_cache(
-                state_tracker.get(),
+                state_tracker.latest_transaction_identifiers(),
                 &executable,
                 &parsed_transaction.get_hash(),
             );
@@ -712,7 +714,7 @@ where
         let executable = prepared_txn.to_executable();
         let validator_txn = LedgerTransaction::Validator(validator_transaction);
         let (new_accumulator_hash, processed) = self.execute_for_staging_with_cache(
-            state_tracker.get(),
+            state_tracker.latest_transaction_identifiers(),
             &executable,
             &validator_txn.get_hash(),
         );
@@ -798,8 +800,11 @@ where
                 let (payload, hash) = LedgerTransaction::User(parsed.clone())
                     .create_payload_and_hash()
                     .unwrap();
-                let (new_accumulator_hash, processed) =
-                    self.execute_for_staging_with_cache(state_tracker.get(), &executable, &hash);
+                let (new_accumulator_hash, processed) = self.execute_for_staging_with_cache(
+                    state_tracker.latest_transaction_identifiers(),
+                    &executable,
+                    &hash,
+                );
 
                 match &processed.receipt().result {
                     TransactionResult::Commit(result) => {
@@ -886,64 +891,36 @@ where
             committed,
             rejected: rejected_payloads,
             next_epoch,
-            state_hash: state_tracker.into_final_state_hash(),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-struct StateSummary {
-    state_version: u64,
-    accumulator_hash: AccumulatorHash,
-}
-
-impl StateSummary {
-    pub fn from(committed_ids: Option<CommittedTransactionIdentifiers>) -> Self {
-        let ids = committed_ids.unwrap_or_else(CommittedTransactionIdentifiers::pre_genesis);
-        Self {
-            state_version: ids.state_version,
-            accumulator_hash: ids.accumulator_hash,
-        }
-    }
-
-    pub fn pre_genesis() -> Self {
-        Self::from(None)
-    }
-
-    pub fn to_committed_identifiers(&self) -> CommittedTransactionIdentifiers {
-        CommittedTransactionIdentifiers {
-            state_version: self.state_version,
-            accumulator_hash: self.accumulator_hash,
+            state_hash: *state_tracker.latest_state_hash(),
         }
     }
 }
 
 struct StateTracker {
-    summary: StateSummary,
+    transaction_identifiers: CommittedTransactionIdentifiers,
     state_hash: Option<StateHash>,
 }
 
 impl StateTracker {
-    pub fn initial(summary: StateSummary) -> Self {
+    pub fn initial(base_transaction_identifiers: CommittedTransactionIdentifiers) -> Self {
         Self {
-            summary,
+            transaction_identifiers: base_transaction_identifiers,
             state_hash: None,
         }
     }
 
-    pub fn get(&self) -> &StateSummary {
-        &self.summary
+    pub fn latest_transaction_identifiers(&self) -> &CommittedTransactionIdentifiers {
+        &self.transaction_identifiers
     }
 
     pub fn update(&mut self, accumulator_hash: AccumulatorHash, state_hash: StateHash) {
-        self.summary.state_version += 1;
-        self.summary.accumulator_hash = accumulator_hash;
+        self.transaction_identifiers.state_version += 1;
+        self.transaction_identifiers.accumulator_hash = accumulator_hash;
         self.state_hash = Some(state_hash);
     }
 
-    pub fn into_final_state_hash(self) -> StateHash {
-        self.state_hash
-            .expect("at least round update transaction must have succeeded")
+    pub fn latest_state_hash(&self) -> &StateHash {
+        self.state_hash.as_ref().expect("no update yet")
     }
 }
 
@@ -965,7 +942,10 @@ where
     pub fn commit(&'db mut self, commit_request: CommitRequest) -> Result<(), CommitError> {
         let commit_transactions_len = commit_request.transaction_payloads.len();
         if commit_transactions_len == 0 {
-            return Ok(());
+            panic!(
+                "cannot commit 0 transactions from request {:?}",
+                commit_request
+            );
         }
 
         let commit_request_start_state_version =
@@ -987,16 +967,18 @@ where
                 })
                 .collect::<Vec<_>>();
 
-        let base_ledger_state =
-            StateSummary::from(self.store.get_top_of_ledger_transaction_identifiers());
-        if base_ledger_state.state_version != commit_request_start_state_version {
+        let base_transaction_identifiers = self
+            .store
+            .get_top_of_ledger_transaction_identifiers()
+            .unwrap_or_else(CommittedTransactionIdentifiers::pre_genesis);
+        if base_transaction_identifiers.state_version != commit_request_start_state_version {
             panic!(
                 "Mismatched state versions - the commit request claims {} but the database thinks we're at {}",
-                commit_request_start_state_version, base_ledger_state.state_version
+                commit_request_start_state_version, base_transaction_identifiers.state_version
             );
         }
 
-        let mut state_tracker = StateTracker::initial(base_ledger_state);
+        let mut state_tracker = StateTracker::initial(base_transaction_identifiers);
         let mut epoch_boundary = None;
         let mut committed_transaction_bundles = Vec::new();
         let mut state_diff = StateDiff::new();
@@ -1023,7 +1005,7 @@ where
 
             let payload_hash = transaction.get_hash();
             let (current_accumulator_hash, processed) = self.execute_for_staging_with_cache(
-                state_tracker.get(),
+                state_tracker.latest_transaction_identifiers(),
                 &executable,
                 &payload_hash,
             );
@@ -1068,7 +1050,7 @@ where
             committed_transaction_bundles.push((
                 transaction,
                 ledger_receipt,
-                state_tracker.get().to_committed_identifiers(),
+                state_tracker.latest_transaction_identifiers().clone(),
             ));
 
             // TODO: the StateDiff below should really have its own complete .extend() method (see
@@ -1079,19 +1061,18 @@ where
             hash_tree_diff.extend(processed.hash_tree_diff().clone());
         }
 
-        let final_ledger_state = state_tracker.get().clone();
-        let final_state_hash = state_tracker.into_final_state_hash();
-        if final_state_hash != commit_request.proof_state_hash {
+        if *state_tracker.latest_state_hash() != commit_request.proof_state_hash {
             warn!(
                 "computed state hash at version {} differs from the one in proof ({} != {})",
                 commit_request.proof_state_version,
-                final_state_hash,
+                state_tracker.latest_state_hash(),
                 commit_request.proof_state_hash
             );
         }
+        let final_transaction_identifiers = state_tracker.latest_transaction_identifiers().clone();
 
         self.execution_cache
-            .progress_root(&final_ledger_state.accumulator_hash);
+            .progress_root(&final_transaction_identifiers.accumulator_hash);
 
         self.store.commit(CommitBundle {
             transactions: committed_transaction_bundles,
@@ -1105,7 +1086,7 @@ where
 
         self.metrics
             .ledger_state_version
-            .set(final_ledger_state.state_version as i64);
+            .set(final_transaction_identifiers.state_version as i64);
         self.metrics
             .ledger_transactions_committed
             .inc_by(commit_transactions_len as u64);
