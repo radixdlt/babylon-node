@@ -1058,7 +1058,10 @@ where
             state_diff
                 .up_substates
                 .extend(processed.state_diff().up_substates.clone());
-            state_hash_tree_update.add(current_state_version, processed.hash_tree_diff().clone());
+            state_hash_tree_update.add(
+                state_tracker.latest_transaction_identifiers().state_version,
+                processed.hash_tree_diff().clone(),
+            );
         }
 
         if *state_tracker.latest_state_hash() != commit_request.proof_state_hash {
