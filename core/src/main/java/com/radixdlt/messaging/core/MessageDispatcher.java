@@ -149,9 +149,10 @@ class MessageDispatcher {
       Throwable cause, NodeId receiver, Message message) {
     final var msg =
         String.format(
-            "Send %s to %s failed",
+            "Send %s to %s with %s failed",
             message.getClass().getSimpleName(),
-            addressing.encodeNodeAddress(receiver.getPublicKey()));
+            addressing.encodeNodeAddress(receiver.getPublicKey()),
+            receiver.getPublicKey());
     log.warn("{}: {}", msg, cause.getMessage());
     return IO_ERROR.result();
   }
