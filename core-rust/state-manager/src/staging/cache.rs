@@ -235,10 +235,10 @@ lazy_static! {
 }
 
 impl ProcessedResult {
-    fn from_processed<S: RootStore>(
+    fn from_processed<S: ReadableTreeStore>(
         transaction_receipt: TransactionReceipt,
         state_version: Option<Version>,
-        store: &StagedStore<S>,
+        store: &S,
     ) -> ProcessedResult {
         // TODO: currently, only the hashes of changed (or created) substates are tracked, since
         // the hash tree wants to stay consistent with the substate store (which does not support
