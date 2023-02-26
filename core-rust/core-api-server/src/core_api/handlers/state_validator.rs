@@ -1,5 +1,5 @@
 use crate::core_api::*;
-use radix_engine::system::substates::PersistedSubstate;
+use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{
     AccessRulesChainOffset, GlobalAddress, MetadataOffset, NodeModuleId, SubstateOffset,
     ValidatorOffset,

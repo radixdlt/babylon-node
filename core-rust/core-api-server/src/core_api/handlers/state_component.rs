@@ -1,10 +1,10 @@
 use crate::core_api::*;
-use radix_engine::system::substates::PersistedSubstate;
+use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{
     AccessRulesChainOffset, ComponentOffset, GlobalAddress, MetadataOffset, RENodeId, SubstateId,
     SubstateOffset,
 };
-use radix_engine_interface::api::types::{NodeModuleId, RoyaltyOffset};
+use radix_engine_interface::api::types::{ComponentTypeInfoOffset, NodeModuleId, RoyaltyOffset};
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::query::dump_component_state;
 
@@ -39,11 +39,11 @@ fn handle_state_component_internal(
         read_derefed_global_node_id(state_manager, GlobalAddress::Component(component_address))?;
 
     let component_info = {
-        let substate_offset = SubstateOffset::Component(ComponentOffset::Info);
+        let substate_offset = SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo);
         let loaded_substate = read_known_substate(
             state_manager,
             component_node_id,
-            NodeModuleId::SELF,
+            NodeModuleId::ComponentTypeInfo,
             &substate_offset,
         )?;
         let PersistedSubstate::ComponentInfo(substate) = loaded_substate else {
@@ -52,7 +52,7 @@ fn handle_state_component_internal(
         substate
     };
     let component_state = {
-        let substate_offset = SubstateOffset::Component(ComponentOffset::State);
+        let substate_offset = SubstateOffset::Component(ComponentOffset::State0);
         let loaded_substate = read_known_substate(
             state_manager,
             component_node_id,

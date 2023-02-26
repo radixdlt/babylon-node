@@ -127,7 +127,7 @@ public final class PacemakerGenerateProposalTest {
     this.proposalDispatcher = rmock(RemoteEventDispatcher.class);
     this.voteDispatcher = rmock(RemoteEventDispatcher.class);
     this.roundLeaderFailureDispatcher = rmock(EventDispatcher.class);
-    this.hasher = new Sha256Hasher(DefaultSerialization.getInstance());
+    this.hasher = new Blake2b256Hasher(DefaultSerialization.getInstance());
     this.timeSupplier = mock(TimeSupplier.class);
     this.initialRoundUpdate =
         RoundUpdate.create(Round.of(1L), mock(HighQC.class), validator1, validator2);
