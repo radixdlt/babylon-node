@@ -115,6 +115,7 @@ impl ExecutionCache {
     pub fn execute_transaction<S: RootStore, T: FnOnce(&StagedStore<S>) -> TransactionReceipt>(
         &mut self,
         root_store: &S,
+        state_version: Option<Version>,
         parent_hash: &AccumulatorHash,
         new_hash: &AccumulatorHash,
         transaction: T,
@@ -126,7 +127,8 @@ impl ExecutionCache {
                 let staged_store =
                     StagedStore::new(root_store, self.stage_tree.get_accumulator(&parent_key));
                 let receipt = transaction(&staged_store);
-                let processed = ProcessedResult::from_processed(receipt, &staged_store);
+                let processed =
+                    ProcessedResult::from_processed(receipt, state_version, &staged_store);
                 let new_key = self.stage_tree.new_child_node(parent_key, processed);
                 self.key_to_accumulator_hash.insert(new_key, *new_hash);
                 self.accumulator_hash_to_key.insert(*new_hash, new_key);
@@ -235,6 +237,7 @@ lazy_static! {
 impl ProcessedResult {
     fn from_processed<S: RootStore>(
         transaction_receipt: TransactionReceipt,
+        state_version: Option<Version>,
         store: &StagedStore<S>,
     ) -> ProcessedResult {
         // TODO: currently, only the hashes of changed (or created) substates are tracked, since
@@ -256,7 +259,6 @@ impl ProcessedResult {
             TransactionResult::Reject(_) | TransactionResult::Abort(_) => Vec::new(),
         };
         let mut collector = CollectingTreeStore::new(store);
-        let state_version = store.overlay.state_version;
         let root_hash = put_at_next_version(&mut collector, state_version, &hash_changes);
         Self {
             state_hash: StateHash::from(root_hash),
@@ -309,7 +311,6 @@ impl HashTreeDiff {
 
 #[derive(Clone)]
 pub struct ImmutableStore {
-    state_version: Option<Version>,
     substate_values: ImmutableHashMap<SubstateId, OutputValue>,
     hash_tree_nodes: ImmutableHashMap<NodeKey, TreeNode>,
 }
@@ -317,14 +318,12 @@ pub struct ImmutableStore {
 impl Accumulator<ProcessedResult> for ImmutableStore {
     fn create_empty() -> Self {
         Self {
-            state_version: None,
             substate_values: ImmutableHashMap::new(),
             hash_tree_nodes: ImmutableHashMap::new(),
         }
     }
 
     fn accumulate(&mut self, processed: &ProcessedResult) {
-        self.state_version = Some(self.state_version.unwrap_or(0) + 1);
         self.substate_values.extend(
             processed
                 .state_diff()
