@@ -48,6 +48,14 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: Unit tests
         run: ./gradlew clean check jacocoTestReport --stacktrace --refresh-dependencies
+      - name: DistZip
+        run: ./gradlew distZip
+      - name: Publish Java distZip
+        uses: actions/upload-artifact@v3
+        with:
+          path: ./core/build/distributions/core-*.zip
+          name: distZip
+          retention-days: 7
       - name: Sonar analysis
         env:
           # Needed to get some information about the pull request, if any
