@@ -8,7 +8,7 @@ use state_manager::query::{dump_component_state, VaultData};
 use super::map_to_descendent_id;
 
 pub(crate) async fn handle_state_validator(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
     request: Json<models::StateValidatorRequest>,
 ) -> Result<Json<models::StateValidatorResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_state_validator_internal)

@@ -8,7 +8,7 @@ use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::query::{dump_component_state, VaultData};
 
 pub(crate) async fn handle_state_component(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
     request: Json<models::StateComponentRequest>,
 ) -> Result<Json<models::StateComponentResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_state_component_internal)

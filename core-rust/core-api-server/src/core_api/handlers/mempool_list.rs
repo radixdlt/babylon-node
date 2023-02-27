@@ -2,7 +2,7 @@ use crate::core_api::*;
 
 #[tracing::instrument(level = "debug", skip(state), err(Debug))]
 pub(crate) async fn handle_mempool_list(
-    Extension(state): Extension<CoreApiState>,
+    State(state): State<CoreApiState>,
     Json(request): Json<models::MempoolListRequest>,
 ) -> Result<Json<models::MempoolListResponse>, ResponseError<()>> {
     let state_manager = state.state_manager.read();

@@ -20,7 +20,7 @@ use transaction::model::{
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_stream_transactions(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
     request: Json<models::StreamTransactionsRequest>,
 ) -> Result<Json<models::StreamTransactionsResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_stream_transactions_internal)

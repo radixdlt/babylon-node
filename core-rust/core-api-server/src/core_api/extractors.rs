@@ -1,7 +1,9 @@
 use axum::{
     async_trait,
     body::HttpBody,
-    extract::{rejection::JsonRejection, FromRequest, RequestParts},
+    extract::{rejection::JsonRejection, FromRequest, FromRequestParts},
+    http::request::Parts,
+    http::Request,
     response::IntoResponse,
 };
 use serde::Serialize;
@@ -12,18 +14,35 @@ use super::{client_error, ResponseError};
 
 #[derive(Debug)]
 pub(crate) struct Json<T>(pub T);
-pub use axum::Extension; // Re-export Extension so that it can be used easily
+pub use axum::extract::State; // Re-export Extension so that it can be used easily
 
 #[async_trait]
-impl<B, T> FromRequest<B> for Json<T>
+impl<S, T> FromRequestParts<S> for Json<T>
 where
-    axum::Json<T>: FromRequest<B, Rejection = JsonRejection>,
-    B: HttpBody + Send,
+    axum::Json<T>: FromRequestParts<S, Rejection = JsonRejection>,
+    S: Send + Sync,
 {
     type Rejection = ResponseError<()>;
 
-    async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
-        match axum::Json::<T>::from_request(req).await {
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        match axum::Json::<T>::from_request_parts(parts, state).await {
+            Ok(value) => Ok(Self(value.0)),
+            Err(rejection) => Err(client_error(format!("{:?}", rejection))),
+        }
+    }
+}
+
+#[async_trait]
+impl<S, B, T> FromRequest<S, B> for Json<T>
+where
+    axum::Json<T>: FromRequest<S, B, Rejection = JsonRejection>,
+    S: Send + Sync,
+    B: HttpBody + Send + 'static,
+{
+    type Rejection = ResponseError<()>;
+
+    async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
+        match axum::Json::<T>::from_request(req, state).await {
             Ok(value) => Ok(Self(value.0)),
             Err(rejection) => Err(client_error(format!("{rejection:?}"))),
         }

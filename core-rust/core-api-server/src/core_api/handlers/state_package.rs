@@ -8,7 +8,7 @@ use radix_engine_interface::api::types::{
 use state_manager::jni::state_manager::ActualStateManager;
 
 pub(crate) async fn handle_state_package(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
     request: Json<models::StatePackageRequest>,
 ) -> Result<Json<models::StatePackageResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_state_package_internal)

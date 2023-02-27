@@ -68,12 +68,11 @@ use std::sync::Arc;
 use axum::{
     extract::DefaultBodyLimit,
     routing::{get, post},
-    Extension, Router,
+    Router,
 };
 use parking_lot::RwLock;
 use radix_engine::types::{Categorize, Decode, Encode};
 use state_manager::jni::state_manager::ActualStateManager;
-use tower_http::limit::RequestBodyLimitLayer;
 
 use super::{handlers::*, not_found_error, ResponseError};
 
@@ -93,8 +92,6 @@ pub async fn create_server<F>(
 {
     let core_api_state = CoreApiState { state_manager };
 
-    // TODO - Change to remove the Tower RequestBodyLimitLayer middleware and use DefaultBodyLimit::max
-    // once it is released https://github.com/tokio-rs/axum/pull/1397
     // TODO - Change this to be slightly larger than the double the max transaction payload size.
     // (We double due to the hex encoding of the payload)
     const LARGE_REQUEST_MAX_BYTES: usize = 50 * 1024 * 1024;
@@ -114,23 +111,17 @@ pub async fn create_server<F>(
         // Transaction Sub-API
         .route(
             "/transaction/parse",
-            post(handle_transaction_parse)
-                .layer(DefaultBodyLimit::disable())
-                .layer(RequestBodyLimitLayer::new(LARGE_REQUEST_MAX_BYTES)),
+            post(handle_transaction_parse).layer(DefaultBodyLimit::max(LARGE_REQUEST_MAX_BYTES)),
         )
         .route(
             "/transaction/submit",
-            post(handle_transaction_submit)
-                .layer(DefaultBodyLimit::disable())
-                .layer(RequestBodyLimitLayer::new(LARGE_REQUEST_MAX_BYTES)),
+            post(handle_transaction_submit).layer(DefaultBodyLimit::max(LARGE_REQUEST_MAX_BYTES)),
         )
         .route("/transaction/status", post(handle_transaction_status))
         .route("/transaction/receipt", post(handle_transaction_receipt))
         .route(
             "/transaction/preview",
-            post(handle_transaction_preview)
-                .layer(DefaultBodyLimit::disable())
-                .layer(RequestBodyLimitLayer::new(LARGE_REQUEST_MAX_BYTES)),
+            post(handle_transaction_preview).layer(DefaultBodyLimit::max(LARGE_REQUEST_MAX_BYTES)),
         )
         .route(
             "/transaction/call-preview",
@@ -150,7 +141,7 @@ pub async fn create_server<F>(
         .route("/state/package", post(handle_state_package))
         .route("/state/resource", post(handle_state_resource))
         .route("/state/non-fungible", post(handle_state_non_fungible))
-        .layer(Extension(core_api_state));
+        .with_state(core_api_state);
 
     let prefixed_router = Router::new()
         .nest("/core", router)
