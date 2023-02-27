@@ -69,6 +69,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.AccumulatorState;

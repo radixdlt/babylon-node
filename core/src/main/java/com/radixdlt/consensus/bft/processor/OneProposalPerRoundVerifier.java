@@ -68,8 +68,8 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.ProposalRejected;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.RoundLeaderFailure;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.monitoring.Metrics;
@@ -132,8 +132,8 @@ public final class OneProposalPerRoundVerifier implements BFTEventProcessor {
   }
 
   @Override
-  public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
-    forwardTo.processRoundLeaderFailure(roundLeaderFailure);
+  public void processProposalRejected(ProposalRejected proposalRejected) {
+    forwardTo.processProposalRejected(proposalRejected);
   }
 
   @Override

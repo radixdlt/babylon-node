@@ -62,73 +62,110 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.mock;
+package com.radixdlt.consensus.vertexstore;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.*;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.serialization.DefaultSerialization;
-import org.junit.Before;
-import org.junit.Test;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexWithHash;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.Pair;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
 
-public class VertexStoreStateCreationTest {
-  private VertexWithHash genesisVertex;
-  private HashCode genesisHash;
-  private Hasher hasher;
-  private static final LedgerHeader MOCKED_HEADER =
-      LedgerHeader.create(
-          0,
-          Round.genesis(),
-          new AccumulatorState(0, HashUtils.zero256()),
-          HashUtils.zero256(),
-          0,
-          0);
+/**
+ * A Vertex which has been executed by the engine.
+ *
+ * <p>In particular, a system transaction has been added, and user-transactions have been executed.
+ * Some of these may fail, this is captured in transactionsWhichRaisedAnException. The system
+ * transaction and user-transactions are captured in executedTransactions.
+ *
+ * <p>The ledger header captures an overview of the resultant state after ingesting these
+ * transactions.
+ */
+public final class ExecutedVertex {
+  private final long timeOfExecution;
+  private final VertexWithHash vertexWithHash;
 
-  @Before
-  public void setup() {
-    this.hasher = new Blake2b256Hasher(DefaultSerialization.getInstance());
-    this.genesisVertex = Vertex.createInitialEpochVertex(MOCKED_HEADER).withId(hasher);
-    this.genesisHash = genesisVertex.hash();
+  private final LedgerHeader ledgerHeader;
+
+  private final List<ExecutedTransaction> executedTransactions;
+  private final Map<RawNotarizedTransaction, Exception> transactionsWhichRaisedAnException;
+
+  public ExecutedVertex(
+      VertexWithHash vertexWithHash,
+      LedgerHeader ledgerHeader,
+      List<ExecutedTransaction> executedTransactions,
+      Map<RawNotarizedTransaction, Exception> transactionsWhichRaisedAnException,
+      long timeOfExecution) {
+    this.vertexWithHash = Objects.requireNonNull(vertexWithHash);
+    this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
+    this.executedTransactions = Objects.requireNonNull(executedTransactions);
+    this.transactionsWhichRaisedAnException =
+        Objects.requireNonNull(transactionsWhichRaisedAnException);
+    this.timeOfExecution = timeOfExecution;
   }
 
-  @Test
-  public void creating_vertex_store_with_root_not_committed_should_fail() {
-    BFTHeader genesisHeader = new BFTHeader(Round.of(0), genesisHash, mock(LedgerHeader.class));
-    VoteData voteData = new VoteData(genesisHeader, genesisHeader, null);
-    QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-    assertThatThrownBy(
-            () ->
-                VertexStoreState.create(HighQC.ofInitialEpochQc(badRootQC), genesisVertex, hasher))
-        .isInstanceOf(IllegalStateException.class);
+  public Vertex vertex() {
+    return this.vertexWithHash.vertex();
   }
 
-  @Test
-  public void creating_vertex_store_with_committed_qc_not_matching_vertex_should_fail() {
-    BFTHeader genesisHeader = new BFTHeader(Round.of(0), genesisHash, mock(LedgerHeader.class));
-    BFTHeader otherHeader =
-        new BFTHeader(Round.of(0), HashUtils.random256(), mock(LedgerHeader.class));
-    VoteData voteData = new VoteData(genesisHeader, genesisHeader, otherHeader);
-    QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-    assertThatThrownBy(
-            () ->
-                VertexStoreState.create(HighQC.ofInitialEpochQc(badRootQC), genesisVertex, hasher))
-        .isInstanceOf(IllegalStateException.class);
+  public long getTimeOfExecution() {
+    return timeOfExecution;
   }
 
-  @Test
-  public void creating_vertex_store_with_qc_not_matching_vertex_should_fail() {
-    BFTHeader genesisHeader =
-        new BFTHeader(Round.of(0), HashUtils.random256(), mock(LedgerHeader.class));
-    VoteData voteData = new VoteData(genesisHeader, genesisHeader, genesisHeader);
-    QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-    assertThatThrownBy(
-            () ->
-                VertexStoreState.create(HighQC.ofInitialEpochQc(badRootQC), genesisVertex, hasher))
-        .isInstanceOf(IllegalStateException.class);
+  public HashCode getVertexHash() {
+    return vertexWithHash.hash();
+  }
+
+  public HashCode getParentId() {
+    return vertex().getParentVertexId();
+  }
+
+  public Round getRound() {
+    return vertex().getRound();
+  }
+
+  public Stream<ExecutedTransaction> successfulTransactions() {
+    return executedTransactions.stream();
+  }
+
+  public Stream<Pair<RawNotarizedTransaction, Exception>> errorTransactions() {
+    return transactionsWhichRaisedAnException.entrySet().stream()
+        .map(e -> Pair.of(e.getKey(), e.getValue()));
+  }
+
+  public Stream<RawLedgerTransaction> getTransactions() {
+    return successfulTransactions().map(ExecutedTransaction::transaction);
+  }
+
+  /**
+   * Retrieve the resulting header which is to be persisted on ledger
+   *
+   * @return the header
+   */
+  public LedgerHeader getLedgerHeader() {
+    return ledgerHeader;
+  }
+
+  /**
+   * Retrieve the vertex which was executed
+   *
+   * @return the executed vertex
+   */
+  public VertexWithHash getVertexWithHash() {
+    return vertexWithHash;
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{vertex=%s ledgerHeader=%s}",
+        this.getClass().getSimpleName(), this.vertex(), this.ledgerHeader);
   }
 }

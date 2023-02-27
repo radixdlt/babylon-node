@@ -67,171 +67,114 @@ package com.radixdlt.consensus.bft.processor;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.consensus.bft.ProposalRejected;
+import com.radixdlt.consensus.bft.RoundQuorumReached;
+import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.bft.VoteProcessingResult.QuorumReached;
 import com.radixdlt.consensus.bft.VoteProcessingResult.VoteAccepted;
 import com.radixdlt.consensus.bft.VoteProcessingResult.VoteRejected;
-import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.Bft.IgnoredVote;
+import com.radixdlt.monitoring.Metrics.Bft.VoteIgnoreReason;
 import java.util.Objects;
-import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Processes and reduces BFT events to the BFT state based on core BFT validation logic, any
- * messages which must be sent to other nodes are then forwarded to the BFT sender.
+ * Processes BFT Vote events and assembles a quorum (either a regular or timeout quorum). Warning:
+ * operates under the assumption that all received events are for the current round.
  */
-// TODO: cleanup TODOs https://radixdlt.atlassian.net/browse/NT-7
-public final class BFTEventReducer implements BFTEventProcessor {
+public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound {
   private static final Logger log = LogManager.getLogger();
 
+  private final BFTEventProcessorAtCurrentRound forwardTo;
   private final BFTValidatorId self;
-  private final VertexStoreAdapter vertexStore;
-  private final Pacemaker pacemaker;
   private final EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher;
-  private final EventDispatcher<NoVote> noVoteDispatcher;
-  private final RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher;
-  private final Hasher hasher;
   private final Metrics metrics;
-  private final SafetyRules safetyRules;
-  private final BFTValidatorSet validatorSet;
   private final PendingVotes pendingVotes;
 
-  private BFTInsertUpdate latestInsertUpdate;
   private RoundUpdate latestRoundUpdate;
 
   /* Indicates whether the quorum (QC or TC) has already been formed for the current round.
-   * If the quorum has been reached (but round hasn't yet been updated), subsequent votes are ignored.
-   * TODO: consider moving it to PendingVotes or elsewhere.
-   */
+   * If the quorum has been reached (but round hasn't yet been updated), subsequent votes are ignored. */
   private boolean hasReachedQuorum = false;
 
-  private boolean hasLeaderFailedTheRound = false;
-
-  public BFTEventReducer(
+  public BFTQuorumAssembler(
+      BFTEventProcessorAtCurrentRound forwardTo,
       BFTValidatorId self,
-      Pacemaker pacemaker,
-      VertexStoreAdapter vertexStore,
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
-      EventDispatcher<NoVote> noVoteDispatcher,
-      RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher,
-      Hasher hasher,
       Metrics metrics,
-      SafetyRules safetyRules,
-      BFTValidatorSet validatorSet,
       PendingVotes pendingVotes,
       RoundUpdate initialRoundUpdate) {
+    this.forwardTo = Objects.requireNonNull(forwardTo);
     this.self = Objects.requireNonNull(self);
-    this.pacemaker = Objects.requireNonNull(pacemaker);
-    this.vertexStore = Objects.requireNonNull(vertexStore);
     this.roundQuorumReachedEventDispatcher =
         Objects.requireNonNull(roundQuorumReachedEventDispatcher);
-    this.noVoteDispatcher = Objects.requireNonNull(noVoteDispatcher);
-    this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
-    this.hasher = Objects.requireNonNull(hasher);
     this.metrics = Objects.requireNonNull(metrics);
-    this.safetyRules = Objects.requireNonNull(safetyRules);
-    this.validatorSet = Objects.requireNonNull(validatorSet);
     this.pendingVotes = Objects.requireNonNull(pendingVotes);
     this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
   }
 
   @Override
+  public void start() {
+    forwardTo.start();
+  }
+
+  @Override
   public void processBFTUpdate(BFTInsertUpdate update) {
-    log.trace("BFTUpdate: Processing {}", update);
-
-    final Round round = update.getHeader().getRound();
-    if (round.lt(this.latestRoundUpdate.getCurrentRound())) {
-      log.trace(
-          "InsertUpdate: Ignoring insert {} for round {}, current round at {}",
-          update,
-          round,
-          this.latestRoundUpdate.getCurrentRound());
-      return;
-    }
-
-    this.latestInsertUpdate = update;
-    this.tryVote();
-
-    this.pacemaker.processBFTUpdate(update);
+    forwardTo.processBFTUpdate(update);
   }
 
   @Override
   public void processRoundUpdate(RoundUpdate roundUpdate) {
-    this.hasReachedQuorum = false;
-    this.hasLeaderFailedTheRound = false;
     this.latestRoundUpdate = roundUpdate;
-    this.pacemaker.processRoundUpdate(roundUpdate);
-    this.tryVote();
-  }
-
-  private void tryVote() {
-    BFTInsertUpdate update = this.latestInsertUpdate;
-    if (update == null) {
-      return;
-    }
-
-    if (!Objects.equals(update.getHeader().getRound(), this.latestRoundUpdate.getCurrentRound())) {
-      return;
-    }
-
-    // Check if already voted in this round
-    if (this.safetyRules.getLastVote(this.latestRoundUpdate.getCurrentRound()).isPresent()) {
-      return;
-    }
-
-    // Don't vote if the leader has already failed their round
-    if (this.hasLeaderFailedTheRound) {
-      return;
-    }
-
-    // TODO: what if insertUpdate occurs before roundUpdate
-    final BFTValidatorId nextLeader = this.latestRoundUpdate.getNextLeader();
-    final Optional<Vote> maybeVote =
-        this.safetyRules.createVote(
-            update.getInserted().getVertexWithHash(),
-            update.getHeader(),
-            update.getInserted().getTimeOfExecution(),
-            this.latestRoundUpdate.getHighQC());
-    maybeVote.ifPresentOrElse(
-        vote -> this.voteDispatcher.dispatch(nextLeader, vote),
-        () ->
-            this.noVoteDispatcher.dispatch(
-                NoVote.create(update.getInserted().getVertexWithHash())));
+    this.hasReachedQuorum = false;
+    forwardTo.processRoundUpdate(roundUpdate);
   }
 
   @Override
   public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
-    // No-op
+    forwardTo.processBFTRebuildUpdate(update);
   }
 
   @Override
   public void processVote(Vote vote) {
     log.trace("Vote: Processing {}", vote);
+    processVoteInternal(vote);
+    forwardTo.processVote(vote);
+  }
 
-    final Round round = vote.getRound();
+  private void processVoteInternal(Vote vote) {
+    final var currentRound = this.latestRoundUpdate.getCurrentRound();
 
     if (this.hasReachedQuorum) {
+      metrics
+          .bft()
+          .ignoredVotes()
+          .label(new IgnoredVote(VoteIgnoreReason.QUORUM_ALREADY_REACHED))
+          .inc();
       log.trace(
           "Vote: Ignoring vote from {} for round {}, quorum has already been reached",
           vote.getAuthor(),
-          round);
+          currentRound);
       return;
     }
 
     if (!this.self.equals(this.latestRoundUpdate.getNextLeader()) && !vote.isTimeout()) {
+      metrics.bft().ignoredVotes().label(new IgnoredVote(VoteIgnoreReason.UNEXPECTED_VOTE)).inc();
       log.trace(
-          "Vote: Ignoring vote from {} for round {}, unexpected vote", vote.getAuthor(), round);
+          "Vote: Ignoring vote from {} for round {}, unexpected vote",
+          vote.getAuthor(),
+          currentRound);
       return;
     }
 
-    switch (this.pendingVotes.insertVote(vote, this.validatorSet)) {
+    switch (this.pendingVotes.insertVote(vote)) {
       case VoteAccepted ignored -> log.trace("Vote has been processed but didn't form a quorum");
       case VoteRejected voteRejected -> log.trace(
           "Vote has been rejected because of: {}", voteRejected.getReason());
@@ -247,29 +190,26 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
   @Override
   public void processProposal(Proposal proposal) {
-    log.trace("Proposal: Processing {}", proposal);
-
-    // TODO: Move insertion and maybe check into BFTSync
-    final var proposedVertex = proposal.getVertex().withId(hasher);
-    this.vertexStore.insertVertex(proposedVertex);
-
-    metrics.bft().successfullyProcessedProposals().inc();
+    forwardTo.processProposal(proposal);
   }
 
   @Override
   public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
-    this.hasLeaderFailedTheRound = true;
-    this.pacemaker.processLocalTimeout(scheduledLocalTimeout);
+    forwardTo.processLocalTimeout(scheduledLocalTimeout);
   }
 
   @Override
-  public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
-    this.hasLeaderFailedTheRound = true;
-    this.pacemaker.processRoundLeaderFailure(roundLeaderFailure);
+  public void processProposalRejected(ProposalRejected proposalRejected) {
+    forwardTo.processProposalRejected(proposalRejected);
   }
 
   @Override
-  public void start() {
-    this.pacemaker.start();
+  public void preProcessUnsyncedVoteForCurrentOrFutureRound(Vote vote) {
+    forwardTo.preProcessUnsyncedVoteForCurrentOrFutureRound(vote);
+  }
+
+  @Override
+  public void preProcessUnsyncedProposalForCurrentOrFutureRound(Proposal proposal) {
+    forwardTo.preProcessUnsyncedProposalForCurrentOrFutureRound(proposal);
   }
 }

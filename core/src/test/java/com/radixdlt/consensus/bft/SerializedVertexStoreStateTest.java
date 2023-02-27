@@ -65,6 +65,7 @@
 package com.radixdlt.consensus.bft;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;

@@ -81,6 +81,9 @@ import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.*;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.sync.*;
+import com.radixdlt.consensus.vertexstore.ExecutedVertex;
+import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
@@ -192,9 +195,9 @@ public class EpochManagerTest {
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<EpochRoundUpdate>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<EventDispatcher<RoundLeaderFailure>>() {})
+        bind(new TypeLiteral<EventDispatcher<ProposalRejected>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<EventDispatcher<EpochRoundLeaderFailure>>() {})
+        bind(new TypeLiteral<EventDispatcher<EpochProposalRejected>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<NoVote>>() {})
             .toInstance(rmock(EventDispatcher.class));

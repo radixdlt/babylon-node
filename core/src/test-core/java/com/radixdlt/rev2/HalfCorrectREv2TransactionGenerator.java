@@ -64,9 +64,9 @@
 
 package com.radixdlt.rev2;
 
-import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 

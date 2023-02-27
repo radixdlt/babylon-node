@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.vertexstore;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
@@ -71,6 +71,10 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.VertexWithHash;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.environment.EventDispatcher;
 import java.util.List;
 import java.util.Objects;

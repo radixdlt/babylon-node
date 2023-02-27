@@ -62,12 +62,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.vertexstore;
 
-/**
- * Store which saves the Vertex Store State for recovery TODO: Remove this interface, integrate with
- * RadixEngine ((RPNV1-718)
- */
-public interface PersistentVertexStore {
-  void save(VertexStoreState vertexStoreState);
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.VertexWithHash;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
+
+/** Basic tests for {@link VertexWithHash} */
+public class VertexWithHashTest {
+
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(VertexWithHash.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
 }

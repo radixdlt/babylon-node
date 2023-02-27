@@ -62,9 +62,74 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.vertexstore;
 
-public enum RoundLeaderFailureReason {
-  PROPOSED_TIMESTAMP_UNACCEPTABLE,
-  ROUND_TIMEOUT
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.*;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.serialization.DefaultSerialization;
+import org.junit.Before;
+import org.junit.Test;
+
+public class VertexStoreStateCreationTest {
+  private VertexWithHash genesisVertex;
+  private HashCode genesisHash;
+  private Hasher hasher;
+  private static final LedgerHeader MOCKED_HEADER =
+      LedgerHeader.create(
+          0,
+          Round.genesis(),
+          new AccumulatorState(0, HashUtils.zero256()),
+          HashUtils.zero256(),
+          0,
+          0);
+
+  @Before
+  public void setup() {
+    this.hasher = new Blake2b256Hasher(DefaultSerialization.getInstance());
+    this.genesisVertex = Vertex.createInitialEpochVertex(MOCKED_HEADER).withId(hasher);
+    this.genesisHash = genesisVertex.hash();
+  }
+
+  @Test
+  public void creating_vertex_store_with_root_not_committed_should_fail() {
+    BFTHeader genesisHeader = new BFTHeader(Round.of(0), genesisHash, mock(LedgerHeader.class));
+    VoteData voteData = new VoteData(genesisHeader, genesisHeader, null);
+    QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
+    assertThatThrownBy(
+            () ->
+                VertexStoreState.create(HighQC.ofInitialEpochQc(badRootQC), genesisVertex, hasher))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  public void creating_vertex_store_with_committed_qc_not_matching_vertex_should_fail() {
+    BFTHeader genesisHeader = new BFTHeader(Round.of(0), genesisHash, mock(LedgerHeader.class));
+    BFTHeader otherHeader =
+        new BFTHeader(Round.of(0), HashUtils.random256(), mock(LedgerHeader.class));
+    VoteData voteData = new VoteData(genesisHeader, genesisHeader, otherHeader);
+    QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
+    assertThatThrownBy(
+            () ->
+                VertexStoreState.create(HighQC.ofInitialEpochQc(badRootQC), genesisVertex, hasher))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  public void creating_vertex_store_with_qc_not_matching_vertex_should_fail() {
+    BFTHeader genesisHeader =
+        new BFTHeader(Round.of(0), HashUtils.random256(), mock(LedgerHeader.class));
+    VoteData voteData = new VoteData(genesisHeader, genesisHeader, genesisHeader);
+    QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
+    assertThatThrownBy(
+            () ->
+                VertexStoreState.create(HighQC.ofInitialEpochQc(badRootQC), genesisVertex, hasher))
+        .isInstanceOf(IllegalStateException.class);
+  }
 }

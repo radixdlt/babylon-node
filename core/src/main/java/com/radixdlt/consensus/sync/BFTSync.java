@@ -75,6 +75,10 @@ import com.radixdlt.consensus.bft.RoundVotingResult.FormedQC;
 import com.radixdlt.consensus.bft.RoundVotingResult.FormedTC;
 import com.radixdlt.consensus.liveness.PacemakerReducer;
 import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.vertexstore.VertexChain;
+import com.radixdlt.consensus.vertexstore.VertexStore;
+import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.*;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -295,13 +299,13 @@ public final class BFTSync implements BFTSyncer {
     if (highestTc.stream().anyMatch(tc -> tc.getRound().gt(highestQc.getRound()))) {
       return CertificateType.TC;
     } else {
-      final var isTimeoutVertex =
+      final var isFallbackVertex =
           vertexStore
               .getExecutedVertex(highestQc.getProposedHeader().getVertexId())
-              .map(v -> v.vertex().isTimeout())
+              .map(v -> v.vertex().isFallback())
               .orElse(false);
-      return isTimeoutVertex
-          ? CertificateType.QC_ON_TIMEOUT_VERTEX
+      return isFallbackVertex
+          ? CertificateType.QC_ON_FALLBACK_VERTEX
           : CertificateType.QC_ON_REGULAR_VERTEX;
     }
   }

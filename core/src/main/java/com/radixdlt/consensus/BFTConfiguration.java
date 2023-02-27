@@ -65,8 +65,8 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import java.util.Objects;
 
 /** Configuration for a bft instance which should be shared by all validators in the bft. */

@@ -98,11 +98,15 @@ public final class PendingVotes {
   private final Map<BFTValidatorId, PreviousVote> previousVotes = Maps.newHashMap();
   private final Hasher hasher;
   private final EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher;
+  private final BFTValidatorSet validatorSet;
 
   public PendingVotes(
-      Hasher hasher, EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher) {
+      Hasher hasher,
+      EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
+      BFTValidatorSet validatorSet) {
     this.hasher = Objects.requireNonNull(hasher);
     this.doubleVoteEventDispatcher = Objects.requireNonNull(doubleVoteEventDispatcher);
+    this.validatorSet = Objects.requireNonNull(validatorSet);
   }
 
   /**
@@ -113,7 +117,7 @@ public final class PendingVotes {
    * @param vote The vote to be inserted
    * @return The result of vote processing
    */
-  public VoteProcessingResult insertVote(Vote vote, BFTValidatorSet validatorSet) {
+  public VoteProcessingResult insertVote(Vote vote) {
     final BFTValidatorId node = vote.getAuthor();
     final VoteData voteData = vote.getVoteData();
     final HashCode voteDataHash = this.hasher.hashDsonEncoded(voteData);
@@ -126,13 +130,13 @@ public final class PendingVotes {
       return VoteProcessingResult.rejected(VoteRejectedReason.DUPLICATE_VOTE);
     }
 
-    return processVoteForQC(vote, validatorSet)
+    return processVoteForQC(vote)
         .<VoteProcessingResult>map(VoteProcessingResult::qcQuorum)
-        .or(() -> processVoteForTC(vote, validatorSet).map(VoteProcessingResult::tcQuorum))
+        .or(() -> processVoteForTC(vote).map(VoteProcessingResult::tcQuorum))
         .orElseGet(VoteProcessingResult::accepted);
   }
 
-  private Optional<QuorumCertificate> processVoteForQC(Vote vote, BFTValidatorSet validatorSet) {
+  private Optional<QuorumCertificate> processVoteForQC(Vote vote) {
     final VoteData voteData = vote.getVoteData();
     final HashCode voteDataHash = this.hasher.hashDsonEncoded(voteData);
     final BFTValidatorId node = vote.getAuthor();
@@ -150,7 +154,7 @@ public final class PendingVotes {
     }
   }
 
-  private Optional<TimeoutCertificate> processVoteForTC(Vote vote, BFTValidatorSet validatorSet) {
+  private Optional<TimeoutCertificate> processVoteForTC(Vote vote) {
     if (!vote.isTimeout()) {
       return Optional.empty(); // TC can't be formed if vote is not timed out
     }

@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.vertexstore;
 
 /** An exception indicating a failure in inserting a vertex into a VertexStore */
 public class VertexInsertionException extends Exception {
