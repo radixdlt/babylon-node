@@ -88,7 +88,7 @@ import org.junit.rules.TemporaryFolder;
 public class RadixNodeModuleTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private static final String MOCK_GENESIS_TXN =
+  private final String MOCK_GENESIS_TXN =
       ECKeyPair.fromSeed(new byte[] {0x01}).getPublicKey().toHex();
 
   @NetworkId private int networkId;

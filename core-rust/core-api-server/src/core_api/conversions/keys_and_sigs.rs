@@ -1,7 +1,8 @@
 use radix_engine::types::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
-    PublicKey, Signature, SignatureWithPublicKey,
+    PublicKey,
 };
+use transaction::model::{Signature, SignatureWithPublicKey};
 
 use crate::core_api::*;
 

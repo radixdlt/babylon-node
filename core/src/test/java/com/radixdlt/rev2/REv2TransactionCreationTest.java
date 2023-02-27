@@ -160,7 +160,7 @@ public class REv2TransactionCreationTest {
   }
 
   public static TransactionInfo createTransaction(byte[] intentBytes, List<ECKeyPair> signatories) {
-    final var intentHash = HashUtils.sha256Twice(intentBytes);
+    final var intentHash = HashUtils.blake2b256(intentBytes);
     final var transaction =
         REv2TestTransactions.constructRawTransaction(intentBytes, NOTARY, signatories);
 

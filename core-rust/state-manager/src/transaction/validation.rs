@@ -1,6 +1,6 @@
 use crate::transaction::ledger_transaction::LedgerTransaction;
 use radix_engine::types::scrypto_decode;
-use radix_engine_interface::api::kernel_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::data::scrypto_encode;
 use transaction::errors::TransactionValidationError;
 use transaction::model::{Executable, NotarizedTransaction};

@@ -28,6 +28,12 @@ pub enum SubstateType {
     ComponentRoyaltyAccumulator,
     #[serde(rename = "PackageInfo")]
     PackageInfo,
+    #[serde(rename = "PackageTypeInfo")]
+    PackageTypeInfo,
+    #[serde(rename = "WasmCode")]
+    WasmCode,
+    #[serde(rename = "NativeCode")]
+    NativeCode,
     #[serde(rename = "PackageRoyaltyConfig")]
     PackageRoyaltyConfig,
     #[serde(rename = "PackageRoyaltyAccumulator")]
@@ -66,6 +72,9 @@ impl ToString for SubstateType {
             Self::ComponentRoyaltyConfig => String::from("ComponentRoyaltyConfig"),
             Self::ComponentRoyaltyAccumulator => String::from("ComponentRoyaltyAccumulator"),
             Self::PackageInfo => String::from("PackageInfo"),
+            Self::PackageTypeInfo => String::from("PackageTypeInfo"),
+            Self::WasmCode => String::from("WasmCode"),
+            Self::NativeCode => String::from("NativeCode"),
             Self::PackageRoyaltyConfig => String::from("PackageRoyaltyConfig"),
             Self::PackageRoyaltyAccumulator => String::from("PackageRoyaltyAccumulator"),
             Self::ResourceManager => String::from("ResourceManager"),

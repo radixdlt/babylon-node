@@ -68,8 +68,8 @@ import static com.radixdlt.rev2.REv2TestTransactions.constructValidRawTransactio
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.radixdlt.consensus.Blake2b256Hasher;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.lang.Option;
@@ -122,7 +122,7 @@ public final class RustMempoolTest {
     var stateComputer = new RustStateComputer(metrics, stateManager);
     var accumulator =
         new SimpleLedgerAccumulatorAndVerifier(
-            new Sha256Hasher(DefaultSerialization.getInstance()));
+            new Blake2b256Hasher(DefaultSerialization.getInstance()));
     var transactionsWithProof = buildGenesis(accumulator);
     var transactions = transactionsWithProof.getTransactions();
     var proof = transactionsWithProof.getProof();

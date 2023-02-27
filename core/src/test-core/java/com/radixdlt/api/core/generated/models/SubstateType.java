@@ -44,6 +44,12 @@ public enum SubstateType {
   
   PACKAGEINFO("PackageInfo"),
   
+  PACKAGETYPEINFO("PackageTypeInfo"),
+  
+  WASMCODE("WasmCode"),
+  
+  NATIVECODE("NativeCode"),
+  
   PACKAGEROYALTYCONFIG("PackageRoyaltyConfig"),
   
   PACKAGEROYALTYACCUMULATOR("PackageRoyaltyAccumulator"),

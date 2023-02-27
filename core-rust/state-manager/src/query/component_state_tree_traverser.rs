@@ -64,7 +64,7 @@
 
 use radix_engine::blueprints::resource::VaultSubstate;
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
-use radix_engine::system::substates::PersistedSubstate;
+use radix_engine::system::node_substates::PersistedSubstate;
 
 use radix_engine::types::{
     AccessControllerOffset, ComponentOffset, EpochManagerOffset, GlobalOffset, KeyValueStoreOffset,
@@ -157,7 +157,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
             RENodeId::Component(..) => {
                 self.recurse_via_self_substate(
                     node_id,
-                    SubstateOffset::Component(ComponentOffset::State),
+                    SubstateOffset::Component(ComponentOffset::State0),
                     depth,
                 )?;
             }
@@ -198,7 +198,6 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
             RENodeId::Bucket(_)
             | RENodeId::Proof(_)
             | RENodeId::AuthZoneStack
-            | RENodeId::FeeReserve(_)
             | RENodeId::Worktop
             | RENodeId::Logger
             | RENodeId::TransactionRuntime => {
