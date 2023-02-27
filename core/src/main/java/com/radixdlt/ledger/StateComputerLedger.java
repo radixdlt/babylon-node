@@ -242,8 +242,11 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       // "previous" list
       final var committedAccumulatorHash =
           this.currentLedgerHeader.getAccumulatorState().getAccumulatorHash();
-      var committedAccumulatorHasMatchedStartOfAVertex =
-          committedAccumulatorHash.equals(parentAccumulatorState.getAccumulatorHash());
+      // Whether any of the `previous` vertices has matched
+      // against the committed accumulator hash.
+      // `previous` vertices following the first matched vertex (including itself)
+      // are included in extension (`verticesInExtension`)
+      var committedAccumulatorHasMatchedStartOfAPreviousVertex = false;
       var verticesInExtension = new ArrayList<ExecutedVertex>();
       for (var previousVertex : previous) {
         var previousVertexParentAccumulatorHash =
@@ -254,15 +257,21 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
                 .getAccumulatorState()
                 .getAccumulatorHash();
         if (committedAccumulatorHash.equals(previousVertexParentAccumulatorHash)) {
-          committedAccumulatorHasMatchedStartOfAVertex = true;
+          committedAccumulatorHasMatchedStartOfAPreviousVertex = true;
         }
-        if (committedAccumulatorHasMatchedStartOfAVertex) {
+        if (committedAccumulatorHasMatchedStartOfAPreviousVertex) {
           verticesInExtension.add(previousVertex);
         }
       }
 
-      if (!committedAccumulatorHasMatchedStartOfAVertex) {
-        // This could trigger if the "previous" vertices don't line up with the committed state.
+      final var vertexMatchesAccumulator =
+          committedAccumulatorHash.equals(parentAccumulatorState.getAccumulatorHash());
+
+      // Check that ledger's accumulator state has been matched
+      // against any previous vertex's parent (extension not empty)
+      // or the parent of the "vertex" itself (extension empty).
+      if (!committedAccumulatorHasMatchedStartOfAPreviousVertex && !vertexMatchesAccumulator) {
+        // This could trigger if the vertices don't line up with the committed state.
         // In other words, they don't provide a valid partial path from the committed state to the
         // start of the proposal.
         return Optional.empty();
