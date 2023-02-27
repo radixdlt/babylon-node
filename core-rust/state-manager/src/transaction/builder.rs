@@ -63,7 +63,6 @@
  */
 
 use radix_engine::ledger::create_genesis;
-use radix_engine::types::{Signature, SignatureWithPublicKey};
 use radix_engine_interface::api::component::ComponentAddress;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::data::scrypto_encode;
@@ -74,8 +73,8 @@ use std::collections::BTreeMap;
 use crate::transaction::LedgerTransaction;
 use transaction::manifest::{compile, CompileError};
 use transaction::model::{
-    NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
-    TransactionManifest,
+    NotarizedTransaction, Signature, SignatureWithPublicKey, SignedTransactionIntent,
+    TransactionHeader, TransactionIntent, TransactionManifest,
 };
 
 pub fn create_genesis_ledger_transaction_bytes(

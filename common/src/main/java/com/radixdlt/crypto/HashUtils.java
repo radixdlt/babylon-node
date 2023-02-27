@@ -91,6 +91,8 @@ public final class HashUtils {
 
   private static final SHAHashHandler shaHashHandler = new SHAHashHandler();
 
+  private static final Blake2BHashHandler blake2BHashHandler = new Blake2BHashHandler();
+
   private static final HashCode ZERO_256 = zero(32);
 
   /** Returns a hash consisting of 32 zero bytes. */
@@ -107,7 +109,7 @@ public final class HashUtils {
   public static HashCode random256() {
     byte[] randomBytes = new byte[32];
     secureRandom.nextBytes(randomBytes);
-    return HashCode.fromBytes(shaHashHandler.sha256Twice(randomBytes, 0, randomBytes.length));
+    return HashCode.fromBytes(blake2BHashHandler.blake2b256(randomBytes, 0, randomBytes.length));
   }
 
   /**
@@ -130,6 +132,15 @@ public final class HashUtils {
    */
   public static HashCode sha256Twice(byte[] dataToBeHashed, int offset, int length) {
     return HashCode.fromBytes(shaHashHandler.sha256Twice(dataToBeHashed, offset, length));
+  }
+
+  public static HashCode blake2b256(byte[] dataToBeHashed) {
+    return HashCode.fromBytes(
+        blake2BHashHandler.blake2b256(dataToBeHashed, 0, dataToBeHashed.length));
+  }
+
+  public static HashCode blake2b256(byte[] dataToBeHashed, int offset, int length) {
+    return HashCode.fromBytes(blake2BHashHandler.blake2b256(dataToBeHashed, offset, length));
   }
 
   /**
@@ -169,7 +180,7 @@ public final class HashUtils {
    * @return calculated hash
    */
   public static HashCode transactionIdHash(byte[] payload) {
-    return sha256Twice(payload);
+    return blake2b256(payload);
   }
 
   private HashUtils() {

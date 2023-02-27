@@ -94,6 +94,11 @@ pub enum Substate {
         #[serde(rename = "metadata")]
         metadata: Vec<crate::core_api::generated::models::MetadataSubstateAllOfMetadata>,
     },
+    #[serde(rename="NativeCode")]
+    NativeCodeSubstate {
+        #[serde(rename = "native_package_code_id")]
+        native_package_code_id: i32,
+    },
     #[serde(rename="NonFungibleStoreEntry")]
     NonFungibleStoreEntrySubstate {
         #[serde(rename = "non_fungible_id")]
@@ -105,12 +110,13 @@ pub enum Substate {
     },
     #[serde(rename="PackageInfo")]
     PackageInfoSubstate {
-        /// The hex-encoded package code
-        #[serde(rename = "code_hex")]
-        code_hex: String,
         /// A map from the blueprint name to BlueprintData
         #[serde(rename = "blueprints")]
         blueprints: ::std::collections::HashMap<String, crate::core_api::generated::models::BlueprintData>,
+        #[serde(rename = "dependent_resources")]
+        dependent_resources: Vec<String>,
+        #[serde(rename = "dependent_components")]
+        dependent_components: Vec<String>,
     },
     #[serde(rename="PackageRoyaltyAccumulator")]
     PackageRoyaltyAccumulatorSubstate {
@@ -121,6 +127,9 @@ pub enum Substate {
     PackageRoyaltyConfigSubstate {
         #[serde(rename = "blueprint_royalties")]
         blueprint_royalties: Vec<crate::core_api::generated::models::BlueprintRoyaltyConfig>,
+    },
+    #[serde(rename="PackageTypeInfo")]
+    PackageTypeInfoSubstate {
     },
     #[serde(rename="ResourceManager")]
     ResourceManagerSubstate {
@@ -171,6 +180,12 @@ pub enum Substate {
     VaultSubstate {
         #[serde(rename = "resource_amount")]
         resource_amount: Box<crate::core_api::generated::models::ResourceAmount>,
+    },
+    #[serde(rename="WasmCode")]
+    WasmCodeSubstate {
+        /// The hex-encoded package code
+        #[serde(rename = "code_hex")]
+        code_hex: String,
     },
 }
 

@@ -75,7 +75,7 @@ use std::path::PathBuf;
 use crate::types::UserPayloadHash;
 
 use radix_engine::ledger::{OutputValue, QueryableSubstateStore, ReadableSubstateStore};
-use radix_engine::system::substates::PersistedSubstate;
+use radix_engine::system::node_substates::PersistedSubstate;
 
 use crate::store::traits::RecoverableVertexStore;
 use crate::transaction::LedgerTransaction;

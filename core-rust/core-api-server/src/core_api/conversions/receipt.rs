@@ -1,7 +1,7 @@
 use super::addressing::*;
 use crate::core_api::*;
 use radix_engine::blueprints::epoch_manager::Validator;
-use radix_engine::system::kernel_modules::fee::{FeeSummary, RoyaltyReceiver};
+use radix_engine::system::kernel_modules::costing::{FeeSummary, RoyaltyReceiver};
 use radix_engine::{
     ledger::OutputValue,
     types::{hash, scrypto_encode, Decimal, GlobalAddress, RENodeId, SubstateId},

@@ -164,7 +164,7 @@ public final class REv2TestTransactions {
     return String.format(
         """
                         CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
-                        CALL_METHOD ComponentAddress("%s") "withdraw_by_amount" Decimal("900") ResourceAddress("%s");
+                        CALL_METHOD ComponentAddress("%s") "withdraw" ResourceAddress("%s") Decimal("9900");
                         CALL_METHOD ComponentAddress("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
                         """,
         fromAddress, fromAddress, xrdAddress, accountAddress);
@@ -250,7 +250,7 @@ public final class REv2TestTransactions {
     return String.format(
         """
                                 CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
-                                CALL_METHOD ComponentAddress("%s") "withdraw_by_amount" ResourceAddress("%s") Decimal("1");
+                                CALL_METHOD ComponentAddress("%s") "withdraw" ResourceAddress("%s") Decimal("1");
                                 TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("lp_token");
                                 CALL_METHOD ComponentAddress("%s") "unstake" Bucket("lp_token");
                                 CALL_METHOD ComponentAddress("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
@@ -473,7 +473,7 @@ public final class REv2TestTransactions {
       byte[] intentBytes, ECKeyPair notary, List<ECKeyPair> signatories) {
 
     public HashCode hashedIntent() {
-      return HashUtils.sha256Twice(this.intentBytes);
+      return HashUtils.blake2b256(this.intentBytes);
     }
 
     public RawNotarizedTransaction constructRawTransaction() {
@@ -489,7 +489,7 @@ public final class REv2TestTransactions {
           TransactionBuilder.createSignedIntentBytes(this.intentBytes(), intentSignatures);
 
       // Notarize
-      var hashedSignedIntent = HashUtils.sha256Twice(signedIntentBytes).asBytes();
+      var hashedSignedIntent = HashUtils.blake2b256(signedIntentBytes).asBytes();
       var notarySignature = this.notary().sign(hashedSignedIntent).toSignature();
       var notarizedBytes =
           TransactionBuilder.createNotarizedBytes(signedIntentBytes, notarySignature);

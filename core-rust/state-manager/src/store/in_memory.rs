@@ -71,7 +71,7 @@ use crate::{
 };
 
 use radix_engine::ledger::OutputValue;
-use radix_engine::system::substates::PersistedSubstate;
+use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine_interface::api::types::{KeyValueStoreId, SubstateId};
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, ReadableTreeStore, SerializedInMemoryTreeStore, TreeNode, WriteableTreeStore,

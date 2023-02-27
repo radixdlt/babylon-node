@@ -540,16 +540,16 @@ impl PendingTransactionResultCache {
 
 #[cfg(test)]
 mod tests {
-    use radix_engine::types::sha256_twice;
+    use radix_engine_interface::crypto::blake2b_256_hash;
 
     use super::*;
 
     fn user_payload_hash(nonce: u8) -> UserPayloadHash {
-        UserPayloadHash::from_raw_bytes(sha256_twice([0, nonce]).0)
+        UserPayloadHash::from_raw_bytes(blake2b_256_hash([0, nonce]).0)
     }
 
     fn intent_hash(nonce: u8) -> IntentHash {
-        IntentHash::from_raw_bytes(sha256_twice([1, nonce]).0)
+        IntentHash::from_raw_bytes(blake2b_256_hash([1, nonce]).0)
     }
 
     #[test]

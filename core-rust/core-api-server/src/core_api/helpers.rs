@@ -1,5 +1,5 @@
 use radix_engine::ledger::ReadableSubstateStore;
-use radix_engine::system::substates::PersistedSubstate;
+use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{GlobalAddress, RENodeId, SubstateId, SubstateOffset};
 use radix_engine_interface::api::types::NodeModuleId;
 use state_manager::{jni::state_manager::ActualStateManager, query::StateManagerSubstateQueries};
