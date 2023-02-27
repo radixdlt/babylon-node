@@ -327,10 +327,11 @@ impl CommitStore for RocksDBStore {
             );
         }
         for stale_node_keys in state_hash_tree_update.stale_node_keys_at_state_version {
+            let encoded_node_keys = stale_node_keys.1.iter().map(encode_key).collect::<Vec<_>>();
             batch.put_cf(
                 self.cf_handle(&StaleStateHashTreeNodeKeysByStateVersion),
                 stale_node_keys.0.to_be_bytes(),
-                encode_vec(&stale_node_keys.1, encode_key),
+                scrypto_encode(&encoded_node_keys).unwrap(),
             )
         }
 
@@ -714,20 +715,4 @@ impl RecoverableVertexStore for RocksDBStore {
     fn get_vertex_store(&self) -> Option<Vec<u8>> {
         self.db.get_cf(self.cf_handle(&VertexStore), []).unwrap()
     }
-}
-
-/// Encodes a vector of arbitrary items, given a known encoder of a single item.
-/// This is achieved in a straightforward way: by storing an item count and each item's length
-/// before its encoded bytes.
-fn encode_vec<I>(vec: &Vec<I>, item_encoder: fn(&I) -> Vec<u8>) -> Vec<u8> {
-    let mut encoded_vec = Vec::new();
-    let item_count = vec.len() as u64;
-    encoded_vec.extend(item_count.to_be_bytes());
-    for item in vec {
-        let encoded_item = item_encoder(item);
-        let item_length = encoded_item.len() as u64;
-        encoded_vec.extend(item_length.to_be_bytes());
-        encoded_vec.extend(encoded_item);
-    }
-    encoded_vec
 }
