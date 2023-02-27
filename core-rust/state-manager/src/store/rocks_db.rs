@@ -106,13 +106,14 @@ enum RocksDBColumnFamily {
     Substates,
     /// Vertex store
     VertexStore,
-    /// Hash tree nodes
-    HashTreeNodes,
+    /// State hash tree: all nodes + keys of nodes that became stale by now
+    StateHashTreeNodes,
+    StaleStateHashTreeNodeKeysByStateVersion,
 }
 
 use RocksDBColumnFamily::*;
 
-const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 11] = [
+const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 12] = [
     TxnByStateVersion,
     TxnReceiptByStateVersion,
     TxnAccumulatorHashByStateVersion,
@@ -123,7 +124,8 @@ const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 11] = [
     LedgerProofByEpoch,
     Substates,
     VertexStore,
-    HashTreeNodes,
+    StateHashTreeNodes,
+    StaleStateHashTreeNodeKeysByStateVersion,
 ];
 
 impl fmt::Display for RocksDBColumnFamily {
@@ -139,7 +141,8 @@ impl fmt::Display for RocksDBColumnFamily {
             LedgerProofByEpoch => "ledger_proof_by_epoch",
             Substates => "substates",
             VertexStore => "vertex_store",
-            HashTreeNodes => "hash_tree_nodes",
+            StateHashTreeNodes => "state_hash_tree_nodes",
+            StaleStateHashTreeNodeKeysByStateVersion => "stale_state_hash_tree_node_keys",
         };
         write!(f, "{}", str)
     }
@@ -315,12 +318,21 @@ impl CommitStore for RocksDBStore {
             batch.put_cf(self.cf_handle(&VertexStore), [], vertex_store);
         }
 
-        for (key, node) in commit_bundle.hash_tree_nodes {
+        let state_hash_tree_update = commit_bundle.state_hash_tree_update;
+        for (key, node) in state_hash_tree_update.new_nodes {
             batch.put_cf(
-                self.cf_handle(&HashTreeNodes),
+                self.cf_handle(&StateHashTreeNodes),
                 encode_key(&key),
                 scrypto_encode(&node).unwrap(),
             );
+        }
+        for stale_node_keys in state_hash_tree_update.stale_node_keys_at_state_version {
+            let encoded_node_keys = stale_node_keys.1.iter().map(encode_key).collect::<Vec<_>>();
+            batch.put_cf(
+                self.cf_handle(&StaleStateHashTreeNodeKeysByStateVersion),
+                stale_node_keys.0.to_be_bytes(),
+                scrypto_encode(&encoded_node_keys).unwrap(),
+            )
         }
 
         self.db.write(batch).expect("Commit failed");
@@ -645,7 +657,7 @@ impl ReadableSubstateStore for RocksDBStore {
 impl ReadableTreeStore for RocksDBStore {
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
         self.db
-            .get_pinned_cf(self.cf_handle(&HashTreeNodes), encode_key(key))
+            .get_pinned_cf(self.cf_handle(&StateHashTreeNodes), encode_key(key))
             .unwrap()
             .map(|pinnable_slice| scrypto_decode(pinnable_slice.as_ref()).unwrap())
     }

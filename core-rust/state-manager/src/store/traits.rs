@@ -138,9 +138,10 @@ pub mod proofs {
 
 pub mod commit {
     use super::*;
+    use crate::staging::HashTreeDiff;
     use radix_engine::ledger::OutputValue;
     use radix_engine_interface::api::types::SubstateId;
-    use radix_engine_stores::hash_tree::tree_store::{NodeKey, TreeNode};
+    use radix_engine_stores::hash_tree::tree_store::{NodeKey, TreeNode, Version};
     use std::collections::BTreeMap;
 
     pub struct CommitBundle {
@@ -150,7 +151,27 @@ pub mod commit {
         pub epoch_boundary: Option<u64>,
         pub substates: BTreeMap<SubstateId, OutputValue>,
         pub vertex_store: Option<Vec<u8>>,
-        pub hash_tree_nodes: Vec<(NodeKey, TreeNode)>,
+        pub state_hash_tree_update: HashTreeUpdate,
+    }
+
+    pub struct HashTreeUpdate {
+        pub new_nodes: Vec<(NodeKey, TreeNode)>,
+        pub stale_node_keys_at_state_version: Vec<(Version, Vec<NodeKey>)>,
+    }
+
+    impl HashTreeUpdate {
+        pub fn new() -> Self {
+            Self {
+                new_nodes: Vec::new(),
+                stale_node_keys_at_state_version: Vec::new(),
+            }
+        }
+
+        pub fn add(&mut self, at_state_version: Version, diff: HashTreeDiff) {
+            self.new_nodes.extend(diff.new_hash_tree_nodes);
+            self.stale_node_keys_at_state_version
+                .push((at_state_version, diff.stale_hash_tree_node_keys));
+        }
     }
 
     pub trait CommitStore {
