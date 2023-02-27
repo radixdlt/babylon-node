@@ -49,7 +49,7 @@ jobs:
             type=sha
           flavor: |
             latest=false
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
       - name: Set up JDK 17
