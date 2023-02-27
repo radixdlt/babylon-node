@@ -211,7 +211,7 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
           .label(new Metrics.RejectedConsensusEvent(Type.PROPOSAL, Invalidity.ATTACHED_QC))
           .inc();
       log.warn(
-          "Ignoring a proposal from {} for round {} because it doesn't contains a highQc for the"
+          "Ignoring a proposal from {} for round {} because it doesn't contain a highQc for the"
               + " previous round (it contains a highQc for round {})",
           proposal.getAuthor(),
           proposal.getRound(),
