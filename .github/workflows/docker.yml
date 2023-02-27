@@ -69,9 +69,8 @@ jobs:
   build_push_container:
     needs: 
       - build_deb
-    uses: radixdlt/babylon-node/.github/workflows/docker-build.yml@DO-1214/docker-build-action
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
-      environment: "release"
       # image information
       image_registry: "eu.gcr.io"
       image_organization: "dev-container-repo"
@@ -86,11 +85,12 @@ jobs:
       dockerfile: "./docker/Dockerfile.core"
       platforms: "linux/amd64"
       # optimizations
-      cache_repo: "radixdlt/build-cache"
-      cache_tag_suffix: "babylon-node-pr"
+      cache_repo: "europe-west2-docker.pkg.dev/dev-container-repo/eu-cache-repo/babylon-node"
+      cache_tag_suffix: "pr"
       role_to_assume: "arn:aws:iam::308190735829:role/gh-dockerhub-releaser"
-      enable_dockerhub: "true"
+      enable_dockerhub: "false"
       enable_trivy: "false"
+      enable_pr_comment: "false"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
