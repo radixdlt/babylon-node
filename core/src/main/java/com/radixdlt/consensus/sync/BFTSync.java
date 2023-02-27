@@ -299,13 +299,13 @@ public final class BFTSync implements BFTSyncer {
     if (highestTc.stream().anyMatch(tc -> tc.getRound().gt(highestQc.getRound()))) {
       return CertificateType.TC;
     } else {
-      final var isTimeoutVertex =
+      final var isFallbackVertex =
           vertexStore
               .getExecutedVertex(highestQc.getProposedHeader().getVertexId())
-              .map(v -> v.vertex().isTimeout())
+              .map(v -> v.vertex().isFallback())
               .orElse(false);
-      return isTimeoutVertex
-          ? CertificateType.QC_ON_TIMEOUT_VERTEX
+      return isFallbackVertex
+          ? CertificateType.QC_ON_FALLBACK_VERTEX
           : CertificateType.QC_ON_REGULAR_VERTEX;
     }
   }

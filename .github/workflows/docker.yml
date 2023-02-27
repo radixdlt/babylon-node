@@ -72,11 +72,11 @@ jobs:
         uses: 'google-github-actions/setup-gcloud@d51b5346f85640ec2aa2fa057354d2b82c2fcbce'
       - name: 'Register gcloud as Docker credential helper'
         run: |
-            gcloud auth configure-docker -q
+          gcloud auth configure-docker -q
       - name: Create deb package
         run: |
-            sudo apt-get update && sudo apt-get install make
-            cd core && make build-core
+          sudo apt-get update && sudo apt-get install make
+          cd core && make build-core
       - name: Upload generated debian package
         uses: actions/upload-artifact@v3.1.0
         with:
@@ -110,7 +110,7 @@ jobs:
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
       - name: 'Register gcloud as Docker credential helper'
         run: |
-            gcloud auth configure-docker -q
+          gcloud auth configure-docker -q
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
@@ -145,8 +145,6 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - name: Dump context
-        uses: crazy-max/ghaction-dump-context@516dbb0c760f39b4cdd750ae095f1688780f68f4
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -175,9 +173,18 @@ jobs:
           password: ${{env.DOCKERHUB_TOKEN}}
       - name: Docker meta
         id: meta
-        run: |
-          echo "RELEASE_TAG=radixdlt/babylon-node:${{ github.event.release.tag_name }}"
-          echo "RELEASE_TAG=radixdlt/babylon-node:${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            radixdlt/babylon-node
+          tags: |
+            type=ref,event=release
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
+          flavor: |
+            latest=false
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
@@ -189,8 +196,8 @@ jobs:
           context: docker
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ${{ env.RELEASE_TAG }}
-
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
 # TEMPORARILY REMOVE EPHEMERAL TESTS
 # => Until we can change them to only run the "node" tests and not the transaction tests

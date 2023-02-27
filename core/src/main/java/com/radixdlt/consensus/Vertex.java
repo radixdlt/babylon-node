@@ -245,6 +245,10 @@ public final class Vertex {
     return this.proposerTimestamp;
   }
 
+  public boolean isFallback() {
+    return isFallback;
+  }
+
   public BFTHeader getParentHeader() {
     return getQCToParent().getProposedHeader();
   }

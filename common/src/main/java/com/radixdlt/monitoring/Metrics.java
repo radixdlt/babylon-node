@@ -311,7 +311,7 @@ public record Metrics(
 
     public enum CertificateType {
       QC_ON_REGULAR_VERTEX,
-      QC_ON_TIMEOUT_VERTEX,
+      QC_ON_FALLBACK_VERTEX,
       TC
     }
   }
