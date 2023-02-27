@@ -65,6 +65,7 @@
 package com.radixdlt.ledger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -314,5 +315,36 @@ public class StateComputerLedgerTest {
     // Assert
     verify(stateComputer, never()).commit(any(), any());
     verify(mempool, never()).handleTransactionsCommitted(any());
+  }
+
+  @Test
+  public void
+      when_none_of_previous_vertices_match_accumulator__then_should_only_process_main_vertex() {
+    /* Prepare a mocked "previous" vertex, whose parent accumulator hash doesn't match
+    ledger's accumulator hash. This previous vertex should then be considered "already committed"
+    and removed from "verticesInExtension". */
+    final var prevAccumulator = new AccumulatorState(2, HashUtils.random256());
+    final var prevLedgerHeader = mock(LedgerHeader.class);
+    when(prevLedgerHeader.getAccumulatorState()).thenReturn(prevAccumulator);
+    final var prevBftHeader = mock(BFTHeader.class);
+    when(prevBftHeader.getLedgerHeader()).thenReturn(prevLedgerHeader);
+    final var previousVertex = mock(Vertex.class);
+    when(previousVertex.getParentHeader()).thenReturn(prevBftHeader);
+    final var previousExecutedVertex = mock(ExecutedVertex.class);
+    when(previousExecutedVertex.vertex()).thenReturn(previousVertex);
+    final var previous = new LinkedList<>(List.of(previousExecutedVertex));
+
+    final var proposedVertex =
+        Vertex.create(
+                initialEpochQC, Round.of(1), List.of(nextTransaction), BFTValidatorId.random(), 0)
+            .withId(hasher);
+
+    // Explicitly expecting an empty "previous" list in the stateComputer call
+    when(stateComputer.prepare(any(), eq(List.of()), any(), any()))
+        .thenReturn(
+            new StateComputerResult(
+                ImmutableList.of(successfulNextTransaction), Map.of(), HashUtils.zero256()));
+
+    assertTrue(sut.prepare(previous, proposedVertex).isPresent());
   }
 }
