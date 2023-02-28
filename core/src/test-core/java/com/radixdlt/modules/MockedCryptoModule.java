@@ -69,8 +69,8 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.radixdlt.consensus.Blake2b256Hasher;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.monitoring.Metrics;
@@ -111,7 +111,7 @@ public class MockedCryptoModule extends AbstractModule {
     AtomicBoolean running = new AtomicBoolean(false);
     Hasher hasher =
         new Hasher() {
-          private final Sha256Hasher hasher = new Sha256Hasher(serialization);
+          private final Blake2b256Hasher hasher = new Blake2b256Hasher(serialization);
 
           @Override
           public int hashSizeInBytes() {
