@@ -35,13 +35,13 @@ jobs:
       - name: Install libclang-dev
         run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
       - name: Cache SonarCloud packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
       - name: Cache Gradle packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
@@ -80,7 +80,7 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
       - name: Cache Gradle packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
@@ -106,7 +106,7 @@ jobs:
       - name: Install libclang-dev
         run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
       - name: Cache Gradle packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
@@ -137,7 +137,7 @@ jobs:
       - name: Install libclang-dev
         run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
       - name: Cache Gradle packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
