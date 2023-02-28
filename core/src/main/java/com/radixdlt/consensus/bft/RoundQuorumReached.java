@@ -69,7 +69,7 @@ import com.radixdlt.consensus.Vote;
 /**
  * A local event message indicating that a round quorum (either QC or TC) has been reached.
  *
- * @param votingResult round voting result
+ * @param roundQuorum the quorum that has been reached
  * @param lastVote the last received vote event that led to forming a quorum
  */
-public record RoundQuorumReached(RoundVotingResult votingResult, Vote lastVote) {}
+public record RoundQuorumReached(RoundQuorum roundQuorum, Vote lastVote) {}

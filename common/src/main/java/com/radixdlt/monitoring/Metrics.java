@@ -173,6 +173,7 @@ public record Metrics(
       Counter timeoutQuorums,
       Counter prolongedRoundTimeouts,
       Counter obsoleteEventsIgnored,
+      Counter postponedRoundQuorums,
       LabelledCounter<RoundChange> roundChanges,
       Timer consensusEventsQueueWait,
       LabelledCounter<RejectedConsensusEvent> rejectedConsensusEvents,
@@ -184,12 +185,12 @@ public record Metrics(
       Summary leaderMaxProposalPayloadSize,
       Summary leaderNumTransactionsIncludedInProposal,
       Summary leaderTransactionBytesIncludedInProposal,
-      Summary leaderTransactionBytesIncludedInProposalAndPreviousVertices) {
+      Summary leaderTransactionBytesIncludedInProposalAndPreviousVertices,
+      Summary numSignaturesInCertificate) {
 
     public record IgnoredVote(VoteIgnoreReason reason) {}
 
     public enum VoteIgnoreReason {
-      QUORUM_ALREADY_REACHED,
       UNEXPECTED_VOTE
     }
 

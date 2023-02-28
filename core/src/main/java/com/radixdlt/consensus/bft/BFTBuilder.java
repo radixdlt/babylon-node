@@ -66,11 +66,13 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.processor.*;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.PostponedRoundQuorum;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.utils.TimeSupplier;
 
@@ -85,8 +87,9 @@ public final class BFTBuilder {
   // BFT Stateful objects
   private Pacemaker pacemaker;
   private BFTSyncer bftSyncer;
-  private EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher;
-  private EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher;
+  private EventDispatcher<RoundQuorumReached> roundQuorumReachedDispatcher;
+  private ScheduledEventDispatcher<PostponedRoundQuorum> postponedRoundQuorumDispatcher;
+  private EventDispatcher<ConsensusByzantineEvent> doubleVoteDispatcher;
   private EventDispatcher<ProposalRejected> proposalRejectedDispatcher;
 
   // Instance specific objects
@@ -127,9 +130,9 @@ public final class BFTBuilder {
     return this;
   }
 
-  public BFTBuilder doubleVoteEventDispatcher(
-      EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher) {
-    this.doubleVoteEventDispatcher = doubleVoteEventDispatcher;
+  public BFTBuilder doubleVoteDispatcher(
+      EventDispatcher<ConsensusByzantineEvent> doubleVoteDispatcher) {
+    this.doubleVoteDispatcher = doubleVoteDispatcher;
     return this;
   }
 
@@ -168,9 +171,15 @@ public final class BFTBuilder {
     return this;
   }
 
-  public BFTBuilder roundQuorumReachedEventDispatcher(
-      EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher) {
-    this.roundQuorumReachedEventDispatcher = roundQuorumReachedEventDispatcher;
+  public BFTBuilder roundQuorumReachedDispatcher(
+      EventDispatcher<RoundQuorumReached> roundQuorumReachedDispatcher) {
+    this.roundQuorumReachedDispatcher = roundQuorumReachedDispatcher;
+    return this;
+  }
+
+  public BFTBuilder postponedRoundQuorumDispatcher(
+      ScheduledEventDispatcher<PostponedRoundQuorum> postponedRoundQuorumDispatcher) {
+    this.postponedRoundQuorumDispatcher = postponedRoundQuorumDispatcher;
     return this;
   }
 
@@ -183,8 +192,7 @@ public final class BFTBuilder {
     if (!validatorSet.containsNode(self)) {
       return EmptyBFTEventProcessor.INSTANCE;
     }
-    final PendingVotes pendingVotes =
-        new PendingVotes(hasher, doubleVoteEventDispatcher, validatorSet);
+    final PendingVotes pendingVotes = new PendingVotes(hasher, doubleVoteDispatcher, validatorSet);
 
     /* Setting up the following BFT event processing pipeline:
     ObsoleteEventsFilter (filters out obsolete events for past rounds)
@@ -198,7 +206,13 @@ public final class BFTBuilder {
 
     final var quorumAssembler =
         new BFTQuorumAssembler(
-            pacemaker, self, roundQuorumReachedEventDispatcher, metrics, pendingVotes, roundUpdate);
+            pacemaker,
+            self,
+            roundQuorumReachedDispatcher,
+            postponedRoundQuorumDispatcher,
+            metrics,
+            pendingVotes,
+            roundUpdate);
 
     final var proposalTimestampVerifier =
         new ProposalTimestampVerifier(

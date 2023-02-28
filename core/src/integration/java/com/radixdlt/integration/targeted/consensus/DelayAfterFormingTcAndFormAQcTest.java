@@ -62,34 +62,94 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.integration.targeted.consensus;
 
-import static org.mockito.Mockito.mock;
+import static com.radixdlt.harness.predicates.NodesPredicate.anyAtExactlyStateVersion;
+import static org.junit.Assert.assertEquals;
 
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimeoutCertificate;
-import nl.jqno.equalsverifier.EqualsVerifier;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.EpochNodeWeightMapping;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.monitoring.Metrics;
 import org.junit.Test;
 
-public class VoteProcessingResultTest {
-
-  @Test
-  public void equalsVoteAccepted() {
-    EqualsVerifier.forClass(VoteProcessingResult.VoteAccepted.class).verify();
+// spotless:off
+/**
+ * Test a scenario where a timeout cert is formed first, but its
+ * processing is delayed, then a QC is formed
+ * which results in a QC output (RoundQuorumReached event with a QC).
+ *
+ * The test works by dropping a proposal to 3 out of 4 nodes,
+ * which results in:
+ * a) 1 node receives a proposal, sends a regular vote and then a timeout vote
+ * b) 3 nodes don't receive a proposal and they send a timeout vote for a fallback vertex
+ *
+ * If the order of received votes is mixed, and it happens to be when
+ * using the "first" message selector (it's deterministic, but just a coincidence),
+ * then the node is able to create a TC (by using the timeout signatures) before
+ * it can create a QC (on a fallback vertex, voted on by 3 nodes).
+ *
+ * Example order of received votes:
+ *  1) vote for fallback vertex + timeout
+ *  2) vote for proposal vertex + timeout
+ *  3) vote for fallback vertex + timeout
+ *  4) vote for fallback vertex + timeout
+ *
+ *  Note that if the votes for fallback vertices were received first,
+ *  then the node could form a QC straight away and the test wouldn't
+ *  actually test what it's supposed to. So there's another assertion
+ *  that makes sure that the nodes have actually created (and ignored) a TC.
+ */
+// spotless:on
+public final class DelayAfterFormingTcAndFormAQcTest {
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(4))
+        .messageSelector(MessageSelector.firstSelector())
+        .messageMutators(dropProposalToNodes(Round.of(3), ImmutableList.of(0, 1, 2)))
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                true,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                FunctionalRadixNodeModule.ConsensusConfig.of(),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
+                    StateComputerConfig.mockedWithEpochs(
+                        Round.of(10000),
+                        EpochNodeWeightMapping.constant(4),
+                        new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
   }
 
   @Test
-  public void equalsVoteRejected() {
-    EqualsVerifier.forClass(VoteProcessingResult.VoteRejected.class).verify();
+  public void delay_tc_processing_and_form_a_qc_test() {
+    try (var test = createTest()) {
+      test.startAllNodes();
+      test.runUntilState(anyAtExactlyStateVersion(10));
+
+      for (var injector : test.getNodeInjectors()) {
+        final var metrics = injector.getInstance(Metrics.class);
+        // Each node should have created and postponed a timeout cert...
+        assertEquals(1, (int) metrics.bft().postponedRoundQuorums().get());
+        // ...and then form a QC, resulting in no TCs actually processed.
+        assertEquals(0, (int) metrics.bft().timeoutQuorums().get());
+      }
+    }
   }
 
-  @Test
-  public void equalsQuorumReached() {
-    EqualsVerifier.forClass(VoteProcessingResult.QuorumReached.class)
-        .withPrefabValues(
-            RoundVotingResult.class,
-            new RoundVotingResult.FormedQC(mock(QuorumCertificate.class)),
-            new RoundVotingResult.FormedTC(mock(TimeoutCertificate.class)))
-        .verify();
+  private static MessageMutator dropProposalToNodes(Round round, ImmutableList<Integer> nodes) {
+    return (message, queue) -> {
+      final var msg = message.message();
+      if (msg instanceof final Proposal proposal) {
+        return proposal.getRound().equals(round)
+            && nodes.contains(message.channelId().receiverIndex());
+      }
+      return false;
+    };
   }
 }

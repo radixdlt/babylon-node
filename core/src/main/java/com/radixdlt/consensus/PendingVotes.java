@@ -131,8 +131,8 @@ public final class PendingVotes {
     }
 
     return processVoteForQC(vote)
-        .<VoteProcessingResult>map(VoteProcessingResult::qcQuorum)
-        .or(() -> processVoteForTC(vote).map(VoteProcessingResult::tcQuorum))
+        .<VoteProcessingResult>map(VoteProcessingResult::regularQuorum)
+        .or(() -> processVoteForTC(vote).map(VoteProcessingResult::timeoutQuorum))
         .orElseGet(VoteProcessingResult::accepted);
   }
 

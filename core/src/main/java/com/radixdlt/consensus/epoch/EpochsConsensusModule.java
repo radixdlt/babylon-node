@@ -75,6 +75,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.PostponedRoundQuorum;
 import com.radixdlt.consensus.liveness.*;
 import com.radixdlt.consensus.sync.*;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
@@ -131,6 +132,14 @@ public class EpochsConsensusModule extends AbstractModule {
         Runners.CONSENSUS,
         new TypeLiteral<Epoched<ScheduledLocalTimeout>>() {},
         epochManager::processLocalTimeout);
+  }
+
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> postponedRoundQuorum(EpochManager epochManager) {
+    return new EventProcessorOnRunner<>(
+        Runners.CONSENSUS,
+        new TypeLiteral<Epoched<PostponedRoundQuorum>>() {},
+        epochManager::processPostponedRoundQuorum);
   }
 
   @ProvidesIntoSet
@@ -320,6 +329,7 @@ public class EpochsConsensusModule extends AbstractModule {
       TimeSupplier timeSupplier,
       Metrics metrics,
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
+      ScheduledEventDispatcher<PostponedRoundQuorum> postponedRoundQuorumDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
       EventDispatcher<EpochProposalRejected> proposalRejectedDispatcher) {
     return (self,
@@ -341,13 +351,14 @@ public class EpochsConsensusModule extends AbstractModule {
                         new EpochProposalRejected(epoch, proposalRejected)))
             .safetyRules(safetyRules)
             .pacemaker(pacemaker)
-            .roundQuorumReachedEventDispatcher(
+            .roundQuorumReachedDispatcher(
                 roundQuorumReached -> {
                   // FIXME: a hack for now until replacement of epochmanager factories
                   roundQuorumReachedEventProcessor.process(roundQuorumReached);
                   roundQuorumReachedEventDispatcher.dispatch(roundQuorumReached);
                 })
-            .doubleVoteEventDispatcher(doubleVoteEventDispatcher)
+            .postponedRoundQuorumDispatcher(postponedRoundQuorumDispatcher)
+            .doubleVoteDispatcher(doubleVoteEventDispatcher)
             .roundUpdate(roundUpdate)
             .bftSyncer(bftSyncer)
             .validatorSet(validatorSet)

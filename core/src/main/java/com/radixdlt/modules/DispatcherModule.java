@@ -71,6 +71,7 @@ import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.PostponedRoundQuorum;
 import com.radixdlt.consensus.epoch.EpochProposalRejected;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
@@ -234,12 +235,15 @@ public class DispatcherModule extends AbstractModule {
             Dispatchers.dispatcherProvider(
                 RoundQuorumReached.class,
                 (counters, event) -> {
-                  if (event.votingResult() instanceof RoundVotingResult.FormedTC) {
+                  if (event.roundQuorum() instanceof RoundQuorum.TimeoutRoundQuorum) {
                     counters.bft().timeoutQuorums().inc();
                   } else {
                     counters.bft().voteQuorums().inc();
                   }
                 }));
+
+    bind(new TypeLiteral<ScheduledEventDispatcher<PostponedRoundQuorum>>() {})
+        .toProvider(Dispatchers.scheduledDispatcherProvider(PostponedRoundQuorum.class));
 
     Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() {});
 

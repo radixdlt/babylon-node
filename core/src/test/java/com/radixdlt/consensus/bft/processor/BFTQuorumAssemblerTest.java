@@ -70,9 +70,11 @@ import static org.mockito.Mockito.*;
 
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.PostponedRoundQuorum;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import org.junit.Before;
@@ -86,6 +88,8 @@ public final class BFTQuorumAssemblerTest {
   private Pacemaker pacemaker = mock(Pacemaker.class);
   private EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher =
       rmock(EventDispatcher.class);
+  private ScheduledEventDispatcher<PostponedRoundQuorum> postponedRoundQuorumDispatcher =
+      rmock(ScheduledEventDispatcher.class);
 
   private BFTQuorumAssembler bftQuorumAssembler;
 
@@ -96,6 +100,7 @@ public final class BFTQuorumAssemblerTest {
             this.pacemaker,
             this.self,
             this.roundQuorumReachedEventDispatcher,
+            this.postponedRoundQuorumDispatcher,
             this.metrics,
             this.pendingVotes,
             mock(RoundUpdate.class));
@@ -113,7 +118,7 @@ public final class BFTQuorumAssemblerTest {
     when(highQc.highestCommittedQC()).thenReturn(highestCommittedQc);
     when(vote.getRound()).thenReturn(Round.of(1));
 
-    when(this.pendingVotes.insertVote(any())).thenReturn(VoteProcessingResult.qcQuorum(qc));
+    when(this.pendingVotes.insertVote(any())).thenReturn(VoteProcessingResult.regularQuorum(qc));
     when(this.vertexStore.highQC()).thenReturn(highQc);
 
     // Move to round 1

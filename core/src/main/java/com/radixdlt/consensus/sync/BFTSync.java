@@ -71,8 +71,6 @@ import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.bft.RoundVotingResult.FormedQC;
-import com.radixdlt.consensus.bft.RoundVotingResult.FormedTC;
 import com.radixdlt.consensus.liveness.PacemakerReducer;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.vertexstore.VertexChain;
@@ -219,9 +217,13 @@ public final class BFTSync implements BFTSyncer {
       this.runOnThreads.add(Thread.currentThread().getName());
 
       final var highQC =
-          switch (roundQuorumReached.votingResult()) {
-            case FormedQC formedQc -> this.vertexStore.highQC().withHighestQC(formedQc.getQC());
-            case FormedTC formedTc -> this.vertexStore.highQC().withHighestTC(formedTc.getTC());
+          switch (roundQuorumReached.roundQuorum()) {
+            case RoundQuorum.RegularRoundQuorum regularRoundQuorum -> this.vertexStore
+                .highQC()
+                .withHighestQC(regularRoundQuorum.qc());
+            case RoundQuorum.TimeoutRoundQuorum timeoutRoundQuorum -> this.vertexStore
+                .highQC()
+                .withHighestTC(timeoutRoundQuorum.tc());
           };
 
       final var nodeId = NodeId.fromPublicKey(roundQuorumReached.lastVote().getAuthor().getKey());

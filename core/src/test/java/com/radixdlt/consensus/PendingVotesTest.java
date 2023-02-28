@@ -171,8 +171,8 @@ public class PendingVotesTest {
     assertTrue(result2 instanceof VoteProcessingResult.QuorumReached);
 
     assertTrue(
-        ((VoteProcessingResult.QuorumReached) result2).getRoundVotingResult()
-            instanceof RoundVotingResult.FormedTC);
+        ((VoteProcessingResult.QuorumReached) result2).roundQuorum()
+            instanceof RoundQuorum.TimeoutRoundQuorum);
   }
 
   @Test
@@ -281,8 +281,8 @@ public class PendingVotesTest {
     assertTrue(result2 instanceof VoteProcessingResult.QuorumReached);
 
     assertTrue(
-        ((VoteProcessingResult.QuorumReached) result2).getRoundVotingResult()
-            instanceof RoundVotingResult.FormedTC);
+        ((VoteProcessingResult.QuorumReached) result2).roundQuorum()
+            instanceof RoundQuorum.TimeoutRoundQuorum);
   }
 
   private Vote makeSignedVoteFor(BFTValidatorId author, Round parentRound, HashCode vertexId) {

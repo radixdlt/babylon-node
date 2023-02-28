@@ -152,13 +152,13 @@ public final class ConsensusModule extends AbstractModule {
         .proposalRejectedDispatcher(proposalRejectedDispatcher)
         .safetyRules(safetyRules)
         .pacemaker(pacemaker)
-        .roundQuorumReachedEventDispatcher(
+        .roundQuorumReachedDispatcher(
             roundQuorumReached -> {
               // FIXME: a hack for now until replacement of epochmanager factories
               bftSync.roundQuorumReachedEventProcessor().process(roundQuorumReached);
               roundQuorumReachedEventDispatcher.dispatch(roundQuorumReached);
             })
-        .doubleVoteEventDispatcher(doubleVoteEventDispatcher)
+        .doubleVoteDispatcher(doubleVoteEventDispatcher)
         .roundUpdate(roundUpdate)
         .bftSyncer(bftSync)
         .validatorSet(config.getValidatorSet())

@@ -64,22 +64,35 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.TimeoutCertificate;
 
-public class RoundVotingResultTest {
+/** Represents a quorum that has been formed in a specific round. */
+public sealed interface RoundQuorum {
 
-  @Test
-  public void equalsFormedTC() {
-    EqualsVerifier.forClass(RoundVotingResult.FormedTC.class).verify();
+  static RegularRoundQuorum regular(QuorumCertificate qc) {
+    return new RegularRoundQuorum(qc);
   }
 
-  @Test
-  public void equalsFormedQC() {
-    EqualsVerifier.forClass(RoundVotingResult.FormedQC.class)
-        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-        .verify();
+  static TimeoutRoundQuorum timeout(TimeoutCertificate tc) {
+    return new TimeoutRoundQuorum(tc);
+  }
+
+  Round getRound();
+
+  /** Represents a regular (i.e. non-timeout) quorum */
+  record RegularRoundQuorum(QuorumCertificate qc) implements RoundQuorum {
+    @Override
+    public Round getRound() {
+      return this.qc.getRound();
+    }
+  }
+
+  /** Represents a timeout quorum */
+  record TimeoutRoundQuorum(TimeoutCertificate tc) implements RoundQuorum {
+    @Override
+    public Round getRound() {
+      return this.tc.getRound();
+    }
   }
 }
