@@ -69,7 +69,6 @@ import static java.util.Objects.requireNonNull;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.ledger.AccumulatorState;
@@ -109,14 +108,9 @@ public final class LedgerHeader {
   @DsonOutput(Output.ALL)
   private final AccumulatorState accumulatorState;
 
-  @JsonProperty("state_hash")
-  // TODO: restore `Output.ALL` after fixing non-determinism bugs
-  // We need to come up with a few tests that expose potential non-determinism bugs, and then fix
-  // them. Before that happens, it could be risky to include the state hash in the DSON-based
-  // hashing (used e.g. in `QuorumCertificate` to get a hash of `VoteData`, leading to nodes not
-  // being able to agree on the same hash).
-  @DsonOutput(value = Output.HASH, include = false)
-  private final HashCode stateHash;
+  @JsonProperty("hashes")
+  @DsonOutput(Output.ALL)
+  private final LedgerHashes hashes;
 
   @JsonProperty("consensus_parent_round_timestamp_ms")
   @DsonOutput(Output.ALL)
@@ -136,7 +130,7 @@ public final class LedgerHeader {
       @JsonProperty("epoch") long epoch,
       @JsonProperty("round") long roundNumber,
       @JsonProperty(value = "accumulator_state", required = true) AccumulatorState accumulatorState,
-      @JsonProperty(value = "state_hash", required = true) HashCode stateHash,
+      @JsonProperty(value = "hashes", required = true) LedgerHashes hashes,
       @JsonProperty("consensus_parent_round_timestamp_ms") long consensusParentRoundTimestampMs,
       @JsonProperty("proposer_timestamp") long proposerTimestampMs,
       @JsonProperty("next_epoch") NextEpoch nextEpoch) {
@@ -144,7 +138,7 @@ public final class LedgerHeader {
         epoch,
         Round.of(roundNumber),
         accumulatorState,
-        stateHash,
+        hashes,
         consensusParentRoundTimestampMs,
         proposerTimestampMs,
         nextEpoch);
@@ -154,7 +148,7 @@ public final class LedgerHeader {
       long epoch,
       Round round,
       AccumulatorState accumulatorState,
-      HashCode stateHash,
+      LedgerHashes hashes,
       long consensusParentRoundTimestampMs,
       long proposerTimestampMs,
       NextEpoch nextEpoch) {
@@ -166,7 +160,7 @@ public final class LedgerHeader {
 
     this.round = round;
     this.accumulatorState = requireNonNull(accumulatorState);
-    this.stateHash = requireNonNull(stateHash);
+    this.hashes = requireNonNull(hashes);
     this.nextEpoch = nextEpoch;
     this.consensusParentRoundTimestampMs = consensusParentRoundTimestampMs;
     this.proposerTimestampMs = proposerTimestampMs;
@@ -174,7 +168,7 @@ public final class LedgerHeader {
 
   public static LedgerHeader genesis(
       AccumulatorState accumulatorState,
-      HashCode stateHash,
+      LedgerHashes hashes,
       BFTValidatorSet validatorSet,
       long consensusParentRoundTimestamp,
       long proposerTimestamp) {
@@ -182,7 +176,7 @@ public final class LedgerHeader {
         0,
         Round.genesis(),
         accumulatorState,
-        stateHash,
+        hashes,
         consensusParentRoundTimestamp,
         proposerTimestamp,
         validatorSet == null ? null : NextEpoch.create(1, validatorSet.getValidators()));
@@ -192,14 +186,14 @@ public final class LedgerHeader {
       long epoch,
       Round round,
       AccumulatorState accumulatorState,
-      HashCode stateHash,
+      LedgerHashes hashes,
       long consensusParentRoundTimestamp,
       long proposerTimestamp) {
     return new LedgerHeader(
         epoch,
         round,
         accumulatorState,
-        stateHash,
+        hashes,
         consensusParentRoundTimestamp,
         proposerTimestamp,
         null);
@@ -209,7 +203,7 @@ public final class LedgerHeader {
       long epoch,
       Round round,
       AccumulatorState accumulatorState,
-      HashCode stateHash,
+      LedgerHashes hashes,
       long consensusParentRoundTimestamp,
       long proposerTimestamp,
       NextEpoch nextEpoch) {
@@ -217,7 +211,7 @@ public final class LedgerHeader {
         epoch,
         round,
         accumulatorState,
-        stateHash,
+        hashes,
         consensusParentRoundTimestamp,
         proposerTimestamp,
         nextEpoch);
@@ -229,7 +223,7 @@ public final class LedgerHeader {
         this.epoch,
         round,
         this.accumulatorState,
-        this.stateHash,
+        this.hashes,
         consensusParentRoundTimestamp,
         proposerTimestamp,
         this.nextEpoch);
@@ -253,8 +247,8 @@ public final class LedgerHeader {
     return accumulatorState;
   }
 
-  public HashCode getStateHash() {
-    return stateHash;
+  public LedgerHashes getHashes() {
+    return hashes;
   }
 
   public long getEpoch() {
@@ -277,7 +271,7 @@ public final class LedgerHeader {
   public int hashCode() {
     return Objects.hash(
         this.accumulatorState,
-        this.stateHash,
+        this.hashes,
         this.consensusParentRoundTimestampMs,
         this.proposerTimestampMs,
         this.epoch,
@@ -295,7 +289,7 @@ public final class LedgerHeader {
         && this.consensusParentRoundTimestampMs == other.consensusParentRoundTimestampMs
         && this.proposerTimestampMs == other.proposerTimestampMs
         && Objects.equals(this.accumulatorState, other.accumulatorState)
-        && Objects.equals(this.stateHash, other.stateHash)
+        && Objects.equals(this.hashes, other.hashes)
         && this.epoch == other.epoch
         && Objects.equals(this.round, other.round)
         && Objects.equals(this.nextEpoch, other.nextEpoch);
@@ -304,11 +298,11 @@ public final class LedgerHeader {
   @Override
   public String toString() {
     return String.format(
-        "%s{accumulator=%s stateHash=%s consensus_parent_round_timestamp=%s proposer_timestamp=%s"
+        "%s{accumulator=%s hashes=%s consensus_parent_round_timestamp=%s proposer_timestamp=%s"
             + " epoch=%s round=%s nextEpoch=%s}",
         getClass().getSimpleName(),
         this.accumulatorState,
-        this.stateHash,
+        this.hashes,
         this.consensusParentRoundTimestampMs,
         this.proposerTimestampMs,
         this.epoch,

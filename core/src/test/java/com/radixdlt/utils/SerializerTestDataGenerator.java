@@ -123,7 +123,8 @@ public class SerializerTestDataGenerator {
             Math.abs(random.nextLong()),
             randomRound(),
             new AccumulatorState(Math.abs(random.nextLong()) + 1, HashUtils.random256()),
-            HashUtils.random256(),
+            LedgerHashes.create(
+                HashUtils.random256(), HashUtils.random256(), HashUtils.random256()),
             Math.abs(random.nextLong()) + 1,
             Math.abs(random.nextLong()) + 1,
             NextEpoch.create(

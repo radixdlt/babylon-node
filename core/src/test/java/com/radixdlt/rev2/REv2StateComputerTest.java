@@ -71,6 +71,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
+import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorId;
@@ -126,14 +127,12 @@ public class REv2StateComputerTest {
             1, Decimal.of(1), UInt64.fromNonNegativeLong(10));
     var accumulatorState =
         accumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
-    // The accumulator state is computed correctly, but we cannot easily do the same for state hash
-    var stateHash = HashUtils.random256();
     var validatorSet =
         BFTValidatorSet.from(
             PrivateKeys.numeric(1)
                 .map(k -> BFTValidator.from(BFTValidatorId.create(k.getPublicKey()), UInt256.ONE))
                 .limit(1));
-    var proof = LedgerProof.genesis(accumulatorState, stateHash, validatorSet, 0, 0);
+    var proof = LedgerProof.genesis(accumulatorState, LedgerHashes.zero(), validatorSet, 0, 0);
     return CommittedTransactionsWithProof.create(List.of(genesis), proof);
   }
 

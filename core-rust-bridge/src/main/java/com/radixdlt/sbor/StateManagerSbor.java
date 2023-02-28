@@ -136,6 +136,7 @@ public final class StateManagerSbor {
     ECDSASecp256k1Signature.registerCodec(codecMap);
     EdDSAEd25519Signature.registerCodec(codecMap);
     SignatureWithPublicKey.registerCodec(codecMap);
+    LedgerHashes.registerCodec(codecMap);
     PrepareGenesisRequest.registerCodec(codecMap);
     PrepareGenesisResult.registerCodec(codecMap);
     PreviousVertex.registerCodec(codecMap);

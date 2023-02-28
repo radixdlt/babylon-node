@@ -69,6 +69,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.consensus.Blake2b256Hasher;
+import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.HashUtils;
@@ -110,10 +111,9 @@ public final class RustMempoolTest {
             UInt64.fromNonNegativeLong(1));
     var accumulatorState =
         accumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
-    // The accumulator state is computed correctly, but we cannot easily do the same for state hash
-    var stateHash = HashUtils.random256();
     var proof =
-        LedgerProof.genesis(accumulatorState, stateHash, BFTValidatorSet.from(Stream.of()), 0, 0);
+        LedgerProof.genesis(
+            accumulatorState, LedgerHashes.zero(), BFTValidatorSet.from(Stream.of()), 0, 0);
     return CommittedTransactionsWithProof.create(List.of(genesis), proof);
   }
 
@@ -131,7 +131,7 @@ public final class RustMempoolTest {
             new CommitRequest(
                 transactions,
                 UInt64.fromNonNegativeLong(proof.getStateVersion()),
-                proof.getStateHash(),
+                proof.getLedgerHashes().getStateRoot(),
                 DefaultSerialization.getInstance().toDson(proof, DsonOutput.Output.ALL),
                 Option.none()))
         .unwrap();

@@ -63,6 +63,7 @@
  */
 
 pub mod addressing;
+pub mod common_types;
 pub mod java_structure;
 pub mod mempool;
 pub mod scrypto_constants;

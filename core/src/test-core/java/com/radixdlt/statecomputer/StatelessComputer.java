@@ -73,7 +73,6 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
@@ -152,7 +151,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
     invalidCount += invalidTransactions.size();
 
     return new StateComputerLedger.StateComputerResult(
-        successfulTransactions, invalidTransactions, HashUtils.zero256());
+        successfulTransactions, invalidTransactions, LedgerHashes.zero());
   }
 
   private LedgerUpdate generateLedgerUpdate(CommittedTransactionsWithProof txnsAndProof) {
@@ -162,17 +161,17 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
             .getNextEpoch()
             .map(
                 nextEpoch -> {
-                  LedgerProof header = txnsAndProof.getProof();
+                  LedgerProof proof = txnsAndProof.getProof();
                   VertexWithHash genesisVertex =
-                      Vertex.createInitialEpochVertex(header.getHeader()).withId(hasher);
+                      Vertex.createInitialEpochVertex(proof.getHeader()).withId(hasher);
                   LedgerHeader nextLedgerHeader =
                       LedgerHeader.create(
                           nextEpoch.getEpoch(),
                           Round.genesis(),
-                          header.getAccumulatorState(),
-                          header.getStateHash(),
-                          header.consensusParentRoundTimestamp(),
-                          header.proposerTimestamp());
+                          proof.getAccumulatorState(),
+                          proof.getLedgerHashes(),
+                          proof.consensusParentRoundTimestamp(),
+                          proof.proposerTimestamp());
                   QuorumCertificate initialEpochQC =
                       QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
                   final var initialState =
@@ -182,7 +181,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
                   var proposerElection = new WeightedRotatingLeaders(validatorSet);
                   var bftConfiguration =
                       new BFTConfiguration(proposerElection, validatorSet, initialState);
-                  return new EpochChange(header, bftConfiguration);
+                  return new EpochChange(proof, bftConfiguration);
                 })
             .map(e -> ImmutableClassToInstanceMap.<Object, EpochChange>of(EpochChange.class, e))
             .orElse(ImmutableClassToInstanceMap.of());

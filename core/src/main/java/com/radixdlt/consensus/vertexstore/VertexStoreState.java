@@ -127,7 +127,7 @@ public final class VertexStoreState {
             nextEpoch.getEpoch(),
             Round.genesis(),
             epochProof.getAccumulatorState(),
-            epochProof.getStateHash(),
+            epochProof.getLedgerHashes(),
             epochProof.consensusParentRoundTimestamp(),
             epochProof.proposerTimestamp());
     final var initialEpochQC =

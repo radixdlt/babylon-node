@@ -67,12 +67,12 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
+import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
@@ -131,7 +131,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
           NextEpoch.create(
               roundDetails.epoch() + 1,
               validatorSetMapping.apply(roundDetails.epoch() + 1).getValidators()),
-          HashUtils.zero256());
+          LedgerHashes.zero());
     } else {
       return stateComputer.prepare(
           parentAccumulator, previousVertices, proposedTransactions, roundDetails);

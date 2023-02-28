@@ -264,9 +264,9 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                     roundDetails, rejected, exception)));
 
     var nextEpoch = result.nextEpoch().map(REv2ToConsensus::nextEpoch).or((NextEpoch) null);
-
+    var ledgerHashes = REv2ToConsensus.ledgerHashes(result.ledgerHashes());
     return new StateComputerLedger.StateComputerResult(
-        committableTransactions, rejectedTransactions, nextEpoch, result.stateHash());
+        committableTransactions, rejectedTransactions, nextEpoch, ledgerHashes);
   }
 
   @Override
@@ -284,7 +284,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         new CommitRequest(
             txnsAndProof.getTransactions(),
             UInt64.fromNonNegativeLong(proof.getStateVersion()),
-            proof.getStateHash(),
+            proof.getLedgerHashes().getStateRoot(),
             serialization.toDson(proof, DsonOutput.Output.ALL),
             vertexStoreBytes);
 

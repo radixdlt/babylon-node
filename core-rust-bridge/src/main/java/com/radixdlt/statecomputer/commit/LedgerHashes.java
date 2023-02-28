@@ -64,20 +64,13 @@
 
 package com.radixdlt.statecomputer.commit;
 
-import com.radixdlt.lang.Option;
-import com.radixdlt.lang.Tuple;
+import com.google.common.hash.HashCode;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import java.util.List;
 
-public record PrepareResult(
-    List<byte[]> committed,
-    List<Tuple.Tuple2<byte[], String>> rejected,
-    Option<NextEpoch> nextEpoch,
-    LedgerHashes ledgerHashes) {
+public record LedgerHashes(HashCode stateRoot, HashCode transactionRoot, HashCode receiptRoot) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        PrepareResult.class,
-        codecs -> StructCodec.fromRecordComponents(PrepareResult.class, codecs));
+        LedgerHashes.class, codecs -> StructCodec.fromRecordComponents(LedgerHashes.class, codecs));
   }
 }

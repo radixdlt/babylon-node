@@ -88,7 +88,7 @@ public class LedgerHeaderTest {
     this.accumulatorState = mock(AccumulatorState.class);
     this.ledgerHeader =
         LedgerHeader.create(
-            0, Round.genesis(), accumulatorState, HashUtils.zero256(), timestamp, timestamp);
+            0, Round.genesis(), accumulatorState, LedgerHashes.zero(), timestamp, timestamp);
   }
 
   @Test
@@ -117,7 +117,7 @@ public class LedgerHeaderTest {
         -1L,
         1L,
         mock(AccumulatorState.class),
-        HashUtils.zero256(),
+        LedgerHashes.zero(),
         1L,
         1L,
         NextEpoch.create(1, ImmutableSet.of()));
@@ -129,7 +129,7 @@ public class LedgerHeaderTest {
         1L,
         -1L,
         mock(AccumulatorState.class),
-        HashUtils.zero256(),
+        LedgerHashes.zero(),
         1L,
         1L,
         NextEpoch.create(1, ImmutableSet.of()));
@@ -138,6 +138,6 @@ public class LedgerHeaderTest {
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullAccumulatorStateThrowsException() {
     new LedgerHeader(
-        1L, 1L, null, HashUtils.zero256(), 1L, 1L, NextEpoch.create(1, ImmutableSet.of()));
+        1L, 1L, null, LedgerHashes.zero(), 1L, 1L, NextEpoch.create(1, ImmutableSet.of()));
   }
 }
