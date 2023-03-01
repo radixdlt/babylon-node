@@ -23,13 +23,13 @@ parking_lot = { version = "0.12" }
 #
 # Ensure this version is also identically updated in ../state-manager/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-a3e85db09", features = ["serde"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-a3e85db09" }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-a3e85db09", features = ["serde"]  }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-a3e85db09" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-a3e85db09" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-a3e85db09" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-a3e85db09" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-3a1c11", features = ["serde"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-3a1c11" }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-3a1c11", features = ["serde"]  }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-3a1c11" }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-3a1c11" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-3a1c11" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-3a1c11" }
 
 jni = "0.19.0"
 

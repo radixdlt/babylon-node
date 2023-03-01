@@ -62,7 +62,6 @@
  * permissions under this License.
  */
 
-use std::marker::PhantomData;
 use super::stage_tree::{DerivedStageKey, StageKey};
 use crate::staging::stage_tree::{Accumulator, Delta, StageTree};
 use crate::{AccumulatorHash, StateHash};
@@ -75,7 +74,7 @@ use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::scrypto_encode;
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
-use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeStore, ReNodeModulePayload, TreeNode, Version, WriteableTreeStore};
+use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReadableTreeStore, ReNodeModulePayload, TreeNode, Version, WriteableTreeStore};
 use sbor::rust::collections::HashMap;
 use slotmap::SecondaryMap;
 
@@ -172,31 +171,50 @@ impl ExecutionCache {
     }
 }
 
-struct CollectingTreeStore<'s, P: Payload, S: ReadableTreeStore<P>> {
+struct CollectingTreeStore<'s, S> where S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset> {
     readable_delegate: &'s S,
     diff: HashTreeDiff,
-    phantom: PhantomData<P>,
 }
 
-impl<'s, P: Payload, S: ReadableTreeStore<P>> CollectingTreeStore<'s, P, S> {
+impl<'s, S> CollectingTreeStore<'s, S>
+    where S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset> {
     pub fn new(readable_delegate: &'s S) -> Self {
         Self {
             readable_delegate,
             diff: HashTreeDiff::new(),
-            phantom: PhantomData,
         }
     }
 }
 
-impl<'s, P:Payload, S: ReadableTreeStore<P>> ReadableTreeStore<P> for CollectingTreeStore<'s, P, S> {
+impl<'s, S> ReadableTreeStore<ReNodeModulePayload> for CollectingTreeStore<'s, S>
+    where S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset> {
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode<ReNodeModulePayload>> {
         self.readable_delegate.get_node(key)
     }
 }
 
-impl<'s, P: Payload, S: ReadableTreeStore<P>> WriteableTreeStore<P> for CollectingTreeStore<'s, P, S> {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<P>) {
-        self.diff.new_hash_tree_nodes.push((key, node));
+impl<'s, S> ReadableTreeStore<SubstateOffset> for CollectingTreeStore<'s, S>
+    where S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset> {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<SubstateOffset>> {
+        self.readable_delegate.get_node(key)
+    }
+}
+
+impl<'s, S> WriteableTreeStore<ReNodeModulePayload> for CollectingTreeStore<'s, S>
+    where S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset> {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<ReNodeModulePayload>) {
+        self.diff.new_re_node_layer_nodes.push((key, node));
+    }
+
+    fn record_stale_node(&mut self, key: NodeKey) {
+        self.diff.stale_hash_tree_node_keys.push(key);
+    }
+}
+
+impl<'s, S> WriteableTreeStore<SubstateOffset> for CollectingTreeStore<'s, S>
+    where S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset> {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<SubstateOffset>) {
+        self.diff.new_substate_layer_nodes.push((key, node));
     }
 
     fn record_stale_node(&mut self, key: NodeKey) {
