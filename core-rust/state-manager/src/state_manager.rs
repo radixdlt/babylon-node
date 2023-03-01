@@ -90,7 +90,7 @@ use radix_engine::transaction::{
     PreviewError, PreviewResult, TransactionOutcome, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::{
-    scrypto_encode, Categorize, ComponentAddress, Decimal, Decode, Encode, PublicKey, RENodeId, ResourceAddress,
+    Categorize, ComponentAddress, Decimal, Decode, Encode, PublicKey, RENodeId, ResourceAddress,
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 
@@ -98,7 +98,6 @@ use radix_engine::state_manager::StateDiff;
 use radix_engine_interface::api::types::{
     NodeModuleId, SubstateId, SubstateOffset, ValidatorOffset,
 };
-use radix_engine_stores::hash_tree::tree_store::ReadableTreeStore;
 use std::collections::HashMap;
 use std::convert::TryInto;
 
@@ -109,6 +108,7 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use tracing::{info, warn};
+use ::transaction::data::*;
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct LoggingConfig {
@@ -445,7 +445,7 @@ where
         }
 
         // TODO: Remove and use some sort of cache to store size
-        let payload_size = scrypto_encode(transaction).unwrap().len();
+        let payload_size = manifest_encode(transaction).unwrap().len();
         let rejection = self
             .check_for_rejection_uncached(transaction, payload_size)
             .err();
@@ -720,7 +720,7 @@ where
                 }
 
                 state_tracker.update(new_accumulator_hash, *processed.state_hash());
-                committed.push(scrypto_encode(&validator_txn).unwrap());
+                committed.push(manifest_encode(&validator_txn).unwrap());
 
                 commit_result.next_epoch.clone().map(|e| NextEpoch {
                     validator_set: e.0,

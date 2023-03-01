@@ -61,7 +61,7 @@ fn extract_preview_request(
         .map_err(|err| err.into_response_error("signer_public_keys"))?;
 
     Ok(PreviewRequest {
-        manifest,
+        manifest: manifest,
         start_epoch_inclusive: extract_api_epoch(request.start_epoch_inclusive)
             .map_err(|err| err.into_response_error("start_epoch_inclusive"))?,
         end_epoch_exclusive: extract_api_epoch(request.end_epoch_exclusive)

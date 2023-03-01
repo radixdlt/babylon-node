@@ -168,7 +168,7 @@ pub mod commit {
         }
 
         pub fn add(&mut self, at_state_version: Version, diff: HashTreeDiff) {
-            self.new_nodes.extend(diff.new_hash_tree_nodes);
+            self.new_nodes.extend(diff.new_re_node_layer_nodes);
             self.stale_node_keys_at_state_version
                 .push((at_state_version, diff.stale_hash_tree_node_keys));
         }

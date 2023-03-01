@@ -84,6 +84,7 @@ use rocksdb::{
 };
 use std::path::PathBuf;
 use tracing::{error, warn};
+use transaction::data::manifest_decode;
 
 use crate::transaction::LedgerTransaction;
 
@@ -399,7 +400,7 @@ impl QueryableTransactionStore for RocksDBStore {
                            next_accumulator_hash_state_version, next_txn_state_version);
                     }
 
-                    let next_txn = scrypto_decode(next_txn_kv.1.as_ref()).unwrap();
+                    let next_txn = manifest_decode(next_txn_kv.1.as_ref()).unwrap();
                     let next_receipt = scrypto_decode(next_receipt_kv.1.as_ref()).unwrap();
                     let next_accumulator_hash = AccumulatorHash::from_raw_bytes(
                         (*next_accumulator_hash_kv.1).try_into().unwrap(),
@@ -426,7 +427,7 @@ impl QueryableTransactionStore for RocksDBStore {
                 state_version.to_be_bytes(),
             )
             .expect("DB error loading transaction")
-            .map(|v| scrypto_decode(&v).expect("Failed to decode a committed transaction"))
+            .map(|v| manifest_decode(&v).expect("Failed to decode a committed transaction"))
     }
 
     fn get_committed_transaction_receipt(

@@ -206,14 +206,11 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
             RENodeId::Clock(_) => {}            // Contains no children
             RENodeId::Identity(_) => {}         // Contains no children
             RENodeId::NonFungibleStore(_) => {} // Contains no children
-            RENodeId::ResourceManager(_) => {}  // Contains no children
-            RENodeId::Package(_) => {}          // Contains no children
             // TRANSIENT
             RENodeId::Bucket(_)
             | RENodeId::Proof(_)
             | RENodeId::AuthZoneStack
             | RENodeId::Worktop
-            | RENodeId::Logger
             | RENodeId::TransactionRuntime => {
                 return Err(StateTreeTraverserError::UnexpectedPersistedNode(node_id))
             } // END - NB - we list all types so that we get a compile error if a new type is added

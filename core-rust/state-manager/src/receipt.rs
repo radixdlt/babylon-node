@@ -1,5 +1,6 @@
 use radix_engine::blueprints::epoch_manager::Validator;
 use std::collections::BTreeMap;
+use radix_engine::blueprints::transaction_processor::InstructionOutput;
 
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::OutputValue;
@@ -61,7 +62,13 @@ impl From<TransactionOutcome> for LedgerTransactionOutcome {
     fn from(outcome: TransactionOutcome) -> Self {
         match outcome {
             TransactionOutcome::Success(output) => {
-                LedgerTransactionOutcome::Success(output.into_iter().map(|o| o.as_vec()).collect())
+                LedgerTransactionOutcome::Success(output.into_iter().map(|o| {
+                    // TODO: Clean this up
+                    match o {
+                        InstructionOutput::None => scrypto_encode(&()).unwrap(),
+                        InstructionOutput::CallReturn(v) => v.into(),
+                    }
+                }).collect())
             }
             TransactionOutcome::Failure(error) => LedgerTransactionOutcome::Failure(error),
         }
