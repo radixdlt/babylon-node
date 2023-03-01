@@ -62,15 +62,16 @@
  * permissions under this License.
  */
 
-use radix_engine::blueprints::resource::VaultSubstate;
+use radix_engine::blueprints::resource::VaultInfoSubstate;
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use radix_engine::system::node_substates::PersistedSubstate;
 
 use radix_engine::types::{
-    AccessControllerOffset, ComponentOffset, EpochManagerOffset, GlobalOffset, KeyValueStoreOffset,
+    AccessControllerOffset, ComponentOffset, EpochManagerOffset, KeyValueStoreOffset,
     RENodeId, SubstateId, SubstateOffset, ValidatorOffset, VaultOffset,
 };
 use radix_engine_interface::api::types::{AccountOffset, NodeModuleId};
+use radix_engine_interface::blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource, ResourceType};
 
 #[derive(Debug)]
 pub enum StateTreeTraverserError {
@@ -91,7 +92,8 @@ pub struct ComponentStateTreeTraverser<
 }
 
 pub trait StateTreeVisitor {
-    fn visit_vault(&mut self, _parent_id: Option<&SubstateId>, _vault_substate: &VaultSubstate) {}
+    fn visit_fungible_vault(&mut self, _parent_id: Option<&SubstateId>, _info: &VaultInfoSubstate, _liquid: &LiquidFungibleResource) {}
+    fn visit_non_fungible_vault(&mut self, _parent_id: Option<&SubstateId>, _info: &VaultInfoSubstate, _liquid: &LiquidNonFungibleResource) {}
     fn visit_node_id(&mut self, _parent_id: Option<&SubstateId>, _node_id: &RENodeId, _depth: u32) {
     }
 }
@@ -126,22 +128,34 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
         }
         self.visitor.visit_node_id(parent, &node_id, depth);
         match node_id {
-            RENodeId::Global(..) => {
-                self.recurse_via_self_substate(
-                    node_id,
-                    SubstateOffset::Global(GlobalOffset::Global),
-                    depth,
-                )?;
-            }
             RENodeId::Vault(..) => {
-                let substate_id = SubstateId(
+                let info_substate = self.read_substate(&SubstateId(
                     node_id,
                     NodeModuleId::SELF,
-                    SubstateOffset::Vault(VaultOffset::Vault),
-                );
-                let substate = self.read_substate(&substate_id)?;
-                self.visitor
-                    .visit_vault(Some(&substate_id), substate.vault());
+                    SubstateOffset::Vault(VaultOffset::Info),
+                ))?;
+                let vault_info: VaultInfoSubstate = info_substate.to_runtime().into();
+
+                match vault_info.resource_type {
+                    ResourceType::Fungible {..} => {
+                        let liquid_substate = self.read_substate(&SubstateId(
+                            node_id,
+                            NodeModuleId::SELF,
+                            SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                        ))?;
+
+                        self.visitor.visit_fungible_vault(parent, &vault_info, &liquid_substate.into());
+                    }
+                    ResourceType::NonFungible {..} => {
+                        let liquid_substate = self.read_substate(&SubstateId(
+                            node_id,
+                            NodeModuleId::SELF,
+                            SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+                        ))?;
+
+                        self.visitor.visit_non_fungible_vault(parent, &vault_info, &liquid_substate.into());
+                    }
+                }
             }
             RENodeId::KeyValueStore(kv_store_id) => {
                 let map = self.substate_store.get_kv_store_entries(&kv_store_id);

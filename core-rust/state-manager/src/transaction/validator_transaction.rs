@@ -12,8 +12,7 @@ use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto_encode;
 use std::collections::BTreeSet;
 use transaction::model::{
-    AuthZoneParams, BasicInstruction, Executable, ExecutionContext, FeePayment, Instruction,
-    InstructionList,
+    AuthZoneParams, Executable, ExecutionContext, FeePayment, Instruction,
 };
 
 #[derive(Debug, Copy, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
@@ -39,7 +38,7 @@ impl ValidatorTransaction {
                 round_in_epoch,
                 ..
             } => {
-                let update_time = BasicInstruction::CallMethod {
+                let update_time = Instruction::CallMethod {
                     component_address: CLOCK,
                     method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
                     args: scrypto_encode(&ClockSetCurrentTimeInput {
@@ -48,7 +47,7 @@ impl ValidatorTransaction {
                     .unwrap(),
                 };
 
-                let update_round = BasicInstruction::CallMethod {
+                let update_round = Instruction::CallMethod {
                     component_address: EPOCH_MANAGER,
                     method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
                     args: scrypto_encode(&EpochManagerNextRoundInput {
@@ -57,10 +56,7 @@ impl ValidatorTransaction {
                     .unwrap(),
                 };
 
-                vec![
-                    Instruction::Basic(update_time),
-                    Instruction::Basic(update_round),
-                ]
+                vec![update_time, update_round]
             }
         };
 
@@ -82,7 +78,7 @@ impl PreparedValidatorTransaction {
         };
 
         Executable::new_no_blobs(
-            InstructionList::AnyOwned(self.instructions),
+            &self.instructions,
             ExecutionContext {
                 transaction_hash: self.hash,
                 payload_size: 0,

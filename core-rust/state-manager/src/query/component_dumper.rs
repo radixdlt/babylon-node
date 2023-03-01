@@ -62,20 +62,45 @@
  * permissions under this License.
  */
 
-use radix_engine::blueprints::resource::VaultSubstate;
+use std::collections::BTreeSet;
+use radix_engine::blueprints::resource::{VaultInfoSubstate};
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
-use radix_engine::types::{ComponentAddress, GlobalAddress, RENodeId, SubstateId};
+use radix_engine::types::{ComponentAddress, RENodeId, SubstateId};
+use radix_engine_interface::blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource, NonFungibleLocalId, ResourceAddress};
+use radix_engine_interface::math::Decimal;
 
 use super::component_state_tree_traverser::*;
 
+
+pub enum VaultData {
+    Fungible {
+        resource_address: ResourceAddress,
+        amount: Decimal,
+    },
+    NonFungible {
+        resource_address: ResourceAddress,
+        ids: BTreeSet<NonFungibleLocalId>,
+    },
+}
+
 pub struct ComponentStateDump {
-    pub vaults: Vec<VaultSubstate>,
+    pub vaults: Vec<VaultData>,
     pub descendents: Vec<(Option<SubstateId>, RENodeId, u32)>,
 }
 
 impl StateTreeVisitor for ComponentStateDump {
-    fn visit_vault(&mut self, _parent_id: Option<&SubstateId>, vault: &VaultSubstate) {
-        self.vaults.push(vault.clone());
+    fn visit_fungible_vault(&mut self, _parent_id: Option<&SubstateId>, info: &VaultInfoSubstate, liquid: &LiquidFungibleResource) {
+        self.vaults.push(VaultData::Fungible {
+            resource_address: info.resource_address,
+            amount: liquid.amount(),
+        });
+    }
+
+    fn visit_non_fungible_vault(&mut self, _parent_id: Option<&SubstateId>, info: &VaultInfoSubstate, liquid: &LiquidNonFungibleResource) {
+        self.vaults.push(VaultData::NonFungible {
+            resource_address: info.resource_address,
+            ids: liquid.ids().clone(),
+        });
     }
 
     fn visit_node_id(&mut self, _parent_id: Option<&SubstateId>, node_id: &RENodeId, depth: u32) {
@@ -91,7 +116,7 @@ pub fn dump_component_state<S>(
 where
     S: ReadableSubstateStore + QueryableSubstateStore,
 {
-    let node_id = RENodeId::Global(GlobalAddress::Component(component));
+    let node_id = RENodeId::GlobalComponent(component);
     let mut component_dump = ComponentStateDump {
         vaults: Vec::new(),
         descendents: Vec::new(),

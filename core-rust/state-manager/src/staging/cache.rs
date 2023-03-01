@@ -74,7 +74,7 @@ use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::scrypto_encode;
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
-use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeStore, ReNodeModulePayload, TreeNode, Version, WriteableTreeStore};
+use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReadableTreeStore, ReNodeModulePayload, TreeNode, Version, WriteableTreeStore};
 use sbor::rust::collections::HashMap;
 use slotmap::SecondaryMap;
 
@@ -171,12 +171,12 @@ impl ExecutionCache {
     }
 }
 
-struct CollectingTreeStore<'s, P: Payload, S: ReadableTreeStore<P>> {
+struct CollectingTreeStore<'s, S: ReadableTreeStore<ReNodeModulePayload>> {
     readable_delegate: &'s S,
     diff: HashTreeDiff,
 }
 
-impl<'s, P: Payload, S: ReadableTreeStore<P>> CollectingTreeStore<'s, P, S> {
+impl<'s, S: ReadableTreeStore<ReNodeModulePayload>> CollectingTreeStore<'s, S> {
     pub fn new(readable_delegate: &'s S) -> Self {
         Self {
             readable_delegate,
@@ -185,13 +185,13 @@ impl<'s, P: Payload, S: ReadableTreeStore<P>> CollectingTreeStore<'s, P, S> {
     }
 }
 
-impl<'s, P: Payload, S: ReadableTreeStore<P>> ReadableTreeStore<P> for CollectingTreeStore<'s, P, S> {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
+impl<'s, S: ReadableTreeStore<ReNodeModulePayload>> ReadableTreeStore<ReNodeModulePayload> for CollectingTreeStore<'s, S> {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<ReNodeModulePayload>> {
         self.readable_delegate.get_node(key)
     }
 }
 
-impl<'s, P: Payload, S: ReadableTreeStore<P>> WriteableTreeStore<ReNodeModulePayload> for CollectingTreeStore<'s, P, S> {
+impl<'s, S: ReadableTreeStore<ReNodeModulePayload>> WriteableTreeStore<ReNodeModulePayload> for CollectingTreeStore<'s, S> {
     fn insert_node(&mut self, key: NodeKey, node: TreeNode<ReNodeModulePayload>) {
         self.diff.new_hash_tree_nodes.push((key, node));
     }
