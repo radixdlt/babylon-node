@@ -70,6 +70,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.PostponedRoundQuorum;
 import com.radixdlt.consensus.liveness.*;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.*;
@@ -142,6 +143,7 @@ public final class ConsensusModule extends AbstractModule {
       ProposerElection proposerElection,
       Metrics metrics,
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
+      ScheduledEventDispatcher<PostponedRoundQuorum> postponedRoundQuorumDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
       EventDispatcher<ProposalRejected> proposalRejectedDispatcher,
       RoundUpdate roundUpdate) {
@@ -158,6 +160,7 @@ public final class ConsensusModule extends AbstractModule {
               bftSync.roundQuorumReachedEventProcessor().process(roundQuorumReached);
               roundQuorumReachedEventDispatcher.dispatch(roundQuorumReached);
             })
+        .postponedRoundQuorumDispatcher(postponedRoundQuorumDispatcher)
         .doubleVoteDispatcher(doubleVoteEventDispatcher)
         .roundUpdate(roundUpdate)
         .bftSyncer(bftSync)
