@@ -78,9 +78,7 @@ use radix_engine::types::{
     SubstateOffset,
 };
 use radix_engine_interface::api::types::NodeModuleId;
-use radix_engine_stores::hash_tree::tree_store::{
-    encode_key, NodeKey, ReadableTreeStore, TreeNode,
-};
+use radix_engine_stores::hash_tree::tree_store::{encode_key, NodeKey, Payload, ReadableTreeStore, TreeNode};
 use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, Direction, IteratorMode, Options, WriteBatch, DB,
 };
@@ -654,8 +652,8 @@ impl ReadableSubstateStore for RocksDBStore {
     }
 }
 
-impl ReadableTreeStore for RocksDBStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+impl<P: Payload> ReadableTreeStore<P> for RocksDBStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
         self.db
             .get_pinned_cf(self.cf_handle(&StateHashTreeNodes), encode_key(key))
             .unwrap()

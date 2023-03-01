@@ -23,13 +23,13 @@ parking_lot = { version = "0.12" }
 #
 # Ensure this version is also identically updated in ../state-manager/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-create-account-f1160a", features = ["serde", "indexmap"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-create-account-f1160a" }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-create-account-f1160a", features = ["serde"]  }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-create-account-f1160a" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-create-account-f1160a" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-create-account-f1160a" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-create-account-f1160a" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-a3e85db09", features = ["serde"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-a3e85db09" }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-a3e85db09", features = ["serde"]  }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-a3e85db09" }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-a3e85db09" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-a3e85db09" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-a3e85db09" }
 
 jni = "0.19.0"
 

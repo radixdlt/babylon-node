@@ -70,18 +70,19 @@ use lazy_static::lazy_static;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore};
 use radix_engine::state_manager::StateDiff;
 use radix_engine::transaction::{TransactionReceipt, TransactionResult};
-use radix_engine_interface::api::types::SubstateId;
-use radix_engine_interface::crypto::{hash, Hash};
+use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
+use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::scrypto_encode;
-use radix_engine_stores::hash_tree::put_at_next_version;
-use radix_engine_stores::hash_tree::tree_store::{
-    NodeKey, ReadableTreeStore, TreeNode, Version, WriteableTreeStore,
-};
+use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
+use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeStore, ReNodeModulePayload, TreeNode, Version, WriteableTreeStore};
 use sbor::rust::collections::HashMap;
 use slotmap::SecondaryMap;
 
-pub trait RootStore: ReadableSubstateStore + ReadableTreeStore {}
-impl<T: ReadableSubstateStore + ReadableTreeStore> RootStore for T {}
+pub trait ReadableLayeredTreeStore: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset> {}
+impl<T: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>> ReadableLayeredTreeStore for T {}
+
+pub trait RootStore: ReadableSubstateStore + ReadableLayeredTreeStore {}
+impl<T: ReadableSubstateStore + ReadableLayeredTreeStore> RootStore for T {}
 
 pub struct ExecutionCache {
     stage_tree: StageTree<ProcessedResult, ImmutableStore>,
@@ -98,7 +99,8 @@ pub struct ProcessedResult {
 
 #[derive(Clone)]
 pub struct HashTreeDiff {
-    pub new_hash_tree_nodes: Vec<(NodeKey, TreeNode)>,
+    pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<ReNodeModulePayload>)>,
+    pub new_substate_layer_nodes: Vec<(NodeKey, TreeNode<SubstateOffset>)>,
     pub stale_hash_tree_node_keys: Vec<NodeKey>,
 }
 
@@ -169,12 +171,12 @@ impl ExecutionCache {
     }
 }
 
-struct CollectingTreeStore<'s, S: ReadableTreeStore> {
+struct CollectingTreeStore<'s, P: Payload, S: ReadableTreeStore<P>> {
     readable_delegate: &'s S,
     diff: HashTreeDiff,
 }
 
-impl<'s, S: ReadableTreeStore> CollectingTreeStore<'s, S> {
+impl<'s, P: Payload, S: ReadableTreeStore<P>> CollectingTreeStore<'s, P, S> {
     pub fn new(readable_delegate: &'s S) -> Self {
         Self {
             readable_delegate,
@@ -183,14 +185,14 @@ impl<'s, S: ReadableTreeStore> CollectingTreeStore<'s, S> {
     }
 }
 
-impl<'s, S: ReadableTreeStore> ReadableTreeStore for CollectingTreeStore<'s, S> {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+impl<'s, P: Payload, S: ReadableTreeStore<P>> ReadableTreeStore<P> for CollectingTreeStore<'s, P, S> {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
         self.readable_delegate.get_node(key)
     }
 }
 
-impl<'s, S: ReadableTreeStore> WriteableTreeStore for CollectingTreeStore<'s, S> {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode) {
+impl<'s, P: Payload, S: ReadableTreeStore<P>> WriteableTreeStore<ReNodeModulePayload> for CollectingTreeStore<'s, P, S> {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<ReNodeModulePayload>) {
         self.diff.new_hash_tree_nodes.push((key, node));
     }
 
@@ -220,10 +222,20 @@ impl<'s, S: RootStore> ReadableSubstateStore for StagedStore<'s, S> {
     }
 }
 
-impl<'s, S: RootStore> ReadableTreeStore for StagedStore<'s, S> {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+impl<'s, S: RootStore> ReadableTreeStore<ReNodeModulePayload> for StagedStore<'s, S> {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<ReNodeModulePayload>> {
         self.overlay
-            .hash_tree_nodes
+            .re_node_layer_nodes
+            .get(key)
+            .cloned()
+            .or_else(|| ReadableTreeStore::get_node(self.root, key))
+    }
+}
+
+impl<'s, S: RootStore> ReadableTreeStore<SubstateOffset> for StagedStore<'s, S> {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<SubstateOffset>> {
+        self.overlay
+            .substate_layer_nodes
             .get(key)
             .cloned()
             .or_else(|| ReadableTreeStore::get_node(self.root, key))
@@ -235,7 +247,7 @@ lazy_static! {
 }
 
 impl ProcessedResult {
-    fn from_processed<S: ReadableTreeStore>(
+    fn from_processed<S: ReadableLayeredTreeStore>(
         transaction_receipt: TransactionReceipt,
         state_version: Option<Version>,
         store: &S,
@@ -249,17 +261,13 @@ impl ProcessedResult {
                 .state_updates
                 .up_substates
                 .iter()
-                .map(|(id, value)| {
-                    (
-                        id.clone(),
-                        Some(hash(scrypto_encode(&value.substate).unwrap())),
-                    )
-                })
-                .collect::<Vec<(SubstateId, Option<Hash>)>>(),
+                .map(|(id, value)| SubstateHashChange::new(
+                    id.clone(), Some(hash(scrypto_encode(&value.substate).unwrap()))))
+                .collect::<Vec<_>>(),
             TransactionResult::Reject(_) | TransactionResult::Abort(_) => Vec::new(),
         };
         let mut collector = CollectingTreeStore::new(store);
-        let root_hash = put_at_next_version(&mut collector, state_version, &hash_changes);
+        let root_hash = put_at_next_version(&mut collector, state_version, hash_changes);
         Self {
             state_hash: StateHash::from(root_hash),
             receipt: transaction_receipt,
@@ -297,7 +305,8 @@ impl Delta for ProcessedResult {
 impl HashTreeDiff {
     pub fn new() -> Self {
         Self {
-            new_hash_tree_nodes: Vec::new(),
+            new_re_node_layer_nodes: Vec::new(),
+            new_substate_layer_nodes: Vec::new(),
             stale_hash_tree_node_keys: Vec::new(),
         }
     }
@@ -306,14 +315,16 @@ impl HashTreeDiff {
 #[derive(Clone)]
 pub struct ImmutableStore {
     substate_values: ImmutableHashMap<SubstateId, OutputValue>,
-    hash_tree_nodes: ImmutableHashMap<NodeKey, TreeNode>,
+    re_node_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<ReNodeModulePayload>>,
+    substate_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<SubstateOffset>>,
 }
 
 impl Accumulator<ProcessedResult> for ImmutableStore {
     fn create_empty() -> Self {
         Self {
             substate_values: ImmutableHashMap::new(),
-            hash_tree_nodes: ImmutableHashMap::new(),
+            re_node_layer_nodes: ImmutableHashMap::new(),
+            substate_layer_nodes: ImmutableHashMap::new(),
         }
     }
 
