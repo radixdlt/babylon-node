@@ -91,6 +91,7 @@ public final class BFTBuilder {
   private ScheduledEventDispatcher<PostponedRoundQuorum> postponedRoundQuorumDispatcher;
   private EventDispatcher<ConsensusByzantineEvent> doubleVoteDispatcher;
   private EventDispatcher<ProposalRejected> proposalRejectedDispatcher;
+  private long timeoutQuorumProcessingDelayMs;
 
   // Instance specific objects
   private BFTValidatorId self;
@@ -183,6 +184,11 @@ public final class BFTBuilder {
     return this;
   }
 
+  public BFTBuilder timeoutQuorumProcessingDelayMs(long timeoutQuorumProcessingDelayMs) {
+    this.timeoutQuorumProcessingDelayMs = timeoutQuorumProcessingDelayMs;
+    return this;
+  }
+
   public BFTBuilder metrics(Metrics metrics) {
     this.metrics = metrics;
     return this;
@@ -212,7 +218,8 @@ public final class BFTBuilder {
             postponedRoundQuorumDispatcher,
             metrics,
             pendingVotes,
-            roundUpdate);
+            roundUpdate,
+            timeoutQuorumProcessingDelayMs);
 
     final var proposalTimestampVerifier =
         new ProposalTimestampVerifier(

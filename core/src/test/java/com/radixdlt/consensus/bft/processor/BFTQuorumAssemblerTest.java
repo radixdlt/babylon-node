@@ -103,7 +103,8 @@ public final class BFTQuorumAssemblerTest {
             this.postponedRoundQuorumDispatcher,
             this.metrics,
             this.pendingVotes,
-            mock(RoundUpdate.class));
+            mock(RoundUpdate.class),
+            1000L);
   }
 
   @Test

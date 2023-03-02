@@ -140,6 +140,12 @@ public class NoEpochsConsensusModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
+  private EventProcessorOnRunner<?> postponedRoundQuorumProcessor(BFTEventProcessor processor) {
+    return new EventProcessorOnRunner<>(
+        Runners.CONSENSUS, PostponedRoundQuorum.class, processor::processPostponedRoundQuorum);
+  }
+
+  @ProvidesIntoSet
   public EventProcessorOnRunner<?> bftSyncTimeoutProcessor(BFTSync bftSync) {
     return new EventProcessorOnRunner<>(
         Runners.CONSENSUS,

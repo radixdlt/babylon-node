@@ -91,12 +91,11 @@ import org.apache.logging.log4j.Logger;
 public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound {
   private static final Logger log = LogManager.getLogger();
 
-  private static final long TIMEOUT_QUORUM_PROCESSING_DELAY_MS = 2000;
-
   public record RoundQuorumWithLastVote(RoundQuorum roundQuorum, Vote lastVote) {}
 
   /** An event indicating that processing a round quorum has been postponed */
-  public record PostponedRoundQuorum(RoundQuorumWithLastVote roundQuorumWithLastVote) {}
+  public record PostponedRoundQuorum(
+      RoundQuorumWithLastVote roundQuorumWithLastVote, long millisecondsWaitTime) {}
 
   private final BFTEventProcessorAtCurrentRound forwardTo;
   private final BFTValidatorId self;
@@ -104,6 +103,7 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
   private final ScheduledEventDispatcher<PostponedRoundQuorum> postponedRoundQuorumDispatcher;
   private final Metrics metrics;
   private final PendingVotes pendingVotes;
+  private final long timeoutQuorumProcessingDelayMs;
 
   private RoundUpdate latestRoundUpdate;
   private Optional<RoundQuorumWithLastVote> bestQuorumFormedSoFarInCurrentRound = Optional.empty();
@@ -115,7 +115,8 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
       ScheduledEventDispatcher<PostponedRoundQuorum> postponedRoundQuorumDispatcher,
       Metrics metrics,
       PendingVotes pendingVotes,
-      RoundUpdate initialRoundUpdate) {
+      RoundUpdate initialRoundUpdate,
+      long timeoutQuorumProcessingDelayMs) {
     this.forwardTo = Objects.requireNonNull(forwardTo);
     this.self = Objects.requireNonNull(self);
     this.roundQuorumReachedDispatcher = Objects.requireNonNull(roundQuorumReachedDispatcher);
@@ -123,6 +124,7 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
     this.metrics = Objects.requireNonNull(metrics);
     this.pendingVotes = Objects.requireNonNull(pendingVotes);
     this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
+    this.timeoutQuorumProcessingDelayMs = timeoutQuorumProcessingDelayMs;
   }
 
   @Override
@@ -191,8 +193,8 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
         if (isThisTheFirstQuorumFormedInThisRound) {
           metrics.bft().postponedRoundQuorums().inc();
           this.postponedRoundQuorumDispatcher.dispatch(
-              new PostponedRoundQuorum(roundQuorumWithLastAuthor),
-              TIMEOUT_QUORUM_PROCESSING_DELAY_MS);
+              new PostponedRoundQuorum(roundQuorumWithLastAuthor, timeoutQuorumProcessingDelayMs),
+              timeoutQuorumProcessingDelayMs);
         }
       }
     }

@@ -62,21 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.deterministic;
+package com.radixdlt.consensus.bft;
 
-import com.google.inject.AbstractModule;
-import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public final class DeterministicEnvironmentModule extends AbstractModule {
-  private final ControlledDispatcher controlledSender;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  public DeterministicEnvironmentModule(ControlledDispatcher controlledSender) {
-    this.controlledSender = controlledSender;
-  }
-
-  @Override
-  protected void configure() {
-    bind(Environment.class).toInstance(controlledSender);
-  }
-}
+/**
+ * The amount of time (in milliseconds) by which the processing of a timeout quorum can be delayed
+ * (to try form a QC in the meantime)
+ */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface TimeoutQuorumProcessingDelayMs {}

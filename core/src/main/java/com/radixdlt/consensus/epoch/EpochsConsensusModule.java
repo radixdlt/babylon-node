@@ -135,7 +135,7 @@ public class EpochsConsensusModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private EventProcessorOnRunner<?> postponedRoundQuorum(EpochManager epochManager) {
+  private EventProcessorOnRunner<?> postponedRoundQuorumProcessor(EpochManager epochManager) {
     return new EventProcessorOnRunner<>(
         Runners.CONSENSUS,
         new TypeLiteral<Epoched<PostponedRoundQuorum>>() {},
@@ -248,6 +248,19 @@ public class EpochsConsensusModule extends AbstractModule {
 
   @ProvidesIntoSet
   @ProcessOnDispatch
+  private EventProcessor<PostponedRoundQuorum> initialEpochPostponedRoundQuorumDispatcher(
+      ScheduledEventDispatcher<Epoched<PostponedRoundQuorum>> epochedPostponedRoundQuorumDispatcher,
+      EpochChange initialEpoch) {
+    return postponedRoundQuorum -> {
+      final var epochedPostponedRoundQuorum =
+          Epoched.from(initialEpoch.getNextEpoch(), postponedRoundQuorum);
+      epochedPostponedRoundQuorumDispatcher.dispatch(
+          epochedPostponedRoundQuorum, postponedRoundQuorum.millisecondsWaitTime());
+    };
+  }
+
+  @ProvidesIntoSet
+  @ProcessOnDispatch
   private EventProcessor<RoundUpdate> initialRoundUpdateToEpochRoundUpdateConverter(
       EventDispatcher<EpochRoundUpdate> epochRoundUpdateEventDispatcher, EpochChange initialEpoch) {
     return roundUpdate -> {
@@ -329,9 +342,10 @@ public class EpochsConsensusModule extends AbstractModule {
       TimeSupplier timeSupplier,
       Metrics metrics,
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
-      ScheduledEventDispatcher<PostponedRoundQuorum> postponedRoundQuorumDispatcher,
+      ScheduledEventDispatcher<Epoched<PostponedRoundQuorum>> postponedRoundQuorumDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
-      EventDispatcher<EpochProposalRejected> proposalRejectedDispatcher) {
+      EventDispatcher<EpochProposalRejected> proposalRejectedDispatcher,
+      @TimeoutQuorumProcessingDelayMs long timeoutQuorumProcessingDelayMs) {
     return (self,
         pacemaker,
         bftSyncer,
@@ -357,7 +371,12 @@ public class EpochsConsensusModule extends AbstractModule {
                   roundQuorumReachedEventProcessor.process(roundQuorumReached);
                   roundQuorumReachedEventDispatcher.dispatch(roundQuorumReached);
                 })
-            .postponedRoundQuorumDispatcher(postponedRoundQuorumDispatcher)
+            .postponedRoundQuorumDispatcher(
+                (postponedRoundQuorum, ms) -> {
+                  postponedRoundQuorumDispatcher.dispatch(
+                      Epoched.from(epoch, postponedRoundQuorum), ms);
+                })
+            .timeoutQuorumProcessingDelayMs(timeoutQuorumProcessingDelayMs)
             .doubleVoteDispatcher(doubleVoteEventDispatcher)
             .roundUpdate(roundUpdate)
             .bftSyncer(bftSyncer)

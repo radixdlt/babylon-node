@@ -147,7 +147,8 @@ public final class ConsensusModule extends AbstractModule {
       ScheduledEventDispatcher<PostponedRoundQuorum> postponedRoundQuorumDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
       EventDispatcher<ProposalRejected> proposalRejectedDispatcher,
-      RoundUpdate roundUpdate) {
+      RoundUpdate roundUpdate,
+      @TimeoutQuorumProcessingDelayMs long timeoutQuorumProcessingDelayMs) {
     return BFTBuilder.create()
         .self(self)
         .hasher(hasher)
@@ -162,6 +163,7 @@ public final class ConsensusModule extends AbstractModule {
               roundQuorumReachedEventDispatcher.dispatch(roundQuorumReached);
             })
         .postponedRoundQuorumDispatcher(postponedRoundQuorumDispatcher)
+        .timeoutQuorumProcessingDelayMs(timeoutQuorumProcessingDelayMs)
         .doubleVoteDispatcher(doubleVoteEventDispatcher)
         .roundUpdate(roundUpdate)
         .bftSyncer(bftSync)

@@ -194,6 +194,8 @@ public class EpochManagerTest {
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<ScheduledEventDispatcher<PostponedRoundQuorum>>() {})
             .toInstance(rmock(ScheduledEventDispatcher.class));
+        bind(new TypeLiteral<ScheduledEventDispatcher<Epoched<PostponedRoundQuorum>>>() {})
+            .toInstance(rmock(ScheduledEventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<RoundUpdate>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<EpochRoundUpdate>>() {})
