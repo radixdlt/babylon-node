@@ -79,7 +79,7 @@ public class MockedLedgerRecoveryModule extends AbstractModule {
   @LastEpochProof
   public LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    return LedgerProof.genesis(accumulatorState, HashUtils.zero256(), validatorSet, 0, 0);
+    return LedgerProof.genesis(accumulatorState, LedgerHashes.zero(), validatorSet, 0, 0);
   }
 
   @Provides

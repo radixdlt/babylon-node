@@ -277,6 +277,7 @@ where
             &self.store,
             Some(parent_transaction_identifiers.state_version).filter(|version| *version > 0),
             &parent_transaction_identifiers.accumulator_hash,
+            payload_hash,
             &new_accumulator_hash,
             |store| {
                 let start = Instant::now();
@@ -592,7 +593,7 @@ where
                         .next_epoch
                         .clone()
                         .map(|(validator_set, _)| validator_set),
-                    state_hash: *processed.state_hash(),
+                    ledger_hashes: *processed.ledger_hashes(),
                 },
                 TransactionOutcome::Failure(error) => {
                     panic!("Genesis failed. Error: {:?}", error)
@@ -672,7 +673,7 @@ where
                     panic!("System Transactions should not be prepared");
                 }
             }
-            .expect("Already prepared tranasctions should be valid");
+            .expect("Already prepared transactions should be valid");
 
             let (new_accumulator_hash, processed) = self.execute_for_staging_with_cache(
                 state_tracker.latest_transaction_identifiers(),
@@ -682,7 +683,7 @@ where
             match &processed.receipt().result {
                 TransactionResult::Commit(_) => {
                     // TODO: Do we need to check that next epoch request has been prepared?
-                    state_tracker.update(new_accumulator_hash, *processed.state_hash());
+                    state_tracker.update(new_accumulator_hash, *processed.ledger_hashes());
                 }
                 TransactionResult::Reject(reject_result) => {
                     panic!(
@@ -719,7 +720,7 @@ where
                     panic!("Validator txn failed: {:?}", error);
                 }
 
-                state_tracker.update(new_accumulator_hash, *processed.state_hash());
+                state_tracker.update(new_accumulator_hash, *processed.ledger_hashes());
                 committed.push(manifest_encode(&validator_txn).unwrap());
 
                 commit_result.next_epoch.clone().map(|e| NextEpoch {
@@ -803,7 +804,7 @@ where
 
                 match &processed.receipt().result {
                     TransactionResult::Commit(result) => {
-                        state_tracker.update(new_accumulator_hash, *processed.state_hash());
+                        state_tracker.update(new_accumulator_hash, *processed.ledger_hashes());
 
                         already_committed_or_prepared_intent_hashes
                             .insert(intent_hash, AlreadyPreparedTransaction::Proposed);
@@ -886,21 +887,21 @@ where
             committed,
             rejected: rejected_payloads,
             next_epoch,
-            state_hash: *state_tracker.latest_state_hash(),
+            ledger_hashes: *state_tracker.latest_ledger_hashes(),
         }
     }
 }
 
 struct StateTracker {
     transaction_identifiers: CommittedTransactionIdentifiers,
-    state_hash: Option<StateHash>,
+    ledger_hashes: Option<LedgerHashes>,
 }
 
 impl StateTracker {
     pub fn initial(base_transaction_identifiers: CommittedTransactionIdentifiers) -> Self {
         Self {
             transaction_identifiers: base_transaction_identifiers,
-            state_hash: None,
+            ledger_hashes: None,
         }
     }
 
@@ -908,14 +909,14 @@ impl StateTracker {
         &self.transaction_identifiers
     }
 
-    pub fn update(&mut self, accumulator_hash: AccumulatorHash, state_hash: StateHash) {
+    pub fn update(&mut self, accumulator_hash: AccumulatorHash, ledger_hashes: LedgerHashes) {
         self.transaction_identifiers.state_version += 1;
         self.transaction_identifiers.accumulator_hash = accumulator_hash;
-        self.state_hash = Some(state_hash);
+        self.ledger_hashes = Some(ledger_hashes);
     }
 
-    pub fn latest_state_hash(&self) -> &StateHash {
-        self.state_hash.as_ref().expect("no update yet")
+    pub fn latest_ledger_hashes(&self) -> &LedgerHashes {
+        self.ledger_hashes.as_ref().expect("no update yet")
     }
 }
 
@@ -1040,7 +1041,7 @@ where
                 intent_hashes.push(intent_hash);
             }
 
-            state_tracker.update(current_accumulator_hash, *processed.state_hash());
+            state_tracker.update(current_accumulator_hash, *processed.ledger_hashes());
 
             committed_transaction_bundles.push((
                 transaction,
@@ -1059,11 +1060,12 @@ where
             );
         }
 
-        if *state_tracker.latest_state_hash() != commit_request.proof_state_hash {
+        let final_state_hash = &state_tracker.latest_ledger_hashes().state_root;
+        if *final_state_hash != commit_request.proof_state_hash {
             warn!(
                 "computed state hash at version {} differs from the one in proof ({} != {})",
                 commit_request.proof_state_version,
-                state_tracker.latest_state_hash(),
+                final_state_hash,
                 commit_request.proof_state_hash
             );
         }

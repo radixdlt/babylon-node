@@ -62,22 +62,16 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.commit;
+use sbor::{Categorize, Decode, Encode};
 
-import com.radixdlt.lang.Option;
-import com.radixdlt.lang.Tuple;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import java.util.List;
+#[derive(Debug, PartialEq, Eq, Categorize, Encode, Decode)]
+pub struct JavaHashCode(Vec<u8>);
 
-public record PrepareResult(
-    List<byte[]> committed,
-    List<Tuple.Tuple2<byte[], String>> rejected,
-    Option<NextEpoch> nextEpoch,
-    LedgerHashes ledgerHashes) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        PrepareResult.class,
-        codecs -> StructCodec.fromRecordComponents(PrepareResult.class, codecs));
-  }
+impl JavaHashCode {
+    pub fn from_bytes<const S: usize>(bytes: [u8; S]) -> Self {
+        JavaHashCode(bytes.to_vec())
+    }
+    pub fn into_bytes<const S: usize>(self) -> [u8; S] {
+        self.0.as_slice().try_into().unwrap()
+    }
 }

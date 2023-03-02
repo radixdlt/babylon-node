@@ -65,6 +65,7 @@
 package com.radixdlt.rev2;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorId;
@@ -96,5 +97,11 @@ public final class REv2ToConsensus {
             .map(e -> REv2ToConsensus.validator(e.getKey(), e.getValue()))
             .collect(ImmutableSet.toImmutableSet());
     return NextEpoch.create(nextEpoch.epoch().toNonNegativeLong().unwrap(), validators);
+  }
+
+  public static LedgerHashes ledgerHashes(
+      com.radixdlt.statecomputer.commit.LedgerHashes ledgerHashes) {
+    return LedgerHashes.create(
+        ledgerHashes.stateRoot(), ledgerHashes.transactionRoot(), ledgerHashes.receiptRoot());
   }
 }

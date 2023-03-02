@@ -64,14 +64,17 @@
 
 use super::stage_tree::{DerivedStageKey, StageKey};
 use crate::staging::stage_tree::{Accumulator, Delta, StageTree};
-use crate::{AccumulatorHash, StateHash};
+use crate::{
+    AccumulatorHash, LedgerHashes, LedgerPayloadHash, LedgerTransactionReceipt, ReceiptHash,
+    StateHash, TransactionHash,
+};
 use im::hashmap::HashMap as ImmutableHashMap;
 use lazy_static::lazy_static;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore};
 use radix_engine::state_manager::StateDiff;
 use radix_engine::transaction::{TransactionReceipt, TransactionResult};
 use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
-use radix_engine_interface::crypto::hash;
+use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto_encode;
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, Payload, ReNodeModulePayload, ReadableTreeStore, TreeNode, Version, WriteableTreeStore,
@@ -100,9 +103,10 @@ pub struct ExecutionCache {
 }
 
 pub struct ProcessedResult {
-    state_hash: StateHash,
+    /// Raw transaction receipt.
     receipt: TransactionReceipt,
-    hash_tree_diff: HashTreeDiff,
+    /// The processing results, applicable only for committed transactions (i.e. not rejected).
+    committed_results: Option<(LedgerHashes, HashTreeDiff)>,
 }
 
 #[derive(Clone)]
@@ -127,6 +131,7 @@ impl ExecutionCache {
         root_store: &S,
         state_version: Option<Version>,
         parent_hash: &AccumulatorHash,
+        transaction_hash: &LedgerPayloadHash,
         new_hash: &AccumulatorHash,
         transaction: T,
     ) -> &ProcessedResult {
@@ -137,8 +142,12 @@ impl ExecutionCache {
                 let staged_store =
                     StagedStore::new(root_store, self.stage_tree.get_accumulator(&parent_key));
                 let receipt = transaction(&staged_store);
-                let processed =
-                    ProcessedResult::from_processed(receipt, state_version, &staged_store);
+                let processed = ProcessedResult::from_processed(
+                    transaction_hash,
+                    receipt,
+                    state_version,
+                    &staged_store,
+                );
                 let new_key = self.stage_tree.new_child_node(parent_key, processed);
                 self.key_to_accumulator_hash.insert(new_key, *new_hash);
                 self.accumulator_hash_to_key.insert(*new_hash, new_key);
@@ -266,34 +275,28 @@ lazy_static! {
 
 impl ProcessedResult {
     fn from_processed<S: ReadableLayeredTreeStore>(
+        transaction_hash: &LedgerPayloadHash,
         transaction_receipt: TransactionReceipt,
         state_version: Option<Version>,
         store: &S,
     ) -> ProcessedResult {
-        // TODO: currently, only the hashes of changed (or created) substates are tracked, since
-        // the hash tree wants to stay consistent with the substate store (which does not support
-        // deletes yet). The underlying JMT implementation already supports deletion - and to use
-        // it, we simply can include `down_substates` with `None` hashes in the vector below.
-        let hash_changes = match &transaction_receipt.result {
-            TransactionResult::Commit(commit) => commit
-                .state_updates
-                .up_substates
-                .iter()
-                .map(|(id, value)| {
-                    SubstateHashChange::new(
-                        id.clone(),
-                        Some(hash(scrypto_encode(&value.substate).unwrap())),
-                    )
-                })
-                .collect::<Vec<_>>(),
-            TransactionResult::Reject(_) | TransactionResult::Abort(_) => Vec::new(),
-        };
-        let mut collector = CollectingTreeStore::new(store);
-        let root_hash = put_at_next_version(&mut collector, state_version, hash_changes);
+        let ledger_receipt = LedgerTransactionReceipt::try_from(transaction_receipt.clone()).ok();
+        let committed_results = ledger_receipt.map(|ledger_receipt| {
+            let state_diff = Self::extract_state_diff(&transaction_receipt);
+            let (state_tree_root_hash, state_tree_diff) =
+                Self::compute_state_tree_update(store, state_version, state_diff);
+            let ledger_hashes = LedgerHashes {
+                state_root: StateHash::from(state_tree_root_hash),
+                // TODO(wip): the values below are currently placeholders; they should be computed
+                // and returned together with "update slices" of their respective merkle trees.
+                transaction_root: TransactionHash::from_raw_bytes(transaction_hash.into_bytes()),
+                receipt_root: ReceiptHash::from_raw_bytes(ledger_receipt.get_hash().into_bytes()),
+            };
+            (ledger_hashes, state_tree_diff)
+        });
         Self {
-            state_hash: StateHash::from(root_hash),
             receipt: transaction_receipt,
-            hash_tree_diff: collector.diff,
+            committed_results,
         }
     }
 
@@ -302,25 +305,64 @@ impl ProcessedResult {
     }
 
     pub fn state_diff(&self) -> &StateDiff {
-        if let TransactionResult::Commit(commit) = &self.receipt.result {
+        Self::extract_state_diff(&self.receipt)
+    }
+
+    pub fn ledger_hashes(&self) -> &LedgerHashes {
+        &self.committed_results().0
+    }
+
+    pub fn hash_tree_diff(&self) -> &HashTreeDiff {
+        &self.committed_results().1
+    }
+
+    fn committed_results(&self) -> &(LedgerHashes, HashTreeDiff) {
+        self.committed_results
+            .as_ref()
+            .expect("available only for committed transactions")
+    }
+
+    fn extract_state_diff(receipt: &TransactionReceipt) -> &StateDiff {
+        if let TransactionResult::Commit(commit) = &receipt.result {
             &commit.state_updates
         } else {
             &EMPTY_STATE_DIFF
         }
     }
 
-    pub fn hash_tree_diff(&self) -> &HashTreeDiff {
-        &self.hash_tree_diff
-    }
-
-    pub fn state_hash(&self) -> &StateHash {
-        &self.state_hash
+    fn compute_state_tree_update<S: ReadableLayeredTreeStore>(
+        store: &S,
+        state_version: Option<Version>,
+        state_diff: &StateDiff,
+    ) -> (Hash, HashTreeDiff) {
+        // TODO: currently, only the hashes of changed (or created) substates are tracked, since
+        // the hash tree wants to stay consistent with the substate store (which does not support
+        // deletes yet). The underlying JMT implementation already supports deletion - and to use
+        // it, we simply can include `down_substates` with `None` hashes in the vector below.
+        let hash_changes = state_diff
+            .up_substates
+            .iter()
+            .map(|(id, value)| {
+                SubstateHashChange::new(
+                    id.clone(),
+                    Some(hash(scrypto_encode(&value.substate).unwrap())),
+                )
+            })
+            .collect::<Vec<_>>();
+        let mut collector = CollectingTreeStore::new(store);
+        let root_hash = put_at_next_version(&mut collector, state_version, hash_changes);
+        (root_hash, collector.diff)
     }
 }
 
 impl Delta for ProcessedResult {
     fn weight(&self) -> usize {
-        self.state_diff().up_substates.len() + self.hash_tree_diff().new_re_node_layer_nodes.len()
+        let state_diff_weight = self.state_diff().up_substates.len();
+        let hash_tree_diff_weight = self
+            .committed_results
+            .as_ref()
+            .map(|results| results.1.weight());
+        state_diff_weight + hash_tree_diff_weight.unwrap_or(0)
     }
 }
 
@@ -331,6 +373,10 @@ impl HashTreeDiff {
             new_substate_layer_nodes: Vec::new(),
             stale_hash_tree_node_keys: Vec::new(),
         }
+    }
+
+    pub fn weight(&self) -> usize {
+        self.new_re_node_layer_nodes.len() + self.new_substate_layer_nodes.len()
     }
 }
 
@@ -358,20 +404,12 @@ impl Accumulator<ProcessedResult> for ImmutableStore {
                 .iter()
                 .map(|(id, value)| (id.clone(), value.clone())),
         );
-        self.re_node_layer_nodes.extend(
-            processed
-                .hash_tree_diff()
-                .new_re_node_layer_nodes
-                .iter()
-                .cloned(),
-        );
-        self.substate_layer_nodes.extend(
-            processed
-                .hash_tree_diff()
-                .new_substate_layer_nodes
-                .iter()
-                .cloned(),
-        );
+        if let Some((_, hash_tree_diff)) = &processed.committed_results {
+            self.re_node_layer_nodes
+                .extend(hash_tree_diff.new_re_node_layer_nodes.iter().cloned());
+            self.substate_layer_nodes
+                .extend(hash_tree_diff.new_substate_layer_nodes.iter().cloned());
+        }
     }
 
     fn constant_clone(&self) -> Self {

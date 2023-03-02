@@ -16,7 +16,7 @@ use radix_engine_interface::api::component::ComponentAddress;
 use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::*;
 
-use crate::AccumulatorHash;
+use crate::{AccumulatorHash, LedgerReceiptHash};
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct CommittedTransactionIdentifiers {
@@ -89,6 +89,12 @@ pub struct LedgerTransactionReceipt {
     pub entity_changes: EntityChanges,
     pub resource_changes: Vec<ResourceChange>,
     pub next_epoch: Option<(BTreeMap<ComponentAddress, Validator>, u64)>,
+}
+
+impl LedgerTransactionReceipt {
+    pub fn get_hash(&self) -> LedgerReceiptHash {
+        LedgerReceiptHash::for_receipt(self)
+    }
 }
 
 impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {

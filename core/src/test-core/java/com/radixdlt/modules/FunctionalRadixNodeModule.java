@@ -366,7 +366,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         withEpochs.epochMaxRound(),
                         withEpochs.mapping(),
                         withEpochs.preGenesisAccumulatorHash(),
-                        withEpochs.preGenesisStateHash()));
+                        withEpochs.preGenesisLedgerHashes()));
               }
             }
           }
@@ -398,7 +398,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                           Vertex.createInitialEpochVertex(
                                   LedgerHeader.genesis(
                                       initialAccumulatorState,
-                                      HashUtils.zero256(),
+                                      LedgerHashes.zero(),
                                       validatorSet,
                                       0,
                                       0))
@@ -408,7 +408,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                               proof.getNextEpoch().orElseThrow().getEpoch(),
                               Round.genesis(),
                               proof.getAccumulatorState(),
-                              proof.getStateHash(),
+                              proof.getLedgerHashes(),
                               proof.consensusParentRoundTimestamp(),
                               proof.proposerTimestamp());
                       var initialEpochQC =

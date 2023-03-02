@@ -86,7 +86,7 @@ import java.util.function.Function;
 public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
 
   private final HashCode preGenesisAccumulatorHash;
-  private final HashCode preGenesisStateHash;
+  private final LedgerHashes preGenesisLedgerHashes;
   private final Round epochMaxRound;
   private final EpochNodeWeightMapping epochNodeWeightMapping;
 
@@ -94,11 +94,11 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
       Round epochMaxRound,
       EpochNodeWeightMapping epochNodeWeightMapping,
       HashCode preGenesisAccumulatorHash,
-      HashCode preGenesisStateHash) {
+      LedgerHashes preGenesisLedgerHashes) {
     this.epochMaxRound = epochMaxRound;
     this.epochNodeWeightMapping = epochNodeWeightMapping;
     this.preGenesisAccumulatorHash = preGenesisAccumulatorHash;
-    this.preGenesisStateHash = preGenesisStateHash;
+    this.preGenesisLedgerHashes = preGenesisLedgerHashes;
   }
 
   public MockedEpochsConsensusRecoveryModule(
@@ -106,7 +106,7 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
     this.epochMaxRound = epochMaxRound;
     this.epochNodeWeightMapping = epochNodeWeightMapping;
     this.preGenesisAccumulatorHash = HashUtils.zero256();
-    this.preGenesisStateHash = HashUtils.zero256();
+    this.preGenesisLedgerHashes = LedgerHashes.zero();
   }
 
   @Override
@@ -150,14 +150,14 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
     VertexWithHash genesisVertex =
         Vertex.createInitialEpochVertex(
                 LedgerHeader.genesis(
-                    accumulatorState, this.preGenesisStateHash, validatorSet, 0, 0))
+                    accumulatorState, this.preGenesisLedgerHashes, validatorSet, 0, 0))
             .withId(hasher);
     LedgerHeader nextLedgerHeader =
         LedgerHeader.create(
             proof.getNextEpoch().orElseThrow().getEpoch(),
             Round.genesis(),
             proof.getAccumulatorState(),
-            proof.getStateHash(),
+            proof.getLedgerHashes(),
             proof.consensusParentRoundTimestamp(),
             proof.proposerTimestamp());
     final var initialEpochQC =

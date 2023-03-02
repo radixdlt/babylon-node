@@ -64,7 +64,7 @@
 
 use crate::jni::mempool::JavaRawTransaction;
 use crate::transaction::UserTransactionValidator;
-use crate::PreviousVertex;
+use crate::{LedgerHashes, PreviousVertex};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -72,11 +72,11 @@ use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine::types::*;
 use std::collections::BTreeMap;
 
+use crate::jni::common_types::JavaHashCode;
 use crate::jni::utils::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
 use crate::{CommitError, NextEpoch, PrepareGenesisRequest, PrepareGenesisResult, StateHash};
 
-use super::mempool::JavaHashCode;
 use super::state_manager::ActualStateManager;
 
 //
@@ -246,7 +246,7 @@ pub fn export_extern_functions() {}
 pub struct JavaCommitRequest {
     pub transactions: Vec<JavaRawTransaction>,
     pub state_version: u64,
-    pub state_hash: JavaStateHash,
+    pub state_hash: JavaHashCode,
     pub proof: Vec<u8>,
     pub vertex_store: Option<Vec<u8>>,
 }
@@ -260,7 +260,7 @@ impl From<JavaCommitRequest> for CommitRequest {
                 .map(|t| t.payload)
                 .collect(),
             proof_state_version: commit_request.state_version,
-            proof_state_hash: commit_request.state_hash.into(),
+            proof_state_hash: StateHash::from_raw_bytes(commit_request.state_hash.into_bytes()),
             proof: commit_request.proof,
             vertex_store: commit_request.vertex_store,
         }
@@ -318,11 +318,28 @@ impl From<JavaPreviousVertex> for PreviousVertex {
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct JavaLedgerHashes {
+    pub state_root: JavaHashCode,
+    pub transaction_root: JavaHashCode,
+    pub receipt_root: JavaHashCode,
+}
+
+impl From<LedgerHashes> for JavaLedgerHashes {
+    fn from(ledger_hashes: LedgerHashes) -> Self {
+        Self {
+            state_root: JavaHashCode::from_bytes(ledger_hashes.state_root.into_bytes()),
+            transaction_root: JavaHashCode::from_bytes(ledger_hashes.transaction_root.into_bytes()),
+            receipt_root: JavaHashCode::from_bytes(ledger_hashes.receipt_root.into_bytes()),
+        }
+    }
+}
+
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPrepareResult {
     pub committed: Vec<Vec<u8>>,
     pub rejected: Vec<(Vec<u8>, String)>,
     pub next_epoch: Option<NextEpoch>,
-    pub state_hash: JavaStateHash,
+    pub ledger_hashes: JavaLedgerHashes,
 }
 
 impl From<PrepareResult> for JavaPrepareResult {
@@ -331,7 +348,7 @@ impl From<PrepareResult> for JavaPrepareResult {
             committed: prepare_results.committed,
             rejected: prepare_results.rejected,
             next_epoch: prepare_results.next_epoch,
-            state_hash: prepare_results.state_hash.into(),
+            ledger_hashes: prepare_results.ledger_hashes.into(),
         }
     }
 }
@@ -352,30 +369,15 @@ impl From<JavaPrepareGenesisRequest> for PrepareGenesisRequest {
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPrepareGenesisResult {
     pub validator_set: Option<BTreeMap<ComponentAddress, Validator>>,
-    pub state_hash: JavaStateHash,
+    pub ledger_hashes: JavaLedgerHashes,
 }
 
 impl From<PrepareGenesisResult> for JavaPrepareGenesisResult {
     fn from(prepare_result: PrepareGenesisResult) -> Self {
         JavaPrepareGenesisResult {
             validator_set: prepare_result.validator_set,
-            state_hash: prepare_result.state_hash.into(),
+            ledger_hashes: prepare_result.ledger_hashes.into(),
         }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Categorize, Encode, Decode)]
-pub struct JavaStateHash(Vec<u8>);
-
-impl From<StateHash> for JavaStateHash {
-    fn from(state_hash: StateHash) -> Self {
-        Self(state_hash.into_bytes().to_vec())
-    }
-}
-
-impl From<JavaStateHash> for StateHash {
-    fn from(java_state_hash: JavaStateHash) -> Self {
-        StateHash::from_raw_bytes(java_state_hash.0.try_into().expect("incorrect hash length"))
     }
 }
 
