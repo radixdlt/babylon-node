@@ -86,7 +86,7 @@ public class VertexStoreStateCreationTest {
           0,
           Round.genesis(),
           new AccumulatorState(0, HashUtils.zero256()),
-          HashUtils.zero256(),
+          LedgerHashes.zero(),
           0,
           0);
 

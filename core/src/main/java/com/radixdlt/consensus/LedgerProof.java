@@ -118,7 +118,7 @@ public final class LedgerProof {
 
   public static LedgerProof mockAtStateVersion(long stateVersion) {
     final var acc = new AccumulatorState(stateVersion, HashUtils.zero256());
-    final var header = LedgerHeader.create(0, Round.genesis(), acc, HashUtils.zero256(), 0, 0);
+    final var header = LedgerHeader.create(0, Round.genesis(), acc, LedgerHashes.zero(), 0, 0);
     return new LedgerProof(HashUtils.zero256(), header, new TimestampedECDSASignatures());
   }
 
@@ -128,14 +128,14 @@ public final class LedgerProof {
 
   public static LedgerProof genesis(
       AccumulatorState accumulatorState,
-      HashCode stateHash,
+      LedgerHashes ledgerHashes,
       BFTValidatorSet nextValidators,
       long consensusParentRoundTimestamp,
       long ledgerTimestamp) {
     var genesisLedgerHeader =
         LedgerHeader.genesis(
             accumulatorState,
-            stateHash,
+            ledgerHashes,
             nextValidators,
             consensusParentRoundTimestamp,
             ledgerTimestamp);
@@ -192,8 +192,8 @@ public final class LedgerProof {
     return ledgerHeader.getAccumulatorState();
   }
 
-  public HashCode getStateHash() {
-    return ledgerHeader.getStateHash();
+  public LedgerHashes getLedgerHashes() {
+    return ledgerHeader.getHashes();
   }
 
   // TODO: Remove

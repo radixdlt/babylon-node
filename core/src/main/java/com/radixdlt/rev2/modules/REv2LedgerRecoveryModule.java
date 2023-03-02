@@ -126,14 +126,15 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
                       .or((BFTValidatorSet) null);
               var accumulatorState =
                   ledgerAccumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
+              var ledgerHashes = REv2ToConsensus.ledgerHashes(result.ledgerHashes());
               var proof =
                   LedgerProof.genesis(
-                      accumulatorState, result.stateHash(), validatorSet, timestamp, timestamp);
+                      accumulatorState, ledgerHashes, validatorSet, timestamp, timestamp);
               var commitRequest =
                   new CommitRequest(
                       List.of(genesis),
                       UInt64.fromNonNegativeLong(proof.getStateVersion()),
-                      proof.getStateHash(),
+                      proof.getLedgerHashes().getStateRoot(),
                       serialization.toDson(proof, DsonOutput.Output.ALL),
                       Option.none());
               var commitResult = stateComputer.commit(commitRequest);

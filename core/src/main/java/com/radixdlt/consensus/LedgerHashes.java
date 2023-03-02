@@ -62,22 +62,95 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.commit;
+package com.radixdlt.consensus;
 
-import com.radixdlt.lang.Option;
-import com.radixdlt.lang.Tuple;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
+import java.util.Objects;
+import javax.annotation.concurrent.Immutable;
 
-public record PrepareResult(
-    List<byte[]> committed,
-    List<Tuple.Tuple2<byte[], String>> rejected,
-    Option<NextEpoch> nextEpoch,
-    LedgerHashes ledgerHashes) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        PrepareResult.class,
-        codecs -> StructCodec.fromRecordComponents(PrepareResult.class, codecs));
+@Immutable
+@SerializerId2("consensus.ledger_hashes")
+public final class LedgerHashes {
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
+  SerializerDummy serializer = SerializerDummy.DUMMY;
+
+  @JsonProperty("state_root")
+  // TODO: restore `Output.ALL` after fixing non-determinism bugs
+  // We need to come up with a few tests that expose potential non-determinism bugs, and then fix
+  // them. Before that happens, it could be risky to include the state hash in the DSON-based
+  // hashing (used e.g. in `QuorumCertificate` to get a hash of `VoteData`, leading to nodes not
+  // being able to agree on the same hash).
+  @DsonOutput(value = DsonOutput.Output.HASH, include = false)
+  private final HashCode stateRoot;
+
+  @JsonProperty("transaction_root")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final HashCode transactionRoot;
+
+  @JsonProperty("receipt_root")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final HashCode receiptRoot;
+
+  @JsonCreator
+  @VisibleForTesting
+  LedgerHashes(
+      @JsonProperty(value = "state_root", required = true) HashCode stateRoot,
+      @JsonProperty(value = "transaction_root", required = true) HashCode transactionRoot,
+      @JsonProperty(value = "receipt_root", required = true) HashCode receiptRoot) {
+    this.stateRoot = stateRoot;
+    this.transactionRoot = transactionRoot;
+    this.receiptRoot = receiptRoot;
+  }
+
+  public static LedgerHashes create(
+      HashCode stateRoot, HashCode transactionRoot, HashCode receiptRoot) {
+    return new LedgerHashes(stateRoot, transactionRoot, receiptRoot);
+  }
+
+  public static LedgerHashes zero() {
+    return create(HashUtils.zero256(), HashUtils.zero256(), HashUtils.zero256());
+  }
+
+  public HashCode getStateRoot() {
+    return stateRoot;
+  }
+
+  public HashCode getTransactionRoot() {
+    return transactionRoot;
+  }
+
+  public HashCode getReceiptRoot() {
+    return receiptRoot;
+  }
+
+  @Override
+  public boolean equals(Object object) {
+    if (this == object) {
+      return true;
+    }
+    return object instanceof LedgerHashes other
+        && stateRoot.equals(other.stateRoot)
+        && transactionRoot.equals(other.transactionRoot)
+        && receiptRoot.equals(other.receiptRoot);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(stateRoot, transactionRoot, receiptRoot);
+  }
+
+  @Override
+  public String toString() {
+    return "%s{stateRoot=%s, transactionRoot=%s, receiptRoot=%s}"
+        .formatted(LedgerHashes.class.getSimpleName(), stateRoot, transactionRoot, receiptRoot);
   }
 }

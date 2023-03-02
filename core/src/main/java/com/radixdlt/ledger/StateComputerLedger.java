@@ -95,32 +95,32 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     private final List<ExecutedTransaction> executedTransactions;
     private final Map<RawNotarizedTransaction, Exception> failedTransactions;
     private final NextEpoch nextEpoch;
-    private final HashCode stateHash;
+    private final LedgerHashes ledgerHashes;
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
         Map<RawNotarizedTransaction, Exception> failedTransactions,
         NextEpoch nextEpoch,
-        HashCode stateHash) {
+        LedgerHashes ledgerHashes) {
       this.executedTransactions = Objects.requireNonNull(executedTransactions);
       this.failedTransactions = Objects.requireNonNull(failedTransactions);
       this.nextEpoch = nextEpoch;
-      this.stateHash = stateHash;
+      this.ledgerHashes = ledgerHashes;
     }
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
         Map<RawNotarizedTransaction, Exception> failedTransactions,
-        HashCode stateHash) {
-      this(executedTransactions, failedTransactions, null, stateHash);
+        LedgerHashes ledgerHashes) {
+      this(executedTransactions, failedTransactions, null, ledgerHashes);
     }
 
     public Optional<NextEpoch> getNextEpoch() {
       return Optional.ofNullable(nextEpoch);
     }
 
-    public HashCode getStateHash() {
-      return stateHash;
+    public LedgerHashes getLedgerHashes() {
+      return ledgerHashes;
     }
 
     public List<ExecutedTransaction> getSuccessfullyExecutedTransactions() {
@@ -310,7 +310,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               parentHeader.getEpoch(),
               vertex.getRound(),
               accumulatorState,
-              result.getStateHash(),
+              result.getLedgerHashes(),
               vertex.getQCToParent().getWeightedTimestampOfSignatures(),
               vertex.proposerTimestamp(),
               result.getNextEpoch().orElse(null));

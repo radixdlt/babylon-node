@@ -132,11 +132,11 @@ public class ConsensusModuleTest {
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     var genesisVertex =
         Vertex.createInitialEpochVertex(
-                LedgerHeader.genesis(accumulatorState, HashUtils.zero256(), null, 0, 0))
+                LedgerHeader.genesis(accumulatorState, LedgerHashes.zero(), null, 0, 0))
             .withId(ZeroHasher.INSTANCE);
     var qc =
         QuorumCertificate.createInitialEpochQC(
-            genesisVertex, LedgerHeader.genesis(accumulatorState, HashUtils.zero256(), null, 0, 0));
+            genesisVertex, LedgerHeader.genesis(accumulatorState, LedgerHashes.zero(), null, 0, 0));
     this.validatorKeyPair = ECKeyPair.generateNew();
     this.validatorId = BFTValidatorId.create(this.validatorKeyPair.getPublicKey());
     var validatorSet =
@@ -259,7 +259,7 @@ public class ConsensusModuleTest {
                 1,
                 Round.of(1),
                 new AccumulatorState(1, HashUtils.zero256()),
-                HashUtils.zero256(),
+                LedgerHashes.zero(),
                 1,
                 1));
     final var voteData = new VoteData(next, parent.getProposedHeader(), parent.getParentHeader());

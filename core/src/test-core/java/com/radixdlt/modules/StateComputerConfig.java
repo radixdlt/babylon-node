@@ -66,6 +66,7 @@ package com.radixdlt.modules;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
+import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.crypto.HashUtils;
@@ -85,17 +86,17 @@ public sealed interface StateComputerConfig {
   static StateComputerConfig mockedWithEpochs(
       Round epochMaxRound, EpochNodeWeightMapping mapping, MockedMempoolConfig mempoolType) {
     return new MockedStateComputerConfigWithEpochs(
-        epochMaxRound, mapping, HashUtils.zero256(), HashUtils.zero256(), mempoolType);
+        epochMaxRound, mapping, HashUtils.zero256(), LedgerHashes.zero(), mempoolType);
   }
 
   static StateComputerConfig mockedWithEpochs(
       Round epochMaxRound,
       EpochNodeWeightMapping mapping,
       HashCode preGenesisAccumulatorHash,
-      HashCode preGenesisStateHash,
+      LedgerHashes preGenesisLedgerHashes,
       MockedMempoolConfig mempoolType) {
     return new MockedStateComputerConfigWithEpochs(
-        epochMaxRound, mapping, preGenesisAccumulatorHash, preGenesisStateHash, mempoolType);
+        epochMaxRound, mapping, preGenesisAccumulatorHash, preGenesisLedgerHashes, mempoolType);
   }
 
   static StateComputerConfig mockedNoEpochs(int numValidators, MockedMempoolConfig mempoolType) {
@@ -140,7 +141,7 @@ public sealed interface StateComputerConfig {
       Round epochMaxRound,
       EpochNodeWeightMapping mapping,
       HashCode preGenesisAccumulatorHash,
-      HashCode preGenesisStateHash,
+      LedgerHashes preGenesisLedgerHashes,
       MockedMempoolConfig mempoolType)
       implements MockedStateComputerConfig {
     @Override

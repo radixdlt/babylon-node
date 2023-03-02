@@ -73,10 +73,11 @@ use radix_engine::types::scrypto_encode;
 use sbor::{Categorize, Decode, Encode};
 use transaction::errors::TransactionValidationError;
 
+use crate::jni::common_types::JavaHashCode;
 use crate::jni::utils::*;
 use crate::transaction::UserTransactionValidator;
 use crate::types::PendingTransaction;
-use crate::{mempool::*, LedgerPayloadHash, UserPayloadHash};
+use crate::{mempool::*, UserPayloadHash};
 
 //
 // JNI Interface
@@ -137,11 +138,7 @@ fn do_get_transactions_for_proposal(
 ) -> Vec<JavaRawTransaction> {
     let user_payload_hashes_to_exclude: HashSet<UserPayloadHash> = transaction_hashes_to_exclude
         .into_iter()
-        .map(|id| {
-            UserPayloadHash::from_raw_bytes(
-                id.0.try_into().expect("transaction id the wrong length"),
-            )
-        })
+        .map(|hash| UserPayloadHash::from_raw_bytes(hash.into_bytes()))
         .collect();
 
     state_manager
@@ -206,16 +203,6 @@ fn do_get_transactions_to_relay(
 // DTO Models + Mapping
 //
 
-/// Corresponds to HashCode from Java
-#[derive(Debug, PartialEq, Eq, Categorize, Encode, Decode)]
-pub struct JavaHashCode(pub Vec<u8>);
-
-impl From<LedgerPayloadHash> for JavaHashCode {
-    fn from(payload_hash: LedgerPayloadHash) -> Self {
-        JavaHashCode(payload_hash.into_bytes().to_vec())
-    }
-}
-
 #[derive(Debug, Categorize, Encode, Decode)]
 pub struct JavaRawTransaction {
     pub payload: Vec<u8>,
@@ -226,7 +213,7 @@ impl From<PendingTransaction> for JavaRawTransaction {
     fn from(transaction: PendingTransaction) -> Self {
         JavaRawTransaction {
             payload: scrypto_encode(&transaction.payload).unwrap(),
-            payload_hash: JavaHashCode(transaction.payload_hash.into_bytes().to_vec()),
+            payload_hash: JavaHashCode::from_bytes(transaction.payload_hash.into_bytes()),
         }
     }
 }
