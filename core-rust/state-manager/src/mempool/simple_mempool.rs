@@ -184,13 +184,13 @@ impl SimpleMempool {
                     None
                 }
             })
-            .take_while(|tx| {
-                payload_size_so_far += tx.payload_size as u64;
-
-                // Note that with this naive approach there might be other txns
-                // in a mempool that could still fit in the available space.
-                // This should be good enough for now, but consider optimizing at some point.
-                payload_size_so_far <= max_payload_size_bytes
+            .filter_map(|tx| {
+                if payload_size_so_far + tx.payload_size as u64 <= max_payload_size_bytes {
+                    payload_size_so_far += tx.payload_size as u64;
+                    Some(tx)
+                } else {
+                    None
+                }
             })
             .take(max_count as usize)
             .collect()
