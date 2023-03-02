@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.ResourceAmount;
 import com.radixdlt.api.core.generated.models.StateComponentDescendentId;
 import com.radixdlt.api.core.generated.models.Substate;
 import io.swagger.annotations.ApiModel;
@@ -53,7 +54,7 @@ public class StateValidatorResponse {
   private Substate accessRules;
 
   public static final String JSON_PROPERTY_STATE_OWNED_VAULTS = "state_owned_vaults";
-  private List<Substate> stateOwnedVaults = new ArrayList<>();
+  private List<ResourceAmount> stateOwnedVaults = new ArrayList<>();
 
   public static final String JSON_PROPERTY_DESCENDENT_IDS = "descendent_ids";
   private List<StateComponentDescendentId> descendentIds = new ArrayList<>();
@@ -139,12 +140,12 @@ public class StateValidatorResponse {
   }
 
 
-  public StateValidatorResponse stateOwnedVaults(List<Substate> stateOwnedVaults) {
+  public StateValidatorResponse stateOwnedVaults(List<ResourceAmount> stateOwnedVaults) {
     this.stateOwnedVaults = stateOwnedVaults;
     return this;
   }
 
-  public StateValidatorResponse addStateOwnedVaultsItem(Substate stateOwnedVaultsItem) {
+  public StateValidatorResponse addStateOwnedVaultsItem(ResourceAmount stateOwnedVaultsItem) {
     this.stateOwnedVaults.add(stateOwnedVaultsItem);
     return this;
   }
@@ -158,14 +159,14 @@ public class StateValidatorResponse {
   @JsonProperty(JSON_PROPERTY_STATE_OWNED_VAULTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<Substate> getStateOwnedVaults() {
+  public List<ResourceAmount> getStateOwnedVaults() {
     return stateOwnedVaults;
   }
 
 
   @JsonProperty(JSON_PROPERTY_STATE_OWNED_VAULTS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setStateOwnedVaults(List<Substate> stateOwnedVaults) {
+  public void setStateOwnedVaults(List<ResourceAmount> stateOwnedVaults) {
     this.stateOwnedVaults = stateOwnedVaults;
   }
 

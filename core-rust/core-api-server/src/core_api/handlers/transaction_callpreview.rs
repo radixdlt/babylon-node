@@ -8,10 +8,12 @@ use radix_engine::{
     transaction::{PreviewError, TransactionOutcome, TransactionResult},
     types::{Decimal, FAUCET_COMPONENT},
 };
+use radix_engine::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
-use radix_engine_interface::args;
+use radix_engine_interface::data::scrypto_encode;
+use transaction::data::manifest_args;
 use state_manager::PreviewRequest;
-use transaction::model::{BasicInstruction, PreviewFlags, TransactionManifest};
+use transaction::model::{Instruction, PreviewFlags, TransactionManifest};
 
 macro_rules! args_from_bytes_vec {
     ($args: expr) => {{
@@ -55,7 +57,7 @@ pub(crate) async fn handle_transaction_callpreview(
                 extract_package_address(&extraction_context, package_address.as_str())
                     .map_err(|err| err.into_response_error("target.package_address"))?;
 
-            BasicInstruction::CallFunction {
+            Instruction::CallFunction {
                 blueprint_name,
                 function_name,
                 package_address,
@@ -70,7 +72,7 @@ pub(crate) async fn handle_transaction_callpreview(
                 extract_component_address(&extraction_context, component_address.as_str())
                     .map_err(|err| err.into_response_error("target.component_address"))?;
 
-            BasicInstruction::CallMethod {
+            Instruction::CallMethod {
                 component_address,
                 method_name,
                 args: args_from_bytes_vec!(args),
@@ -84,10 +86,10 @@ pub(crate) async fn handle_transaction_callpreview(
         .preview(PreviewRequest {
             manifest: TransactionManifest {
                 instructions: vec![
-                    BasicInstruction::CallMethod {
+                    Instruction::CallMethod {
                         component_address: FAUCET_COMPONENT,
                         method_name: "lock_fee".to_string(),
-                        args: args!(Decimal::from(100u32)),
+                        args: manifest_args!(Decimal::from(100u32)),
                     },
                     requested_call,
                 ],
@@ -122,7 +124,11 @@ pub(crate) async fn handle_transaction_callpreview(
                         .into_iter()
                         .skip(1) // Skip the result of `lock_fee`
                         .map(|line_output| {
-                            scrypto_bytes_to_api_sbor_data(&mapping_context, &line_output.as_vec())
+                            let bytes = match line_output {
+                                InstructionOutput::None => scrypto_encode(&()).unwrap(),
+                                InstructionOutput::CallReturn(r) => r.into(),
+                            };
+                            scrypto_bytes_to_api_sbor_data(&mapping_context, &bytes)
                         })
                         .next()
                     {

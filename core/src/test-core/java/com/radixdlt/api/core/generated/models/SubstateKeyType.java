@@ -33,6 +33,8 @@ public enum SubstateKeyType {
   
   ACCESSRULESCHAIN("AccessRulesChain"),
   
+  FUNCTIONACCESSRULES("FunctionAccessRules"),
+  
   TYPEINFO("TypeInfo"),
   
   COMPONENTSTATE("ComponentState"),
@@ -43,9 +45,7 @@ public enum SubstateKeyType {
   
   PACKAGEINFO("PackageInfo"),
   
-  PACKAGETYPEINFO("PackageTypeInfo"),
-  
-  WASMCODE("WasmCode"),
+  PACKAGECODE("PackageCode"),
   
   PACKAGECODETYPE("PackageCodeType"),
   
@@ -74,6 +74,10 @@ public enum SubstateKeyType {
   VAULTFUNGIBLE("VaultFungible"),
   
   VAULTNONFUNGIBLE("VaultNonFungible"),
+  
+  VAULTLOCKEDFUNGIBLE("VaultLockedFungible"),
+  
+  VAULTLOCKEDNONFUNGIBLE("VaultLockedNonFungible"),
   
   ACCESSCONTROLLER("AccessController"),
   

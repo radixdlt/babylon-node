@@ -16,6 +16,8 @@ pub enum SubstateType {
     Metadata,
     #[serde(rename = "AccessRulesChain")]
     AccessRulesChain,
+    #[serde(rename = "FunctionAccessRules")]
+    FunctionAccessRules,
     #[serde(rename = "TypeInfo")]
     TypeInfo,
     #[serde(rename = "ComponentState")]
@@ -26,8 +28,6 @@ pub enum SubstateType {
     ComponentRoyaltyAccumulator,
     #[serde(rename = "PackageInfo")]
     PackageInfo,
-    #[serde(rename = "PackageTypeInfo")]
-    PackageTypeInfo,
     #[serde(rename = "PackageCode")]
     PackageCode,
     #[serde(rename = "PackageCodeType")]
@@ -56,6 +56,10 @@ pub enum SubstateType {
     VaultFungible,
     #[serde(rename = "VaultNonFungible")]
     VaultNonFungible,
+    #[serde(rename = "VaultLockedFungible")]
+    VaultLockedFungible,
+    #[serde(rename = "VaultLockedNonFungible")]
+    VaultLockedNonFungible,
     #[serde(rename = "AccessController")]
     AccessController,
     #[serde(rename = "Account")]
@@ -68,12 +72,12 @@ impl ToString for SubstateType {
         match self {
             Self::Metadata => String::from("Metadata"),
             Self::AccessRulesChain => String::from("AccessRulesChain"),
+            Self::FunctionAccessRules => String::from("FunctionAccessRules"),
             Self::TypeInfo => String::from("TypeInfo"),
             Self::ComponentState => String::from("ComponentState"),
             Self::ComponentRoyaltyConfig => String::from("ComponentRoyaltyConfig"),
             Self::ComponentRoyaltyAccumulator => String::from("ComponentRoyaltyAccumulator"),
             Self::PackageInfo => String::from("PackageInfo"),
-            Self::PackageTypeInfo => String::from("PackageTypeInfo"),
             Self::PackageCode => String::from("PackageCode"),
             Self::PackageCodeType => String::from("PackageCodeType"),
             Self::PackageRoyaltyConfig => String::from("PackageRoyaltyConfig"),
@@ -88,6 +92,8 @@ impl ToString for SubstateType {
             Self::VaultInfo => String::from("VaultInfo"),
             Self::VaultFungible => String::from("VaultFungible"),
             Self::VaultNonFungible => String::from("VaultNonFungible"),
+            Self::VaultLockedFungible => String::from("VaultLockedFungible"),
+            Self::VaultLockedNonFungible => String::from("VaultLockedNonFungible"),
             Self::AccessController => String::from("AccessController"),
             Self::Account => String::from("Account"),
         }

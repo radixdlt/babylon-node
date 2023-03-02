@@ -32,12 +32,12 @@ import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyConfigSubstate;
 import com.radixdlt.api.core.generated.models.ComponentStateSubstate;
-import com.radixdlt.api.core.generated.models.ComponentStateSubstateAllOf;
-import com.radixdlt.api.core.generated.models.DataStruct;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
 import com.radixdlt.api.core.generated.models.FunctionAccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.MetadataSubstate;
+import com.radixdlt.api.core.generated.models.NonFungibleId;
+import com.radixdlt.api.core.generated.models.NonFungibleResourceAmountAllOf;
 import com.radixdlt.api.core.generated.models.NonFungibleStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeSubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeTypeSubstate;
@@ -57,15 +57,17 @@ import com.radixdlt.api.core.generated.models.VaultLockedNonFungibleSubstate;
 import com.radixdlt.api.core.generated.models.VaultNonFungibleSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * AccessControllerSubstate
+ * VaultLockedNonFungibleSubstate
  */
 @JsonPropertyOrder({
-  AccessControllerSubstate.JSON_PROPERTY_DATA_STRUCT
+  VaultLockedNonFungibleSubstate.JSON_PROPERTY_NON_FUNGIBLE_IDS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -102,41 +104,46 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = VaultNonFungibleSubstate.class, name = "VaultNonFungible"),
 })
 
-public class AccessControllerSubstate extends Substate {
-  public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
-  private DataStruct dataStruct;
+public class VaultLockedNonFungibleSubstate extends Substate {
+  public static final String JSON_PROPERTY_NON_FUNGIBLE_IDS = "non_fungible_ids";
+  private List<NonFungibleId> nonFungibleIds = new ArrayList<>();
 
-  public AccessControllerSubstate() { 
+  public VaultLockedNonFungibleSubstate() { 
   }
 
-  public AccessControllerSubstate dataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public VaultLockedNonFungibleSubstate nonFungibleIds(List<NonFungibleId> nonFungibleIds) {
+    this.nonFungibleIds = nonFungibleIds;
+    return this;
+  }
+
+  public VaultLockedNonFungibleSubstate addNonFungibleIdsItem(NonFungibleId nonFungibleIdsItem) {
+    this.nonFungibleIds.add(nonFungibleIdsItem);
     return this;
   }
 
    /**
-   * Get dataStruct
-   * @return dataStruct
+   * Get nonFungibleIds
+   * @return nonFungibleIds
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_IDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public DataStruct getDataStruct() {
-    return dataStruct;
+  public List<NonFungibleId> getNonFungibleIds() {
+    return nonFungibleIds;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_IDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public void setNonFungibleIds(List<NonFungibleId> nonFungibleIds) {
+    this.nonFungibleIds = nonFungibleIds;
   }
 
 
   /**
-   * Return true if this AccessControllerSubstate object is equal to o.
+   * Return true if this VaultLockedNonFungibleSubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -146,22 +153,22 @@ public class AccessControllerSubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    AccessControllerSubstate accessControllerSubstate = (AccessControllerSubstate) o;
-    return Objects.equals(this.dataStruct, accessControllerSubstate.dataStruct) &&
+    VaultLockedNonFungibleSubstate vaultLockedNonFungibleSubstate = (VaultLockedNonFungibleSubstate) o;
+    return Objects.equals(this.nonFungibleIds, vaultLockedNonFungibleSubstate.nonFungibleIds) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(dataStruct, super.hashCode());
+    return Objects.hash(nonFungibleIds, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class AccessControllerSubstate {\n");
+    sb.append("class VaultLockedNonFungibleSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
+    sb.append("    nonFungibleIds: ").append(toIndentedString(nonFungibleIds)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -206,8 +213,8 @@ static {
   mappings.put("VaultLockedFungible", VaultLockedFungibleSubstate.class);
   mappings.put("VaultLockedNonFungible", VaultLockedNonFungibleSubstate.class);
   mappings.put("VaultNonFungible", VaultNonFungibleSubstate.class);
-  mappings.put("AccessControllerSubstate", AccessControllerSubstate.class);
-  JSON.registerDiscriminator(AccessControllerSubstate.class, "substate_type", mappings);
+  mappings.put("VaultLockedNonFungibleSubstate", VaultLockedNonFungibleSubstate.class);
+  JSON.registerDiscriminator(VaultLockedNonFungibleSubstate.class, "substate_type", mappings);
 }
 }
 

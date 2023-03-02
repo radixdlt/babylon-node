@@ -1,12 +1,12 @@
 use crate::core_api::*;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{
-    AccessRulesChainOffset, ComponentOffset, GlobalAddress, MetadataOffset, RENodeId, SubstateId,
+    AccessRulesChainOffset, ComponentOffset, MetadataOffset, RENodeId, SubstateId,
     SubstateOffset,
 };
-use radix_engine_interface::api::types::{ComponentTypeInfoOffset, NodeModuleId, RoyaltyOffset, TypeInfoOffset};
+use radix_engine_interface::api::types::{NodeModuleId, RoyaltyOffset, TypeInfoOffset};
 use state_manager::jni::state_manager::ActualStateManager;
-use state_manager::query::dump_component_state;
+use state_manager::query::{dump_component_state, VaultData};
 
 pub(crate) async fn handle_state_component(
     state: Extension<CoreApiState>,
@@ -36,11 +36,12 @@ fn handle_state_component_internal(
     }
 
     let type_info = {
+        let substate_offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
         let loaded_substate = read_known_substate(
             state_manager,
             RENodeId::GlobalComponent(component_address),
             NodeModuleId::TypeInfo,
-            &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
+            &substate_offset,
         )?;
         let PersistedSubstate::TypeInfo(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
@@ -51,7 +52,7 @@ fn handle_state_component_internal(
         let substate_offset = SubstateOffset::Component(ComponentOffset::State0);
         let loaded_substate = read_known_substate(
             state_manager,
-            component_node_id,
+            RENodeId::GlobalComponent(component_address),
             NodeModuleId::SELF,
             &substate_offset,
         )?;
@@ -64,7 +65,7 @@ fn handle_state_component_internal(
         let substate_offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig);
         let loaded_substate = read_known_substate(
             state_manager,
-            component_node_id,
+            RENodeId::GlobalComponent(component_address),
             NodeModuleId::ComponentRoyalty,
             &substate_offset,
         )?;
@@ -77,7 +78,7 @@ fn handle_state_component_internal(
         let substate_offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator);
         let loaded_substate = read_known_substate(
             state_manager,
-            component_node_id,
+            RENodeId::GlobalComponent(component_address),
             NodeModuleId::ComponentRoyalty,
             &substate_offset,
         )?;
@@ -90,7 +91,7 @@ fn handle_state_component_internal(
         let substate_offset = SubstateOffset::Metadata(MetadataOffset::Metadata);
         let loaded_substate = read_known_substate(
             state_manager,
-            component_node_id,
+            RENodeId::GlobalComponent(component_address),
             NodeModuleId::Metadata,
             &substate_offset,
         )?;
@@ -104,7 +105,7 @@ fn handle_state_component_internal(
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let loaded_substate = read_known_substate(
             state_manager,
-            component_node_id,
+            RENodeId::GlobalComponent(component_address),
             NodeModuleId::AccessRules,
             &substate_offset,
         )?;
@@ -120,7 +121,16 @@ fn handle_state_component_internal(
     let state_owned_vaults = component_dump
         .vaults
         .into_iter()
-        .map(|vault| to_api_fungible_vault_substate(&mapping_context, &vault))
+        .map(|vault| {
+            match vault {
+                VaultData::NonFungible { resource_address, ids } => {
+                    to_api_non_fungible_resource_amount(&mapping_context, &resource_address, &ids)
+                }
+                VaultData::Fungible { resource_address, amount } => {
+                    to_api_fungible_resource_amount(&mapping_context, &resource_address, &amount)
+                }
+            }
+        })
         .collect::<Result<Vec<_>, _>>()?;
 
     let descendent_ids = component_dump

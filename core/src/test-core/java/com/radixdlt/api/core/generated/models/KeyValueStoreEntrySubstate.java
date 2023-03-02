@@ -34,6 +34,7 @@ import com.radixdlt.api.core.generated.models.ComponentRoyaltyConfigSubstate;
 import com.radixdlt.api.core.generated.models.ComponentStateSubstate;
 import com.radixdlt.api.core.generated.models.DataStruct;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
+import com.radixdlt.api.core.generated.models.FunctionAccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstateAllOf;
 import com.radixdlt.api.core.generated.models.MetadataSubstate;
@@ -43,7 +44,6 @@ import com.radixdlt.api.core.generated.models.PackageCodeTypeSubstate;
 import com.radixdlt.api.core.generated.models.PackageInfoSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyConfigSubstate;
-import com.radixdlt.api.core.generated.models.PackageTypeInfoSubstate;
 import com.radixdlt.api.core.generated.models.ResourceManagerSubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
@@ -52,6 +52,8 @@ import com.radixdlt.api.core.generated.models.ValidatorSetSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorSubstate;
 import com.radixdlt.api.core.generated.models.VaultFungibleSubstate;
 import com.radixdlt.api.core.generated.models.VaultInfoSubstate;
+import com.radixdlt.api.core.generated.models.VaultLockedFungibleSubstate;
+import com.radixdlt.api.core.generated.models.VaultLockedNonFungibleSubstate;
 import com.radixdlt.api.core.generated.models.VaultNonFungibleSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -82,6 +84,7 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = ComponentRoyaltyConfigSubstate.class, name = "ComponentRoyaltyConfig"),
   @JsonSubTypes.Type(value = ComponentStateSubstate.class, name = "ComponentState"),
   @JsonSubTypes.Type(value = EpochManagerSubstate.class, name = "EpochManager"),
+  @JsonSubTypes.Type(value = FunctionAccessRulesSubstate.class, name = "FunctionAccessRules"),
   @JsonSubTypes.Type(value = KeyValueStoreEntrySubstate.class, name = "KeyValueStoreEntry"),
   @JsonSubTypes.Type(value = MetadataSubstate.class, name = "Metadata"),
   @JsonSubTypes.Type(value = NonFungibleStoreEntrySubstate.class, name = "NonFungibleStoreEntry"),
@@ -90,13 +93,14 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageInfoSubstate.class, name = "PackageInfo"),
   @JsonSubTypes.Type(value = PackageRoyaltyAccumulatorSubstate.class, name = "PackageRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageRoyaltyConfigSubstate.class, name = "PackageRoyaltyConfig"),
-  @JsonSubTypes.Type(value = PackageTypeInfoSubstate.class, name = "PackageTypeInfo"),
   @JsonSubTypes.Type(value = ResourceManagerSubstate.class, name = "ResourceManager"),
   @JsonSubTypes.Type(value = TypeInfoSubstate.class, name = "TypeInfo"),
   @JsonSubTypes.Type(value = ValidatorSubstate.class, name = "Validator"),
   @JsonSubTypes.Type(value = ValidatorSetSubstate.class, name = "ValidatorSet"),
   @JsonSubTypes.Type(value = VaultFungibleSubstate.class, name = "VaultFungible"),
   @JsonSubTypes.Type(value = VaultInfoSubstate.class, name = "VaultInfo"),
+  @JsonSubTypes.Type(value = VaultLockedFungibleSubstate.class, name = "VaultLockedFungible"),
+  @JsonSubTypes.Type(value = VaultLockedNonFungibleSubstate.class, name = "VaultLockedNonFungible"),
   @JsonSubTypes.Type(value = VaultNonFungibleSubstate.class, name = "VaultNonFungible"),
 })
 
@@ -248,6 +252,7 @@ static {
   mappings.put("ComponentRoyaltyConfig", ComponentRoyaltyConfigSubstate.class);
   mappings.put("ComponentState", ComponentStateSubstate.class);
   mappings.put("EpochManager", EpochManagerSubstate.class);
+  mappings.put("FunctionAccessRules", FunctionAccessRulesSubstate.class);
   mappings.put("KeyValueStoreEntry", KeyValueStoreEntrySubstate.class);
   mappings.put("Metadata", MetadataSubstate.class);
   mappings.put("NonFungibleStoreEntry", NonFungibleStoreEntrySubstate.class);
@@ -256,13 +261,14 @@ static {
   mappings.put("PackageInfo", PackageInfoSubstate.class);
   mappings.put("PackageRoyaltyAccumulator", PackageRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageRoyaltyConfig", PackageRoyaltyConfigSubstate.class);
-  mappings.put("PackageTypeInfo", PackageTypeInfoSubstate.class);
   mappings.put("ResourceManager", ResourceManagerSubstate.class);
   mappings.put("TypeInfo", TypeInfoSubstate.class);
   mappings.put("Validator", ValidatorSubstate.class);
   mappings.put("ValidatorSet", ValidatorSetSubstate.class);
   mappings.put("VaultFungible", VaultFungibleSubstate.class);
   mappings.put("VaultInfo", VaultInfoSubstate.class);
+  mappings.put("VaultLockedFungible", VaultLockedFungibleSubstate.class);
+  mappings.put("VaultLockedNonFungible", VaultLockedNonFungibleSubstate.class);
   mappings.put("VaultNonFungible", VaultNonFungibleSubstate.class);
   mappings.put("KeyValueStoreEntrySubstate", KeyValueStoreEntrySubstate.class);
   JSON.registerDiscriminator(KeyValueStoreEntrySubstate.class, "substate_type", mappings);

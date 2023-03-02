@@ -32,6 +32,8 @@ public enum SubstateType {
   
   ACCESSRULESCHAIN("AccessRulesChain"),
   
+  FUNCTIONACCESSRULES("FunctionAccessRules"),
+  
   TYPEINFO("TypeInfo"),
   
   COMPONENTSTATE("ComponentState"),
@@ -41,8 +43,6 @@ public enum SubstateType {
   COMPONENTROYALTYACCUMULATOR("ComponentRoyaltyAccumulator"),
   
   PACKAGEINFO("PackageInfo"),
-  
-  PACKAGETYPEINFO("PackageTypeInfo"),
   
   PACKAGECODE("PackageCode"),
   
@@ -71,6 +71,10 @@ public enum SubstateType {
   VAULTFUNGIBLE("VaultFungible"),
   
   VAULTNONFUNGIBLE("VaultNonFungible"),
+  
+  VAULTLOCKEDFUNGIBLE("VaultLockedFungible"),
+  
+  VAULTLOCKEDNONFUNGIBLE("VaultLockedNonFungible"),
   
   ACCESSCONTROLLER("AccessController"),
   

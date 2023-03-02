@@ -1,6 +1,6 @@
 use crate::core_api::*;
 use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::{ClockOffset, GlobalAddress, SubstateOffset, CLOCK};
+use radix_engine::types::{ClockOffset, SubstateOffset, CLOCK};
 use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
 use state_manager::jni::state_manager::ActualStateManager;
 

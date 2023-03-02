@@ -9,7 +9,6 @@ use state_manager::mempool::pending_transaction_result_cache::RejectionReason;
 use state_manager::transaction::{LedgerTransaction, UserTransactionValidator};
 use state_manager::{HasIntentHash, HasLedgerPayloadHash, HasSignaturesHash, HasUserPayloadHash};
 
-use radix_engine::types::scrypto_decode;
 use transaction::data::manifest_decode;
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionIntent, TransactionManifest,

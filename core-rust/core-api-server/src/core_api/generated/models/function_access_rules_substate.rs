@@ -12,18 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LocalNativeMethodReference {
-    #[serde(rename = "type")]
-    pub _type: crate::core_api::generated::models::LocalMethodReferenceType,
-    #[serde(rename = "name")]
-    pub name: String,
+pub struct FunctionAccessRulesSubstate {
+    #[serde(rename = "substate_type")]
+    pub substate_type: crate::core_api::generated::models::SubstateType,
 }
 
-impl LocalNativeMethodReference {
-    pub fn new(_type: crate::core_api::generated::models::LocalMethodReferenceType, name: String) -> LocalNativeMethodReference {
-        LocalNativeMethodReference {
-            _type,
-            name,
+impl FunctionAccessRulesSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType) -> FunctionAccessRulesSubstate {
+        FunctionAccessRulesSubstate {
+            substate_type,
         }
     }
 }

@@ -1,7 +1,7 @@
 use crate::core_api::*;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{
-    AccessRulesChainOffset, GlobalAddress, MetadataOffset, ResourceManagerOffset, SubstateOffset,
+    AccessRulesChainOffset, MetadataOffset, ResourceManagerOffset, SubstateOffset,
 };
 use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
 
@@ -25,11 +25,12 @@ fn handle_state_resource_internal(
         .map_err(|err| err.into_response_error("resource_address"))?;
 
     let resource_manager = {
+        let substate_offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let loaded_substate = read_known_substate(
             state_manager,
             RENodeId::GlobalResourceManager(resource_address),
             NodeModuleId::SELF,
-            &SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            &substate_offset,
         )?;
         let PersistedSubstate::ResourceManager(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
@@ -40,7 +41,7 @@ fn handle_state_resource_internal(
         let substate_offset = SubstateOffset::Metadata(MetadataOffset::Metadata);
         let loaded_substate = read_known_substate(
             state_manager,
-            resource_node_id,
+            RENodeId::GlobalResourceManager(resource_address),
             NodeModuleId::Metadata,
             &substate_offset,
         )?;
@@ -54,7 +55,7 @@ fn handle_state_resource_internal(
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let loaded_substate = read_known_substate(
             state_manager,
-            resource_node_id,
+            RENodeId::GlobalResourceManager(resource_address),
             NodeModuleId::AccessRules,
             &substate_offset,
         )?;
@@ -68,7 +69,7 @@ fn handle_state_resource_internal(
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let loaded_substate = read_known_substate(
             state_manager,
-            resource_node_id,
+            RENodeId::GlobalResourceManager(resource_address),
             NodeModuleId::AccessRules1,
             &substate_offset,
         )?;

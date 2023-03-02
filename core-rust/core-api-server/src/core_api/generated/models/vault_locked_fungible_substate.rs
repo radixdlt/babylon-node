@@ -12,15 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct PackageTypeInfoSubstate {
+pub struct VaultLockedFungibleSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
+    /// The string-encoded decimal representing the XRD amount put or taken from the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    #[serde(rename = "amount")]
+    pub amount: String,
 }
 
-impl PackageTypeInfoSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType) -> PackageTypeInfoSubstate {
-        PackageTypeInfoSubstate {
+impl VaultLockedFungibleSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, amount: String) -> VaultLockedFungibleSubstate {
+        VaultLockedFungibleSubstate {
             substate_type,
+            amount,
         }
     }
 }

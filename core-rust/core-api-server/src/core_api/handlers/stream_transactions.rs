@@ -2,8 +2,6 @@ use crate::core_api::*;
 
 use radix_engine::types::hash;
 
-use radix_engine_interface::data::scrypto_encode;
-
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
 use state_manager::transaction::{LedgerTransaction, ValidatorTransaction};

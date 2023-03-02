@@ -1,12 +1,12 @@
 use crate::core_api::*;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{
-    AccessControllerOffset, AccessRulesChainOffset, GlobalAddress, MetadataOffset, NodeModuleId,
+    AccessControllerOffset, AccessRulesChainOffset, MetadataOffset, NodeModuleId,
     SubstateOffset,
 };
 use radix_engine_interface::api::types::RENodeId;
 use state_manager::jni::state_manager::ActualStateManager;
-use state_manager::query::dump_component_state;
+use state_manager::query::{dump_component_state, VaultData};
 
 use super::map_to_descendent_id;
 
@@ -37,11 +37,12 @@ fn handle_state_access_controller_internal(
     }
 
     let component_state = {
+        let substate_offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let loaded_substate = read_known_substate(
             state_manager,
             RENodeId::GlobalComponent(controller_address),
             NodeModuleId::SELF,
-            &SubstateOffset::AccessController(AccessControllerOffset::AccessController),
+            &substate_offset,
         )?;
         let PersistedSubstate::AccessController(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
@@ -52,7 +53,7 @@ fn handle_state_access_controller_internal(
         let substate_offset = SubstateOffset::Metadata(MetadataOffset::Metadata);
         let loaded_substate = read_known_substate(
             state_manager,
-            component_node_id,
+            RENodeId::GlobalComponent(controller_address),
             NodeModuleId::Metadata,
             &substate_offset,
         )?;
@@ -66,7 +67,7 @@ fn handle_state_access_controller_internal(
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let loaded_substate = read_known_substate(
             state_manager,
-            component_node_id,
+            RENodeId::GlobalComponent(controller_address),
             NodeModuleId::AccessRules,
             &substate_offset,
         )?;
@@ -82,7 +83,16 @@ fn handle_state_access_controller_internal(
     let state_owned_vaults = component_dump
         .vaults
         .into_iter()
-        .map(|vault| to_api_fungible_vault_substate(&mapping_context, &vault))
+        .map(|vault| {
+            match vault {
+                VaultData::NonFungible { resource_address, ids } => {
+                    to_api_non_fungible_resource_amount(&mapping_context, &resource_address, &ids)
+                }
+                VaultData::Fungible { resource_address, amount } => {
+                    to_api_fungible_resource_amount(&mapping_context, &resource_address, &amount)
+                }
+            }
+        })
         .collect::<Result<Vec<_>, _>>()?;
 
     let descendent_ids = component_dump

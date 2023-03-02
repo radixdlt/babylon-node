@@ -66,6 +66,9 @@ pub enum Substate {
         #[serde(rename = "num_unstake_epochs")]
         num_unstake_epochs: i64,
     },
+    #[serde(rename="FunctionAccessRules")]
+    FunctionAccessRulesSubstate {
+    },
     #[serde(rename="KeyValueStoreEntry")]
     KeyValueStoreEntrySubstate {
         /// The hex-encoded bytes of its key
@@ -120,9 +123,6 @@ pub enum Substate {
     PackageRoyaltyConfigSubstate {
         #[serde(rename = "blueprint_royalties")]
         blueprint_royalties: Vec<crate::core_api::generated::models::BlueprintRoyaltyConfig>,
-    },
-    #[serde(rename="PackageTypeInfo")]
-    PackageTypeInfoSubstate {
     },
     #[serde(rename="ResourceManager")]
     ResourceManagerSubstate {
@@ -188,6 +188,17 @@ pub enum Substate {
         /// The Bech32m-encoded human readable version of the resource address
         #[serde(rename = "resource_address")]
         resource_address: String,
+    },
+    #[serde(rename="VaultLockedFungible")]
+    VaultLockedFungibleSubstate {
+        /// The string-encoded decimal representing the XRD amount put or taken from the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+        #[serde(rename = "amount")]
+        amount: String,
+    },
+    #[serde(rename="VaultLockedNonFungible")]
+    VaultLockedNonFungibleSubstate {
+        #[serde(rename = "non_fungible_ids")]
+        non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleId>,
     },
     #[serde(rename="VaultNonFungible")]
     VaultNonFungibleSubstate {

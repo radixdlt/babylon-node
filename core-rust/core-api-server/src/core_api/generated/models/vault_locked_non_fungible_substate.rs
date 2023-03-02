@@ -12,15 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LocalNativeMethodReferenceAllOf {
-    #[serde(rename = "name")]
-    pub name: String,
+pub struct VaultLockedNonFungibleSubstate {
+    #[serde(rename = "substate_type")]
+    pub substate_type: crate::core_api::generated::models::SubstateType,
+    #[serde(rename = "non_fungible_ids")]
+    pub non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleId>,
 }
 
-impl LocalNativeMethodReferenceAllOf {
-    pub fn new(name: String) -> LocalNativeMethodReferenceAllOf {
-        LocalNativeMethodReferenceAllOf {
-            name,
+impl VaultLockedNonFungibleSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleId>) -> VaultLockedNonFungibleSubstate {
+        VaultLockedNonFungibleSubstate {
+            substate_type,
+            non_fungible_ids,
         }
     }
 }
