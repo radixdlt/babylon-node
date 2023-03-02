@@ -151,20 +151,17 @@ impl SimpleMempool {
         &mut self,
         intent_hashes: &[IntentHash],
     ) -> Vec<PendingTransaction> {
-        let mut removed_transactions = Vec::new();
-        for intent_hash in intent_hashes {
-            if let Some(payload_hashes) = self.intent_lookup.remove(intent_hash) {
-                for payload_hash in payload_hashes {
-                    let removed_option = self.data.remove(&payload_hash);
-                    if let Some(mempool_data) = removed_option {
-                        removed_transactions.push(mempool_data.transaction);
-                    } else {
-                        panic!("Mempool intent hash lookup out of sync on handle committed");
-                    }
-                }
-            }
-        }
-        removed_transactions
+        intent_hashes
+            .into_iter()
+            .filter_map(|intent_hash| self.intent_lookup.remove(intent_hash))
+            .flat_map(|payload_hashes| payload_hashes.into_iter())
+            .map(|payload_hash| {
+                self.data
+                    .remove(&payload_hash)
+                    .expect("Mempool intent hash lookup out of sync on handle committed")
+                    .transaction
+            })
+            .collect()
     }
 
     pub fn get_count(&self) -> u64 {
