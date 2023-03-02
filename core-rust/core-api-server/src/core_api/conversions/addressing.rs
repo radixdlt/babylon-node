@@ -435,13 +435,21 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 },
                 SubstateOffset::Vault(offset) => match offset {
                     VaultOffset::Info => (SubstateType::VaultInfo, SubstateKeyType::VaultInfo),
-                    VaultOffset::LiquidNonFungible | VaultOffset::LockedNonFungible => (
+                    VaultOffset::LiquidNonFungible => (
                         SubstateType::VaultNonFungible,
                         SubstateKeyType::VaultNonFungible,
                     ),
-                    VaultOffset::LiquidFungible | VaultOffset::LockedFungible => {
+                    VaultOffset::LockedNonFungible => (
+                        SubstateType::VaultLockedNonFungible,
+                        SubstateKeyType::VaultLockedNonFungible,
+                    ),
+                    VaultOffset::LiquidFungible => {
                         (SubstateType::VaultFungible, SubstateKeyType::VaultFungible)
                     }
+                    VaultOffset::LockedFungible => (
+                        SubstateType::VaultLockedFungible,
+                        SubstateKeyType::VaultLockedFungible,
+                    ),
                 },
                 _ => return Err(unknown_substate_error("Vault", &substate_id)),
             };
