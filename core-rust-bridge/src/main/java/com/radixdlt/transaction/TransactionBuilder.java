@@ -170,6 +170,7 @@ public final class TransactionBuilder {
 
   public static byte[] createSignedIntentBytes(
       byte[] intent, List<SignatureWithPublicKey> signatures) {
+
     return createSignedIntentBytesFunc.call(tuple(intent, signatures));
   }
 

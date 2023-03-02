@@ -259,7 +259,9 @@ impl SimpleMempool {
 mod tests {
     use std::matches;
 
-    use radix_engine::types::{EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, PublicKey};
+    use radix_engine::types::PublicKey;
+    use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+    use transaction::ecdsa_secp256k1::EcdsaSecp256k1Signature;
     use transaction::model::{
         NotarizedTransaction, Signature, SignatureWithPublicKey, SignedTransactionIntent,
         TransactionHeader, TransactionIntent, TransactionManifest,

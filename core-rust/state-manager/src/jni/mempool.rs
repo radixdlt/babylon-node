@@ -69,8 +69,8 @@ use crate::jni::state_manager::ActualStateManager;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::types::scrypto_encode;
 use sbor::{Categorize, Decode, Encode};
+use transaction::data::manifest_encode;
 use transaction::errors::TransactionValidationError;
 
 use crate::jni::common_types::JavaHashCode;
@@ -212,7 +212,7 @@ pub struct JavaRawTransaction {
 impl From<PendingTransaction> for JavaRawTransaction {
     fn from(transaction: PendingTransaction) -> Self {
         JavaRawTransaction {
-            payload: scrypto_encode(&transaction.payload).unwrap(),
+            payload: manifest_encode(&transaction.payload).unwrap(),
             payload_hash: JavaHashCode::from_bytes(transaction.payload_hash.into_bytes()),
         }
     }

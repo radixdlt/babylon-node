@@ -70,6 +70,7 @@ use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine::types::*;
 use std::collections::BTreeMap;
 use std::fmt;
+use transaction::data::*;
 use transaction::model::{
     NotarizedTransaction, PreviewFlags, SignedTransactionIntent, TransactionIntent,
     TransactionManifest,
@@ -143,7 +144,7 @@ impl LedgerPayloadHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_transaction(transaction: &LedgerTransaction) -> Self {
-        Self::for_ledger_payload_bytes(&scrypto_encode(transaction).unwrap())
+        Self::for_ledger_payload_bytes(&manifest_encode(transaction).unwrap())
     }
 
     pub fn for_ledger_payload_bytes(ledger_payload_bytes: &[u8]) -> Self {
@@ -276,7 +277,7 @@ impl UserPayloadHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_transaction(transaction: &NotarizedTransaction) -> Self {
-        Self(blake2b_256_hash(scrypto_encode(transaction).unwrap()).0)
+        Self(blake2b_256_hash(manifest_encode(transaction).unwrap()).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -336,7 +337,7 @@ impl SignaturesHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_signed_intent(signed_intent: &SignedTransactionIntent) -> Self {
-        Self(blake2b_256_hash(scrypto_encode(signed_intent).unwrap()).0)
+        Self(blake2b_256_hash(manifest_encode(signed_intent).unwrap()).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -391,7 +392,7 @@ impl IntentHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_intent(intent: &TransactionIntent) -> Self {
-        Self(blake2b_256_hash(scrypto_encode(intent).unwrap()).0)
+        Self(blake2b_256_hash(manifest_encode(intent).unwrap()).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -576,7 +577,7 @@ pub struct LedgerHashes {
 }
 
 /// An uncommitted user transaction, in eg the mempool
-#[derive(Debug, PartialEq, Eq, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct PendingTransaction {
     pub payload: NotarizedTransaction,
     pub payload_hash: UserPayloadHash,
@@ -597,7 +598,7 @@ impl From<NotarizedTransaction> for PendingTransaction {
     }
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct PreviewRequest {
     pub manifest: TransactionManifest,
     pub start_epoch_inclusive: u64,

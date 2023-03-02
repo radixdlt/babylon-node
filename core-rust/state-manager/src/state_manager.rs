@@ -65,7 +65,7 @@
 use crate::jni::state_computer::JavaValidatorInfo;
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::query::*;
-use crate::staging::{ExecutionCache, ProcessedResult};
+use crate::staging::{ExecutionCache, ProcessedResult, ReadableLayeredTreeStore};
 use crate::store::traits::*;
 use crate::transaction::{
     LedgerTransaction, LedgerTransactionValidator, UserTransactionValidator, ValidatorTransaction,
@@ -76,12 +76,12 @@ use crate::{
     CommittedTransactionIdentifiers, HasIntentHash, IntentHash, LedgerTransactionReceipt,
     MempoolAddError, PendingTransaction,
 };
+use ::transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use ::transaction::errors::TransactionValidationError;
 use ::transaction::model::{
     Executable, NotarizedTransaction, PreviewFlags, PreviewIntent, TransactionHeader,
     TransactionIntent,
 };
-use ::transaction::signing::EcdsaSecp256k1PrivateKey;
 use ::transaction::validation::{TestIntentHashManager, ValidationConfig};
 use parking_lot::RwLock;
 use prometheus::Registry;
@@ -90,20 +90,18 @@ use radix_engine::transaction::{
     PreviewError, PreviewResult, TransactionOutcome, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::{
-    scrypto_encode, Categorize, ComponentAddress, Decimal, Decode, Encode, GlobalAddress,
-    PublicKey, RENodeId, ResourceAddress,
+    Categorize, ComponentAddress, Decimal, Decode, Encode, PublicKey, RENodeId, ResourceAddress,
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
-use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
 
 use radix_engine::state_manager::StateDiff;
 use radix_engine_interface::api::types::{
     NodeModuleId, SubstateId, SubstateOffset, ValidatorOffset,
 };
-use radix_engine_stores::hash_tree::tree_store::ReadableTreeStore;
 use std::collections::HashMap;
 use std::convert::TryInto;
 
+use ::transaction::data::*;
 use radix_engine::blueprints::epoch_manager::ValidatorSubstate;
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine_interface::network::NetworkDefinition;
@@ -179,16 +177,13 @@ where
             user_transaction_validator,
             ledger_transaction_validator: committed_transaction_validator,
             execution_config: ExecutionConfig {
-                max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                 debug: logging_config.engine_trace,
-                max_kernel_call_depth_traced: Some(1),
-                abort_when_loan_repaid: false,
+                ..ExecutionConfig::standard()
             },
             execution_config_for_pending_transactions: ExecutionConfig {
-                max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                 debug: logging_config.engine_trace,
-                max_kernel_call_depth_traced: Some(1),
                 abort_when_loan_repaid: true,
+                ..ExecutionConfig::standard()
             },
             scrypto_interpreter: ScryptoInterpreter {
                 wasm_engine: DefaultWasmEngine::default(),
@@ -267,7 +262,7 @@ where
 
 impl<S> StateManager<S>
 where
-    S: ReadableSubstateStore + ReadableTreeStore,
+    S: ReadableSubstateStore + ReadableLayeredTreeStore,
 {
     fn execute_for_staging_with_cache(
         &mut self,
@@ -324,7 +319,7 @@ enum AlreadyPreparedTransaction {
 
 impl<S> StateManager<S>
 where
-    S: ReadableSubstateStore + ReadableTreeStore,
+    S: ReadableSubstateStore + ReadableLayeredTreeStore,
     S: for<'a> TransactionIndex<&'a IntentHash> + QueryableTransactionStore,
     S: QueryableProofStore + QueryableAccumulatorHash,
 {
@@ -451,7 +446,7 @@ where
         }
 
         // TODO: Remove and use some sort of cache to store size
-        let payload_size = scrypto_encode(transaction).unwrap().len();
+        let payload_size = manifest_encode(transaction).unwrap().len();
         let rejection = self
             .check_for_rejection_uncached(transaction, payload_size)
             .err();
@@ -726,7 +721,7 @@ where
                 }
 
                 state_tracker.update(new_accumulator_hash, *processed.ledger_hashes());
-                committed.push(scrypto_encode(&validator_txn).unwrap());
+                committed.push(manifest_encode(&validator_txn).unwrap());
 
                 commit_result.next_epoch.clone().map(|e| NextEpoch {
                     validator_set: e.0,
@@ -937,7 +932,7 @@ where
 impl<'db, S> StateManager<S>
 where
     S: CommitStore,
-    S: ReadableSubstateStore + ReadableTreeStore,
+    S: ReadableSubstateStore + ReadableLayeredTreeStore,
     S: QueryableProofStore + QueryableTransactionStore,
 {
     pub fn commit(&'db mut self, commit_request: CommitRequest) -> Result<(), CommitError> {
@@ -1127,19 +1122,13 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
     ) -> Option<HashMap<ResourceAddress, Decimal>> {
         let mut resource_accounter = ResourceAccounter::new(&self.store);
         resource_accounter
-            .add_resources(RENodeId::Global(GlobalAddress::Component(
-                component_address,
-            )))
+            .add_resources(RENodeId::GlobalComponent(component_address))
             .map_or(None, |()| Some(resource_accounter.into_map()))
     }
 
     pub fn get_validator_info(&self, validator_address: ComponentAddress) -> JavaValidatorInfo {
-        let node_id = self
-            .store()
-            .global_deref(GlobalAddress::Component(validator_address))
-            .unwrap();
         let substate_id = SubstateId(
-            node_id,
+            RENodeId::GlobalComponent(validator_address),
             NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
         );

@@ -12,15 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct VaultSubstateAllOf {
-    #[serde(rename = "resource_amount")]
-    pub resource_amount: Option<crate::core_api::generated::models::ResourceAmount>, // Using Option permits Default trait; Will always be Some in normal use
+pub struct VaultNonFungibleSubstate {
+    #[serde(rename = "substate_type")]
+    pub substate_type: crate::core_api::generated::models::SubstateType,
+    #[serde(rename = "non_fungible_ids")]
+    pub non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleId>,
 }
 
-impl VaultSubstateAllOf {
-    pub fn new(resource_amount: crate::core_api::generated::models::ResourceAmount) -> VaultSubstateAllOf {
-        VaultSubstateAllOf {
-            resource_amount: Option::Some(resource_amount),
+impl VaultNonFungibleSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleId>) -> VaultNonFungibleSubstate {
+        VaultNonFungibleSubstate {
+            substate_type,
+            non_fungible_ids,
         }
     }
 }

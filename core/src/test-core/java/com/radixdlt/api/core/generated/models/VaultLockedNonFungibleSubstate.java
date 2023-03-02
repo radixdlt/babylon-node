@@ -29,40 +29,45 @@ import com.radixdlt.api.core.generated.models.AccessControllerSubstate;
 import com.radixdlt.api.core.generated.models.AccessRulesChainSubstate;
 import com.radixdlt.api.core.generated.models.AccountSubstate;
 import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
-import com.radixdlt.api.core.generated.models.ComponentInfoSubstate;
-import com.radixdlt.api.core.generated.models.ComponentInfoSubstateAllOf;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyConfigSubstate;
 import com.radixdlt.api.core.generated.models.ComponentStateSubstate;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
-import com.radixdlt.api.core.generated.models.GlobalAddressSubstate;
+import com.radixdlt.api.core.generated.models.FunctionAccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.MetadataSubstate;
-import com.radixdlt.api.core.generated.models.NativeCodeSubstate;
+import com.radixdlt.api.core.generated.models.NonFungibleId;
+import com.radixdlt.api.core.generated.models.NonFungibleResourceAmountAllOf;
 import com.radixdlt.api.core.generated.models.NonFungibleStoreEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeSubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeTypeSubstate;
 import com.radixdlt.api.core.generated.models.PackageInfoSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyConfigSubstate;
-import com.radixdlt.api.core.generated.models.PackageTypeInfoSubstate;
 import com.radixdlt.api.core.generated.models.ResourceManagerSubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
+import com.radixdlt.api.core.generated.models.TypeInfoSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorSetSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorSubstate;
-import com.radixdlt.api.core.generated.models.VaultSubstate;
-import com.radixdlt.api.core.generated.models.WasmCodeSubstate;
+import com.radixdlt.api.core.generated.models.VaultFungibleSubstate;
+import com.radixdlt.api.core.generated.models.VaultInfoSubstate;
+import com.radixdlt.api.core.generated.models.VaultLockedFungibleSubstate;
+import com.radixdlt.api.core.generated.models.VaultLockedNonFungibleSubstate;
+import com.radixdlt.api.core.generated.models.VaultNonFungibleSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * ComponentInfoSubstate
+ * VaultLockedNonFungibleSubstate
  */
 @JsonPropertyOrder({
-  ComponentInfoSubstate.JSON_PROPERTY_PACKAGE_ADDRESS,
-  ComponentInfoSubstate.JSON_PROPERTY_BLUEPRINT_NAME
+  VaultLockedNonFungibleSubstate.JSON_PROPERTY_NON_FUNGIBLE_IDS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -75,91 +80,70 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = AccessRulesChainSubstate.class, name = "AccessRulesChain"),
   @JsonSubTypes.Type(value = AccountSubstate.class, name = "Account"),
   @JsonSubTypes.Type(value = ClockCurrentMinuteSubstate.class, name = "ClockCurrentMinute"),
-  @JsonSubTypes.Type(value = ComponentInfoSubstate.class, name = "ComponentInfo"),
   @JsonSubTypes.Type(value = ComponentRoyaltyAccumulatorSubstate.class, name = "ComponentRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = ComponentRoyaltyConfigSubstate.class, name = "ComponentRoyaltyConfig"),
   @JsonSubTypes.Type(value = ComponentStateSubstate.class, name = "ComponentState"),
   @JsonSubTypes.Type(value = EpochManagerSubstate.class, name = "EpochManager"),
-  @JsonSubTypes.Type(value = GlobalAddressSubstate.class, name = "GlobalAddress"),
+  @JsonSubTypes.Type(value = FunctionAccessRulesSubstate.class, name = "FunctionAccessRules"),
   @JsonSubTypes.Type(value = KeyValueStoreEntrySubstate.class, name = "KeyValueStoreEntry"),
   @JsonSubTypes.Type(value = MetadataSubstate.class, name = "Metadata"),
-  @JsonSubTypes.Type(value = NativeCodeSubstate.class, name = "NativeCode"),
   @JsonSubTypes.Type(value = NonFungibleStoreEntrySubstate.class, name = "NonFungibleStoreEntry"),
+  @JsonSubTypes.Type(value = PackageCodeSubstate.class, name = "PackageCode"),
+  @JsonSubTypes.Type(value = PackageCodeTypeSubstate.class, name = "PackageCodeType"),
   @JsonSubTypes.Type(value = PackageInfoSubstate.class, name = "PackageInfo"),
   @JsonSubTypes.Type(value = PackageRoyaltyAccumulatorSubstate.class, name = "PackageRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageRoyaltyConfigSubstate.class, name = "PackageRoyaltyConfig"),
-  @JsonSubTypes.Type(value = PackageTypeInfoSubstate.class, name = "PackageTypeInfo"),
   @JsonSubTypes.Type(value = ResourceManagerSubstate.class, name = "ResourceManager"),
+  @JsonSubTypes.Type(value = TypeInfoSubstate.class, name = "TypeInfo"),
   @JsonSubTypes.Type(value = ValidatorSubstate.class, name = "Validator"),
   @JsonSubTypes.Type(value = ValidatorSetSubstate.class, name = "ValidatorSet"),
-  @JsonSubTypes.Type(value = VaultSubstate.class, name = "Vault"),
-  @JsonSubTypes.Type(value = WasmCodeSubstate.class, name = "WasmCode"),
+  @JsonSubTypes.Type(value = VaultFungibleSubstate.class, name = "VaultFungible"),
+  @JsonSubTypes.Type(value = VaultInfoSubstate.class, name = "VaultInfo"),
+  @JsonSubTypes.Type(value = VaultLockedFungibleSubstate.class, name = "VaultLockedFungible"),
+  @JsonSubTypes.Type(value = VaultLockedNonFungibleSubstate.class, name = "VaultLockedNonFungible"),
+  @JsonSubTypes.Type(value = VaultNonFungibleSubstate.class, name = "VaultNonFungible"),
 })
 
-public class ComponentInfoSubstate extends Substate {
-  public static final String JSON_PROPERTY_PACKAGE_ADDRESS = "package_address";
-  private String packageAddress;
+public class VaultLockedNonFungibleSubstate extends Substate {
+  public static final String JSON_PROPERTY_NON_FUNGIBLE_IDS = "non_fungible_ids";
+  private List<NonFungibleId> nonFungibleIds = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
-  private String blueprintName;
-
-  public ComponentInfoSubstate() { 
+  public VaultLockedNonFungibleSubstate() { 
   }
 
-  public ComponentInfoSubstate packageAddress(String packageAddress) {
-    this.packageAddress = packageAddress;
+  public VaultLockedNonFungibleSubstate nonFungibleIds(List<NonFungibleId> nonFungibleIds) {
+    this.nonFungibleIds = nonFungibleIds;
+    return this;
+  }
+
+  public VaultLockedNonFungibleSubstate addNonFungibleIdsItem(NonFungibleId nonFungibleIdsItem) {
+    this.nonFungibleIds.add(nonFungibleIdsItem);
     return this;
   }
 
    /**
-   * The Bech32m-encoded human readable version of the package address
-   * @return packageAddress
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the package address")
-  @JsonProperty(JSON_PROPERTY_PACKAGE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getPackageAddress() {
-    return packageAddress;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_PACKAGE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPackageAddress(String packageAddress) {
-    this.packageAddress = packageAddress;
-  }
-
-
-  public ComponentInfoSubstate blueprintName(String blueprintName) {
-    this.blueprintName = blueprintName;
-    return this;
-  }
-
-   /**
-   * Get blueprintName
-   * @return blueprintName
+   * Get nonFungibleIds
+   * @return nonFungibleIds
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_IDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getBlueprintName() {
-    return blueprintName;
+  public List<NonFungibleId> getNonFungibleIds() {
+    return nonFungibleIds;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
+  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_IDS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBlueprintName(String blueprintName) {
-    this.blueprintName = blueprintName;
+  public void setNonFungibleIds(List<NonFungibleId> nonFungibleIds) {
+    this.nonFungibleIds = nonFungibleIds;
   }
 
 
   /**
-   * Return true if this ComponentInfoSubstate object is equal to o.
+   * Return true if this VaultLockedNonFungibleSubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -169,24 +153,22 @@ public class ComponentInfoSubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ComponentInfoSubstate componentInfoSubstate = (ComponentInfoSubstate) o;
-    return Objects.equals(this.packageAddress, componentInfoSubstate.packageAddress) &&
-        Objects.equals(this.blueprintName, componentInfoSubstate.blueprintName) &&
+    VaultLockedNonFungibleSubstate vaultLockedNonFungibleSubstate = (VaultLockedNonFungibleSubstate) o;
+    return Objects.equals(this.nonFungibleIds, vaultLockedNonFungibleSubstate.nonFungibleIds) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageAddress, blueprintName, super.hashCode());
+    return Objects.hash(nonFungibleIds, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ComponentInfoSubstate {\n");
+    sb.append("class VaultLockedNonFungibleSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
-    sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
+    sb.append("    nonFungibleIds: ").append(toIndentedString(nonFungibleIds)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -209,27 +191,30 @@ static {
   mappings.put("AccessRulesChain", AccessRulesChainSubstate.class);
   mappings.put("Account", AccountSubstate.class);
   mappings.put("ClockCurrentMinute", ClockCurrentMinuteSubstate.class);
-  mappings.put("ComponentInfo", ComponentInfoSubstate.class);
   mappings.put("ComponentRoyaltyAccumulator", ComponentRoyaltyAccumulatorSubstate.class);
   mappings.put("ComponentRoyaltyConfig", ComponentRoyaltyConfigSubstate.class);
   mappings.put("ComponentState", ComponentStateSubstate.class);
   mappings.put("EpochManager", EpochManagerSubstate.class);
-  mappings.put("GlobalAddress", GlobalAddressSubstate.class);
+  mappings.put("FunctionAccessRules", FunctionAccessRulesSubstate.class);
   mappings.put("KeyValueStoreEntry", KeyValueStoreEntrySubstate.class);
   mappings.put("Metadata", MetadataSubstate.class);
-  mappings.put("NativeCode", NativeCodeSubstate.class);
   mappings.put("NonFungibleStoreEntry", NonFungibleStoreEntrySubstate.class);
+  mappings.put("PackageCode", PackageCodeSubstate.class);
+  mappings.put("PackageCodeType", PackageCodeTypeSubstate.class);
   mappings.put("PackageInfo", PackageInfoSubstate.class);
   mappings.put("PackageRoyaltyAccumulator", PackageRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageRoyaltyConfig", PackageRoyaltyConfigSubstate.class);
-  mappings.put("PackageTypeInfo", PackageTypeInfoSubstate.class);
   mappings.put("ResourceManager", ResourceManagerSubstate.class);
+  mappings.put("TypeInfo", TypeInfoSubstate.class);
   mappings.put("Validator", ValidatorSubstate.class);
   mappings.put("ValidatorSet", ValidatorSetSubstate.class);
-  mappings.put("Vault", VaultSubstate.class);
-  mappings.put("WasmCode", WasmCodeSubstate.class);
-  mappings.put("ComponentInfoSubstate", ComponentInfoSubstate.class);
-  JSON.registerDiscriminator(ComponentInfoSubstate.class, "substate_type", mappings);
+  mappings.put("VaultFungible", VaultFungibleSubstate.class);
+  mappings.put("VaultInfo", VaultInfoSubstate.class);
+  mappings.put("VaultLockedFungible", VaultLockedFungibleSubstate.class);
+  mappings.put("VaultLockedNonFungible", VaultLockedNonFungibleSubstate.class);
+  mappings.put("VaultNonFungible", VaultNonFungibleSubstate.class);
+  mappings.put("VaultLockedNonFungibleSubstate", VaultLockedNonFungibleSubstate.class);
+  JSON.registerDiscriminator(VaultLockedNonFungibleSubstate.class, "substate_type", mappings);
 }
 }
 

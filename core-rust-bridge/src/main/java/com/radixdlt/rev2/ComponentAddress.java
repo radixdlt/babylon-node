@@ -77,7 +77,7 @@ public record ComponentAddress(byte[] value) {
         ComponentAddress.class,
         codecs ->
             new CustomTypeKnownLengthCodec<>(
-                TypeId.TYPE_CUSTOM_COMPONENT_ADDRESS,
+                TypeId.TYPE_CUSTOM_ADDRESS,
                 BYTE_LENGTH,
                 ComponentAddress::value,
                 ComponentAddress::new));
@@ -86,11 +86,7 @@ public record ComponentAddress(byte[] value) {
   private static final int BYTE_LENGTH = 27;
 
   // See entity.rs
-  public static byte RESOURCE_ADDRESS_ENTITY_ID = 0;
-  public static byte PACKAGE_ADDRESS_ENTITY_ID = 1;
-  public static byte NORMAL_COMPONENT_ADDRESS_ENTITY_ID = 2;
-  public static byte ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID = 3;
-  public static byte SYSTEM_COMPONENT_ADDRESS_ENTITY_ID = 4;
+  public static byte NORMAL_COMPONENT_ADDRESS_ENTITY_ID = (byte) 2;
 
   public static final ComponentAddress NON_EXISTENT_COMPONENT_ADDRESS =
       // See constants.rs (component.rs defines the encoding)

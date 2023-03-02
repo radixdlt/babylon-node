@@ -1,9 +1,9 @@
 use crate::core_api::*;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{
-    AccessRulesChainOffset, GlobalAddress, MetadataOffset, ResourceManagerOffset, SubstateOffset,
+    AccessRulesChainOffset, MetadataOffset, ResourceManagerOffset, SubstateOffset,
 };
-use radix_engine_interface::api::types::NodeModuleId;
+use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
 
 use state_manager::jni::state_manager::ActualStateManager;
 
@@ -24,15 +24,12 @@ fn handle_state_resource_internal(
     let resource_address = extract_resource_address(&extraction_context, &request.resource_address)
         .map_err(|err| err.into_response_error("resource_address"))?;
 
-    let resource_node_id =
-        read_derefed_global_node_id(state_manager, GlobalAddress::Resource(resource_address))?;
-
     let resource_manager = {
         let substate_offset =
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let loaded_substate = read_known_substate(
             state_manager,
-            resource_node_id,
+            RENodeId::GlobalResourceManager(resource_address),
             NodeModuleId::SELF,
             &substate_offset,
         )?;
@@ -45,7 +42,7 @@ fn handle_state_resource_internal(
         let substate_offset = SubstateOffset::Metadata(MetadataOffset::Metadata);
         let loaded_substate = read_known_substate(
             state_manager,
-            resource_node_id,
+            RENodeId::GlobalResourceManager(resource_address),
             NodeModuleId::Metadata,
             &substate_offset,
         )?;
@@ -59,7 +56,7 @@ fn handle_state_resource_internal(
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let loaded_substate = read_known_substate(
             state_manager,
-            resource_node_id,
+            RENodeId::GlobalResourceManager(resource_address),
             NodeModuleId::AccessRules,
             &substate_offset,
         )?;
@@ -73,7 +70,7 @@ fn handle_state_resource_internal(
             SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let loaded_substate = read_known_substate(
             state_manager,
-            resource_node_id,
+            RENodeId::GlobalResourceManager(resource_address),
             NodeModuleId::AccessRules1,
             &substate_offset,
         )?;

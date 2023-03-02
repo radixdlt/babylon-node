@@ -84,7 +84,7 @@ use crate::{
     LedgerTransactionReceipt,
 };
 use radix_engine::types::{KeyValueStoreId, SubstateId};
-use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReadableTreeStore, TreeNode};
+use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeStore, TreeNode};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub enum DatabaseConfig {
@@ -136,8 +136,8 @@ impl ReadableSubstateStore for StateManagerDatabase {
     }
 }
 
-impl ReadableTreeStore for StateManagerDatabase {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+impl<P: Payload> ReadableTreeStore<P> for StateManagerDatabase {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_node(key),
             StateManagerDatabase::RocksDB(store) => store.get_node(key),

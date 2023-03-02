@@ -62,9 +62,12 @@
  * permissions under this License.
  */
 
-use radix_engine::blueprints::resource::VaultSubstate;
+use radix_engine::blueprints::resource::VaultInfoSubstate;
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use radix_engine::types::{Decimal, RENodeId, ResourceAddress, SubstateId};
+use radix_engine_interface::blueprints::resource::{
+    LiquidFungibleResource, LiquidNonFungibleResource,
+};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
@@ -105,21 +108,35 @@ impl Accounting {
         }
     }
 
-    pub fn add_vault(&mut self, vault: &VaultSubstate) {
-        match self.balances.entry(vault.0.resource_address()) {
+    pub fn add_vault(&mut self, resource_address: ResourceAddress, amount: Decimal) {
+        match self.balances.entry(resource_address) {
             Entry::Occupied(mut e) => {
-                let new_amount = vault.0.amount() + *e.get();
+                let new_amount = amount + *e.get();
                 e.insert(new_amount);
             }
             Entry::Vacant(e) => {
-                e.insert(vault.0.amount());
+                e.insert(amount);
             }
         }
     }
 }
 
 impl StateTreeVisitor for Accounting {
-    fn visit_vault(&mut self, _parent_id: Option<&SubstateId>, vault: &VaultSubstate) {
-        self.add_vault(vault);
+    fn visit_fungible_vault(
+        &mut self,
+        _parent_id: Option<&SubstateId>,
+        info: &VaultInfoSubstate,
+        liquid: &LiquidFungibleResource,
+    ) {
+        self.add_vault(info.resource_address, liquid.amount());
+    }
+
+    fn visit_non_fungible_vault(
+        &mut self,
+        _parent_id: Option<&SubstateId>,
+        info: &VaultInfoSubstate,
+        liquid: &LiquidNonFungibleResource,
+    ) {
+        self.add_vault(info.resource_address, liquid.amount());
     }
 }

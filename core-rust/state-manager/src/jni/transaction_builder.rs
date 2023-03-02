@@ -62,7 +62,6 @@
  * permissions under this License.
  */
 
-use crate::jni::java_structure::JavaStructure;
 use crate::result::StateManagerResult;
 use crate::transaction::{
     create_genesis_ledger_transaction_bytes, create_intent_bytes, create_manifest,
@@ -71,16 +70,16 @@ use crate::transaction::{
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::types::{scrypto_decode, scrypto_encode, PublicKey};
+use radix_engine::types::PublicKey;
 use radix_engine_interface::api::component::ComponentAddress;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
 use std::collections::BTreeMap;
+use transaction::data::{manifest_decode, manifest_encode};
 use transaction::model::{
-    NotarizedTransaction, Signature, SignatureWithPublicKey, SignedTransactionIntent,
-    TransactionHeader, TransactionIntent,
+    NotarizedTransaction, Signature, SignatureWithPublicKey, TransactionHeader,
 };
 
 use super::utils::{jni_static_sbor_call, jni_static_sbor_call_flatten_result};
@@ -99,7 +98,7 @@ fn do_compile_manifest(
 ) -> Result<Vec<u8>, String> {
     create_manifest(&network, &manifest_str, blobs)
         .map_err(|err| format!("{:?}", err))
-        .map(|manifest| scrypto_encode(&manifest).unwrap())
+        .map(|manifest| manifest_encode(&manifest).unwrap())
 }
 
 #[no_mangle]
@@ -201,7 +200,7 @@ fn do_create_signed_intent_bytes(
     (intent_bytes, signatures): (Vec<u8>, Vec<SignatureWithPublicKey>),
 ) -> StateManagerResult<Vec<u8>> {
     // It's passed through to us as bytes - and need to decode these bytes
-    let intent = TransactionIntent::from_java(&intent_bytes)?;
+    let intent = manifest_decode(&intent_bytes)?;
 
     Ok(create_signed_intent_bytes(intent, signatures))
 }
@@ -219,7 +218,7 @@ fn do_create_notarized_bytes(
     (signed_intent_bytes, signature): (Vec<u8>, Signature),
 ) -> StateManagerResult<Vec<u8>> {
     // It's passed through to us as bytes - and need to decode these bytes
-    let signed_intent = SignedTransactionIntent::from_java(&signed_intent_bytes)?;
+    let signed_intent = manifest_decode(&signed_intent_bytes)?;
 
     Ok(create_notarized_bytes(signed_intent, signature))
 }
@@ -234,8 +233,8 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_userTransact
 }
 
 fn do_user_transaction_to_ledger(args: Vec<u8>) -> StateManagerResult<Vec<u8>> {
-    let notarized_transaction: NotarizedTransaction = scrypto_decode(&args)?;
-    Ok(scrypto_encode(&LedgerTransaction::User(
+    let notarized_transaction: NotarizedTransaction = manifest_decode(&args)?;
+    Ok(manifest_encode(&LedgerTransaction::User(
         notarized_transaction,
     ))?)
 }
@@ -256,7 +255,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_transactionB
 fn do_transaction_bytes_to_notarized_transaction_bytes(
     args: Vec<u8>,
 ) -> StateManagerResult<Option<Vec<u8>>> {
-    let transaction: LedgerTransaction = scrypto_decode(&args)?;
+    let transaction: LedgerTransaction = manifest_decode(&args)?;
     Ok(match transaction {
         LedgerTransaction::User(notarized_transaction) => Some(notarized_transaction.to_bytes()?),
         LedgerTransaction::Validator(..) => None,

@@ -12,8 +12,6 @@
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum EntityType {
-    #[serde(rename = "Global")]
-    Global,
     #[serde(rename = "Component")]
     Component,
     #[serde(rename = "Package")]
@@ -44,7 +42,6 @@ pub enum EntityType {
 impl ToString for EntityType {
     fn to_string(&self) -> String {
         match self {
-            Self::Global => String::from("Global"),
             Self::Component => String::from("Component"),
             Self::Package => String::from("Package"),
             Self::ResourceManager => String::from("ResourceManager"),
@@ -63,7 +60,7 @@ impl ToString for EntityType {
 
 impl Default for EntityType {
     fn default() -> EntityType {
-        Self::Global
+        Self::Component
     }
 }
 

@@ -32,8 +32,6 @@ import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyConfigSubstate;
 import com.radixdlt.api.core.generated.models.ComponentStateSubstate;
-import com.radixdlt.api.core.generated.models.ComponentStateSubstateAllOf;
-import com.radixdlt.api.core.generated.models.DataStruct;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
 import com.radixdlt.api.core.generated.models.FunctionAccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
@@ -51,6 +49,7 @@ import com.radixdlt.api.core.generated.models.TypeInfoSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorSetSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorSubstate;
 import com.radixdlt.api.core.generated.models.VaultFungibleSubstate;
+import com.radixdlt.api.core.generated.models.VaultFungibleSubstateAllOf;
 import com.radixdlt.api.core.generated.models.VaultInfoSubstate;
 import com.radixdlt.api.core.generated.models.VaultLockedFungibleSubstate;
 import com.radixdlt.api.core.generated.models.VaultLockedNonFungibleSubstate;
@@ -62,10 +61,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * AccessControllerSubstate
+ * VaultFungibleSubstate
  */
 @JsonPropertyOrder({
-  AccessControllerSubstate.JSON_PROPERTY_DATA_STRUCT
+  VaultFungibleSubstate.JSON_PROPERTY_AMOUNT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -102,41 +101,41 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = VaultNonFungibleSubstate.class, name = "VaultNonFungible"),
 })
 
-public class AccessControllerSubstate extends Substate {
-  public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
-  private DataStruct dataStruct;
+public class VaultFungibleSubstate extends Substate {
+  public static final String JSON_PROPERTY_AMOUNT = "amount";
+  private String amount;
 
-  public AccessControllerSubstate() { 
+  public VaultFungibleSubstate() { 
   }
 
-  public AccessControllerSubstate dataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public VaultFungibleSubstate amount(String amount) {
+    this.amount = amount;
     return this;
   }
 
    /**
-   * Get dataStruct
-   * @return dataStruct
+   * The string-encoded decimal representing the XRD amount put or taken from the vault. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
+   * @return amount
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the XRD amount put or taken from the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
+  @JsonProperty(JSON_PROPERTY_AMOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public DataStruct getDataStruct() {
-    return dataStruct;
+  public String getAmount() {
+    return amount;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_AMOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public void setAmount(String amount) {
+    this.amount = amount;
   }
 
 
   /**
-   * Return true if this AccessControllerSubstate object is equal to o.
+   * Return true if this VaultFungibleSubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -146,22 +145,22 @@ public class AccessControllerSubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    AccessControllerSubstate accessControllerSubstate = (AccessControllerSubstate) o;
-    return Objects.equals(this.dataStruct, accessControllerSubstate.dataStruct) &&
+    VaultFungibleSubstate vaultFungibleSubstate = (VaultFungibleSubstate) o;
+    return Objects.equals(this.amount, vaultFungibleSubstate.amount) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(dataStruct, super.hashCode());
+    return Objects.hash(amount, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class AccessControllerSubstate {\n");
+    sb.append("class VaultFungibleSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
+    sb.append("    amount: ").append(toIndentedString(amount)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -206,8 +205,8 @@ static {
   mappings.put("VaultLockedFungible", VaultLockedFungibleSubstate.class);
   mappings.put("VaultLockedNonFungible", VaultLockedNonFungibleSubstate.class);
   mappings.put("VaultNonFungible", VaultNonFungibleSubstate.class);
-  mappings.put("AccessControllerSubstate", AccessControllerSubstate.class);
-  JSON.registerDiscriminator(AccessControllerSubstate.class, "substate_type", mappings);
+  mappings.put("VaultFungibleSubstate", VaultFungibleSubstate.class);
+  JSON.registerDiscriminator(VaultFungibleSubstate.class, "substate_type", mappings);
 }
 }
 

@@ -12,16 +12,16 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct WasmCodeSubstateAllOf {
-    /// The hex-encoded package code
-    #[serde(rename = "code_hex")]
-    pub code_hex: String,
+pub struct VaultFungibleSubstateAllOf {
+    /// The string-encoded decimal representing the XRD amount put or taken from the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    #[serde(rename = "amount")]
+    pub amount: String,
 }
 
-impl WasmCodeSubstateAllOf {
-    pub fn new(code_hex: String) -> WasmCodeSubstateAllOf {
-        WasmCodeSubstateAllOf {
-            code_hex,
+impl VaultFungibleSubstateAllOf {
+    pub fn new(amount: String) -> VaultFungibleSubstateAllOf {
+        VaultFungibleSubstateAllOf {
+            amount,
         }
     }
 }

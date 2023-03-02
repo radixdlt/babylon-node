@@ -27,14 +27,14 @@ pub struct StateComponentResponse {
     pub access_rules: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     /// Any vaults owned directly or indirectly by the component
     #[serde(rename = "state_owned_vaults")]
-    pub state_owned_vaults: Vec<crate::core_api::generated::models::Substate>,
+    pub state_owned_vaults: Vec<crate::core_api::generated::models::ResourceAmount>,
     /// Any descendent nodes owned directly or indirectly by the component
     #[serde(rename = "descendent_ids")]
     pub descendent_ids: Vec<crate::core_api::generated::models::StateComponentDescendentId>,
 }
 
 impl StateComponentResponse {
-    pub fn new(info: crate::core_api::generated::models::Substate, state: crate::core_api::generated::models::Substate, royalty_config: crate::core_api::generated::models::Substate, royalty_accumulator: crate::core_api::generated::models::Substate, metadata: crate::core_api::generated::models::Substate, access_rules: crate::core_api::generated::models::Substate, state_owned_vaults: Vec<crate::core_api::generated::models::Substate>, descendent_ids: Vec<crate::core_api::generated::models::StateComponentDescendentId>) -> StateComponentResponse {
+    pub fn new(info: crate::core_api::generated::models::Substate, state: crate::core_api::generated::models::Substate, royalty_config: crate::core_api::generated::models::Substate, royalty_accumulator: crate::core_api::generated::models::Substate, metadata: crate::core_api::generated::models::Substate, access_rules: crate::core_api::generated::models::Substate, state_owned_vaults: Vec<crate::core_api::generated::models::ResourceAmount>, descendent_ids: Vec<crate::core_api::generated::models::StateComponentDescendentId>) -> StateComponentResponse {
         StateComponentResponse {
             info: Option::Some(info),
             state: Option::Some(state),

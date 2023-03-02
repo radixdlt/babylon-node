@@ -12,19 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct WasmCodeSubstate {
-    #[serde(rename = "substate_type")]
-    pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The hex-encoded package code
-    #[serde(rename = "code_hex")]
-    pub code_hex: String,
+pub struct TypeInfoSubstateAllOf {
+    /// The Bech32m-encoded human readable version of the package address
+    #[serde(rename = "package_address")]
+    pub package_address: String,
+    #[serde(rename = "blueprint_name")]
+    pub blueprint_name: String,
 }
 
-impl WasmCodeSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, code_hex: String) -> WasmCodeSubstate {
-        WasmCodeSubstate {
-            substate_type,
-            code_hex,
+impl TypeInfoSubstateAllOf {
+    pub fn new(package_address: String, blueprint_name: String) -> TypeInfoSubstateAllOf {
+        TypeInfoSubstateAllOf {
+            package_address,
+            blueprint_name,
         }
     }
 }

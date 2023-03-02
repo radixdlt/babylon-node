@@ -71,8 +71,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
-import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.sbor.codec.CustomByteArrayCodec;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
@@ -87,9 +86,7 @@ public final class ECDSASecp256k1PublicKey {
     codecMap.register(
         ECDSASecp256k1PublicKey.class,
         codecs ->
-            new CustomTypeKnownLengthCodec<>(
-                TypeId.TYPE_CUSTOM_ECDSA_SECP256K1_PUBLIC_KEY,
-                COMPRESSED_BYTES,
+            new CustomByteArrayCodec<>(
                 ECDSASecp256k1PublicKey::getCompressedBytes,
                 ECDSASecp256k1PublicKey::fromCompressedBytesUnchecked));
   }

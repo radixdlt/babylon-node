@@ -65,10 +65,10 @@
 use radix_engine::ledger::create_genesis;
 use radix_engine_interface::api::component::ComponentAddress;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use radix_engine_interface::data::scrypto_encode;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use std::collections::BTreeMap;
+use transaction::data::manifest_encode;
 
 use crate::transaction::LedgerTransaction;
 use transaction::manifest::{compile, CompileError};
@@ -91,7 +91,7 @@ pub fn create_genesis_ledger_transaction_bytes(
         rounds_per_epoch,
         num_unstake_epochs,
     );
-    scrypto_encode(&LedgerTransaction::System(genesis)).unwrap()
+    manifest_encode(&LedgerTransaction::System(genesis)).unwrap()
 }
 
 pub fn create_intent_bytes(

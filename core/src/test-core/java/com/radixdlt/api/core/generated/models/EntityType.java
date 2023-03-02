@@ -28,8 +28,6 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum EntityType {
   
-  GLOBAL("Global"),
-  
   COMPONENT("Component"),
   
   PACKAGE("Package"),

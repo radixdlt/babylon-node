@@ -14,20 +14,20 @@
 pub enum ModuleType {
     #[serde(rename = "Self")]
     _Self,
+    #[serde(rename = "TypeInfo")]
+    TypeInfo,
     #[serde(rename = "Metadata")]
     Metadata,
     #[serde(rename = "AccessRules")]
     AccessRules,
     #[serde(rename = "AccessRules1")]
     AccessRules1,
+    #[serde(rename = "FunctionAccessRules")]
+    FunctionAccessRules,
     #[serde(rename = "ComponentRoyalty")]
     ComponentRoyalty,
     #[serde(rename = "PackageRoyalty")]
     PackageRoyalty,
-    #[serde(rename = "PackageTypeInfo")]
-    PackageTypeInfo,
-    #[serde(rename = "ComponentTypeInfo")]
-    ComponentTypeInfo,
 
 }
 
@@ -35,13 +35,13 @@ impl ToString for ModuleType {
     fn to_string(&self) -> String {
         match self {
             Self::_Self => String::from("Self"),
+            Self::TypeInfo => String::from("TypeInfo"),
             Self::Metadata => String::from("Metadata"),
             Self::AccessRules => String::from("AccessRules"),
             Self::AccessRules1 => String::from("AccessRules1"),
+            Self::FunctionAccessRules => String::from("FunctionAccessRules"),
             Self::ComponentRoyalty => String::from("ComponentRoyalty"),
             Self::PackageRoyalty => String::from("PackageRoyalty"),
-            Self::PackageTypeInfo => String::from("PackageTypeInfo"),
-            Self::ComponentTypeInfo => String::from("ComponentTypeInfo"),
         }
     }
 }

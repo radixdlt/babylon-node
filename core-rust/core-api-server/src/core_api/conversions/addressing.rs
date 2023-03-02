@@ -5,18 +5,18 @@ use crate::core_api::*;
 
 use crate::core_api::models::ModuleType;
 use models::{EntityType, SubstateKeyType, SubstateType};
-use radix_engine::system::global::GlobalAddressSubstate;
 use radix_engine::types::{
     scrypto_encode, AccessRulesChainOffset, ClockOffset, ComponentAddress, ComponentOffset,
-    EpochManagerOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, MetadataOffset,
-    NonFungibleStoreOffset, PackageAddress, PackageOffset, RENodeId, ResourceAddress,
-    ResourceManagerOffset, SubstateId, SubstateOffset, VaultOffset,
+    EpochManagerOffset, KeyValueStoreOffset, MetadataOffset, NonFungibleStoreOffset,
+    PackageAddress, PackageOffset, RENodeId, ResourceAddress, ResourceManagerOffset, SubstateId,
+    SubstateOffset, VaultOffset,
 };
 use radix_engine_interface::api::types::{
-    AccessControllerOffset, AccountOffset, ComponentTypeInfoOffset, NodeModuleId, RoyaltyOffset,
+    AccessControllerOffset, AccountOffset, NodeModuleId, RoyaltyOffset, TypeInfoOffset,
     ValidatorOffset,
 };
 use radix_engine_interface::blueprints::resource::{NonFungibleIdType, NonFungibleLocalId};
+use radix_engine_interface::data::model::Address;
 
 pub fn to_api_component_address(
     context: &MappingContext,
@@ -45,38 +45,17 @@ pub fn to_api_package_address(
         .encode_package_address_to_string(package_address)
 }
 
-pub fn to_api_global_entity_assignment(
-    context: &MappingContext,
-    global_substate_id: &SubstateId,
-    global_address: &GlobalAddress,
-    global_substate: &GlobalAddressSubstate,
-) -> Result<models::GlobalEntityAssignment, MappingError> {
-    let target_re_node_id = global_substate.node_deref();
-
-    let target_entity = MappedEntityId::try_from(target_re_node_id)?;
-
-    let global_entity_id_bytes = re_node_id_to_entity_id_bytes(&global_substate_id.0)?;
-
-    Ok(models::GlobalEntityAssignment {
-        target_entity_type: target_entity.entity_type,
-        target_entity_id_hex: to_hex(target_entity.entity_id_bytes),
-        global_entity_id_hex: to_hex(global_entity_id_bytes),
-        global_address_hex: to_hex(global_address_to_vec(global_address)),
-        global_address: to_api_global_address(context, global_address),
-    })
-}
-
-pub fn to_api_global_address(context: &MappingContext, global_address: &GlobalAddress) -> String {
-    match global_address {
-        GlobalAddress::Component(addr) => to_api_component_address(context, addr),
-        GlobalAddress::Package(addr) => to_api_package_address(context, addr),
-        GlobalAddress::Resource(addr) => to_api_resource_address(context, addr),
+pub fn to_api_address(context: &MappingContext, address: &Address) -> String {
+    match address {
+        Address::Component(addr) => to_api_component_address(context, addr),
+        Address::Package(addr) => to_api_package_address(context, addr),
+        Address::Resource(addr) => to_api_resource_address(context, addr),
     }
 }
 
-pub fn get_entity_type_from_global_address(global_address: &GlobalAddress) -> models::EntityType {
+pub fn get_entity_type_from_global_address(global_address: &Address) -> models::EntityType {
     match global_address {
-        GlobalAddress::Component(component) => match component {
+        Address::Component(component) => match component {
             // Scrypto Components get mapped to EntityType::Component for now
             ComponentAddress::Normal(_) => models::EntityType::Component,
             ComponentAddress::Account(_) => models::EntityType::Component,
@@ -91,8 +70,8 @@ pub fn get_entity_type_from_global_address(global_address: &GlobalAddress) -> mo
             ComponentAddress::EcdsaSecp256k1VirtualIdentity(_) => models::EntityType::Identity,
             ComponentAddress::EddsaEd25519VirtualIdentity(_) => models::EntityType::Identity,
         },
-        GlobalAddress::Package(_) => models::EntityType::Package,
-        GlobalAddress::Resource(_) => models::EntityType::ResourceManager,
+        Address::Package(_) => models::EntityType::Package,
+        Address::Resource(_) => models::EntityType::ResourceManager,
     }
 }
 
@@ -135,31 +114,42 @@ impl TryFrom<RENodeId> for MappedEntityId {
 
         // Start body of method
         let entity_id_bytes = re_node_id_to_entity_id_bytes(&re_node_id)?;
-        let entity_type = match re_node_id {
-            RENodeId::Global(_) => EntityType::Global,
-            // Gateway understands "Component" to be "Component with Scrypto Package" for now. This will change when we have Native Packages
-            RENodeId::Component(_) => EntityType::Component,
-            RENodeId::Package(_) => EntityType::Package,
-            RENodeId::ResourceManager(_) => EntityType::ResourceManager,
-            // Native Components
-            RENodeId::EpochManager(_) => EntityType::EpochManager,
-            RENodeId::Clock(_) => EntityType::Clock,
-            RENodeId::Validator(_) => EntityType::Validator,
-            RENodeId::AccessController(_) => EntityType::AccessController,
-            RENodeId::Identity(_) => EntityType::Identity,
-            RENodeId::KeyValueStore(_) => EntityType::KeyValueStore,
-            RENodeId::NonFungibleStore(_) => EntityType::NonFungibleStore,
-            RENodeId::Vault(_) => EntityType::Vault,
-            RENodeId::Account(_) => EntityType::Account,
-            RENodeId::Bucket(_) => return Err(transient_renode_error("Bucket")),
-            RENodeId::Proof(_) => return Err(transient_renode_error("Proof")),
-            RENodeId::Worktop => return Err(transient_renode_error("Worktop")),
-            RENodeId::AuthZoneStack => return Err(transient_renode_error("AuthZoneStack")),
-            RENodeId::TransactionRuntime => {
-                return Err(transient_renode_error("TransactionRuntime"))
-            }
-            RENodeId::Logger => return Err(transient_renode_error("Logger")),
-        };
+        let entity_type =
+            match re_node_id {
+                // Gateway understands "Component" to be "Component with Scrypto Package" for now. This will change when we have Native Packages
+                RENodeId::GlobalComponent(ComponentAddress::Normal(..))
+                | RENodeId::Component(_) => EntityType::Component,
+                RENodeId::GlobalPackage(_) => EntityType::Package,
+                RENodeId::GlobalResourceManager(_) => EntityType::ResourceManager,
+                // Native Components
+                RENodeId::GlobalComponent(ComponentAddress::EpochManager(..))
+                | RENodeId::EpochManager(_) => EntityType::EpochManager,
+                RENodeId::GlobalComponent(ComponentAddress::Clock(..)) | RENodeId::Clock(_) => {
+                    EntityType::Clock
+                }
+                RENodeId::GlobalComponent(ComponentAddress::Validator(..))
+                | RENodeId::Validator(_) => EntityType::Validator,
+                RENodeId::GlobalComponent(ComponentAddress::AccessController(..))
+                | RENodeId::AccessController(_) => EntityType::AccessController,
+                RENodeId::GlobalComponent(ComponentAddress::Identity(..))
+                | RENodeId::GlobalComponent(ComponentAddress::EcdsaSecp256k1VirtualIdentity(..))
+                | RENodeId::GlobalComponent(ComponentAddress::EddsaEd25519VirtualIdentity(..))
+                | RENodeId::Identity(_) => EntityType::Identity,
+                RENodeId::KeyValueStore(_) => EntityType::KeyValueStore,
+                RENodeId::NonFungibleStore(_) => EntityType::NonFungibleStore,
+                RENodeId::Vault(_) => EntityType::Vault,
+                RENodeId::GlobalComponent(ComponentAddress::Account(..))
+                | RENodeId::GlobalComponent(ComponentAddress::EcdsaSecp256k1VirtualAccount(..))
+                | RENodeId::GlobalComponent(ComponentAddress::EddsaEd25519VirtualAccount(..))
+                | RENodeId::Account(_) => EntityType::Account,
+                RENodeId::Bucket(_) => return Err(transient_renode_error("Bucket")),
+                RENodeId::Proof(_) => return Err(transient_renode_error("Proof")),
+                RENodeId::Worktop => return Err(transient_renode_error("Worktop")),
+                RENodeId::AuthZoneStack => return Err(transient_renode_error("AuthZoneStack")),
+                RENodeId::TransactionRuntime => {
+                    return Err(transient_renode_error("TransactionRuntime"))
+                }
+            };
         Ok(MappedEntityId {
             entity_type,
             entity_id_bytes,
@@ -242,24 +232,14 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
     //   we capture all possible substate types at compile time...
     // We can't capture new offset types under an RENode though - check nodes.rs after each merge to check we're not missing any
     let (entity_type, substate_type_key) = match &substate_id {
-        SubstateId(RENodeId::Global(_), _, offset) => {
+        SubstateId(
+            RENodeId::GlobalComponent(ComponentAddress::Normal(..)) | RENodeId::Component(_),
+            _,
+            offset,
+        ) => {
             let substate_type_key = match offset {
-                SubstateOffset::Global(offset) => match offset {
-                    GlobalOffset::Global => {
-                        (SubstateType::GlobalAddress, SubstateKeyType::GlobalAddress)
-                    }
-                },
-                _ => return Err(unknown_substate_error("Global", &substate_id)),
-            };
-            (EntityType::Global, substate_type_key)
-        }
-
-        SubstateId(RENodeId::Component(_), _, offset) => {
-            let substate_type_key = match offset {
-                SubstateOffset::ComponentTypeInfo(offset) => match offset {
-                    ComponentTypeInfoOffset::TypeInfo => {
-                        (SubstateType::ComponentInfo, SubstateKeyType::ComponentInfo)
-                    }
+                SubstateOffset::TypeInfo(offset) => match offset {
+                    TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
                 },
                 SubstateOffset::Component(offset) => match offset {
                     ComponentOffset::State0 => (
@@ -291,12 +271,19 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::Component, substate_type_key)
         }
 
-        SubstateId(RENodeId::Account(_), _, offset) => {
+        SubstateId(
+            RENodeId::GlobalComponent(
+                ComponentAddress::Account(..)
+                | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
+                | ComponentAddress::EddsaEd25519VirtualAccount(..),
+            )
+            | RENodeId::Account(_),
+            _,
+            offset,
+        ) => {
             let substate_type_key = match offset {
-                SubstateOffset::ComponentTypeInfo(offset) => match offset {
-                    ComponentTypeInfoOffset::TypeInfo => {
-                        (SubstateType::ComponentInfo, SubstateKeyType::ComponentInfo)
-                    }
+                SubstateOffset::TypeInfo(offset) => match offset {
+                    TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
                 },
                 SubstateOffset::Account(offset) => match offset {
                     AccountOffset::Account => (SubstateType::Account, SubstateKeyType::Account),
@@ -315,12 +302,15 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::Account, substate_type_key)
         }
 
-        SubstateId(RENodeId::AccessController(_), _, offset) => {
+        SubstateId(
+            RENodeId::GlobalComponent(ComponentAddress::AccessController(..))
+            | RENodeId::AccessController(_),
+            _,
+            offset,
+        ) => {
             let substate_type_key = match offset {
-                SubstateOffset::ComponentTypeInfo(offset) => match offset {
-                    ComponentTypeInfoOffset::TypeInfo => {
-                        (SubstateType::ComponentInfo, SubstateKeyType::ComponentInfo)
-                    }
+                SubstateOffset::TypeInfo(offset) => match offset {
+                    TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
                 },
                 SubstateOffset::AccessController(offset) => match offset {
                     AccessControllerOffset::AccessController => (
@@ -342,20 +332,22 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::AccessController, substate_type_key)
         }
 
-        SubstateId(RENodeId::Package(_), _, offset) => {
+        SubstateId(RENodeId::GlobalPackage(_), _, offset) => {
             let substate_type_key = match offset {
-                SubstateOffset::PackageTypeInfo => (
-                    SubstateType::PackageTypeInfo,
-                    SubstateKeyType::PackageTypeInfo,
-                ),
+                SubstateOffset::TypeInfo(offset) => match offset {
+                    TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
+                },
                 SubstateOffset::Package(offset) => match offset {
                     PackageOffset::Info => {
                         (SubstateType::PackageInfo, SubstateKeyType::PackageInfo)
                     }
-                    PackageOffset::WasmCode => (SubstateType::WasmCode, SubstateKeyType::WasmCode),
-                    PackageOffset::NativeCode => {
-                        (SubstateType::NativeCode, SubstateKeyType::NativeCode)
+                    PackageOffset::Code => {
+                        (SubstateType::PackageCode, SubstateKeyType::PackageCode)
                     }
+                    PackageOffset::CodeType => (
+                        SubstateType::PackageCodeType,
+                        SubstateKeyType::PackageCodeType,
+                    ),
                 },
                 SubstateOffset::Royalty(offset) => match offset {
                     RoyaltyOffset::RoyaltyConfig => (
@@ -376,17 +368,19 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         SubstateKeyType::AccessRulesChain,
                     ),
                 },
+                SubstateOffset::PackageAccessRules => (
+                    SubstateType::FunctionAccessRules,
+                    SubstateKeyType::FunctionAccessRules,
+                ),
                 _ => return Err(unknown_substate_error("Package", &substate_id)),
             };
             (EntityType::Package, substate_type_key)
         }
 
-        SubstateId(RENodeId::ResourceManager(_), _, offset) => {
+        SubstateId(RENodeId::GlobalResourceManager(_), _, offset) => {
             let substate_type_key = match offset {
-                SubstateOffset::ComponentTypeInfo(offset) => match offset {
-                    ComponentTypeInfoOffset::TypeInfo => {
-                        (SubstateType::ComponentInfo, SubstateKeyType::ComponentInfo)
-                    }
+                SubstateOffset::TypeInfo(offset) => match offset {
+                    TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
                 },
                 SubstateOffset::ResourceManager(offset) => match offset {
                     ResourceManagerOffset::ResourceManager => (
@@ -436,25 +430,41 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
 
         SubstateId(RENodeId::Vault(_), _, offset) => {
             let substate_type_key = match offset {
-                SubstateOffset::ComponentTypeInfo(offset) => match offset {
-                    ComponentTypeInfoOffset::TypeInfo => {
-                        (SubstateType::ComponentInfo, SubstateKeyType::ComponentInfo)
-                    }
+                SubstateOffset::TypeInfo(offset) => match offset {
+                    TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
                 },
                 SubstateOffset::Vault(offset) => match offset {
-                    VaultOffset::Vault => (SubstateType::Vault, SubstateKeyType::Vault),
+                    VaultOffset::Info => (SubstateType::VaultInfo, SubstateKeyType::VaultInfo),
+                    VaultOffset::LiquidNonFungible => (
+                        SubstateType::VaultNonFungible,
+                        SubstateKeyType::VaultNonFungible,
+                    ),
+                    VaultOffset::LockedNonFungible => (
+                        SubstateType::VaultLockedNonFungible,
+                        SubstateKeyType::VaultLockedNonFungible,
+                    ),
+                    VaultOffset::LiquidFungible => {
+                        (SubstateType::VaultFungible, SubstateKeyType::VaultFungible)
+                    }
+                    VaultOffset::LockedFungible => (
+                        SubstateType::VaultLockedFungible,
+                        SubstateKeyType::VaultLockedFungible,
+                    ),
                 },
                 _ => return Err(unknown_substate_error("Vault", &substate_id)),
             };
             (EntityType::Vault, substate_type_key)
         }
 
-        SubstateId(RENodeId::EpochManager(_), _, offset) => {
+        SubstateId(
+            RENodeId::GlobalComponent(ComponentAddress::EpochManager(..))
+            | RENodeId::EpochManager(_),
+            _,
+            offset,
+        ) => {
             let substate_type_key = match offset {
-                SubstateOffset::ComponentTypeInfo(offset) => match offset {
-                    ComponentTypeInfoOffset::TypeInfo => {
-                        (SubstateType::ComponentInfo, SubstateKeyType::ComponentInfo)
-                    }
+                SubstateOffset::TypeInfo(offset) => match offset {
+                    TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
                 },
                 SubstateOffset::EpochManager(offset) => match offset {
                     EpochManagerOffset::EpochManager => {
@@ -480,12 +490,14 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::EpochManager, substate_type_key)
         }
 
-        SubstateId(RENodeId::Validator(_), _, offset) => {
+        SubstateId(
+            RENodeId::GlobalComponent(ComponentAddress::Validator(..)) | RENodeId::Validator(_),
+            _,
+            offset,
+        ) => {
             let substate_type_key = match offset {
-                SubstateOffset::ComponentTypeInfo(offset) => match offset {
-                    ComponentTypeInfoOffset::TypeInfo => {
-                        (SubstateType::ComponentInfo, SubstateKeyType::ComponentInfo)
-                    }
+                SubstateOffset::TypeInfo(offset) => match offset {
+                    TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
                 },
                 SubstateOffset::Validator(offset) => match offset {
                     ValidatorOffset::Validator => {
@@ -506,12 +518,14 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::Validator, substate_type_key)
         }
 
-        SubstateId(RENodeId::Clock(_), _, offset) => {
+        SubstateId(
+            RENodeId::GlobalComponent(ComponentAddress::Clock(..)) | RENodeId::Clock(_),
+            _,
+            offset,
+        ) => {
             let substate_type_key = match offset {
-                SubstateOffset::ComponentTypeInfo(offset) => match offset {
-                    ComponentTypeInfoOffset::TypeInfo => {
-                        (SubstateType::ComponentInfo, SubstateKeyType::ComponentInfo)
-                    }
+                SubstateOffset::TypeInfo(offset) => match offset {
+                    TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
                 },
                 SubstateOffset::Clock(offset) => match offset {
                     ClockOffset::CurrentTimeRoundedToMinutes => (
@@ -530,12 +544,19 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::Clock, substate_type_key)
         }
 
-        SubstateId(RENodeId::Identity(_), _, offset) => {
+        SubstateId(
+            RENodeId::GlobalComponent(
+                ComponentAddress::Identity(..)
+                | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
+                | ComponentAddress::EddsaEd25519VirtualIdentity(..),
+            )
+            | RENodeId::Identity(_),
+            _,
+            offset,
+        ) => {
             let substate_type_key = match offset {
-                SubstateOffset::ComponentTypeInfo(offset) => match offset {
-                    ComponentTypeInfoOffset::TypeInfo => {
-                        (SubstateType::ComponentInfo, SubstateKeyType::ComponentInfo)
-                    }
+                SubstateOffset::TypeInfo(offset) => match offset {
+                    TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
                 },
                 SubstateOffset::Metadata(offset) => match offset {
                     MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
@@ -567,9 +588,6 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
         SubstateId(RENodeId::TransactionRuntime, ..) => {
             return Err(transient_substate_error("TransactionRuntime", &substate_id))
         }
-        SubstateId(RENodeId::Logger, ..) => {
-            return Err(transient_substate_error("Logger", &substate_id))
-        }
     };
 
     Ok(MappedSubstateId(
@@ -584,12 +602,12 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
 
 pub fn to_global_entity_reference(
     context: &MappingContext,
-    global_address: &GlobalAddress,
+    global_address: &Address,
 ) -> models::GlobalEntityReference {
     models::GlobalEntityReference {
         entity_type: get_entity_type_from_global_address(global_address),
         global_address_hex: to_hex(global_address_to_vec(global_address)),
-        global_address: to_api_global_address(context, global_address),
+        global_address: to_api_address(context, global_address),
     }
 }
 
@@ -644,10 +662,10 @@ pub fn node_module_id_to_module_type(node_module_id: &NodeModuleId) -> ModuleTyp
         NodeModuleId::Metadata => ModuleType::Metadata,
         NodeModuleId::AccessRules => ModuleType::AccessRules,
         NodeModuleId::AccessRules1 => ModuleType::AccessRules1,
+        NodeModuleId::FunctionAccessRules => ModuleType::FunctionAccessRules,
         NodeModuleId::ComponentRoyalty => ModuleType::ComponentRoyalty,
         NodeModuleId::PackageRoyalty => ModuleType::PackageRoyalty,
-        NodeModuleId::PackageTypeInfo => ModuleType::PackageTypeInfo,
-        NodeModuleId::ComponentTypeInfo => ModuleType::ComponentTypeInfo,
+        NodeModuleId::TypeInfo => ModuleType::TypeInfo,
     }
 }
 
@@ -660,10 +678,10 @@ pub fn substate_offset_to_substate_key_bytes(
     })
 }
 
-pub fn global_address_to_vec(global_address: &GlobalAddress) -> Vec<u8> {
+pub fn global_address_to_vec(global_address: &Address) -> Vec<u8> {
     match global_address {
-        GlobalAddress::Package(package_addr) => package_addr.to_vec(),
-        GlobalAddress::Resource(resource_addr) => resource_addr.to_vec(),
-        GlobalAddress::Component(component_addr) => component_addr.to_vec(),
+        Address::Package(package_addr) => package_addr.to_vec(),
+        Address::Resource(resource_addr) => resource_addr.to_vec(),
+        Address::Component(component_addr) => component_addr.to_vec(),
     }
 }
