@@ -12,15 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct WasmCodeSubstateAllOf {
+pub struct PackageCodeSubstateAllOf {
     /// The hex-encoded package code
     #[serde(rename = "code_hex")]
     pub code_hex: String,
 }
 
-impl WasmCodeSubstateAllOf {
-    pub fn new(code_hex: String) -> WasmCodeSubstateAllOf {
-        WasmCodeSubstateAllOf {
+impl PackageCodeSubstateAllOf {
+    pub fn new(code_hex: String) -> PackageCodeSubstateAllOf {
+        PackageCodeSubstateAllOf {
             code_hex,
         }
     }

@@ -13,6 +13,7 @@ use state_manager::{
 };
 
 use std::collections::HashMap;
+use transaction::data::manifest_encode;
 use transaction::manifest;
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, SystemTransaction, TransactionIntent,
@@ -268,7 +269,7 @@ pub fn to_api_system_transaction(
     // NOTE: We don't use the .hash() method on the struct impls themselves,
     //       because they use the wrong hash function
     let payload =
-        scrypto_encode(system_transaction).map_err(|err| MappingError::SborEncodeError {
+        manifest_encode(system_transaction).map_err(|err| MappingError::SborEncodeError {
             encode_error: err,
             message: "Error encoding user system sbor".to_string(),
         })?;

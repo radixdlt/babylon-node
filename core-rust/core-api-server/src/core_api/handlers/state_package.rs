@@ -3,7 +3,7 @@ use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{
     AccessRulesChainOffset, GlobalAddress, MetadataOffset, PackageOffset, SubstateOffset,
 };
-use radix_engine_interface::api::types::{NodeModuleId, RoyaltyOffset};
+use radix_engine_interface::api::types::{NodeModuleId, RENodeId, RoyaltyOffset};
 
 use state_manager::jni::state_manager::ActualStateManager;
 
@@ -24,14 +24,11 @@ fn handle_state_package_internal(
     let package_address = extract_package_address(&extraction_context, &request.package_address)
         .map_err(|err| err.into_response_error("package_address"))?;
 
-    let package_node_id =
-        read_derefed_global_node_id(state_manager, GlobalAddress::Package(package_address))?;
-
     let package_info = {
         let substate_offset = SubstateOffset::Package(PackageOffset::Info);
         let loaded_substate = read_known_substate(
             state_manager,
-            package_node_id,
+            RENodeId::GlobalPackage(package_address),
             NodeModuleId::SELF,
             &substate_offset,
         )?;

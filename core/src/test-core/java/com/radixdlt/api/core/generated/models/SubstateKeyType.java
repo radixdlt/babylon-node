@@ -33,9 +33,7 @@ public enum SubstateKeyType {
   
   ACCESSRULESCHAIN("AccessRulesChain"),
   
-  GLOBALADDRESS("GlobalAddress"),
-  
-  COMPONENTINFO("ComponentInfo"),
+  TYPEINFO("TypeInfo"),
   
   COMPONENTSTATE("ComponentState"),
   
@@ -49,7 +47,7 @@ public enum SubstateKeyType {
   
   WASMCODE("WasmCode"),
   
-  NATIVECODE("NativeCode"),
+  PACKAGECODETYPE("PackageCodeType"),
   
   PACKAGEROYALTYCONFIG("PackageRoyaltyConfig"),
   
@@ -71,7 +69,11 @@ public enum SubstateKeyType {
   
   NONFUNGIBLESTOREENTRY("NonFungibleStoreEntry"),
   
-  VAULT("Vault"),
+  VAULTINFO("VaultInfo"),
+  
+  VAULTFUNGIBLE("VaultFungible"),
+  
+  VAULTNONFUNGIBLE("VaultNonFungible"),
   
   ACCESSCONTROLLER("AccessController"),
   

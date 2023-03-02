@@ -4,7 +4,7 @@ use radix_engine::types::{
     AccessRulesChainOffset, ComponentOffset, GlobalAddress, MetadataOffset, RENodeId, SubstateId,
     SubstateOffset,
 };
-use radix_engine_interface::api::types::{ComponentTypeInfoOffset, NodeModuleId, RoyaltyOffset};
+use radix_engine_interface::api::types::{ComponentTypeInfoOffset, NodeModuleId, RoyaltyOffset, TypeInfoOffset};
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::query::dump_component_state;
 
@@ -35,18 +35,14 @@ fn handle_state_component_internal(
         return Err(client_error("Only component addresses starting component_ or account_ currently work with this endpoint. Try another endpoint instead."));
     }
 
-    let component_node_id =
-        read_derefed_global_node_id(state_manager, GlobalAddress::Component(component_address))?;
-
-    let component_info = {
-        let substate_offset = SubstateOffset::ComponentTypeInfo(ComponentTypeInfoOffset::TypeInfo);
+    let type_info = {
         let loaded_substate = read_known_substate(
             state_manager,
-            component_node_id,
-            NodeModuleId::ComponentTypeInfo,
-            &substate_offset,
+            RENodeId::GlobalComponent(component_address),
+            NodeModuleId::TypeInfo,
+            &SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo),
         )?;
-        let PersistedSubstate::ComponentInfo(substate) = loaded_substate else {
+        let PersistedSubstate::TypeInfo(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
         };
         substate
@@ -124,7 +120,7 @@ fn handle_state_component_internal(
     let state_owned_vaults = component_dump
         .vaults
         .into_iter()
-        .map(|vault| to_api_vault_substate(&mapping_context, &vault))
+        .map(|vault| to_api_fungible_vault_substate(&mapping_context, &vault))
         .collect::<Result<Vec<_>, _>>()?;
 
     let descendent_ids = component_dump
@@ -135,9 +131,9 @@ fn handle_state_component_internal(
         .collect::<Result<Vec<_>, _>>()?;
 
     Ok(models::StateComponentResponse {
-        info: Some(to_api_component_info_substate(
+        info: Some(to_api_type_info_substate(
             &mapping_context,
-            &component_info,
+            &type_info,
         )?),
         state: Some(to_api_component_state_substate(
             &mapping_context,

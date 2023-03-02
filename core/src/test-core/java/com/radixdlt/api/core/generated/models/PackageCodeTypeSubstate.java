@@ -26,9 +26,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerSubstate;
-import com.radixdlt.api.core.generated.models.AccessRules;
 import com.radixdlt.api.core.generated.models.AccessRulesChainSubstate;
-import com.radixdlt.api.core.generated.models.AccessRulesChainSubstateAllOf;
 import com.radixdlt.api.core.generated.models.AccountSubstate;
 import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
@@ -40,6 +38,7 @@ import com.radixdlt.api.core.generated.models.MetadataSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeSubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeTypeSubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeTypeSubstateAllOf;
 import com.radixdlt.api.core.generated.models.PackageInfoSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyConfigSubstate;
@@ -55,17 +54,15 @@ import com.radixdlt.api.core.generated.models.VaultInfoSubstate;
 import com.radixdlt.api.core.generated.models.VaultNonFungibleSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * AccessRulesChainSubstate
+ * PackageCodeTypeSubstate
  */
 @JsonPropertyOrder({
-  AccessRulesChainSubstate.JSON_PROPERTY_CHAIN
+  PackageCodeTypeSubstate.JSON_PROPERTY_CODE_TYPE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -100,46 +97,41 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = VaultNonFungibleSubstate.class, name = "VaultNonFungible"),
 })
 
-public class AccessRulesChainSubstate extends Substate {
-  public static final String JSON_PROPERTY_CHAIN = "chain";
-  private List<AccessRules> chain = new ArrayList<>();
+public class PackageCodeTypeSubstate extends Substate {
+  public static final String JSON_PROPERTY_CODE_TYPE = "code_type";
+  private String codeType;
 
-  public AccessRulesChainSubstate() { 
+  public PackageCodeTypeSubstate() { 
   }
 
-  public AccessRulesChainSubstate chain(List<AccessRules> chain) {
-    this.chain = chain;
-    return this;
-  }
-
-  public AccessRulesChainSubstate addChainItem(AccessRules chainItem) {
-    this.chain.add(chainItem);
+  public PackageCodeTypeSubstate codeType(String codeType) {
+    this.codeType = codeType;
     return this;
   }
 
    /**
-   * The layers of access rules applied. 
-   * @return chain
+   * Get codeType
+   * @return codeType
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The layers of access rules applied. ")
-  @JsonProperty(JSON_PROPERTY_CHAIN)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_CODE_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<AccessRules> getChain() {
-    return chain;
+  public String getCodeType() {
+    return codeType;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CHAIN)
+  @JsonProperty(JSON_PROPERTY_CODE_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setChain(List<AccessRules> chain) {
-    this.chain = chain;
+  public void setCodeType(String codeType) {
+    this.codeType = codeType;
   }
 
 
   /**
-   * Return true if this AccessRulesChainSubstate object is equal to o.
+   * Return true if this PackageCodeTypeSubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -149,22 +141,22 @@ public class AccessRulesChainSubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    AccessRulesChainSubstate accessRulesChainSubstate = (AccessRulesChainSubstate) o;
-    return Objects.equals(this.chain, accessRulesChainSubstate.chain) &&
+    PackageCodeTypeSubstate packageCodeTypeSubstate = (PackageCodeTypeSubstate) o;
+    return Objects.equals(this.codeType, packageCodeTypeSubstate.codeType) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(chain, super.hashCode());
+    return Objects.hash(codeType, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class AccessRulesChainSubstate {\n");
+    sb.append("class PackageCodeTypeSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    chain: ").append(toIndentedString(chain)).append("\n");
+    sb.append("    codeType: ").append(toIndentedString(codeType)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -207,8 +199,8 @@ static {
   mappings.put("VaultFungible", VaultFungibleSubstate.class);
   mappings.put("VaultInfo", VaultInfoSubstate.class);
   mappings.put("VaultNonFungible", VaultNonFungibleSubstate.class);
-  mappings.put("AccessRulesChainSubstate", AccessRulesChainSubstate.class);
-  JSON.registerDiscriminator(AccessRulesChainSubstate.class, "substate_type", mappings);
+  mappings.put("PackageCodeTypeSubstate", PackageCodeTypeSubstate.class);
+  JSON.registerDiscriminator(PackageCodeTypeSubstate.class, "substate_type", mappings);
 }
 }
 

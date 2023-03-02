@@ -12,7 +12,9 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ComponentInfoSubstateAllOf {
+pub struct TypeInfoSubstate {
+    #[serde(rename = "substate_type")]
+    pub substate_type: crate::core_api::generated::models::SubstateType,
     /// The Bech32m-encoded human readable version of the package address
     #[serde(rename = "package_address")]
     pub package_address: String,
@@ -20,9 +22,10 @@ pub struct ComponentInfoSubstateAllOf {
     pub blueprint_name: String,
 }
 
-impl ComponentInfoSubstateAllOf {
-    pub fn new(package_address: String, blueprint_name: String) -> ComponentInfoSubstateAllOf {
-        ComponentInfoSubstateAllOf {
+impl TypeInfoSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, package_address: String, blueprint_name: String) -> TypeInfoSubstate {
+        TypeInfoSubstate {
+            substate_type,
             package_address,
             blueprint_name,
         }

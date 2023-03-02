@@ -10,6 +10,7 @@ use state_manager::transaction::{LedgerTransaction, UserTransactionValidator};
 use state_manager::{HasIntentHash, HasLedgerPayloadHash, HasSignaturesHash, HasUserPayloadHash};
 
 use radix_engine::types::scrypto_decode;
+use transaction::data::manifest_decode;
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionIntent, TransactionManifest,
 };
@@ -211,7 +212,7 @@ fn to_api_parsed_notarized_transaction(
 }
 
 fn attempt_parsing_as_signed_intent(bytes: &[u8]) -> Option<SignedTransactionIntent> {
-    scrypto_decode::<SignedTransactionIntent>(bytes).ok()
+    manifest_decode::<SignedTransactionIntent>(bytes).ok()
 }
 
 fn to_api_parsed_signed_intent(
@@ -235,7 +236,7 @@ fn to_api_parsed_signed_intent(
 }
 
 fn attempt_parsing_as_intent(bytes: &[u8]) -> Option<TransactionIntent> {
-    scrypto_decode::<TransactionIntent>(bytes).ok()
+    manifest_decode::<TransactionIntent>(bytes).ok()
 }
 
 fn to_api_parsed_intent(
@@ -255,7 +256,7 @@ fn to_api_parsed_intent(
 }
 
 fn attempt_parsing_as_manifest(bytes: &[u8]) -> Option<TransactionManifest> {
-    scrypto_decode::<TransactionManifest>(bytes).ok()
+    manifest_decode::<TransactionManifest>(bytes).ok()
 }
 
 fn to_api_parsed_manifest(

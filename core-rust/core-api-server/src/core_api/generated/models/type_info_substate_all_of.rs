@@ -12,15 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct GlobalAddressSubstateAllOf {
-    #[serde(rename = "target_entity")]
-    pub target_entity: Box<crate::core_api::generated::models::GlobalEntityAssignment>,
+pub struct TypeInfoSubstateAllOf {
+    /// The Bech32m-encoded human readable version of the package address
+    #[serde(rename = "package_address")]
+    pub package_address: String,
+    #[serde(rename = "blueprint_name")]
+    pub blueprint_name: String,
 }
 
-impl GlobalAddressSubstateAllOf {
-    pub fn new(target_entity: crate::core_api::generated::models::GlobalEntityAssignment) -> GlobalAddressSubstateAllOf {
-        GlobalAddressSubstateAllOf {
-            target_entity: Box::new(target_entity),
+impl TypeInfoSubstateAllOf {
+    pub fn new(package_address: String, blueprint_name: String) -> TypeInfoSubstateAllOf {
+        TypeInfoSubstateAllOf {
+            package_address,
+            blueprint_name,
         }
     }
 }

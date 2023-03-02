@@ -29,29 +29,29 @@ import com.radixdlt.api.core.generated.models.AccessControllerSubstate;
 import com.radixdlt.api.core.generated.models.AccessRulesChainSubstate;
 import com.radixdlt.api.core.generated.models.AccountSubstate;
 import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
-import com.radixdlt.api.core.generated.models.ComponentInfoSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyConfigSubstate;
 import com.radixdlt.api.core.generated.models.ComponentStateSubstate;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
-import com.radixdlt.api.core.generated.models.GlobalAddressSubstate;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.MetadataSubstate;
-import com.radixdlt.api.core.generated.models.NativeCodeSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleStoreEntrySubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeSubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeTypeSubstate;
 import com.radixdlt.api.core.generated.models.PackageInfoSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyConfigSubstate;
 import com.radixdlt.api.core.generated.models.PackageTypeInfoSubstate;
-import com.radixdlt.api.core.generated.models.ResourceAmount;
 import com.radixdlt.api.core.generated.models.ResourceManagerSubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
+import com.radixdlt.api.core.generated.models.TypeInfoSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorSetSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorSubstate;
-import com.radixdlt.api.core.generated.models.VaultSubstate;
-import com.radixdlt.api.core.generated.models.VaultSubstateAllOf;
-import com.radixdlt.api.core.generated.models.WasmCodeSubstate;
+import com.radixdlt.api.core.generated.models.VaultFungibleSubstate;
+import com.radixdlt.api.core.generated.models.VaultFungibleSubstateAllOf;
+import com.radixdlt.api.core.generated.models.VaultInfoSubstate;
+import com.radixdlt.api.core.generated.models.VaultNonFungibleSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -59,10 +59,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * VaultSubstate
+ * VaultFungibleSubstate
  */
 @JsonPropertyOrder({
-  VaultSubstate.JSON_PROPERTY_RESOURCE_AMOUNT
+  VaultFungibleSubstate.JSON_PROPERTY_AMOUNT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -75,62 +75,63 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = AccessRulesChainSubstate.class, name = "AccessRulesChain"),
   @JsonSubTypes.Type(value = AccountSubstate.class, name = "Account"),
   @JsonSubTypes.Type(value = ClockCurrentMinuteSubstate.class, name = "ClockCurrentMinute"),
-  @JsonSubTypes.Type(value = ComponentInfoSubstate.class, name = "ComponentInfo"),
   @JsonSubTypes.Type(value = ComponentRoyaltyAccumulatorSubstate.class, name = "ComponentRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = ComponentRoyaltyConfigSubstate.class, name = "ComponentRoyaltyConfig"),
   @JsonSubTypes.Type(value = ComponentStateSubstate.class, name = "ComponentState"),
   @JsonSubTypes.Type(value = EpochManagerSubstate.class, name = "EpochManager"),
-  @JsonSubTypes.Type(value = GlobalAddressSubstate.class, name = "GlobalAddress"),
   @JsonSubTypes.Type(value = KeyValueStoreEntrySubstate.class, name = "KeyValueStoreEntry"),
   @JsonSubTypes.Type(value = MetadataSubstate.class, name = "Metadata"),
-  @JsonSubTypes.Type(value = NativeCodeSubstate.class, name = "NativeCode"),
   @JsonSubTypes.Type(value = NonFungibleStoreEntrySubstate.class, name = "NonFungibleStoreEntry"),
+  @JsonSubTypes.Type(value = PackageCodeSubstate.class, name = "PackageCode"),
+  @JsonSubTypes.Type(value = PackageCodeTypeSubstate.class, name = "PackageCodeType"),
   @JsonSubTypes.Type(value = PackageInfoSubstate.class, name = "PackageInfo"),
   @JsonSubTypes.Type(value = PackageRoyaltyAccumulatorSubstate.class, name = "PackageRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageRoyaltyConfigSubstate.class, name = "PackageRoyaltyConfig"),
   @JsonSubTypes.Type(value = PackageTypeInfoSubstate.class, name = "PackageTypeInfo"),
   @JsonSubTypes.Type(value = ResourceManagerSubstate.class, name = "ResourceManager"),
+  @JsonSubTypes.Type(value = TypeInfoSubstate.class, name = "TypeInfo"),
   @JsonSubTypes.Type(value = ValidatorSubstate.class, name = "Validator"),
   @JsonSubTypes.Type(value = ValidatorSetSubstate.class, name = "ValidatorSet"),
-  @JsonSubTypes.Type(value = VaultSubstate.class, name = "Vault"),
-  @JsonSubTypes.Type(value = WasmCodeSubstate.class, name = "WasmCode"),
+  @JsonSubTypes.Type(value = VaultFungibleSubstate.class, name = "VaultFungible"),
+  @JsonSubTypes.Type(value = VaultInfoSubstate.class, name = "VaultInfo"),
+  @JsonSubTypes.Type(value = VaultNonFungibleSubstate.class, name = "VaultNonFungible"),
 })
 
-public class VaultSubstate extends Substate {
-  public static final String JSON_PROPERTY_RESOURCE_AMOUNT = "resource_amount";
-  private ResourceAmount resourceAmount;
+public class VaultFungibleSubstate extends Substate {
+  public static final String JSON_PROPERTY_AMOUNT = "amount";
+  private String amount;
 
-  public VaultSubstate() { 
+  public VaultFungibleSubstate() { 
   }
 
-  public VaultSubstate resourceAmount(ResourceAmount resourceAmount) {
-    this.resourceAmount = resourceAmount;
+  public VaultFungibleSubstate amount(String amount) {
+    this.amount = amount;
     return this;
   }
 
    /**
-   * Get resourceAmount
-   * @return resourceAmount
+   * The string-encoded decimal representing the XRD amount put or taken from the vault. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
+   * @return amount
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_RESOURCE_AMOUNT)
+  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the XRD amount put or taken from the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
+  @JsonProperty(JSON_PROPERTY_AMOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ResourceAmount getResourceAmount() {
-    return resourceAmount;
+  public String getAmount() {
+    return amount;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RESOURCE_AMOUNT)
+  @JsonProperty(JSON_PROPERTY_AMOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResourceAmount(ResourceAmount resourceAmount) {
-    this.resourceAmount = resourceAmount;
+  public void setAmount(String amount) {
+    this.amount = amount;
   }
 
 
   /**
-   * Return true if this VaultSubstate object is equal to o.
+   * Return true if this VaultFungibleSubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -140,22 +141,22 @@ public class VaultSubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    VaultSubstate vaultSubstate = (VaultSubstate) o;
-    return Objects.equals(this.resourceAmount, vaultSubstate.resourceAmount) &&
+    VaultFungibleSubstate vaultFungibleSubstate = (VaultFungibleSubstate) o;
+    return Objects.equals(this.amount, vaultFungibleSubstate.amount) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resourceAmount, super.hashCode());
+    return Objects.hash(amount, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class VaultSubstate {\n");
+    sb.append("class VaultFungibleSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    resourceAmount: ").append(toIndentedString(resourceAmount)).append("\n");
+    sb.append("    amount: ").append(toIndentedString(amount)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -178,27 +179,28 @@ static {
   mappings.put("AccessRulesChain", AccessRulesChainSubstate.class);
   mappings.put("Account", AccountSubstate.class);
   mappings.put("ClockCurrentMinute", ClockCurrentMinuteSubstate.class);
-  mappings.put("ComponentInfo", ComponentInfoSubstate.class);
   mappings.put("ComponentRoyaltyAccumulator", ComponentRoyaltyAccumulatorSubstate.class);
   mappings.put("ComponentRoyaltyConfig", ComponentRoyaltyConfigSubstate.class);
   mappings.put("ComponentState", ComponentStateSubstate.class);
   mappings.put("EpochManager", EpochManagerSubstate.class);
-  mappings.put("GlobalAddress", GlobalAddressSubstate.class);
   mappings.put("KeyValueStoreEntry", KeyValueStoreEntrySubstate.class);
   mappings.put("Metadata", MetadataSubstate.class);
-  mappings.put("NativeCode", NativeCodeSubstate.class);
   mappings.put("NonFungibleStoreEntry", NonFungibleStoreEntrySubstate.class);
+  mappings.put("PackageCode", PackageCodeSubstate.class);
+  mappings.put("PackageCodeType", PackageCodeTypeSubstate.class);
   mappings.put("PackageInfo", PackageInfoSubstate.class);
   mappings.put("PackageRoyaltyAccumulator", PackageRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageRoyaltyConfig", PackageRoyaltyConfigSubstate.class);
   mappings.put("PackageTypeInfo", PackageTypeInfoSubstate.class);
   mappings.put("ResourceManager", ResourceManagerSubstate.class);
+  mappings.put("TypeInfo", TypeInfoSubstate.class);
   mappings.put("Validator", ValidatorSubstate.class);
   mappings.put("ValidatorSet", ValidatorSetSubstate.class);
-  mappings.put("Vault", VaultSubstate.class);
-  mappings.put("WasmCode", WasmCodeSubstate.class);
-  mappings.put("VaultSubstate", VaultSubstate.class);
-  JSON.registerDiscriminator(VaultSubstate.class, "substate_type", mappings);
+  mappings.put("VaultFungible", VaultFungibleSubstate.class);
+  mappings.put("VaultInfo", VaultInfoSubstate.class);
+  mappings.put("VaultNonFungible", VaultNonFungibleSubstate.class);
+  mappings.put("VaultFungibleSubstate", VaultFungibleSubstate.class);
+  JSON.registerDiscriminator(VaultFungibleSubstate.class, "substate_type", mappings);
 }
 }
 

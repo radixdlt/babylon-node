@@ -30,22 +30,6 @@ pub(crate) fn core_api_read_handler<Request, Response>(
 }
 
 #[tracing::instrument(skip_all)]
-pub(crate) fn read_derefed_global_node_id(
-    state_manager: &ActualStateManager,
-    global_address: GlobalAddress,
-) -> Result<RENodeId, ResponseError<()>> {
-    state_manager
-        .store()
-        .global_deref(global_address)
-        .ok_or_else(|| {
-            not_found_error(format!(
-                "{:?} not found",
-                get_entity_type_from_global_address(&global_address)
-            ))
-        })
-}
-
-#[tracing::instrument(skip_all)]
 pub(crate) fn read_known_substate(
     state_manager: &ActualStateManager,
     renode_id: RENodeId,

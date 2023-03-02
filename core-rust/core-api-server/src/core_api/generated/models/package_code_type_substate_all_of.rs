@@ -12,18 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct VaultSubstate {
-    #[serde(rename = "substate_type")]
-    pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "resource_amount")]
-    pub resource_amount: Option<crate::core_api::generated::models::ResourceAmount>, // Using Option permits Default trait; Will always be Some in normal use
+pub struct PackageCodeTypeSubstateAllOf {
+    #[serde(rename = "code_type")]
+    pub code_type: String,
 }
 
-impl VaultSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, resource_amount: crate::core_api::generated::models::ResourceAmount) -> VaultSubstate {
-        VaultSubstate {
-            substate_type,
-            resource_amount: Option::Some(resource_amount),
+impl PackageCodeTypeSubstateAllOf {
+    pub fn new(code_type: String) -> PackageCodeTypeSubstateAllOf {
+        PackageCodeTypeSubstateAllOf {
+            code_type,
         }
     }
 }

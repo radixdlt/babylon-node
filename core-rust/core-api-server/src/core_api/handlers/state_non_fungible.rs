@@ -29,15 +29,12 @@ fn handle_state_non_fungible_internal(
     let resource_address = extract_resource_address(&extraction_context, &request.resource_address)
         .map_err(|err| err.into_response_error("resource_address"))?;
 
-    let resource_node_id =
-        read_derefed_global_node_id(state_manager, GlobalAddress::Resource(resource_address))?;
-
     let resource_manager = {
         let substate_offset =
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let loaded_substate = read_known_substate(
             state_manager,
-            resource_node_id,
+            RENodeId::GlobalResourceManager(resource_address),
             NodeModuleId::SELF,
             &substate_offset,
         )?;

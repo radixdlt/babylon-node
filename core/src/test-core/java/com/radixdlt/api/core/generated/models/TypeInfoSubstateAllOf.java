@@ -22,54 +22,83 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.ResourceAmount;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * VaultSubstateAllOf
+ * TypeInfoSubstateAllOf
  */
 @JsonPropertyOrder({
-  VaultSubstateAllOf.JSON_PROPERTY_RESOURCE_AMOUNT
+  TypeInfoSubstateAllOf.JSON_PROPERTY_PACKAGE_ADDRESS,
+  TypeInfoSubstateAllOf.JSON_PROPERTY_BLUEPRINT_NAME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class VaultSubstateAllOf {
-  public static final String JSON_PROPERTY_RESOURCE_AMOUNT = "resource_amount";
-  private ResourceAmount resourceAmount;
+public class TypeInfoSubstateAllOf {
+  public static final String JSON_PROPERTY_PACKAGE_ADDRESS = "package_address";
+  private String packageAddress;
 
-  public VaultSubstateAllOf() { 
+  public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
+  private String blueprintName;
+
+  public TypeInfoSubstateAllOf() { 
   }
 
-  public VaultSubstateAllOf resourceAmount(ResourceAmount resourceAmount) {
-    this.resourceAmount = resourceAmount;
+  public TypeInfoSubstateAllOf packageAddress(String packageAddress) {
+    this.packageAddress = packageAddress;
     return this;
   }
 
    /**
-   * Get resourceAmount
-   * @return resourceAmount
+   * The Bech32m-encoded human readable version of the package address
+   * @return packageAddress
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_RESOURCE_AMOUNT)
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the package address")
+  @JsonProperty(JSON_PROPERTY_PACKAGE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ResourceAmount getResourceAmount() {
-    return resourceAmount;
+  public String getPackageAddress() {
+    return packageAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RESOURCE_AMOUNT)
+  @JsonProperty(JSON_PROPERTY_PACKAGE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResourceAmount(ResourceAmount resourceAmount) {
-    this.resourceAmount = resourceAmount;
+  public void setPackageAddress(String packageAddress) {
+    this.packageAddress = packageAddress;
+  }
+
+
+  public TypeInfoSubstateAllOf blueprintName(String blueprintName) {
+    this.blueprintName = blueprintName;
+    return this;
+  }
+
+   /**
+   * Get blueprintName
+   * @return blueprintName
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getBlueprintName() {
+    return blueprintName;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setBlueprintName(String blueprintName) {
+    this.blueprintName = blueprintName;
   }
 
 
   /**
-   * Return true if this VaultSubstate_allOf object is equal to o.
+   * Return true if this TypeInfoSubstate_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,20 +108,22 @@ public class VaultSubstateAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    VaultSubstateAllOf vaultSubstateAllOf = (VaultSubstateAllOf) o;
-    return Objects.equals(this.resourceAmount, vaultSubstateAllOf.resourceAmount);
+    TypeInfoSubstateAllOf typeInfoSubstateAllOf = (TypeInfoSubstateAllOf) o;
+    return Objects.equals(this.packageAddress, typeInfoSubstateAllOf.packageAddress) &&
+        Objects.equals(this.blueprintName, typeInfoSubstateAllOf.blueprintName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resourceAmount);
+    return Objects.hash(packageAddress, blueprintName);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class VaultSubstateAllOf {\n");
-    sb.append("    resourceAmount: ").append(toIndentedString(resourceAmount)).append("\n");
+    sb.append("class TypeInfoSubstateAllOf {\n");
+    sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
+    sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
     sb.append("}");
     return sb.toString();
   }

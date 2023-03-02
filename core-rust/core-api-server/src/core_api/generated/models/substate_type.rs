@@ -16,10 +16,8 @@ pub enum SubstateType {
     Metadata,
     #[serde(rename = "AccessRulesChain")]
     AccessRulesChain,
-    #[serde(rename = "GlobalAddress")]
-    GlobalAddress,
-    #[serde(rename = "ComponentInfo")]
-    ComponentInfo,
+    #[serde(rename = "TypeInfo")]
+    TypeInfo,
     #[serde(rename = "ComponentState")]
     ComponentState,
     #[serde(rename = "ComponentRoyaltyConfig")]
@@ -30,10 +28,10 @@ pub enum SubstateType {
     PackageInfo,
     #[serde(rename = "PackageTypeInfo")]
     PackageTypeInfo,
-    #[serde(rename = "WasmCode")]
-    WasmCode,
-    #[serde(rename = "NativeCode")]
-    NativeCode,
+    #[serde(rename = "PackageCode")]
+    PackageCode,
+    #[serde(rename = "PackageCodeType")]
+    PackageCodeType,
     #[serde(rename = "PackageRoyaltyConfig")]
     PackageRoyaltyConfig,
     #[serde(rename = "PackageRoyaltyAccumulator")]
@@ -52,8 +50,12 @@ pub enum SubstateType {
     KeyValueStoreEntry,
     #[serde(rename = "NonFungibleStoreEntry")]
     NonFungibleStoreEntry,
-    #[serde(rename = "Vault")]
-    Vault,
+    #[serde(rename = "VaultInfo")]
+    VaultInfo,
+    #[serde(rename = "VaultFungible")]
+    VaultFungible,
+    #[serde(rename = "VaultNonFungible")]
+    VaultNonFungible,
     #[serde(rename = "AccessController")]
     AccessController,
     #[serde(rename = "Account")]
@@ -66,15 +68,14 @@ impl ToString for SubstateType {
         match self {
             Self::Metadata => String::from("Metadata"),
             Self::AccessRulesChain => String::from("AccessRulesChain"),
-            Self::GlobalAddress => String::from("GlobalAddress"),
-            Self::ComponentInfo => String::from("ComponentInfo"),
+            Self::TypeInfo => String::from("TypeInfo"),
             Self::ComponentState => String::from("ComponentState"),
             Self::ComponentRoyaltyConfig => String::from("ComponentRoyaltyConfig"),
             Self::ComponentRoyaltyAccumulator => String::from("ComponentRoyaltyAccumulator"),
             Self::PackageInfo => String::from("PackageInfo"),
             Self::PackageTypeInfo => String::from("PackageTypeInfo"),
-            Self::WasmCode => String::from("WasmCode"),
-            Self::NativeCode => String::from("NativeCode"),
+            Self::PackageCode => String::from("PackageCode"),
+            Self::PackageCodeType => String::from("PackageCodeType"),
             Self::PackageRoyaltyConfig => String::from("PackageRoyaltyConfig"),
             Self::PackageRoyaltyAccumulator => String::from("PackageRoyaltyAccumulator"),
             Self::ResourceManager => String::from("ResourceManager"),
@@ -84,7 +85,9 @@ impl ToString for SubstateType {
             Self::ClockCurrentMinute => String::from("ClockCurrentMinute"),
             Self::KeyValueStoreEntry => String::from("KeyValueStoreEntry"),
             Self::NonFungibleStoreEntry => String::from("NonFungibleStoreEntry"),
-            Self::Vault => String::from("Vault"),
+            Self::VaultInfo => String::from("VaultInfo"),
+            Self::VaultFungible => String::from("VaultFungible"),
+            Self::VaultNonFungible => String::from("VaultNonFungible"),
             Self::AccessController => String::from("AccessController"),
             Self::Account => String::from("Account"),
         }

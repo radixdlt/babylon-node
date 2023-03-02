@@ -195,8 +195,8 @@ pub fn to_api_fee_summary(
             .into_iter()
             .map(|(receiver, cost_unit_amount)| {
                 let global_address = match receiver {
-                    RoyaltyReceiver::Package(address, _) => GlobalAddress::Package(address),
-                    RoyaltyReceiver::Component(address, _) => GlobalAddress::Component(address),
+                    RoyaltyReceiver::Package(address) => GlobalAddress::Package(address),
+                    RoyaltyReceiver::Component(address) => GlobalAddress::Component(address),
                 };
                 models::RoyaltyPayment {
                     royalty_receiver: Box::new(to_global_entity_reference(

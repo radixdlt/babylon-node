@@ -34,14 +34,6 @@ pub enum Substate {
         #[serde(rename = "timestamp_rounded_down_to_minute")]
         timestamp_rounded_down_to_minute: Box<crate::core_api::generated::models::Instant>,
     },
-    #[serde(rename="ComponentInfo")]
-    ComponentInfoSubstate {
-        /// The Bech32m-encoded human readable version of the package address
-        #[serde(rename = "package_address")]
-        package_address: String,
-        #[serde(rename = "blueprint_name")]
-        blueprint_name: String,
-    },
     #[serde(rename="ComponentRoyaltyAccumulator")]
     ComponentRoyaltyAccumulatorSubstate {
         #[serde(rename = "vault_entity")]
@@ -74,11 +66,6 @@ pub enum Substate {
         #[serde(rename = "num_unstake_epochs")]
         num_unstake_epochs: i64,
     },
-    #[serde(rename="GlobalAddress")]
-    GlobalAddressSubstate {
-        #[serde(rename = "target_entity")]
-        target_entity: Box<crate::core_api::generated::models::GlobalEntityAssignment>,
-    },
     #[serde(rename="KeyValueStoreEntry")]
     KeyValueStoreEntrySubstate {
         /// The hex-encoded bytes of its key
@@ -94,11 +81,6 @@ pub enum Substate {
         #[serde(rename = "metadata")]
         metadata: Vec<crate::core_api::generated::models::MetadataSubstateAllOfMetadata>,
     },
-    #[serde(rename="NativeCode")]
-    NativeCodeSubstate {
-        #[serde(rename = "native_package_code_id")]
-        native_package_code_id: i32,
-    },
     #[serde(rename="NonFungibleStoreEntry")]
     NonFungibleStoreEntrySubstate {
         #[serde(rename = "non_fungible_id")]
@@ -107,6 +89,17 @@ pub enum Substate {
         non_fungible_data: Option<Box<crate::core_api::generated::models::NonFungibleData>>,
         #[serde(rename = "is_deleted")]
         is_deleted: bool,
+    },
+    #[serde(rename="PackageCode")]
+    PackageCodeSubstate {
+        /// The hex-encoded package code
+        #[serde(rename = "code_hex")]
+        code_hex: String,
+    },
+    #[serde(rename="PackageCodeType")]
+    PackageCodeTypeSubstate {
+        #[serde(rename = "code_type")]
+        code_type: String,
     },
     #[serde(rename="PackageInfo")]
     PackageInfoSubstate {
@@ -145,6 +138,14 @@ pub enum Substate {
         #[serde(rename = "owned_non_fungible_store", skip_serializing_if = "Option::is_none")]
         owned_non_fungible_store: Option<Box<crate::core_api::generated::models::EntityReference>>,
     },
+    #[serde(rename="TypeInfo")]
+    TypeInfoSubstate {
+        /// The Bech32m-encoded human readable version of the package address
+        #[serde(rename = "package_address")]
+        package_address: String,
+        #[serde(rename = "blueprint_name")]
+        blueprint_name: String,
+    },
     #[serde(rename="Validator")]
     ValidatorSubstate {
         /// The Bech32m-encoded human readable version of the component address
@@ -176,16 +177,22 @@ pub enum Substate {
         #[serde(rename = "epoch")]
         epoch: i64,
     },
-    #[serde(rename="Vault")]
-    VaultSubstate {
-        #[serde(rename = "resource_amount")]
-        resource_amount: Box<crate::core_api::generated::models::ResourceAmount>,
+    #[serde(rename="VaultFungible")]
+    VaultFungibleSubstate {
+        /// The string-encoded decimal representing the XRD amount put or taken from the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+        #[serde(rename = "amount")]
+        amount: String,
     },
-    #[serde(rename="WasmCode")]
-    WasmCodeSubstate {
-        /// The hex-encoded package code
-        #[serde(rename = "code_hex")]
-        code_hex: String,
+    #[serde(rename="VaultInfo")]
+    VaultInfoSubstate {
+        /// The Bech32m-encoded human readable version of the resource address
+        #[serde(rename = "resource_address")]
+        resource_address: String,
+    },
+    #[serde(rename="VaultNonFungible")]
+    VaultNonFungibleSubstate {
+        #[serde(rename = "non_fungible_ids")]
+        non_fungible_ids: Vec<crate::core_api::generated::models::NonFungibleId>,
     },
 }
 

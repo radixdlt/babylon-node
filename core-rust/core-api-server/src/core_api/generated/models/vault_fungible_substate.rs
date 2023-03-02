@@ -12,18 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct GlobalAddressSubstate {
+pub struct VaultFungibleSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "target_entity")]
-    pub target_entity: Box<crate::core_api::generated::models::GlobalEntityAssignment>,
+    /// The string-encoded decimal representing the XRD amount put or taken from the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    #[serde(rename = "amount")]
+    pub amount: String,
 }
 
-impl GlobalAddressSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, target_entity: crate::core_api::generated::models::GlobalEntityAssignment) -> GlobalAddressSubstate {
-        GlobalAddressSubstate {
+impl VaultFungibleSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, amount: String) -> VaultFungibleSubstate {
+        VaultFungibleSubstate {
             substate_type,
-            target_entity: Box::new(target_entity),
+            amount,
         }
     }
 }

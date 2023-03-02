@@ -12,18 +12,16 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct NativeCodeSubstate {
-    #[serde(rename = "substate_type")]
-    pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "native_package_code_id")]
-    pub native_package_code_id: i32,
+pub struct VaultFungibleSubstateAllOf {
+    /// The string-encoded decimal representing the XRD amount put or taken from the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    #[serde(rename = "amount")]
+    pub amount: String,
 }
 
-impl NativeCodeSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, native_package_code_id: i32) -> NativeCodeSubstate {
-        NativeCodeSubstate {
-            substate_type,
-            native_package_code_id,
+impl VaultFungibleSubstateAllOf {
+    pub fn new(amount: String) -> VaultFungibleSubstateAllOf {
+        VaultFungibleSubstateAllOf {
+            amount,
         }
     }
 }

@@ -4,6 +4,7 @@ use radix_engine::types::{
     AccessControllerOffset, AccessRulesChainOffset, GlobalAddress, MetadataOffset, NodeModuleId,
     SubstateOffset,
 };
+use radix_engine_interface::api::types::RENodeId;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::query::dump_component_state;
 
@@ -35,17 +36,12 @@ fn handle_state_access_controller_internal(
         return Err(client_error("Only access controller addresses work for this endpoint. Try another endpoint instead."));
     }
 
-    let component_node_id =
-        read_derefed_global_node_id(state_manager, GlobalAddress::Component(controller_address))?;
-
     let component_state = {
-        let substate_offset =
-            SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let loaded_substate = read_known_substate(
             state_manager,
-            component_node_id,
+            RENodeId::GlobalComponent(controller_address),
             NodeModuleId::SELF,
-            &substate_offset,
+            &SubstateOffset::AccessController(AccessControllerOffset::AccessController),
         )?;
         let PersistedSubstate::AccessController(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
@@ -86,7 +82,7 @@ fn handle_state_access_controller_internal(
     let state_owned_vaults = component_dump
         .vaults
         .into_iter()
-        .map(|vault| to_api_vault_substate(&mapping_context, &vault))
+        .map(|vault| to_api_fungible_vault_substate(&mapping_context, &vault))
         .collect::<Result<Vec<_>, _>>()?;
 
     let descendent_ids = component_dump

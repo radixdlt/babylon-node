@@ -28,47 +28,47 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * NativeCodeSubstateAllOf
+ * PackageCodeSubstateAllOf
  */
 @JsonPropertyOrder({
-  NativeCodeSubstateAllOf.JSON_PROPERTY_NATIVE_PACKAGE_CODE_ID
+  PackageCodeSubstateAllOf.JSON_PROPERTY_CODE_HEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class NativeCodeSubstateAllOf {
-  public static final String JSON_PROPERTY_NATIVE_PACKAGE_CODE_ID = "native_package_code_id";
-  private Integer nativePackageCodeId;
+public class PackageCodeSubstateAllOf {
+  public static final String JSON_PROPERTY_CODE_HEX = "code_hex";
+  private String codeHex;
 
-  public NativeCodeSubstateAllOf() { 
+  public PackageCodeSubstateAllOf() { 
   }
 
-  public NativeCodeSubstateAllOf nativePackageCodeId(Integer nativePackageCodeId) {
-    this.nativePackageCodeId = nativePackageCodeId;
+  public PackageCodeSubstateAllOf codeHex(String codeHex) {
+    this.codeHex = codeHex;
     return this;
   }
 
    /**
-   * Get nativePackageCodeId
-   * @return nativePackageCodeId
+   * The hex-encoded package code
+   * @return codeHex
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_NATIVE_PACKAGE_CODE_ID)
+  @ApiModelProperty(required = true, value = "The hex-encoded package code")
+  @JsonProperty(JSON_PROPERTY_CODE_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getNativePackageCodeId() {
-    return nativePackageCodeId;
+  public String getCodeHex() {
+    return codeHex;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NATIVE_PACKAGE_CODE_ID)
+  @JsonProperty(JSON_PROPERTY_CODE_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNativePackageCodeId(Integer nativePackageCodeId) {
-    this.nativePackageCodeId = nativePackageCodeId;
+  public void setCodeHex(String codeHex) {
+    this.codeHex = codeHex;
   }
 
 
   /**
-   * Return true if this NativeCodeSubstate_allOf object is equal to o.
+   * Return true if this PackageCodeSubstate_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -78,20 +78,20 @@ public class NativeCodeSubstateAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    NativeCodeSubstateAllOf nativeCodeSubstateAllOf = (NativeCodeSubstateAllOf) o;
-    return Objects.equals(this.nativePackageCodeId, nativeCodeSubstateAllOf.nativePackageCodeId);
+    PackageCodeSubstateAllOf packageCodeSubstateAllOf = (PackageCodeSubstateAllOf) o;
+    return Objects.equals(this.codeHex, packageCodeSubstateAllOf.codeHex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(nativePackageCodeId);
+    return Objects.hash(codeHex);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class NativeCodeSubstateAllOf {\n");
-    sb.append("    nativePackageCodeId: ").append(toIndentedString(nativePackageCodeId)).append("\n");
+    sb.append("class PackageCodeSubstateAllOf {\n");
+    sb.append("    codeHex: ").append(toIndentedString(codeHex)).append("\n");
     sb.append("}");
     return sb.toString();
   }

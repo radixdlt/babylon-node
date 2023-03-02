@@ -5,10 +5,9 @@ use crate::core_api::*;
 
 use crate::core_api::models::ModuleType;
 use models::{EntityType, SubstateKeyType, SubstateType};
-use radix_engine::system::global::GlobalAddressSubstate;
 use radix_engine::types::{
     scrypto_encode, AccessRulesChainOffset, ClockOffset, ComponentAddress, ComponentOffset,
-    EpochManagerOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset, MetadataOffset,
+    EpochManagerOffset, GlobalOffset, KeyValueStoreOffset, MetadataOffset,
     NonFungibleStoreOffset, PackageAddress, PackageOffset, RENodeId, ResourceAddress,
     ResourceManagerOffset, SubstateId, SubstateOffset, VaultOffset,
 };
@@ -17,6 +16,7 @@ use radix_engine_interface::api::types::{
     ValidatorOffset,
 };
 use radix_engine_interface::blueprints::resource::{NonFungibleIdType, NonFungibleLocalId};
+use radix_engine_interface::data::model::Address;
 
 pub fn to_api_component_address(
     context: &MappingContext,
@@ -45,38 +45,17 @@ pub fn to_api_package_address(
         .encode_package_address_to_string(package_address)
 }
 
-pub fn to_api_global_entity_assignment(
-    context: &MappingContext,
-    global_substate_id: &SubstateId,
-    global_address: &GlobalAddress,
-    global_substate: &GlobalAddressSubstate,
-) -> Result<models::GlobalEntityAssignment, MappingError> {
-    let target_re_node_id = global_substate.node_deref();
-
-    let target_entity = MappedEntityId::try_from(target_re_node_id)?;
-
-    let global_entity_id_bytes = re_node_id_to_entity_id_bytes(&global_substate_id.0)?;
-
-    Ok(models::GlobalEntityAssignment {
-        target_entity_type: target_entity.entity_type,
-        target_entity_id_hex: to_hex(target_entity.entity_id_bytes),
-        global_entity_id_hex: to_hex(global_entity_id_bytes),
-        global_address_hex: to_hex(global_address_to_vec(global_address)),
-        global_address: to_api_global_address(context, global_address),
-    })
-}
-
-pub fn to_api_global_address(context: &MappingContext, global_address: &GlobalAddress) -> String {
-    match global_address {
-        GlobalAddress::Component(addr) => to_api_component_address(context, addr),
-        GlobalAddress::Package(addr) => to_api_package_address(context, addr),
-        GlobalAddress::Resource(addr) => to_api_resource_address(context, addr),
+pub fn to_api_address(context: &MappingContext, address: &Address) -> String {
+    match address {
+        Address::Component(addr) => to_api_component_address(context, addr),
+        Address::Package(addr) => to_api_package_address(context, addr),
+        Address::Resource(addr) => to_api_resource_address(context, addr),
     }
 }
 
-pub fn get_entity_type_from_global_address(global_address: &GlobalAddress) -> models::EntityType {
+pub fn get_entity_type_from_global_address(global_address: &Address) -> models::EntityType {
     match global_address {
-        GlobalAddress::Component(component) => match component {
+        Address::Component(component) => match component {
             // Scrypto Components get mapped to EntityType::Component for now
             ComponentAddress::Normal(_) => models::EntityType::Component,
             ComponentAddress::Account(_) => models::EntityType::Component,
@@ -91,8 +70,8 @@ pub fn get_entity_type_from_global_address(global_address: &GlobalAddress) -> mo
             ComponentAddress::EcdsaSecp256k1VirtualIdentity(_) => models::EntityType::Identity,
             ComponentAddress::EddsaEd25519VirtualIdentity(_) => models::EntityType::Identity,
         },
-        GlobalAddress::Package(_) => models::EntityType::Package,
-        GlobalAddress::Resource(_) => models::EntityType::ResourceManager,
+        Address::Package(_) => models::EntityType::Package,
+        Address::Resource(_) => models::EntityType::ResourceManager,
     }
 }
 
@@ -584,12 +563,12 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
 
 pub fn to_global_entity_reference(
     context: &MappingContext,
-    global_address: &GlobalAddress,
+    global_address: &Address,
 ) -> models::GlobalEntityReference {
     models::GlobalEntityReference {
         entity_type: get_entity_type_from_global_address(global_address),
         global_address_hex: to_hex(global_address_to_vec(global_address)),
-        global_address: to_api_global_address(context, global_address),
+        global_address: to_api_address(context, global_address),
     }
 }
 
