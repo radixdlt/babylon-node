@@ -102,7 +102,7 @@ jobs:
       context: "docker"
       dockerfile: "./docker/Dockerfile.core"
       platforms: "linux/amd64,linux/arm64"
-      restore_artifacts: "true"
+      restore_artifact: "true"
       artifact_name: "deb4docker"
       artifact_location: "docker"
     secrets:
@@ -129,7 +129,7 @@ jobs:
       context: "docker"
       dockerfile: "./docker/Dockerfile.core"
       platforms: "linux/amd64,linux/arm64"
-      restore_artifacts: "true"
+      restore_artifact: "true"
       artifact_name: "deb4docker"
       artifact_location: "docker"
       enable_dockerhub: "true"
