@@ -110,6 +110,7 @@ jobs:
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
   build_push_container_dockerhub:
+    if: github.event_name == 'release'
     name: (DockerHub) Docker
     needs: build_deb
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
@@ -119,13 +120,7 @@ jobs:
       image_registry: "registry.hub.docker.com"
       image_organization: "radixdlt"
       image_name: "babylon-node"
-      tags: |
-        type=ref,event=branch
-        type=ref,event=pr
-        type=semver,pattern={{version}}
-        type=semver,pattern={{major}}.{{minor}}
-        type=semver,pattern={{major}}
-        type=sha
+      tag: ${{ github.event.release.tag_name }}
       context: "docker"
       dockerfile: "./docker/Dockerfile.core"
       platforms: "linux/amd64,linux/arm64"
