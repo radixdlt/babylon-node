@@ -76,7 +76,7 @@ public record PackageAddress(byte[] value) {
         PackageAddress.class,
         codecs ->
             new CustomTypeKnownLengthCodec<>(
-                TypeId.TYPE_CUSTOM_PACKAGE_ADDRESS,
+                TypeId.TYPE_CUSTOM_ADDRESS,
                 BYTE_LENGTH,
                 PackageAddress::value,
                 PackageAddress::new));
