@@ -74,7 +74,7 @@ use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::scrypto_encode;
 use radix_engine_stores::hash_tree::tree_store::{
-    NodeKey, ReNodeModulePayload, ReadableTreeStore, TreeNode, Version, WriteableTreeStore,
+    NodeKey, Payload, ReNodeModulePayload, ReadableTreeStore, TreeNode, Version, WriteableTreeStore,
 };
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use sbor::rust::collections::HashMap;
@@ -179,18 +179,12 @@ impl ExecutionCache {
     }
 }
 
-struct CollectingTreeStore<'s, S>
-where
-    S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>,
-{
+struct CollectingTreeStore<'s, S> {
     readable_delegate: &'s S,
     diff: HashTreeDiff,
 }
 
-impl<'s, S> CollectingTreeStore<'s, S>
-where
-    S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>,
-{
+impl<'s, S: ReadableLayeredTreeStore> CollectingTreeStore<'s, S> {
     pub fn new(readable_delegate: &'s S) -> Self {
         Self {
             readable_delegate,
@@ -199,28 +193,13 @@ where
     }
 }
 
-impl<'s, S> ReadableTreeStore<ReNodeModulePayload> for CollectingTreeStore<'s, S>
-where
-    S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>,
-{
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<ReNodeModulePayload>> {
+impl<'s, S: ReadableTreeStore<P>, P: Payload> ReadableTreeStore<P> for CollectingTreeStore<'s, S> {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
         self.readable_delegate.get_node(key)
     }
 }
 
-impl<'s, S> ReadableTreeStore<SubstateOffset> for CollectingTreeStore<'s, S>
-where
-    S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>,
-{
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<SubstateOffset>> {
-        self.readable_delegate.get_node(key)
-    }
-}
-
-impl<'s, S> WriteableTreeStore<ReNodeModulePayload> for CollectingTreeStore<'s, S>
-where
-    S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>,
-{
+impl<'s, S> WriteableTreeStore<ReNodeModulePayload> for CollectingTreeStore<'s, S> {
     fn insert_node(&mut self, key: NodeKey, node: TreeNode<ReNodeModulePayload>) {
         self.diff.new_re_node_layer_nodes.push((key, node));
     }
@@ -230,10 +209,7 @@ where
     }
 }
 
-impl<'s, S> WriteableTreeStore<SubstateOffset> for CollectingTreeStore<'s, S>
-where
-    S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>,
-{
+impl<'s, S> WriteableTreeStore<SubstateOffset> for CollectingTreeStore<'s, S> {
     fn insert_node(&mut self, key: NodeKey, node: TreeNode<SubstateOffset>) {
         self.diff.new_substate_layer_nodes.push((key, node));
     }
@@ -386,6 +362,13 @@ impl Accumulator<ProcessedResult> for ImmutableStore {
             processed
                 .hash_tree_diff()
                 .new_re_node_layer_nodes
+                .iter()
+                .cloned(),
+        );
+        self.substate_layer_nodes.extend(
+            processed
+                .hash_tree_diff()
+                .new_substate_layer_nodes
                 .iter()
                 .cloned(),
         );

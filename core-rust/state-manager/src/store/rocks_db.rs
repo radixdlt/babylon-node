@@ -320,7 +320,14 @@ impl CommitStore for RocksDBStore {
         }
 
         let state_hash_tree_update = commit_bundle.state_hash_tree_update;
-        for (key, node) in state_hash_tree_update.new_nodes {
+        for (key, node) in state_hash_tree_update.new_re_node_layer_nodes {
+            batch.put_cf(
+                self.cf_handle(&StateHashTreeNodes),
+                encode_key(&key),
+                scrypto_encode(&node).unwrap(),
+            );
+        }
+        for (key, node) in state_hash_tree_update.new_substate_layer_nodes {
             batch.put_cf(
                 self.cf_handle(&StateHashTreeNodes),
                 encode_key(&key),

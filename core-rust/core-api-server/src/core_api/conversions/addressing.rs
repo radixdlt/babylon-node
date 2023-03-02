@@ -368,6 +368,10 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         SubstateKeyType::AccessRulesChain,
                     ),
                 },
+                SubstateOffset::PackageAccessRules => (
+                    SubstateType::FunctionAccessRules,
+                    SubstateKeyType::FunctionAccessRules,
+                ),
                 _ => return Err(unknown_substate_error("Package", &substate_id)),
             };
             (EntityType::Package, substate_type_key)
@@ -431,18 +435,12 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 },
                 SubstateOffset::Vault(offset) => match offset {
                     VaultOffset::Info => (SubstateType::VaultInfo, SubstateKeyType::VaultInfo),
-                    VaultOffset::LiquidNonFungible => (
+                    VaultOffset::LiquidNonFungible | VaultOffset::LockedNonFungible => (
                         SubstateType::VaultNonFungible,
                         SubstateKeyType::VaultNonFungible,
                     ),
-                    VaultOffset::LiquidFungible => {
+                    VaultOffset::LiquidFungible | VaultOffset::LockedFungible => {
                         (SubstateType::VaultFungible, SubstateKeyType::VaultFungible)
-                    }
-                    VaultOffset::LockedFungible => {
-                        return Err(transient_substate_error("Vault", &substate_id))
-                    }
-                    VaultOffset::LockedNonFungible => {
-                        return Err(transient_substate_error("Vault", &substate_id))
                     }
                 },
                 _ => return Err(unknown_substate_error("Vault", &substate_id)),

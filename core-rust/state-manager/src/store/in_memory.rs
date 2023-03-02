@@ -225,7 +225,11 @@ impl CommitStore for InMemoryStore {
             self.save_vertex_store(vertex_store)
         }
 
-        for (key, node) in commit_bundle.state_hash_tree_update.new_nodes {
+        let state_hash_tree_update = commit_bundle.state_hash_tree_update;
+        for (key, node) in state_hash_tree_update.new_re_node_layer_nodes {
+            self.tree_node_store.insert_node(key, node);
+        }
+        for (key, node) in state_hash_tree_update.new_substate_layer_nodes {
             self.tree_node_store.insert_node(key, node);
         }
     }

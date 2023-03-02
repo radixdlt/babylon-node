@@ -140,7 +140,7 @@ pub mod commit {
     use super::*;
     use crate::staging::HashTreeDiff;
     use radix_engine::ledger::OutputValue;
-    use radix_engine_interface::api::types::SubstateId;
+    use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
     use radix_engine_stores::hash_tree::tree_store::{
         NodeKey, ReNodeModulePayload, TreeNode, Version,
     };
@@ -157,20 +157,25 @@ pub mod commit {
     }
 
     pub struct HashTreeUpdate {
-        pub new_nodes: Vec<(NodeKey, TreeNode<ReNodeModulePayload>)>,
+        pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<ReNodeModulePayload>)>,
+        pub new_substate_layer_nodes: Vec<(NodeKey, TreeNode<SubstateOffset>)>,
         pub stale_node_keys_at_state_version: Vec<(Version, Vec<NodeKey>)>,
     }
 
     impl HashTreeUpdate {
         pub fn new() -> Self {
             Self {
-                new_nodes: Vec::new(),
+                new_re_node_layer_nodes: Vec::new(),
+                new_substate_layer_nodes: Vec::new(),
                 stale_node_keys_at_state_version: Vec::new(),
             }
         }
 
         pub fn add(&mut self, at_state_version: Version, diff: HashTreeDiff) {
-            self.new_nodes.extend(diff.new_re_node_layer_nodes);
+            self.new_re_node_layer_nodes
+                .extend(diff.new_re_node_layer_nodes);
+            self.new_substate_layer_nodes
+                .extend(diff.new_substate_layer_nodes);
             self.stale_node_keys_at_state_version
                 .push((at_state_version, diff.stale_hash_tree_node_keys));
         }
