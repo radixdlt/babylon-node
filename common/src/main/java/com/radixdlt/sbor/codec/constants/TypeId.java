@@ -93,11 +93,7 @@ public enum TypeId {
   // Custom Start
   // custom types start from 0x80 and values are encoded as `len + data`
   TYPE_CUSTOM_ADDRESS(0x80),
-  TYPE_CUSTOM_DECIMAL(0x85),
-  TYPE_CUSTOM_ECDSA_SECP256K1_PUBLIC_KEY(0xb1),
-  TYPE_CUSTOM_ECDSA_SECP256K1_SIGNATURE(0xb2),
-  TYPE_CUSTOM_EDDSA_ED25519_PUBLIC_KEY(0xb3),
-  TYPE_CUSTOM_EDDSA_ED25519_SIGNATURE(0xb4);
+  TYPE_CUSTOM_DECIMAL(0x85);
 
   private final byte id;
 
