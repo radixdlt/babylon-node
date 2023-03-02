@@ -9,8 +9,8 @@ use radix_engine_interface::blueprints::epoch_manager::{
 };
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 use radix_engine_interface::crypto::{hash, Hash};
-use radix_engine_interface::data::scrypto_encode;
 use std::collections::BTreeSet;
+use transaction::data::manifest_encode;
 use transaction::model::{AuthZoneParams, Executable, ExecutionContext, FeePayment, Instruction};
 
 #[derive(Debug, Copy, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
@@ -28,7 +28,7 @@ pub enum ValidatorTransaction {
 impl ValidatorTransaction {
     pub fn prepare(&self) -> PreparedValidatorTransaction {
         // TODO: Figure out better way to do this or if we even do need it
-        let hash = hash(scrypto_encode(self).unwrap());
+        let hash = hash(manifest_encode(self).unwrap());
 
         let instructions = match self {
             ValidatorTransaction::RoundUpdate {
@@ -39,7 +39,7 @@ impl ValidatorTransaction {
                 let update_time = Instruction::CallMethod {
                     component_address: CLOCK,
                     method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
-                    args: scrypto_encode(&ClockSetCurrentTimeInput {
+                    args: manifest_encode(&ClockSetCurrentTimeInput {
                         current_time_ms: *timestamp_ms,
                     })
                     .unwrap(),
@@ -48,7 +48,7 @@ impl ValidatorTransaction {
                 let update_round = Instruction::CallMethod {
                     component_address: EPOCH_MANAGER,
                     method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-                    args: scrypto_encode(&EpochManagerNextRoundInput {
+                    args: manifest_encode(&EpochManagerNextRoundInput {
                         round: *round_in_epoch,
                     })
                     .unwrap(),

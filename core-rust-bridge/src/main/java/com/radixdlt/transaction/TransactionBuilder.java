@@ -78,7 +78,6 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionHeader;
 import com.radixdlt.sbor.Natives;
-import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
@@ -172,23 +171,11 @@ public final class TransactionBuilder {
   public static byte[] createSignedIntentBytes(
       byte[] intent, List<SignatureWithPublicKey> signatures) {
 
-    // Serialization is required here since SignatureWithPublicKey is Manifest encoded rather than
-    // Scrypto encoded
-    var serializedSignatures =
-        signatures.stream()
-            .map(
-                s ->
-                    StateManagerSbor.encode(s, StateManagerSbor.resolveCodec(new TypeToken<>() {})))
-            .toList();
-    return createSignedIntentBytesFunc.call(tuple(intent, serializedSignatures));
+    return createSignedIntentBytesFunc.call(tuple(intent, signatures));
   }
 
   public static byte[] createNotarizedBytes(byte[] signedIntent, Signature signature) {
-    // Serialization is required here since Signature is Manifest encoded rather than Scrypto
-    // encoded
-    var serializedSignature =
-        StateManagerSbor.encode(signature, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
-    return createNotarizedBytesFunc.call(tuple(signedIntent, serializedSignature));
+    return createNotarizedBytesFunc.call(tuple(signedIntent, signature));
   }
 
   private static final Natives.Call1<
@@ -220,13 +207,13 @@ public final class TransactionBuilder {
 
   private static native byte[] createIntent(byte[] requestPayload);
 
-  private static final Natives.Call1<Tuple.Tuple2<byte[], List<byte[]>>, byte[]>
+  private static final Natives.Call1<Tuple.Tuple2<byte[], List<SignatureWithPublicKey>>, byte[]>
       createSignedIntentBytesFunc =
           Natives.builder(TransactionBuilder::createSignedIntentBytes).build(new TypeToken<>() {});
 
   private static native byte[] createSignedIntentBytes(byte[] requestPayload);
 
-  private static final Natives.Call1<Tuple.Tuple2<byte[], byte[]>, byte[]>
+  private static final Natives.Call1<Tuple.Tuple2<byte[], Signature>, byte[]>
       createNotarizedBytesFunc =
           Natives.builder(TransactionBuilder::createNotarizedBytes).build(new TypeToken<>() {});
 

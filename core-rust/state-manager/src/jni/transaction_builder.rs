@@ -78,7 +78,9 @@ use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
 use std::collections::BTreeMap;
 use transaction::data::{manifest_decode, manifest_encode};
-use transaction::model::{NotarizedTransaction, SignatureWithPublicKey, TransactionHeader};
+use transaction::model::{
+    NotarizedTransaction, Signature, SignatureWithPublicKey, TransactionHeader,
+};
 
 use super::utils::{jni_static_sbor_call, jni_static_sbor_call_flatten_result};
 
@@ -195,18 +197,12 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createSigned
 }
 
 fn do_create_signed_intent_bytes(
-    (intent_bytes, signatures): (Vec<u8>, Vec<Vec<u8>>),
+    (intent_bytes, signatures): (Vec<u8>, Vec<SignatureWithPublicKey>),
 ) -> StateManagerResult<Vec<u8>> {
     // It's passed through to us as bytes - and need to decode these bytes
     let intent = manifest_decode(&intent_bytes)?;
 
-    let mut signatures_with_pub_keys = Vec::new();
-    for signature in signatures {
-        let signature: SignatureWithPublicKey = manifest_decode(&signature).unwrap();
-        signatures_with_pub_keys.push(signature);
-    }
-
-    Ok(create_signed_intent_bytes(intent, signatures_with_pub_keys))
+    Ok(create_signed_intent_bytes(intent, signatures))
 }
 
 #[no_mangle]
@@ -219,10 +215,9 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createNotari
 }
 
 fn do_create_notarized_bytes(
-    (signed_intent_bytes, signature): (Vec<u8>, Vec<u8>),
+    (signed_intent_bytes, signature): (Vec<u8>, Signature),
 ) -> StateManagerResult<Vec<u8>> {
     // It's passed through to us as bytes - and need to decode these bytes
-    let signature = manifest_decode(&signature)?;
     let signed_intent = manifest_decode(&signed_intent_bytes)?;
 
     Ok(create_notarized_bytes(signed_intent, signature))

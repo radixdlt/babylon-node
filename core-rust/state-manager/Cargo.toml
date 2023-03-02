@@ -25,13 +25,13 @@ prometheus = { version = "0.13.2", default-features = false, features = [] }
 # 
 # Ensure this version is also identically updated in ../core-api-server/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-2e09c6", features = ["serde"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-2e09c6" }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-2e09c6", features = ["serde"]  }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-2e09c6" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-2e09c6" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-2e09c6" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-2e09c6" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-ae730f", features = ["serde"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-ae730f" }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-ae730f", features = ["serde"]  }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-ae730f" }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-ae730f" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-ae730f" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "clean-executable-ae730f" }
 
 # Non-Radix Engine Dependencies:
 blake2 = { version = "0.10.6", default-features = false }
