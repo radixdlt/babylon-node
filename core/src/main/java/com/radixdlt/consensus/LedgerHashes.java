@@ -97,11 +97,7 @@ public final class LedgerHashes {
   private final HashCode transactionRoot;
 
   @JsonProperty("receipt_root")
-  // TODO: restore `Output.ALL` after fixing non-determinism bugs
-  // The test `REv2ConsensusLedgerRecoveryTest.recovery_should_work_when_consensus_is_behind_ledger`
-  // fails when the receipt root is taken into account, which suggests that nodes can end up with
-  // different receipts in some special cases. We need to investigate and fix it.
-  @DsonOutput(value = DsonOutput.Output.HASH, include = false)
+  @DsonOutput(DsonOutput.Output.ALL)
   private final HashCode receiptRoot;
 
   @JsonCreator

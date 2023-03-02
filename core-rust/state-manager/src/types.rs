@@ -63,7 +63,8 @@
  */
 
 use crate::{
-    jni::common_types::JavaHashCode, transaction::LedgerTransaction, LedgerTransactionReceipt,
+    jni::common_types::JavaHashCode, transaction::LedgerTransaction, LedgerTransactionOutcome,
+    LedgerTransactionReceipt, SubstateChanges,
 };
 use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine::types::*;
@@ -216,15 +217,22 @@ impl HasLedgerPayloadHash for NotarizedTransaction {
 )]
 pub struct LedgerReceiptHash([u8; Self::LENGTH]);
 
+#[derive(ScryptoCategorize, ScryptoEncode)]
+struct HashableLedgerReceiptPart {
+    successful: bool,
+    substate_changes: SubstateChanges,
+}
+
 impl LedgerReceiptHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_receipt(receipt: &LedgerTransactionReceipt) -> Self {
-        Self::for_receipt_bytes(&scrypto_encode(receipt).unwrap())
-    }
-
-    pub fn for_receipt_bytes(ledger_receipt_bytes: &[u8]) -> Self {
-        Self(blake2b_256_hash(ledger_receipt_bytes).0)
+        let hashable_part = HashableLedgerReceiptPart {
+            successful: matches!(receipt.outcome, LedgerTransactionOutcome::Success(_)),
+            substate_changes: receipt.substate_changes.clone(),
+        };
+        let hashable_part_bytes = scrypto_encode(&hashable_part).unwrap();
+        Self(blake2b_256_hash(hashable_part_bytes).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
