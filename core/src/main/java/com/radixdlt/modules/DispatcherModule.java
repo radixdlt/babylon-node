@@ -140,6 +140,11 @@ public class DispatcherModule extends AbstractModule {
             Dispatchers.scheduledDispatcherProvider(
                 new TypeLiteral<Epoched<ScheduledLocalTimeout>>() {}))
         .in(Scopes.SINGLETON);
+    bind(new TypeLiteral<ScheduledEventDispatcher<Epoched<PostponedRoundQuorum>>>() {})
+        .toProvider(
+            Dispatchers.scheduledDispatcherProvider(
+                new TypeLiteral<Epoched<PostponedRoundQuorum>>() {}))
+        .in(Scopes.SINGLETON);
     bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() {})
         .toProvider(Dispatchers.scheduledDispatcherProvider(VertexRequestTimeout.class))
         .in(Scopes.SINGLETON);
@@ -184,6 +189,10 @@ public class DispatcherModule extends AbstractModule {
     final var scheduledTimeoutKey = new TypeLiteral<EventProcessor<ScheduledLocalTimeout>>() {};
     Multibinder.newSetBinder(binder(), scheduledTimeoutKey, ProcessOnDispatch.class);
     Multibinder.newSetBinder(binder(), scheduledTimeoutKey);
+
+    final var postponedRoundQuorumKey = new TypeLiteral<EventProcessor<PostponedRoundQuorum>>() {};
+    Multibinder.newSetBinder(binder(), postponedRoundQuorumKey, ProcessOnDispatch.class);
+    Multibinder.newSetBinder(binder(), postponedRoundQuorumKey);
 
     final var syncRequestKey = new TypeLiteral<EventProcessor<LocalSyncRequest>>() {};
     Multibinder.newSetBinder(binder(), syncRequestKey, ProcessOnDispatch.class);
@@ -241,9 +250,6 @@ public class DispatcherModule extends AbstractModule {
                     counters.bft().voteQuorums().inc();
                   }
                 }));
-
-    bind(new TypeLiteral<ScheduledEventDispatcher<PostponedRoundQuorum>>() {})
-        .toProvider(Dispatchers.scheduledDispatcherProvider(PostponedRoundQuorum.class));
 
     Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() {});
 
@@ -338,6 +344,17 @@ public class DispatcherModule extends AbstractModule {
     return (timeout, ms) -> {
       dispatcher.dispatch(timeout, ms);
       processors.forEach(e -> e.process(timeout));
+    };
+  }
+
+  @Provides
+  private ScheduledEventDispatcher<PostponedRoundQuorum> postponedRoundQuorumDispatcher(
+      @ProcessOnDispatch Set<EventProcessor<PostponedRoundQuorum>> processors,
+      Environment environment) {
+    var dispatcher = environment.getScheduledDispatcher(PostponedRoundQuorum.class);
+    return (postponedRoundQuorum, ms) -> {
+      dispatcher.dispatch(postponedRoundQuorum, ms);
+      processors.forEach(e -> e.process(postponedRoundQuorum));
     };
   }
 

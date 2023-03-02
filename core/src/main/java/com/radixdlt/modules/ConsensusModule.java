@@ -105,6 +105,7 @@ public final class ConsensusModule extends AbstractModule {
     var eventBinder =
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
             .permitDuplicates();
+    eventBinder.addBinding().toInstance(PostponedRoundQuorum.class);
     eventBinder.addBinding().toInstance(RoundUpdate.class);
     eventBinder.addBinding().toInstance(BFTRebuildUpdate.class);
     eventBinder.addBinding().toInstance(BFTInsertUpdate.class);
