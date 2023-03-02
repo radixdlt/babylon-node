@@ -175,7 +175,6 @@ impl SimpleMempool {
         user_payload_hashes_to_exclude: &HashSet<UserPayloadHash>,
     ) -> Vec<PendingTransaction> {
         let mut payload_size_so_far = 0u64;
-        let mut count_so_far = 0u64;
         self.data
             .iter()
             .filter_map(|(tid, data)| {
@@ -186,21 +185,14 @@ impl SimpleMempool {
                 }
             })
             .take_while(|tx| {
-                count_so_far += 1;
-                if count_so_far > max_count {
-                    return false;
-                }
-
                 payload_size_so_far += tx.payload_size as u64;
-                if payload_size_so_far > max_payload_size_bytes {
-                    // Note that with this naive approach there might be other txns
-                    // in a mempool that could still fit in the available space.
-                    // This should be good enough for now, but consider optimizing at some point.
-                    return false;
-                }
 
-                true
+                // Note that with this naive approach there might be other txns
+                // in a mempool that could still fit in the available space.
+                // This should be good enough for now, but consider optimizing at some point.
+                payload_size_so_far <= max_payload_size_bytes
             })
+            .take(max_count as usize)
             .collect()
     }
 
