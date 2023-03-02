@@ -78,7 +78,9 @@ use radix_engine::types::{
     SubstateOffset,
 };
 use radix_engine_interface::api::types::NodeModuleId;
-use radix_engine_stores::hash_tree::tree_store::{encode_key, NodeKey, Payload, ReadableTreeStore, TreeNode};
+use radix_engine_stores::hash_tree::tree_store::{
+    encode_key, NodeKey, Payload, ReadableTreeStore, TreeNode,
+};
 use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, Direction, IteratorMode, Options, WriteBatch, DB,
 };

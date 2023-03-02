@@ -25,7 +25,8 @@ fn handle_state_resource_internal(
         .map_err(|err| err.into_response_error("resource_address"))?;
 
     let resource_manager = {
-        let substate_offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+        let substate_offset =
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let loaded_substate = read_known_substate(
             state_manager,
             RENodeId::GlobalResourceManager(resource_address),

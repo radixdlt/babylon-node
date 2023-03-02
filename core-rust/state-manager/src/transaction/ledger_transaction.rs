@@ -3,8 +3,8 @@ use sbor::*;
 
 use crate::transaction::validator_transaction::ValidatorTransaction;
 use crate::LedgerPayloadHash;
-use transaction::model::*;
 use transaction::data::*;
+use transaction::model::*;
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]

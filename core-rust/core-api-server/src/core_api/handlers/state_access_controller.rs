@@ -1,8 +1,7 @@
 use crate::core_api::*;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{
-    AccessControllerOffset, AccessRulesChainOffset, MetadataOffset, NodeModuleId,
-    SubstateOffset,
+    AccessControllerOffset, AccessRulesChainOffset, MetadataOffset, NodeModuleId, SubstateOffset,
 };
 use radix_engine_interface::api::types::RENodeId;
 use state_manager::jni::state_manager::ActualStateManager;
@@ -37,7 +36,8 @@ fn handle_state_access_controller_internal(
     }
 
     let component_state = {
-        let substate_offset = SubstateOffset::AccessController(AccessControllerOffset::AccessController);
+        let substate_offset =
+            SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let loaded_substate = read_known_substate(
             state_manager,
             RENodeId::GlobalComponent(controller_address),
@@ -83,15 +83,15 @@ fn handle_state_access_controller_internal(
     let state_owned_vaults = component_dump
         .vaults
         .into_iter()
-        .map(|vault| {
-            match vault {
-                VaultData::NonFungible { resource_address, ids } => {
-                    to_api_non_fungible_resource_amount(&mapping_context, &resource_address, &ids)
-                }
-                VaultData::Fungible { resource_address, amount } => {
-                    to_api_fungible_resource_amount(&mapping_context, &resource_address, &amount)
-                }
-            }
+        .map(|vault| match vault {
+            VaultData::NonFungible {
+                resource_address,
+                ids,
+            } => to_api_non_fungible_resource_amount(&mapping_context, &resource_address, &ids),
+            VaultData::Fungible {
+                resource_address,
+                amount,
+            } => to_api_fungible_resource_amount(&mapping_context, &resource_address, &amount),
         })
         .collect::<Result<Vec<_>, _>>()?;
 

@@ -172,14 +172,22 @@ public final class TransactionBuilder {
   public static byte[] createSignedIntentBytes(
       byte[] intent, List<SignatureWithPublicKey> signatures) {
 
-    // Serialization is required here since SignatureWithPublicKey is Manifest encoded rather than Scrypto encoded
-    var serializedSignatures = signatures.stream().map(s -> StateManagerSbor.encode(s, StateManagerSbor.resolveCodec(new TypeToken<>() {}))).toList();
+    // Serialization is required here since SignatureWithPublicKey is Manifest encoded rather than
+    // Scrypto encoded
+    var serializedSignatures =
+        signatures.stream()
+            .map(
+                s ->
+                    StateManagerSbor.encode(s, StateManagerSbor.resolveCodec(new TypeToken<>() {})))
+            .toList();
     return createSignedIntentBytesFunc.call(tuple(intent, serializedSignatures));
   }
 
   public static byte[] createNotarizedBytes(byte[] signedIntent, Signature signature) {
-    // Serialization is required here since Signature is Manifest encoded rather than Scrypto encoded
-    var serializedSignature = StateManagerSbor.encode(signature, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+    // Serialization is required here since Signature is Manifest encoded rather than Scrypto
+    // encoded
+    var serializedSignature =
+        StateManagerSbor.encode(signature, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
     return createNotarizedBytesFunc.call(tuple(signedIntent, serializedSignature));
   }
 

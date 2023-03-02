@@ -1,8 +1,7 @@
 use crate::core_api::*;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{
-    AccessRulesChainOffset, ComponentOffset, MetadataOffset, RENodeId, SubstateId,
-    SubstateOffset,
+    AccessRulesChainOffset, ComponentOffset, MetadataOffset, RENodeId, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::api::types::{NodeModuleId, RoyaltyOffset, TypeInfoOffset};
 use state_manager::jni::state_manager::ActualStateManager;
@@ -121,15 +120,15 @@ fn handle_state_component_internal(
     let state_owned_vaults = component_dump
         .vaults
         .into_iter()
-        .map(|vault| {
-            match vault {
-                VaultData::NonFungible { resource_address, ids } => {
-                    to_api_non_fungible_resource_amount(&mapping_context, &resource_address, &ids)
-                }
-                VaultData::Fungible { resource_address, amount } => {
-                    to_api_fungible_resource_amount(&mapping_context, &resource_address, &amount)
-                }
-            }
+        .map(|vault| match vault {
+            VaultData::NonFungible {
+                resource_address,
+                ids,
+            } => to_api_non_fungible_resource_amount(&mapping_context, &resource_address, &ids),
+            VaultData::Fungible {
+                resource_address,
+                amount,
+            } => to_api_fungible_resource_amount(&mapping_context, &resource_address, &amount),
         })
         .collect::<Result<Vec<_>, _>>()?;
 
@@ -141,10 +140,7 @@ fn handle_state_component_internal(
         .collect::<Result<Vec<_>, _>>()?;
 
     Ok(models::StateComponentResponse {
-        info: Some(to_api_type_info_substate(
-            &mapping_context,
-            &type_info,
-        )?),
+        info: Some(to_api_type_info_substate(&mapping_context, &type_info)?),
         state: Some(to_api_component_state_substate(
             &mapping_context,
             &component_state,

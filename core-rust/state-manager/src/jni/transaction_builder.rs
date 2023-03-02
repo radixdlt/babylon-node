@@ -78,10 +78,7 @@ use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
 use std::collections::BTreeMap;
 use transaction::data::{manifest_decode, manifest_encode};
-use transaction::model::{
-    NotarizedTransaction, SignatureWithPublicKey,
-    TransactionHeader,
-};
+use transaction::model::{NotarizedTransaction, SignatureWithPublicKey, TransactionHeader};
 
 use super::utils::{jni_static_sbor_call, jni_static_sbor_call_flatten_result};
 

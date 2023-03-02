@@ -34,9 +34,6 @@ pub enum MappingError {
         message: String,
         bytes: Vec<u8>,
     },
-    InvalidComponentStateEntities {
-        message: String,
-    },
     InvalidManifest {
         message: String,
     },

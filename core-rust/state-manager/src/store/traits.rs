@@ -141,7 +141,9 @@ pub mod commit {
     use crate::staging::HashTreeDiff;
     use radix_engine::ledger::OutputValue;
     use radix_engine_interface::api::types::SubstateId;
-    use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReNodeModulePayload, TreeNode, Version};
+    use radix_engine_stores::hash_tree::tree_store::{
+        NodeKey, ReNodeModulePayload, TreeNode, Version,
+    };
     use std::collections::BTreeMap;
 
     pub struct CommitBundle {

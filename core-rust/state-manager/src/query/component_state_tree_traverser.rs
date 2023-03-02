@@ -67,11 +67,13 @@ use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use radix_engine::system::node_substates::PersistedSubstate;
 
 use radix_engine::types::{
-    AccessControllerOffset, ComponentOffset, EpochManagerOffset, KeyValueStoreOffset,
-    RENodeId, SubstateId, SubstateOffset, ValidatorOffset, VaultOffset,
+    AccessControllerOffset, ComponentOffset, EpochManagerOffset, KeyValueStoreOffset, RENodeId,
+    SubstateId, SubstateOffset, ValidatorOffset, VaultOffset,
 };
 use radix_engine_interface::api::types::{AccountOffset, ComponentAddress, NodeModuleId};
-use radix_engine_interface::blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource, ResourceType};
+use radix_engine_interface::blueprints::resource::{
+    LiquidFungibleResource, LiquidNonFungibleResource, ResourceType,
+};
 
 #[derive(Debug)]
 pub enum StateTreeTraverserError {
@@ -92,8 +94,20 @@ pub struct ComponentStateTreeTraverser<
 }
 
 pub trait StateTreeVisitor {
-    fn visit_fungible_vault(&mut self, _parent_id: Option<&SubstateId>, _info: &VaultInfoSubstate, _liquid: &LiquidFungibleResource) {}
-    fn visit_non_fungible_vault(&mut self, _parent_id: Option<&SubstateId>, _info: &VaultInfoSubstate, _liquid: &LiquidNonFungibleResource) {}
+    fn visit_fungible_vault(
+        &mut self,
+        _parent_id: Option<&SubstateId>,
+        _info: &VaultInfoSubstate,
+        _liquid: &LiquidFungibleResource,
+    ) {
+    }
+    fn visit_non_fungible_vault(
+        &mut self,
+        _parent_id: Option<&SubstateId>,
+        _info: &VaultInfoSubstate,
+        _liquid: &LiquidNonFungibleResource,
+    ) {
+    }
     fn visit_node_id(&mut self, _parent_id: Option<&SubstateId>, _node_id: &RENodeId, _depth: u32) {
     }
 }
@@ -137,23 +151,31 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                 let vault_info: VaultInfoSubstate = info_substate.to_runtime().into();
 
                 match vault_info.resource_type {
-                    ResourceType::Fungible {..} => {
+                    ResourceType::Fungible { .. } => {
                         let liquid_substate = self.read_substate(&SubstateId(
                             node_id,
                             NodeModuleId::SELF,
                             SubstateOffset::Vault(VaultOffset::LiquidFungible),
                         ))?;
 
-                        self.visitor.visit_fungible_vault(parent, &vault_info, &liquid_substate.into());
+                        self.visitor.visit_fungible_vault(
+                            parent,
+                            &vault_info,
+                            &liquid_substate.into(),
+                        );
                     }
-                    ResourceType::NonFungible {..} => {
+                    ResourceType::NonFungible { .. } => {
                         let liquid_substate = self.read_substate(&SubstateId(
                             node_id,
                             NodeModuleId::SELF,
                             SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
                         ))?;
 
-                        self.visitor.visit_non_fungible_vault(parent, &vault_info, &liquid_substate.into());
+                        self.visitor.visit_non_fungible_vault(
+                            parent,
+                            &vault_info,
+                            &liquid_substate.into(),
+                        );
                     }
                 }
             }
@@ -178,7 +200,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
             RENodeId::GlobalComponent(
                 ComponentAddress::Account(..)
                 | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
-                | ComponentAddress::EddsaEd25519VirtualAccount(..)
+                | ComponentAddress::EddsaEd25519VirtualAccount(..),
             )
             | RENodeId::Account(..) => {
                 self.recurse_via_self_substate(
@@ -211,17 +233,16 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                     depth,
                 )?;
             }
-            RENodeId::GlobalComponent(ComponentAddress::Clock(..))
-            | RENodeId::Clock(_) => {}            // Contains no children
+            RENodeId::GlobalComponent(ComponentAddress::Clock(..)) | RENodeId::Clock(_) => {} // Contains no children
             RENodeId::GlobalComponent(
                 ComponentAddress::Identity(..)
                 | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
-                | ComponentAddress::EddsaEd25519VirtualIdentity(..)
+                | ComponentAddress::EddsaEd25519VirtualIdentity(..),
             )
-            | RENodeId::Identity(_) => {}         // Contains no children
+            | RENodeId::Identity(_) => {} // Contains no children
             RENodeId::NonFungibleStore(_) => {} // Contains no children
-            RENodeId::GlobalResourceManager(..)  => {} // Contains no children
-            RENodeId::GlobalPackage(..)  => {} // Contains no children
+            RENodeId::GlobalResourceManager(..) => {} // Contains no children
+            RENodeId::GlobalPackage(..) => {}   // Contains no children
             // TRANSIENT
             RENodeId::Bucket(_)
             | RENodeId::Proof(_)

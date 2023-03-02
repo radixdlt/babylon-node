@@ -11,9 +11,7 @@ use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto_encode;
 use std::collections::BTreeSet;
-use transaction::model::{
-    AuthZoneParams, Executable, ExecutionContext, FeePayment, Instruction,
-};
+use transaction::model::{AuthZoneParams, Executable, ExecutionContext, FeePayment, Instruction};
 
 #[derive(Debug, Copy, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub enum ValidatorTransaction {

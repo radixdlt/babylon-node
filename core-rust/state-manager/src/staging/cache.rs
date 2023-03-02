@@ -73,13 +73,21 @@ use radix_engine::transaction::{TransactionReceipt, TransactionResult};
 use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::scrypto_encode;
+use radix_engine_stores::hash_tree::tree_store::{
+    NodeKey, ReNodeModulePayload, ReadableTreeStore, TreeNode, Version, WriteableTreeStore,
+};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
-use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReadableTreeStore, ReNodeModulePayload, TreeNode, Version, WriteableTreeStore};
 use sbor::rust::collections::HashMap;
 use slotmap::SecondaryMap;
 
-pub trait ReadableLayeredTreeStore: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset> {}
-impl<T: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>> ReadableLayeredTreeStore for T {}
+pub trait ReadableLayeredTreeStore:
+    ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>
+{
+}
+impl<T: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>>
+    ReadableLayeredTreeStore for T
+{
+}
 
 pub trait RootStore: ReadableSubstateStore + ReadableLayeredTreeStore {}
 impl<T: ReadableSubstateStore + ReadableLayeredTreeStore> RootStore for T {}
@@ -171,13 +179,18 @@ impl ExecutionCache {
     }
 }
 
-struct CollectingTreeStore<'s, S> where S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset> {
+struct CollectingTreeStore<'s, S>
+where
+    S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>,
+{
     readable_delegate: &'s S,
     diff: HashTreeDiff,
 }
 
 impl<'s, S> CollectingTreeStore<'s, S>
-    where S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset> {
+where
+    S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>,
+{
     pub fn new(readable_delegate: &'s S) -> Self {
         Self {
             readable_delegate,
@@ -187,21 +200,27 @@ impl<'s, S> CollectingTreeStore<'s, S>
 }
 
 impl<'s, S> ReadableTreeStore<ReNodeModulePayload> for CollectingTreeStore<'s, S>
-    where S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset> {
+where
+    S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>,
+{
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode<ReNodeModulePayload>> {
         self.readable_delegate.get_node(key)
     }
 }
 
 impl<'s, S> ReadableTreeStore<SubstateOffset> for CollectingTreeStore<'s, S>
-    where S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset> {
+where
+    S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>,
+{
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode<SubstateOffset>> {
         self.readable_delegate.get_node(key)
     }
 }
 
 impl<'s, S> WriteableTreeStore<ReNodeModulePayload> for CollectingTreeStore<'s, S>
-    where S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset> {
+where
+    S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>,
+{
     fn insert_node(&mut self, key: NodeKey, node: TreeNode<ReNodeModulePayload>) {
         self.diff.new_re_node_layer_nodes.push((key, node));
     }
@@ -212,7 +231,9 @@ impl<'s, S> WriteableTreeStore<ReNodeModulePayload> for CollectingTreeStore<'s, 
 }
 
 impl<'s, S> WriteableTreeStore<SubstateOffset> for CollectingTreeStore<'s, S>
-    where S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset> {
+where
+    S: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>,
+{
     fn insert_node(&mut self, key: NodeKey, node: TreeNode<SubstateOffset>) {
         self.diff.new_substate_layer_nodes.push((key, node));
     }
@@ -282,8 +303,12 @@ impl ProcessedResult {
                 .state_updates
                 .up_substates
                 .iter()
-                .map(|(id, value)| SubstateHashChange::new(
-                    id.clone(), Some(hash(scrypto_encode(&value.substate).unwrap()))))
+                .map(|(id, value)| {
+                    SubstateHashChange::new(
+                        id.clone(),
+                        Some(hash(scrypto_encode(&value.substate).unwrap())),
+                    )
+                })
                 .collect::<Vec<_>>(),
             TransactionResult::Reject(_) | TransactionResult::Abort(_) => Vec::new(),
         };

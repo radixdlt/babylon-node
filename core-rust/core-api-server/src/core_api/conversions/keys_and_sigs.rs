@@ -1,6 +1,4 @@
-use radix_engine::types::{
-    PublicKey,
-};
+use radix_engine::types::PublicKey;
 use radix_engine_interface::crypto::{EcdsaSecp256k1PublicKey, EddsaEd25519PublicKey};
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1Signature;
 use transaction::eddsa_ed25519::EddsaEd25519Signature;

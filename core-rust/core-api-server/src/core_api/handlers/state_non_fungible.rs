@@ -1,8 +1,7 @@
 use crate::core_api::*;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{
-    NonFungibleStoreOffset, RENodeId, ResourceManagerOffset, SubstateId,
-    SubstateOffset,
+    NonFungibleStoreOffset, RENodeId, ResourceManagerOffset, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::api::types::NodeModuleId;
 use radix_engine_interface::blueprints::resource::ResourceType;

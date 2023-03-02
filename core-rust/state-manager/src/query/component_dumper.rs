@@ -62,15 +62,16 @@
  * permissions under this License.
  */
 
-use std::collections::BTreeSet;
-use radix_engine::blueprints::resource::{VaultInfoSubstate};
+use radix_engine::blueprints::resource::VaultInfoSubstate;
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use radix_engine::types::{ComponentAddress, RENodeId, SubstateId};
-use radix_engine_interface::blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource, NonFungibleLocalId, ResourceAddress};
+use radix_engine_interface::blueprints::resource::{
+    LiquidFungibleResource, LiquidNonFungibleResource, NonFungibleLocalId, ResourceAddress,
+};
 use radix_engine_interface::math::Decimal;
+use std::collections::BTreeSet;
 
 use super::component_state_tree_traverser::*;
-
 
 pub enum VaultData {
     Fungible {
@@ -89,14 +90,24 @@ pub struct ComponentStateDump {
 }
 
 impl StateTreeVisitor for ComponentStateDump {
-    fn visit_fungible_vault(&mut self, _parent_id: Option<&SubstateId>, info: &VaultInfoSubstate, liquid: &LiquidFungibleResource) {
+    fn visit_fungible_vault(
+        &mut self,
+        _parent_id: Option<&SubstateId>,
+        info: &VaultInfoSubstate,
+        liquid: &LiquidFungibleResource,
+    ) {
         self.vaults.push(VaultData::Fungible {
             resource_address: info.resource_address,
             amount: liquid.amount(),
         });
     }
 
-    fn visit_non_fungible_vault(&mut self, _parent_id: Option<&SubstateId>, info: &VaultInfoSubstate, liquid: &LiquidNonFungibleResource) {
+    fn visit_non_fungible_vault(
+        &mut self,
+        _parent_id: Option<&SubstateId>,
+        info: &VaultInfoSubstate,
+        liquid: &LiquidNonFungibleResource,
+    ) {
         self.vaults.push(VaultData::NonFungible {
             resource_address: info.resource_address,
             ids: liquid.ids().clone(),

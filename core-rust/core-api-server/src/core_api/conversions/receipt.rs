@@ -7,8 +7,8 @@ use radix_engine::{
     types::{hash, scrypto_encode, Decimal, RENodeId, SubstateId},
 };
 use radix_engine_interface::api::component::ComponentAddress;
-use std::collections::BTreeMap;
 use radix_engine_interface::api::types::{Address, NodeModuleId};
+use std::collections::BTreeMap;
 
 use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
 
@@ -37,13 +37,28 @@ pub fn to_api_receipt(
     for (id, output) in substate_changes.created {
         match id {
             SubstateId(RENodeId::GlobalPackage(package_address), NodeModuleId::TypeInfo, ..) => {
-                new_global_entities.push(to_global_entity_reference(context, &package_address.into()));
+                new_global_entities
+                    .push(to_global_entity_reference(context, &package_address.into()));
             }
-            SubstateId(RENodeId::GlobalComponent(component_address), NodeModuleId::TypeInfo, ..) => {
-                new_global_entities.push(to_global_entity_reference(context, &component_address.into()));
+            SubstateId(
+                RENodeId::GlobalComponent(component_address),
+                NodeModuleId::TypeInfo,
+                ..,
+            ) => {
+                new_global_entities.push(to_global_entity_reference(
+                    context,
+                    &component_address.into(),
+                ));
             }
-            SubstateId(RENodeId::GlobalResourceManager(resource_address), NodeModuleId::TypeInfo, ..) => {
-                new_global_entities.push(to_global_entity_reference(context, &resource_address.into()));
+            SubstateId(
+                RENodeId::GlobalResourceManager(resource_address),
+                NodeModuleId::TypeInfo,
+                ..,
+            ) => {
+                new_global_entities.push(to_global_entity_reference(
+                    context,
+                    &resource_address.into(),
+                ));
             }
             _ => {}
         }
@@ -199,7 +214,9 @@ pub fn to_api_fee_summary(
             .filter_map(|(receiver, cost_unit_amount)| {
                 let global_address = match receiver {
                     RoyaltyReceiver::Package(address) => Address::Package(address),
-                    RoyaltyReceiver::Component(RENodeId::GlobalComponent(address)) => Address::Component(address),
+                    RoyaltyReceiver::Component(RENodeId::GlobalComponent(address)) => {
+                        Address::Component(address)
+                    }
                     _ => return None,
                 };
                 let payment = models::RoyaltyPayment {

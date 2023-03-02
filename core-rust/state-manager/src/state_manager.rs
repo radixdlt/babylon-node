@@ -76,12 +76,12 @@ use crate::{
     CommittedTransactionIdentifiers, HasIntentHash, IntentHash, LedgerTransactionReceipt,
     MempoolAddError, PendingTransaction,
 };
+use ::transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use ::transaction::errors::TransactionValidationError;
 use ::transaction::model::{
     Executable, NotarizedTransaction, PreviewFlags, PreviewIntent, TransactionHeader,
     TransactionIntent,
 };
-use ::transaction::ecdsa_secp256k1::EcdsaSecp256k1PrivateKey;
 use ::transaction::validation::{TestIntentHashManager, ValidationConfig};
 use parking_lot::RwLock;
 use prometheus::Registry;
@@ -101,6 +101,7 @@ use radix_engine_interface::api::types::{
 use std::collections::HashMap;
 use std::convert::TryInto;
 
+use ::transaction::data::*;
 use radix_engine::blueprints::epoch_manager::ValidatorSubstate;
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine_interface::network::NetworkDefinition;
@@ -108,7 +109,6 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use tracing::{info, warn};
-use ::transaction::data::*;
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct LoggingConfig {
@@ -262,7 +262,7 @@ where
 
 impl<S> StateManager<S>
 where
-    S: ReadableSubstateStore + ReadableLayeredTreeStore
+    S: ReadableSubstateStore + ReadableLayeredTreeStore,
 {
     fn execute_for_staging_with_cache(
         &mut self,

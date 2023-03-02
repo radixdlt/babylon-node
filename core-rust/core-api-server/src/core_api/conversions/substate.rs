@@ -4,12 +4,16 @@ use radix_engine::blueprints::clock::CurrentTimeRoundedToMinutesSubstate;
 use radix_engine::blueprints::epoch_manager::{
     EpochManagerSubstate, Validator, ValidatorSetSubstate, ValidatorSubstate,
 };
-use radix_engine::blueprints::resource::{NonFungible, NonFungibleSubstate, ResourceManagerSubstate, VaultInfoSubstate};
-use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::system::type_info::{PackageCodeTypeSubstate};
-use std::collections::BTreeSet;
-use radix_engine::system::node_modules::access_rules::{FunctionAccessRulesSubstate, MethodAccessRulesChainSubstate};
+use radix_engine::blueprints::resource::{
+    NonFungible, NonFungibleSubstate, ResourceManagerSubstate, VaultInfoSubstate,
+};
+use radix_engine::system::node_modules::access_rules::{
+    FunctionAccessRulesSubstate, MethodAccessRulesChainSubstate,
+};
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
+use radix_engine::system::node_substates::PersistedSubstate;
+use radix_engine::system::type_info::PackageCodeTypeSubstate;
+use std::collections::BTreeSet;
 
 use super::*;
 use crate::core_api::models;
@@ -19,10 +23,21 @@ use radix_engine::types::{
     scrypto_encode, Decimal, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId,
     ResourceAddress, RoyaltyConfig, SubstateId, SubstateOffset,
 };
-use radix_engine_interface::api::component::{ComponentAddress, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate, KeyValueStoreEntrySubstate, TypeInfoSubstate};
-use radix_engine_interface::api::package::{PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate};
+use radix_engine_interface::api::component::{
+    ComponentAddress, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
+    ComponentStateSubstate, KeyValueStoreEntrySubstate, TypeInfoSubstate,
+};
+use radix_engine_interface::api::package::{
+    PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate,
+    PackageRoyaltyConfigSubstate,
+};
 use radix_engine_interface::api::types::{Address, NodeModuleId};
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, AccessRuleNode, AccessRules, LiquidFungibleResource, LiquidNonFungibleResource, LockedFungibleResource, LockedNonFungibleResource, MethodKey, NonFungibleIdType, NonFungibleLocalId, ProofRule, ResourceType, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, AccessRuleEntry, AccessRuleNode, AccessRules, LiquidFungibleResource,
+    LiquidNonFungibleResource, LockedFungibleResource, LockedNonFungibleResource, MethodKey,
+    NonFungibleIdType, NonFungibleLocalId, ProofRule, ResourceType, SoftCount, SoftDecimal,
+    SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
+};
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 
 use super::MappingError;
@@ -41,9 +56,7 @@ pub fn to_api_substate(
             to_api_function_access_rules_substate(context, substate)?
         }
         PersistedSubstate::Metadata(substate) => to_api_metadata_substate(context, substate)?,
-        PersistedSubstate::TypeInfo(type_info) => {
-            to_api_type_info_substate(context, type_info)?
-        }
+        PersistedSubstate::TypeInfo(type_info) => to_api_type_info_substate(context, type_info)?,
         // Specific
         PersistedSubstate::ComponentState(component_state) => {
             to_api_component_state_substate(context, component_state)?
@@ -58,7 +71,9 @@ pub fn to_api_substate(
             to_api_resource_manager_substate(context, resource_manager)?
         }
         PersistedSubstate::PackageInfo(package) => to_api_package_info_substate(context, package)?,
-        PersistedSubstate::PackageCode(package_code) => to_api_package_code_substate(context, package_code)?,
+        PersistedSubstate::PackageCode(package_code) => {
+            to_api_package_code_substate(context, package_code)?
+        }
         PersistedSubstate::PackageCodeType(code_type) => {
             to_api_package_code_type_substate(context, code_type)?
         }
@@ -78,11 +93,21 @@ pub fn to_api_substate(
         PersistedSubstate::CurrentTimeRoundedToMinutes(substate) => {
             to_api_clock_current_time_rounded_down_to_minutes_substate(substate)?
         }
-        PersistedSubstate::VaultInfo(vault_info) => to_api_vault_info_substate(context, vault_info)?,
-        PersistedSubstate::VaultLiquidFungible(vault_fungible) => to_api_fungible_vault_substate(context, vault_fungible)?,
-        PersistedSubstate::VaultLiquidNonFungible(vault_non_fungible) => to_api_non_fungible_vault_substate(context, vault_non_fungible)?,
-        PersistedSubstate::VaultLockedFungible(locked_fungible) => to_api_locked_fungible_vault_substate(context, locked_fungible)?,
-        PersistedSubstate::VaultLockedNonFungible(locked_non_fungible) => to_api_locked_non_fungible_vault_substate(context, locked_non_fungible)?,
+        PersistedSubstate::VaultInfo(vault_info) => {
+            to_api_vault_info_substate(context, vault_info)?
+        }
+        PersistedSubstate::VaultLiquidFungible(vault_fungible) => {
+            to_api_fungible_vault_substate(context, vault_fungible)?
+        }
+        PersistedSubstate::VaultLiquidNonFungible(vault_non_fungible) => {
+            to_api_non_fungible_vault_substate(context, vault_non_fungible)?
+        }
+        PersistedSubstate::VaultLockedFungible(locked_fungible) => {
+            to_api_locked_fungible_vault_substate(context, locked_fungible)?
+        }
+        PersistedSubstate::VaultLockedNonFungible(locked_non_fungible) => {
+            to_api_locked_non_fungible_vault_substate(context, locked_non_fungible)?
+        }
         PersistedSubstate::KeyValueStoreEntry(kv_store_entry_wrapper) => {
             to_api_key_value_story_entry_substate(context, substate_id, kv_store_entry_wrapper)?
         }
@@ -118,10 +143,8 @@ pub fn to_api_function_access_rules_substate(
     // Use compiler to unpack to ensure we map all fields
     //let FunctionAccessRulesSubstate { .. } = substate;
 
-    Ok(models::Substate::FunctionAccessRulesSubstate {
-    })
+    Ok(models::Substate::FunctionAccessRulesSubstate {})
 }
-
 
 pub fn to_api_metadata_substate(
     _context: &MappingContext,
@@ -537,7 +560,7 @@ fn extract_entities(
 ) -> Result<Entities, MappingError> {
     let owned_entities = struct_scrypto_value
         .owned_node_ids()
-        .into_iter()
+        .iter()
         .map(|node_id| -> Result<models::EntityReference, MappingError> {
             Ok(MappedEntityId::try_from(*node_id)?.into())
         })
@@ -545,9 +568,9 @@ fn extract_entities(
 
     let referenced_entities = struct_scrypto_value
         .global_references()
-        .into_iter()
+        .iter()
         .map(|addr| {
-            let address: Address = addr.clone().into();
+            let address: Address = (*addr).into();
             to_global_entity_reference(context, &address)
         })
         .collect::<Vec<_>>();
@@ -659,7 +682,7 @@ pub fn to_api_package_code_type_substate(
         code_type: match substate {
             PackageCodeTypeSubstate::Precompiled => "native".to_string(),
             PackageCodeTypeSubstate::Wasm => "wasm".to_string(),
-        }
+        },
     })
 }
 
@@ -807,9 +830,7 @@ pub fn to_api_non_fungible_vault_substate(
 ) -> Result<models::Substate, MappingError> {
     let non_fungible_ids = vault.ids().iter().map(to_api_non_fungible_id).collect();
 
-    Ok(models::Substate::VaultNonFungibleSubstate {
-        non_fungible_ids,
-    })
+    Ok(models::Substate::VaultNonFungibleSubstate { non_fungible_ids })
 }
 
 pub fn to_api_locked_fungible_vault_substate(
@@ -825,10 +846,8 @@ pub fn to_api_locked_non_fungible_vault_substate(
     _context: &MappingContext,
     vault: &LockedNonFungibleResource,
 ) -> Result<models::Substate, MappingError> {
-    let non_fungible_ids = vault.ids.iter().map(|(id, _)| to_api_non_fungible_id(id)).collect();
-    Ok(models::Substate::VaultLockedNonFungibleSubstate {
-        non_fungible_ids,
-    })
+    let non_fungible_ids = vault.ids.keys().map(to_api_non_fungible_id).collect();
+    Ok(models::Substate::VaultLockedNonFungibleSubstate { non_fungible_ids })
 }
 
 pub fn to_api_fungible_resource_amount(
