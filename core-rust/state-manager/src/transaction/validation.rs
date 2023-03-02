@@ -1,7 +1,6 @@
 use crate::transaction::ledger_transaction::LedgerTransaction;
-use radix_engine::types::scrypto_decode;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::data::scrypto_encode;
+use transaction::data::{manifest_decode, manifest_encode};
 use transaction::errors::TransactionValidationError;
 use transaction::model::{Executable, NotarizedTransaction};
 use transaction::validation::ValidationConfig;
@@ -29,7 +28,7 @@ impl UserTransactionValidator {
             return Err(TransactionValidationError::TransactionTooLarge);
         }
 
-        let transaction: NotarizedTransaction = scrypto_decode(transaction_payload)
+        let transaction: NotarizedTransaction = manifest_decode(transaction_payload)
             .map_err(TransactionValidationError::DeserializationError)?;
 
         Ok(transaction)
@@ -60,7 +59,7 @@ impl LedgerTransactionValidator {
             return Err(TransactionValidationError::TransactionTooLarge);
         }
 
-        let transaction: LedgerTransaction = scrypto_decode(transaction_payload)
+        let transaction: LedgerTransaction = manifest_decode(transaction_payload)
             .map_err(TransactionValidationError::DeserializationError)?;
 
         Ok(transaction)
@@ -74,7 +73,7 @@ impl LedgerTransactionValidator {
         match ledger_transaction {
             LedgerTransaction::User(notarized_transaction) => {
                 // TODO: Remove
-                let payload_size = scrypto_encode(notarized_transaction).unwrap().len();
+                let payload_size = manifest_encode(notarized_transaction).unwrap().len();
                 validator.validate(
                     notarized_transaction,
                     payload_size,

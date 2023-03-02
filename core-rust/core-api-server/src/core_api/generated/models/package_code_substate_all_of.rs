@@ -12,15 +12,16 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct PackageTypeInfoSubstate {
-    #[serde(rename = "substate_type")]
-    pub substate_type: crate::core_api::generated::models::SubstateType,
+pub struct PackageCodeSubstateAllOf {
+    /// The hex-encoded package code
+    #[serde(rename = "code_hex")]
+    pub code_hex: String,
 }
 
-impl PackageTypeInfoSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType) -> PackageTypeInfoSubstate {
-        PackageTypeInfoSubstate {
-            substate_type,
+impl PackageCodeSubstateAllOf {
+    pub fn new(code_hex: String) -> PackageCodeSubstateAllOf {
+        PackageCodeSubstateAllOf {
+            code_hex,
         }
     }
 }

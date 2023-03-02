@@ -12,15 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct NativeCodeSubstateAllOf {
-    #[serde(rename = "native_package_code_id")]
-    pub native_package_code_id: i32,
+pub struct PackageCodeSubstate {
+    #[serde(rename = "substate_type")]
+    pub substate_type: crate::core_api::generated::models::SubstateType,
+    /// The hex-encoded package code
+    #[serde(rename = "code_hex")]
+    pub code_hex: String,
 }
 
-impl NativeCodeSubstateAllOf {
-    pub fn new(native_package_code_id: i32) -> NativeCodeSubstateAllOf {
-        NativeCodeSubstateAllOf {
-            native_package_code_id,
+impl PackageCodeSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, code_hex: String) -> PackageCodeSubstate {
+        PackageCodeSubstate {
+            substate_type,
+            code_hex,
         }
     }
 }

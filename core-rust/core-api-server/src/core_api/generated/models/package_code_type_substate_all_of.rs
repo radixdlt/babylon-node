@@ -12,15 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LocalNativeMethodReferenceAllOf {
-    #[serde(rename = "name")]
-    pub name: String,
+pub struct PackageCodeTypeSubstateAllOf {
+    #[serde(rename = "code_type")]
+    pub code_type: String,
 }
 
-impl LocalNativeMethodReferenceAllOf {
-    pub fn new(name: String) -> LocalNativeMethodReferenceAllOf {
-        LocalNativeMethodReferenceAllOf {
-            name,
+impl PackageCodeTypeSubstateAllOf {
+    pub fn new(code_type: String) -> PackageCodeTypeSubstateAllOf {
+        PackageCodeTypeSubstateAllOf {
+            code_type,
         }
     }
 }

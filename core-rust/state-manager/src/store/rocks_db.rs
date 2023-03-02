@@ -79,13 +79,14 @@ use radix_engine::types::{
 };
 use radix_engine_interface::api::types::NodeModuleId;
 use radix_engine_stores::hash_tree::tree_store::{
-    encode_key, NodeKey, ReadableTreeStore, TreeNode,
+    encode_key, NodeKey, Payload, ReadableTreeStore, TreeNode,
 };
 use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, Direction, IteratorMode, Options, WriteBatch, DB,
 };
 use std::path::PathBuf;
 use tracing::{error, warn};
+use transaction::data::manifest_decode;
 
 use crate::transaction::LedgerTransaction;
 
@@ -319,7 +320,14 @@ impl CommitStore for RocksDBStore {
         }
 
         let state_hash_tree_update = commit_bundle.state_hash_tree_update;
-        for (key, node) in state_hash_tree_update.new_nodes {
+        for (key, node) in state_hash_tree_update.new_re_node_layer_nodes {
+            batch.put_cf(
+                self.cf_handle(&StateHashTreeNodes),
+                encode_key(&key),
+                scrypto_encode(&node).unwrap(),
+            );
+        }
+        for (key, node) in state_hash_tree_update.new_substate_layer_nodes {
             batch.put_cf(
                 self.cf_handle(&StateHashTreeNodes),
                 encode_key(&key),
@@ -401,7 +409,7 @@ impl QueryableTransactionStore for RocksDBStore {
                            next_accumulator_hash_state_version, next_txn_state_version);
                     }
 
-                    let next_txn = scrypto_decode(next_txn_kv.1.as_ref()).unwrap();
+                    let next_txn = manifest_decode(next_txn_kv.1.as_ref()).unwrap();
                     let next_receipt = scrypto_decode(next_receipt_kv.1.as_ref()).unwrap();
                     let next_accumulator_hash = AccumulatorHash::from_raw_bytes(
                         (*next_accumulator_hash_kv.1).try_into().unwrap(),
@@ -428,7 +436,7 @@ impl QueryableTransactionStore for RocksDBStore {
                 state_version.to_be_bytes(),
             )
             .expect("DB error loading transaction")
-            .map(|v| scrypto_decode(&v).expect("Failed to decode a committed transaction"))
+            .map(|v| manifest_decode(&v).expect("Failed to decode a committed transaction"))
     }
 
     fn get_committed_transaction_receipt(
@@ -654,8 +662,8 @@ impl ReadableSubstateStore for RocksDBStore {
     }
 }
 
-impl ReadableTreeStore for RocksDBStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+impl<P: Payload> ReadableTreeStore<P> for RocksDBStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
         self.db
             .get_pinned_cf(self.cf_handle(&StateHashTreeNodes), encode_key(key))
             .unwrap()

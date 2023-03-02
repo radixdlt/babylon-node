@@ -28,47 +28,47 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * WasmCodeSubstateAllOf
+ * VaultFungibleSubstateAllOf
  */
 @JsonPropertyOrder({
-  WasmCodeSubstateAllOf.JSON_PROPERTY_CODE_HEX
+  VaultFungibleSubstateAllOf.JSON_PROPERTY_AMOUNT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class WasmCodeSubstateAllOf {
-  public static final String JSON_PROPERTY_CODE_HEX = "code_hex";
-  private String codeHex;
+public class VaultFungibleSubstateAllOf {
+  public static final String JSON_PROPERTY_AMOUNT = "amount";
+  private String amount;
 
-  public WasmCodeSubstateAllOf() { 
+  public VaultFungibleSubstateAllOf() { 
   }
 
-  public WasmCodeSubstateAllOf codeHex(String codeHex) {
-    this.codeHex = codeHex;
+  public VaultFungibleSubstateAllOf amount(String amount) {
+    this.amount = amount;
     return this;
   }
 
    /**
-   * The hex-encoded package code
-   * @return codeHex
+   * The string-encoded decimal representing the XRD amount put or taken from the vault. A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
+   * @return amount
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded package code")
-  @JsonProperty(JSON_PROPERTY_CODE_HEX)
+  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the XRD amount put or taken from the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
+  @JsonProperty(JSON_PROPERTY_AMOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getCodeHex() {
-    return codeHex;
+  public String getAmount() {
+    return amount;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CODE_HEX)
+  @JsonProperty(JSON_PROPERTY_AMOUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCodeHex(String codeHex) {
-    this.codeHex = codeHex;
+  public void setAmount(String amount) {
+    this.amount = amount;
   }
 
 
   /**
-   * Return true if this WasmCodeSubstate_allOf object is equal to o.
+   * Return true if this VaultFungibleSubstate_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -78,20 +78,20 @@ public class WasmCodeSubstateAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    WasmCodeSubstateAllOf wasmCodeSubstateAllOf = (WasmCodeSubstateAllOf) o;
-    return Objects.equals(this.codeHex, wasmCodeSubstateAllOf.codeHex);
+    VaultFungibleSubstateAllOf vaultFungibleSubstateAllOf = (VaultFungibleSubstateAllOf) o;
+    return Objects.equals(this.amount, vaultFungibleSubstateAllOf.amount);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(codeHex);
+    return Objects.hash(amount);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class WasmCodeSubstateAllOf {\n");
-    sb.append("    codeHex: ").append(toIndentedString(codeHex)).append("\n");
+    sb.append("class VaultFungibleSubstateAllOf {\n");
+    sb.append("    amount: ").append(toIndentedString(amount)).append("\n");
     sb.append("}");
     return sb.toString();
   }

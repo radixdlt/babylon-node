@@ -10,21 +10,19 @@
 
 
 
-#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(tag = "type")]
-pub enum LocalMethodReference {
-    #[serde(rename="NativeMethod")]
-    LocalNativeMethodReference {
-        #[serde(rename = "name")]
-        name: String,
-    },
-    #[serde(rename="ScryptoMethod")]
-    LocalScryptoMethodReference {
-        #[serde(rename = "name")]
-        name: String,
-    },
+
+#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
+pub struct LocalMethodReference {
+    #[serde(rename = "name")]
+    pub name: String,
 }
 
-
+impl LocalMethodReference {
+    pub fn new(name: String) -> LocalMethodReference {
+        LocalMethodReference {
+            name,
+        }
+    }
+}
 
 

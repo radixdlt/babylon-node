@@ -12,18 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LocalScryptoMethodReference {
-    #[serde(rename = "type")]
-    pub _type: crate::core_api::generated::models::LocalMethodReferenceType,
-    #[serde(rename = "name")]
-    pub name: String,
+pub struct PackageCodeTypeSubstate {
+    #[serde(rename = "substate_type")]
+    pub substate_type: crate::core_api::generated::models::SubstateType,
+    #[serde(rename = "code_type")]
+    pub code_type: String,
 }
 
-impl LocalScryptoMethodReference {
-    pub fn new(_type: crate::core_api::generated::models::LocalMethodReferenceType, name: String) -> LocalScryptoMethodReference {
-        LocalScryptoMethodReference {
-            _type,
-            name,
+impl PackageCodeTypeSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, code_type: String) -> PackageCodeTypeSubstate {
+        PackageCodeTypeSubstate {
+            substate_type,
+            code_type,
         }
     }
 }

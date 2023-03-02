@@ -12,18 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LocalNativeMethodReference {
-    #[serde(rename = "type")]
-    pub _type: crate::core_api::generated::models::LocalMethodReferenceType,
-    #[serde(rename = "name")]
-    pub name: String,
+pub struct VaultFungibleSubstate {
+    #[serde(rename = "substate_type")]
+    pub substate_type: crate::core_api::generated::models::SubstateType,
+    /// The string-encoded decimal representing the XRD amount put or taken from the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    #[serde(rename = "amount")]
+    pub amount: String,
 }
 
-impl LocalNativeMethodReference {
-    pub fn new(_type: crate::core_api::generated::models::LocalMethodReferenceType, name: String) -> LocalNativeMethodReference {
-        LocalNativeMethodReference {
-            _type,
-            name,
+impl VaultFungibleSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, amount: String) -> VaultFungibleSubstate {
+        VaultFungibleSubstate {
+            substate_type,
+            amount,
         }
     }
 }

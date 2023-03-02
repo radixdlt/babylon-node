@@ -12,18 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct GlobalAddressSubstate {
+pub struct FunctionAccessRulesSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "target_entity")]
-    pub target_entity: Box<crate::core_api::generated::models::GlobalEntityAssignment>,
 }
 
-impl GlobalAddressSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, target_entity: crate::core_api::generated::models::GlobalEntityAssignment) -> GlobalAddressSubstate {
-        GlobalAddressSubstate {
+impl FunctionAccessRulesSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType) -> FunctionAccessRulesSubstate {
+        FunctionAccessRulesSubstate {
             substate_type,
-            target_entity: Box::new(target_entity),
         }
     }
 }

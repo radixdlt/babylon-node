@@ -4,9 +4,10 @@ use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine::system::kernel_modules::costing::{FeeSummary, RoyaltyReceiver};
 use radix_engine::{
     ledger::OutputValue,
-    types::{hash, scrypto_encode, Decimal, GlobalAddress, RENodeId, SubstateId},
+    types::{hash, scrypto_encode, Decimal, RENodeId, SubstateId},
 };
 use radix_engine_interface::api::component::ComponentAddress;
+use radix_engine_interface::api::types::{Address, NodeModuleId};
 use std::collections::BTreeMap;
 
 use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
@@ -30,11 +31,40 @@ pub fn to_api_receipt(
 
     let substate_changes = receipt.substate_changes;
 
-    let created = substate_changes
-        .created
-        .into_iter()
-        .map(|substate_kv| to_api_new_substate_version(context, substate_kv))
-        .collect::<Result<Vec<_>, _>>()?;
+    let mut new_global_entities = Vec::new();
+    let mut created = Vec::new();
+
+    for (id, output) in substate_changes.created {
+        match id {
+            SubstateId(RENodeId::GlobalPackage(package_address), NodeModuleId::TypeInfo, ..) => {
+                new_global_entities
+                    .push(to_global_entity_reference(context, &package_address.into()));
+            }
+            SubstateId(
+                RENodeId::GlobalComponent(component_address),
+                NodeModuleId::TypeInfo,
+                ..,
+            ) => {
+                new_global_entities.push(to_global_entity_reference(
+                    context,
+                    &component_address.into(),
+                ));
+            }
+            SubstateId(
+                RENodeId::GlobalResourceManager(resource_address),
+                NodeModuleId::TypeInfo,
+                ..,
+            ) => {
+                new_global_entities.push(to_global_entity_reference(
+                    context,
+                    &resource_address.into(),
+                ));
+            }
+            _ => {}
+        }
+        let substate_version = to_api_new_substate_version(context, (id.clone(), output))?;
+        created.push(substate_version)
+    }
 
     let updated = substate_changes
         .updated
@@ -47,18 +77,6 @@ pub fn to_api_receipt(
         .into_iter()
         .map(to_api_deleted_substate)
         .collect::<Result<Vec<_>, _>>()?;
-
-    let new_global_entities = created
-        .iter()
-        .filter_map(|substate| {
-            substate.substate_data.as_ref().and_then(|data| match data {
-                models::Substate::GlobalAddressSubstate { target_entity } => {
-                    Some(target_entity.as_ref().clone())
-                }
-                _ => None,
-            })
-        })
-        .collect::<Vec<_>>();
 
     let api_state_updates = models::StateUpdates {
         created_substates: created,
@@ -193,18 +211,22 @@ pub fn to_api_fee_summary(
         cost_unit_royalty_breakdown: fee_summary
             .royalty_cost_unit_breakdown
             .into_iter()
-            .map(|(receiver, cost_unit_amount)| {
+            .filter_map(|(receiver, cost_unit_amount)| {
                 let global_address = match receiver {
-                    RoyaltyReceiver::Package(address, _) => GlobalAddress::Package(address),
-                    RoyaltyReceiver::Component(address, _) => GlobalAddress::Component(address),
+                    RoyaltyReceiver::Package(address) => Address::Package(address),
+                    RoyaltyReceiver::Component(RENodeId::GlobalComponent(address)) => {
+                        Address::Component(address)
+                    }
+                    _ => return None,
                 };
-                models::RoyaltyPayment {
+                let payment = models::RoyaltyPayment {
                     royalty_receiver: Box::new(to_global_entity_reference(
                         context,
                         &global_address,
                     )),
                     cost_unit_amount: to_api_u32_as_i64(cost_unit_amount),
-                }
+                };
+                Some(payment)
             })
             .collect(),
     })

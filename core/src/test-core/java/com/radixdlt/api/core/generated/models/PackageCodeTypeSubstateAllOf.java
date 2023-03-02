@@ -22,54 +22,53 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.GlobalEntityAssignment;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * GlobalAddressSubstateAllOf
+ * PackageCodeTypeSubstateAllOf
  */
 @JsonPropertyOrder({
-  GlobalAddressSubstateAllOf.JSON_PROPERTY_TARGET_ENTITY
+  PackageCodeTypeSubstateAllOf.JSON_PROPERTY_CODE_TYPE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class GlobalAddressSubstateAllOf {
-  public static final String JSON_PROPERTY_TARGET_ENTITY = "target_entity";
-  private GlobalEntityAssignment targetEntity;
+public class PackageCodeTypeSubstateAllOf {
+  public static final String JSON_PROPERTY_CODE_TYPE = "code_type";
+  private String codeType;
 
-  public GlobalAddressSubstateAllOf() { 
+  public PackageCodeTypeSubstateAllOf() { 
   }
 
-  public GlobalAddressSubstateAllOf targetEntity(GlobalEntityAssignment targetEntity) {
-    this.targetEntity = targetEntity;
+  public PackageCodeTypeSubstateAllOf codeType(String codeType) {
+    this.codeType = codeType;
     return this;
   }
 
    /**
-   * Get targetEntity
-   * @return targetEntity
+   * Get codeType
+   * @return codeType
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TARGET_ENTITY)
+  @JsonProperty(JSON_PROPERTY_CODE_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public GlobalEntityAssignment getTargetEntity() {
-    return targetEntity;
+  public String getCodeType() {
+    return codeType;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TARGET_ENTITY)
+  @JsonProperty(JSON_PROPERTY_CODE_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTargetEntity(GlobalEntityAssignment targetEntity) {
-    this.targetEntity = targetEntity;
+  public void setCodeType(String codeType) {
+    this.codeType = codeType;
   }
 
 
   /**
-   * Return true if this GlobalAddressSubstate_allOf object is equal to o.
+   * Return true if this PackageCodeTypeSubstate_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,20 +78,20 @@ public class GlobalAddressSubstateAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    GlobalAddressSubstateAllOf globalAddressSubstateAllOf = (GlobalAddressSubstateAllOf) o;
-    return Objects.equals(this.targetEntity, globalAddressSubstateAllOf.targetEntity);
+    PackageCodeTypeSubstateAllOf packageCodeTypeSubstateAllOf = (PackageCodeTypeSubstateAllOf) o;
+    return Objects.equals(this.codeType, packageCodeTypeSubstateAllOf.codeType);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(targetEntity);
+    return Objects.hash(codeType);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class GlobalAddressSubstateAllOf {\n");
-    sb.append("    targetEntity: ").append(toIndentedString(targetEntity)).append("\n");
+    sb.append("class PackageCodeTypeSubstateAllOf {\n");
+    sb.append("    codeType: ").append(toIndentedString(codeType)).append("\n");
     sb.append("}");
     return sb.toString();
   }

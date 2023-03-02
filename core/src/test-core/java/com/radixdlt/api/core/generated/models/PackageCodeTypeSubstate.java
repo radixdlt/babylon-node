@@ -32,8 +32,6 @@ import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyConfigSubstate;
 import com.radixdlt.api.core.generated.models.ComponentStateSubstate;
-import com.radixdlt.api.core.generated.models.ComponentStateSubstateAllOf;
-import com.radixdlt.api.core.generated.models.DataStruct;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
 import com.radixdlt.api.core.generated.models.FunctionAccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
@@ -41,6 +39,7 @@ import com.radixdlt.api.core.generated.models.MetadataSubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeSubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeTypeSubstate;
+import com.radixdlt.api.core.generated.models.PackageCodeTypeSubstateAllOf;
 import com.radixdlt.api.core.generated.models.PackageInfoSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyConfigSubstate;
@@ -62,10 +61,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * AccessControllerSubstate
+ * PackageCodeTypeSubstate
  */
 @JsonPropertyOrder({
-  AccessControllerSubstate.JSON_PROPERTY_DATA_STRUCT
+  PackageCodeTypeSubstate.JSON_PROPERTY_CODE_TYPE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -102,41 +101,41 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = VaultNonFungibleSubstate.class, name = "VaultNonFungible"),
 })
 
-public class AccessControllerSubstate extends Substate {
-  public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
-  private DataStruct dataStruct;
+public class PackageCodeTypeSubstate extends Substate {
+  public static final String JSON_PROPERTY_CODE_TYPE = "code_type";
+  private String codeType;
 
-  public AccessControllerSubstate() { 
+  public PackageCodeTypeSubstate() { 
   }
 
-  public AccessControllerSubstate dataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public PackageCodeTypeSubstate codeType(String codeType) {
+    this.codeType = codeType;
     return this;
   }
 
    /**
-   * Get dataStruct
-   * @return dataStruct
+   * Get codeType
+   * @return codeType
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_CODE_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public DataStruct getDataStruct() {
-    return dataStruct;
+  public String getCodeType() {
+    return codeType;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonProperty(JSON_PROPERTY_CODE_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setDataStruct(DataStruct dataStruct) {
-    this.dataStruct = dataStruct;
+  public void setCodeType(String codeType) {
+    this.codeType = codeType;
   }
 
 
   /**
-   * Return true if this AccessControllerSubstate object is equal to o.
+   * Return true if this PackageCodeTypeSubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -146,22 +145,22 @@ public class AccessControllerSubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    AccessControllerSubstate accessControllerSubstate = (AccessControllerSubstate) o;
-    return Objects.equals(this.dataStruct, accessControllerSubstate.dataStruct) &&
+    PackageCodeTypeSubstate packageCodeTypeSubstate = (PackageCodeTypeSubstate) o;
+    return Objects.equals(this.codeType, packageCodeTypeSubstate.codeType) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(dataStruct, super.hashCode());
+    return Objects.hash(codeType, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class AccessControllerSubstate {\n");
+    sb.append("class PackageCodeTypeSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
+    sb.append("    codeType: ").append(toIndentedString(codeType)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -206,8 +205,8 @@ static {
   mappings.put("VaultLockedFungible", VaultLockedFungibleSubstate.class);
   mappings.put("VaultLockedNonFungible", VaultLockedNonFungibleSubstate.class);
   mappings.put("VaultNonFungible", VaultNonFungibleSubstate.class);
-  mappings.put("AccessControllerSubstate", AccessControllerSubstate.class);
-  JSON.registerDiscriminator(AccessControllerSubstate.class, "substate_type", mappings);
+  mappings.put("PackageCodeTypeSubstate", PackageCodeTypeSubstate.class);
+  JSON.registerDiscriminator(PackageCodeTypeSubstate.class, "substate_type", mappings);
 }
 }
 

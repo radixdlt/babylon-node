@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.DeletedSubstateVersionRef;
-import com.radixdlt.api.core.generated.models.GlobalEntityAssignment;
+import com.radixdlt.api.core.generated.models.GlobalEntityReference;
 import com.radixdlt.api.core.generated.models.NewSubstateVersion;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -54,7 +54,7 @@ public class StateUpdates {
   private List<DeletedSubstateVersionRef> deletedSubstates = new ArrayList<>();
 
   public static final String JSON_PROPERTY_NEW_GLOBAL_ENTITIES = "new_global_entities";
-  private List<GlobalEntityAssignment> newGlobalEntities = new ArrayList<>();
+  private List<GlobalEntityReference> newGlobalEntities = new ArrayList<>();
 
   public StateUpdates() { 
   }
@@ -152,12 +152,12 @@ public class StateUpdates {
   }
 
 
-  public StateUpdates newGlobalEntities(List<GlobalEntityAssignment> newGlobalEntities) {
+  public StateUpdates newGlobalEntities(List<GlobalEntityReference> newGlobalEntities) {
     this.newGlobalEntities = newGlobalEntities;
     return this;
   }
 
-  public StateUpdates addNewGlobalEntitiesItem(GlobalEntityAssignment newGlobalEntitiesItem) {
+  public StateUpdates addNewGlobalEntitiesItem(GlobalEntityReference newGlobalEntitiesItem) {
     this.newGlobalEntities.add(newGlobalEntitiesItem);
     return this;
   }
@@ -171,14 +171,14 @@ public class StateUpdates {
   @JsonProperty(JSON_PROPERTY_NEW_GLOBAL_ENTITIES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<GlobalEntityAssignment> getNewGlobalEntities() {
+  public List<GlobalEntityReference> getNewGlobalEntities() {
     return newGlobalEntities;
   }
 
 
   @JsonProperty(JSON_PROPERTY_NEW_GLOBAL_ENTITIES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNewGlobalEntities(List<GlobalEntityAssignment> newGlobalEntities) {
+  public void setNewGlobalEntities(List<GlobalEntityReference> newGlobalEntities) {
     this.newGlobalEntities = newGlobalEntities;
   }
 

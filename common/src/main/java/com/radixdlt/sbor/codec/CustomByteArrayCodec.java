@@ -62,69 +62,36 @@
  * permissions under this License.
  */
 
-package com.radixdlt.crypto;
+package com.radixdlt.sbor.codec;
 
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.CustomByteArrayCodec;
-import com.radixdlt.utils.Bytes;
-import java.util.Arrays;
+import static com.radixdlt.sbor.codec.constants.TypeId.TYPE_U8;
 
-/**
- * Asymmetric EC public key for Ed25519 - note: this is just a data class for now, and doesn't
- * support any signing
- */
-public final class EdDSAEd25519PublicKey {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        EdDSAEd25519PublicKey.class,
-        codecs ->
-            new CustomByteArrayCodec<>(
-                EdDSAEd25519PublicKey::getCompressedBytes,
-                EdDSAEd25519PublicKey::fromCompressedBytesUnchecked));
-  }
+import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.sbor.coding.DecoderApi;
+import com.radixdlt.sbor.coding.EncoderApi;
+import java.util.function.Function;
 
-  public static final int COMPRESSED_BYTES_LENGTH = 32;
+public record CustomByteArrayCodec<T>(
+    Function<T, byte[]> encodeToBytes, Function<byte[], T> decodeFromBytes) implements Codec<T> {
 
-  private final byte[] compressed;
-
-  private EdDSAEd25519PublicKey(byte[] compressed) {
-    this.compressed = compressed;
-  }
-
-  public byte[] getCompressedBytes() {
-    return compressed;
-  }
-
-  public static EdDSAEd25519PublicKey fromCompressedBytesUnchecked(byte[] compressed) {
-    return new EdDSAEd25519PublicKey(compressed);
-  }
-
-  public String toHex() {
-    return Bytes.toHexString(getCompressedBytes());
-  }
-
-  public PublicKey toPublicKey() {
-    return new PublicKey.EddsaEd25519(this);
+  @Override
+  public TypeId getTypeId() {
+    return TypeId.TYPE_ARRAY;
   }
 
   @Override
-  public int hashCode() {
-    return Arrays.hashCode(compressed);
+  public void encodeWithoutTypeId(EncoderApi encoder, T obj) {
+    final var bytes = this.encodeToBytes.apply(obj);
+    encoder.encodeTypeId(TYPE_U8);
+    encoder.writeSize(bytes.length);
+    encoder.writeBytes(bytes);
   }
 
   @Override
-  public boolean equals(Object object) {
-    if (object == this) {
-      return true;
-    }
-    if (object instanceof final EdDSAEd25519PublicKey that) {
-      return Arrays.equals(this.compressed, that.compressed);
-    }
-    return false;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s[%s]", getClass().getSimpleName(), toHex());
+  public T decodeWithoutTypeId(DecoderApi decoder) {
+    decoder.expectType(TYPE_U8);
+    var length = decoder.readSize();
+    var bytes = decoder.readBytes(length);
+    return this.decodeFromBytes.apply(bytes);
   }
 }

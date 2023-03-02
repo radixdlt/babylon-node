@@ -69,8 +69,9 @@ import static java.util.Objects.requireNonNull;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
-import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.sbor.codec.Field;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.sbor.codec.core.ByteArrayCodec;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -96,11 +97,9 @@ public final class ECDSASecp256k1Signature {
     codecMap.register(
         ECDSASecp256k1Signature.class,
         codecs ->
-            new CustomTypeKnownLengthCodec<>(
-                TypeId.TYPE_CUSTOM_ECDSA_SECP256K1_SIGNATURE,
-                COMPRESSED_BYTE_LENGTH,
-                ECDSASecp256k1Signature::getConcatRecoveryRSBytes,
-                ECDSASecp256k1Signature::decodeFromConcatRecoveryRSBytes));
+            StructCodec.fromFields(
+                ECDSASecp256k1Signature::decodeFromConcatRecoveryRSBytes,
+                Field.of(ECDSASecp256k1Signature::getConcatRecoveryRSBytes, new ByteArrayCodec())));
   }
 
   public static final int COMPRESSED_BYTE_LENGTH = 65; // 32 + 32 + header byte

@@ -1,13 +1,10 @@
 use radix_engine::ledger::ReadableSubstateStore;
 use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::{GlobalAddress, RENodeId, SubstateId, SubstateOffset};
+use radix_engine::types::{RENodeId, SubstateId, SubstateOffset};
 use radix_engine_interface::api::types::NodeModuleId;
-use state_manager::{jni::state_manager::ActualStateManager, query::StateManagerSubstateQueries};
+use state_manager::jni::state_manager::ActualStateManager;
 
-use super::{
-    get_entity_type_from_global_address, not_found_error, CoreApiState, Extension, Json,
-    MappingError, ResponseError,
-};
+use super::{CoreApiState, Extension, Json, MappingError, ResponseError};
 
 pub(crate) fn core_api_handler_empty_request<Response>(
     Extension(state): Extension<CoreApiState>,
@@ -27,22 +24,6 @@ pub(crate) fn core_api_read_handler<Request, Response>(
     let state_manager = state.state_manager.read();
 
     method(&state_manager, request_body).map(Json)
-}
-
-#[tracing::instrument(skip_all)]
-pub(crate) fn read_derefed_global_node_id(
-    state_manager: &ActualStateManager,
-    global_address: GlobalAddress,
-) -> Result<RENodeId, ResponseError<()>> {
-    state_manager
-        .store()
-        .global_deref(global_address)
-        .ok_or_else(|| {
-            not_found_error(format!(
-                "{:?} not found",
-                get_entity_type_from_global_address(&global_address)
-            ))
-        })
 }
 
 #[tracing::instrument(skip_all)]

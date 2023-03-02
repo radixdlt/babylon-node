@@ -1173,7 +1173,7 @@ components:
         new_global_entities:
           type: array
           items:
-            $ref: "#/components/schemas/GlobalEntityAssignment"
+            $ref: "#/components/schemas/GlobalEntityReference"
     NextEpoch:
       type: object
       required:
@@ -1500,42 +1500,13 @@ components:
           $ref: '#/components/schemas/LocalMethodReference'
         access_rule:
           $ref: '#/components/schemas/AccessRule'
-    LocalMethodReferenceType:
-      type: string
-      enum:
-        - NativeMethod
-        - ScryptoMethod
     LocalMethodReference:
       type: object
       required:
-        - type
+        - name
       properties:
-        type:
-          $ref: '#/components/schemas/LocalMethodReferenceType'
-      discriminator:
-        propertyName: type
-        mapping:
-          # NOTE: These need to match LocalMethodReferenceType options above
-          NativeMethod: '#/components/schemas/LocalNativeMethodReference'
-          ScryptoMethod: '#/components/schemas/LocalScryptoMethodReference'
-    LocalNativeMethodReference:
-      allOf:
-        - $ref: '#/components/schemas/LocalMethodReference'
-        - type: object
-          required:
-            - name
-          properties:
-            name:
-              type: string
-    LocalScryptoMethodReference:
-      allOf:
-        - $ref: '#/components/schemas/LocalMethodReference'
-        - type: object
-          required:
-            - name
-          properties:
-            name:
-              type: string
+        name:
+          type: string
     AccessRuleReferenceType:
       type: string
       enum:
@@ -2128,7 +2099,6 @@ components:
     EntityType:
       type: string
       enum:
-        - Global
         - Component
         - Package
         - ResourceManager
@@ -2146,13 +2116,13 @@ components:
       type: string
       enum:
         - Self
+        - TypeInfo
         - Metadata
         - AccessRules
         - AccessRules1
+        - FunctionAccessRules
         - ComponentRoyalty
         - PackageRoyalty
-        - PackageTypeInfo
-        - ComponentTypeInfo
     Substate:
       type: object
       required:
@@ -2166,15 +2136,14 @@ components:
           # NOTE: These need to match SubstateType options below
           Metadata: '#/components/schemas/MetadataSubstate'
           AccessRulesChain: '#/components/schemas/AccessRulesChainSubstate'
-          GlobalAddress: '#/components/schemas/GlobalAddressSubstate'
-          ComponentInfo: '#/components/schemas/ComponentInfoSubstate'
+          FunctionAccessRules: '#/components/schemas/FunctionAccessRulesSubstate'
+          TypeInfo: '#/components/schemas/TypeInfoSubstate'
           ComponentState: '#/components/schemas/ComponentStateSubstate'
           ComponentRoyaltyConfig: '#/components/schemas/ComponentRoyaltyConfigSubstate'
           ComponentRoyaltyAccumulator: '#/components/schemas/ComponentRoyaltyAccumulatorSubstate'
           PackageInfo: '#/components/schemas/PackageInfoSubstate'
-          PackageTypeInfo: '#/components/schemas/PackageTypeInfoSubstate'
-          WasmCode: '#/components/schemas/WasmCodeSubstate'
-          NativeCode: '#/components/schemas/NativeCodeSubstate'
+          PackageCode: '#/components/schemas/PackageCodeSubstate'
+          PackageCodeType: '#/components/schemas/PackageCodeTypeSubstate'
           PackageRoyaltyConfig: '#/components/schemas/PackageRoyaltyConfigSubstate'
           PackageRoyaltyAccumulator: '#/components/schemas/PackageRoyaltyAccumulatorSubstate'
           ResourceManager: '#/components/schemas/ResourceManagerSubstate'
@@ -2183,7 +2152,11 @@ components:
           Validator: '#/components/schemas/ValidatorSubstate'
           ClockCurrentMinute: '#/components/schemas/ClockCurrentMinuteSubstate'
           KeyValueStoreEntry: '#/components/schemas/KeyValueStoreEntrySubstate'
-          Vault: '#/components/schemas/VaultSubstate'
+          VaultInfo: '#/components/schemas/VaultInfoSubstate'
+          VaultFungible: '#/components/schemas/VaultFungibleSubstate'
+          VaultNonFungible: '#/components/schemas/VaultNonFungibleSubstate'
+          VaultLockedFungible: '#/components/schemas/VaultLockedFungibleSubstate'
+          VaultLockedNonFungible: '#/components/schemas/VaultLockedNonFungibleSubstate'
           NonFungibleStoreEntry: '#/components/schemas/NonFungibleStoreEntrySubstate'
           AccessController: '#/components/schemas/AccessControllerSubstate'
           Account: '#/components/schemas/AccountSubstate'
@@ -2193,16 +2166,15 @@ components:
         # Common
         - Metadata
         - AccessRulesChain
+        - FunctionAccessRules
         # Specific
-        - GlobalAddress
-        - ComponentInfo
+        - TypeInfo
         - ComponentState
         - ComponentRoyaltyConfig
         - ComponentRoyaltyAccumulator
         - PackageInfo
-        - PackageTypeInfo
-        - WasmCode
-        - NativeCode
+        - PackageCode
+        - PackageCodeType
         - PackageRoyaltyConfig
         - PackageRoyaltyAccumulator
         - ResourceManager
@@ -2212,7 +2184,11 @@ components:
         - ClockCurrentMinute
         - KeyValueStoreEntry
         - NonFungibleStoreEntry
-        - Vault
+        - VaultInfo
+        - VaultFungible
+        - VaultNonFungible
+        - VaultLockedFungible
+        - VaultLockedNonFungible
         - AccessController
         - Account
     SubstateKeyType:
@@ -2226,16 +2202,15 @@ components:
         # Common
         - Metadata
         - AccessRulesChain
+        - FunctionAccessRules
         # Specific
-        - GlobalAddress
-        - ComponentInfo
+        - TypeInfo
         - ComponentState
         - ComponentRoyaltyConfig
         - ComponentRoyaltyAccumulator
         - PackageInfo
-        - PackageTypeInfo
-        - WasmCode
-        - NativeCode
+        - PackageCode
+        - PackageCodeType
         - PackageRoyaltyConfig
         - PackageRoyaltyAccumulator
         - ResourceManager
@@ -2246,7 +2221,11 @@ components:
         - ClockCurrentMinute
         - KeyValueStoreEntry
         - NonFungibleStoreEntry
-        - Vault
+        - VaultInfo
+        - VaultFungible
+        - VaultNonFungible
+        - VaultLockedFungible
+        - VaultLockedNonFungible
         - AccessController
         - Account
 ### COMMON SUBSTATES
@@ -2263,6 +2242,9 @@ components:
                 The layers of access rules applied.
               items:
                 $ref: '#/components/schemas/AccessRules'
+    FunctionAccessRulesSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
     MetadataSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -2283,39 +2265,7 @@ components:
                   value:
                     type: string
 ### SPECIFIC SUBSTATES
-    GlobalAddressSubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-          required:
-            - target_entity
-          properties:
-            target_entity:
-              $ref: '#/components/schemas/GlobalEntityAssignment'
-    GlobalEntityAssignment:
-      type: object
-      required:
-        - target_entity_type
-        - target_entity_id_hex
-        - global_entity_id_hex
-        - global_address_hex
-        - global_address
-      properties:
-        target_entity_type:
-          $ref: "#/components/schemas/EntityType"
-        target_entity_id_hex:
-          type: string
-          description: The hex-encoded bytes of the target entity id
-        global_entity_id_hex:
-          type: string
-          description: The hex-encoded bytes of the global entity id
-        global_address_hex:
-          type: string
-          description: The hex-encoded bytes of the assigned global address.
-        global_address:
-          type: string
-          description: The Bech32m-encoded human readable version of the assigned global address
-    ComponentInfoSubstate:
+    TypeInfoSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
@@ -2376,11 +2326,7 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/ComponentAddress'
-    PackageTypeInfoSubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-    WasmCodeSubstate:
+    PackageCodeSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
@@ -2390,15 +2336,15 @@ components:
             code_hex:
               type: string
               description: The hex-encoded package code
-    NativeCodeSubstate:
+    PackageCodeTypeSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - native_package_code_id
+            - code_type
           properties:
-            native_package_code_id:
-              type: integer
+            code_type:
+              type: string
     BlueprintData:
       type: object
       required:
@@ -2560,15 +2506,61 @@ components:
               type: boolean
             data_struct:
               $ref: '#/components/schemas/DataStruct'
-    VaultSubstate:
+    VaultInfoSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - resource_amount
+            - resource_address
           properties:
-            resource_amount:
-              $ref: '#/components/schemas/ResourceAmount'
+            resource_address:
+              $ref: '#/components/schemas/ResourceAddress'
+    VaultFungibleSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - amount
+          properties:
+            amount:
+              type: string
+              description: |
+                The string-encoded decimal representing the XRD amount put or taken from the vault.
+                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    VaultNonFungibleSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - non_fungible_ids
+          properties:
+            non_fungible_ids:
+              type: array
+              items:
+                $ref: '#/components/schemas/NonFungibleId'
+    VaultLockedFungibleSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - amount
+          properties:
+            amount:
+              type: string
+              description: |
+                The string-encoded decimal representing the XRD amount put or taken from the vault.
+                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    VaultLockedNonFungibleSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - non_fungible_ids
+          properties:
+            non_fungible_ids:
+              type: array
+              items:
+                $ref: '#/components/schemas/NonFungibleId'
     NonFungibleStoreEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -3643,7 +3635,7 @@ components:
           type: array
           description: Any vaults owned directly or indirectly by the component
           items:
-            $ref: "#/components/schemas/Substate"
+            $ref: "#/components/schemas/ResourceAmount"
         descendent_ids:
           type: array
           description: Any descendent nodes owned directly or indirectly by the component
@@ -3698,7 +3690,7 @@ components:
           type: array
           description: Any vaults owned directly or indirectly by the component
           items:
-            $ref: "#/components/schemas/Substate"
+            $ref: "#/components/schemas/ResourceAmount"
         descendent_ids:
           type: array
           description: Any descendent nodes owned directly or indirectly by the component
@@ -3736,7 +3728,7 @@ components:
           type: array
           description: Any vaults owned directly or indirectly by the component
           items:
-            $ref: "#/components/schemas/Substate"
+            $ref: "#/components/schemas/ResourceAmount"
         descendent_ids:
           type: array
           description: Any descendent nodes owned directly or indirectly by the component

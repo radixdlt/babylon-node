@@ -30,19 +30,19 @@ public enum ModuleType {
   
   SELF("Self"),
   
+  TYPEINFO("TypeInfo"),
+  
   METADATA("Metadata"),
   
   ACCESSRULES("AccessRules"),
   
   ACCESSRULES1("AccessRules1"),
   
+  FUNCTIONACCESSRULES("FunctionAccessRules"),
+  
   COMPONENTROYALTY("ComponentRoyalty"),
   
-  PACKAGEROYALTY("PackageRoyalty"),
-  
-  PACKAGETYPEINFO("PackageTypeInfo"),
-  
-  COMPONENTTYPEINFO("ComponentTypeInfo");
+  PACKAGEROYALTY("PackageRoyalty");
 
   private String value;
 
