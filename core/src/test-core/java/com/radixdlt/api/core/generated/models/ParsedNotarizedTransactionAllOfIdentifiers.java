@@ -59,11 +59,11 @@ public class ParsedNotarizedTransactionAllOfIdentifiers {
   }
 
    /**
-   * The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is &#x60;SHA256(SHA256(compiled_intent))&#x60;
+   * The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is &#x60;Blake2b-256(compiled_intent)&#x60;
    * @return intentHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is `SHA256(SHA256(compiled_intent))`")
+  @ApiModelProperty(required = true, value = "The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is `Blake2b-256(compiled_intent)`")
   @JsonProperty(JSON_PROPERTY_INTENT_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -85,11 +85,11 @@ public class ParsedNotarizedTransactionAllOfIdentifiers {
   }
 
    /**
-   * The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is &#x60;SHA256(SHA256(compiled_signed_transaction))&#x60;
+   * The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is &#x60;Blake2b-256(compiled_signed_transaction)&#x60;
    * @return signaturesHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is `SHA256(SHA256(compiled_signed_transaction))`")
+  @ApiModelProperty(required = true, value = "The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is `Blake2b-256(compiled_signed_transaction)`")
   @JsonProperty(JSON_PROPERTY_SIGNATURES_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -111,11 +111,11 @@ public class ParsedNotarizedTransactionAllOfIdentifiers {
   }
 
    /**
-   * The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is &#x60;SHA256(SHA256(compiled_notarized_transaction))&#x60;
+   * The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is &#x60;Blake2b-256(compiled_notarized_transaction)&#x60;
    * @return payloadHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is `SHA256(SHA256(compiled_notarized_transaction))`")
+  @ApiModelProperty(required = true, value = "The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is `Blake2b-256(compiled_notarized_transaction)`")
   @JsonProperty(JSON_PROPERTY_PAYLOAD_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -137,11 +137,11 @@ public class ParsedNotarizedTransactionAllOfIdentifiers {
   }
 
    /**
-   * The hex-encoded ledger-wrapped transaction hash. This is known as the Ledger Hash. This hash is &#x60;SHA256(SHA256(ledger_transaction_bytes))&#x60;
+   * The hex-encoded ledger-wrapped transaction hash. This is known as the Ledger Hash. This hash is &#x60;Blake2b-256(ledger_transaction_bytes)&#x60;
    * @return ledgerHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded ledger-wrapped transaction hash. This is known as the Ledger Hash. This hash is `SHA256(SHA256(ledger_transaction_bytes))`")
+  @ApiModelProperty(required = true, value = "The hex-encoded ledger-wrapped transaction hash. This is known as the Ledger Hash. This hash is `Blake2b-256(ledger_transaction_bytes)`")
   @JsonProperty(JSON_PROPERTY_LEDGER_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

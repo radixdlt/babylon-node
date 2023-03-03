@@ -35,7 +35,7 @@ openapi: 3.1.0
 #
 # Descriptions guidance:
 # => For descriptions of encoded types, we follow this pattern: 'The xyz-encoded, abc-encoded xx of the yy'
-#    EG 'The hex-encoded, SBOR-encoded data' or 'The hex-encoded double-SHA256 hash of the banana payload'
+#    EG 'The hex-encoded, SBOR-encoded data' or 'The hex-encoded Blake2b-256 hash of the banana payload'
 # => Don't end in a full-stop, unless it is more than 1 sentence, then all sentences should end in a full stop
 # => It's not technically valid to have both $ref and description, but it works in ReDocly, so feel free to do it
 #
@@ -977,7 +977,7 @@ components:
           maxLength: 64
           description: |
             The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger.
-            This hash is `ACC_{N+1} = SHA256(SHA256(CONCAT(ACC_N, LEDGER_HASH_{N})))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator.
+            This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator.
     TransactionIdentifiers:
       type: object
       required:
@@ -995,22 +995,22 @@ components:
       type: string
       minLength: 64
       maxLength: 64
-      description: The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is `SHA256(SHA256(compiled_intent))`
+      description: The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is `Blake2b-256(compiled_intent)`
     SignaturesHash:
       type: string
       minLength: 64
       maxLength: 64
-      description: The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is `SHA256(SHA256(compiled_signed_transaction))`
+      description: The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is `Blake2b-256(compiled_signed_transaction)`
     PayloadHash:
       type: string
       minLength: 64
       maxLength: 64
-      description: The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is `SHA256(SHA256(compiled_notarized_transaction))`
+      description: The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is `Blake2b-256(compiled_notarized_transaction)`
     LedgerHash:
       type: string
       minLength: 64
       maxLength: 64
-      description: The hex-encoded ledger-wrapped transaction hash. This is known as the Ledger Hash. This hash is `SHA256(SHA256(ledger_transaction_bytes))`
+      description: The hex-encoded ledger-wrapped transaction hash. This is known as the Ledger Hash. This hash is `Blake2b-256(ledger_transaction_bytes)`
     ErrorResponseType:
       type: string
       enum:
@@ -1213,7 +1213,7 @@ components:
           description: The hex-encoded, SBOR-encoded substate data bytes
         substate_data_hash:
           type: string
-          description: The hex-encoded single-SHA256 hash of the substate data bytes
+          description: The hex-encoded Blake2b-256 hash of the substate data bytes
         substate_data:
           $ref: "#/components/schemas/Substate"
     DeletedSubstateVersionRef:
@@ -1227,7 +1227,7 @@ components:
           $ref: "#/components/schemas/SubstateId"
         substate_data_hash:
           type: string
-          description: The hex-encoded single-SHA256 hash of the substate data bytes
+          description: The hex-encoded Blake2b-256 hash of the substate data bytes
         version:
           type: integer
           format: int64
@@ -3442,7 +3442,7 @@ components:
           maxLength: 64
           description: |
             The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger.
-            This hash is `ACC_{N+1} = SHA256(SHA256(CONCAT(ACC_N, LEDGER_HASH_{N})))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator.
+            This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator.
         ledger_transaction:
           $ref: "#/components/schemas/LedgerTransaction"
         receipt:
