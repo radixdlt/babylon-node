@@ -555,17 +555,14 @@ where
         }
 
         // See the comment above about moving this to a separate job
-        for transaction_to_remove in transactions_to_remove {
-            if self
-                .mempool
-                .write()
-                .remove_transaction(&transaction_to_remove.0, &transaction_to_remove.1)
-                .is_some()
-            {
-                self.metrics
-                    .mempool_current_transactions
-                    .set(self.mempool.read().get_count() as i64);
+        {
+            let mut mempool = self.mempool.write();
+            for transaction_to_remove in transactions_to_remove {
+                mempool.remove_transaction(&transaction_to_remove.0, &transaction_to_remove.1);
             }
+            self.metrics
+                .mempool_current_transactions
+                .set(mempool.get_count() as i64);
         }
 
         transactions_to_return

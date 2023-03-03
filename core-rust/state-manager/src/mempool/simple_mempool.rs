@@ -151,20 +151,17 @@ impl SimpleMempool {
         &mut self,
         intent_hashes: &[IntentHash],
     ) -> Vec<PendingTransaction> {
-        let mut removed_transactions = Vec::new();
-        for intent_hash in intent_hashes {
-            if let Some(payload_hashes) = self.intent_lookup.remove(intent_hash) {
-                for payload_hash in payload_hashes {
-                    let removed_option = self.data.remove(&payload_hash);
-                    if let Some(mempool_data) = removed_option {
-                        removed_transactions.push(mempool_data.transaction);
-                    } else {
-                        panic!("Mempool intent hash lookup out of sync on handle committed");
-                    }
-                }
-            }
-        }
-        removed_transactions
+        intent_hashes
+            .into_iter()
+            .filter_map(|intent_hash| self.intent_lookup.remove(intent_hash))
+            .flat_map(|payload_hashes| payload_hashes.into_iter())
+            .map(|payload_hash| {
+                self.data
+                    .remove(&payload_hash)
+                    .expect("Mempool intent hash lookup out of sync on handle committed")
+                    .transaction
+            })
+            .collect()
     }
 
     pub fn get_count(&self) -> u64 {
@@ -178,7 +175,6 @@ impl SimpleMempool {
         user_payload_hashes_to_exclude: &HashSet<UserPayloadHash>,
     ) -> Vec<PendingTransaction> {
         let mut payload_size_so_far = 0u64;
-        let mut count_so_far = 0u64;
         self.data
             .iter()
             .filter_map(|(tid, data)| {
@@ -188,22 +184,15 @@ impl SimpleMempool {
                     None
                 }
             })
-            .take_while(|tx| {
-                count_so_far += 1;
-                if count_so_far > max_count {
-                    return false;
+            .filter_map(|tx| {
+                if payload_size_so_far + tx.payload_size as u64 <= max_payload_size_bytes {
+                    payload_size_so_far += tx.payload_size as u64;
+                    Some(tx)
+                } else {
+                    None
                 }
-
-                payload_size_so_far += tx.payload_size as u64;
-                if payload_size_so_far > max_payload_size_bytes {
-                    // Note that with this naive approach there might be other txns
-                    // in a mempool that could still fit in the available space.
-                    // This should be good enough for now, but consider optimizing at some point.
-                    return false;
-                }
-
-                true
             })
+            .take(max_count as usize)
             .collect()
     }
 
