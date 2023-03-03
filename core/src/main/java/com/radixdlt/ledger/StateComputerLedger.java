@@ -327,6 +327,11 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
   public EventProcessor<BFTCommittedUpdate> bftCommittedUpdateEventProcessor() {
     return committedUpdate -> {
+      metrics
+          .bft()
+          .committedFallbackVertices()
+          .inc(committedUpdate.committed().stream().filter(v -> v.vertex().isFallback()).count());
+
       final ImmutableList<RawLedgerTransaction> transactions =
           committedUpdate.committed().stream()
               .flatMap(ExecutedVertex::successfulTransactions)

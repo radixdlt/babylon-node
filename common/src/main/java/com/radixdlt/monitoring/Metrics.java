@@ -168,6 +168,7 @@ public record Metrics(
       Counter duplicateProposalsReceived,
       Counter eventsReceived,
       Counter committedVertices,
+      Counter committedFallbackVertices,
       Counter noVotesSent,
       Counter voteQuorums,
       Counter timeoutQuorums,
