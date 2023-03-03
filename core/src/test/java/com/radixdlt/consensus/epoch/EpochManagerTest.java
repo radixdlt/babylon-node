@@ -247,6 +247,7 @@ public class EpochManagerTest {
         bindConstant().annotatedWith(PacemakerBackoffRate.class).to(2.0);
         bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
         bindConstant().annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class).to(10L);
+        bindConstant().annotatedWith(TimeoutQuorumProcessingDelayMs.class).to(10L);
         bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 
         bind(new TypeLiteral<Consumer<EpochRoundUpdate>>() {}).toInstance(rmock(Consumer.class));

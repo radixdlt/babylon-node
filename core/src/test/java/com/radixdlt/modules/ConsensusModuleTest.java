@@ -225,6 +225,7 @@ public class ConsensusModuleTest {
         bindConstant().annotatedWith(PacemakerBackoffRate.class).to(2.0);
         bindConstant().annotatedWith(PacemakerMaxExponent.class).to(6);
         bindConstant().annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class).to(1000L);
+        bindConstant().annotatedWith(TimeoutQuorumProcessingDelayMs.class).to(1000L);
 
         ECKeyPair ecKeyPair = ECKeyPair.generateNew();
         bind(HashSigner.class).toInstance(ecKeyPair::sign);
