@@ -179,7 +179,7 @@ pub enum Substate {
     },
     #[serde(rename="VaultFungible")]
     VaultFungibleSubstate {
-        /// The string-encoded decimal representing the XRD amount put or taken from the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+        /// The string-encoded decimal representing the token amount in the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
         #[serde(rename = "amount")]
         amount: String,
     },
@@ -191,7 +191,7 @@ pub enum Substate {
     },
     #[serde(rename="VaultLockedFungible")]
     VaultLockedFungibleSubstate {
-        /// The string-encoded decimal representing the XRD amount put or taken from the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+        /// The string-encoded decimal representing the token amount in the vault. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
         #[serde(rename = "amount")]
         amount: String,
     },

@@ -13,22 +13,22 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct GlobalEntityReference {
-    #[serde(rename = "entity_type")]
-    pub entity_type: crate::core_api::generated::models::EntityType,
     /// The hex-encoded bytes of the entity's global address
     #[serde(rename = "global_address_hex")]
     pub global_address_hex: String,
     /// The Bech32m-encoded human readable version of the entity's global address
     #[serde(rename = "global_address")]
     pub global_address: String,
+    #[serde(rename = "entity_reference")]
+    pub entity_reference: Box<crate::core_api::generated::models::EntityReference>,
 }
 
 impl GlobalEntityReference {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, global_address_hex: String, global_address: String) -> GlobalEntityReference {
+    pub fn new(global_address_hex: String, global_address: String, entity_reference: crate::core_api::generated::models::EntityReference) -> GlobalEntityReference {
         GlobalEntityReference {
-            entity_type,
             global_address_hex,
             global_address,
+            entity_reference: Box::new(entity_reference),
         }
     }
 }

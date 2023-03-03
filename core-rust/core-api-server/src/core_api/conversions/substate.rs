@@ -566,18 +566,19 @@ fn extract_entities(
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    let referenced_entities = struct_scrypto_value
+    let referenced_entities: Result<Vec<_>, _> = struct_scrypto_value
         .global_references()
         .iter()
         .map(|addr| {
             let address: Address = (*addr).into();
-            to_global_entity_reference(context, &address)
+            let reference = to_global_entity_reference(context, &address)?;
+            Ok(reference)
         })
-        .collect::<Vec<_>>();
+        .collect();
 
     Ok(Entities {
         owned_entities,
-        referenced_entities,
+        referenced_entities: referenced_entities?,
     })
 }
 
