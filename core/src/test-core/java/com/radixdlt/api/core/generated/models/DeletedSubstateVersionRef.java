@@ -82,11 +82,11 @@ public class DeletedSubstateVersionRef {
   }
 
    /**
-   * The hex-encoded single-SHA256 hash of the substate data bytes
+   * The hex-encoded Blake2b-256 hash of the substate data bytes
    * @return substateDataHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded single-SHA256 hash of the substate data bytes")
+  @ApiModelProperty(required = true, value = "The hex-encoded Blake2b-256 hash of the substate data bytes")
   @JsonProperty(JSON_PROPERTY_SUBSTATE_DATA_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

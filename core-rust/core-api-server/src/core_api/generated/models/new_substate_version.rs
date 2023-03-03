@@ -21,7 +21,7 @@ pub struct NewSubstateVersion {
     /// The hex-encoded, SBOR-encoded substate data bytes
     #[serde(rename = "substate_hex")]
     pub substate_hex: String,
-    /// The hex-encoded single-SHA256 hash of the substate data bytes
+    /// The hex-encoded Blake2b-256 hash of the substate data bytes
     #[serde(rename = "substate_data_hash")]
     pub substate_data_hash: String,
     #[serde(rename = "substate_data")]
