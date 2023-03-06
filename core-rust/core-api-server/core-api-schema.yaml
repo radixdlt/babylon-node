@@ -1237,18 +1237,18 @@ components:
     GlobalEntityReference:
       type: object
       required:
-        - entity_type
+        - entity_reference
         - global_address_hex
         - global_address
       properties:
-        entity_type:
-          $ref: "#/components/schemas/EntityType"
         global_address_hex:
           type: string
           description: The hex-encoded bytes of the entity's global address
         global_address:
           type: string
           description: The Bech32m-encoded human readable version of the entity's global address
+        entity_reference:
+          $ref: "#/components/schemas/EntityReference"
     EntityReference:
       type: object
       required:
@@ -2525,7 +2525,7 @@ components:
             amount:
               type: string
               description: |
-                The string-encoded decimal representing the XRD amount put or taken from the vault.
+                The string-encoded decimal representing the token amount in the vault.
                 A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
     VaultNonFungibleSubstate:
       allOf:
@@ -2548,7 +2548,7 @@ components:
             amount:
               type: string
               description: |
-                The string-encoded decimal representing the XRD amount put or taken from the vault.
+                The string-encoded decimal representing the token amount in the vault.
                 A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
     VaultLockedNonFungibleSubstate:
       allOf:
@@ -2700,7 +2700,6 @@ components:
             - Validator
             - Clock
             - AccessController
-            - Account
         hrp_prefix:
           type: string
         entity_type:
