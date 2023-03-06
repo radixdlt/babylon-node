@@ -16,7 +16,7 @@ pub struct TransactionStatusRequest {
     /// The logical name of the network
     #[serde(rename = "network")]
     pub network: String,
-    /// The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is `SHA256(SHA256(compiled_intent))`
+    /// The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is `Blake2b-256(compiled_intent)`
     #[serde(rename = "intent_hash")]
     pub intent_hash: String,
 }

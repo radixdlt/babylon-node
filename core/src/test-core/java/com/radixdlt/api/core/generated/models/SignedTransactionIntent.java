@@ -59,11 +59,11 @@ public class SignedTransactionIntent {
   }
 
    /**
-   * The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is &#x60;SHA256(SHA256(compiled_signed_transaction))&#x60;
+   * The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is &#x60;Blake2b-256(compiled_signed_transaction)&#x60;
    * @return hash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is `SHA256(SHA256(compiled_signed_transaction))`")
+  @ApiModelProperty(required = true, value = "The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is `Blake2b-256(compiled_signed_transaction)`")
   @JsonProperty(JSON_PROPERTY_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

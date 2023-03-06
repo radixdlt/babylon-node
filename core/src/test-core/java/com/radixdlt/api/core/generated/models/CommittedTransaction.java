@@ -89,11 +89,11 @@ public class CommittedTransaction {
   }
 
    /**
-   * The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger. This hash is &#x60;ACC_{N+1} &#x3D; SHA256(SHA256(CONCAT(ACC_N, LEDGER_HASH_{N})))&#x60;, starting with &#x60;ACC_0 &#x3D; 000..000&#x60; the pre-genesis accumulator. 
+   * The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger. This hash is &#x60;ACC_{N+1} &#x3D; Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))&#x60;, starting with &#x60;ACC_0 &#x3D; 000..000&#x60; the pre-genesis accumulator. 
    * @return accumulatorHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger. This hash is `ACC_{N+1} = SHA256(SHA256(CONCAT(ACC_N, LEDGER_HASH_{N})))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator. ")
+  @ApiModelProperty(required = true, value = "The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger. This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator. ")
   @JsonProperty(JSON_PROPERTY_ACCUMULATOR_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

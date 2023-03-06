@@ -15,7 +15,7 @@
 pub struct DeletedSubstateVersionRef {
     #[serde(rename = "substate_id")]
     pub substate_id: Box<crate::core_api::generated::models::SubstateId>,
-    /// The hex-encoded single-SHA256 hash of the substate data bytes
+    /// The hex-encoded Blake2b-256 hash of the substate data bytes
     #[serde(rename = "substate_data_hash")]
     pub substate_data_hash: String,
     /// An integer between `0` and `10^13`, counting the number of times the substate was updated
