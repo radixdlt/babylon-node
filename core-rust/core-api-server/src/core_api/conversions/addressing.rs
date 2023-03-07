@@ -53,28 +53,6 @@ pub fn to_api_address(context: &MappingContext, address: &Address) -> String {
     }
 }
 
-pub fn get_entity_type_from_global_address(global_address: &Address) -> models::EntityType {
-    match global_address {
-        Address::Component(component) => match component {
-            // Scrypto Components get mapped to EntityType::Component for now
-            ComponentAddress::Normal(_) => models::EntityType::Component,
-            ComponentAddress::Account(_) => models::EntityType::Component,
-            ComponentAddress::EcdsaSecp256k1VirtualAccount(_) => models::EntityType::Component,
-            ComponentAddress::EddsaEd25519VirtualAccount(_) => models::EntityType::Component,
-            // Native Components get mapped to their own EntityType for now - but this will change when we have native packages
-            ComponentAddress::EpochManager(_) => models::EntityType::EpochManager,
-            ComponentAddress::Clock(_) => models::EntityType::Clock,
-            ComponentAddress::Validator(_) => models::EntityType::Validator,
-            ComponentAddress::AccessController(_) => models::EntityType::AccessController,
-            ComponentAddress::Identity(_) => models::EntityType::Identity,
-            ComponentAddress::EcdsaSecp256k1VirtualIdentity(_) => models::EntityType::Identity,
-            ComponentAddress::EddsaEd25519VirtualIdentity(_) => models::EntityType::Identity,
-        },
-        Address::Package(_) => models::EntityType::Package,
-        Address::Resource(_) => models::EntityType::ResourceManager,
-    }
-}
-
 pub fn to_api_entity_reference(node_id: RENodeId) -> Result<models::EntityReference, MappingError> {
     let mapped = MappedEntityId::try_from(node_id)?;
 
@@ -603,12 +581,14 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
 pub fn to_global_entity_reference(
     context: &MappingContext,
     global_address: &Address,
-) -> models::GlobalEntityReference {
-    models::GlobalEntityReference {
-        entity_type: get_entity_type_from_global_address(global_address),
+) -> Result<models::GlobalEntityReference, MappingError> {
+    let reference = models::GlobalEntityReference {
+        entity_reference: Box::new(to_api_entity_reference(global_address.clone().into())?),
         global_address_hex: to_hex(global_address_to_vec(global_address)),
         global_address: to_api_address(context, global_address),
-    }
+    };
+
+    Ok(reference)
 }
 
 pub fn extract_package_address(
