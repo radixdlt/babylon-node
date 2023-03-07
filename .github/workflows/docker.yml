@@ -120,7 +120,12 @@ jobs:
       image_registry: "registry.hub.docker.com"
       image_organization: "radixdlt"
       image_name: "babylon-node"
-      tag: ${{ github.event.release.tag_name }}
+      tags: |
+        type=ref,event=release
+        type=semver,pattern={{version}}
+        type=semver,pattern={{major}}.{{minor}}
+        type=semver,pattern={{major}}
+        type=sha
       context: "docker"
       dockerfile: "./docker/Dockerfile.core"
       platforms: "linux/amd64,linux/arm64"
