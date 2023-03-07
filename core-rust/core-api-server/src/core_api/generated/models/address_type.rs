@@ -66,8 +66,6 @@ pub enum Subtype {
     Clock,
     #[serde(rename = "AccessController")]
     AccessController,
-    #[serde(rename = "Account")]
-    Account,
 }
 
 impl Default for Subtype {
