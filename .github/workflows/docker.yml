@@ -23,9 +23,6 @@ jobs:
   build_deb:
     name: Build debian package
     runs-on: babylon-runner
-    outputs:
-      tags: ${{ steps.meta.outputs.tags }}
-      labels: ${{ steps.meta.outputs.labels }}
     permissions:
       id-token: write
       contents: read
@@ -34,21 +31,6 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: |
-            eu.gcr.io/dev-container-repo/babylon-node
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
-          flavor: |
-            latest=false
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
