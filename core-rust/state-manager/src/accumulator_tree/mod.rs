@@ -94,7 +94,7 @@ impl Merklizable for Hash {
         Hash([0; Hash::LENGTH])
     }
 
-    fn accumulate(left: &Self, right: &Self) -> Self {
+    fn merge(left: &Self, right: &Self) -> Self {
         blake2b_256_hash([left.0, right.0].concat())
     }
 }

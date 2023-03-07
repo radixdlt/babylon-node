@@ -66,14 +66,14 @@ use super::storage::{AccuTreeStore, TreeSlice, TreeSliceLevel};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-/// An element that can be placed in a merkle tree.
+/// An element that a merkle tree can be built from (i.e. both a leaf and an internal node).
 pub trait Merklizable: Debug {
-    /// A "zero" element, to be used as a right sibling to hash with, when the actual right sibling
-    /// does not exist.
+    /// A "zero" element, to be used as a right sibling to `merge()` with, when the actual right
+    /// sibling does not exist.
     fn zero() -> Self;
 
-    /// An accumulation function (i.e. giving virtually-unique results for any ordered pair).
-    fn accumulate(left: &Self, right: &Self) -> Self;
+    /// A merging function (i.e. giving virtually-unique results for any ordered pair).
+    fn merge(left: &Self, right: &Self) -> Self;
 }
 
 /// An accumulator tree with persistence backed by an external storage.
@@ -141,7 +141,7 @@ impl<'s, S: AccuTreeStore<M>, M: Merklizable> AccuTree<'s, S, M> {
             higher_level_nodes = (from..to)
                 .map(|level_index| level_index * 2)
                 .map(|lower_level_index| {
-                    M::accumulate(
+                    M::merge(
                         lower_level_access.get(lower_level_index),
                         lower_level_access.get(lower_level_index + 1),
                     )

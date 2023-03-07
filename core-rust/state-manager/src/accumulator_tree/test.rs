@@ -259,7 +259,7 @@ impl Merklizable for String {
         "".to_string()
     }
 
-    fn accumulate(left: &Self, right: &Self) -> Self {
+    fn merge(left: &Self, right: &Self) -> Self {
         format!("({}+{})", left, right)
     }
 }
