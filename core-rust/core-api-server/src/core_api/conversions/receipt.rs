@@ -196,7 +196,7 @@ pub fn to_api_fee_summary(
                     .into_iter()
                     .map(|(vault_id, amount)| {
                         Ok(models::VaultPayment {
-                            vault_entity: Box::new(to_api_entity_reference(RENodeId::Vault(
+                            vault_entity: Box::new(to_api_entity_reference(RENodeId::Object(
                                 vault_id,
                             ))?),
                             xrd_amount: to_api_decimal(&amount),

@@ -617,7 +617,7 @@ pub fn to_api_component_royalty_accumulator_substate(
     let ComponentRoyaltyAccumulatorSubstate { royalty } = substate;
 
     Ok(models::Substate::ComponentRoyaltyAccumulatorSubstate {
-        vault_entity: Box::new(to_api_entity_reference(RENodeId::Vault(
+        vault_entity: Box::new(to_api_entity_reference(RENodeId::Object(
             royalty.vault_id(),
         ))?),
     })
@@ -712,7 +712,7 @@ pub fn to_api_package_royalty_accumulator_substate(
     let PackageRoyaltyAccumulatorSubstate { royalty } = substate;
 
     Ok(models::Substate::PackageRoyaltyAccumulatorSubstate {
-        vault_entity: Box::new(to_api_entity_reference(RENodeId::Vault(
+        vault_entity: Box::new(to_api_entity_reference(RENodeId::Object(
             royalty.vault_id(),
         ))?),
     })
@@ -753,9 +753,9 @@ pub fn to_api_validator_substate(
         pending_xrd_withdraw_vault_id,
     } = substate;
 
-    let owned_stake_vault_id = MappedEntityId::try_from(RENodeId::Vault(*stake_xrd_vault_id))?;
+    let owned_stake_vault_id = MappedEntityId::try_from(RENodeId::Object(*stake_xrd_vault_id))?;
     let owned_unstake_vault_id =
-        MappedEntityId::try_from(RENodeId::Vault(*pending_xrd_withdraw_vault_id))?;
+        MappedEntityId::try_from(RENodeId::Object(*pending_xrd_withdraw_vault_id))?;
 
     Ok(models::Substate::ValidatorSubstate {
         epoch_manager_address: to_api_component_address(context, manager),
