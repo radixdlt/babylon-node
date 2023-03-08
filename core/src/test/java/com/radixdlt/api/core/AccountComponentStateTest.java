@@ -62,90 +62,42 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.coreapi;
+package com.radixdlt.api.core;
 
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
 import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
 import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransaction;
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.api.CoreApiServer;
+import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.StateComponentRequest;
+import com.radixdlt.api.core.generated.models.TransactionReceiptRequest;
+import com.radixdlt.api.core.generated.models.TypeInfoSubstate;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2TestTransactions;
 import com.radixdlt.rev2.TransactionHeader;
-import com.radixdlt.statemanager.CoreApiServerConfig;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.FreePortFinder;
 import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.bouncycastle.util.encoders.Hex;
-import org.json.JSONObject;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
-public final class REv2ComponentStateApiTest {
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  private DeterministicTest createTest() {
-    return DeterministicTest.builder()
-        .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
-        .messageSelector(firstSelector())
-        .messageMutator(MessageMutator.dropTimeouts())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                true,
-                SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
-                ConsensusConfig.of(1000),
-                LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
-                            1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
-                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            10, 10 * 1024 * 1024, 2, MempoolRelayConfig.of())))));
-  }
-
+public final class AccountComponentStateTest extends DeterministicCoreApiTestBase {
   @Test
-  public void core_api_can_return_account_component_state() throws Exception {
-    try (var test = createTest()) {
-      // Arrange: Start a single node network
-      test.startAllNodes();
+  public void test_core_api_can_retrieve_account_component_state() throws Exception {
+    try (var test = buildRunningServerTest()) {
 
       // Prepare an account creation transaction
       final var notary = ECKeyPair.generateNew();
       final var header =
           TransactionHeader.defaults(
-              NetworkDefinition.INT_TEST_NET,
+              networkDefinition,
               1,
               1,
               1,
@@ -153,11 +105,9 @@ public final class REv2ComponentStateApiTest {
               UInt32.fromNonNegativeInt(10000000),
               true);
 
-      final var manifest =
-          REv2TestTransactions.constructNewAccountManifest(NetworkDefinition.INT_TEST_NET);
+      final var manifest = REv2TestTransactions.constructNewAccountManifest(networkDefinition);
       final var intent =
-          TransactionBuilder.createIntent(
-              NetworkDefinition.INT_TEST_NET, header, manifest, List.of());
+          TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
       final var intentHash = HashUtils.blake2b256(intent);
       final var signedIntentBytes = TransactionBuilder.createSignedIntentBytes(intent, List.of());
       final var signedIntentHash = HashUtils.blake2b256(signedIntentBytes).asBytes();
@@ -173,61 +123,31 @@ public final class REv2ComponentStateApiTest {
           allCommittedTransaction(rawNotarizedTx),
           onlyConsensusEvents().or(onlyLocalMempoolAddEvents()));
 
-      // Start the core API server for the test node
-      final var port = FreePortFinder.findFreeLocalPort();
-      final var serverConfig =
-          new CoreApiServerConfig("127.0.0.1", UInt32.fromNonNegativeInt(port));
-      final var apiServer =
-          CoreApiServer.create(test.getInstance(0, StateManager.class), serverConfig);
-      try {
-        apiServer.start();
+      final var receipt =
+          getTransactionApi()
+              .transactionReceiptPost(
+                  new TransactionReceiptRequest()
+                      .network(networkLogicalName)
+                      .intentHash(Hex.toHexString(intentHash.asBytes())));
 
-        // Act: Call the API
-        final var receipt =
-            postJson(
-                port,
-                "/transaction/receipt",
-                new JSONObject()
-                    .put("network", "inttestnet")
-                    .put("intent_hash", Hex.toHexString(intentHash.asBytes())));
-        final var newAccountAddress =
-            receipt.query("/committed/receipt/state_updates/new_global_entities/0/global_address");
-        final var componentStateResponse =
-            postJson(
-                port,
-                "/state/component",
-                new JSONObject()
-                    .put("network", "inttestnet")
-                    .put("component_address", newAccountAddress));
+      final var newAccountAddress =
+          receipt
+              .getCommitted()
+              .getReceipt()
+              .getStateUpdates()
+              .getNewGlobalEntities()
+              .get(0)
+              .getGlobalAddress();
 
-        // Assert: verify that the request succeeds and returns a response
-        assertEquals("Account", componentStateResponse.query("/info/blueprint_name"));
-      } finally {
-        apiServer.stop();
-      }
-    }
-  }
+      final var stateResp =
+          getStateApi()
+              .stateComponentPost(
+                  new StateComponentRequest()
+                      .network(networkLogicalName)
+                      .componentAddress(newAccountAddress));
 
-  private static JSONObject postJson(int coreApiPort, String path, JSONObject request)
-      throws Exception {
-    final var url = new URL(String.format("http://127.0.0.1:%s/core%s", coreApiPort, path));
-    final var conn = (HttpURLConnection) url.openConnection();
-    conn.setRequestMethod("POST");
-    conn.setRequestProperty("Content-Type", "application/json");
-    conn.setDoOutput(true);
-    final var requestPayload = request.toString();
-    try (OutputStream os = conn.getOutputStream()) {
-      byte[] input = requestPayload.getBytes(StandardCharsets.UTF_8);
-      os.write(input, 0, input.length);
-    }
-    try (BufferedReader br =
-        new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-      final var response = new StringBuilder();
-      String responseLine;
-      while ((responseLine = br.readLine()) != null) {
-        response.append(responseLine.trim());
-      }
-      return new JSONObject(response.toString());
+      // Assert that the component state request succeeds
+      assertThat(((TypeInfoSubstate) stateResp.getInfo()).getBlueprintName()).isEqualTo("Account");
     }
   }
 }

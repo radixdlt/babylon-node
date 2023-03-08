@@ -57,12 +57,10 @@ fn handle_state_component_internal(
             NodeModuleId::SELF,
             &substate_offset,
         );
-        if let Some(PersistedSubstate::ComponentState(substate)) = loaded_substate_opt {
-            Some(substate)
-        } else if let Some(..) = loaded_substate_opt {
-            return Err(wrong_substate_type(substate_offset));
-        } else {
-            None
+        match loaded_substate_opt {
+            Some(PersistedSubstate::ComponentState(substate)) => Some(substate),
+            Some(..) => return Err(wrong_substate_type(substate_offset)),
+            None => None,
         }
     };
     let account_state = {
@@ -73,12 +71,10 @@ fn handle_state_component_internal(
             NodeModuleId::SELF,
             &substate_offset,
         );
-        if let Some(PersistedSubstate::Account(substate)) = loaded_substate_opt {
-            Some(substate)
-        } else if let Some(..) = loaded_substate_opt {
-            return Err(wrong_substate_type(substate_offset));
-        } else {
-            None
+        match loaded_substate_opt {
+            Some(PersistedSubstate::Account(substate)) => Some(substate),
+            Some(..) => return Err(wrong_substate_type(substate_offset)),
+            None => None,
         }
     };
     // TODO: royalty_* should be non-optional once fixed on the engine side
@@ -90,12 +86,10 @@ fn handle_state_component_internal(
             NodeModuleId::ComponentRoyalty,
             &substate_offset,
         );
-        if let Some(PersistedSubstate::ComponentRoyaltyConfig(substate)) = loaded_substate_opt {
-            Some(substate)
-        } else if let Some(..) = loaded_substate_opt {
-            return Err(wrong_substate_type(substate_offset));
-        } else {
-            None
+        match loaded_substate_opt {
+            Some(PersistedSubstate::ComponentRoyaltyConfig(substate)) => Some(substate),
+            Some(..) => return Err(wrong_substate_type(substate_offset)),
+            None => None,
         }
     };
     let component_royalty_accumulator = {
@@ -106,13 +100,10 @@ fn handle_state_component_internal(
             NodeModuleId::ComponentRoyalty,
             &substate_offset,
         );
-        if let Some(PersistedSubstate::ComponentRoyaltyAccumulator(substate)) = loaded_substate_opt
-        {
-            Some(substate)
-        } else if let Some(..) = loaded_substate_opt {
-            return Err(wrong_substate_type(substate_offset));
-        } else {
-            None
+        match loaded_substate_opt {
+            Some(PersistedSubstate::ComponentRoyaltyAccumulator(substate)) => Some(substate),
+            Some(..) => return Err(wrong_substate_type(substate_offset)),
+            None => None,
         }
     };
     let component_metadata = {

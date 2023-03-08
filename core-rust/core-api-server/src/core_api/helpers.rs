@@ -37,8 +37,8 @@ pub(crate) fn read_known_substate(
         || {
             MappingError::MismatchedSubstateId {
                 message: format!(
-                    "Substate {:?} not found under {:?}",
-                    substate_offset, renode_id
+                    "Substate {:?} not found under RE node {:?} and module {:?}",
+                    substate_offset, renode_id, node_module_id
                 ),
             }
             .into()
