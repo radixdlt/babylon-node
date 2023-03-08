@@ -62,8 +62,9 @@
  * permissions under this License.
  */
 
+use crate::staging::HashTreeDiff;
 use crate::transaction::LedgerTransaction;
-use crate::{CommittedTransactionIdentifiers, LedgerTransactionReceipt};
+use crate::{CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt};
 pub use commit::*;
 pub use proofs::*;
 pub use substate::*;
@@ -123,6 +124,8 @@ pub mod transactions {
 }
 
 pub mod proofs {
+    use super::*;
+
     pub trait QueryableProofStore {
         fn max_state_version(&self) -> u64;
         fn get_txns_and_proof(
@@ -130,15 +133,14 @@ pub mod proofs {
             start_state_version_inclusive: u64,
             max_number_of_txns_if_more_than_one_proof: u32,
             max_payload_size_in_bytes: u32,
-        ) -> Option<(Vec<Vec<u8>>, Vec<u8>)>;
-        fn get_epoch_proof(&self, epoch: u64) -> Option<Vec<u8>>;
-        fn get_last_proof(&self) -> Option<Vec<u8>>;
+        ) -> Option<(Vec<Vec<u8>>, LedgerProof)>;
+        fn get_epoch_proof(&self, epoch: u64) -> Option<LedgerProof>;
+        fn get_last_proof(&self) -> Option<LedgerProof>;
     }
 }
 
 pub mod commit {
     use super::*;
-    use crate::staging::HashTreeDiff;
     use radix_engine::ledger::OutputValue;
     use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
     use radix_engine_stores::hash_tree::tree_store::{
@@ -148,9 +150,7 @@ pub mod commit {
 
     pub struct CommitBundle {
         pub transactions: Vec<CommittedTransactionBundle>,
-        pub proof_bytes: Vec<u8>,
-        pub proof_state_version: u64,
-        pub epoch_boundary: Option<u64>,
+        pub proof: LedgerProof,
         pub substates: BTreeMap<SubstateId, OutputValue>,
         pub vertex_store: Option<Vec<u8>>,
         pub state_hash_tree_update: HashTreeUpdate,
