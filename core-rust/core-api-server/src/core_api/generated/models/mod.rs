@@ -172,6 +172,8 @@ pub mod index_schema_subpath_all_of;
 pub use self::index_schema_subpath_all_of::IndexSchemaSubpathAllOf;
 pub mod instant;
 pub use self::instant::Instant;
+pub mod instruction_resource_changes;
+pub use self::instruction_resource_changes::InstructionResourceChanges;
 pub mod key_value_store_entry_substate;
 pub use self::key_value_store_entry_substate::KeyValueStoreEntrySubstate;
 pub mod key_value_store_entry_substate_all_of;

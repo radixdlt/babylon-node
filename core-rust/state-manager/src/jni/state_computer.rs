@@ -99,12 +99,12 @@ fn do_verify(state_manager: &ActualStateManager, args: JavaRawTransaction) -> Re
     let parsed = UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
         &transaction.payload,
     )
-    .map_err(|err| format!("{:?}", err))?;
+    .map_err(|err| format!("{err:?}"))?;
 
     let _static_validation = state_manager
         .user_transaction_validator
         .validate_and_create_executable(&parsed, transaction.payload.len())
-        .map_err(|err| format!("{:?}", err))?;
+        .map_err(|err| format!("{err:?}"))?;
 
     Ok(())
 }

@@ -25,7 +25,7 @@ where
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
         match axum::Json::<T>::from_request(req).await {
             Ok(value) => Ok(Self(value.0)),
-            Err(rejection) => Err(client_error(format!("{:?}", rejection))),
+            Err(rejection) => Err(client_error(format!("{rejection:?}"))),
         }
     }
 }

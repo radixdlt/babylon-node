@@ -15,17 +15,17 @@
 pub struct TransactionPreviewResponse {
     #[serde(rename = "receipt")]
     pub receipt: Box<crate::core_api::generated::models::TransactionReceipt>,
-    #[serde(rename = "resource_changes")]
-    pub resource_changes: Vec<crate::core_api::generated::models::ResourceChange>,
+    #[serde(rename = "instruction_resource_changes")]
+    pub instruction_resource_changes: Vec<crate::core_api::generated::models::InstructionResourceChanges>,
     #[serde(rename = "logs")]
     pub logs: Vec<crate::core_api::generated::models::TransactionPreviewResponseLogsInner>,
 }
 
 impl TransactionPreviewResponse {
-    pub fn new(receipt: crate::core_api::generated::models::TransactionReceipt, resource_changes: Vec<crate::core_api::generated::models::ResourceChange>, logs: Vec<crate::core_api::generated::models::TransactionPreviewResponseLogsInner>) -> TransactionPreviewResponse {
+    pub fn new(receipt: crate::core_api::generated::models::TransactionReceipt, instruction_resource_changes: Vec<crate::core_api::generated::models::InstructionResourceChanges>, logs: Vec<crate::core_api::generated::models::TransactionPreviewResponseLogsInner>) -> TransactionPreviewResponse {
         TransactionPreviewResponse {
             receipt: Box::new(receipt),
-            resource_changes,
+            instruction_resource_changes,
             logs,
         }
     }

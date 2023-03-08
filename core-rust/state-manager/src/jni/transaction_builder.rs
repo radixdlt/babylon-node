@@ -70,14 +70,13 @@ use crate::transaction::{
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::types::PublicKey;
-use radix_engine_interface::api::component::ComponentAddress;
+use radix_engine::types::{ComponentAddress, PublicKey};
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::data::manifest::{manifest_decode, manifest_encode};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
 use std::collections::BTreeMap;
-use transaction::data::{manifest_decode, manifest_encode};
 use transaction::model::{
     NotarizedTransaction, Signature, SignatureWithPublicKey, TransactionHeader,
 };
@@ -97,7 +96,7 @@ fn do_compile_manifest(
     (network, manifest_str, blobs): (NetworkDefinition, String, Vec<Vec<u8>>),
 ) -> Result<Vec<u8>, String> {
     create_manifest(&network, &manifest_str, blobs)
-        .map_err(|err| format!("{:?}", err))
+        .map_err(|err| format!("{err:?}"))
         .map(|manifest| manifest_encode(&manifest).unwrap())
 }
 
@@ -184,7 +183,7 @@ fn do_create_intent_bytes(
     ),
 ) -> Result<Vec<u8>, String> {
     create_intent_bytes(&network_definition, header.into(), manifest, blobs)
-        .map_err(|err| format!("{:?}", err))
+        .map_err(|err| format!("{err:?}"))
 }
 
 #[no_mangle]

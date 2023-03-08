@@ -7,37 +7,42 @@ use radix_engine::blueprints::epoch_manager::{
 use radix_engine::blueprints::resource::{
     NonFungible, NonFungibleSubstate, ResourceManagerSubstate, VaultInfoSubstate,
 };
-use radix_engine::system::node_modules::access_rules::{FunctionAccessRulesSubstate, MethodAccessRulesSubstate};
+use radix_engine::system::node_modules::access_rules::{
+    FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
+};
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
+use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::system::type_info::PackageCodeTypeSubstate;
 use std::collections::BTreeSet;
-use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 
 use super::*;
 use crate::core_api::models;
-use radix_engine_interface::data::{IndexedScryptoValue, SchemaPath, SchemaSubPath};
 
 use radix_engine::types::{
     scrypto_encode, Decimal, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId,
     ResourceAddress, RoyaltyConfig, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::api::component::{
-    ComponentAddress, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
-    ComponentStateSubstate, KeyValueStoreEntrySubstate,
+    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
+    KeyValueStoreEntrySubstate,
 };
 use radix_engine_interface::api::package::{
     PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate,
     PackageRoyaltyConfigSubstate,
 };
-use radix_engine_interface::api::types::{Address, NodeModuleId};
+use radix_engine_interface::api::types::{IndexedScryptoValue, NodeModuleId};
 use radix_engine_interface::blueprints::resource::{
     AccessRule, AccessRuleEntry, AccessRuleNode, AccessRules, LiquidFungibleResource,
     LiquidNonFungibleResource, LockedFungibleResource, LockedNonFungibleResource, MethodKey,
-    NonFungibleIdType, NonFungibleLocalId, ProofRule, ResourceType, SoftCount, SoftDecimal,
-    SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
+    ProofRule, ResourceType, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible,
+    SoftResourceOrNonFungibleList,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::data::scrypto::model::{
+    Address, ComponentAddress, NonFungibleIdType, NonFungibleLocalId,
+};
+use radix_engine_interface::data::scrypto::{SchemaPath, SchemaSubPath};
 
 use super::MappingError;
 
@@ -216,7 +221,7 @@ pub fn to_api_type_info_substate(
     Ok(models::Substate::TypeInfoSubstate {
         package_address: to_api_package_address(context, package_address),
         blueprint_name: blueprint_name.to_string(),
-        global: global.clone(),
+        global: *global,
     })
 }
 
@@ -393,7 +398,7 @@ pub fn to_api_dynamic_count_from_soft_count(
             count: (*count)
                 .try_into()
                 .map_err(|err| MappingError::IntegerError {
-                    message: format!("Could not translate count into i32: {:?}", err),
+                    message: format!("Could not translate count into i32: {err:?}"),
                 })?,
         },
         SoftCount::Dynamic(schema_path) => models::DynamicCount::SchemaPathDynamicCount {
@@ -515,7 +520,7 @@ pub fn to_api_schema_subpath(
         SchemaSubPath::Index(index) => models::SchemaSubpath::IndexSchemaSubpath {
             index: to_api_u64_as_string((*index).try_into().map_err(|err| {
                 MappingError::IntegerError {
-                    message: format!("Couldn't map usize to u64: {:?}", err),
+                    message: format!("Couldn't map usize to u64: {err:?}"),
                 }
             })?),
         },
@@ -629,9 +634,9 @@ pub fn to_api_package_info_substate(
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
     let PackageInfoSubstate {
-        blueprint_abis,
         dependent_resources,
         dependent_components,
+        schema,
     } = substate;
 
     Ok(models::Substate::PackageInfoSubstate {
@@ -643,7 +648,8 @@ pub fn to_api_package_info_substate(
             .iter()
             .map(|address| to_api_component_address(context, address))
             .collect(),
-        blueprints: blueprint_abis
+        blueprints: schema
+            .blueprints
             .iter()
             .map(|(blueprint_name, abi)| {
                 let blueprint_data = models::BlueprintData {

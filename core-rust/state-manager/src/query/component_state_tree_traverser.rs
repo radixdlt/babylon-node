@@ -68,15 +68,18 @@ use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::node_substates::PersistedSubstate;
 
 use radix_engine::types::{
-    AccessControllerOffset, ComponentOffset, EpochManagerOffset, KeyValueStoreOffset, RENodeId,
-    SubstateId, SubstateOffset, ValidatorOffset, VaultOffset,
+    AccessControllerOffset, Address, ComponentOffset, EpochManagerOffset, KeyValueStoreOffset,
+    RENodeId, SubstateId, SubstateOffset, ValidatorOffset, VaultOffset,
 };
-use radix_engine_interface::api::types::{AccountOffset, ComponentAddress, NodeModuleId, TypeInfoOffset};
+use radix_engine_interface::api::types::{AccountOffset, NodeModuleId, TypeInfoOffset};
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::epoch_manager::VALIDATOR_BLUEPRINT;
-use radix_engine_interface::blueprints::resource::{LiquidFungibleResource, LiquidNonFungibleResource, ResourceType, VAULT_BLUEPRINT};
+use radix_engine_interface::blueprints::resource::{
+    LiquidFungibleResource, LiquidNonFungibleResource, ResourceType, VAULT_BLUEPRINT,
+};
 use radix_engine_interface::constants::*;
+use radix_engine_interface::data::scrypto::model::ComponentAddress;
 
 #[derive(Debug)]
 pub enum StateTreeTraverserError {
@@ -207,7 +210,9 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                     (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
                         self.recurse_via_self_substate(
                             node_id,
-                            SubstateOffset::AccessController(AccessControllerOffset::AccessController),
+                            SubstateOffset::AccessController(
+                                AccessControllerOffset::AccessController,
+                            ),
                             depth,
                         )?;
                     }
@@ -231,58 +236,56 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                     self.recurse_via_loaded_substate(&substate_id, substate, depth)?;
                 }
             }
-            RENodeId::GlobalComponent(ComponentAddress::Normal(..)) => {
+            RENodeId::GlobalObject(Address::Component(ComponentAddress::Normal(..))) => {
                 self.recurse_via_self_substate(
                     node_id,
                     SubstateOffset::Component(ComponentOffset::State0),
                     depth,
                 )?;
             }
-            RENodeId::GlobalComponent(
+            RENodeId::GlobalObject(Address::Component(
                 ComponentAddress::Account(..)
                 | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
                 | ComponentAddress::EddsaEd25519VirtualAccount(..),
-            ) => {
+            )) => {
                 self.recurse_via_self_substate(
                     node_id,
                     SubstateOffset::Account(AccountOffset::Account),
                     depth,
                 )?;
             }
-            RENodeId::GlobalComponent(ComponentAddress::Validator(..)) => {
+            RENodeId::GlobalObject(Address::Component(ComponentAddress::Validator(..))) => {
                 self.recurse_via_self_substate(
                     node_id,
                     SubstateOffset::Validator(ValidatorOffset::Validator),
                     depth,
                 )?;
             }
-            RENodeId::GlobalComponent(ComponentAddress::AccessController(..)) => {
+            RENodeId::GlobalObject(Address::Component(ComponentAddress::AccessController(..))) => {
                 self.recurse_via_self_substate(
                     node_id,
                     SubstateOffset::AccessController(AccessControllerOffset::AccessController),
                     depth,
                 )?;
             }
-            RENodeId::GlobalComponent(ComponentAddress::EpochManager(..)) => {
+            RENodeId::GlobalObject(Address::Component(ComponentAddress::EpochManager(..))) => {
                 self.recurse_via_self_substate(
                     node_id,
                     SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                     depth,
                 )?;
             }
-            RENodeId::GlobalComponent(ComponentAddress::Clock(..)) => {} // Contains no children
-            RENodeId::GlobalComponent(
+            RENodeId::GlobalObject(Address::Component(ComponentAddress::Clock(..))) => {} // Contains no children
+            RENodeId::GlobalObject(Address::Component(
                 ComponentAddress::Identity(..)
                 | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
                 | ComponentAddress::EddsaEd25519VirtualIdentity(..),
-            ) => {} // Contains no children
+            )) => {} // Contains no children
             RENodeId::NonFungibleStore(_) => {} // Contains no children
-            RENodeId::GlobalResourceManager(..) => {} // Contains no children
-            RENodeId::GlobalPackage(..) => {}   // Contains no children
+            RENodeId::GlobalObject(Address::Resource(..)) => {} // Contains no children
+            RENodeId::GlobalObject(Address::Package(..)) => {} // Contains no children
             // TRANSIENT
-            RENodeId::AuthZoneStack
-            | RENodeId::Worktop
-            | RENodeId::TransactionRuntime => {
+            RENodeId::AuthZoneStack | RENodeId::TransactionRuntime => {
                 return Err(StateTreeTraverserError::UnexpectedPersistedNode(node_id))
             } // END - NB - we list all types so that we get a compile error if a new type is added
         };

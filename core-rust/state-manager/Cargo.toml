@@ -25,13 +25,14 @@ prometheus = { version = "0.13.2", default-features = false, features = [] }
 # 
 # Ensure this version is also identically updated in ../core-api-server/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-1eaa68", features = ["serde"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-1eaa68" }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-1eaa68", features = ["serde"]  }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-1eaa68" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-1eaa68" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-1eaa68" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-1eaa68" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-be6392", features = ["serde"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-be6392" }
+radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-be6392", features = ["serde"]  }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-be6392", features = ["serde"]  }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-be6392" }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-be6392" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-be6392" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-be6392" }
 
 # Non-Radix Engine Dependencies:
 blake2 = { version = "0.10.6", default-features = false }

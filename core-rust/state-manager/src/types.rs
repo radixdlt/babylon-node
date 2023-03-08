@@ -70,7 +70,6 @@ use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine::types::*;
 use std::collections::BTreeMap;
 use std::fmt;
-use transaction::data::*;
 use transaction::model::{
     NotarizedTransaction, PreviewFlags, SignedTransactionIntent, TransactionIntent,
     TransactionManifest,

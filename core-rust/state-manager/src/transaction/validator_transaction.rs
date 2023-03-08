@@ -10,7 +10,6 @@ use radix_engine_interface::blueprints::epoch_manager::{
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 use radix_engine_interface::crypto::{hash, Hash};
 use std::collections::BTreeSet;
-use transaction::data::manifest_encode;
 use transaction::model::{AuthZoneParams, Executable, ExecutionContext, FeePayment, Instruction};
 
 #[derive(Debug, Copy, Clone, Categorize, Encode, Decode, PartialEq, Eq)]

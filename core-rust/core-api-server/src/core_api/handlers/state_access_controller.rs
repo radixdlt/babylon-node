@@ -1,8 +1,6 @@
 use crate::core_api::*;
 use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::{
-    AccessControllerOffset, MetadataOffset, NodeModuleId, SubstateOffset,
-};
+use radix_engine::types::{AccessControllerOffset, MetadataOffset, NodeModuleId, SubstateOffset};
 use radix_engine_interface::api::types::{AccessRulesOffset, RENodeId};
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::query::{dump_component_state, VaultData};
@@ -40,7 +38,7 @@ fn handle_state_access_controller_internal(
             SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let loaded_substate = read_known_substate(
             state_manager,
-            RENodeId::GlobalComponent(controller_address),
+            RENodeId::GlobalObject(controller_address.into()),
             NodeModuleId::SELF,
             &substate_offset,
         )?;
@@ -53,7 +51,7 @@ fn handle_state_access_controller_internal(
         let substate_offset = SubstateOffset::Metadata(MetadataOffset::Metadata);
         let loaded_substate = read_known_substate(
             state_manager,
-            RENodeId::GlobalComponent(controller_address),
+            RENodeId::GlobalObject(controller_address.into()),
             NodeModuleId::Metadata,
             &substate_offset,
         )?;
@@ -63,11 +61,10 @@ fn handle_state_access_controller_internal(
         substate
     };
     let component_access_rules = {
-        let substate_offset =
-            SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
+        let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
         let loaded_substate = read_known_substate(
             state_manager,
-            RENodeId::GlobalComponent(controller_address),
+            RENodeId::GlobalObject(controller_address.into()),
             NodeModuleId::AccessRules,
             &substate_offset,
         )?;
@@ -78,7 +75,7 @@ fn handle_state_access_controller_internal(
     };
 
     let component_dump = dump_component_state(state_manager.store(), controller_address)
-        .map_err(|err| server_error(format!("Error traversing component state: {:?}", err)))?;
+        .map_err(|err| server_error(format!("Error traversing component state: {err:?}")))?;
 
     let state_owned_vaults = component_dump
         .vaults

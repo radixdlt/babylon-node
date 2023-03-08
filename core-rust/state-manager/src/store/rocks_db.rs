@@ -78,6 +78,7 @@ use radix_engine::types::{
     SubstateOffset,
 };
 use radix_engine_interface::api::types::NodeModuleId;
+use radix_engine_interface::data::manifest::manifest_decode;
 use radix_engine_stores::hash_tree::tree_store::{
     encode_key, NodeKey, Payload, ReadableTreeStore, TreeNode,
 };
@@ -86,7 +87,6 @@ use rocksdb::{
 };
 use std::path::PathBuf;
 use tracing::{error, warn};
-use transaction::data::manifest_decode;
 
 use crate::transaction::LedgerTransaction;
 
@@ -145,7 +145,7 @@ impl fmt::Display for RocksDBColumnFamily {
             StateHashTreeNodes => "state_hash_tree_nodes",
             StaleStateHashTreeNodeKeysByStateVersion => "stale_state_hash_tree_node_keys",
         };
-        write!(f, "{}", str)
+        write!(f, "{str}")
     }
 }
 
@@ -382,8 +382,7 @@ impl QueryableTransactionStore for RocksDBStore {
                     let expected_state_version = start_state_version_inclusive + res.len() as u64;
                     if expected_state_version != next_txn_state_version {
                         panic!(
-                            "DB inconsistency! Missing txn at state version {}",
-                            expected_state_version
+                            "DB inconsistency! Missing txn at state version {expected_state_version}"
                         );
                     }
 
@@ -400,13 +399,11 @@ impl QueryableTransactionStore for RocksDBStore {
                         u64::from_be_bytes((*next_accumulator_hash_kv.0).try_into().unwrap());
 
                     if next_receipt_state_version != next_txn_state_version {
-                        panic!("DB inconsistency! Receipt state version ({}) doesn't match txn state version ({})",
-                            next_receipt_state_version, next_txn_state_version);
+                        panic!("DB inconsistency! Receipt state version ({next_receipt_state_version}) doesn't match txn state version ({next_txn_state_version})");
                     }
 
                     if next_accumulator_hash_state_version != next_txn_state_version {
-                        panic!("DB inconsistency! Accumulator hash state version ({}) doesn't match txn state version ({})",
-                           next_accumulator_hash_state_version, next_txn_state_version);
+                        panic!("DB inconsistency! Accumulator hash state version ({next_accumulator_hash_state_version}) doesn't match txn state version ({next_txn_state_version})");
                     }
 
                     let next_txn = manifest_decode(next_txn_kv.1.as_ref()).unwrap();

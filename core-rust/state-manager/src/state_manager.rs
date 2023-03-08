@@ -101,9 +101,9 @@ use radix_engine_interface::api::types::{
 use std::collections::HashMap;
 use std::convert::TryInto;
 
-use ::transaction::data::*;
 use radix_engine::blueprints::epoch_manager::ValidatorSubstate;
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
+use radix_engine_interface::data::manifest::manifest_encode;
 use radix_engine_interface::network::NetworkDefinition;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
@@ -593,11 +593,11 @@ where
                     ledger_hashes: *processed.ledger_hashes(),
                 },
                 TransactionOutcome::Failure(error) => {
-                    panic!("Genesis failed. Error: {:?}", error)
+                    panic!("Genesis failed. Error: {error:?}")
                 }
             },
             TransactionResult::Reject(reject_result) => {
-                panic!("Genesis rejected. Result: {:?}", reject_result)
+                panic!("Genesis rejected. Result: {reject_result:?}")
             }
             TransactionResult::Abort(_) => {
                 panic!("Genesis aborted. This should not be possible");
@@ -684,8 +684,7 @@ where
                 }
                 TransactionResult::Reject(reject_result) => {
                     panic!(
-                        "Already prepared transactions should be committable. Reject result: {:?}",
-                        reject_result
+                        "Already prepared transactions should be committable. Reject result: {reject_result:?}"
                     )
                 }
                 TransactionResult::Abort(_) => {
@@ -714,7 +713,7 @@ where
         let mut next_epoch = match &processed.receipt().result {
             TransactionResult::Commit(commit_result) => {
                 if let TransactionOutcome::Failure(error) = &commit_result.outcome {
-                    panic!("Validator txn failed: {:?}", error);
+                    panic!("Validator txn failed: {error:?}");
                 }
 
                 state_tracker.update(new_accumulator_hash, *processed.ledger_hashes());
@@ -726,10 +725,10 @@ where
                 })
             }
             TransactionResult::Reject(reject_result) => {
-                panic!("Validator txn failed: {:?}", reject_result)
+                panic!("Validator txn failed: {reject_result:?}")
             }
             TransactionResult::Abort(abort_result) => {
-                panic!("Validator txn aborted: {:?}", abort_result);
+                panic!("Validator txn aborted: {abort_result:?}");
             }
         };
 
@@ -747,7 +746,7 @@ where
                     ) {
                         Ok(parsed) => parsed,
                         Err(error) => {
-                            rejected_payloads.push((proposed_payload, format!("{:?}", error)));
+                            rejected_payloads.push((proposed_payload, format!("{error:?}")));
                             continue;
                         }
                     };
@@ -935,10 +934,7 @@ where
     pub fn commit(&'db mut self, commit_request: CommitRequest) -> Result<(), CommitError> {
         let commit_transactions_len = commit_request.transaction_payloads.len();
         if commit_transactions_len == 0 {
-            panic!(
-                "cannot commit 0 transactions from request {:?}",
-                commit_request
-            );
+            panic!("cannot commit 0 transactions from request {commit_request:?}");
         }
 
         let commit_request_start_state_version =
@@ -954,7 +950,7 @@ where
                 .map(|payload| {
                     LedgerTransactionValidator::parse_unvalidated_transaction_from_slice(&payload)
                         .unwrap_or_else(|error| {
-                            panic!("Committed transaction cannot be decoded - likely byzantine quorum: {:?}", error);
+                            panic!("Committed transaction cannot be decoded - likely byzantine quorum: {error:?}");
                         })
                     // TODO - will want to validate when non-user transactions (eg round/epoch change intents) occur
                 })
@@ -991,8 +987,7 @@ where
                 .validate_and_create_executable(&transaction)
                 .unwrap_or_else(|error| {
                     panic!(
-                        "Committed transaction is not valid - likely byzantine quorum: {:?}",
-                        error
+                        "Committed transaction is not valid - likely byzantine quorum: {error:?}"
                     );
                 });
 
@@ -1119,13 +1114,13 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
     ) -> Option<HashMap<ResourceAddress, Decimal>> {
         let mut resource_accounter = ResourceAccounter::new(&self.store);
         resource_accounter
-            .add_resources(RENodeId::GlobalComponent(component_address))
+            .add_resources(RENodeId::GlobalObject(component_address.into()))
             .map_or(None, |()| Some(resource_accounter.into_map()))
     }
 
     pub fn get_validator_info(&self, validator_address: ComponentAddress) -> JavaValidatorInfo {
         let substate_id = SubstateId(
-            RENodeId::GlobalComponent(validator_address),
+            RENodeId::GlobalObject(validator_address.into()),
             NodeModuleId::SELF,
             SubstateOffset::Validator(ValidatorOffset::Validator),
         );

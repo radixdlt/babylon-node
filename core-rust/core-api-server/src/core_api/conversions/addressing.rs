@@ -6,14 +6,17 @@ use crate::core_api::*;
 use crate::core_api::models::ModuleType;
 use models::{EntityType, SubstateKeyType, SubstateType};
 use radix_engine::types::{
-    scrypto_encode, ClockOffset, ComponentAddress, ComponentOffset,
-    EpochManagerOffset, KeyValueStoreOffset, MetadataOffset, NonFungibleStoreOffset,
-    PackageAddress, PackageOffset, RENodeId, ResourceAddress, ResourceManagerOffset, SubstateId,
-    SubstateOffset, VaultOffset,
+    scrypto_encode, ClockOffset, ComponentAddress, ComponentOffset, EpochManagerOffset,
+    KeyValueStoreOffset, MetadataOffset, NonFungibleStoreOffset, PackageAddress, PackageOffset,
+    RENodeId, ResourceAddress, ResourceManagerOffset, SubstateId, SubstateOffset, VaultOffset,
 };
-use radix_engine_interface::api::types::{AccessControllerOffset, AccessRulesOffset, AccountOffset, NodeModuleId, RoyaltyOffset, TypeInfoOffset, ValidatorOffset};
-use radix_engine_interface::blueprints::resource::{NonFungibleIdType, NonFungibleLocalId};
-use radix_engine_interface::data::model::Address;
+use radix_engine_interface::api::types::{
+    AccessControllerOffset, AccessRulesOffset, AccountOffset, NodeModuleId, RoyaltyOffset,
+    TypeInfoOffset, ValidatorOffset,
+};
+use radix_engine_interface::data::scrypto::model::{
+    Address, NonFungibleIdType, NonFungibleLocalId,
+};
 
 pub fn to_api_component_address(
     context: &MappingContext,
@@ -83,43 +86,55 @@ impl TryFrom<RENodeId> for MappedEntityId {
         // Helper function
         fn transient_renode_error(name: &'static str) -> MappingError {
             MappingError::TransientRENodePersisted {
-                message: format!("{} persisted", name),
+                message: format!("{name} persisted"),
             }
         }
 
         // Start body of method
         let entity_id_bytes = re_node_id_to_entity_id_bytes(&re_node_id)?;
-        let entity_type =
-            match re_node_id {
-                // Gateway understands "Component" to be "Component with Scrypto Package" for now. This will change when we have Native Packages
-                RENodeId::GlobalComponent(ComponentAddress::Normal(..)) => EntityType::Component,
-                RENodeId::GlobalPackage(_) => EntityType::Package,
-                RENodeId::GlobalResourceManager(_) => EntityType::ResourceManager,
-                // Native Components
-                RENodeId::GlobalComponent(ComponentAddress::EpochManager(..)) => EntityType::EpochManager,
-                RENodeId::GlobalComponent(ComponentAddress::Clock(..)) => {
-                    EntityType::Clock
-                }
-                RENodeId::GlobalComponent(ComponentAddress::Validator(..)) => EntityType::Validator,
-                RENodeId::GlobalComponent(ComponentAddress::AccessController(..)) => EntityType::AccessController,
-                RENodeId::GlobalComponent(ComponentAddress::Identity(..))
-                | RENodeId::GlobalComponent(ComponentAddress::EcdsaSecp256k1VirtualIdentity(..))
-                | RENodeId::GlobalComponent(ComponentAddress::EddsaEd25519VirtualIdentity(..))
-                => EntityType::Identity,
-                RENodeId::KeyValueStore(_) => EntityType::KeyValueStore,
-                RENodeId::NonFungibleStore(_) => EntityType::NonFungibleStore,
-                // TODO: Add Vault type
-                RENodeId::Object(..) => EntityType::Component,
-                //RENodeId::Vault(_) => EntityType::Vault,
-                RENodeId::GlobalComponent(ComponentAddress::Account(..))
-                | RENodeId::GlobalComponent(ComponentAddress::EcdsaSecp256k1VirtualAccount(..))
-                | RENodeId::GlobalComponent(ComponentAddress::EddsaEd25519VirtualAccount(..)) => EntityType::Account,
-                RENodeId::Worktop => return Err(transient_renode_error("Worktop")),
-                RENodeId::AuthZoneStack => return Err(transient_renode_error("AuthZoneStack")),
-                RENodeId::TransactionRuntime => {
-                    return Err(transient_renode_error("TransactionRuntime"))
-                }
-            };
+        let entity_type = match re_node_id {
+            // Gateway understands "Component" to be "Component with Scrypto Package" for now. This will change when we have Native Packages
+            RENodeId::GlobalObject(Address::Component(ComponentAddress::Normal(..))) => {
+                EntityType::Component
+            }
+            RENodeId::GlobalObject(Address::Component(ComponentAddress::EpochManager(..))) => {
+                EntityType::EpochManager
+            }
+            RENodeId::GlobalObject(Address::Component(ComponentAddress::Clock(..))) => {
+                EntityType::Clock
+            }
+            RENodeId::GlobalObject(Address::Component(ComponentAddress::Validator(..))) => {
+                EntityType::Validator
+            }
+            RENodeId::GlobalObject(Address::Component(ComponentAddress::AccessController(..))) => {
+                EntityType::AccessController
+            }
+            RENodeId::GlobalObject(Address::Component(
+                ComponentAddress::Identity(..)
+                | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
+                | ComponentAddress::EddsaEd25519VirtualIdentity(..),
+            )) => EntityType::Identity,
+            RENodeId::GlobalObject(Address::Component(
+                ComponentAddress::Account(..)
+                | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
+                | ComponentAddress::EddsaEd25519VirtualAccount(..),
+            )) => EntityType::Account,
+            RENodeId::GlobalObject(Address::Package(PackageAddress::Normal(..))) => {
+                EntityType::Package
+            }
+            RENodeId::GlobalObject(Address::Resource(ResourceAddress::Normal(..))) => {
+                EntityType::ResourceManager
+            }
+            RENodeId::KeyValueStore(_) => EntityType::KeyValueStore,
+            RENodeId::NonFungibleStore(_) => EntityType::NonFungibleStore,
+            // TODO: Add Vault type
+            RENodeId::Object(..) => EntityType::Component,
+            //RENodeId::Vault(_) => EntityType::Vault,
+            RENodeId::AuthZoneStack => return Err(transient_renode_error("AuthZoneStack")),
+            RENodeId::TransactionRuntime => {
+                return Err(transient_renode_error("TransactionRuntime"))
+            }
+        };
         Ok(MappedEntityId {
             entity_type,
             entity_id_bytes,
@@ -176,8 +191,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
     fn unknown_substate_error(renode_name: &'static str, substate_id: &SubstateId) -> MappingError {
         MappingError::UnsupportedSubstatePersisted {
             message: format!(
-                "Unsupported substate persisted for {} RENode: {:?}",
-                renode_name, substate_id
+                "Unsupported substate persisted for {renode_name} RENode: {substate_id:?}"
             ),
         }
     }
@@ -187,8 +201,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
     ) -> MappingError {
         MappingError::TransientSubstatePersisted {
             message: format!(
-                "Transient substate persisted for {} RENode: {:?}",
-                renode_name, substate_id
+                "Transient substate persisted for {renode_name} RENode: {substate_id:?}"
             ),
         }
     }
@@ -203,7 +216,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
     // We can't capture new offset types under an RENode though - check nodes.rs after each merge to check we're not missing any
     let (entity_type, substate_type_key) = match &substate_id {
         SubstateId(
-            RENodeId::GlobalComponent(ComponentAddress::Normal(..)),
+            RENodeId::GlobalObject(Address::Component(ComponentAddress::Normal(..))),
             _,
             offset,
         ) => {
@@ -231,10 +244,9 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                     MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
                 },
                 SubstateOffset::AccessRules(offset) => match offset {
-                    AccessRulesOffset::AccessRules => (
-                        SubstateType::AccessRules,
-                        SubstateKeyType::AccessRules,
-                    ),
+                    AccessRulesOffset::AccessRules => {
+                        (SubstateType::AccessRules, SubstateKeyType::AccessRules)
+                    }
                 },
                 _ => return Err(unknown_substate_error("Component", &substate_id)),
             };
@@ -242,11 +254,11 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
         }
 
         SubstateId(
-            RENodeId::GlobalComponent(
+            RENodeId::GlobalObject(Address::Component(
                 ComponentAddress::Account(..)
                 | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
                 | ComponentAddress::EddsaEd25519VirtualAccount(..),
-            ),
+            )),
             _,
             offset,
         ) => {
@@ -261,10 +273,9 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                     MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
                 },
                 SubstateOffset::AccessRules(offset) => match offset {
-                    AccessRulesOffset::AccessRules => (
-                        SubstateType::AccessRules,
-                        SubstateKeyType::AccessRules,
-                    ),
+                    AccessRulesOffset::AccessRules => {
+                        (SubstateType::AccessRules, SubstateKeyType::AccessRules)
+                    }
                 },
                 _ => return Err(unknown_substate_error("Account", &substate_id)),
             };
@@ -272,7 +283,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
         }
 
         SubstateId(
-            RENodeId::GlobalComponent(ComponentAddress::AccessController(..)),
+            RENodeId::GlobalObject(Address::Component(ComponentAddress::AccessController(..))),
             _,
             offset,
         ) => {
@@ -290,17 +301,16 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                     MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
                 },
                 SubstateOffset::AccessRules(offset) => match offset {
-                    AccessRulesOffset::AccessRules => (
-                        SubstateType::AccessRules,
-                        SubstateKeyType::AccessRules,
-                    ),
+                    AccessRulesOffset::AccessRules => {
+                        (SubstateType::AccessRules, SubstateKeyType::AccessRules)
+                    }
                 },
                 _ => return Err(unknown_substate_error("AccessController", &substate_id)),
             };
             (EntityType::AccessController, substate_type_key)
         }
 
-        SubstateId(RENodeId::GlobalPackage(_), _, offset) => {
+        SubstateId(RENodeId::GlobalObject(Address::Package(..)), _, offset) => {
             let substate_type_key = match offset {
                 SubstateOffset::TypeInfo(offset) => match offset {
                     TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
@@ -331,10 +341,9 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                     MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
                 },
                 SubstateOffset::AccessRules(offset) => match offset {
-                    AccessRulesOffset::AccessRules => (
-                        SubstateType::AccessRules,
-                        SubstateKeyType::AccessRules,
-                    ),
+                    AccessRulesOffset::AccessRules => {
+                        (SubstateType::AccessRules, SubstateKeyType::AccessRules)
+                    }
                 },
                 SubstateOffset::PackageAccessRules => (
                     SubstateType::FunctionAccessRules,
@@ -345,7 +354,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::Package, substate_type_key)
         }
 
-        SubstateId(RENodeId::GlobalResourceManager(_), _, offset) => {
+        SubstateId(RENodeId::GlobalObject(Address::Resource(..)), _, offset) => {
             let substate_type_key = match offset {
                 SubstateOffset::TypeInfo(offset) => match offset {
                     TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
@@ -360,10 +369,9 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                     MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
                 },
                 SubstateOffset::AccessRules(offset) => match offset {
-                    AccessRulesOffset::AccessRules => (
-                        SubstateType::AccessRules,
-                        SubstateKeyType::AccessRules,
-                    ),
+                    AccessRulesOffset::AccessRules => {
+                        (SubstateType::AccessRules, SubstateKeyType::AccessRules)
+                    }
                 },
                 _ => return Err(unknown_substate_error("ResourceManager", &substate_id)),
             };
@@ -426,7 +434,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
         }
 
         SubstateId(
-            RENodeId::GlobalComponent(ComponentAddress::EpochManager(..)),
+            RENodeId::GlobalObject(Address::Component(ComponentAddress::EpochManager(..))),
             _,
             offset,
         ) => {
@@ -448,16 +456,12 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                     ),
                 },
                 SubstateOffset::AccessRules(offset) => match offset {
-                    AccessRulesOffset::AccessRules => (
-                        SubstateType::AccessRules,
-                        SubstateKeyType::AccessRules,
-                    ),
+                    AccessRulesOffset::AccessRules => {
+                        (SubstateType::AccessRules, SubstateKeyType::AccessRules)
+                    }
                 },
                 SubstateOffset::Metadata(offset) => match offset {
-                    MetadataOffset::Metadata => (
-                        SubstateType::Metadata,
-                        SubstateKeyType::Metadata,
-                    ),
+                    MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
                 },
                 _ => return Err(unknown_substate_error("EpochManager", &substate_id)),
             };
@@ -465,7 +469,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
         }
 
         SubstateId(
-            RENodeId::GlobalComponent(ComponentAddress::Validator(..)),
+            RENodeId::GlobalObject(Address::Component(ComponentAddress::Validator(..))),
             _,
             offset,
         ) => {
@@ -482,10 +486,9 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                     MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
                 },
                 SubstateOffset::AccessRules(offset) => match offset {
-                    AccessRulesOffset::AccessRules => (
-                        SubstateType::AccessRules,
-                        SubstateKeyType::AccessRules,
-                    ),
+                    AccessRulesOffset::AccessRules => {
+                        (SubstateType::AccessRules, SubstateKeyType::AccessRules)
+                    }
                 },
                 _ => return Err(unknown_substate_error("Validator", &substate_id)),
             };
@@ -493,7 +496,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
         }
 
         SubstateId(
-            RENodeId::GlobalComponent(ComponentAddress::Clock(..)),
+            RENodeId::GlobalObject(Address::Component(ComponentAddress::Clock(..))),
             _,
             offset,
         ) => {
@@ -508,16 +511,12 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                     ),
                 },
                 SubstateOffset::AccessRules(offset) => match offset {
-                    AccessRulesOffset::AccessRules => (
-                        SubstateType::AccessRules,
-                        SubstateKeyType::AccessRules,
-                    ),
+                    AccessRulesOffset::AccessRules => {
+                        (SubstateType::AccessRules, SubstateKeyType::AccessRules)
+                    }
                 },
                 SubstateOffset::Metadata(offset) => match offset {
-                    MetadataOffset::Metadata => (
-                        SubstateType::Metadata,
-                        SubstateKeyType::Metadata,
-                    ),
+                    MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
                 },
                 _ => return Err(unknown_substate_error("Clock", &substate_id)),
             };
@@ -525,11 +524,11 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
         }
 
         SubstateId(
-            RENodeId::GlobalComponent(
+            RENodeId::GlobalObject(Address::Component(
                 ComponentAddress::Identity(..)
                 | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
                 | ComponentAddress::EddsaEd25519VirtualIdentity(..),
-            ),
+            )),
             _,
             offset,
         ) => {
@@ -541,10 +540,9 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                     MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
                 },
                 SubstateOffset::AccessRules(offset) => match offset {
-                    AccessRulesOffset::AccessRules => (
-                        SubstateType::AccessRules,
-                        SubstateKeyType::AccessRules,
-                    ),
+                    AccessRulesOffset::AccessRules => {
+                        (SubstateType::AccessRules, SubstateKeyType::AccessRules)
+                    }
                 },
                 _ => return Err(unknown_substate_error("Identity", &substate_id)),
             };
@@ -552,9 +550,6 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
         }
 
         // TRANSIENT SUBSTATES
-        SubstateId(RENodeId::Worktop, ..) => {
-            return Err(transient_substate_error("Worktop", &substate_id))
-        }
         SubstateId(RENodeId::AuthZoneStack, ..) => {
             return Err(transient_substate_error("AuthZoneStack", &substate_id))
         }

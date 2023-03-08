@@ -1310,6 +1310,18 @@ components:
           description: |
             The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use "Z" denoting UTC and include milliseconds.
             EG: `2023-01-26T18:30:09.453Z`.
+    InstructionResourceChanges:
+      type: object
+      required:
+        - index
+        - resource_changes
+      properties:
+        index:
+          type: integer
+        resource_changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceChange'
     ResourceChange:
       type: object
       required:
@@ -3343,15 +3355,15 @@ components:
       type: object
       required:
         - receipt
-        - resource_changes
+        - instruction_resource_changes
         - logs
       properties:
         receipt:
           $ref: "#/components/schemas/TransactionReceipt"
-        resource_changes:
+        instruction_resource_changes:
           type: array
           items:
-            $ref: "#/components/schemas/ResourceChange"
+            $ref: "#/components/schemas/InstructionResourceChanges"
         logs:
           type: array
           items:

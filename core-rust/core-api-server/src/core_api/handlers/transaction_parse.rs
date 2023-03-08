@@ -1,5 +1,6 @@
 use crate::core_api::*;
 use models::parsed_notarized_transaction_all_of_identifiers::ParsedNotarizedTransactionAllOfIdentifiers;
+use radix_engine_interface::data::manifest::manifest_decode;
 
 use models::parsed_signed_transaction_intent_all_of_identifiers::ParsedSignedTransactionIntentAllOfIdentifiers;
 use models::transaction_parse_request::{ParseMode, ResponseMode, ValidationMode};
@@ -9,7 +10,6 @@ use state_manager::mempool::pending_transaction_result_cache::RejectionReason;
 use state_manager::transaction::{LedgerTransaction, UserTransactionValidator};
 use state_manager::{HasIntentHash, HasLedgerPayloadHash, HasSignaturesHash, HasUserPayloadHash};
 
-use transaction::data::manifest_decode;
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionIntent, TransactionManifest,
 };
@@ -193,7 +193,7 @@ fn to_api_parsed_notarized_transaction(
         .and_then(|result| result.err())
         .map(|error| {
             Box::new(models::ParsedNotarizedTransactionAllOfValidationError {
-                reason: format!("{:?}", error),
+                reason: format!("{error:?}"),
                 is_permanent: error.is_permanent_for_payload(),
             })
         });
