@@ -3,7 +3,9 @@ use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{
     AccessRulesChainOffset, ComponentOffset, MetadataOffset, RENodeId, SubstateId, SubstateOffset,
 };
-use radix_engine_interface::api::types::{NodeModuleId, RoyaltyOffset, TypeInfoOffset};
+use radix_engine_interface::api::types::{
+    AccountOffset, NodeModuleId, RoyaltyOffset, TypeInfoOffset,
+};
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::query::{dump_component_state, VaultData};
 
@@ -49,42 +51,60 @@ fn handle_state_component_internal(
     };
     let component_state = {
         let substate_offset = SubstateOffset::Component(ComponentOffset::State0);
-        let loaded_substate = read_known_substate(
+        let loaded_substate_opt = read_optional_substate(
             state_manager,
             RENodeId::GlobalComponent(component_address),
             NodeModuleId::SELF,
             &substate_offset,
-        )?;
-        let PersistedSubstate::ComponentState(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
+        );
+        match loaded_substate_opt {
+            Some(PersistedSubstate::ComponentState(substate)) => Some(substate),
+            Some(..) => return Err(wrong_substate_type(substate_offset)),
+            None => None,
+        }
     };
+    let account_state = {
+        let substate_offset = SubstateOffset::Account(AccountOffset::Account);
+        let loaded_substate_opt = read_optional_substate(
+            state_manager,
+            RENodeId::GlobalComponent(component_address),
+            NodeModuleId::SELF,
+            &substate_offset,
+        );
+        match loaded_substate_opt {
+            Some(PersistedSubstate::Account(substate)) => Some(substate),
+            Some(..) => return Err(wrong_substate_type(substate_offset)),
+            None => None,
+        }
+    };
+    // TODO: royalty_* should be non-optional once fixed on the engine side
     let component_royalty_config = {
         let substate_offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig);
-        let loaded_substate = read_known_substate(
+        let loaded_substate_opt = read_optional_substate(
             state_manager,
             RENodeId::GlobalComponent(component_address),
             NodeModuleId::ComponentRoyalty,
             &substate_offset,
-        )?;
-        let PersistedSubstate::ComponentRoyaltyConfig(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
+        );
+        match loaded_substate_opt {
+            Some(PersistedSubstate::ComponentRoyaltyConfig(substate)) => Some(substate),
+            Some(..) => return Err(wrong_substate_type(substate_offset)),
+            None => None,
+        }
     };
     let component_royalty_accumulator = {
         let substate_offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator);
-        let loaded_substate = read_known_substate(
+        let loaded_substate_opt = read_optional_substate(
             state_manager,
             RENodeId::GlobalComponent(component_address),
             NodeModuleId::ComponentRoyalty,
             &substate_offset,
-        )?;
-        let PersistedSubstate::ComponentRoyaltyAccumulator(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
+        );
+        match loaded_substate_opt {
+            Some(PersistedSubstate::ComponentRoyaltyAccumulator(substate)) => Some(substate),
+            Some(..) => return Err(wrong_substate_type(substate_offset)),
+            None => None,
+        }
     };
     let component_metadata = {
         let substate_offset = SubstateOffset::Metadata(MetadataOffset::Metadata);
@@ -141,17 +161,32 @@ fn handle_state_component_internal(
 
     Ok(models::StateComponentResponse {
         info: Some(to_api_type_info_substate(&mapping_context, &type_info)?),
-        state: Some(to_api_component_state_substate(
-            &mapping_context,
-            &component_state,
-        )?),
-        royalty_config: Some(to_api_component_royalty_config_substate(
-            &mapping_context,
-            &component_royalty_config,
-        )?),
-        royalty_accumulator: Some(to_api_component_royalty_accumulator_substate(
-            &component_royalty_accumulator,
-        )?),
+        state: if let Some(c) = component_state {
+            Some(Box::new(to_api_component_state_substate(
+                &mapping_context,
+                &c,
+            )?))
+        } else {
+            None
+        },
+        account: if let Some(a) = account_state {
+            Some(Box::new(to_api_account_substate(&mapping_context, &a)?))
+        } else {
+            None
+        },
+        royalty_config: if let Some(r) = component_royalty_config {
+            Some(Box::new(to_api_component_royalty_config_substate(
+                &mapping_context,
+                &r,
+            )?))
+        } else {
+            None
+        },
+        royalty_accumulator: if let Some(r) = component_royalty_accumulator {
+            Some(Box::new(to_api_component_royalty_accumulator_substate(&r)?))
+        } else {
+            None
+        },
         access_rules: Some(to_api_access_rules_chain_substate(
             &mapping_context,
             &component_access_rules,
