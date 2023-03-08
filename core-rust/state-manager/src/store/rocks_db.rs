@@ -69,7 +69,7 @@ use std::fmt;
 use crate::store::traits::*;
 use crate::{
     AccumulatorHash, CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash,
-    HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerTransactionReceipt,
+    HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt,
 };
 use radix_engine::ledger::{OutputValue, QueryableSubstateStore, ReadableSubstateStore};
 use radix_engine::system::node_substates::PersistedSubstate;
@@ -285,25 +285,23 @@ impl CommitStore for RocksDBStore {
             panic!("Commit request contains duplicate payload hashes");
         }
 
-        // Ledger proof (by state version) is a tuple of optional epoch boundary and an actual
-        // proof bytes to optimize preparation of ledger sync responses (see: get_txns_and_proof).
-        // Note that this doesn't apply to an epoch proof (stored separately in
-        // LedgerProofByEpoch column family) - it is just raw proof bytes.
-        let encoded_proof =
-            scrypto_encode(&(commit_bundle.epoch_boundary, &commit_bundle.proof_bytes))
-                .expect("Failed to encode commit proof");
-
+        let encoded_proof = scrypto_encode(&commit_bundle.proof).unwrap();
         batch.put_cf(
             self.cf_handle(&LedgerProofByStateVersion),
-            commit_bundle.proof_state_version.to_be_bytes(),
+            commit_bundle
+                .proof
+                .ledger_header
+                .accumulator_state
+                .state_version
+                .to_be_bytes(),
             &encoded_proof,
         );
 
-        if let Some(epoch_boundary) = commit_bundle.epoch_boundary {
+        if let Some(next_epoch) = commit_bundle.proof.ledger_header.next_epoch {
             batch.put_cf(
                 self.cf_handle(&LedgerProofByEpoch),
-                epoch_boundary.to_be_bytes(),
-                &commit_bundle.proof_bytes,
+                next_epoch.epoch.to_be_bytes(),
+                &encoded_proof,
             );
         }
 
@@ -520,9 +518,9 @@ impl QueryableProofStore for RocksDBStore {
         start_state_version_inclusive: u64,
         max_number_of_txns_if_more_than_one_proof: u32,
         max_payload_size_in_bytes: u32,
-    ) -> Option<(Vec<Vec<u8>>, Vec<u8>)> {
+    ) -> Option<(Vec<Vec<u8>>, LedgerProof)> {
         let mut payload_size_so_far = 0;
-        let mut latest_usable_proof: Option<Vec<u8>> = None;
+        let mut latest_usable_proof: Option<LedgerProof> = None;
         let mut txns = Vec::new();
 
         let mut proofs_iter = self.db.iterator_cf(
@@ -553,8 +551,7 @@ impl QueryableProofStore for RocksDBStore {
                     let next_proof_kv = next_proof_result.unwrap();
                     let next_proof_state_version =
                         u64::from_be_bytes((*next_proof_kv.0).try_into().unwrap());
-                    let (next_proof_epoch_opt, next_proof_bytes): (Option<u64>, Vec<u8>) =
-                        scrypto_decode(next_proof_kv.1.as_ref()).unwrap();
+                    let next_proof: LedgerProof = scrypto_decode(next_proof_kv.1.as_ref()).unwrap();
 
                     let mut payload_size_including_next_proof_txns = payload_size_so_far;
                     let mut next_proof_txns = Vec::new();
@@ -605,11 +602,12 @@ impl QueryableProofStore for RocksDBStore {
                                 <= (max_number_of_txns_if_more_than_one_proof as usize))
                     {
                         // Yup, all good, use next_proof as the result and add its txns
-                        latest_usable_proof = Some(next_proof_bytes);
+                        let next_proof_at_epoch = next_proof.ledger_header.next_epoch.is_some();
+                        latest_usable_proof = Some(next_proof);
                         txns.append(&mut next_proof_txns);
                         payload_size_so_far = payload_size_including_next_proof_txns;
 
-                        if next_proof_epoch_opt.is_some() {
+                        if next_proof_at_epoch {
                             // Stop if we've reached an epoch proof
                             break 'proof_loop;
                         }
@@ -628,13 +626,14 @@ impl QueryableProofStore for RocksDBStore {
         latest_usable_proof.map(|proof| (txns, proof))
     }
 
-    fn get_epoch_proof(&self, epoch: u64) -> Option<Vec<u8>> {
+    fn get_epoch_proof(&self, epoch: u64) -> Option<LedgerProof> {
         self.db
             .get_cf(self.cf_handle(&LedgerProofByEpoch), epoch.to_be_bytes())
             .unwrap()
+            .map(|bytes| scrypto_decode(bytes.as_ref()).unwrap())
     }
 
-    fn get_last_proof(&self) -> Option<Vec<u8>> {
+    fn get_last_proof(&self) -> Option<LedgerProof> {
         self.db
             .iterator_cf(
                 self.cf_handle(&LedgerProofByStateVersion),
@@ -642,11 +641,7 @@ impl QueryableProofStore for RocksDBStore {
             )
             .map(|res| res.unwrap())
             .next()
-            .map(|(_, proof)| {
-                // A proof is a tuple of (epoch_change, proof_bytes), see: commit
-                let decoded_tuple: (Option<u64>, Vec<u8>) = scrypto_decode(proof.as_ref()).unwrap();
-                decoded_tuple.1
-            })
+            .map(|(_, proof)| scrypto_decode(proof.as_ref()).unwrap())
     }
 }
 

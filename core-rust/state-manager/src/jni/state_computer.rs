@@ -64,18 +64,19 @@
 
 use crate::jni::mempool::JavaRawTransaction;
 use crate::transaction::UserTransactionValidator;
-use crate::{LedgerHashes, PreviousVertex};
+use crate::{
+    AccumulatorHash, AccumulatorState, LedgerHashes, LedgerHeader, LedgerProof, PreviousVertex,
+    ReceiptHash, StateHash, TimestampedValidatorSignature, TransactionHash, ValidatorInfo,
+};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine::types::*;
-use std::collections::BTreeMap;
 
 use crate::jni::common_types::JavaHashCode;
 use crate::jni::utils::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
-use crate::{CommitError, NextEpoch, PrepareGenesisRequest, PrepareGenesisResult, StateHash};
+use crate::{CommitError, NextEpoch, PrepareGenesisRequest, PrepareGenesisResult};
 
 use super::state_manager::ActualStateManager;
 
@@ -242,12 +243,10 @@ fn do_get_epoch(state_manager: &ActualStateManager, _args: ()) -> u64 {
 
 pub fn export_extern_functions() {}
 
-#[derive(Debug, Decode, Encode, Categorize)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaCommitRequest {
     pub transactions: Vec<JavaRawTransaction>,
-    pub state_version: u64,
-    pub state_hash: JavaHashCode,
-    pub proof: Vec<u8>,
+    pub proof: JavaLedgerProof,
     pub vertex_store: Option<Vec<u8>>,
 }
 
@@ -259,9 +258,7 @@ impl From<JavaCommitRequest> for CommitRequest {
                 .into_iter()
                 .map(|t| t.payload)
                 .collect(),
-            proof_state_version: commit_request.state_version,
-            proof_state_hash: StateHash::from_raw_bytes(commit_request.state_hash.into_bytes()),
-            proof: commit_request.proof,
+            proof: commit_request.proof.into(),
             vertex_store: commit_request.vertex_store,
         }
     }
@@ -317,7 +314,7 @@ impl From<JavaPreviousVertex> for PreviousVertex {
     }
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Decode, Encode, Categorize)]
 pub struct JavaLedgerHashes {
     pub state_root: JavaHashCode,
     pub transaction_root: JavaHashCode,
@@ -330,6 +327,18 @@ impl From<LedgerHashes> for JavaLedgerHashes {
             state_root: JavaHashCode::from_bytes(ledger_hashes.state_root.into_bytes()),
             transaction_root: JavaHashCode::from_bytes(ledger_hashes.transaction_root.into_bytes()),
             receipt_root: JavaHashCode::from_bytes(ledger_hashes.receipt_root.into_bytes()),
+        }
+    }
+}
+
+impl From<JavaLedgerHashes> for LedgerHashes {
+    fn from(ledger_hashes: JavaLedgerHashes) -> Self {
+        Self {
+            state_root: StateHash::from_raw_bytes(ledger_hashes.state_root.into_bytes()),
+            transaction_root: TransactionHash::from_raw_bytes(
+                ledger_hashes.transaction_root.into_bytes(),
+            ),
+            receipt_root: ReceiptHash::from_raw_bytes(ledger_hashes.receipt_root.into_bytes()),
         }
     }
 }
@@ -368,7 +377,7 @@ impl From<JavaPrepareGenesisRequest> for PrepareGenesisRequest {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPrepareGenesisResult {
-    pub validator_set: Option<BTreeMap<ComponentAddress, Validator>>,
+    pub validator_set: Option<Vec<ValidatorInfo>>,
     pub ledger_hashes: JavaLedgerHashes,
 }
 
@@ -385,4 +394,98 @@ impl From<PrepareGenesisResult> for JavaPrepareGenesisResult {
 pub struct JavaValidatorInfo {
     pub lp_token_address: ResourceAddress,
     pub unstake_resource: ResourceAddress,
+}
+
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct JavaLedgerProof {
+    pub opaque: JavaHashCode,
+    pub ledger_header: JavaLedgerHeader,
+    pub timestamped_signatures: Vec<TimestampedValidatorSignature>,
+}
+
+impl From<LedgerProof> for JavaLedgerProof {
+    fn from(ledger_proof: LedgerProof) -> Self {
+        Self {
+            opaque: JavaHashCode::from_bytes(ledger_proof.opaque.0),
+            ledger_header: ledger_proof.ledger_header.into(),
+            timestamped_signatures: ledger_proof.timestamped_signatures,
+        }
+    }
+}
+
+impl From<JavaLedgerProof> for LedgerProof {
+    fn from(ledger_proof: JavaLedgerProof) -> Self {
+        Self {
+            opaque: Hash(ledger_proof.opaque.into_bytes()),
+            ledger_header: ledger_proof.ledger_header.into(),
+            timestamped_signatures: ledger_proof.timestamped_signatures,
+        }
+    }
+}
+
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct JavaLedgerHeader {
+    pub epoch: u64,
+    pub round: u64,
+    pub accumulator_state: JavaAccumulatorState,
+    pub hashes: JavaLedgerHashes,
+    pub consensus_parent_round_timestamp_ms: i64,
+    pub proposer_timestamp_ms: i64,
+    pub next_epoch: Option<NextEpoch>,
+}
+
+impl From<LedgerHeader> for JavaLedgerHeader {
+    fn from(ledger_header: LedgerHeader) -> Self {
+        Self {
+            epoch: ledger_header.epoch,
+            round: ledger_header.round,
+            accumulator_state: ledger_header.accumulator_state.into(),
+            hashes: ledger_header.hashes.into(),
+            consensus_parent_round_timestamp_ms: ledger_header.consensus_parent_round_timestamp_ms,
+            proposer_timestamp_ms: ledger_header.proposer_timestamp_ms,
+            next_epoch: ledger_header.next_epoch,
+        }
+    }
+}
+
+impl From<JavaLedgerHeader> for LedgerHeader {
+    fn from(ledger_header: JavaLedgerHeader) -> Self {
+        Self {
+            epoch: ledger_header.epoch,
+            round: ledger_header.round,
+            accumulator_state: ledger_header.accumulator_state.into(),
+            hashes: ledger_header.hashes.into(),
+            consensus_parent_round_timestamp_ms: ledger_header.consensus_parent_round_timestamp_ms,
+            proposer_timestamp_ms: ledger_header.proposer_timestamp_ms,
+            next_epoch: ledger_header.next_epoch,
+        }
+    }
+}
+
+#[derive(Debug, Decode, Encode, Categorize)]
+pub struct JavaAccumulatorState {
+    pub state_version: u64,
+    pub accumulator_hash: JavaHashCode,
+}
+
+impl From<JavaAccumulatorState> for AccumulatorState {
+    fn from(accumulator_state: JavaAccumulatorState) -> Self {
+        Self {
+            state_version: accumulator_state.state_version,
+            accumulator_hash: AccumulatorHash::from_raw_bytes(
+                accumulator_state.accumulator_hash.into_bytes(),
+            ),
+        }
+    }
+}
+
+impl From<AccumulatorState> for JavaAccumulatorState {
+    fn from(accumulator_state: AccumulatorState) -> Self {
+        Self {
+            state_version: accumulator_state.state_version,
+            accumulator_hash: JavaHashCode::from_bytes(
+                accumulator_state.accumulator_hash.into_bytes(),
+            ),
+        }
+    }
 }

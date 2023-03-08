@@ -1,6 +1,6 @@
 use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine::blueprints::transaction_processor::InstructionOutput;
-use std::collections::BTreeMap;
+use std::collections::btree_map::BTreeMap;
 
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::OutputValue;

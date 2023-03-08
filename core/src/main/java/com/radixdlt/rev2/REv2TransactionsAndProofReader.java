@@ -68,8 +68,6 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawLedgerTransaction;
@@ -89,13 +87,10 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
   public static final int MAX_TXN_BYTES_FOR_A_SINGLE_RESPONSE = 4 * 1024 * 1024;
 
   private final REv2TransactionAndProofStore transactionStore;
-  private final Serialization serialization;
 
   @Inject
-  public REv2TransactionsAndProofReader(
-      REv2TransactionAndProofStore transactionStore, Serialization serialization) {
+  public REv2TransactionsAndProofReader(REv2TransactionAndProofStore transactionStore) {
     this.transactionStore = transactionStore;
-    this.serialization = serialization;
   }
 
   @Override
@@ -111,44 +106,20 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
 
     return rawTxnsAndProofOpt
         .map(
-            rawTxnsAndProof -> {
-              try {
-                final var proof = serialization.fromDson(rawTxnsAndProof.last(), LedgerProof.class);
-                final var txns =
-                    rawTxnsAndProof.first().stream().map(RawLedgerTransaction::create).toList();
-                return CommittedTransactionsWithProof.create(txns, proof);
-              } catch (DeserializeException e) {
-                throw new RuntimeException(e);
-              }
-            })
+            rawTxnsAndProof ->
+                CommittedTransactionsWithProof.create(
+                    rawTxnsAndProof.first().stream().map(RawLedgerTransaction::create).toList(),
+                    REv2ToConsensus.ledgerProof(rawTxnsAndProof.last())))
         .or(() -> null);
   }
 
   @Override
   public Optional<LedgerProof> getEpochProof(long epoch) {
-    return this.transactionStore
-        .getEpochProof(epoch)
-        .map(
-            b -> {
-              try {
-                return serialization.fromDson(b, LedgerProof.class);
-              } catch (DeserializeException e) {
-                throw new RuntimeException(e);
-              }
-            });
+    return this.transactionStore.getEpochProof(epoch).map(REv2ToConsensus::ledgerProof);
   }
 
   @Override
   public Optional<LedgerProof> getLastProof() {
-    return this.transactionStore
-        .getLastProof()
-        .map(
-            b -> {
-              try {
-                return serialization.fromDson(b, LedgerProof.class);
-              } catch (DeserializeException e) {
-                throw new RuntimeException(e);
-              }
-            });
+    return this.transactionStore.getLastProof().map(REv2ToConsensus::ledgerProof);
   }
 }

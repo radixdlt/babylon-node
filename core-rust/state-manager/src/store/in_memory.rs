@@ -67,7 +67,7 @@ use crate::transaction::LedgerTransaction;
 use crate::types::UserPayloadHash;
 use crate::{
     CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash, HasUserPayloadHash,
-    IntentHash, LedgerPayloadHash, LedgerTransactionReceipt,
+    IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt,
 };
 
 use radix_engine::ledger::OutputValue;
@@ -77,7 +77,8 @@ use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, Payload, ReadableTreeStore, SerializedInMemoryTreeStore, TreeNode, WriteableTreeStore,
 };
 use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::btree_map::BTreeMap;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct InMemoryStore {
@@ -87,8 +88,8 @@ pub struct InMemoryStore {
     transaction_intent_lookup: HashMap<IntentHash, u64>,
     user_payload_hash_lookup: HashMap<UserPayloadHash, u64>,
     ledger_payload_hash_lookup: HashMap<LedgerPayloadHash, u64>,
-    proofs: BTreeMap<u64, Vec<u8>>,
-    epoch_proofs: BTreeMap<u64, Vec<u8>>,
+    proofs: BTreeMap<u64, LedgerProof>,
+    epoch_proofs: BTreeMap<u64, LedgerProof>,
     vertex_store: Option<Vec<u8>>,
     substate_store: SerializedInMemorySubstateStore,
     tree_node_store: SerializedInMemoryTreeStore,
@@ -210,12 +211,15 @@ impl CommitStore for InMemoryStore {
             self.insert_transaction(txn, receipt, identifiers);
         }
 
-        if let Some(epoch_boundary) = commit_bundle.epoch_boundary {
+        let commit_ledger_header = &commit_bundle.proof.ledger_header;
+        if let Some(next_epoch) = &commit_ledger_header.next_epoch {
             self.epoch_proofs
-                .insert(epoch_boundary, commit_bundle.proof_bytes.clone());
+                .insert(next_epoch.epoch, commit_bundle.proof.clone());
         }
-        self.proofs
-            .insert(commit_bundle.proof_state_version, commit_bundle.proof_bytes);
+        self.proofs.insert(
+            commit_ledger_header.accumulator_state.state_version,
+            commit_bundle.proof,
+        );
 
         for (substate_id, substate) in commit_bundle.substates {
             self.substate_store.put_substate(substate_id, substate);
@@ -294,7 +298,7 @@ impl QueryableProofStore for InMemoryStore {
         start_state_version_inclusive: u64,
         _max_number_of_txns_if_more_than_one_proof: u32,
         _max_payload_size_in_bytes: u32,
-    ) -> Option<(Vec<Vec<u8>>, Vec<u8>)> {
+    ) -> Option<(Vec<Vec<u8>>, LedgerProof)> {
         self.proofs
             .range(start_state_version_inclusive..)
             .next()
@@ -307,14 +311,14 @@ impl QueryableProofStore for InMemoryStore {
             })
     }
 
-    fn get_epoch_proof(&self, epoch: u64) -> Option<Vec<u8>> {
+    fn get_epoch_proof(&self, epoch: u64) -> Option<LedgerProof> {
         self.epoch_proofs.get(&epoch).cloned()
     }
 
-    fn get_last_proof(&self) -> Option<Vec<u8>> {
+    fn get_last_proof(&self) -> Option<LedgerProof> {
         self.proofs
             .iter()
             .next_back()
-            .map(|(_, bytes)| bytes.clone())
+            .map(|(_, proof)| proof.clone())
     }
 }

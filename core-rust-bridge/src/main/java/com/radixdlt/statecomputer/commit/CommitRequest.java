@@ -64,21 +64,17 @@
 
 package com.radixdlt.statecomputer.commit;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transactions.RawLedgerTransaction;
-import com.radixdlt.utils.UInt64;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 public record CommitRequest(
     List<RawLedgerTransaction> transactions,
-    UInt64 stateVersion,
-    HashCode stateHash,
-    byte[] proofBytes,
+    LedgerProof proof,
     Option<byte[]> postCommitVertexStoreBytes) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
@@ -92,17 +88,16 @@ public record CommitRequest(
     if (o == null || getClass() != o.getClass()) return false;
     CommitRequest that = (CommitRequest) o;
     return Objects.equals(transactions, that.transactions)
-        && Objects.equals(stateVersion, that.stateVersion)
-        && Objects.equals(stateHash, that.stateHash)
-        && Arrays.equals(proofBytes, that.proofBytes)
-        && Objects.equals(postCommitVertexStoreBytes, that.postCommitVertexStoreBytes);
+        && Objects.equals(proof, that.proof)
+        && Arrays.equals(
+            postCommitVertexStoreBytes.or((byte[]) null),
+            that.postCommitVertexStoreBytes.or((byte[]) null));
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(transactions, stateVersion, stateHash, postCommitVertexStoreBytes);
-    result = 31 * result + Arrays.hashCode(proofBytes);
-    return result;
+    return Objects.hash(
+        transactions, proof, Arrays.hashCode(postCommitVertexStoreBytes.or((byte[]) null)));
   }
 
   @Override
@@ -110,14 +105,10 @@ public record CommitRequest(
     return "CommitRequest{"
         + "transactions="
         + transactions
-        + ", stateVersion="
-        + stateVersion
-        + ", stateHash="
-        + stateHash
-        + ", proofBytes="
-        + Arrays.toString(proofBytes)
+        + ", proof="
+        + proof
         + ", postCommitVertexStoreBytes="
-        + postCommitVertexStoreBytes
+        + postCommitVertexStoreBytes.map(Arrays::toString)
         + '}';
   }
 }

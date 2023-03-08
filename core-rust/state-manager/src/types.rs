@@ -66,11 +66,10 @@ use crate::{
     jni::common_types::JavaHashCode, transaction::LedgerTransaction, LedgerTransactionOutcome,
     LedgerTransactionReceipt, SubstateChanges,
 };
-use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine::types::*;
-use std::collections::BTreeMap;
 use std::fmt;
 use transaction::data::*;
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1Signature;
 use transaction::model::{
     NotarizedTransaction, PreviewFlags, SignedTransactionIntent, TransactionIntent,
     TransactionManifest,
@@ -617,12 +616,10 @@ pub enum CommitError {
     MissingEpochProof,
 }
 
-#[derive(Debug, Categorize, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct CommitRequest {
     pub transaction_payloads: Vec<Vec<u8>>,
-    pub proof_state_version: u64, // TODO: Use actual proof to get the state version...
-    pub proof_state_hash: StateHash, // TODO: ... and the state hash
-    pub proof: Vec<u8>,
+    pub proof: LedgerProof,
     pub vertex_store: Option<Vec<u8>>,
 }
 
@@ -650,9 +647,16 @@ pub struct PrepareResult {
     pub ledger_hashes: LedgerHashes,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorInfo {
+    pub address: Option<ComponentAddress>,
+    pub key: EcdsaSecp256k1PublicKey,
+    pub stake: Decimal,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct NextEpoch {
-    pub validator_set: BTreeMap<ComponentAddress, Validator>,
+    pub validator_set: Vec<ValidatorInfo>,
     pub epoch: u64,
 }
 
@@ -663,6 +667,38 @@ pub struct PrepareGenesisRequest {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareGenesisResult {
-    pub validator_set: Option<BTreeMap<ComponentAddress, Validator>>,
+    pub validator_set: Option<Vec<ValidatorInfo>>,
     pub ledger_hashes: LedgerHashes,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct TimestampedValidatorSignature {
+    pub key: EcdsaSecp256k1PublicKey,
+    pub validator_address: ComponentAddress,
+    pub timestamp_ms: i64,
+    pub signature: EcdsaSecp256k1Signature,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct LedgerProof {
+    pub opaque: Hash,
+    pub ledger_header: LedgerHeader,
+    pub timestamped_signatures: Vec<TimestampedValidatorSignature>,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct LedgerHeader {
+    pub epoch: u64,
+    pub round: u64,
+    pub accumulator_state: AccumulatorState,
+    pub hashes: LedgerHashes,
+    pub consensus_parent_round_timestamp_ms: i64,
+    pub proposer_timestamp_ms: i64,
+    pub next_epoch: Option<NextEpoch>,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct AccumulatorState {
+    pub state_version: u64,
+    pub accumulator_hash: AccumulatorHash,
 }

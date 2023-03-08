@@ -71,6 +71,7 @@ import com.radixdlt.monitoring.LabelledTimer;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.MethodId;
 import com.radixdlt.sbor.Natives;
+import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
@@ -109,7 +110,7 @@ public final class REv2TransactionAndProofStore {
     return this.getTransactionAtStateVersionFunc.call(UInt64.fromNonNegativeLong(stateVersion));
   }
 
-  public Option<Tuple.Tuple2<List<byte[]>, byte[]>> getTxnsAndProof(
+  public Option<Tuple.Tuple2<List<byte[]>, LedgerProof>> getTxnsAndProof(
       long startStateVersionInclusive,
       int maxNumberOfTxnsIfMoreThanOneProof,
       int maxPayloadSizeInBytes) {
@@ -120,11 +121,11 @@ public final class REv2TransactionAndProofStore {
             UInt32.fromNonNegativeInt(maxPayloadSizeInBytes)));
   }
 
-  public Optional<byte[]> getLastProof() {
+  public Optional<LedgerProof> getLastProof() {
     return this.getLastProofFunc.call(Tuple.tuple()).toOptional();
   }
 
-  public Optional<byte[]> getEpochProof(long epoch) {
+  public Optional<LedgerProof> getEpochProof(long epoch) {
     return this.getEpochProofFunc.call(UInt64.fromNonNegativeLong(epoch)).toOptional();
   }
 
@@ -134,16 +135,16 @@ public final class REv2TransactionAndProofStore {
       StateManager stateManager, byte[] payload);
 
   private final Natives.Call1<
-          Tuple.Tuple3<UInt64, UInt32, UInt32>, Option<Tuple.Tuple2<List<byte[]>, byte[]>>>
+          Tuple.Tuple3<UInt64, UInt32, UInt32>, Option<Tuple.Tuple2<List<byte[]>, LedgerProof>>>
       getTxnsAndProof;
 
   private static native byte[] getTxnsAndProof(StateManager stateManager, byte[] payload);
 
-  private final Natives.Call1<Tuple.Tuple0, Option<byte[]>> getLastProofFunc;
+  private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>> getLastProofFunc;
 
   private static native byte[] getLastProof(StateManager stateManager, byte[] payload);
 
-  private final Natives.Call1<UInt64, Option<byte[]>> getEpochProofFunc;
+  private final Natives.Call1<UInt64, Option<LedgerProof>> getEpochProofFunc;
 
   private static native byte[] getEpochProof(StateManager stateManager, byte[] payload);
 }
