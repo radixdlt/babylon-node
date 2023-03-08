@@ -65,8 +65,9 @@
 use crate::jni::mempool::JavaRawTransaction;
 use crate::transaction::UserTransactionValidator;
 use crate::{
-    AccumulatorHash, AccumulatorState, LedgerHashes, LedgerHeader, LedgerProof, PreviousVertex,
-    ReceiptHash, StateHash, TimestampedValidatorSignature, TransactionHash, ValidatorInfo,
+    AccumulatorHash, AccumulatorState, ActiveValidatorInfo, LedgerHashes, LedgerHeader,
+    LedgerProof, PreviousVertex, ReceiptHash, StateHash, TimestampedValidatorSignature,
+    TransactionHash,
 };
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
@@ -377,7 +378,7 @@ impl From<JavaPrepareGenesisRequest> for PrepareGenesisRequest {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct JavaPrepareGenesisResult {
-    pub validator_set: Option<Vec<ValidatorInfo>>,
+    pub validator_set: Option<Vec<ActiveValidatorInfo>>,
     pub ledger_hashes: JavaLedgerHashes,
 }
 

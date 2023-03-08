@@ -146,7 +146,7 @@ pub mod commit {
     use radix_engine_stores::hash_tree::tree_store::{
         NodeKey, ReNodeModulePayload, TreeNode, Version,
     };
-    use std::collections::btree_map::BTreeMap;
+    use std::collections::BTreeMap;
 
     pub struct CommitBundle {
         pub transactions: Vec<CommittedTransactionBundle>,

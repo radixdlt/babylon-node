@@ -648,7 +648,7 @@ pub struct PrepareResult {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct ValidatorInfo {
+pub struct ActiveValidatorInfo {
     pub address: Option<ComponentAddress>,
     pub key: EcdsaSecp256k1PublicKey,
     pub stake: Decimal,
@@ -656,7 +656,7 @@ pub struct ValidatorInfo {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct NextEpoch {
-    pub validator_set: Vec<ValidatorInfo>,
+    pub validator_set: Vec<ActiveValidatorInfo>,
     pub epoch: u64,
 }
 
@@ -667,7 +667,7 @@ pub struct PrepareGenesisRequest {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareGenesisResult {
-    pub validator_set: Option<Vec<ValidatorInfo>>,
+    pub validator_set: Option<Vec<ActiveValidatorInfo>>,
     pub ledger_hashes: LedgerHashes,
 }
 
