@@ -14,6 +14,7 @@ use radix_engine::transaction::{
 use radix_engine::types::{hash, scrypto_encode, Hash, SubstateId};
 use radix_engine_interface::api::component::ComponentAddress;
 use radix_engine_interface::blueprints::logger::Level;
+use radix_engine_interface::constants::PACKAGE_LOADER;
 use radix_engine_interface::*;
 
 use crate::{AccumulatorHash, LedgerReceiptHash};
@@ -119,7 +120,18 @@ impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
 
 /// For Genesis Transaction
 impl From<(CommitResult, FeeSummary)> for LedgerTransactionReceipt {
-    fn from((commit_result, fee_summary): (CommitResult, FeeSummary)) -> Self {
+    fn from((mut commit_result, fee_summary): (CommitResult, FeeSummary)) -> Self {
+        // TODO: This is a hack to get PACKAGE_LOADER package into the receipt
+        // TODO: for gateway support
+        if let Some((_, epoch)) = commit_result.next_epoch {
+            if epoch == 1 {
+                commit_result
+                    .entity_changes
+                    .new_package_addresses
+                    .insert(0, PACKAGE_LOADER);
+            }
+        }
+
         LedgerTransactionReceipt {
             outcome: commit_result.outcome.into(),
             fee_summary,
