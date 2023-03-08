@@ -102,8 +102,11 @@ public record CommitRequest(
 
   @Override
   public String toString() {
-    return "%s{transactions=%s, proof=%s, postCommitVertexStoreBytes.length=%s}".formatted(
-        CommitRequest.class.getSimpleName(), transactions, proof,
-        postCommitVertexStoreBytes.map(bytes -> bytes.length));
+    return "%s{transactions=%s, proof=%s, postCommitVertexStoreBytes.length=%s}"
+        .formatted(
+            CommitRequest.class.getSimpleName(),
+            transactions,
+            proof,
+            postCommitVertexStoreBytes.map(bytes -> bytes.length));
   }
 }
