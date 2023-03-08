@@ -102,13 +102,8 @@ public record CommitRequest(
 
   @Override
   public String toString() {
-    return "CommitRequest{"
-        + "transactions="
-        + transactions
-        + ", proof="
-        + proof
-        + ", postCommitVertexStoreBytes="
-        + postCommitVertexStoreBytes.map(Arrays::toString)
-        + '}';
+    return "%s{transactions=%s, proof=%s, postCommitVertexStoreBytes.length=%s}".formatted(
+        CommitRequest.class.getSimpleName(), transactions, proof,
+        postCommitVertexStoreBytes.map(bytes -> bytes.length));
   }
 }
