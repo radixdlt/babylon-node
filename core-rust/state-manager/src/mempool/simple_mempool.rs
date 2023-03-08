@@ -152,7 +152,7 @@ impl SimpleMempool {
         intent_hashes: &[IntentHash],
     ) -> Vec<PendingTransaction> {
         intent_hashes
-            .into_iter()
+            .iter()
             .filter_map(|intent_hash| self.intent_lookup.remove(intent_hash))
             .flat_map(|payload_hashes| payload_hashes.into_iter())
             .map(|payload_hash| {

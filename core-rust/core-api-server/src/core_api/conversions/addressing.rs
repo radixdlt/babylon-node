@@ -592,7 +592,7 @@ pub fn to_global_entity_reference(
     global_address: &Address,
 ) -> Result<models::GlobalEntityReference, MappingError> {
     let reference = models::GlobalEntityReference {
-        entity_reference: Box::new(to_api_entity_reference(global_address.clone().into())?),
+        entity_reference: Box::new(to_api_entity_reference((*global_address).into())?),
         global_address_hex: to_hex(global_address_to_vec(global_address)),
         global_address: to_api_address(context, global_address),
     };
