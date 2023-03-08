@@ -37,8 +37,10 @@ pub fn to_api_receipt(
     for (id, output) in substate_changes.created {
         match id {
             SubstateId(RENodeId::GlobalPackage(package_address), NodeModuleId::TypeInfo, ..) => {
-                new_global_entities
-                    .push(to_global_entity_reference(context, &package_address.into())?);
+                new_global_entities.push(to_global_entity_reference(
+                    context,
+                    &package_address.into(),
+                )?);
             }
             SubstateId(
                 RENodeId::GlobalComponent(component_address),
@@ -220,10 +222,9 @@ pub fn to_api_fee_summary(
                     _ => return None,
                 };
                 let payment = models::RoyaltyPayment {
-                    royalty_receiver: Box::new(to_global_entity_reference(
-                        context,
-                        &global_address,
-                    ).ok()?),
+                    royalty_receiver: Box::new(
+                        to_global_entity_reference(context, &global_address).ok()?,
+                    ),
                     cost_unit_amount: to_api_u32_as_i64(cost_unit_amount),
                 };
                 Some(payment)

@@ -3610,9 +3610,6 @@ components:
       type: object
       required:
         - info
-        - state
-        - royalty_config
-        - royalty_accumulator
         - metadata
         - access_rules
         - state_owned_vaults
@@ -3621,6 +3618,8 @@ components:
         info:
           $ref: "#/components/schemas/Substate"
         state:
+          $ref: "#/components/schemas/Substate"
+        account:
           $ref: "#/components/schemas/Substate"
         royalty_config:
           $ref: "#/components/schemas/Substate"
