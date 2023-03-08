@@ -167,7 +167,7 @@ enum RelativeIndex {
 struct RelativeNodeAccess<M: Merklizable> {
     offset: usize,
     slice_level: TreeSliceLevel<M>,
-    zero: M,
+    zero: M, // only present here because it is the easiest way of returning a `&M` from `get()`
 }
 
 impl<M: Merklizable> RelativeNodeAccess<M> {
