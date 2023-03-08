@@ -154,7 +154,9 @@ public final class REv2ToConsensus {
   public static Map.Entry<BFTValidatorId, TimestampedECDSASignature> timestampedValidatorSignature(
       TimestampedValidatorSignature timestampedSignature) {
     return Maps.immutableEntry(
-        BFTValidatorId.create(timestampedSignature.validatorAddress(), timestampedSignature.key()),
+        BFTValidatorId.create(
+            timestampedSignature.validatorAddress().or((ComponentAddress) null),
+            timestampedSignature.key()),
         TimestampedECDSASignature.from(
             timestampedSignature.timestampMs(), timestampedSignature.signature()));
   }
@@ -163,7 +165,7 @@ public final class REv2ToConsensus {
       BFTValidatorId id, TimestampedECDSASignature timestampedSignature) {
     return new TimestampedValidatorSignature(
         id.getKey(),
-        id.getValidatorAddress().get(),
+        Option.from(id.getValidatorAddress()),
         timestampedSignature.timestamp(),
         timestampedSignature.signature());
   }

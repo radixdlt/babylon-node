@@ -674,7 +674,7 @@ pub struct PrepareGenesisResult {
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TimestampedValidatorSignature {
     pub key: EcdsaSecp256k1PublicKey,
-    pub validator_address: ComponentAddress,
+    pub validator_address: Option<ComponentAddress>,
     pub timestamp_ms: i64,
     pub signature: EcdsaSecp256k1Signature,
 }
