@@ -2135,7 +2135,7 @@ components:
         mapping:
           # NOTE: These need to match SubstateType options below
           Metadata: '#/components/schemas/MetadataSubstate'
-          AccessRulesChain: '#/components/schemas/AccessRulesChainSubstate'
+          AccessRules: '#/components/schemas/AccessRulesSubstate'
           FunctionAccessRules: '#/components/schemas/FunctionAccessRulesSubstate'
           TypeInfo: '#/components/schemas/TypeInfoSubstate'
           ComponentState: '#/components/schemas/ComponentStateSubstate'
@@ -2165,7 +2165,7 @@ components:
       enum:
         # Common
         - Metadata
-        - AccessRulesChain
+        - AccessRules
         - FunctionAccessRules
         # Specific
         - TypeInfo
@@ -2194,14 +2194,14 @@ components:
     SubstateKeyType:
       # This corresponds to what's currently referred to as the "SubstateOffset"
       # This is roughly the same as the substate type, but some entities have two of the same substates
-      # (eg ResourceManagers have two AccessRulesChain substates)
+      # (eg ResourceManagers have two AccessRules substates)
       type: string
       description: |
-        Slightly different to the SubstateType - some entities have two of the same substate (eg ResouceManager AccessRuleChains)
+        Slightly different to the SubstateType - some entities have two of the same substate (eg ResouceManager AccessRules)
       enum:
         # Common
         - Metadata
-        - AccessRulesChain
+        - AccessRules
         - FunctionAccessRules
         # Specific
         - TypeInfo
@@ -2229,19 +2229,15 @@ components:
         - AccessController
         - Account
 ### COMMON SUBSTATES
-    AccessRulesChainSubstate:
+    AccessRulesSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - chain
+            - access_rules
           properties:
-            chain:
-              type: array
-              description: |
-                The layers of access rules applied.
-              items:
-                $ref: '#/components/schemas/AccessRules'
+            access_rules:
+              $ref: '#/components/schemas/AccessRules'
     FunctionAccessRulesSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -2272,11 +2268,14 @@ components:
           required:
             - package_address
             - blueprint_name
+            - global
           properties:
             package_address:
               $ref: '#/components/schemas/PackageAddress'
             blueprint_name:
               type: string
+            global:
+              type: boolean
     ComponentStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'

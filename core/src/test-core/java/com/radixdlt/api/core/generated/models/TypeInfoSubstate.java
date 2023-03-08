@@ -26,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerSubstate;
-import com.radixdlt.api.core.generated.models.AccessRulesChainSubstate;
+import com.radixdlt.api.core.generated.models.AccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.AccountSubstate;
 import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
@@ -65,7 +65,8 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   TypeInfoSubstate.JSON_PROPERTY_PACKAGE_ADDRESS,
-  TypeInfoSubstate.JSON_PROPERTY_BLUEPRINT_NAME
+  TypeInfoSubstate.JSON_PROPERTY_BLUEPRINT_NAME,
+  TypeInfoSubstate.JSON_PROPERTY_GLOBAL
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -75,7 +76,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "substate_type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = AccessControllerSubstate.class, name = "AccessController"),
-  @JsonSubTypes.Type(value = AccessRulesChainSubstate.class, name = "AccessRulesChain"),
+  @JsonSubTypes.Type(value = AccessRulesSubstate.class, name = "AccessRules"),
   @JsonSubTypes.Type(value = AccountSubstate.class, name = "Account"),
   @JsonSubTypes.Type(value = ClockCurrentMinuteSubstate.class, name = "ClockCurrentMinute"),
   @JsonSubTypes.Type(value = ComponentRoyaltyAccumulatorSubstate.class, name = "ComponentRoyaltyAccumulator"),
@@ -108,6 +109,9 @@ public class TypeInfoSubstate extends Substate {
 
   public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
   private String blueprintName;
+
+  public static final String JSON_PROPERTY_GLOBAL = "global";
+  private Boolean global;
 
   public TypeInfoSubstate() { 
   }
@@ -164,6 +168,32 @@ public class TypeInfoSubstate extends Substate {
   }
 
 
+  public TypeInfoSubstate global(Boolean global) {
+    this.global = global;
+    return this;
+  }
+
+   /**
+   * Get global
+   * @return global
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_GLOBAL)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getGlobal() {
+    return global;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_GLOBAL)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setGlobal(Boolean global) {
+    this.global = global;
+  }
+
+
   /**
    * Return true if this TypeInfoSubstate object is equal to o.
    */
@@ -178,12 +208,13 @@ public class TypeInfoSubstate extends Substate {
     TypeInfoSubstate typeInfoSubstate = (TypeInfoSubstate) o;
     return Objects.equals(this.packageAddress, typeInfoSubstate.packageAddress) &&
         Objects.equals(this.blueprintName, typeInfoSubstate.blueprintName) &&
+        Objects.equals(this.global, typeInfoSubstate.global) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageAddress, blueprintName, super.hashCode());
+    return Objects.hash(packageAddress, blueprintName, global, super.hashCode());
   }
 
   @Override
@@ -193,6 +224,7 @@ public class TypeInfoSubstate extends Substate {
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
     sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
+    sb.append("    global: ").append(toIndentedString(global)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -212,7 +244,7 @@ static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("AccessController", AccessControllerSubstate.class);
-  mappings.put("AccessRulesChain", AccessRulesChainSubstate.class);
+  mappings.put("AccessRules", AccessRulesSubstate.class);
   mappings.put("Account", AccountSubstate.class);
   mappings.put("ClockCurrentMinute", ClockCurrentMinuteSubstate.class);
   mappings.put("ComponentRoyaltyAccumulator", ComponentRoyaltyAccumulatorSubstate.class);

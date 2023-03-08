@@ -106,7 +106,7 @@ pub fn to_api_committed_transaction(
     receipt: LedgerTransactionReceipt,
     identifiers: CommittedTransactionIdentifiers,
 ) -> Result<models::CommittedTransaction, MappingError> {
-    let receipt = to_api_receipt(context, receipt)?;
+    let receipt = to_api_receipt(context, receipt).unwrap();
 
     Ok(models::CommittedTransaction {
         state_version: to_api_state_version(identifiers.state_version)?,

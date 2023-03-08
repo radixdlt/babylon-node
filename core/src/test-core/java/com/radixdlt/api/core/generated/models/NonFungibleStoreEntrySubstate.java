@@ -26,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerSubstate;
-import com.radixdlt.api.core.generated.models.AccessRulesChainSubstate;
+import com.radixdlt.api.core.generated.models.AccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.AccountSubstate;
 import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
@@ -78,7 +78,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "substate_type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = AccessControllerSubstate.class, name = "AccessController"),
-  @JsonSubTypes.Type(value = AccessRulesChainSubstate.class, name = "AccessRulesChain"),
+  @JsonSubTypes.Type(value = AccessRulesSubstate.class, name = "AccessRules"),
   @JsonSubTypes.Type(value = AccountSubstate.class, name = "Account"),
   @JsonSubTypes.Type(value = ClockCurrentMinuteSubstate.class, name = "ClockCurrentMinute"),
   @JsonSubTypes.Type(value = ComponentRoyaltyAccumulatorSubstate.class, name = "ComponentRoyaltyAccumulator"),
@@ -246,7 +246,7 @@ static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("AccessController", AccessControllerSubstate.class);
-  mappings.put("AccessRulesChain", AccessRulesChainSubstate.class);
+  mappings.put("AccessRules", AccessRulesSubstate.class);
   mappings.put("Account", AccountSubstate.class);
   mappings.put("ClockCurrentMinute", ClockCurrentMinuteSubstate.class);
   mappings.put("ComponentRoyaltyAccumulator", ComponentRoyaltyAccumulatorSubstate.class);

@@ -26,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerSubstate;
-import com.radixdlt.api.core.generated.models.AccessRulesChainSubstate;
+import com.radixdlt.api.core.generated.models.AccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.AccountSubstate;
 import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
@@ -73,8 +73,8 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonSubTypes({
   @JsonSubTypes.Type(value = AccessControllerSubstate.class, name = "AccessController"),
   @JsonSubTypes.Type(value = AccessControllerSubstate.class, name = "AccessControllerSubstate"),
-  @JsonSubTypes.Type(value = AccessRulesChainSubstate.class, name = "AccessRulesChain"),
-  @JsonSubTypes.Type(value = AccessRulesChainSubstate.class, name = "AccessRulesChainSubstate"),
+  @JsonSubTypes.Type(value = AccessRulesSubstate.class, name = "AccessRules"),
+  @JsonSubTypes.Type(value = AccessRulesSubstate.class, name = "AccessRulesSubstate"),
   @JsonSubTypes.Type(value = AccountSubstate.class, name = "Account"),
   @JsonSubTypes.Type(value = AccountSubstate.class, name = "AccountSubstate"),
   @JsonSubTypes.Type(value = ClockCurrentMinuteSubstate.class, name = "ClockCurrentMinute"),
@@ -203,8 +203,8 @@ static {
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("AccessController", AccessControllerSubstate.class);
   mappings.put("AccessControllerSubstate", AccessControllerSubstate.class);
-  mappings.put("AccessRulesChain", AccessRulesChainSubstate.class);
-  mappings.put("AccessRulesChainSubstate", AccessRulesChainSubstate.class);
+  mappings.put("AccessRules", AccessRulesSubstate.class);
+  mappings.put("AccessRulesSubstate", AccessRulesSubstate.class);
   mappings.put("Account", AccountSubstate.class);
   mappings.put("AccountSubstate", AccountSubstate.class);
   mappings.put("ClockCurrentMinute", ClockCurrentMinuteSubstate.class);

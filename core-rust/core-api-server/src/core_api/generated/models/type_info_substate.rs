@@ -20,14 +20,17 @@ pub struct TypeInfoSubstate {
     pub package_address: String,
     #[serde(rename = "blueprint_name")]
     pub blueprint_name: String,
+    #[serde(rename = "global")]
+    pub global: bool,
 }
 
 impl TypeInfoSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, package_address: String, blueprint_name: String) -> TypeInfoSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, package_address: String, blueprint_name: String, global: bool) -> TypeInfoSubstate {
         TypeInfoSubstate {
             substate_type,
             package_address,
             blueprint_name,
+            global,
         }
     }
 }

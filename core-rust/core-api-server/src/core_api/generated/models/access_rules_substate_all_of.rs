@@ -12,19 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct AccessRulesChainSubstate {
-    #[serde(rename = "substate_type")]
-    pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The layers of access rules applied. 
-    #[serde(rename = "chain")]
-    pub chain: Vec<crate::core_api::generated::models::AccessRules>,
+pub struct AccessRulesSubstateAllOf {
+    #[serde(rename = "access_rules")]
+    pub access_rules: Box<crate::core_api::generated::models::AccessRules>,
 }
 
-impl AccessRulesChainSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, chain: Vec<crate::core_api::generated::models::AccessRules>) -> AccessRulesChainSubstate {
-        AccessRulesChainSubstate {
-            substate_type,
-            chain,
+impl AccessRulesSubstateAllOf {
+    pub fn new(access_rules: crate::core_api::generated::models::AccessRules) -> AccessRulesSubstateAllOf {
+        AccessRulesSubstateAllOf {
+            access_rules: Box::new(access_rules),
         }
     }
 }

@@ -15,8 +15,8 @@
 pub enum SubstateKeyType {
     #[serde(rename = "Metadata")]
     Metadata,
-    #[serde(rename = "AccessRulesChain")]
-    AccessRulesChain,
+    #[serde(rename = "AccessRules")]
+    AccessRules,
     #[serde(rename = "FunctionAccessRules")]
     FunctionAccessRules,
     #[serde(rename = "TypeInfo")]
@@ -74,7 +74,7 @@ impl ToString for SubstateKeyType {
     fn to_string(&self) -> String {
         match self {
             Self::Metadata => String::from("Metadata"),
-            Self::AccessRulesChain => String::from("AccessRulesChain"),
+            Self::AccessRules => String::from("AccessRules"),
             Self::FunctionAccessRules => String::from("FunctionAccessRules"),
             Self::TypeInfo => String::from("TypeInfo"),
             Self::ComponentState => String::from("ComponentState"),

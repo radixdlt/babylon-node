@@ -18,11 +18,10 @@ pub enum Substate {
         #[serde(rename = "data_struct")]
         data_struct: Box<crate::core_api::generated::models::DataStruct>,
     },
-    #[serde(rename="AccessRulesChain")]
-    AccessRulesChainSubstate {
-        /// The layers of access rules applied. 
-        #[serde(rename = "chain")]
-        chain: Vec<crate::core_api::generated::models::AccessRules>,
+    #[serde(rename="AccessRules")]
+    AccessRulesSubstate {
+        #[serde(rename = "access_rules")]
+        access_rules: Box<crate::core_api::generated::models::AccessRules>,
     },
     #[serde(rename="Account")]
     AccountSubstate {
@@ -145,6 +144,8 @@ pub enum Substate {
         package_address: String,
         #[serde(rename = "blueprint_name")]
         blueprint_name: String,
+        #[serde(rename = "global")]
+        global: bool,
     },
     #[serde(rename="Validator")]
     ValidatorSubstate {

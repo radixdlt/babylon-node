@@ -27,8 +27,8 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerSubstate;
 import com.radixdlt.api.core.generated.models.AccessRules;
-import com.radixdlt.api.core.generated.models.AccessRulesChainSubstate;
-import com.radixdlt.api.core.generated.models.AccessRulesChainSubstateAllOf;
+import com.radixdlt.api.core.generated.models.AccessRulesSubstate;
+import com.radixdlt.api.core.generated.models.AccessRulesSubstateAllOf;
 import com.radixdlt.api.core.generated.models.AccountSubstate;
 import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
@@ -57,17 +57,15 @@ import com.radixdlt.api.core.generated.models.VaultLockedNonFungibleSubstate;
 import com.radixdlt.api.core.generated.models.VaultNonFungibleSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * AccessRulesChainSubstate
+ * AccessRulesSubstate
  */
 @JsonPropertyOrder({
-  AccessRulesChainSubstate.JSON_PROPERTY_CHAIN
+  AccessRulesSubstate.JSON_PROPERTY_ACCESS_RULES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -77,7 +75,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "substate_type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = AccessControllerSubstate.class, name = "AccessController"),
-  @JsonSubTypes.Type(value = AccessRulesChainSubstate.class, name = "AccessRulesChain"),
+  @JsonSubTypes.Type(value = AccessRulesSubstate.class, name = "AccessRules"),
   @JsonSubTypes.Type(value = AccountSubstate.class, name = "Account"),
   @JsonSubTypes.Type(value = ClockCurrentMinuteSubstate.class, name = "ClockCurrentMinute"),
   @JsonSubTypes.Type(value = ComponentRoyaltyAccumulatorSubstate.class, name = "ComponentRoyaltyAccumulator"),
@@ -104,46 +102,41 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = VaultNonFungibleSubstate.class, name = "VaultNonFungible"),
 })
 
-public class AccessRulesChainSubstate extends Substate {
-  public static final String JSON_PROPERTY_CHAIN = "chain";
-  private List<AccessRules> chain = new ArrayList<>();
+public class AccessRulesSubstate extends Substate {
+  public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
+  private AccessRules accessRules;
 
-  public AccessRulesChainSubstate() { 
+  public AccessRulesSubstate() { 
   }
 
-  public AccessRulesChainSubstate chain(List<AccessRules> chain) {
-    this.chain = chain;
-    return this;
-  }
-
-  public AccessRulesChainSubstate addChainItem(AccessRules chainItem) {
-    this.chain.add(chainItem);
+  public AccessRulesSubstate accessRules(AccessRules accessRules) {
+    this.accessRules = accessRules;
     return this;
   }
 
    /**
-   * The layers of access rules applied. 
-   * @return chain
+   * Get accessRules
+   * @return accessRules
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The layers of access rules applied. ")
-  @JsonProperty(JSON_PROPERTY_CHAIN)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<AccessRules> getChain() {
-    return chain;
+  public AccessRules getAccessRules() {
+    return accessRules;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CHAIN)
+  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setChain(List<AccessRules> chain) {
-    this.chain = chain;
+  public void setAccessRules(AccessRules accessRules) {
+    this.accessRules = accessRules;
   }
 
 
   /**
-   * Return true if this AccessRulesChainSubstate object is equal to o.
+   * Return true if this AccessRulesSubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -153,22 +146,22 @@ public class AccessRulesChainSubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    AccessRulesChainSubstate accessRulesChainSubstate = (AccessRulesChainSubstate) o;
-    return Objects.equals(this.chain, accessRulesChainSubstate.chain) &&
+    AccessRulesSubstate accessRulesSubstate = (AccessRulesSubstate) o;
+    return Objects.equals(this.accessRules, accessRulesSubstate.accessRules) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(chain, super.hashCode());
+    return Objects.hash(accessRules, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class AccessRulesChainSubstate {\n");
+    sb.append("class AccessRulesSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    chain: ").append(toIndentedString(chain)).append("\n");
+    sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -188,7 +181,7 @@ static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("AccessController", AccessControllerSubstate.class);
-  mappings.put("AccessRulesChain", AccessRulesChainSubstate.class);
+  mappings.put("AccessRules", AccessRulesSubstate.class);
   mappings.put("Account", AccountSubstate.class);
   mappings.put("ClockCurrentMinute", ClockCurrentMinuteSubstate.class);
   mappings.put("ComponentRoyaltyAccumulator", ComponentRoyaltyAccumulatorSubstate.class);
@@ -213,8 +206,8 @@ static {
   mappings.put("VaultLockedFungible", VaultLockedFungibleSubstate.class);
   mappings.put("VaultLockedNonFungible", VaultLockedNonFungibleSubstate.class);
   mappings.put("VaultNonFungible", VaultNonFungibleSubstate.class);
-  mappings.put("AccessRulesChainSubstate", AccessRulesChainSubstate.class);
-  JSON.registerDiscriminator(AccessRulesChainSubstate.class, "substate_type", mappings);
+  mappings.put("AccessRulesSubstate", AccessRulesSubstate.class);
+  JSON.registerDiscriminator(AccessRulesSubstate.class, "substate_type", mappings);
 }
 }
 

@@ -6,15 +6,12 @@ use crate::core_api::*;
 use crate::core_api::models::ModuleType;
 use models::{EntityType, SubstateKeyType, SubstateType};
 use radix_engine::types::{
-    scrypto_encode, AccessRulesChainOffset, ClockOffset, ComponentAddress, ComponentOffset,
+    scrypto_encode, ClockOffset, ComponentAddress, ComponentOffset,
     EpochManagerOffset, KeyValueStoreOffset, MetadataOffset, NonFungibleStoreOffset,
     PackageAddress, PackageOffset, RENodeId, ResourceAddress, ResourceManagerOffset, SubstateId,
     SubstateOffset, VaultOffset,
 };
-use radix_engine_interface::api::types::{
-    AccessControllerOffset, AccountOffset, NodeModuleId, RoyaltyOffset, TypeInfoOffset,
-    ValidatorOffset,
-};
+use radix_engine_interface::api::types::{AccessControllerOffset, AccessRulesOffset, AccountOffset, NodeModuleId, RoyaltyOffset, TypeInfoOffset, ValidatorOffset};
 use radix_engine_interface::blueprints::resource::{NonFungibleIdType, NonFungibleLocalId};
 use radix_engine_interface::data::model::Address;
 
@@ -238,10 +235,10 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 SubstateOffset::Metadata(offset) => match offset {
                     MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
                 },
-                SubstateOffset::AccessRulesChain(offset) => match offset {
-                    AccessRulesChainOffset::AccessRulesChain => (
-                        SubstateType::AccessRulesChain,
-                        SubstateKeyType::AccessRulesChain,
+                SubstateOffset::AccessRules(offset) => match offset {
+                    AccessRulesOffset::AccessRules => (
+                        SubstateType::AccessRules,
+                        SubstateKeyType::AccessRules,
                     ),
                 },
                 _ => return Err(unknown_substate_error("Component", &substate_id)),
@@ -269,10 +266,10 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 SubstateOffset::Metadata(offset) => match offset {
                     MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
                 },
-                SubstateOffset::AccessRulesChain(offset) => match offset {
-                    AccessRulesChainOffset::AccessRulesChain => (
-                        SubstateType::AccessRulesChain,
-                        SubstateKeyType::AccessRulesChain,
+                SubstateOffset::AccessRules(offset) => match offset {
+                    AccessRulesOffset::AccessRules => (
+                        SubstateType::AccessRules,
+                        SubstateKeyType::AccessRules,
                     ),
                 },
                 _ => return Err(unknown_substate_error("Account", &substate_id)),
@@ -299,10 +296,10 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 SubstateOffset::Metadata(offset) => match offset {
                     MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
                 },
-                SubstateOffset::AccessRulesChain(offset) => match offset {
-                    AccessRulesChainOffset::AccessRulesChain => (
-                        SubstateType::AccessRulesChain,
-                        SubstateKeyType::AccessRulesChain,
+                SubstateOffset::AccessRules(offset) => match offset {
+                    AccessRulesOffset::AccessRules => (
+                        SubstateType::AccessRules,
+                        SubstateKeyType::AccessRules,
                     ),
                 },
                 _ => return Err(unknown_substate_error("AccessController", &substate_id)),
@@ -340,10 +337,10 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 SubstateOffset::Metadata(offset) => match offset {
                     MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
                 },
-                SubstateOffset::AccessRulesChain(offset) => match offset {
-                    AccessRulesChainOffset::AccessRulesChain => (
-                        SubstateType::AccessRulesChain,
-                        SubstateKeyType::AccessRulesChain,
+                SubstateOffset::AccessRules(offset) => match offset {
+                    AccessRulesOffset::AccessRules => (
+                        SubstateType::AccessRules,
+                        SubstateKeyType::AccessRules,
                     ),
                 },
                 SubstateOffset::PackageAccessRules => (
@@ -369,10 +366,10 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 SubstateOffset::Metadata(offset) => match offset {
                     MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
                 },
-                SubstateOffset::AccessRulesChain(offset) => match offset {
-                    AccessRulesChainOffset::AccessRulesChain => (
-                        SubstateType::AccessRulesChain,
-                        SubstateKeyType::AccessRulesChain,
+                SubstateOffset::AccessRules(offset) => match offset {
+                    AccessRulesOffset::AccessRules => (
+                        SubstateType::AccessRules,
+                        SubstateKeyType::AccessRules,
                     ),
                 },
                 _ => return Err(unknown_substate_error("ResourceManager", &substate_id)),
@@ -457,10 +454,16 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         SubstateKeyType::PreparingValidatorSet,
                     ),
                 },
-                SubstateOffset::AccessRulesChain(offset) => match offset {
-                    AccessRulesChainOffset::AccessRulesChain => (
-                        SubstateType::AccessRulesChain,
-                        SubstateKeyType::AccessRulesChain,
+                SubstateOffset::AccessRules(offset) => match offset {
+                    AccessRulesOffset::AccessRules => (
+                        SubstateType::AccessRules,
+                        SubstateKeyType::AccessRules,
+                    ),
+                },
+                SubstateOffset::Metadata(offset) => match offset {
+                    MetadataOffset::Metadata => (
+                        SubstateType::Metadata,
+                        SubstateKeyType::Metadata,
                     ),
                 },
                 _ => return Err(unknown_substate_error("EpochManager", &substate_id)),
@@ -485,10 +488,10 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 SubstateOffset::Metadata(offset) => match offset {
                     MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
                 },
-                SubstateOffset::AccessRulesChain(offset) => match offset {
-                    AccessRulesChainOffset::AccessRulesChain => (
-                        SubstateType::AccessRulesChain,
-                        SubstateKeyType::AccessRulesChain,
+                SubstateOffset::AccessRules(offset) => match offset {
+                    AccessRulesOffset::AccessRules => (
+                        SubstateType::AccessRules,
+                        SubstateKeyType::AccessRules,
                     ),
                 },
                 _ => return Err(unknown_substate_error("Validator", &substate_id)),
@@ -511,10 +514,16 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         SubstateKeyType::ClockCurrentMinute,
                     ),
                 },
-                SubstateOffset::AccessRulesChain(offset) => match offset {
-                    AccessRulesChainOffset::AccessRulesChain => (
-                        SubstateType::AccessRulesChain,
-                        SubstateKeyType::AccessRulesChain,
+                SubstateOffset::AccessRules(offset) => match offset {
+                    AccessRulesOffset::AccessRules => (
+                        SubstateType::AccessRules,
+                        SubstateKeyType::AccessRules,
+                    ),
+                },
+                SubstateOffset::Metadata(offset) => match offset {
+                    MetadataOffset::Metadata => (
+                        SubstateType::Metadata,
+                        SubstateKeyType::Metadata,
                     ),
                 },
                 _ => return Err(unknown_substate_error("Clock", &substate_id)),
@@ -539,10 +548,10 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 SubstateOffset::Metadata(offset) => match offset {
                     MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
                 },
-                SubstateOffset::AccessRulesChain(offset) => match offset {
-                    AccessRulesChainOffset::AccessRulesChain => (
-                        SubstateType::AccessRulesChain,
-                        SubstateKeyType::AccessRulesChain,
+                SubstateOffset::AccessRules(offset) => match offset {
+                    AccessRulesOffset::AccessRules => (
+                        SubstateType::AccessRules,
+                        SubstateKeyType::AccessRules,
                     ),
                 },
                 _ => return Err(unknown_substate_error("Identity", &substate_id)),

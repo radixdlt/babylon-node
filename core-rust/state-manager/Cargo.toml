@@ -25,13 +25,13 @@ prometheus = { version = "0.13.2", default-features = false, features = [] }
 # 
 # Ensure this version is also identically updated in ../core-api-server/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-b307c9", features = ["serde"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-b307c9" }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-b307c9", features = ["serde"]  }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-b307c9" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-b307c9" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-b307c9" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-b307c9" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-9a40b4", features = ["serde"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-9a40b4" }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-9a40b4", features = ["serde"]  }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-9a40b4" }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-9a40b4" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-9a40b4" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-9a40b4" }
 
 # Non-Radix Engine Dependencies:
 blake2 = { version = "0.10.6", default-features = false }

@@ -7,13 +7,12 @@ use radix_engine::blueprints::epoch_manager::{
 use radix_engine::blueprints::resource::{
     NonFungible, NonFungibleSubstate, ResourceManagerSubstate, VaultInfoSubstate,
 };
-use radix_engine::system::node_modules::access_rules::{
-    FunctionAccessRulesSubstate, MethodAccessRulesChainSubstate,
-};
+use radix_engine::system::node_modules::access_rules::{FunctionAccessRulesSubstate, MethodAccessRulesSubstate};
 use radix_engine::system::node_modules::metadata::MetadataSubstate;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::system::type_info::PackageCodeTypeSubstate;
 use std::collections::BTreeSet;
+use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 
 use super::*;
 use crate::core_api::models;
@@ -25,7 +24,7 @@ use radix_engine::types::{
 };
 use radix_engine_interface::api::component::{
     ComponentAddress, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
-    ComponentStateSubstate, KeyValueStoreEntrySubstate, TypeInfoSubstate,
+    ComponentStateSubstate, KeyValueStoreEntrySubstate,
 };
 use radix_engine_interface::api::package::{
     PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate,
@@ -49,10 +48,10 @@ pub fn to_api_substate(
 ) -> Result<models::Substate, MappingError> {
     Ok(match substate {
         // Shared
-        PersistedSubstate::AccessRulesChain(substate) => {
+        PersistedSubstate::MethodAccessRules(substate) => {
             to_api_access_rules_chain_substate(context, substate)?
         }
-        PersistedSubstate::PackageAccessRules(substate) => {
+        PersistedSubstate::FunctionAccessRules(substate) => {
             to_api_function_access_rules_substate(context, substate)?
         }
         PersistedSubstate::Metadata(substate) => to_api_metadata_substate(context, substate)?,
@@ -123,16 +122,13 @@ pub fn to_api_substate(
 
 pub fn to_api_access_rules_chain_substate(
     context: &MappingContext,
-    substate: &MethodAccessRulesChainSubstate,
+    substate: &MethodAccessRulesSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
-    let MethodAccessRulesChainSubstate { access_rules_chain } = substate;
+    let MethodAccessRulesSubstate { access_rules } = substate;
 
-    Ok(models::Substate::AccessRulesChainSubstate {
-        chain: access_rules_chain
-            .iter()
-            .map(|access_rules| to_api_access_rules(context, access_rules))
-            .collect::<Result<_, _>>()?,
+    Ok(models::Substate::AccessRulesSubstate {
+        access_rules: Box::new(to_api_access_rules(context, access_rules)?),
     })
 }
 
@@ -214,11 +210,13 @@ pub fn to_api_type_info_substate(
     let TypeInfoSubstate {
         package_address,
         blueprint_name,
+        global,
     } = substate;
 
     Ok(models::Substate::TypeInfoSubstate {
         package_address: to_api_package_address(context, package_address),
         blueprint_name: blueprint_name.to_string(),
+        global: global.clone(),
     })
 }
 
@@ -681,7 +679,7 @@ pub fn to_api_package_code_type_substate(
 ) -> Result<models::Substate, MappingError> {
     Ok(models::Substate::PackageCodeTypeSubstate {
         code_type: match substate {
-            PackageCodeTypeSubstate::Precompiled => "native".to_string(),
+            PackageCodeTypeSubstate::Native => "native".to_string(),
             PackageCodeTypeSubstate::Wasm => "wasm".to_string(),
         },
     })

@@ -30,7 +30,7 @@ public enum SubstateType {
   
   METADATA("Metadata"),
   
-  ACCESSRULESCHAIN("AccessRulesChain"),
+  ACCESSRULES("AccessRules"),
   
   FUNCTIONACCESSRULES("FunctionAccessRules"),
   

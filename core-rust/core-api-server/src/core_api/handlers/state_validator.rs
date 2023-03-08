@@ -1,9 +1,9 @@
 use crate::core_api::*;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{
-    AccessRulesChainOffset, MetadataOffset, NodeModuleId, SubstateOffset, ValidatorOffset,
+    MetadataOffset, NodeModuleId, SubstateOffset, ValidatorOffset,
 };
-use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::types::{AccessRulesOffset, RENodeId};
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::query::{dump_component_state, VaultData};
 
@@ -63,14 +63,14 @@ fn handle_state_validator_internal(
     };
     let component_access_rules = {
         let substate_offset =
-            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
+            SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
         let loaded_substate = read_known_substate(
             state_manager,
             RENodeId::GlobalComponent(validator_address),
             NodeModuleId::AccessRules,
             &substate_offset,
         )?;
-        let PersistedSubstate::AccessRulesChain(substate) = loaded_substate else {
+        let PersistedSubstate::MethodAccessRules(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
         };
         substate

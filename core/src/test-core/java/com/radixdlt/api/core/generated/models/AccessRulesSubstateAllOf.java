@@ -25,58 +25,51 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessRules;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * AccessRulesChainSubstateAllOf
+ * AccessRulesSubstateAllOf
  */
 @JsonPropertyOrder({
-  AccessRulesChainSubstateAllOf.JSON_PROPERTY_CHAIN
+  AccessRulesSubstateAllOf.JSON_PROPERTY_ACCESS_RULES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class AccessRulesChainSubstateAllOf {
-  public static final String JSON_PROPERTY_CHAIN = "chain";
-  private List<AccessRules> chain = new ArrayList<>();
+public class AccessRulesSubstateAllOf {
+  public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
+  private AccessRules accessRules;
 
-  public AccessRulesChainSubstateAllOf() { 
+  public AccessRulesSubstateAllOf() { 
   }
 
-  public AccessRulesChainSubstateAllOf chain(List<AccessRules> chain) {
-    this.chain = chain;
-    return this;
-  }
-
-  public AccessRulesChainSubstateAllOf addChainItem(AccessRules chainItem) {
-    this.chain.add(chainItem);
+  public AccessRulesSubstateAllOf accessRules(AccessRules accessRules) {
+    this.accessRules = accessRules;
     return this;
   }
 
    /**
-   * The layers of access rules applied. 
-   * @return chain
+   * Get accessRules
+   * @return accessRules
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The layers of access rules applied. ")
-  @JsonProperty(JSON_PROPERTY_CHAIN)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<AccessRules> getChain() {
-    return chain;
+  public AccessRules getAccessRules() {
+    return accessRules;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_CHAIN)
+  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setChain(List<AccessRules> chain) {
-    this.chain = chain;
+  public void setAccessRules(AccessRules accessRules) {
+    this.accessRules = accessRules;
   }
 
 
   /**
-   * Return true if this AccessRulesChainSubstate_allOf object is equal to o.
+   * Return true if this AccessRulesSubstate_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -86,20 +79,20 @@ public class AccessRulesChainSubstateAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    AccessRulesChainSubstateAllOf accessRulesChainSubstateAllOf = (AccessRulesChainSubstateAllOf) o;
-    return Objects.equals(this.chain, accessRulesChainSubstateAllOf.chain);
+    AccessRulesSubstateAllOf accessRulesSubstateAllOf = (AccessRulesSubstateAllOf) o;
+    return Objects.equals(this.accessRules, accessRulesSubstateAllOf.accessRules);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(chain);
+    return Objects.hash(accessRules);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class AccessRulesChainSubstateAllOf {\n");
-    sb.append("    chain: ").append(toIndentedString(chain)).append("\n");
+    sb.append("class AccessRulesSubstateAllOf {\n");
+    sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
     sb.append("}");
     return sb.toString();
   }
