@@ -3348,10 +3348,14 @@ components:
     TransactionPreviewResponse:
       type: object
       required:
+        - encoded_receipt
         - receipt
         - instruction_resource_changes
         - logs
       properties:
+        encoded_receipt:
+          type: string
+          description: The hex-sbor-encoded receipt
         receipt:
           $ref: "#/components/schemas/TransactionReceipt"
         instruction_resource_changes:

@@ -13,6 +13,9 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TransactionPreviewResponse {
+    /// The hex-sbor-encoded receipt
+    #[serde(rename = "encoded_receipt")]
+    pub encoded_receipt: String,
     #[serde(rename = "receipt")]
     pub receipt: Box<crate::core_api::generated::models::TransactionReceipt>,
     #[serde(rename = "instruction_resource_changes")]
@@ -22,8 +25,9 @@ pub struct TransactionPreviewResponse {
 }
 
 impl TransactionPreviewResponse {
-    pub fn new(receipt: crate::core_api::generated::models::TransactionReceipt, instruction_resource_changes: Vec<crate::core_api::generated::models::InstructionResourceChanges>, logs: Vec<crate::core_api::generated::models::TransactionPreviewResponseLogsInner>) -> TransactionPreviewResponse {
+    pub fn new(encoded_receipt: String, receipt: crate::core_api::generated::models::TransactionReceipt, instruction_resource_changes: Vec<crate::core_api::generated::models::InstructionResourceChanges>, logs: Vec<crate::core_api::generated::models::TransactionPreviewResponseLogsInner>) -> TransactionPreviewResponse {
         TransactionPreviewResponse {
+            encoded_receipt,
             receipt: Box::new(receipt),
             instruction_resource_changes,
             logs,

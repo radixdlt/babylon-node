@@ -36,12 +36,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * TransactionPreviewResponse
  */
 @JsonPropertyOrder({
+  TransactionPreviewResponse.JSON_PROPERTY_ENCODED_RECEIPT,
   TransactionPreviewResponse.JSON_PROPERTY_RECEIPT,
   TransactionPreviewResponse.JSON_PROPERTY_INSTRUCTION_RESOURCE_CHANGES,
   TransactionPreviewResponse.JSON_PROPERTY_LOGS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TransactionPreviewResponse {
+  public static final String JSON_PROPERTY_ENCODED_RECEIPT = "encoded_receipt";
+  private String encodedReceipt;
+
   public static final String JSON_PROPERTY_RECEIPT = "receipt";
   private TransactionReceipt receipt;
 
@@ -53,6 +57,32 @@ public class TransactionPreviewResponse {
 
   public TransactionPreviewResponse() { 
   }
+
+  public TransactionPreviewResponse encodedReceipt(String encodedReceipt) {
+    this.encodedReceipt = encodedReceipt;
+    return this;
+  }
+
+   /**
+   * The hex-sbor-encoded receipt
+   * @return encodedReceipt
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The hex-sbor-encoded receipt")
+  @JsonProperty(JSON_PROPERTY_ENCODED_RECEIPT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getEncodedReceipt() {
+    return encodedReceipt;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_ENCODED_RECEIPT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setEncodedReceipt(String encodedReceipt) {
+    this.encodedReceipt = encodedReceipt;
+  }
+
 
   public TransactionPreviewResponse receipt(TransactionReceipt receipt) {
     this.receipt = receipt;
@@ -154,20 +184,22 @@ public class TransactionPreviewResponse {
       return false;
     }
     TransactionPreviewResponse transactionPreviewResponse = (TransactionPreviewResponse) o;
-    return Objects.equals(this.receipt, transactionPreviewResponse.receipt) &&
+    return Objects.equals(this.encodedReceipt, transactionPreviewResponse.encodedReceipt) &&
+        Objects.equals(this.receipt, transactionPreviewResponse.receipt) &&
         Objects.equals(this.instructionResourceChanges, transactionPreviewResponse.instructionResourceChanges) &&
         Objects.equals(this.logs, transactionPreviewResponse.logs);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(receipt, instructionResourceChanges, logs);
+    return Objects.hash(encodedReceipt, receipt, instructionResourceChanges, logs);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TransactionPreviewResponse {\n");
+    sb.append("    encodedReceipt: ").append(toIndentedString(encodedReceipt)).append("\n");
     sb.append("    receipt: ").append(toIndentedString(receipt)).append("\n");
     sb.append("    instructionResourceChanges: ").append(toIndentedString(instructionResourceChanges)).append("\n");
     sb.append("    logs: ").append(toIndentedString(logs)).append("\n");
