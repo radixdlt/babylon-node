@@ -10,7 +10,6 @@ use radix_engine::blueprints::resource::{
 use radix_engine::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
-use radix_engine::system::node_modules::metadata::MetadataSubstate;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::system::type_info::PackageCodeTypeSubstate;
@@ -32,12 +31,7 @@ use radix_engine_interface::api::package::{
     PackageRoyaltyConfigSubstate,
 };
 use radix_engine_interface::api::types::{IndexedScryptoValue, NodeModuleId};
-use radix_engine_interface::blueprints::resource::{
-    AccessRule, AccessRuleEntry, AccessRuleNode, AccessRules, LiquidFungibleResource,
-    LiquidNonFungibleResource, LockedFungibleResource, LockedNonFungibleResource, MethodKey,
-    ProofRule, ResourceType, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible,
-    SoftResourceOrNonFungibleList,
-};
+use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, AccessRuleNode, AccessRulesConfig, LiquidFungibleResource, LiquidNonFungibleResource, LockedFungibleResource, LockedNonFungibleResource, MethodKey, ProofRule, ResourceType, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList};
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::data::scrypto::model::{
     Address, ComponentAddress, NonFungibleIdType, NonFungibleLocalId,
@@ -59,7 +53,6 @@ pub fn to_api_substate(
         PersistedSubstate::FunctionAccessRules(substate) => {
             to_api_function_access_rules_substate(context, substate)?
         }
-        PersistedSubstate::Metadata(substate) => to_api_metadata_substate(context, substate)?,
         PersistedSubstate::TypeInfo(type_info) => to_api_type_info_substate(context, type_info)?,
         // Specific
         PersistedSubstate::ComponentState(component_state) => {
@@ -147,24 +140,6 @@ pub fn to_api_function_access_rules_substate(
     Ok(models::Substate::FunctionAccessRulesSubstate {})
 }
 
-pub fn to_api_metadata_substate(
-    _context: &MappingContext,
-    substate: &MetadataSubstate,
-) -> Result<models::Substate, MappingError> {
-    // Use compiler to unpack to ensure we map all fields
-    let MetadataSubstate { metadata } = substate;
-
-    Ok(models::Substate::MetadataSubstate {
-        metadata: metadata
-            .iter()
-            .map(|(key, value)| models::MetadataSubstateAllOfMetadata {
-                key: key.to_owned(),
-                value: value.to_owned(),
-            })
-            .collect(),
-    })
-}
-
 pub fn to_api_resource_manager_substate(
     _context: &MappingContext,
     resource_manager: &ResourceManagerSubstate,
@@ -227,7 +202,7 @@ pub fn to_api_type_info_substate(
 
 pub fn to_api_access_rules(
     context: &MappingContext,
-    access_rules: &AccessRules,
+    access_rules: &AccessRulesConfig,
 ) -> Result<models::AccessRules, MappingError> {
     Ok(models::AccessRules {
         method_auth: access_rules
@@ -962,12 +937,51 @@ fn to_api_key_value_story_entry_substate(
     substate_id: &SubstateId,
     key_value_store_entry: &KeyValueStoreEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
-    let key = match substate_id {
+    let substate = match substate_id {
         SubstateId(
             RENodeId::KeyValueStore(..),
             NodeModuleId::SELF,
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-        ) => key,
+        ) => {
+            match key_value_store_entry {
+                KeyValueStoreEntrySubstate::Some(value) => {
+                    models::Substate::KeyValueStoreEntrySubstate {
+                        key_hex: to_hex(key),
+                        is_deleted: false,
+                        data_struct: Some(Box::new(to_api_data_struct(
+                            context,
+                            &scrypto_encode(&value).unwrap(),
+                        )?)),
+                    }
+                }
+                KeyValueStoreEntrySubstate::None => models::Substate::KeyValueStoreEntrySubstate {
+                    key_hex: to_hex(key),
+                    is_deleted: true,
+                    data_struct: None,
+                },
+            }
+        },
+        SubstateId(
+            _,
+            NodeModuleId::Metadata,
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+        ) => {
+            match key_value_store_entry {
+                KeyValueStoreEntrySubstate::Some(value) => {
+                    models::Substate::MetadataEntrySubstate {
+                        key_hex: to_hex(key),
+                        data_struct: Some(Box::new(to_api_data_struct(
+                            context,
+                            &scrypto_encode(&value).unwrap(),
+                        )?)),
+                    }
+                }
+                KeyValueStoreEntrySubstate::None => models::Substate::MetadataEntrySubstate {
+                    key_hex: to_hex(key),
+                    data_struct: None,
+                },
+            }
+        }
         _ => {
             return Err(MappingError::MismatchedSubstateId {
                 message: "KVStoreEntry substate was matched with a different substate id"
@@ -976,23 +990,7 @@ fn to_api_key_value_story_entry_substate(
         }
     };
 
-    Ok(match key_value_store_entry {
-        KeyValueStoreEntrySubstate::Some(_key, value) => {
-            models::Substate::KeyValueStoreEntrySubstate {
-                key_hex: to_hex(key),
-                is_deleted: false,
-                data_struct: Some(Box::new(to_api_data_struct(
-                    context,
-                    &scrypto_encode(&value).unwrap(),
-                )?)),
-            }
-        }
-        KeyValueStoreEntrySubstate::None => models::Substate::KeyValueStoreEntrySubstate {
-            key_hex: to_hex(key),
-            is_deleted: true,
-            data_struct: None,
-        },
-    })
+    Ok(substate)
 }
 
 fn to_api_data_struct(

@@ -35,7 +35,7 @@ import com.radixdlt.api.core.generated.models.ComponentStateSubstate;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
 import com.radixdlt.api.core.generated.models.FunctionAccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
-import com.radixdlt.api.core.generated.models.MetadataSubstate;
+import com.radixdlt.api.core.generated.models.MetadataEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeSubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeTypeSubstate;
@@ -83,7 +83,7 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = EpochManagerSubstate.class, name = "EpochManager"),
   @JsonSubTypes.Type(value = FunctionAccessRulesSubstate.class, name = "FunctionAccessRules"),
   @JsonSubTypes.Type(value = KeyValueStoreEntrySubstate.class, name = "KeyValueStoreEntry"),
-  @JsonSubTypes.Type(value = MetadataSubstate.class, name = "Metadata"),
+  @JsonSubTypes.Type(value = MetadataEntrySubstate.class, name = "MetadataEntry"),
   @JsonSubTypes.Type(value = NonFungibleStoreEntrySubstate.class, name = "NonFungibleStoreEntry"),
   @JsonSubTypes.Type(value = PackageCodeSubstate.class, name = "PackageCode"),
   @JsonSubTypes.Type(value = PackageCodeTypeSubstate.class, name = "PackageCodeType"),
@@ -189,7 +189,7 @@ static {
   mappings.put("EpochManager", EpochManagerSubstate.class);
   mappings.put("FunctionAccessRules", FunctionAccessRulesSubstate.class);
   mappings.put("KeyValueStoreEntry", KeyValueStoreEntrySubstate.class);
-  mappings.put("Metadata", MetadataSubstate.class);
+  mappings.put("MetadataEntry", MetadataEntrySubstate.class);
   mappings.put("NonFungibleStoreEntry", NonFungibleStoreEntrySubstate.class);
   mappings.put("PackageCode", PackageCodeSubstate.class);
   mappings.put("PackageCodeType", PackageCodeTypeSubstate.class);

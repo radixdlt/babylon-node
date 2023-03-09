@@ -12,8 +12,8 @@
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum SubstateType {
-    #[serde(rename = "Metadata")]
-    Metadata,
+    #[serde(rename = "MetadataEntry")]
+    MetadataEntry,
     #[serde(rename = "AccessRules")]
     AccessRules,
     #[serde(rename = "FunctionAccessRules")]
@@ -70,7 +70,7 @@ pub enum SubstateType {
 impl ToString for SubstateType {
     fn to_string(&self) -> String {
         match self {
-            Self::Metadata => String::from("Metadata"),
+            Self::MetadataEntry => String::from("MetadataEntry"),
             Self::AccessRules => String::from("AccessRules"),
             Self::FunctionAccessRules => String::from("FunctionAccessRules"),
             Self::TypeInfo => String::from("TypeInfo"),
@@ -102,7 +102,7 @@ impl ToString for SubstateType {
 
 impl Default for SubstateType {
     fn default() -> SubstateType {
-        Self::Metadata
+        Self::MetadataEntry
     }
 }
 

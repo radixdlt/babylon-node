@@ -1,6 +1,6 @@
 use crate::core_api::*;
 use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::{ComponentOffset, MetadataOffset, RENodeId, SubstateId, SubstateOffset};
+use radix_engine::types::{ComponentOffset, RENodeId, SubstateId, SubstateOffset};
 use radix_engine_interface::api::types::{
     AccessRulesOffset, AccountOffset, NodeModuleId, RoyaltyOffset, TypeInfoOffset,
 };
@@ -104,19 +104,6 @@ fn handle_state_component_internal(
             None => None,
         }
     };
-    let component_metadata = {
-        let substate_offset = SubstateOffset::Metadata(MetadataOffset::Metadata);
-        let loaded_substate = read_known_substate(
-            state_manager,
-            RENodeId::GlobalObject(component_address.into()),
-            NodeModuleId::Metadata,
-            &substate_offset,
-        )?;
-        let PersistedSubstate::Metadata(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
     let component_access_rules = {
         let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
         let loaded_substate = read_known_substate(
@@ -187,10 +174,6 @@ fn handle_state_component_internal(
         access_rules: Some(to_api_access_rules_chain_substate(
             &mapping_context,
             &component_access_rules,
-        )?),
-        metadata: Some(to_api_metadata_substate(
-            &mapping_context,
-            &component_metadata,
         )?),
         state_owned_vaults,
         descendent_ids,

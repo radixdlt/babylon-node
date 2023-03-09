@@ -32,12 +32,12 @@ import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyConfigSubstate;
 import com.radixdlt.api.core.generated.models.ComponentStateSubstate;
+import com.radixdlt.api.core.generated.models.DataStruct;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
 import com.radixdlt.api.core.generated.models.FunctionAccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
-import com.radixdlt.api.core.generated.models.MetadataSubstate;
-import com.radixdlt.api.core.generated.models.MetadataSubstateAllOf;
-import com.radixdlt.api.core.generated.models.MetadataSubstateAllOfMetadata;
+import com.radixdlt.api.core.generated.models.MetadataEntrySubstate;
+import com.radixdlt.api.core.generated.models.MetadataEntrySubstateAllOf;
 import com.radixdlt.api.core.generated.models.NonFungibleStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeSubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeTypeSubstate;
@@ -57,17 +57,16 @@ import com.radixdlt.api.core.generated.models.VaultLockedNonFungibleSubstate;
 import com.radixdlt.api.core.generated.models.VaultNonFungibleSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * MetadataSubstate
+ * MetadataEntrySubstate
  */
 @JsonPropertyOrder({
-  MetadataSubstate.JSON_PROPERTY_METADATA
+  MetadataEntrySubstate.JSON_PROPERTY_KEY_HEX,
+  MetadataEntrySubstate.JSON_PROPERTY_DATA_STRUCT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -86,7 +85,7 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = EpochManagerSubstate.class, name = "EpochManager"),
   @JsonSubTypes.Type(value = FunctionAccessRulesSubstate.class, name = "FunctionAccessRules"),
   @JsonSubTypes.Type(value = KeyValueStoreEntrySubstate.class, name = "KeyValueStoreEntry"),
-  @JsonSubTypes.Type(value = MetadataSubstate.class, name = "Metadata"),
+  @JsonSubTypes.Type(value = MetadataEntrySubstate.class, name = "MetadataEntry"),
   @JsonSubTypes.Type(value = NonFungibleStoreEntrySubstate.class, name = "NonFungibleStoreEntry"),
   @JsonSubTypes.Type(value = PackageCodeSubstate.class, name = "PackageCode"),
   @JsonSubTypes.Type(value = PackageCodeTypeSubstate.class, name = "PackageCodeType"),
@@ -104,46 +103,70 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = VaultNonFungibleSubstate.class, name = "VaultNonFungible"),
 })
 
-public class MetadataSubstate extends Substate {
-  public static final String JSON_PROPERTY_METADATA = "metadata";
-  private List<MetadataSubstateAllOfMetadata> metadata = new ArrayList<>();
+public class MetadataEntrySubstate extends Substate {
+  public static final String JSON_PROPERTY_KEY_HEX = "key_hex";
+  private String keyHex;
 
-  public MetadataSubstate() { 
+  public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
+  private DataStruct dataStruct;
+
+  public MetadataEntrySubstate() { 
   }
 
-  public MetadataSubstate metadata(List<MetadataSubstateAllOfMetadata> metadata) {
-    this.metadata = metadata;
-    return this;
-  }
-
-  public MetadataSubstate addMetadataItem(MetadataSubstateAllOfMetadata metadataItem) {
-    this.metadata.add(metadataItem);
+  public MetadataEntrySubstate keyHex(String keyHex) {
+    this.keyHex = keyHex;
     return this;
   }
 
    /**
-   * Get metadata
-   * @return metadata
+   * The hex-encoded bytes of its key
+   * @return keyHex
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_METADATA)
+  @ApiModelProperty(required = true, value = "The hex-encoded bytes of its key")
+  @JsonProperty(JSON_PROPERTY_KEY_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<MetadataSubstateAllOfMetadata> getMetadata() {
-    return metadata;
+  public String getKeyHex() {
+    return keyHex;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_METADATA)
+  @JsonProperty(JSON_PROPERTY_KEY_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMetadata(List<MetadataSubstateAllOfMetadata> metadata) {
-    this.metadata = metadata;
+  public void setKeyHex(String keyHex) {
+    this.keyHex = keyHex;
+  }
+
+
+  public MetadataEntrySubstate dataStruct(DataStruct dataStruct) {
+    this.dataStruct = dataStruct;
+    return this;
+  }
+
+   /**
+   * Get dataStruct
+   * @return dataStruct
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public DataStruct getDataStruct() {
+    return dataStruct;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setDataStruct(DataStruct dataStruct) {
+    this.dataStruct = dataStruct;
   }
 
 
   /**
-   * Return true if this MetadataSubstate object is equal to o.
+   * Return true if this MetadataEntrySubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -153,22 +176,24 @@ public class MetadataSubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    MetadataSubstate metadataSubstate = (MetadataSubstate) o;
-    return Objects.equals(this.metadata, metadataSubstate.metadata) &&
+    MetadataEntrySubstate metadataEntrySubstate = (MetadataEntrySubstate) o;
+    return Objects.equals(this.keyHex, metadataEntrySubstate.keyHex) &&
+        Objects.equals(this.dataStruct, metadataEntrySubstate.dataStruct) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(metadata, super.hashCode());
+    return Objects.hash(keyHex, dataStruct, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class MetadataSubstate {\n");
+    sb.append("class MetadataEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
+    sb.append("    keyHex: ").append(toIndentedString(keyHex)).append("\n");
+    sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -197,7 +222,7 @@ static {
   mappings.put("EpochManager", EpochManagerSubstate.class);
   mappings.put("FunctionAccessRules", FunctionAccessRulesSubstate.class);
   mappings.put("KeyValueStoreEntry", KeyValueStoreEntrySubstate.class);
-  mappings.put("Metadata", MetadataSubstate.class);
+  mappings.put("MetadataEntry", MetadataEntrySubstate.class);
   mappings.put("NonFungibleStoreEntry", NonFungibleStoreEntrySubstate.class);
   mappings.put("PackageCode", PackageCodeSubstate.class);
   mappings.put("PackageCodeType", PackageCodeTypeSubstate.class);
@@ -213,8 +238,8 @@ static {
   mappings.put("VaultLockedFungible", VaultLockedFungibleSubstate.class);
   mappings.put("VaultLockedNonFungible", VaultLockedNonFungibleSubstate.class);
   mappings.put("VaultNonFungible", VaultNonFungibleSubstate.class);
-  mappings.put("MetadataSubstate", MetadataSubstate.class);
-  JSON.registerDiscriminator(MetadataSubstate.class, "substate_type", mappings);
+  mappings.put("MetadataEntrySubstate", MetadataEntrySubstate.class);
+  JSON.registerDiscriminator(MetadataEntrySubstate.class, "substate_type", mappings);
 }
 }
 

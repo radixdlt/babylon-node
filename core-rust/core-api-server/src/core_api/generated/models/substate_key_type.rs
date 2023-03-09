@@ -13,8 +13,8 @@
 /// Slightly different to the SubstateType - some entities have two of the same substate (eg ResouceManager AccessRules) 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum SubstateKeyType {
-    #[serde(rename = "Metadata")]
-    Metadata,
+    #[serde(rename = "MetadataEntry")]
+    MetadataEntry,
     #[serde(rename = "AccessRules")]
     AccessRules,
     #[serde(rename = "FunctionAccessRules")]
@@ -73,7 +73,7 @@ pub enum SubstateKeyType {
 impl ToString for SubstateKeyType {
     fn to_string(&self) -> String {
         match self {
-            Self::Metadata => String::from("Metadata"),
+            Self::MetadataEntry => String::from("MetadataEntry"),
             Self::AccessRules => String::from("AccessRules"),
             Self::FunctionAccessRules => String::from("FunctionAccessRules"),
             Self::TypeInfo => String::from("TypeInfo"),
@@ -106,7 +106,7 @@ impl ToString for SubstateKeyType {
 
 impl Default for SubstateKeyType {
     fn default() -> SubstateKeyType {
-        Self::Metadata
+        Self::MetadataEntry
     }
 }
 

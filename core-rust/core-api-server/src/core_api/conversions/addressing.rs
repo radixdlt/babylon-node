@@ -7,7 +7,7 @@ use crate::core_api::models::ModuleType;
 use models::{EntityType, SubstateKeyType, SubstateType};
 use radix_engine::types::{
     scrypto_encode, ClockOffset, ComponentAddress, ComponentOffset, EpochManagerOffset,
-    KeyValueStoreOffset, MetadataOffset, NonFungibleStoreOffset, PackageAddress, PackageOffset,
+    KeyValueStoreOffset, NonFungibleStoreOffset, PackageAddress, PackageOffset,
     RENodeId, ResourceAddress, ResourceManagerOffset, SubstateId, SubstateOffset, VaultOffset,
 };
 use radix_engine_interface::api::types::{
@@ -217,20 +217,20 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
     let (entity_type, substate_type_key) = match &substate_id {
         SubstateId(
             RENodeId::GlobalObject(Address::Component(ComponentAddress::Normal(..))),
-            _,
+            module_id,
             offset,
         ) => {
-            let substate_type_key = match offset {
-                SubstateOffset::TypeInfo(offset) => match offset {
+            let substate_type_key = match (module_id, offset) {
+                (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
                     TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
                 },
-                SubstateOffset::Component(offset) => match offset {
+                (NodeModuleId::SELF, SubstateOffset::Component(offset)) => match offset {
                     ComponentOffset::State0 => (
                         SubstateType::ComponentState,
                         SubstateKeyType::ComponentState,
                     ),
                 },
-                SubstateOffset::Royalty(offset) => match offset {
+                (NodeModuleId::ComponentRoyalty, SubstateOffset::Royalty(offset)) => match offset {
                     RoyaltyOffset::RoyaltyConfig => (
                         SubstateType::ComponentRoyaltyConfig,
                         SubstateKeyType::ComponentRoyaltyConfig,
@@ -240,10 +240,10 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         SubstateKeyType::ComponentRoyaltyAccumulator,
                     ),
                 },
-                SubstateOffset::Metadata(offset) => match offset {
-                    MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
+                (NodeModuleId::Metadata, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
+                    (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry)
                 },
-                SubstateOffset::AccessRules(offset) => match offset {
+                (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
                     AccessRulesOffset::AccessRules => {
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
                     }
@@ -259,20 +259,20 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 | ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
                 | ComponentAddress::EddsaEd25519VirtualAccount(..),
             )),
-            _,
+            module_id,
             offset,
         ) => {
-            let substate_type_key = match offset {
-                SubstateOffset::TypeInfo(offset) => match offset {
+            let substate_type_key = match (module_id, offset) {
+                (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
                     TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
                 },
-                SubstateOffset::Account(offset) => match offset {
+                (NodeModuleId::SELF, SubstateOffset::Account(offset)) => match offset {
                     AccountOffset::Account => (SubstateType::Account, SubstateKeyType::Account),
                 },
-                SubstateOffset::Metadata(offset) => match offset {
-                    MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
+                (NodeModuleId::Metadata, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
+                    (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry)
                 },
-                SubstateOffset::AccessRules(offset) => match offset {
+                (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
                     AccessRulesOffset::AccessRules => {
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
                     }
@@ -284,23 +284,23 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
 
         SubstateId(
             RENodeId::GlobalObject(Address::Component(ComponentAddress::AccessController(..))),
-            _,
+            module_id,
             offset,
         ) => {
-            let substate_type_key = match offset {
-                SubstateOffset::TypeInfo(offset) => match offset {
+            let substate_type_key = match (module_id, offset) {
+                (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
                     TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
                 },
-                SubstateOffset::AccessController(offset) => match offset {
+                (NodeModuleId::SELF, SubstateOffset::AccessController(offset)) => match offset {
                     AccessControllerOffset::AccessController => (
                         SubstateType::AccessController,
                         SubstateKeyType::AccessController,
                     ),
                 },
-                SubstateOffset::Metadata(offset) => match offset {
-                    MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
+                (NodeModuleId::Metadata, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
+                    (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry)
                 },
-                SubstateOffset::AccessRules(offset) => match offset {
+                (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
                     AccessRulesOffset::AccessRules => {
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
                     }
@@ -310,12 +310,12 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::AccessController, substate_type_key)
         }
 
-        SubstateId(RENodeId::GlobalObject(Address::Package(..)), _, offset) => {
-            let substate_type_key = match offset {
-                SubstateOffset::TypeInfo(offset) => match offset {
+        SubstateId(RENodeId::GlobalObject(Address::Package(..)), module_id, offset) => {
+            let substate_type_key = match (module_id, offset) {
+                (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
                     TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
                 },
-                SubstateOffset::Package(offset) => match offset {
+                (NodeModuleId::SELF, SubstateOffset::Package(offset)) => match offset {
                     PackageOffset::Info => {
                         (SubstateType::PackageInfo, SubstateKeyType::PackageInfo)
                     }
@@ -327,7 +327,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         SubstateKeyType::PackageCodeType,
                     ),
                 },
-                SubstateOffset::Royalty(offset) => match offset {
+                (NodeModuleId::PackageRoyalty, SubstateOffset::Royalty(offset)) => match offset {
                     RoyaltyOffset::RoyaltyConfig => (
                         SubstateType::PackageRoyaltyConfig,
                         SubstateKeyType::PackageRoyaltyConfig,
@@ -337,15 +337,15 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         SubstateKeyType::PackageRoyaltyAccumulator,
                     ),
                 },
-                SubstateOffset::Metadata(offset) => match offset {
-                    MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
+                (NodeModuleId::Metadata, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
+                    (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry)
                 },
-                SubstateOffset::AccessRules(offset) => match offset {
+                (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
                     AccessRulesOffset::AccessRules => {
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
                     }
                 },
-                SubstateOffset::PackageAccessRules => (
+                (NodeModuleId::FunctionAccessRules, SubstateOffset::PackageAccessRules) => (
                     SubstateType::FunctionAccessRules,
                     SubstateKeyType::FunctionAccessRules,
                 ),
@@ -354,21 +354,21 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::Package, substate_type_key)
         }
 
-        SubstateId(RENodeId::GlobalObject(Address::Resource(..)), _, offset) => {
-            let substate_type_key = match offset {
-                SubstateOffset::TypeInfo(offset) => match offset {
+        SubstateId(RENodeId::GlobalObject(Address::Resource(..)), module_id, offset) => {
+            let substate_type_key = match (module_id, offset) {
+                (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
                     TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
                 },
-                SubstateOffset::ResourceManager(offset) => match offset {
+                (NodeModuleId::SELF, SubstateOffset::ResourceManager(offset)) => match offset {
                     ResourceManagerOffset::ResourceManager => (
                         SubstateType::ResourceManager,
                         SubstateKeyType::ResourceManager,
                     ),
                 },
-                SubstateOffset::Metadata(offset) => match offset {
-                    MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
+                (NodeModuleId::Metadata, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
+                    (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry)
                 },
-                SubstateOffset::AccessRules(offset) => match offset {
+                (NodeModuleId::AccessRules | NodeModuleId::AccessRules1, SubstateOffset::AccessRules(offset)) => match offset {
                     AccessRulesOffset::AccessRules => {
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
                     }
@@ -435,14 +435,14 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
 
         SubstateId(
             RENodeId::GlobalObject(Address::Component(ComponentAddress::EpochManager(..))),
-            _,
+            module_id,
             offset,
         ) => {
-            let substate_type_key = match offset {
-                SubstateOffset::TypeInfo(offset) => match offset {
+            let substate_type_key = match (module_id, offset) {
+                (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
                     TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
                 },
-                SubstateOffset::EpochManager(offset) => match offset {
+                (NodeModuleId::SELF, SubstateOffset::EpochManager(offset)) => match offset {
                     EpochManagerOffset::EpochManager => {
                         (SubstateType::EpochManager, SubstateKeyType::EpochManager)
                     }
@@ -455,13 +455,13 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         SubstateKeyType::PreparingValidatorSet,
                     ),
                 },
-                SubstateOffset::AccessRules(offset) => match offset {
+                (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
                     AccessRulesOffset::AccessRules => {
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
                     }
                 },
-                SubstateOffset::Metadata(offset) => match offset {
-                    MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
+                (NodeModuleId::Metadata, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
+                    (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry)
                 },
                 _ => return Err(unknown_substate_error("EpochManager", &substate_id)),
             };
@@ -470,22 +470,22 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
 
         SubstateId(
             RENodeId::GlobalObject(Address::Component(ComponentAddress::Validator(..))),
-            _,
+            module_id,
             offset,
         ) => {
-            let substate_type_key = match offset {
-                SubstateOffset::TypeInfo(offset) => match offset {
+            let substate_type_key = match (module_id, offset) {
+                (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
                     TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
                 },
-                SubstateOffset::Validator(offset) => match offset {
+                (NodeModuleId::SELF, SubstateOffset::Validator(offset)) => match offset {
                     ValidatorOffset::Validator => {
                         (SubstateType::Validator, SubstateKeyType::Validator)
                     }
                 },
-                SubstateOffset::Metadata(offset) => match offset {
-                    MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
+                (NodeModuleId::Metadata, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
+                    (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry)
                 },
-                SubstateOffset::AccessRules(offset) => match offset {
+                (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
                     AccessRulesOffset::AccessRules => {
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
                     }
@@ -497,26 +497,26 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
 
         SubstateId(
             RENodeId::GlobalObject(Address::Component(ComponentAddress::Clock(..))),
-            _,
+            module_id,
             offset,
         ) => {
-            let substate_type_key = match offset {
-                SubstateOffset::TypeInfo(offset) => match offset {
+            let substate_type_key = match (module_id, offset) {
+                (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
                     TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
                 },
-                SubstateOffset::Clock(offset) => match offset {
+                (NodeModuleId::SELF, SubstateOffset::Clock(offset)) => match offset {
                     ClockOffset::CurrentTimeRoundedToMinutes => (
                         SubstateType::ClockCurrentMinute,
                         SubstateKeyType::ClockCurrentMinute,
                     ),
                 },
-                SubstateOffset::AccessRules(offset) => match offset {
+                (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
                     AccessRulesOffset::AccessRules => {
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
                     }
                 },
-                SubstateOffset::Metadata(offset) => match offset {
-                    MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
+                (NodeModuleId::Metadata, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
+                    (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry)
                 },
                 _ => return Err(unknown_substate_error("Clock", &substate_id)),
             };
@@ -529,17 +529,17 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
                 | ComponentAddress::EddsaEd25519VirtualIdentity(..),
             )),
-            _,
+            module_id,
             offset,
         ) => {
-            let substate_type_key = match offset {
-                SubstateOffset::TypeInfo(offset) => match offset {
+            let substate_type_key = match (module_id, offset) {
+                (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
                     TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
                 },
-                SubstateOffset::Metadata(offset) => match offset {
-                    MetadataOffset::Metadata => (SubstateType::Metadata, SubstateKeyType::Metadata),
+                (NodeModuleId::Metadata, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
+                    (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry)
                 },
-                SubstateOffset::AccessRules(offset) => match offset {
+                (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
                     AccessRulesOffset::AccessRules => {
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
                     }

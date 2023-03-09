@@ -2146,7 +2146,7 @@ components:
         propertyName: substate_type
         mapping:
           # NOTE: These need to match SubstateType options below
-          Metadata: '#/components/schemas/MetadataSubstate'
+          MetadataEntry: '#/components/schemas/MetadataEntrySubstate'
           AccessRules: '#/components/schemas/AccessRulesSubstate'
           FunctionAccessRules: '#/components/schemas/FunctionAccessRulesSubstate'
           TypeInfo: '#/components/schemas/TypeInfoSubstate'
@@ -2176,7 +2176,7 @@ components:
       type: string
       enum:
         # Common
-        - Metadata
+        - MetadataEntry
         - AccessRules
         - FunctionAccessRules
         # Specific
@@ -2212,7 +2212,7 @@ components:
         Slightly different to the SubstateType - some entities have two of the same substate (eg ResouceManager AccessRules)
       enum:
         # Common
-        - Metadata
+        - MetadataEntry
         - AccessRules
         - FunctionAccessRules
         # Specific
@@ -2253,25 +2253,19 @@ components:
     FunctionAccessRulesSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
-    MetadataSubstate:
+    MetadataEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - metadata
+            - key_hex
+            - is_deleted
           properties:
-            metadata:
-              type: array
-              items:
-                type: object
-                required:
-                  - key
-                  - value
-                properties:
-                  key:
-                    type: string
-                  value:
-                    type: string
+            key_hex:
+              type: string
+              description: The hex-encoded bytes of its key
+            data_struct:
+              $ref: '#/components/schemas/DataStruct'
 ### SPECIFIC SUBSTATES
     TypeInfoSubstate:
       allOf:
@@ -3621,7 +3615,6 @@ components:
       type: object
       required:
         - info
-        - metadata
         - access_rules
         - state_owned_vaults
         - descendent_ids
@@ -3635,8 +3628,6 @@ components:
         royalty_config:
           $ref: "#/components/schemas/Substate"
         royalty_accumulator:
-          $ref: "#/components/schemas/Substate"
-        metadata:
           $ref: "#/components/schemas/Substate"
         access_rules:
           $ref: "#/components/schemas/Substate"
@@ -3684,14 +3675,11 @@ components:
       type: object
       required:
         - state
-        - metadata
         - access_rules
         - state_owned_vaults
         - descendent_ids
       properties:
         state:
-          $ref: "#/components/schemas/Substate"
-        metadata:
           $ref: "#/components/schemas/Substate"
         access_rules:
           $ref: "#/components/schemas/Substate"
@@ -3722,14 +3710,11 @@ components:
       type: object
       required:
         - state
-        - metadata
         - access_rules
         - state_owned_vaults
         - descendent_ids
       properties:
         state:
-          $ref: "#/components/schemas/Substate"
-        metadata:
           $ref: "#/components/schemas/Substate"
         access_rules:
           $ref: "#/components/schemas/Substate"
@@ -3761,13 +3746,10 @@ components:
       type: object
       required:
         - manager
-        - metadata
         - access_rules
         - vault_access_rules
       properties:
         manager:
-          $ref: "#/components/schemas/Substate"
-        metadata:
           $ref: "#/components/schemas/Substate"
         access_rules:
           $ref: "#/components/schemas/Substate"
@@ -3817,7 +3799,6 @@ components:
         - info
         - royalty_config
         - royalty_accumulator
-        - metadata
         - access_rules
       properties:
         info:
@@ -3825,8 +3806,6 @@ components:
         royalty_config:
           $ref: "#/components/schemas/Substate"
         royalty_accumulator:
-          $ref: "#/components/schemas/Substate"
-        metadata:
           $ref: "#/components/schemas/Substate"
         access_rules:
           $ref: "#/components/schemas/Substate"

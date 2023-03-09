@@ -28,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum SubstateType {
   
-  METADATA("Metadata"),
+  METADATAENTRY("MetadataEntry"),
   
   ACCESSRULES("AccessRules"),
   

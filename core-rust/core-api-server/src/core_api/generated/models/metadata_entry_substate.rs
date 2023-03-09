@@ -12,18 +12,22 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct MetadataSubstate {
+pub struct MetadataEntrySubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "metadata")]
-    pub metadata: Vec<crate::core_api::generated::models::MetadataSubstateAllOfMetadata>,
+    /// The hex-encoded bytes of its key
+    #[serde(rename = "key_hex")]
+    pub key_hex: String,
+    #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
+    pub data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
 }
 
-impl MetadataSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, metadata: Vec<crate::core_api::generated::models::MetadataSubstateAllOfMetadata>) -> MetadataSubstate {
-        MetadataSubstate {
+impl MetadataEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, key_hex: String) -> MetadataEntrySubstate {
+        MetadataEntrySubstate {
             substate_type,
-            metadata,
+            key_hex,
+            data_struct: None,
         }
     }
 }

@@ -12,18 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct MetadataSubstateAllOfMetadata {
-    #[serde(rename = "key")]
-    pub key: String,
-    #[serde(rename = "value")]
-    pub value: String,
+pub struct MetadataEntrySubstateAllOf {
+    /// The hex-encoded bytes of its key
+    #[serde(rename = "key_hex")]
+    pub key_hex: String,
+    #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
+    pub data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
 }
 
-impl MetadataSubstateAllOfMetadata {
-    pub fn new(key: String, value: String) -> MetadataSubstateAllOfMetadata {
-        MetadataSubstateAllOfMetadata {
-            key,
-            value,
+impl MetadataEntrySubstateAllOf {
+    pub fn new(key_hex: String) -> MetadataEntrySubstateAllOf {
+        MetadataEntrySubstateAllOf {
+            key_hex,
+            data_struct: None,
         }
     }
 }

@@ -78,10 +78,13 @@ pub enum Substate {
         #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
         data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
     },
-    #[serde(rename="Metadata")]
-    MetadataSubstate {
-        #[serde(rename = "metadata")]
-        metadata: Vec<crate::core_api::generated::models::MetadataSubstateAllOfMetadata>,
+    #[serde(rename="MetadataEntry")]
+    MetadataEntrySubstate {
+        /// The hex-encoded bytes of its key
+        #[serde(rename = "key_hex")]
+        key_hex: String,
+        #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
+        data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
     },
     #[serde(rename="NonFungibleStoreEntry")]
     NonFungibleStoreEntrySubstate {
