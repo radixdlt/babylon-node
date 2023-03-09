@@ -77,15 +77,18 @@ pub trait Merklizable: Debug {
 }
 
 /// An accumulator tree with persistence backed by an external storage.
-/// For convenience, this structure tracks the current number of accumulated leaves internally
-/// between calls.
-pub struct AccuTree<'s, S: AccuTreeStore<N>, N> {
+/// The storage key (for `AccuTreeStore`) used by this implementation is simply an integer
+/// representing the number of leaf nodes stored in the tree by _all_ the slices _including_ the
+/// loaded/saved one. This approach allows to easily access the last slice (needed for `append()`
+/// operation) by knowing only the current tree size.
+/// For convenience, this structure tracks the current tree size internally between calls.
+pub struct AccuTree<'s, S: AccuTreeStore<usize, N>, N> {
     store: &'s mut S,
     current_len: usize,
     phantom_data: PhantomData<N>,
 }
 
-impl<'s, S: AccuTreeStore<M>, M: Merklizable> AccuTree<'s, S, M> {
+impl<'s, S: AccuTreeStore<usize, M>, M: Merklizable> AccuTree<'s, S, M> {
     /// Creates a new accumulator tree backed by the given store, which is assumed to currently hold
     /// the given number of leaves.
     pub fn new(store: &'s mut S, current_len: usize) -> Self {
@@ -108,7 +111,7 @@ impl<'s, S: AccuTreeStore<M>, M: Merklizable> AccuTree<'s, S, M> {
         } else {
             let previous_slice = self
                 .store
-                .get_tree_slice(self.current_len)
+                .get_tree_slice(&self.current_len)
                 .expect("no slice ending at given version found");
             previous_slice.levels.into_iter()
         };
@@ -154,7 +157,7 @@ impl<'s, S: AccuTreeStore<M>, M: Merklizable> AccuTree<'s, S, M> {
 
         self.current_len = target_length;
         self.store
-            .put_tree_slice(self.current_len, TreeSlice::new(levels));
+            .put_tree_slice(&self.current_len, TreeSlice::new(levels));
     }
 }
 
