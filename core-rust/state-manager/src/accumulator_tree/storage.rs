@@ -62,24 +62,107 @@
  * permissions under this License.
  */
 
-extern crate core;
+use std::collections::HashMap;
 
-mod accumulator_tree;
-pub mod jni;
-pub mod mempool;
-mod metrics;
-pub mod query;
-mod receipt;
-mod result;
-mod staging;
-mod state_manager;
-pub mod store;
-pub mod transaction;
-mod types;
+/// The "read" part of an accumulator tree storage SPI.
+pub trait ReadableAccuTreeStore<N> {
+    /// Gets a vertical `TreeSlice` by its end index.
+    /// This index is effectively equal to the number of leaf nodes stored in the tree by _all_ the
+    /// slices _including_ the requested one.
+    fn get_tree_slice(&self, index: usize) -> Option<TreeSlice<N>>;
+}
 
-pub use crate::mempool::*;
-pub use crate::metrics::*;
-pub use crate::pending_transaction_result_cache::*;
-pub use crate::receipt::*;
-pub use crate::state_manager::*;
-pub use crate::types::*;
+/// The "write" part of an accumulator tree storage SPI.
+pub trait WriteableAccuTreeStore<N> {
+    /// Puts a vertical `TreeSlice` at the given end index.
+    /// This index is effectively equal to the number of leaf nodes stored in the tree by _all_ the
+    /// slices _including_ the given one.
+    fn put_tree_slice(&mut self, index: usize, slice: TreeSlice<N>);
+}
+
+/// A convenience read+write storage trait.
+pub trait AccuTreeStore<N>: ReadableAccuTreeStore<N> + WriteableAccuTreeStore<N> {}
+impl<T: ReadableAccuTreeStore<N> + WriteableAccuTreeStore<N>, N> AccuTreeStore<N> for T {}
+
+/// A vertical slice of an accumulator tree.
+/// This is an "incremental" persistence part of a tree representing a batch of appended leaf nodes
+/// and the resulting merkle updates, propagating up to a single root.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct TreeSlice<N> {
+    /// The tree-levels of this slice, arranged from leafs to root.
+    pub levels: Vec<TreeSliceLevel<N>>,
+}
+
+impl<N> TreeSlice<N> {
+    /// Creates a vertical slice directly from levels.
+    pub fn new(levels: Vec<TreeSliceLevel<N>>) -> Self {
+        Self { levels }
+    }
+
+    /// Returns the root of the tree.
+    pub fn root(&self) -> &N {
+        self.levels
+            .last()
+            .expect("empty slice")
+            .nodes
+            .first()
+            .expect("empty slice level")
+    }
+}
+
+/// A single tree-level of a `TreeSlice`.
+/// Effectively this means that it is a horizontal slice of a corresponding level of an entire
+/// accumulator tree.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct TreeSliceLevel<N> {
+    /// The cached left sibling of the first node of that level slice, i.e. present if and only if
+    /// the `nodes` actually start with a right child.
+    /// This value was not computed (i.e. not updated) during the append to the accumulator tree,
+    /// but it needed to be loaded from the storage (i.e. coming from the previous vertical slice).
+    /// It is stored in this slice again (i.e. cached), because it will be needed to produce merkle
+    /// proofs for the nodes contained in this slice.
+    pub left_sibling_cache: Option<N>,
+
+    /// The actual nodes computed during the append to the accumulator tree.
+    /// Depending on the level, these might be exactly all the appended leafs, or their composite
+    /// merkle nodes, all the way up. The highest level of each `TreeSlice` contains a single
+    /// element in the `nodes`, representing the merkle root.
+    pub nodes: Vec<N>,
+}
+
+impl<N> TreeSliceLevel<N> {
+    /// Creates a single horizontal level slice (of some vertical tree slice).
+    pub fn new(left_sibling_cache: Option<N>, nodes: Vec<N>) -> Self {
+        Self {
+            left_sibling_cache,
+            nodes,
+        }
+    }
+}
+
+/// An in-memory implementation of an `AccuTreeStore`.
+pub struct MemoryAccuTreeStore<N> {
+    /// Directly stored vertical slices, keyed by their end index (exclusive).
+    pub slices: HashMap<usize, TreeSlice<N>>,
+}
+
+impl<N> MemoryAccuTreeStore<N> {
+    /// Creates an empty in-memory storage.
+    pub fn new() -> Self {
+        Self {
+            slices: HashMap::new(),
+        }
+    }
+}
+
+impl<N: Clone> ReadableAccuTreeStore<N> for MemoryAccuTreeStore<N> {
+    fn get_tree_slice(&self, index: usize) -> Option<TreeSlice<N>> {
+        self.slices.get(&index).cloned()
+    }
+}
+
+impl<N: Clone> WriteableAccuTreeStore<N> for MemoryAccuTreeStore<N> {
+    fn put_tree_slice(&mut self, index: usize, slice: TreeSlice<N>) {
+        self.slices.insert(index, slice);
+    }
+}
