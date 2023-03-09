@@ -164,6 +164,10 @@ public final class LedgerProof {
     return new DtoLedgerProof(opaque, ledgerHeader, signatures);
   }
 
+  public HashCode getOpaque() {
+    return this.opaque;
+  }
+
   public LedgerHeader getHeader() {
     return ledgerHeader;
   }

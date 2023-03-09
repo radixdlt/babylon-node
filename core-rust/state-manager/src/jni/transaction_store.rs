@@ -65,6 +65,7 @@
 use crate::jni::state_manager::ActualStateManager;
 use crate::store::traits::*;
 
+use crate::jni::state_computer::JavaLedgerProof;
 use crate::LedgerTransactionOutcome;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
@@ -154,12 +155,15 @@ fn do_get_txns_and_proof(
         max_number_of_txns_if_more_than_one_proof,
         max_payload_size_in_bytes,
     ): (u64, u32, u32),
-) -> Option<(Vec<Vec<u8>>, Vec<u8>)> {
-    state_manager.store().get_txns_and_proof(
-        start_state_version_inclusive,
-        max_number_of_txns_if_more_than_one_proof,
-        max_payload_size_in_bytes,
-    )
+) -> Option<(Vec<Vec<u8>>, JavaLedgerProof)> {
+    state_manager
+        .store()
+        .get_txns_and_proof(
+            start_state_version_inclusive,
+            max_number_of_txns_if_more_than_one_proof,
+            max_payload_size_in_bytes,
+        )
+        .map(|(txns, proof)| (txns, proof.into()))
 }
 
 #[no_mangle]
@@ -173,8 +177,14 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 }
 
 #[tracing::instrument(skip_all)]
-fn do_get_epoch_proof(state_manager: &ActualStateManager, state_version: u64) -> Option<Vec<u8>> {
-    state_manager.store().get_epoch_proof(state_version)
+fn do_get_epoch_proof(
+    state_manager: &ActualStateManager,
+    state_version: u64,
+) -> Option<JavaLedgerProof> {
+    state_manager
+        .store()
+        .get_epoch_proof(state_version)
+        .map(|proof| proof.into())
 }
 
 #[no_mangle]
@@ -188,8 +198,11 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 }
 
 #[tracing::instrument(skip_all)]
-fn do_get_last_proof(state_manager: &ActualStateManager, _args: ()) -> Option<Vec<u8>> {
-    state_manager.store().get_last_proof()
+fn do_get_last_proof(state_manager: &ActualStateManager, _args: ()) -> Option<JavaLedgerProof> {
+    state_manager
+        .store()
+        .get_last_proof()
+        .map(|proof| proof.into())
 }
 
 pub fn export_extern_functions() {}

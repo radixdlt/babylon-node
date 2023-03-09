@@ -80,7 +80,7 @@ use radix_engine::system::node_substates::PersistedSubstate;
 use crate::store::traits::RecoverableVertexStore;
 use crate::transaction::LedgerTransaction;
 use crate::{
-    AccumulatorHash, CommittedTransactionIdentifiers, IntentHash, LedgerPayloadHash,
+    AccumulatorHash, CommittedTransactionIdentifiers, IntentHash, LedgerPayloadHash, LedgerProof,
     LedgerTransactionReceipt,
 };
 use radix_engine::types::{KeyValueStoreId, SubstateId};
@@ -272,7 +272,7 @@ impl QueryableProofStore for StateManagerDatabase {
         start_state_version_inclusive: u64,
         max_number_of_txns_if_more_than_one_proof: u32,
         max_payload_size_in_bytes: u32,
-    ) -> Option<(Vec<Vec<u8>>, Vec<u8>)> {
+    ) -> Option<(Vec<Vec<u8>>, LedgerProof)> {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_txns_and_proof(
                 start_state_version_inclusive,
@@ -288,7 +288,7 @@ impl QueryableProofStore for StateManagerDatabase {
         }
     }
 
-    fn get_epoch_proof(&self, epoch: u64) -> Option<Vec<u8>> {
+    fn get_epoch_proof(&self, epoch: u64) -> Option<LedgerProof> {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_epoch_proof(epoch),
             StateManagerDatabase::RocksDB(store) => store.get_epoch_proof(epoch),
@@ -296,7 +296,7 @@ impl QueryableProofStore for StateManagerDatabase {
         }
     }
 
-    fn get_last_proof(&self) -> Option<Vec<u8>> {
+    fn get_last_proof(&self) -> Option<LedgerProof> {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_last_proof(),
             StateManagerDatabase::RocksDB(store) => store.get_last_proof(),

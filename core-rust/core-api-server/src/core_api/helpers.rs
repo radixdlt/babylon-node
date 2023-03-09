@@ -33,17 +33,31 @@ pub(crate) fn read_known_substate(
     node_module_id: NodeModuleId,
     substate_offset: &SubstateOffset,
 ) -> Result<PersistedSubstate, ResponseError<()>> {
+    read_optional_substate(state_manager, renode_id, node_module_id, substate_offset).ok_or_else(
+        || {
+            MappingError::MismatchedSubstateId {
+                message: format!(
+                    "Substate {:?} not found under RE node {:?} and module {:?}",
+                    substate_offset, renode_id, node_module_id
+                ),
+            }
+            .into()
+        },
+    )
+}
+
+#[tracing::instrument(skip_all)]
+pub(crate) fn read_optional_substate(
+    state_manager: &ActualStateManager,
+    renode_id: RENodeId,
+    node_module_id: NodeModuleId,
+    substate_offset: &SubstateOffset,
+) -> Option<PersistedSubstate> {
     let substate_id = SubstateId(renode_id, node_module_id, substate_offset.clone());
-    let output_value = state_manager
+    state_manager
         .store()
         .get_substate(&substate_id)
-        .ok_or_else(|| MappingError::MismatchedSubstateId {
-            message: format!(
-                "Substate {:?} not found under {:?}",
-                substate_offset, renode_id
-            ),
-        })?;
-    Ok(output_value.substate)
+        .map(|o| o.substate)
 }
 
 #[tracing::instrument(skip_all)]

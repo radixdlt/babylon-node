@@ -84,7 +84,6 @@ import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.serialization.DefaultSerialization;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statemanager.*;
@@ -127,13 +126,7 @@ public final class RustMempoolTest {
     var transactions = transactionsWithProof.getTransactions();
     var proof = transactionsWithProof.getProof();
     stateComputer
-        .commit(
-            new CommitRequest(
-                transactions,
-                UInt64.fromNonNegativeLong(proof.getStateVersion()),
-                proof.getLedgerHashes().getStateRoot(),
-                DefaultSerialization.getInstance().toDson(proof, DsonOutput.Output.ALL),
-                Option.none()))
+        .commit(new CommitRequest(transactions, REv2ToConsensus.ledgerProof(proof), Option.none()))
         .unwrap();
   }
 

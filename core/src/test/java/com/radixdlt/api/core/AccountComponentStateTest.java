@@ -62,77 +62,92 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.api.core;
 
-import static java.util.Objects.requireNonNull;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
+import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransaction;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
-import java.util.Objects;
-import java.util.Set;
-import javax.annotation.concurrent.Immutable;
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.StateComponentRequest;
+import com.radixdlt.api.core.generated.models.TransactionReceiptRequest;
+import com.radixdlt.api.core.generated.models.TypeInfoSubstate;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.rev2.REv2TestTransactions;
+import com.radixdlt.rev2.TransactionHeader;
+import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.UInt32;
+import java.util.List;
+import org.bouncycastle.util.encoders.Hex;
+import org.junit.Test;
 
-@Immutable
-@SerializerId2("consensus.next_epoch")
-public final class NextEpoch {
-  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
-  @DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
-  SerializerDummy serializer = SerializerDummy.DUMMY;
+public final class AccountComponentStateTest extends DeterministicCoreApiTestBase {
+  @Test
+  public void test_core_api_can_retrieve_account_component_state() throws Exception {
+    try (var test = buildRunningServerTest()) {
 
-  @JsonProperty("validators")
-  @DsonOutput(DsonOutput.Output.ALL)
-  private final ImmutableSet<BFTValidator> validators;
+      // Prepare an account creation transaction
+      final var notary = ECKeyPair.generateNew();
+      final var header =
+          TransactionHeader.defaults(
+              networkDefinition,
+              1,
+              1,
+              1,
+              notary.getPublicKey().toPublicKey(),
+              UInt32.fromNonNegativeInt(10000000),
+              true);
 
-  @JsonProperty("epoch")
-  @DsonOutput(DsonOutput.Output.ALL)
-  private final long epoch;
+      final var manifest = REv2TestTransactions.constructNewAccountManifest(networkDefinition);
+      final var intent =
+          TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
+      final var intentHash = HashUtils.blake2b256(intent);
+      final var signedIntentBytes = TransactionBuilder.createSignedIntentBytes(intent, List.of());
+      final var signedIntentHash = HashUtils.blake2b256(signedIntentBytes).asBytes();
+      final var notarySignature = notary.sign(signedIntentHash).toSignature();
+      final var notarizedTxBytes =
+          TransactionBuilder.createNotarizedBytes(signedIntentBytes, notarySignature);
+      final var rawNotarizedTx = RawNotarizedTransaction.create(notarizedTxBytes);
 
-  @JsonCreator
-  @VisibleForTesting
-  NextEpoch(
-      @JsonProperty(value = "epoch", required = true) long epoch,
-      @JsonProperty(value = "validators", required = true) ImmutableSet<BFTValidator> validators) {
-    this.epoch = epoch;
-    if (epoch < 0) {
-      throw new IllegalArgumentException("Epoch can't be < 0");
+      // Submit an account creation transaction and await its commit
+      test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}))
+          .dispatch(MempoolAdd.create(rawNotarizedTx));
+      test.runUntilState(
+          allCommittedTransaction(rawNotarizedTx),
+          onlyConsensusEvents().or(onlyLocalMempoolAddEvents()));
+
+      final var receipt =
+          getTransactionApi()
+              .transactionReceiptPost(
+                  new TransactionReceiptRequest()
+                      .network(networkLogicalName)
+                      .intentHash(Hex.toHexString(intentHash.asBytes())));
+
+      final var newAccountAddress =
+          receipt
+              .getCommitted()
+              .getReceipt()
+              .getStateUpdates()
+              .getNewGlobalEntities()
+              .get(0)
+              .getGlobalAddress();
+
+      final var stateResp =
+          getStateApi()
+              .stateComponentPost(
+                  new StateComponentRequest()
+                      .network(networkLogicalName)
+                      .componentAddress(newAccountAddress));
+
+      // Assert that the component state request succeeds
+      assertThat(((TypeInfoSubstate) stateResp.getInfo()).getBlueprintName()).isEqualTo("Account");
     }
-    this.validators = requireNonNull(validators);
-  }
-
-  public static NextEpoch create(long epoch, Set<BFTValidator> validators) {
-    return new NextEpoch(epoch, ImmutableSet.copyOf(validators));
-  }
-
-  public ImmutableSet<BFTValidator> getValidators() {
-    return validators;
-  }
-
-  public long getEpoch() {
-    return epoch;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    NextEpoch nextEpoch = (NextEpoch) o;
-    return epoch == nextEpoch.epoch && Objects.equals(validators, nextEpoch.validators);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(validators, epoch);
-  }
-
-  @Override
-  public String toString() {
-    return "NextEpoch{" + "validators=" + validators + ", epoch=" + epoch + '}';
   }
 }
