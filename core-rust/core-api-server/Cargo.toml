@@ -23,14 +23,14 @@ parking_lot = { version = "0.12" }
 #
 # Ensure this version is also identically updated in ../state-manager/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-a91483", features = ["serde"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-a91483" }
-radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-a91483", features = ["serde"]  }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-a91483", features = ["serde"]  }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-a91483" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-a91483" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-a91483" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-a91483" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-4878e1", features = ["serde"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-4878e1" }
+radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-4878e1", features = ["serde"]  }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-4878e1", features = ["serde"]  }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-4878e1" }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-4878e1" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-4878e1" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-4878e1" }
 
 jni = "0.19.0"
 

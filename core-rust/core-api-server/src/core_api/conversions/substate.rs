@@ -31,7 +31,12 @@ use radix_engine_interface::api::package::{
     PackageRoyaltyConfigSubstate,
 };
 use radix_engine_interface::api::types::{IndexedScryptoValue, NodeModuleId};
-use radix_engine_interface::blueprints::resource::{AccessRule, AccessRuleEntry, AccessRuleNode, AccessRulesConfig, LiquidFungibleResource, LiquidNonFungibleResource, LockedFungibleResource, LockedNonFungibleResource, MethodKey, ProofRule, ResourceType, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, AccessRuleEntry, AccessRuleNode, AccessRulesConfig, LiquidFungibleResource,
+    LiquidNonFungibleResource, LockedFungibleResource, LockedNonFungibleResource, MethodKey,
+    ProofRule, ResourceType, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible,
+    SoftResourceOrNonFungibleList,
+};
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::data::scrypto::model::{
     Address, ComponentAddress, NonFungibleIdType, NonFungibleLocalId,
@@ -942,46 +947,40 @@ fn to_api_key_value_story_entry_substate(
             RENodeId::KeyValueStore(..),
             NodeModuleId::SELF,
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-        ) => {
-            match key_value_store_entry {
-                KeyValueStoreEntrySubstate::Some(value) => {
-                    models::Substate::KeyValueStoreEntrySubstate {
-                        key_hex: to_hex(key),
-                        is_deleted: false,
-                        data_struct: Some(Box::new(to_api_data_struct(
-                            context,
-                            &scrypto_encode(&value).unwrap(),
-                        )?)),
-                    }
-                }
-                KeyValueStoreEntrySubstate::None => models::Substate::KeyValueStoreEntrySubstate {
+        ) => match key_value_store_entry {
+            KeyValueStoreEntrySubstate::Some(value) => {
+                models::Substate::KeyValueStoreEntrySubstate {
                     key_hex: to_hex(key),
-                    is_deleted: true,
-                    data_struct: None,
-                },
+                    is_deleted: false,
+                    data_struct: Some(Box::new(to_api_data_struct(
+                        context,
+                        &scrypto_encode(&value).unwrap(),
+                    )?)),
+                }
             }
+            KeyValueStoreEntrySubstate::None => models::Substate::KeyValueStoreEntrySubstate {
+                key_hex: to_hex(key),
+                is_deleted: true,
+                data_struct: None,
+            },
         },
         SubstateId(
             _,
             NodeModuleId::Metadata,
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-        ) => {
-            match key_value_store_entry {
-                KeyValueStoreEntrySubstate::Some(value) => {
-                    models::Substate::MetadataEntrySubstate {
-                        key_hex: to_hex(key),
-                        data_struct: Some(Box::new(to_api_data_struct(
-                            context,
-                            &scrypto_encode(&value).unwrap(),
-                        )?)),
-                    }
-                }
-                KeyValueStoreEntrySubstate::None => models::Substate::MetadataEntrySubstate {
-                    key_hex: to_hex(key),
-                    data_struct: None,
-                },
-            }
-        }
+        ) => match key_value_store_entry {
+            KeyValueStoreEntrySubstate::Some(value) => models::Substate::MetadataEntrySubstate {
+                key_hex: to_hex(key),
+                data_struct: Some(Box::new(to_api_data_struct(
+                    context,
+                    &scrypto_encode(&value).unwrap(),
+                )?)),
+            },
+            KeyValueStoreEntrySubstate::None => models::Substate::MetadataEntrySubstate {
+                key_hex: to_hex(key),
+                data_struct: None,
+            },
+        },
         _ => {
             return Err(MappingError::MismatchedSubstateId {
                 message: "KVStoreEntry substate was matched with a different substate id"

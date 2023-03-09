@@ -7,13 +7,10 @@ use crate::core_api::models::ModuleType;
 use models::{EntityType, SubstateKeyType, SubstateType};
 use radix_engine::types::{
     scrypto_encode, ClockOffset, ComponentAddress, ComponentOffset, EpochManagerOffset,
-    KeyValueStoreOffset, NonFungibleStoreOffset, PackageAddress, PackageOffset,
-    RENodeId, ResourceAddress, ResourceManagerOffset, SubstateId, SubstateOffset, VaultOffset,
+    KeyValueStoreOffset, NonFungibleStoreOffset, PackageAddress, PackageOffset, RENodeId,
+    ResourceAddress, ResourceManagerOffset, SubstateId, SubstateOffset, VaultOffset,
 };
-use radix_engine_interface::api::types::{
-    AccessControllerOffset, AccessRulesOffset, AccountOffset, NodeModuleId, RoyaltyOffset,
-    TypeInfoOffset, ValidatorOffset,
-};
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::data::scrypto::model::{
     Address, NonFungibleIdType, NonFungibleLocalId,
 };
@@ -127,9 +124,10 @@ impl TryFrom<RENodeId> for MappedEntityId {
             }
             RENodeId::KeyValueStore(_) => EntityType::KeyValueStore,
             RENodeId::NonFungibleStore(_) => EntityType::NonFungibleStore,
-            // TODO: Add Vault type
-            RENodeId::Object(..) => EntityType::Component,
-            //RENodeId::Vault(_) => EntityType::Vault,
+            RENodeId::Object([INTERNAL_OBJECT_B0, INTERNAL_OBJECT_VAULT_B1, ..]) => {
+                EntityType::Vault
+            }
+            RENodeId::Object([..]) => EntityType::Component,
             RENodeId::AuthZoneStack => return Err(transient_renode_error("AuthZoneStack")),
             RENodeId::TransactionRuntime => {
                 return Err(transient_renode_error("TransactionRuntime"))
@@ -240,9 +238,10 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         SubstateKeyType::ComponentRoyaltyAccumulator,
                     ),
                 },
-                (NodeModuleId::Metadata, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
-                    (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry)
-                },
+                (
+                    NodeModuleId::Metadata,
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                ) => (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry),
                 (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
                     AccessRulesOffset::AccessRules => {
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
@@ -269,9 +268,10 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 (NodeModuleId::SELF, SubstateOffset::Account(offset)) => match offset {
                     AccountOffset::Account => (SubstateType::Account, SubstateKeyType::Account),
                 },
-                (NodeModuleId::Metadata, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
-                    (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry)
-                },
+                (
+                    NodeModuleId::Metadata,
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                ) => (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry),
                 (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
                     AccessRulesOffset::AccessRules => {
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
@@ -297,9 +297,10 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         SubstateKeyType::AccessController,
                     ),
                 },
-                (NodeModuleId::Metadata, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
-                    (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry)
-                },
+                (
+                    NodeModuleId::Metadata,
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                ) => (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry),
                 (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
                     AccessRulesOffset::AccessRules => {
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
@@ -337,9 +338,10 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         SubstateKeyType::PackageRoyaltyAccumulator,
                     ),
                 },
-                (NodeModuleId::Metadata, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
-                    (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry)
-                },
+                (
+                    NodeModuleId::Metadata,
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                ) => (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry),
                 (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
                     AccessRulesOffset::AccessRules => {
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
@@ -365,10 +367,14 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         SubstateKeyType::ResourceManager,
                     ),
                 },
-                (NodeModuleId::Metadata, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
-                    (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry)
-                },
-                (NodeModuleId::AccessRules | NodeModuleId::AccessRules1, SubstateOffset::AccessRules(offset)) => match offset {
+                (
+                    NodeModuleId::Metadata,
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                ) => (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry),
+                (
+                    NodeModuleId::AccessRules | NodeModuleId::AccessRules1,
+                    SubstateOffset::AccessRules(offset),
+                ) => match offset {
                     AccessRulesOffset::AccessRules => {
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
                     }
@@ -405,33 +411,56 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
         }
 
         // TODO: Fix
-        SubstateId(RENodeId::Object(_), _, offset) => {
-            let substate_type_key = match offset {
-                SubstateOffset::TypeInfo(offset) => match offset {
-                    TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
-                },
-                SubstateOffset::Vault(offset) => match offset {
-                    VaultOffset::Info => (SubstateType::VaultInfo, SubstateKeyType::VaultInfo),
-                    VaultOffset::LiquidNonFungible => (
-                        SubstateType::VaultNonFungible,
-                        SubstateKeyType::VaultNonFungible,
-                    ),
-                    VaultOffset::LockedNonFungible => (
-                        SubstateType::VaultLockedNonFungible,
-                        SubstateKeyType::VaultLockedNonFungible,
-                    ),
-                    VaultOffset::LiquidFungible => {
-                        (SubstateType::VaultFungible, SubstateKeyType::VaultFungible)
-                    }
-                    VaultOffset::LockedFungible => (
-                        SubstateType::VaultLockedFungible,
-                        SubstateKeyType::VaultLockedFungible,
-                    ),
-                },
-                _ => return Err(unknown_substate_error("Vault", &substate_id)),
-            };
-            (EntityType::Vault, substate_type_key)
-        }
+        SubstateId(RENodeId::Object(object_id), _, offset) => match object_id {
+            [INTERNAL_OBJECT_B0, INTERNAL_OBJECT_VAULT_B1, ..] => {
+                let substate_type_key = match offset {
+                    SubstateOffset::TypeInfo(offset) => match offset {
+                        TypeInfoOffset::TypeInfo => {
+                            (SubstateType::TypeInfo, SubstateKeyType::TypeInfo)
+                        }
+                    },
+                    SubstateOffset::Vault(offset) => match offset {
+                        VaultOffset::Info => (SubstateType::VaultInfo, SubstateKeyType::VaultInfo),
+                        VaultOffset::LiquidNonFungible => (
+                            SubstateType::VaultNonFungible,
+                            SubstateKeyType::VaultNonFungible,
+                        ),
+                        VaultOffset::LockedNonFungible => (
+                            SubstateType::VaultLockedNonFungible,
+                            SubstateKeyType::VaultLockedNonFungible,
+                        ),
+                        VaultOffset::LiquidFungible => {
+                            (SubstateType::VaultFungible, SubstateKeyType::VaultFungible)
+                        }
+                        VaultOffset::LockedFungible => (
+                            SubstateType::VaultLockedFungible,
+                            SubstateKeyType::VaultLockedFungible,
+                        ),
+                    },
+                    _ => return Err(unknown_substate_error("Vault", &substate_id)),
+                };
+                (EntityType::Vault, substate_type_key)
+            }
+            [INTERNAL_OBJECT_B0, INTERNAL_OBJECT_NORMAL_COMPONENT_B1, ..] => {
+                let substate_type_key = match offset {
+                    SubstateOffset::TypeInfo(offset) => match offset {
+                        TypeInfoOffset::TypeInfo => {
+                            (SubstateType::TypeInfo, SubstateKeyType::TypeInfo)
+                        }
+                    },
+                    SubstateOffset::Component(offset) => match offset {
+                        ComponentOffset::State0 => (
+                            SubstateType::ComponentState,
+                            SubstateKeyType::ComponentState,
+                        ),
+                    },
+                    _ => return Err(unknown_substate_error("Internal Component", &substate_id)),
+                };
+
+                (EntityType::Component, substate_type_key)
+            }
+            _ => return Err(unknown_substate_error("Unknown RENode", &substate_id)),
+        },
 
         SubstateId(
             RENodeId::GlobalObject(Address::Component(ComponentAddress::EpochManager(..))),
@@ -460,9 +489,10 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
                     }
                 },
-                (NodeModuleId::Metadata, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
-                    (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry)
-                },
+                (
+                    NodeModuleId::Metadata,
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                ) => (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry),
                 _ => return Err(unknown_substate_error("EpochManager", &substate_id)),
             };
             (EntityType::EpochManager, substate_type_key)
@@ -482,9 +512,10 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         (SubstateType::Validator, SubstateKeyType::Validator)
                     }
                 },
-                (NodeModuleId::Metadata, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
-                    (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry)
-                },
+                (
+                    NodeModuleId::Metadata,
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                ) => (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry),
                 (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
                     AccessRulesOffset::AccessRules => {
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
@@ -515,9 +546,10 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
                     }
                 },
-                (NodeModuleId::Metadata, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
-                    (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry)
-                },
+                (
+                    NodeModuleId::Metadata,
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                ) => (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry),
                 _ => return Err(unknown_substate_error("Clock", &substate_id)),
             };
             (EntityType::Clock, substate_type_key)
@@ -536,9 +568,10 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
                     TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
                 },
-                (NodeModuleId::Metadata, SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))) => {
-                    (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry)
-                },
+                (
+                    NodeModuleId::Metadata,
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                ) => (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry),
                 (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
                     AccessRulesOffset::AccessRules => {
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
