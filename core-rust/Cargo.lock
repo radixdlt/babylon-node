@@ -1144,7 +1144,7 @@ dependencies = [
 [[package]]
 name = "native-sdk"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-value-serializer-66740e#66740e5bf47d346f59bc819ebaa14862da8ee9e6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-fc0d91#fc0d91955d694e43bf43aeb774b285b489f55a57"
 dependencies = [
  "radix-engine-derive",
  "radix-engine-interface",
@@ -1450,7 +1450,7 @@ dependencies = [
 [[package]]
 name = "radix-engine"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-value-serializer-66740e#66740e5bf47d346f59bc819ebaa14862da8ee9e6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-fc0d91#fc0d91955d694e43bf43aeb774b285b489f55a57"
 dependencies = [
  "bitflags",
  "colored",
@@ -1462,6 +1462,7 @@ dependencies = [
  "radix-engine-interface",
  "sbor",
  "strum",
+ "tikv-jemallocator",
  "transaction",
  "utils",
  "wasm-instrument",
@@ -1472,7 +1473,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-common"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-value-serializer-66740e#66740e5bf47d346f59bc819ebaa14862da8ee9e6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-fc0d91#fc0d91955d694e43bf43aeb774b285b489f55a57"
 dependencies = [
  "bech32",
  "blake2",
@@ -1493,12 +1494,12 @@ dependencies = [
 [[package]]
 name = "radix-engine-constants"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-value-serializer-66740e#66740e5bf47d346f59bc819ebaa14862da8ee9e6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-fc0d91#fc0d91955d694e43bf43aeb774b285b489f55a57"
 
 [[package]]
 name = "radix-engine-derive"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-value-serializer-66740e#66740e5bf47d346f59bc819ebaa14862da8ee9e6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-fc0d91#fc0d91955d694e43bf43aeb774b285b489f55a57"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1509,7 +1510,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-interface"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-value-serializer-66740e#66740e5bf47d346f59bc819ebaa14862da8ee9e6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-fc0d91#fc0d91955d694e43bf43aeb774b285b489f55a57"
 dependencies = [
  "bitflags",
  "hex",
@@ -1524,7 +1525,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-stores"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-value-serializer-66740e#66740e5bf47d346f59bc819ebaa14862da8ee9e6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-fc0d91#fc0d91955d694e43bf43aeb774b285b489f55a57"
 dependencies = [
  "itertools",
  "radix-engine",
@@ -1694,7 +1695,7 @@ dependencies = [
 [[package]]
 name = "sbor"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-value-serializer-66740e#66740e5bf47d346f59bc819ebaa14862da8ee9e6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-fc0d91#fc0d91955d694e43bf43aeb774b285b489f55a57"
 dependencies = [
  "const-sha1",
  "indexmap 2.0.0-pre",
@@ -1706,7 +1707,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-value-serializer-66740e#66740e5bf47d346f59bc819ebaa14862da8ee9e6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-fc0d91#fc0d91955d694e43bf43aeb774b285b489f55a57"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -1715,7 +1716,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive-common"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-value-serializer-66740e#66740e5bf47d346f59bc819ebaa14862da8ee9e6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-fc0d91#fc0d91955d694e43bf43aeb774b285b489f55a57"
 dependencies = [
  "const-sha1",
  "proc-macro2",
@@ -1747,7 +1748,7 @@ checksum = "1792db035ce95be60c3f8853017b3999209281c24e2ba5bc8e59bf97a0c590c1"
 [[package]]
 name = "scrypto-schema"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-value-serializer-66740e#66740e5bf47d346f59bc819ebaa14862da8ee9e6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-fc0d91#fc0d91955d694e43bf43aeb774b285b489f55a57"
 dependencies = [
  "radix-engine-common",
  "sbor",
@@ -2122,6 +2123,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "tikv-jemalloc-sys"
+version = "0.5.3+5.3.0-patched"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a678df20055b43e57ef8cddde41cdfda9a3c1a060b67f4c5836dfb1d78543ba8"
+dependencies = [
+ "cc",
+ "libc",
+]
+
+[[package]]
+name = "tikv-jemallocator"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20612db8a13a6c06d57ec83953694185a367e16945f66565e8028d2c0bd76979"
+dependencies = [
+ "libc",
+ "tikv-jemalloc-sys",
+]
+
+[[package]]
 name = "time"
 version = "0.3.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2297,7 +2318,7 @@ dependencies = [
 [[package]]
 name = "transaction"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-value-serializer-66740e#66740e5bf47d346f59bc819ebaa14862da8ee9e6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-fc0d91#fc0d91955d694e43bf43aeb774b285b489f55a57"
 dependencies = [
  "ed25519-dalek",
  "hex",
@@ -2357,7 +2378,7 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 [[package]]
 name = "utils"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=fix-value-serializer-66740e#66740e5bf47d346f59bc819ebaa14862da8ee9e6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-fc0d91#fc0d91955d694e43bf43aeb774b285b489f55a57"
 dependencies = [
  "sbor",
  "serde",
