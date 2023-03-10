@@ -2263,7 +2263,6 @@ components:
         - type: object
           required:
             - key_hex
-            - is_deleted
           properties:
             key_hex:
               type: string
