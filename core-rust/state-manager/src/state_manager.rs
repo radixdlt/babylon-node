@@ -98,10 +98,12 @@ use radix_engine::state_manager::StateDiff;
 use radix_engine_interface::api::types::{
     NodeModuleId, SubstateId, SubstateOffset, ValidatorOffset,
 };
-use std::collections::HashMap;
+
+use std::collections::{BTreeMap, HashMap};
 use std::convert::TryInto;
 
-use radix_engine::blueprints::epoch_manager::ValidatorSubstate;
+use ::transaction::data::*;
+use radix_engine::blueprints::epoch_manager::{Validator, ValidatorSubstate};
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine_interface::data::manifest::manifest_encode;
 use radix_engine_interface::network::NetworkDefinition;
@@ -589,7 +591,7 @@ where
                     validator_set: commit
                         .next_epoch
                         .clone()
-                        .map(|(validator_set, _)| validator_set),
+                        .map(|next_epoch_result| NextEpoch::from(next_epoch_result).validator_set),
                     ledger_hashes: *processed.ledger_hashes(),
                 },
                 TransactionOutcome::Failure(error) => {
@@ -719,10 +721,7 @@ where
                 state_tracker.update(new_accumulator_hash, *processed.ledger_hashes());
                 committed.push(manifest_encode(&validator_txn).unwrap());
 
-                commit_result.next_epoch.clone().map(|e| NextEpoch {
-                    validator_set: e.0,
-                    epoch: e.1,
-                })
+                commit_result.next_epoch.clone().map(NextEpoch::from)
             }
             TransactionResult::Reject(reject_result) => {
                 panic!("Validator txn failed: {reject_result:?}")
@@ -812,11 +811,8 @@ where
                             None,
                         ));
 
-                        if let Some(e) = &result.next_epoch {
-                            next_epoch = Some(NextEpoch {
-                                validator_set: e.0.clone(),
-                                epoch: e.1,
-                            });
+                        if let Some(next_epoch_result) = &result.next_epoch {
+                            next_epoch = Some(NextEpoch::from(next_epoch_result.clone()));
                             break;
                         }
                     }
@@ -937,8 +933,10 @@ where
             panic!("cannot commit 0 transactions from request {commit_request:?}");
         }
 
+        let commit_ledger_header = &commit_request.proof.ledger_header;
+        let commit_accumulator_state = &commit_ledger_header.accumulator_state;
         let commit_request_start_state_version =
-            commit_request.proof_state_version - (commit_transactions_len as u64);
+            commit_accumulator_state.state_version - (commit_transactions_len as u64);
 
         // Whilst we should probably validate intent hash duplicates here, these are checked by validators on prepare already,
         // and the check will move into the engine at some point and we'll get it for free then...
@@ -968,7 +966,6 @@ where
         }
 
         let mut state_tracker = StateTracker::initial(base_transaction_identifiers);
-        let mut epoch_boundary = None;
         let mut committed_transaction_bundles = Vec::new();
         let mut state_diff = StateDiff::new();
         let mut state_hash_tree_update = HashTreeUpdate::new();
@@ -977,7 +974,7 @@ where
         for (i, transaction) in parsed_transactions.into_iter().enumerate() {
             if let LedgerTransaction::System(..) = transaction {
                 // TODO: Cleanup and use real system transaction logic
-                if commit_request.proof_state_version != 1 && i != 0 {
+                if commit_accumulator_state.state_version != 1 && i != 0 {
                     panic!("Non Genesis system transaction cannot be committed.");
                 }
             }
@@ -1000,26 +997,27 @@ where
 
             let commit_result = match &processed.receipt().result {
                 TransactionResult::Commit(result) => {
-                    if let Some((_, next_epoch)) = result.next_epoch {
+                    if result.next_epoch.is_some() {
                         let is_last = i == (commit_transactions_len - 1);
                         if !is_last {
                             return Err(CommitError::MissingEpochProof);
                         }
-                        // TODO: Use actual result and verify proof validator set matches transaction receipt validator set
-                        epoch_boundary = Some(next_epoch);
+                        // TODO: verify that `result.next_epoch == commit_ledger_header.next_epoch`
+                        // (currently it would fail for some of our tests which create genesis proof
+                        // directly, without caring about validator addresses)
                     }
                     result.clone()
                 }
                 TransactionResult::Reject(error) => {
                     panic!(
                         "Failed to commit a txn at state version {}: {:?}",
-                        commit_request.proof_state_version, error
+                        commit_accumulator_state.state_version, error
                     )
                 }
                 TransactionResult::Abort(abort_result) => {
                     panic!(
                         "Failed to commit a txn at state version {}: {:?}",
-                        commit_request.proof_state_version, abort_result
+                        commit_accumulator_state.state_version, abort_result
                     );
                 }
             };
@@ -1052,13 +1050,14 @@ where
             );
         }
 
+        let commit_ledger_hashes = &commit_ledger_header.hashes;
         let final_state_hash = &state_tracker.latest_ledger_hashes().state_root;
-        if *final_state_hash != commit_request.proof_state_hash {
+        if *final_state_hash != commit_ledger_hashes.state_root {
             warn!(
                 "computed state hash at version {} differs from the one in proof ({} != {})",
-                commit_request.proof_state_version,
+                commit_accumulator_state.state_version,
                 final_state_hash,
-                commit_request.proof_state_hash
+                commit_ledger_hashes.state_root
             );
         }
         let final_transaction_identifiers = state_tracker.latest_transaction_identifiers().clone();
@@ -1068,9 +1067,7 @@ where
 
         self.store.commit(CommitBundle {
             transactions: committed_transaction_bundles,
-            proof_bytes: commit_request.proof,
-            proof_state_version: commit_request.proof_state_version,
-            epoch_boundary,
+            proof: commit_request.proof,
             substates: state_diff.up_substates,
             vertex_store: commit_request.vertex_store,
             state_hash_tree_update,
@@ -1134,5 +1131,22 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
 
     pub fn get_epoch(&self) -> u64 {
         self.store.get_epoch()
+    }
+}
+
+impl From<(BTreeMap<ComponentAddress, Validator>, u64)> for NextEpoch {
+    fn from(next_epoch_result: (BTreeMap<ComponentAddress, Validator>, u64)) -> Self {
+        NextEpoch {
+            validator_set: next_epoch_result
+                .0
+                .into_iter()
+                .map(|(address, validator)| ActiveValidatorInfo {
+                    address: Some(address),
+                    key: validator.key,
+                    stake: validator.stake,
+                })
+                .collect(),
+            epoch: next_epoch_result.1,
+        }
     }
 }

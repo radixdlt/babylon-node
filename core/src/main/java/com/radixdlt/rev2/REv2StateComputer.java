@@ -282,11 +282,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
     var commitRequest =
         new CommitRequest(
-            txnsAndProof.getTransactions(),
-            UInt64.fromNonNegativeLong(proof.getStateVersion()),
-            proof.getLedgerHashes().getStateRoot(),
-            serialization.toDson(proof, DsonOutput.Output.ALL),
-            vertexStoreBytes);
+            txnsAndProof.getTransactions(), REv2ToConsensus.ledgerProof(proof), vertexStoreBytes);
 
     var result = stateComputer.commit(commitRequest);
     if (result.isError()) {

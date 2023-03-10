@@ -62,77 +62,73 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+use crate::accumulator_tree::storage::{
+    AccuTreeStore, ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore,
+};
+use crate::accumulator_tree::tree_builder::AccuTree;
+use radix_engine_interface::crypto::{blake2b_256_hash, Hash};
+use tree_builder::Merklizable;
 
-import static java.util.Objects.requireNonNull;
+pub mod storage;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
-import java.util.Objects;
-import java.util.Set;
-import javax.annotation.concurrent.Immutable;
+pub mod tree_builder;
 
-@Immutable
-@SerializerId2("consensus.next_epoch")
-public final class NextEpoch {
-  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
-  @DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
-  SerializerDummy serializer = SerializerDummy.DUMMY;
+#[cfg(test)]
+mod test;
 
-  @JsonProperty("validators")
-  @DsonOutput(DsonOutput.Output.ALL)
-  private final ImmutableSet<BFTValidator> validators;
+/// Appends the given leaf hashes to the accumulator tree stored in the given storage, assuming its
+/// known current length.
+/// Returns the new root hash.
+pub fn append_at_index<S: AccuTreeStore<Hash>>(
+    store: &mut S,
+    current_len: usize,
+    hashes: Vec<Hash>,
+) -> Hash {
+    let mut root_capturing_store = RootCapturingStore::wrap(store);
+    AccuTree::new(&mut root_capturing_store, current_len).append(hashes);
+    root_capturing_store.into_root()
+}
 
-  @JsonProperty("epoch")
-  @DsonOutput(DsonOutput.Output.ALL)
-  private final long epoch;
-
-  @JsonCreator
-  @VisibleForTesting
-  NextEpoch(
-      @JsonProperty(value = "epoch", required = true) long epoch,
-      @JsonProperty(value = "validators", required = true) ImmutableSet<BFTValidator> validators) {
-    this.epoch = epoch;
-    if (epoch < 0) {
-      throw new IllegalArgumentException("Epoch can't be < 0");
+impl Merklizable for Hash {
+    fn zero() -> Self {
+        Hash([0; Hash::LENGTH])
     }
-    this.validators = requireNonNull(validators);
-  }
 
-  public static NextEpoch create(long epoch, Set<BFTValidator> validators) {
-    return new NextEpoch(epoch, ImmutableSet.copyOf(validators));
-  }
+    fn merge(left: &Self, right: &Self) -> Self {
+        blake2b_256_hash([left.0, right.0].concat())
+    }
+}
 
-  public ImmutableSet<BFTValidator> getValidators() {
-    return validators;
-  }
+struct RootCapturingStore<'s, S, N> {
+    underlying: &'s mut S,
+    captured_root: Option<N>,
+}
 
-  public long getEpoch() {
-    return epoch;
-  }
+impl<'s, S: AccuTreeStore<N>, N> RootCapturingStore<'s, S, N> {
+    pub fn wrap(underlying: &'s mut S) -> Self {
+        Self {
+            underlying,
+            captured_root: None,
+        }
+    }
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    NextEpoch nextEpoch = (NextEpoch) o;
-    return epoch == nextEpoch.epoch && Objects.equals(validators, nextEpoch.validators);
-  }
+    pub fn into_root(self) -> N {
+        self.captured_root.expect("no root captured")
+    }
+}
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(validators, epoch);
-  }
+impl<'s, S: AccuTreeStore<N>, N> ReadableAccuTreeStore<N> for RootCapturingStore<'s, S, N> {
+    fn get_tree_slice(&self, index: usize) -> Option<TreeSlice<N>> {
+        self.underlying.get_tree_slice(index)
+    }
+}
 
-  @Override
-  public String toString() {
-    return "NextEpoch{" + "validators=" + validators + ", epoch=" + epoch + '}';
-  }
+impl<'s, S: AccuTreeStore<N>, N: Clone> WriteableAccuTreeStore<N> for RootCapturingStore<'s, S, N> {
+    fn put_tree_slice(&mut self, index: usize, slice: TreeSlice<N>) {
+        let previously_captured = self.captured_root.replace(slice.root().clone());
+        if previously_captured.is_some() {
+            panic!("cannot capture more than one root")
+        }
+        self.underlying.put_tree_slice(index, slice)
+    }
 }

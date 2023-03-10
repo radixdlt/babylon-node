@@ -91,7 +91,6 @@ import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 import org.junit.Test;
@@ -122,15 +121,18 @@ public class REv2StateComputerTest {
 
   private CommittedTransactionsWithProof buildGenesis(LedgerAccumulator accumulator) {
     var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
+    var stake = Decimal.of(1);
     var genesis =
-        TransactionBuilder.createGenesisWithNumValidators(
-            1, Decimal.of(1), UInt64.fromNonNegativeLong(10));
+        TransactionBuilder.createGenesisWithNumValidators(1, stake, UInt64.fromNonNegativeLong(10));
     var accumulatorState =
         accumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
     var validatorSet =
         BFTValidatorSet.from(
             PrivateKeys.numeric(1)
-                .map(k -> BFTValidator.from(BFTValidatorId.create(k.getPublicKey()), UInt256.ONE))
+                .map(
+                    k ->
+                        BFTValidator.from(
+                            BFTValidatorId.create(k.getPublicKey()), stake.toUInt256()))
                 .limit(1));
     var proof = LedgerProof.genesis(accumulatorState, LedgerHashes.zero(), validatorSet, 0, 0);
     return CommittedTransactionsWithProof.create(List.of(genesis), proof);

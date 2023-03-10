@@ -77,7 +77,6 @@ import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
@@ -87,7 +86,6 @@ import com.radixdlt.store.LastProof;
 import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transactions.RawLedgerTransaction;
-import com.radixdlt.utils.UInt64;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -132,11 +130,7 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
                       accumulatorState, ledgerHashes, validatorSet, timestamp, timestamp);
               var commitRequest =
                   new CommitRequest(
-                      List.of(genesis),
-                      UInt64.fromNonNegativeLong(proof.getStateVersion()),
-                      proof.getLedgerHashes().getStateRoot(),
-                      serialization.toDson(proof, DsonOutput.Output.ALL),
-                      Option.none());
+                      List.of(genesis), REv2ToConsensus.ledgerProof(proof), Option.none());
               var commitResult = stateComputer.commit(commitRequest);
               commitResult.unwrap();
 
