@@ -62,9 +62,6 @@
  * permissions under this License.
  */
 
-use std::collections::HashMap;
-use std::hash::Hash;
-
 /// The "read" part of an accumulator tree storage SPI.
 /// Both the key type and node type are implementation-dependent.
 pub trait ReadableAccuTreeStore<K, N> {
@@ -141,32 +138,5 @@ impl<N> TreeSliceLevel<N> {
             left_sibling_cache,
             nodes,
         }
-    }
-}
-
-/// An in-memory implementation of an `AccuTreeStore`.
-pub struct MemoryAccuTreeStore<K, N> {
-    /// Directly stored vertical slices, keyed by their end index (exclusive).
-    pub slices: HashMap<K, TreeSlice<N>>,
-}
-
-impl<K, N> MemoryAccuTreeStore<K, N> {
-    /// Creates an empty in-memory storage.
-    pub fn new() -> Self {
-        Self {
-            slices: HashMap::new(),
-        }
-    }
-}
-
-impl<K: Eq + Hash, N: Clone> ReadableAccuTreeStore<K, N> for MemoryAccuTreeStore<K, N> {
-    fn get_tree_slice(&self, key: &K) -> Option<TreeSlice<N>> {
-        self.slices.get(key).cloned()
-    }
-}
-
-impl<K: Eq + Hash + Clone, N> WriteableAccuTreeStore<K, N> for MemoryAccuTreeStore<K, N> {
-    fn put_tree_slice(&mut self, key: &K, slice: TreeSlice<N>) {
-        self.slices.insert(key.clone(), slice);
     }
 }
