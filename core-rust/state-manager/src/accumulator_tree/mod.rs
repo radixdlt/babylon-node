@@ -62,73 +62,8 @@
  * permissions under this License.
  */
 
-use crate::accumulator_tree::storage::{
-    AccuTreeStore, ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore,
-};
-use crate::accumulator_tree::tree_builder::AccuTree;
-use radix_engine_interface::crypto::{blake2b_256_hash, Hash};
-use tree_builder::Merklizable;
-
 pub mod storage;
-
 pub mod tree_builder;
 
 #[cfg(test)]
 mod test;
-
-/// Appends the given leaf hashes to the accumulator tree stored in the given storage, assuming its
-/// known current length.
-/// Returns the new root hash.
-pub fn append_at_index<S: AccuTreeStore<Hash>>(
-    store: &mut S,
-    current_len: usize,
-    hashes: Vec<Hash>,
-) -> Hash {
-    let mut root_capturing_store = RootCapturingStore::wrap(store);
-    AccuTree::new(&mut root_capturing_store, current_len).append(hashes);
-    root_capturing_store.into_root()
-}
-
-impl Merklizable for Hash {
-    fn zero() -> Self {
-        Hash([0; Hash::LENGTH])
-    }
-
-    fn merge(left: &Self, right: &Self) -> Self {
-        blake2b_256_hash([left.0, right.0].concat())
-    }
-}
-
-struct RootCapturingStore<'s, S, N> {
-    underlying: &'s mut S,
-    captured_root: Option<N>,
-}
-
-impl<'s, S: AccuTreeStore<N>, N> RootCapturingStore<'s, S, N> {
-    pub fn wrap(underlying: &'s mut S) -> Self {
-        Self {
-            underlying,
-            captured_root: None,
-        }
-    }
-
-    pub fn into_root(self) -> N {
-        self.captured_root.expect("no root captured")
-    }
-}
-
-impl<'s, S: AccuTreeStore<N>, N> ReadableAccuTreeStore<N> for RootCapturingStore<'s, S, N> {
-    fn get_tree_slice(&self, index: usize) -> Option<TreeSlice<N>> {
-        self.underlying.get_tree_slice(index)
-    }
-}
-
-impl<'s, S: AccuTreeStore<N>, N: Clone> WriteableAccuTreeStore<N> for RootCapturingStore<'s, S, N> {
-    fn put_tree_slice(&mut self, index: usize, slice: TreeSlice<N>) {
-        let previously_captured = self.captured_root.replace(slice.root().clone());
-        if previously_captured.is_some() {
-            panic!("cannot capture more than one root")
-        }
-        self.underlying.put_tree_slice(index, slice)
-    }
-}

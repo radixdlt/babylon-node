@@ -62,27 +62,28 @@
  * permissions under this License.
  */
 
-use std::collections::HashMap;
-
 /// The "read" part of an accumulator tree storage SPI.
-pub trait ReadableAccuTreeStore<N> {
-    /// Gets a vertical `TreeSlice` by its end index.
-    /// This index is effectively equal to the number of leaf nodes stored in the tree by _all_ the
-    /// slices _including_ the requested one.
-    fn get_tree_slice(&self, index: usize) -> Option<TreeSlice<N>>;
+/// Both the key type and node type are implementation-dependent.
+pub trait ReadableAccuTreeStore<K, N> {
+    /// Gets a vertical `TreeSlice` by the given key.
+    fn get_tree_slice(&self, key: &K) -> Option<TreeSlice<N>>;
 }
 
 /// The "write" part of an accumulator tree storage SPI.
-pub trait WriteableAccuTreeStore<N> {
+/// Both the key type and node type are implementation-dependent.
+pub trait WriteableAccuTreeStore<K, N> {
     /// Puts a vertical `TreeSlice` at the given end index.
     /// This index is effectively equal to the number of leaf nodes stored in the tree by _all_ the
     /// slices _including_ the given one.
-    fn put_tree_slice(&mut self, index: usize, slice: TreeSlice<N>);
+    fn put_tree_slice(&mut self, key: &K, slice: TreeSlice<N>);
 }
 
 /// A convenience read+write storage trait.
-pub trait AccuTreeStore<N>: ReadableAccuTreeStore<N> + WriteableAccuTreeStore<N> {}
-impl<T: ReadableAccuTreeStore<N> + WriteableAccuTreeStore<N>, N> AccuTreeStore<N> for T {}
+pub trait AccuTreeStore<K, N>: ReadableAccuTreeStore<K, N> + WriteableAccuTreeStore<K, N> {}
+impl<T: ReadableAccuTreeStore<K, N> + WriteableAccuTreeStore<K, N>, K, N> AccuTreeStore<K, N>
+    for T
+{
+}
 
 /// A vertical slice of an accumulator tree.
 /// This is an "incremental" persistence part of a tree representing a batch of appended leaf nodes
@@ -137,32 +138,5 @@ impl<N> TreeSliceLevel<N> {
             left_sibling_cache,
             nodes,
         }
-    }
-}
-
-/// An in-memory implementation of an `AccuTreeStore`.
-pub struct MemoryAccuTreeStore<N> {
-    /// Directly stored vertical slices, keyed by their end index (exclusive).
-    pub slices: HashMap<usize, TreeSlice<N>>,
-}
-
-impl<N> MemoryAccuTreeStore<N> {
-    /// Creates an empty in-memory storage.
-    pub fn new() -> Self {
-        Self {
-            slices: HashMap::new(),
-        }
-    }
-}
-
-impl<N: Clone> ReadableAccuTreeStore<N> for MemoryAccuTreeStore<N> {
-    fn get_tree_slice(&self, index: usize) -> Option<TreeSlice<N>> {
-        self.slices.get(&index).cloned()
-    }
-}
-
-impl<N: Clone> WriteableAccuTreeStore<N> for MemoryAccuTreeStore<N> {
-    fn put_tree_slice(&mut self, index: usize, slice: TreeSlice<N>) {
-        self.slices.insert(index, slice);
     }
 }

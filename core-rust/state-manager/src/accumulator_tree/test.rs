@@ -62,10 +62,11 @@
  * permissions under this License.
  */
 
-use super::append_at_index;
-use super::storage::{MemoryAccuTreeStore, TreeSlice, TreeSliceLevel};
+use super::storage::{TreeSlice, TreeSliceLevel};
 use super::tree_builder::{AccuTree, Merklizable};
+use crate::accumulator_tree::storage::{ReadableAccuTreeStore, WriteableAccuTreeStore};
 use radix_engine_interface::crypto::{blake2b_256_hash, Hash};
+use std::collections::HashMap;
 
 // Simple smoke tests using the actual hashing coming from our business use-cases:
 
@@ -73,18 +74,28 @@ use radix_engine_interface::crypto::{blake2b_256_hash, Hash};
 fn degenerate_node_tree_treats_its_only_node_as_root() {
     let node = Hash([9; 32]);
     let mut store = MemoryAccuTreeStore::new();
-    let root = append_at_index(&mut store, 0, vec![node]);
-    assert_eq!(root, node);
+    AccuTree::new(&mut store, 0).append(vec![node]);
+    let root = store.slices.get(&1).unwrap().root();
+    assert_eq!(*root, node);
 }
 
 #[test]
 fn simple_tree_produces_root_using_merkle_rule() {
-    let left = Hash([7; 32]);
-    let right = Hash([13; 32]);
-    let merkle_hash = blake2b_256_hash([left.0, right.0].concat());
+    let h0 = Hash([7; 32]);
+    let h1 = Hash([13; 32]);
+    let h2 = Hash([66; 32]);
+    let h3 = Hash([8; 32]);
+    let merkle_hash = blake2b_256_hash(
+        [
+            blake2b_256_hash([h0.0, h1.0].concat()).0,
+            blake2b_256_hash([h2.0, h3.0].concat()).0,
+        ]
+        .concat(),
+    );
     let mut store = MemoryAccuTreeStore::new();
-    let root = append_at_index(&mut store, 0, vec![left, right]);
-    assert_eq!(root, merkle_hash);
+    AccuTree::new(&mut store, 0).append(vec![h0, h1, h2, h3]);
+    let root = store.slices.get(&4).unwrap().root();
+    assert_eq!(*root, merkle_hash);
 }
 
 // Detailed unit tests covering corner-cases, with a "fake hashing" allowing for easy inspection.
@@ -261,5 +272,41 @@ impl Merklizable for String {
 
     fn merge(left: &Self, right: &Self) -> Self {
         format!("({left}+{right})")
+    }
+}
+
+impl Merklizable for Hash {
+    fn zero() -> Self {
+        Hash([0; Hash::LENGTH])
+    }
+
+    fn merge(left: &Self, right: &Self) -> Self {
+        blake2b_256_hash([left.0, right.0].concat())
+    }
+}
+
+struct MemoryAccuTreeStore<K, N> {
+    pub slices: HashMap<K, TreeSlice<N>>,
+}
+
+impl<K, N> MemoryAccuTreeStore<K, N> {
+    pub fn new() -> Self {
+        Self {
+            slices: HashMap::new(),
+        }
+    }
+}
+
+impl<K: Eq + core::hash::Hash, N: Clone> ReadableAccuTreeStore<K, N> for MemoryAccuTreeStore<K, N> {
+    fn get_tree_slice(&self, key: &K) -> Option<TreeSlice<N>> {
+        self.slices.get(key).cloned()
+    }
+}
+
+impl<K: Eq + core::hash::Hash + Clone, N> WriteableAccuTreeStore<K, N>
+    for MemoryAccuTreeStore<K, N>
+{
+    fn put_tree_slice(&mut self, key: &K, slice: TreeSlice<N>) {
+        self.slices.insert(key.clone(), slice);
     }
 }
