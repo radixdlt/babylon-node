@@ -124,9 +124,7 @@ impl TryFrom<RENodeId> for MappedEntityId {
             }
             RENodeId::KeyValueStore(_) => EntityType::KeyValueStore,
             RENodeId::NonFungibleStore(_) => EntityType::NonFungibleStore,
-            RENodeId::Object([INTERNAL_OBJECT_B0, INTERNAL_OBJECT_VAULT_B1, ..]) => {
-                EntityType::Vault
-            }
+            RENodeId::Object([INTERNAL_OBJECT_VAULT_ID, ..]) => EntityType::Vault,
             RENodeId::Object([..]) => EntityType::Component,
             RENodeId::AuthZoneStack => return Err(transient_renode_error("AuthZoneStack")),
             RENodeId::TransactionRuntime => {
@@ -351,6 +349,15 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                     SubstateType::FunctionAccessRules,
                     SubstateKeyType::FunctionAccessRules,
                 ),
+                (
+                    NodeModuleId::PackageEventSchema,
+                    SubstateOffset::PackageEventSchema(
+                        PackageEventSchemaOffset::PackageEventSchema,
+                    ),
+                ) => (
+                    SubstateType::PackageEventSchema,
+                    SubstateKeyType::PackageEventSchema,
+                ),
                 _ => return Err(unknown_substate_error("Package", &substate_id)),
             };
             (EntityType::Package, substate_type_key)
@@ -412,7 +419,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
 
         // TODO: Fix
         SubstateId(RENodeId::Object(object_id), _, offset) => match object_id {
-            [INTERNAL_OBJECT_B0, INTERNAL_OBJECT_VAULT_B1, ..] => {
+            [INTERNAL_OBJECT_VAULT_ID, ..] => {
                 let substate_type_key = match offset {
                     SubstateOffset::TypeInfo(offset) => match offset {
                         TypeInfoOffset::TypeInfo => {
@@ -441,7 +448,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 };
                 (EntityType::Vault, substate_type_key)
             }
-            [INTERNAL_OBJECT_B0, INTERNAL_OBJECT_NORMAL_COMPONENT_B1, ..] => {
+            [INTERNAL_OBJECT_NORMAL_COMPONENT_ID, ..] => {
                 let substate_type_key = match offset {
                     SubstateOffset::TypeInfo(offset) => match offset {
                         TypeInfoOffset::TypeInfo => {
@@ -669,6 +676,7 @@ pub fn node_module_id_to_module_type(node_module_id: &NodeModuleId) -> ModuleTyp
         NodeModuleId::ComponentRoyalty => ModuleType::ComponentRoyalty,
         NodeModuleId::PackageRoyalty => ModuleType::PackageRoyalty,
         NodeModuleId::TypeInfo => ModuleType::TypeInfo,
+        NodeModuleId::PackageEventSchema => ModuleType::PackageEventSchema,
     }
 }
 

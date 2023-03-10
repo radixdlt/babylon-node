@@ -10,6 +10,7 @@ use radix_engine::blueprints::resource::{
 use radix_engine::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
+use radix_engine::system::node_modules::event_schema::PackageEventSchemaSubstate;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::system::type_info::PackageCodeTypeSubstate;
@@ -120,6 +121,9 @@ pub fn to_api_substate(
             to_api_access_controller_substate(context, access_controller)?
         }
         PersistedSubstate::Account(account) => to_api_account_substate(context, account)?,
+        PersistedSubstate::PackageEventSchema(event_schema) => {
+            to_api_package_event_schema(context, event_schema)?
+        }
     })
 }
 
@@ -935,6 +939,13 @@ pub fn to_api_account_substate(
         data_struct: Box::new(to_api_data_struct(context, &data)?),
     };
     Ok(substate)
+}
+
+pub fn to_api_package_event_schema(
+    _context: &MappingContext,
+    _substate: &PackageEventSchemaSubstate,
+) -> Result<models::Substate, MappingError> {
+    Ok(models::Substate::PackageEventSchemaSubstate {})
 }
 
 fn to_api_key_value_story_entry_substate(

@@ -252,6 +252,8 @@ pub mod package_code_type_substate;
 pub use self::package_code_type_substate::PackageCodeTypeSubstate;
 pub mod package_code_type_substate_all_of;
 pub use self::package_code_type_substate_all_of::PackageCodeTypeSubstateAllOf;
+pub mod package_event_schema_substate;
+pub use self::package_event_schema_substate::PackageEventSchemaSubstate;
 pub mod package_info_substate;
 pub use self::package_info_substate::PackageInfoSubstate;
 pub mod package_info_substate_all_of;

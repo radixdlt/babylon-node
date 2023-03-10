@@ -78,7 +78,9 @@ public enum SubstateType {
   
   ACCESSCONTROLLER("AccessController"),
   
-  ACCOUNT("Account");
+  ACCOUNT("Account"),
+  
+  PACKAGEEVENTSCHEMA("PackageEventSchema");
 
   private String value;
 

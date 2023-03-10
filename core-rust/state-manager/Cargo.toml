@@ -25,14 +25,14 @@ prometheus = { version = "0.13.2", default-features = false, features = [] }
 # 
 # Ensure this version is also identically updated in ../core-api-server/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-4878e1", features = ["serde"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-4878e1" }
-radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-4878e1", features = ["serde"]  }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-4878e1", features = ["serde"]  }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-4878e1" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-4878e1" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-4878e1" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-4878e1" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-66740e", features = ["serde"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-66740e" }
+radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-66740e", features = ["serde"]  }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-66740e", features = ["serde"]  }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-66740e" }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-66740e" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-66740e" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "fix-value-serializer-66740e" }
 
 # Non-Radix Engine Dependencies:
 blake2 = { version = "0.10.6", default-features = false }

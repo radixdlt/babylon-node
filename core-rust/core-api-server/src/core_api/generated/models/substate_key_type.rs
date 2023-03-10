@@ -67,6 +67,8 @@ pub enum SubstateKeyType {
     AccessController,
     #[serde(rename = "Account")]
     Account,
+    #[serde(rename = "PackageEventSchema")]
+    PackageEventSchema,
 
 }
 
@@ -100,6 +102,7 @@ impl ToString for SubstateKeyType {
             Self::VaultLockedNonFungible => String::from("VaultLockedNonFungible"),
             Self::AccessController => String::from("AccessController"),
             Self::Account => String::from("Account"),
+            Self::PackageEventSchema => String::from("PackageEventSchema"),
         }
     }
 }

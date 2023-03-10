@@ -2135,6 +2135,7 @@ components:
         - FunctionAccessRules
         - ComponentRoyalty
         - PackageRoyalty
+        - PackageEventSchema
     Substate:
       type: object
       required:
@@ -2172,6 +2173,7 @@ components:
           NonFungibleStoreEntry: '#/components/schemas/NonFungibleStoreEntrySubstate'
           AccessController: '#/components/schemas/AccessControllerSubstate'
           Account: '#/components/schemas/AccountSubstate'
+          PackageEventSchema: '#/components/schemas/PackageEventSchemaSubstate'
     SubstateType:
       type: string
       enum:
@@ -2203,6 +2205,7 @@ components:
         - VaultLockedNonFungible
         - AccessController
         - Account
+        - PackageEventSchema
     SubstateKeyType:
       # This corresponds to what's currently referred to as the "SubstateOffset"
       # This is roughly the same as the substate type, but some entities have two of the same substates
@@ -2240,6 +2243,7 @@ components:
         - VaultLockedNonFungible
         - AccessController
         - Account
+        - PackageEventSchema
 ### COMMON SUBSTATES
     AccessRulesSubstate:
       allOf:
@@ -2266,6 +2270,9 @@ components:
               description: The hex-encoded bytes of its key
             data_struct:
               $ref: '#/components/schemas/DataStruct'
+    PackageEventSchemaSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
 ### SPECIFIC SUBSTATES
     TypeInfoSubstate:
       allOf:
@@ -2622,6 +2629,8 @@ components:
           properties:
             data_struct:
               $ref: '#/components/schemas/DataStruct'
+
+
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################

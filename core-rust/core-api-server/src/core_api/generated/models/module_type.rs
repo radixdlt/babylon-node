@@ -28,6 +28,8 @@ pub enum ModuleType {
     ComponentRoyalty,
     #[serde(rename = "PackageRoyalty")]
     PackageRoyalty,
+    #[serde(rename = "PackageEventSchema")]
+    PackageEventSchema,
 
 }
 
@@ -42,6 +44,7 @@ impl ToString for ModuleType {
             Self::FunctionAccessRules => String::from("FunctionAccessRules"),
             Self::ComponentRoyalty => String::from("ComponentRoyalty"),
             Self::PackageRoyalty => String::from("PackageRoyalty"),
+            Self::PackageEventSchema => String::from("PackageEventSchema"),
         }
     }
 }
