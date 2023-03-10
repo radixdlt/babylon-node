@@ -102,7 +102,6 @@ use radix_engine_interface::api::types::{
 use std::collections::{BTreeMap, HashMap};
 use std::convert::TryInto;
 
-use ::transaction::data::*;
 use radix_engine::blueprints::epoch_manager::{Validator, ValidatorSubstate};
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine_interface::data::manifest::manifest_encode;
