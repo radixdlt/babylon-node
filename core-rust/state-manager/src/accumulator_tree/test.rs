@@ -62,9 +62,10 @@
  * permissions under this License.
  */
 
+use super::slice_merger::AccuTreeSliceMerger;
+use super::storage::{ReadableAccuTreeStore, WriteableAccuTreeStore};
 use super::storage::{TreeSlice, TreeSliceLevel};
 use super::tree_builder::{AccuTree, Merklizable};
-use crate::accumulator_tree::storage::{ReadableAccuTreeStore, WriteableAccuTreeStore};
 use radix_engine_interface::crypto::{blake2b_256_hash, Hash};
 use std::collections::HashMap;
 
@@ -247,6 +248,77 @@ fn noop_when_adding_0_leaves() {
     assert_eq!(store.slices.len(), 1);
 }
 
+#[test]
+fn merger_compacts_example_second_and_third_slice() {
+    // The node labels used here deliberately do not follow the "transparent hash" syntax defined
+    // by `impl Merklizable for String`. This demonstrates that the merger's logic does not rely on
+    // re-computing the hashes from leaves up, but simply combines the nodes.
+    let mut merger = AccuTreeSliceMerger::new(5);
+    merger.append(slice(&[
+        level_woc(&["root at second slice = a to g"]),
+        level("a to d", &["e to g"]),
+        level_woc(&["e and f", "alone g hashed with 0"]),
+        level("e", &["f", "g"]),
+    ]));
+    merger.append(slice(&[
+        level_woc(&["root at third slice = a to j"]),
+        level_woc(&["a to h", "i and j++"]),
+        level("a to d", &["e to h", "i and j+"]),
+        level("e and f", &["g and h", "i and j"]),
+        level("g", &["h", "i", "j"]),
+    ]));
+    let merged_slice = merger.into_slice();
+    assert_eq!(
+        merged_slice,
+        slice(&[
+            level_woc(&["root at third slice = a to j"]),
+            level_woc(&["a to h", "i and j++"]),
+            level("a to d", &["e to h", "i and j+"]),
+            level_woc(&["e and f", "g and h", "i and j"]),
+            level("e", &["f", "g", "h", "i", "j"]),
+        ])
+    );
+}
+
+#[test]
+fn compacting_result_is_same_as_single_built_slice() {
+    const BASE_LEAF_COUNT: usize = 2000;
+    const SECOND_SLICE_LEN: usize = 1000;
+    const TOTAL_LEAF_COUNT: usize = BASE_LEAF_COUNT + SECOND_SLICE_LEN;
+    let nodes = (0..TOTAL_LEAF_COUNT)
+        .map(|index| index.to_string())
+        .collect::<Vec<String>>();
+
+    // Insert 2 batches using the regular tree builder and capture the second slice this way.
+    let mut store_1 = MemoryAccuTreeStore::new();
+    let mut tree_1 = AccuTree::new(&mut store_1, 0);
+    tree_1.append(nodes[0..BASE_LEAF_COUNT].to_vec());
+    tree_1.append(nodes[BASE_LEAF_COUNT..TOTAL_LEAF_COUNT].to_vec());
+    let built_second_slice = store_1.slices.remove(&TOTAL_LEAF_COUNT).unwrap();
+
+    // In another tree, insert the same first batch as above, and then the rest of nodes as a large
+    // number of thin, single-leafed slices.
+    let mut store_2 = MemoryAccuTreeStore::new();
+    let mut tree_2 = AccuTree::new(&mut store_2, 0);
+    tree_2.append(nodes[0..BASE_LEAF_COUNT].to_vec());
+    for node in &nodes[BASE_LEAF_COUNT..TOTAL_LEAF_COUNT] {
+        tree_2.append(vec![node.clone()])
+    }
+    let thin_slices = (BASE_LEAF_COUNT..TOTAL_LEAF_COUNT)
+        .map(|index| index + 1)
+        .map(|slice_end_index| store_2.slices.remove(&slice_end_index).unwrap())
+        .collect::<Vec<TreeSlice<String>>>();
+
+    // Merge the thin slices captured above, and expect the same result as the regular built slice.
+    let mut merger = AccuTreeSliceMerger::new(BASE_LEAF_COUNT);
+    for thin_slice in thin_slices {
+        merger.append(thin_slice);
+    }
+    let merged_second_slice = merger.into_slice();
+
+    assert_eq!(built_second_slice, merged_second_slice)
+}
+
 fn slice(levels: &[TreeSliceLevel<String>]) -> TreeSlice<String> {
     TreeSlice {
         levels: levels.iter().rev().cloned().collect(),
@@ -275,16 +347,6 @@ impl Merklizable for String {
     }
 }
 
-impl Merklizable for Hash {
-    fn zero() -> Self {
-        Hash([0; Hash::LENGTH])
-    }
-
-    fn merge(left: &Self, right: &Self) -> Self {
-        blake2b_256_hash([left.0, right.0].concat())
-    }
-}
-
 struct MemoryAccuTreeStore<K, N> {
     pub slices: HashMap<K, TreeSlice<N>>,
 }
@@ -306,7 +368,7 @@ impl<K: Eq + core::hash::Hash, N: Clone> ReadableAccuTreeStore<K, N> for MemoryA
 impl<K: Eq + core::hash::Hash + Clone, N> WriteableAccuTreeStore<K, N>
     for MemoryAccuTreeStore<K, N>
 {
-    fn put_tree_slice(&mut self, key: &K, slice: TreeSlice<N>) {
-        self.slices.insert(key.clone(), slice);
+    fn put_tree_slice(&mut self, key: K, slice: TreeSlice<N>) {
+        self.slices.insert(key, slice);
     }
 }
