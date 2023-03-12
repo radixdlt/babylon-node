@@ -23,14 +23,14 @@ parking_lot = { version = "0.12" }
 #
 # Ensure this version is also identically updated in ../state-manager/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "replace-jemalloc-d8bbe7", features = ["serde"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "replace-jemalloc-d8bbe7" }
-radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "replace-jemalloc-d8bbe7", features = ["serde"]  }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "replace-jemalloc-d8bbe7", features = ["serde"]  }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "replace-jemalloc-d8bbe7" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "replace-jemalloc-d8bbe7" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "replace-jemalloc-d8bbe7" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "replace-jemalloc-d8bbe7" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-f78089", features = ["serde"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-f78089" }
+radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-f78089", features = ["serde"]  }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-f78089", features = ["serde"]  }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-f78089" }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-f78089" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-f78089" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-f78089" }
 
 jni = "0.19.0"
 
