@@ -529,7 +529,7 @@ fn scrypto_value_to_api_data_struct(
         struct_data: Box::new(scrypto_value_to_api_sbor_data(
             context,
             scrypto_value.as_slice(),
-            scrypto_value.as_value(),
+            &scrypto_value.as_scrypto_value(),
         )?),
         owned_entities: entities.owned_entities,
         referenced_entities: entities.referenced_entities,
