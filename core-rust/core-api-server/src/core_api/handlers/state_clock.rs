@@ -22,7 +22,7 @@ fn handle_state_clock_internal(
         let substate_offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
         let loaded_substate = read_known_substate(
             state_manager,
-            RENodeId::GlobalComponent(CLOCK),
+            RENodeId::GlobalObject(CLOCK.into()),
             NodeModuleId::SELF,
             &substate_offset,
         )?;

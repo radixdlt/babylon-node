@@ -12,18 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct MetadataSubstate {
+pub struct AccessRulesSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "metadata")]
-    pub metadata: Vec<crate::core_api::generated::models::MetadataSubstateAllOfMetadata>,
+    #[serde(rename = "access_rules")]
+    pub access_rules: Box<crate::core_api::generated::models::AccessRules>,
 }
 
-impl MetadataSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, metadata: Vec<crate::core_api::generated::models::MetadataSubstateAllOfMetadata>) -> MetadataSubstate {
-        MetadataSubstate {
+impl AccessRulesSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, access_rules: crate::core_api::generated::models::AccessRules) -> AccessRulesSubstate {
+        AccessRulesSubstate {
             substate_type,
-            metadata,
+            access_rules: Box::new(access_rules),
         }
     }
 }

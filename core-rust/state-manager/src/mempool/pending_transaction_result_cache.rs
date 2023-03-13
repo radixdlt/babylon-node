@@ -140,9 +140,9 @@ pub enum RetrySettings {
 impl fmt::Display for RejectionReason {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RejectionReason::FromExecution(rejection_error) => write!(f, "{}", rejection_error),
+            RejectionReason::FromExecution(rejection_error) => write!(f, "{rejection_error}"),
             RejectionReason::ValidationError(validation_error) => {
-                write!(f, "Validation Error: {:?}", validation_error)
+                write!(f, "Validation Error: {validation_error:?}")
             }
             RejectionReason::IntentHashCommitted => write!(f, "Intent hash already committed"),
         }

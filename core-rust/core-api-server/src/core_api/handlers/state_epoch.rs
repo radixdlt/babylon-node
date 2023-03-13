@@ -23,7 +23,7 @@ fn handle_state_epoch_internal(
         let substate_offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
         let loaded_substate = read_known_substate(
             state_manager,
-            RENodeId::GlobalComponent(EPOCH_MANAGER),
+            RENodeId::GlobalObject(EPOCH_MANAGER.into()),
             NodeModuleId::SELF,
             &substate_offset,
         )?;
@@ -37,7 +37,7 @@ fn handle_state_epoch_internal(
         let substate_offset = SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet);
         let loaded_substate = read_known_substate(
             state_manager,
-            RENodeId::GlobalComponent(EPOCH_MANAGER),
+            RENodeId::GlobalObject(EPOCH_MANAGER.into()),
             NodeModuleId::SELF,
             &substate_offset,
         )?;

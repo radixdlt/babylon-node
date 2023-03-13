@@ -32,7 +32,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   TypeInfoSubstateAllOf.JSON_PROPERTY_PACKAGE_ADDRESS,
-  TypeInfoSubstateAllOf.JSON_PROPERTY_BLUEPRINT_NAME
+  TypeInfoSubstateAllOf.JSON_PROPERTY_BLUEPRINT_NAME,
+  TypeInfoSubstateAllOf.JSON_PROPERTY_GLOBAL
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TypeInfoSubstateAllOf {
@@ -41,6 +42,9 @@ public class TypeInfoSubstateAllOf {
 
   public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
   private String blueprintName;
+
+  public static final String JSON_PROPERTY_GLOBAL = "global";
+  private Boolean global;
 
   public TypeInfoSubstateAllOf() { 
   }
@@ -97,6 +101,32 @@ public class TypeInfoSubstateAllOf {
   }
 
 
+  public TypeInfoSubstateAllOf global(Boolean global) {
+    this.global = global;
+    return this;
+  }
+
+   /**
+   * Get global
+   * @return global
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_GLOBAL)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getGlobal() {
+    return global;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_GLOBAL)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setGlobal(Boolean global) {
+    this.global = global;
+  }
+
+
   /**
    * Return true if this TypeInfoSubstate_allOf object is equal to o.
    */
@@ -110,12 +140,13 @@ public class TypeInfoSubstateAllOf {
     }
     TypeInfoSubstateAllOf typeInfoSubstateAllOf = (TypeInfoSubstateAllOf) o;
     return Objects.equals(this.packageAddress, typeInfoSubstateAllOf.packageAddress) &&
-        Objects.equals(this.blueprintName, typeInfoSubstateAllOf.blueprintName);
+        Objects.equals(this.blueprintName, typeInfoSubstateAllOf.blueprintName) &&
+        Objects.equals(this.global, typeInfoSubstateAllOf.global);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageAddress, blueprintName);
+    return Objects.hash(packageAddress, blueprintName, global);
   }
 
   @Override
@@ -124,6 +155,7 @@ public class TypeInfoSubstateAllOf {
     sb.append("class TypeInfoSubstateAllOf {\n");
     sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
     sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
+    sb.append("    global: ").append(toIndentedString(global)).append("\n");
     sb.append("}");
     return sb.toString();
   }

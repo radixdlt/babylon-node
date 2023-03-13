@@ -35,7 +35,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   StatePackageResponse.JSON_PROPERTY_INFO,
   StatePackageResponse.JSON_PROPERTY_ROYALTY_CONFIG,
   StatePackageResponse.JSON_PROPERTY_ROYALTY_ACCUMULATOR,
-  StatePackageResponse.JSON_PROPERTY_METADATA,
   StatePackageResponse.JSON_PROPERTY_ACCESS_RULES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -48,9 +47,6 @@ public class StatePackageResponse {
 
   public static final String JSON_PROPERTY_ROYALTY_ACCUMULATOR = "royalty_accumulator";
   private Substate royaltyAccumulator;
-
-  public static final String JSON_PROPERTY_METADATA = "metadata";
-  private Substate metadata;
 
   public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
   private Substate accessRules;
@@ -136,32 +132,6 @@ public class StatePackageResponse {
   }
 
 
-  public StatePackageResponse metadata(Substate metadata) {
-    this.metadata = metadata;
-    return this;
-  }
-
-   /**
-   * Get metadata
-   * @return metadata
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_METADATA)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Substate getMetadata() {
-    return metadata;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_METADATA)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMetadata(Substate metadata) {
-    this.metadata = metadata;
-  }
-
-
   public StatePackageResponse accessRules(Substate accessRules) {
     this.accessRules = accessRules;
     return this;
@@ -203,13 +173,12 @@ public class StatePackageResponse {
     return Objects.equals(this.info, statePackageResponse.info) &&
         Objects.equals(this.royaltyConfig, statePackageResponse.royaltyConfig) &&
         Objects.equals(this.royaltyAccumulator, statePackageResponse.royaltyAccumulator) &&
-        Objects.equals(this.metadata, statePackageResponse.metadata) &&
         Objects.equals(this.accessRules, statePackageResponse.accessRules);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(info, royaltyConfig, royaltyAccumulator, metadata, accessRules);
+    return Objects.hash(info, royaltyConfig, royaltyAccumulator, accessRules);
   }
 
   @Override
@@ -219,7 +188,6 @@ public class StatePackageResponse {
     sb.append("    info: ").append(toIndentedString(info)).append("\n");
     sb.append("    royaltyConfig: ").append(toIndentedString(royaltyConfig)).append("\n");
     sb.append("    royaltyAccumulator: ").append(toIndentedString(royaltyAccumulator)).append("\n");
-    sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
     sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
     sb.append("}");
     return sb.toString();

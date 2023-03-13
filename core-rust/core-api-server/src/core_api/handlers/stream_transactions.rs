@@ -10,8 +10,8 @@ use state_manager::{
     UserPayloadHash,
 };
 
+use radix_engine_interface::data::manifest::manifest_encode;
 use std::collections::HashMap;
-use transaction::data::manifest_encode;
 use transaction::manifest;
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, SystemTransaction, TransactionIntent,
@@ -49,8 +49,7 @@ fn handle_stream_transactions_internal(
 
     if limit > MAX_TXN_COUNT_PER_REQUEST.into() {
         return Err(client_error(format!(
-            "limit must <= {}",
-            MAX_TXN_COUNT_PER_REQUEST
+            "limit must <= {MAX_TXN_COUNT_PER_REQUEST}"
         )));
     }
 

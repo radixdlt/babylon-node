@@ -26,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerSubstate;
-import com.radixdlt.api.core.generated.models.AccessRulesChainSubstate;
+import com.radixdlt.api.core.generated.models.AccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.AccountSubstate;
 import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
@@ -35,10 +35,11 @@ import com.radixdlt.api.core.generated.models.ComponentStateSubstate;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
 import com.radixdlt.api.core.generated.models.FunctionAccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
-import com.radixdlt.api.core.generated.models.MetadataSubstate;
+import com.radixdlt.api.core.generated.models.MetadataEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeSubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeTypeSubstate;
+import com.radixdlt.api.core.generated.models.PackageEventSchemaSubstate;
 import com.radixdlt.api.core.generated.models.PackageInfoSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyConfigSubstate;
@@ -73,8 +74,8 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonSubTypes({
   @JsonSubTypes.Type(value = AccessControllerSubstate.class, name = "AccessController"),
   @JsonSubTypes.Type(value = AccessControllerSubstate.class, name = "AccessControllerSubstate"),
-  @JsonSubTypes.Type(value = AccessRulesChainSubstate.class, name = "AccessRulesChain"),
-  @JsonSubTypes.Type(value = AccessRulesChainSubstate.class, name = "AccessRulesChainSubstate"),
+  @JsonSubTypes.Type(value = AccessRulesSubstate.class, name = "AccessRules"),
+  @JsonSubTypes.Type(value = AccessRulesSubstate.class, name = "AccessRulesSubstate"),
   @JsonSubTypes.Type(value = AccountSubstate.class, name = "Account"),
   @JsonSubTypes.Type(value = AccountSubstate.class, name = "AccountSubstate"),
   @JsonSubTypes.Type(value = ClockCurrentMinuteSubstate.class, name = "ClockCurrentMinute"),
@@ -91,14 +92,16 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = FunctionAccessRulesSubstate.class, name = "FunctionAccessRulesSubstate"),
   @JsonSubTypes.Type(value = KeyValueStoreEntrySubstate.class, name = "KeyValueStoreEntry"),
   @JsonSubTypes.Type(value = KeyValueStoreEntrySubstate.class, name = "KeyValueStoreEntrySubstate"),
-  @JsonSubTypes.Type(value = MetadataSubstate.class, name = "Metadata"),
-  @JsonSubTypes.Type(value = MetadataSubstate.class, name = "MetadataSubstate"),
+  @JsonSubTypes.Type(value = MetadataEntrySubstate.class, name = "MetadataEntry"),
+  @JsonSubTypes.Type(value = MetadataEntrySubstate.class, name = "MetadataEntrySubstate"),
   @JsonSubTypes.Type(value = NonFungibleStoreEntrySubstate.class, name = "NonFungibleStoreEntry"),
   @JsonSubTypes.Type(value = NonFungibleStoreEntrySubstate.class, name = "NonFungibleStoreEntrySubstate"),
   @JsonSubTypes.Type(value = PackageCodeSubstate.class, name = "PackageCode"),
   @JsonSubTypes.Type(value = PackageCodeSubstate.class, name = "PackageCodeSubstate"),
   @JsonSubTypes.Type(value = PackageCodeTypeSubstate.class, name = "PackageCodeType"),
   @JsonSubTypes.Type(value = PackageCodeTypeSubstate.class, name = "PackageCodeTypeSubstate"),
+  @JsonSubTypes.Type(value = PackageEventSchemaSubstate.class, name = "PackageEventSchema"),
+  @JsonSubTypes.Type(value = PackageEventSchemaSubstate.class, name = "PackageEventSchemaSubstate"),
   @JsonSubTypes.Type(value = PackageInfoSubstate.class, name = "PackageInfo"),
   @JsonSubTypes.Type(value = PackageInfoSubstate.class, name = "PackageInfoSubstate"),
   @JsonSubTypes.Type(value = PackageRoyaltyAccumulatorSubstate.class, name = "PackageRoyaltyAccumulator"),
@@ -203,8 +206,8 @@ static {
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("AccessController", AccessControllerSubstate.class);
   mappings.put("AccessControllerSubstate", AccessControllerSubstate.class);
-  mappings.put("AccessRulesChain", AccessRulesChainSubstate.class);
-  mappings.put("AccessRulesChainSubstate", AccessRulesChainSubstate.class);
+  mappings.put("AccessRules", AccessRulesSubstate.class);
+  mappings.put("AccessRulesSubstate", AccessRulesSubstate.class);
   mappings.put("Account", AccountSubstate.class);
   mappings.put("AccountSubstate", AccountSubstate.class);
   mappings.put("ClockCurrentMinute", ClockCurrentMinuteSubstate.class);
@@ -221,14 +224,16 @@ static {
   mappings.put("FunctionAccessRulesSubstate", FunctionAccessRulesSubstate.class);
   mappings.put("KeyValueStoreEntry", KeyValueStoreEntrySubstate.class);
   mappings.put("KeyValueStoreEntrySubstate", KeyValueStoreEntrySubstate.class);
-  mappings.put("Metadata", MetadataSubstate.class);
-  mappings.put("MetadataSubstate", MetadataSubstate.class);
+  mappings.put("MetadataEntry", MetadataEntrySubstate.class);
+  mappings.put("MetadataEntrySubstate", MetadataEntrySubstate.class);
   mappings.put("NonFungibleStoreEntry", NonFungibleStoreEntrySubstate.class);
   mappings.put("NonFungibleStoreEntrySubstate", NonFungibleStoreEntrySubstate.class);
   mappings.put("PackageCode", PackageCodeSubstate.class);
   mappings.put("PackageCodeSubstate", PackageCodeSubstate.class);
   mappings.put("PackageCodeType", PackageCodeTypeSubstate.class);
   mappings.put("PackageCodeTypeSubstate", PackageCodeTypeSubstate.class);
+  mappings.put("PackageEventSchema", PackageEventSchemaSubstate.class);
+  mappings.put("PackageEventSchemaSubstate", PackageEventSchemaSubstate.class);
   mappings.put("PackageInfo", PackageInfoSubstate.class);
   mappings.put("PackageInfoSubstate", PackageInfoSubstate.class);
   mappings.put("PackageRoyaltyAccumulator", PackageRoyaltyAccumulatorSubstate.class);

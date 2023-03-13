@@ -69,8 +69,8 @@ use crate::jni::state_manager::ActualStateManager;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use radix_engine::types::manifest_encode;
 use sbor::{Categorize, Decode, Encode};
-use transaction::data::manifest_encode;
 use transaction::errors::TransactionValidationError;
 
 use crate::jni::common_types::JavaHashCode;
@@ -246,7 +246,7 @@ impl From<MempoolAddError> for MempoolAddErrorJava {
 
 impl From<TransactionValidationError> for MempoolAddErrorJava {
     fn from(error: TransactionValidationError) -> Self {
-        MempoolAddErrorJava::TransactionValidationError(format!("{:?}", error))
+        MempoolAddErrorJava::TransactionValidationError(format!("{error:?}"))
     }
 }
 

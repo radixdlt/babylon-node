@@ -33,7 +33,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   StateResourceResponse.JSON_PROPERTY_MANAGER,
-  StateResourceResponse.JSON_PROPERTY_METADATA,
   StateResourceResponse.JSON_PROPERTY_ACCESS_RULES,
   StateResourceResponse.JSON_PROPERTY_VAULT_ACCESS_RULES
 })
@@ -41,9 +40,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class StateResourceResponse {
   public static final String JSON_PROPERTY_MANAGER = "manager";
   private Substate manager;
-
-  public static final String JSON_PROPERTY_METADATA = "metadata";
-  private Substate metadata;
 
   public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
   private Substate accessRules;
@@ -77,32 +73,6 @@ public class StateResourceResponse {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setManager(Substate manager) {
     this.manager = manager;
-  }
-
-
-  public StateResourceResponse metadata(Substate metadata) {
-    this.metadata = metadata;
-    return this;
-  }
-
-   /**
-   * Get metadata
-   * @return metadata
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_METADATA)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Substate getMetadata() {
-    return metadata;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_METADATA)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMetadata(Substate metadata) {
-    this.metadata = metadata;
   }
 
 
@@ -171,14 +141,13 @@ public class StateResourceResponse {
     }
     StateResourceResponse stateResourceResponse = (StateResourceResponse) o;
     return Objects.equals(this.manager, stateResourceResponse.manager) &&
-        Objects.equals(this.metadata, stateResourceResponse.metadata) &&
         Objects.equals(this.accessRules, stateResourceResponse.accessRules) &&
         Objects.equals(this.vaultAccessRules, stateResourceResponse.vaultAccessRules);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(manager, metadata, accessRules, vaultAccessRules);
+    return Objects.hash(manager, accessRules, vaultAccessRules);
   }
 
   @Override
@@ -186,7 +155,6 @@ public class StateResourceResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class StateResourceResponse {\n");
     sb.append("    manager: ").append(toIndentedString(manager)).append("\n");
-    sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
     sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
     sb.append("    vaultAccessRules: ").append(toIndentedString(vaultAccessRules)).append("\n");
     sb.append("}");

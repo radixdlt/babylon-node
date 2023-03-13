@@ -85,7 +85,7 @@ fn handle_transaction_status_internal(
             LedgerTransactionOutcome::Failure(reason) => (
                 PayloadStatus::CommittedFailure,
                 "FAILURE",
-                Some(format!("{:?}", reason)),
+                Some(format!("{reason:?}")),
             ),
         };
 
@@ -102,7 +102,7 @@ fn handle_transaction_status_internal(
 
         return Ok(models::TransactionStatusResponse {
             intent_status,
-            status_description: format!("The transaction has been committed to the ledger, with an outcome of {}. For more information, use the /transaction/receipt endpoint.", outcome),
+            status_description: format!("The transaction has been committed to the ledger, with an outcome of {outcome}. For more information, use the /transaction/receipt endpoint."),
             invalid_from_epoch: None,
             known_payloads,
         });

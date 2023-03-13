@@ -1310,6 +1310,18 @@ components:
           description: |
             The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use "Z" denoting UTC and include milliseconds.
             EG: `2023-01-26T18:30:09.453Z`.
+    InstructionResourceChanges:
+      type: object
+      required:
+        - index
+        - resource_changes
+      properties:
+        index:
+          type: integer
+        resource_changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceChange'
     ResourceChange:
       type: object
       required:
@@ -2123,6 +2135,7 @@ components:
         - FunctionAccessRules
         - ComponentRoyalty
         - PackageRoyalty
+        - PackageEventSchema
     Substate:
       type: object
       required:
@@ -2134,8 +2147,8 @@ components:
         propertyName: substate_type
         mapping:
           # NOTE: These need to match SubstateType options below
-          Metadata: '#/components/schemas/MetadataSubstate'
-          AccessRulesChain: '#/components/schemas/AccessRulesChainSubstate'
+          MetadataEntry: '#/components/schemas/MetadataEntrySubstate'
+          AccessRules: '#/components/schemas/AccessRulesSubstate'
           FunctionAccessRules: '#/components/schemas/FunctionAccessRulesSubstate'
           TypeInfo: '#/components/schemas/TypeInfoSubstate'
           ComponentState: '#/components/schemas/ComponentStateSubstate'
@@ -2160,12 +2173,13 @@ components:
           NonFungibleStoreEntry: '#/components/schemas/NonFungibleStoreEntrySubstate'
           AccessController: '#/components/schemas/AccessControllerSubstate'
           Account: '#/components/schemas/AccountSubstate'
+          PackageEventSchema: '#/components/schemas/PackageEventSchemaSubstate'
     SubstateType:
       type: string
       enum:
         # Common
-        - Metadata
-        - AccessRulesChain
+        - MetadataEntry
+        - AccessRules
         - FunctionAccessRules
         # Specific
         - TypeInfo
@@ -2191,17 +2205,18 @@ components:
         - VaultLockedNonFungible
         - AccessController
         - Account
+        - PackageEventSchema
     SubstateKeyType:
       # This corresponds to what's currently referred to as the "SubstateOffset"
       # This is roughly the same as the substate type, but some entities have two of the same substates
-      # (eg ResourceManagers have two AccessRulesChain substates)
+      # (eg ResourceManagers have two AccessRules substates)
       type: string
       description: |
-        Slightly different to the SubstateType - some entities have two of the same substate (eg ResouceManager AccessRuleChains)
+        Slightly different to the SubstateType - some entities have two of the same substate (eg ResouceManager AccessRules)
       enum:
         # Common
-        - Metadata
-        - AccessRulesChain
+        - MetadataEntry
+        - AccessRules
         - FunctionAccessRules
         # Specific
         - TypeInfo
@@ -2228,42 +2243,35 @@ components:
         - VaultLockedNonFungible
         - AccessController
         - Account
+        - PackageEventSchema
 ### COMMON SUBSTATES
-    AccessRulesChainSubstate:
+    AccessRulesSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - chain
+            - access_rules
           properties:
-            chain:
-              type: array
-              description: |
-                The layers of access rules applied.
-              items:
-                $ref: '#/components/schemas/AccessRules'
+            access_rules:
+              $ref: '#/components/schemas/AccessRules'
     FunctionAccessRulesSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
-    MetadataSubstate:
+    MetadataEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - metadata
+            - key_hex
           properties:
-            metadata:
-              type: array
-              items:
-                type: object
-                required:
-                  - key
-                  - value
-                properties:
-                  key:
-                    type: string
-                  value:
-                    type: string
+            key_hex:
+              type: string
+              description: The hex-encoded bytes of its key
+            data_struct:
+              $ref: '#/components/schemas/DataStruct'
+    PackageEventSchemaSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
 ### SPECIFIC SUBSTATES
     TypeInfoSubstate:
       allOf:
@@ -2272,11 +2280,14 @@ components:
           required:
             - package_address
             - blueprint_name
+            - global
           properties:
             package_address:
               $ref: '#/components/schemas/PackageAddress'
             blueprint_name:
               type: string
+            global:
+              type: boolean
     ComponentStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -2617,6 +2628,8 @@ components:
           properties:
             data_struct:
               $ref: '#/components/schemas/DataStruct'
+
+
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################
@@ -3343,16 +3356,20 @@ components:
     TransactionPreviewResponse:
       type: object
       required:
+        - encoded_receipt
         - receipt
-        - resource_changes
+        - instruction_resource_changes
         - logs
       properties:
+        encoded_receipt:
+          type: string
+          description: The hex-sbor-encoded receipt
         receipt:
           $ref: "#/components/schemas/TransactionReceipt"
-        resource_changes:
+        instruction_resource_changes:
           type: array
           items:
-            $ref: "#/components/schemas/ResourceChange"
+            $ref: "#/components/schemas/InstructionResourceChanges"
         logs:
           type: array
           items:
@@ -3610,7 +3627,6 @@ components:
       type: object
       required:
         - info
-        - metadata
         - access_rules
         - state_owned_vaults
         - descendent_ids
@@ -3624,8 +3640,6 @@ components:
         royalty_config:
           $ref: "#/components/schemas/Substate"
         royalty_accumulator:
-          $ref: "#/components/schemas/Substate"
-        metadata:
           $ref: "#/components/schemas/Substate"
         access_rules:
           $ref: "#/components/schemas/Substate"
@@ -3673,14 +3687,11 @@ components:
       type: object
       required:
         - state
-        - metadata
         - access_rules
         - state_owned_vaults
         - descendent_ids
       properties:
         state:
-          $ref: "#/components/schemas/Substate"
-        metadata:
           $ref: "#/components/schemas/Substate"
         access_rules:
           $ref: "#/components/schemas/Substate"
@@ -3711,14 +3722,11 @@ components:
       type: object
       required:
         - state
-        - metadata
         - access_rules
         - state_owned_vaults
         - descendent_ids
       properties:
         state:
-          $ref: "#/components/schemas/Substate"
-        metadata:
           $ref: "#/components/schemas/Substate"
         access_rules:
           $ref: "#/components/schemas/Substate"
@@ -3750,13 +3758,10 @@ components:
       type: object
       required:
         - manager
-        - metadata
         - access_rules
         - vault_access_rules
       properties:
         manager:
-          $ref: "#/components/schemas/Substate"
-        metadata:
           $ref: "#/components/schemas/Substate"
         access_rules:
           $ref: "#/components/schemas/Substate"
@@ -3806,7 +3811,6 @@ components:
         - info
         - royalty_config
         - royalty_accumulator
-        - metadata
         - access_rules
       properties:
         info:
@@ -3814,8 +3818,6 @@ components:
         royalty_config:
           $ref: "#/components/schemas/Substate"
         royalty_accumulator:
-          $ref: "#/components/schemas/Substate"
-        metadata:
           $ref: "#/components/schemas/Substate"
         access_rules:
           $ref: "#/components/schemas/Substate"

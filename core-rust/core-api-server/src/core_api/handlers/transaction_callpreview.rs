@@ -10,19 +10,19 @@ use radix_engine::{
     types::{Decimal, FAUCET_COMPONENT},
 };
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
-use radix_engine_interface::data::scrypto_encode;
+use radix_engine_interface::data::scrypto::scrypto_encode;
+use radix_engine_interface::manifest_args;
 use state_manager::PreviewRequest;
-use transaction::data::manifest_args;
 use transaction::model::{Instruction, PreviewFlags, TransactionManifest};
 
 macro_rules! args_from_bytes_vec {
     ($args: expr) => {{
         let mut fields = Vec::new();
         for arg in $args {
-            fields.push(::radix_engine_interface::data::scrypto_decode(&arg).unwrap());
+            fields.push(::radix_engine_interface::data::scrypto::scrypto_decode(&arg).unwrap());
         }
-        let input_struct = ::radix_engine_interface::data::ScryptoValue::Tuple { fields };
-        ::radix_engine_interface::data::scrypto_encode(&input_struct).unwrap()
+        let input_struct = ::radix_engine_interface::data::scrypto::ScryptoValue::Tuple { fields };
+        ::radix_engine_interface::data::scrypto::scrypto_encode(&input_struct).unwrap()
     }};
 }
 
@@ -112,7 +112,7 @@ pub(crate) async fn handle_transaction_callpreview(
         })
         .map_err(|err| match err {
             PreviewError::TransactionValidationError(err) => {
-                server_error(format!("Transaction validation error: {:?}", err))
+                server_error(format!("Transaction validation error: {err:?}"))
             }
         })?;
 
@@ -126,7 +126,7 @@ pub(crate) async fn handle_transaction_callpreview(
                         .map(|line_output| {
                             let bytes = match line_output {
                                 InstructionOutput::None => scrypto_encode(&()).unwrap(),
-                                InstructionOutput::CallReturn(r) => r.into(),
+                                InstructionOutput::CallReturn(r) => r,
                             };
                             scrypto_bytes_to_api_sbor_data(&mapping_context, &bytes)
                         })
@@ -135,7 +135,7 @@ pub(crate) async fn handle_transaction_callpreview(
                         None => None,
                         Some(Ok(output)) => Some(output),
                         // Decoding engine response should succeed
-                        Some(Err(err)) => Err(server_error(format!("{:?}", err)))?,
+                        Some(Err(err)) => Err(server_error(format!("{err:?}")))?,
                     };
 
                     (TransactionStatus::Succeeded, output, None)

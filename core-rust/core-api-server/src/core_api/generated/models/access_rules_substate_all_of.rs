@@ -12,18 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct MetadataSubstateAllOfMetadata {
-    #[serde(rename = "key")]
-    pub key: String,
-    #[serde(rename = "value")]
-    pub value: String,
+pub struct AccessRulesSubstateAllOf {
+    #[serde(rename = "access_rules")]
+    pub access_rules: Box<crate::core_api::generated::models::AccessRules>,
 }
 
-impl MetadataSubstateAllOfMetadata {
-    pub fn new(key: String, value: String) -> MetadataSubstateAllOfMetadata {
-        MetadataSubstateAllOfMetadata {
-            key,
-            value,
+impl AccessRulesSubstateAllOf {
+    pub fn new(access_rules: crate::core_api::generated::models::AccessRules) -> AccessRulesSubstateAllOf {
+        AccessRulesSubstateAllOf {
+            access_rules: Box::new(access_rules),
         }
     }
 }

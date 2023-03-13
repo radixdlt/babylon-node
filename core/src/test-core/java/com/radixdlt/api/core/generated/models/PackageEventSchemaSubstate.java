@@ -29,13 +29,11 @@ import com.radixdlt.api.core.generated.models.AccessControllerSubstate;
 import com.radixdlt.api.core.generated.models.AccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.AccountSubstate;
 import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
-import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstateAllOf;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyConfigSubstate;
 import com.radixdlt.api.core.generated.models.ComponentStateSubstate;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
 import com.radixdlt.api.core.generated.models.FunctionAccessRulesSubstate;
-import com.radixdlt.api.core.generated.models.Instant;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.MetadataEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleStoreEntrySubstate;
@@ -63,10 +61,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * ClockCurrentMinuteSubstate
+ * PackageEventSchemaSubstate
  */
 @JsonPropertyOrder({
-  ClockCurrentMinuteSubstate.JSON_PROPERTY_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -104,41 +101,12 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = VaultNonFungibleSubstate.class, name = "VaultNonFungible"),
 })
 
-public class ClockCurrentMinuteSubstate extends Substate {
-  public static final String JSON_PROPERTY_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE = "timestamp_rounded_down_to_minute";
-  private Instant timestampRoundedDownToMinute;
-
-  public ClockCurrentMinuteSubstate() { 
+public class PackageEventSchemaSubstate extends Substate {
+  public PackageEventSchemaSubstate() { 
   }
-
-  public ClockCurrentMinuteSubstate timestampRoundedDownToMinute(Instant timestampRoundedDownToMinute) {
-    this.timestampRoundedDownToMinute = timestampRoundedDownToMinute;
-    return this;
-  }
-
-   /**
-   * Get timestampRoundedDownToMinute
-   * @return timestampRoundedDownToMinute
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Instant getTimestampRoundedDownToMinute() {
-    return timestampRoundedDownToMinute;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTimestampRoundedDownToMinute(Instant timestampRoundedDownToMinute) {
-    this.timestampRoundedDownToMinute = timestampRoundedDownToMinute;
-  }
-
 
   /**
-   * Return true if this ClockCurrentMinuteSubstate object is equal to o.
+   * Return true if this PackageEventSchemaSubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -148,22 +116,19 @@ public class ClockCurrentMinuteSubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ClockCurrentMinuteSubstate clockCurrentMinuteSubstate = (ClockCurrentMinuteSubstate) o;
-    return Objects.equals(this.timestampRoundedDownToMinute, clockCurrentMinuteSubstate.timestampRoundedDownToMinute) &&
-        super.equals(o);
+    return super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(timestampRoundedDownToMinute, super.hashCode());
+    return Objects.hash(super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ClockCurrentMinuteSubstate {\n");
+    sb.append("class PackageEventSchemaSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    timestampRoundedDownToMinute: ").append(toIndentedString(timestampRoundedDownToMinute)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -209,8 +174,8 @@ static {
   mappings.put("VaultLockedFungible", VaultLockedFungibleSubstate.class);
   mappings.put("VaultLockedNonFungible", VaultLockedNonFungibleSubstate.class);
   mappings.put("VaultNonFungible", VaultNonFungibleSubstate.class);
-  mappings.put("ClockCurrentMinuteSubstate", ClockCurrentMinuteSubstate.class);
-  JSON.registerDiscriminator(ClockCurrentMinuteSubstate.class, "substate_type", mappings);
+  mappings.put("PackageEventSchemaSubstate", PackageEventSchemaSubstate.class);
+  JSON.registerDiscriminator(PackageEventSchemaSubstate.class, "substate_type", mappings);
 }
 }
 

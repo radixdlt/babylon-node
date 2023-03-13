@@ -26,7 +26,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerSubstate;
-import com.radixdlt.api.core.generated.models.AccessRulesChainSubstate;
+import com.radixdlt.api.core.generated.models.AccessRules;
+import com.radixdlt.api.core.generated.models.AccessRulesSubstate;
+import com.radixdlt.api.core.generated.models.AccessRulesSubstateAllOf;
 import com.radixdlt.api.core.generated.models.AccountSubstate;
 import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
@@ -35,12 +37,11 @@ import com.radixdlt.api.core.generated.models.ComponentStateSubstate;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
 import com.radixdlt.api.core.generated.models.FunctionAccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
-import com.radixdlt.api.core.generated.models.MetadataSubstate;
-import com.radixdlt.api.core.generated.models.MetadataSubstateAllOf;
-import com.radixdlt.api.core.generated.models.MetadataSubstateAllOfMetadata;
+import com.radixdlt.api.core.generated.models.MetadataEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeSubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeTypeSubstate;
+import com.radixdlt.api.core.generated.models.PackageEventSchemaSubstate;
 import com.radixdlt.api.core.generated.models.PackageInfoSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltyConfigSubstate;
@@ -57,17 +58,15 @@ import com.radixdlt.api.core.generated.models.VaultLockedNonFungibleSubstate;
 import com.radixdlt.api.core.generated.models.VaultNonFungibleSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * MetadataSubstate
+ * AccessRulesSubstate
  */
 @JsonPropertyOrder({
-  MetadataSubstate.JSON_PROPERTY_METADATA
+  AccessRulesSubstate.JSON_PROPERTY_ACCESS_RULES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -77,7 +76,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "substate_type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = AccessControllerSubstate.class, name = "AccessController"),
-  @JsonSubTypes.Type(value = AccessRulesChainSubstate.class, name = "AccessRulesChain"),
+  @JsonSubTypes.Type(value = AccessRulesSubstate.class, name = "AccessRules"),
   @JsonSubTypes.Type(value = AccountSubstate.class, name = "Account"),
   @JsonSubTypes.Type(value = ClockCurrentMinuteSubstate.class, name = "ClockCurrentMinute"),
   @JsonSubTypes.Type(value = ComponentRoyaltyAccumulatorSubstate.class, name = "ComponentRoyaltyAccumulator"),
@@ -86,10 +85,11 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = EpochManagerSubstate.class, name = "EpochManager"),
   @JsonSubTypes.Type(value = FunctionAccessRulesSubstate.class, name = "FunctionAccessRules"),
   @JsonSubTypes.Type(value = KeyValueStoreEntrySubstate.class, name = "KeyValueStoreEntry"),
-  @JsonSubTypes.Type(value = MetadataSubstate.class, name = "Metadata"),
+  @JsonSubTypes.Type(value = MetadataEntrySubstate.class, name = "MetadataEntry"),
   @JsonSubTypes.Type(value = NonFungibleStoreEntrySubstate.class, name = "NonFungibleStoreEntry"),
   @JsonSubTypes.Type(value = PackageCodeSubstate.class, name = "PackageCode"),
   @JsonSubTypes.Type(value = PackageCodeTypeSubstate.class, name = "PackageCodeType"),
+  @JsonSubTypes.Type(value = PackageEventSchemaSubstate.class, name = "PackageEventSchema"),
   @JsonSubTypes.Type(value = PackageInfoSubstate.class, name = "PackageInfo"),
   @JsonSubTypes.Type(value = PackageRoyaltyAccumulatorSubstate.class, name = "PackageRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageRoyaltyConfigSubstate.class, name = "PackageRoyaltyConfig"),
@@ -104,46 +104,41 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = VaultNonFungibleSubstate.class, name = "VaultNonFungible"),
 })
 
-public class MetadataSubstate extends Substate {
-  public static final String JSON_PROPERTY_METADATA = "metadata";
-  private List<MetadataSubstateAllOfMetadata> metadata = new ArrayList<>();
+public class AccessRulesSubstate extends Substate {
+  public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
+  private AccessRules accessRules;
 
-  public MetadataSubstate() { 
+  public AccessRulesSubstate() { 
   }
 
-  public MetadataSubstate metadata(List<MetadataSubstateAllOfMetadata> metadata) {
-    this.metadata = metadata;
-    return this;
-  }
-
-  public MetadataSubstate addMetadataItem(MetadataSubstateAllOfMetadata metadataItem) {
-    this.metadata.add(metadataItem);
+  public AccessRulesSubstate accessRules(AccessRules accessRules) {
+    this.accessRules = accessRules;
     return this;
   }
 
    /**
-   * Get metadata
-   * @return metadata
+   * Get accessRules
+   * @return accessRules
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_METADATA)
+  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<MetadataSubstateAllOfMetadata> getMetadata() {
-    return metadata;
+  public AccessRules getAccessRules() {
+    return accessRules;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_METADATA)
+  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMetadata(List<MetadataSubstateAllOfMetadata> metadata) {
-    this.metadata = metadata;
+  public void setAccessRules(AccessRules accessRules) {
+    this.accessRules = accessRules;
   }
 
 
   /**
-   * Return true if this MetadataSubstate object is equal to o.
+   * Return true if this AccessRulesSubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -153,22 +148,22 @@ public class MetadataSubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    MetadataSubstate metadataSubstate = (MetadataSubstate) o;
-    return Objects.equals(this.metadata, metadataSubstate.metadata) &&
+    AccessRulesSubstate accessRulesSubstate = (AccessRulesSubstate) o;
+    return Objects.equals(this.accessRules, accessRulesSubstate.accessRules) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(metadata, super.hashCode());
+    return Objects.hash(accessRules, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class MetadataSubstate {\n");
+    sb.append("class AccessRulesSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
+    sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -188,7 +183,7 @@ static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("AccessController", AccessControllerSubstate.class);
-  mappings.put("AccessRulesChain", AccessRulesChainSubstate.class);
+  mappings.put("AccessRules", AccessRulesSubstate.class);
   mappings.put("Account", AccountSubstate.class);
   mappings.put("ClockCurrentMinute", ClockCurrentMinuteSubstate.class);
   mappings.put("ComponentRoyaltyAccumulator", ComponentRoyaltyAccumulatorSubstate.class);
@@ -197,10 +192,11 @@ static {
   mappings.put("EpochManager", EpochManagerSubstate.class);
   mappings.put("FunctionAccessRules", FunctionAccessRulesSubstate.class);
   mappings.put("KeyValueStoreEntry", KeyValueStoreEntrySubstate.class);
-  mappings.put("Metadata", MetadataSubstate.class);
+  mappings.put("MetadataEntry", MetadataEntrySubstate.class);
   mappings.put("NonFungibleStoreEntry", NonFungibleStoreEntrySubstate.class);
   mappings.put("PackageCode", PackageCodeSubstate.class);
   mappings.put("PackageCodeType", PackageCodeTypeSubstate.class);
+  mappings.put("PackageEventSchema", PackageEventSchemaSubstate.class);
   mappings.put("PackageInfo", PackageInfoSubstate.class);
   mappings.put("PackageRoyaltyAccumulator", PackageRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageRoyaltyConfig", PackageRoyaltyConfigSubstate.class);
@@ -213,8 +209,8 @@ static {
   mappings.put("VaultLockedFungible", VaultLockedFungibleSubstate.class);
   mappings.put("VaultLockedNonFungible", VaultLockedNonFungibleSubstate.class);
   mappings.put("VaultNonFungible", VaultNonFungibleSubstate.class);
-  mappings.put("MetadataSubstate", MetadataSubstate.class);
-  JSON.registerDiscriminator(MetadataSubstate.class, "substate_type", mappings);
+  mappings.put("AccessRulesSubstate", AccessRulesSubstate.class);
+  JSON.registerDiscriminator(AccessRulesSubstate.class, "substate_type", mappings);
 }
 }
 

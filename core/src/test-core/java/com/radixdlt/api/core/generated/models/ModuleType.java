@@ -42,7 +42,9 @@ public enum ModuleType {
   
   COMPONENTROYALTY("ComponentRoyalty"),
   
-  PACKAGEROYALTY("PackageRoyalty");
+  PACKAGEROYALTY("PackageRoyalty"),
+  
+  PACKAGEEVENTSCHEMA("PackageEventSchema");
 
   private String value;
 

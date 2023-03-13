@@ -12,9 +12,10 @@ use radix_engine::transaction::{
     TransactionReceipt as EngineTransactionReceipt, TransactionResult,
 };
 use radix_engine::types::{hash, scrypto_encode, Hash, SubstateId};
-use radix_engine_interface::api::component::ComponentAddress;
 use radix_engine_interface::blueprints::logger::Level;
+use radix_engine_interface::data::scrypto::model::ComponentAddress;
 use radix_engine_interface::*;
+use sbor::rust::collections::IndexMap;
 
 use crate::{AccumulatorHash, LedgerReceiptHash};
 
@@ -69,7 +70,7 @@ impl From<TransactionOutcome> for LedgerTransactionOutcome {
                             // TODO: Clean this up
                             match o {
                                 InstructionOutput::None => scrypto_encode(&()).unwrap(),
-                                InstructionOutput::CallReturn(v) => v.into(),
+                                InstructionOutput::CallReturn(v) => v,
                             }
                         })
                         .collect(),
@@ -87,7 +88,7 @@ pub struct LedgerTransactionReceipt {
     pub application_logs: Vec<(Level, String)>,
     pub substate_changes: SubstateChanges,
     pub entity_changes: EntityChanges,
-    pub resource_changes: Vec<ResourceChange>,
+    pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
     pub next_epoch: Option<(BTreeMap<ComponentAddress, Validator>, u64)>,
 }
 
@@ -106,12 +107,10 @@ impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
                 Ok((commit_result, engine_receipt.execution.fee_summary).into())
             }
             TransactionResult::Reject(error) => Err(format!(
-                "Can't create a ledger receipt for rejected txn: {:?}",
-                error
+                "Can't create a ledger receipt for rejected txn: {error:?}"
             )),
             TransactionResult::Abort(result) => Err(format!(
-                "Can't create a ledger receipt for aborted txn: {:?}",
-                result
+                "Can't create a ledger receipt for aborted txn: {result:?}"
             )),
         }
     }

@@ -25,13 +25,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Slightly different to the SubstateType - some entities have two of the same substate (eg ResouceManager AccessRuleChains) 
+ * Slightly different to the SubstateType - some entities have two of the same substate (eg ResouceManager AccessRules) 
  */
 public enum SubstateKeyType {
   
-  METADATA("Metadata"),
+  METADATAENTRY("MetadataEntry"),
   
-  ACCESSRULESCHAIN("AccessRulesChain"),
+  ACCESSRULES("AccessRules"),
   
   FUNCTIONACCESSRULES("FunctionAccessRules"),
   
@@ -81,7 +81,9 @@ public enum SubstateKeyType {
   
   ACCESSCONTROLLER("AccessController"),
   
-  ACCOUNT("Account");
+  ACCOUNT("Account"),
+  
+  PACKAGEEVENTSCHEMA("PackageEventSchema");
 
   private String value;
 

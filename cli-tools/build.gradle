@@ -157,6 +157,7 @@ task generateNodeKey(type: Exec) {
 
     group = "Execution"
     description = "Generate Node key"
+    environment "LD_PRELOAD", "${project(':core-rust').projectDir}/target/debug/libcorerust.so"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
             "-Djava.library.path=${project(':core-rust').projectDir}/target/debug/",
             "com.radixdlt.cloud.AWSSecrets",
@@ -178,6 +179,7 @@ task generateDevUniverse(type: Exec) {
     dependsOn ':olympia-engine:jar'
     group = "Execution"
     description = "Generate development universe"
+    environment "LD_PRELOAD", "${project(':core-rust').projectDir}/target/debug/libcorerust.so"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
             "-Djava.library.path=${project(':core-rust').projectDir}/target/debug/",
             "-Dlog4j.configurationFile=${projectDir.path + "/src/main/resources/generateuniverses.log4j2.properties"}",
@@ -194,6 +196,7 @@ task generateGenesisFile(type: Exec) {
     dependsOn ':olympia-engine:jar'
     group = "Execution"
     description = "Generate development universe"
+    environment "LD_PRELOAD", "${project(':core-rust').projectDir}/target/debug/libcorerust.so"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
             "-Djava.library.path=${project(':core-rust').projectDir}/target/debug/",
             "-Dlog4j.configurationFile=${projectDir.path + "/src/main/resources/generateuniverses.log4j2.properties"}",
@@ -251,6 +254,7 @@ task runTargetedIntegrationTests(type: Test) {
 
 task runAllIntegrationTests(type: Test) {
     environment "RADIX_NODE_KEYSTORE_PASSWORD", "supersecret"
+    environment "LD_PRELOAD", "${project(':core-rust').projectDir}/target/debug/libcorerust.so"
     systemProperty "java.library.path", "${project(':core-rust').projectDir}/target/debug/"
     testClassesDirs = sourceSets.integration.output.classesDirs
     classpath = sourceSets.integration.runtimeClasspath
@@ -258,6 +262,7 @@ task runAllIntegrationTests(type: Test) {
 
 task runP2pTests(type: JavaExec) {
     classpath = sourceSets.p2pTest.runtimeClasspath
+    environment "LD_PRELOAD", "${project(':core-rust').projectDir}/target/debug/libcorerust.so"
     systemProperty "java.library.path", "${project(':core-rust').projectDir}/target/debug/"
     main = "com.radixdlt.p2ptest.LargeMessageTest"
 

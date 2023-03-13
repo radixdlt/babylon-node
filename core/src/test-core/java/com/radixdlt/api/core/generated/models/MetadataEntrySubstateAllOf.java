@@ -22,61 +22,84 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.MetadataSubstateAllOfMetadata;
+import com.radixdlt.api.core.generated.models.DataStruct;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * MetadataSubstateAllOf
+ * MetadataEntrySubstateAllOf
  */
 @JsonPropertyOrder({
-  MetadataSubstateAllOf.JSON_PROPERTY_METADATA
+  MetadataEntrySubstateAllOf.JSON_PROPERTY_KEY_HEX,
+  MetadataEntrySubstateAllOf.JSON_PROPERTY_DATA_STRUCT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class MetadataSubstateAllOf {
-  public static final String JSON_PROPERTY_METADATA = "metadata";
-  private List<MetadataSubstateAllOfMetadata> metadata = new ArrayList<>();
+public class MetadataEntrySubstateAllOf {
+  public static final String JSON_PROPERTY_KEY_HEX = "key_hex";
+  private String keyHex;
 
-  public MetadataSubstateAllOf() { 
+  public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
+  private DataStruct dataStruct;
+
+  public MetadataEntrySubstateAllOf() { 
   }
 
-  public MetadataSubstateAllOf metadata(List<MetadataSubstateAllOfMetadata> metadata) {
-    this.metadata = metadata;
-    return this;
-  }
-
-  public MetadataSubstateAllOf addMetadataItem(MetadataSubstateAllOfMetadata metadataItem) {
-    this.metadata.add(metadataItem);
+  public MetadataEntrySubstateAllOf keyHex(String keyHex) {
+    this.keyHex = keyHex;
     return this;
   }
 
    /**
-   * Get metadata
-   * @return metadata
+   * The hex-encoded bytes of its key
+   * @return keyHex
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_METADATA)
+  @ApiModelProperty(required = true, value = "The hex-encoded bytes of its key")
+  @JsonProperty(JSON_PROPERTY_KEY_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<MetadataSubstateAllOfMetadata> getMetadata() {
-    return metadata;
+  public String getKeyHex() {
+    return keyHex;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_METADATA)
+  @JsonProperty(JSON_PROPERTY_KEY_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMetadata(List<MetadataSubstateAllOfMetadata> metadata) {
-    this.metadata = metadata;
+  public void setKeyHex(String keyHex) {
+    this.keyHex = keyHex;
+  }
+
+
+  public MetadataEntrySubstateAllOf dataStruct(DataStruct dataStruct) {
+    this.dataStruct = dataStruct;
+    return this;
+  }
+
+   /**
+   * Get dataStruct
+   * @return dataStruct
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public DataStruct getDataStruct() {
+    return dataStruct;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_DATA_STRUCT)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setDataStruct(DataStruct dataStruct) {
+    this.dataStruct = dataStruct;
   }
 
 
   /**
-   * Return true if this MetadataSubstate_allOf object is equal to o.
+   * Return true if this MetadataEntrySubstate_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -86,20 +109,22 @@ public class MetadataSubstateAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    MetadataSubstateAllOf metadataSubstateAllOf = (MetadataSubstateAllOf) o;
-    return Objects.equals(this.metadata, metadataSubstateAllOf.metadata);
+    MetadataEntrySubstateAllOf metadataEntrySubstateAllOf = (MetadataEntrySubstateAllOf) o;
+    return Objects.equals(this.keyHex, metadataEntrySubstateAllOf.keyHex) &&
+        Objects.equals(this.dataStruct, metadataEntrySubstateAllOf.dataStruct);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(metadata);
+    return Objects.hash(keyHex, dataStruct);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class MetadataSubstateAllOf {\n");
-    sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
+    sb.append("class MetadataEntrySubstateAllOf {\n");
+    sb.append("    keyHex: ").append(toIndentedString(keyHex)).append("\n");
+    sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
     sb.append("}");
     return sb.toString();
   }

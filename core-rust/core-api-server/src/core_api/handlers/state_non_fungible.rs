@@ -33,7 +33,7 @@ fn handle_state_non_fungible_internal(
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let loaded_substate = read_known_substate(
             state_manager,
-            RENodeId::GlobalResourceManager(resource_address),
+            RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::SELF,
             &substate_offset,
         )?;
