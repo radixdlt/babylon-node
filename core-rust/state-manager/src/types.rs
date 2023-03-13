@@ -68,7 +68,7 @@ use crate::{
 };
 use radix_engine::types::*;
 use std::fmt;
-use transaction::data::*;
+
 use transaction::ecdsa_secp256k1::EcdsaSecp256k1Signature;
 use transaction::model::{
     NotarizedTransaction, PreviewFlags, SignedTransactionIntent, TransactionIntent,

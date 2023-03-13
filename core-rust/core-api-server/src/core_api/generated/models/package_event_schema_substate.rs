@@ -12,19 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct AccessRulesChainSubstate {
+pub struct PackageEventSchemaSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The layers of access rules applied. 
-    #[serde(rename = "chain")]
-    pub chain: Vec<crate::core_api::generated::models::AccessRules>,
 }
 
-impl AccessRulesChainSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, chain: Vec<crate::core_api::generated::models::AccessRules>) -> AccessRulesChainSubstate {
-        AccessRulesChainSubstate {
+impl PackageEventSchemaSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType) -> PackageEventSchemaSubstate {
+        PackageEventSchemaSubstate {
             substate_type,
-            chain,
         }
     }
 }

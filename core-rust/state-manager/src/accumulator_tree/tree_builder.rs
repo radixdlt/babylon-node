@@ -221,7 +221,7 @@ impl<M: Merklizable> RelativeNodeAccess<M> {
         if index < self.offset {
             if index + 1 == self.offset {
                 if self.slice_level.left_sibling_cache.is_none() {
-                    panic!("wrongfully requested left sibling at index {}", index);
+                    panic!("wrongfully requested left sibling at index {index}");
                 }
                 return RelativeIndex::CachedLeftSibling;
             }

@@ -15,8 +15,6 @@
 pub struct StateValidatorResponse {
     #[serde(rename = "state")]
     pub state: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
-    #[serde(rename = "metadata")]
-    pub metadata: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "access_rules")]
     pub access_rules: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     /// Any vaults owned directly or indirectly by the component
@@ -28,10 +26,9 @@ pub struct StateValidatorResponse {
 }
 
 impl StateValidatorResponse {
-    pub fn new(state: crate::core_api::generated::models::Substate, metadata: crate::core_api::generated::models::Substate, access_rules: crate::core_api::generated::models::Substate, state_owned_vaults: Vec<crate::core_api::generated::models::ResourceAmount>, descendent_ids: Vec<crate::core_api::generated::models::StateComponentDescendentId>) -> StateValidatorResponse {
+    pub fn new(state: crate::core_api::generated::models::Substate, access_rules: crate::core_api::generated::models::Substate, state_owned_vaults: Vec<crate::core_api::generated::models::ResourceAmount>, descendent_ids: Vec<crate::core_api::generated::models::StateComponentDescendentId>) -> StateValidatorResponse {
         StateValidatorResponse {
             state: Option::Some(state),
-            metadata: Option::Some(metadata),
             access_rules: Option::Some(access_rules),
             state_owned_vaults,
             descendent_ids,

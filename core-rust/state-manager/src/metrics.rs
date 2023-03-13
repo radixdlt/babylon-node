@@ -141,7 +141,7 @@ impl Default for StateManagerMetrics {
 }
 
 fn opts(name: &str, help: &str) -> Opts {
-    Opts::new(format!("rn_{}", name), help)
+    Opts::new(format!("rn_{name}"), help)
 }
 
 // TODO - capture the metric types on a generic wrapper around the GenericCounter, and ensure the provided labels match the types, like in Java.

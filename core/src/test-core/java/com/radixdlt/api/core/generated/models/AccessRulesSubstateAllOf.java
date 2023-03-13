@@ -22,83 +22,54 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.AccessRules;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * MetadataSubstateAllOfMetadata
+ * AccessRulesSubstateAllOf
  */
 @JsonPropertyOrder({
-  MetadataSubstateAllOfMetadata.JSON_PROPERTY_KEY,
-  MetadataSubstateAllOfMetadata.JSON_PROPERTY_VALUE
+  AccessRulesSubstateAllOf.JSON_PROPERTY_ACCESS_RULES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class MetadataSubstateAllOfMetadata {
-  public static final String JSON_PROPERTY_KEY = "key";
-  private String key;
+public class AccessRulesSubstateAllOf {
+  public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
+  private AccessRules accessRules;
 
-  public static final String JSON_PROPERTY_VALUE = "value";
-  private String value;
-
-  public MetadataSubstateAllOfMetadata() { 
+  public AccessRulesSubstateAllOf() { 
   }
 
-  public MetadataSubstateAllOfMetadata key(String key) {
-    this.key = key;
+  public AccessRulesSubstateAllOf accessRules(AccessRules accessRules) {
+    this.accessRules = accessRules;
     return this;
   }
 
    /**
-   * Get key
-   * @return key
+   * Get accessRules
+   * @return accessRules
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getKey() {
-    return key;
+  public AccessRules getAccessRules() {
+    return accessRules;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_KEY)
+  @JsonProperty(JSON_PROPERTY_ACCESS_RULES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKey(String key) {
-    this.key = key;
-  }
-
-
-  public MetadataSubstateAllOfMetadata value(String value) {
-    this.value = value;
-    return this;
-  }
-
-   /**
-   * Get value
-   * @return value
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_VALUE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getValue() {
-    return value;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_VALUE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setValue(String value) {
-    this.value = value;
+  public void setAccessRules(AccessRules accessRules) {
+    this.accessRules = accessRules;
   }
 
 
   /**
-   * Return true if this MetadataSubstate_allOf_metadata object is equal to o.
+   * Return true if this AccessRulesSubstate_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -108,22 +79,20 @@ public class MetadataSubstateAllOfMetadata {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    MetadataSubstateAllOfMetadata metadataSubstateAllOfMetadata = (MetadataSubstateAllOfMetadata) o;
-    return Objects.equals(this.key, metadataSubstateAllOfMetadata.key) &&
-        Objects.equals(this.value, metadataSubstateAllOfMetadata.value);
+    AccessRulesSubstateAllOf accessRulesSubstateAllOf = (AccessRulesSubstateAllOf) o;
+    return Objects.equals(this.accessRules, accessRulesSubstateAllOf.accessRules);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, value);
+    return Objects.hash(accessRules);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class MetadataSubstateAllOfMetadata {\n");
-    sb.append("    key: ").append(toIndentedString(key)).append("\n");
-    sb.append("    value: ").append(toIndentedString(value)).append("\n");
+    sb.append("class AccessRulesSubstateAllOf {\n");
+    sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
     sb.append("}");
     return sb.toString();
   }

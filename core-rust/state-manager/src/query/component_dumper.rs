@@ -66,8 +66,9 @@ use radix_engine::blueprints::resource::VaultInfoSubstate;
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use radix_engine::types::{ComponentAddress, RENodeId, SubstateId};
 use radix_engine_interface::blueprints::resource::{
-    LiquidFungibleResource, LiquidNonFungibleResource, NonFungibleLocalId, ResourceAddress,
+    LiquidFungibleResource, LiquidNonFungibleResource,
 };
+use radix_engine_interface::data::scrypto::model::{NonFungibleLocalId, ResourceAddress};
 use radix_engine_interface::math::Decimal;
 use std::collections::BTreeSet;
 
@@ -127,7 +128,7 @@ pub fn dump_component_state<S>(
 where
     S: ReadableSubstateStore + QueryableSubstateStore,
 {
-    let node_id = RENodeId::GlobalComponent(component);
+    let node_id = RENodeId::GlobalObject(component.into());
     let mut component_dump = ComponentStateDump {
         vaults: Vec::new(),
         descendents: Vec::new(),

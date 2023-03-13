@@ -6,8 +6,8 @@ use radix_engine::{
     ledger::OutputValue,
     types::{hash, scrypto_encode, Decimal, RENodeId, SubstateId},
 };
-use radix_engine_interface::api::component::ComponentAddress;
-use radix_engine_interface::api::types::{Address, NodeModuleId};
+use radix_engine_interface::api::types::NodeModuleId;
+use radix_engine_interface::data::scrypto::model::{Address, ComponentAddress};
 use std::collections::BTreeMap;
 
 use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
@@ -25,7 +25,7 @@ pub fn to_api_receipt(
         LedgerTransactionOutcome::Failure(error) => (
             models::TransactionStatus::Failed,
             None,
-            Some(format!("{:?}", error)),
+            Some(format!("{error:?}")),
         ),
     };
 
@@ -36,14 +36,18 @@ pub fn to_api_receipt(
 
     for (id, output) in substate_changes.created {
         match id {
-            SubstateId(RENodeId::GlobalPackage(package_address), NodeModuleId::TypeInfo, ..) => {
+            SubstateId(
+                RENodeId::GlobalObject(Address::Package(package_address)),
+                NodeModuleId::TypeInfo,
+                ..,
+            ) => {
                 new_global_entities.push(to_global_entity_reference(
                     context,
                     &package_address.into(),
                 )?);
             }
             SubstateId(
-                RENodeId::GlobalComponent(component_address),
+                RENodeId::GlobalObject(Address::Component(component_address)),
                 NodeModuleId::TypeInfo,
                 ..,
             ) => {
@@ -53,7 +57,7 @@ pub fn to_api_receipt(
                 )?);
             }
             SubstateId(
-                RENodeId::GlobalResourceManager(resource_address),
+                RENodeId::GlobalObject(Address::Resource(resource_address)),
                 NodeModuleId::TypeInfo,
                 ..,
             ) => {
@@ -196,7 +200,7 @@ pub fn to_api_fee_summary(
                     .into_iter()
                     .map(|(vault_id, amount)| {
                         Ok(models::VaultPayment {
-                            vault_entity: Box::new(to_api_entity_reference(RENodeId::Vault(
+                            vault_entity: Box::new(to_api_entity_reference(RENodeId::Object(
                                 vault_id,
                             ))?),
                             xrd_amount: to_api_decimal(&amount),
@@ -216,9 +220,7 @@ pub fn to_api_fee_summary(
             .filter_map(|(receiver, cost_unit_amount)| {
                 let global_address = match receiver {
                     RoyaltyReceiver::Package(address) => Address::Package(address),
-                    RoyaltyReceiver::Component(RENodeId::GlobalComponent(address)) => {
-                        Address::Component(address)
-                    }
+                    RoyaltyReceiver::Component(RENodeId::GlobalObject(address)) => address,
                     _ => return None,
                 };
                 let payment = models::RoyaltyPayment {

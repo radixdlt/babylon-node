@@ -12,16 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct AccessRulesChainSubstateAllOf {
-    /// The layers of access rules applied. 
-    #[serde(rename = "chain")]
-    pub chain: Vec<crate::core_api::generated::models::AccessRules>,
+pub struct InstructionResourceChanges {
+    #[serde(rename = "index")]
+    pub index: i32,
+    #[serde(rename = "resource_changes")]
+    pub resource_changes: Vec<crate::core_api::generated::models::ResourceChange>,
 }
 
-impl AccessRulesChainSubstateAllOf {
-    pub fn new(chain: Vec<crate::core_api::generated::models::AccessRules>) -> AccessRulesChainSubstateAllOf {
-        AccessRulesChainSubstateAllOf {
-            chain,
+impl InstructionResourceChanges {
+    pub fn new(index: i32, resource_changes: Vec<crate::core_api::generated::models::ResourceChange>) -> InstructionResourceChanges {
+        InstructionResourceChanges {
+            index,
+            resource_changes,
         }
     }
 }

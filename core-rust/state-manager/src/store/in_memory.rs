@@ -122,8 +122,7 @@ impl InMemoryStore {
             let key_already_exists = self.transaction_intent_lookup.get(&intent_hash);
             if let Some(existing_payload_hash) = key_already_exists {
                 panic!(
-                    "Attempted to save intent hash which already exists: {:?}",
-                    existing_payload_hash
+                    "Attempted to save intent hash which already exists: {existing_payload_hash:?}"
                 );
             }
             self.transaction_intent_lookup

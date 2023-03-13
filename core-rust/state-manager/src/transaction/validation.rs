@@ -1,6 +1,6 @@
 use crate::transaction::ledger_transaction::LedgerTransaction;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use transaction::data::{manifest_decode, manifest_encode};
+use radix_engine_interface::data::manifest::{manifest_decode, manifest_encode};
 use transaction::errors::TransactionValidationError;
 use transaction::model::{Executable, NotarizedTransaction};
 use transaction::validation::ValidationConfig;

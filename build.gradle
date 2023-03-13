@@ -182,11 +182,13 @@ allprojects {
     tasks.withType(Test) {
         systemProperty "file.encoding", "UTF-8"
         jvmArgs("--enable-preview")
+        environment "LD_PRELOAD", "${project(':core-rust').projectDir}/target/debug/libcorerust.so"
         systemProperty "java.library.path", "${project(':core-rust').projectDir}/target/debug"
     }
 
     tasks.withType(JavaExec) {
         jvmArgs("--enable-preview")
+        environment "LD_PRELOAD", "${project(':core-rust').projectDir}/target/debug/libcorerust.so"
         systemProperty "java.library.path", "${project(':core-rust').projectDir}/target/debug"
     }
 }

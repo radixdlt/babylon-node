@@ -1,5 +1,5 @@
 use radix_engine::types::scrypto_decode;
-use radix_engine_interface::data::{ScryptoValue, SerializableScryptoValue};
+use radix_engine_common::data::scrypto::{ScryptoValue, SerializableScryptoValue};
 use serde_json::to_value;
 
 use crate::core_api::*;

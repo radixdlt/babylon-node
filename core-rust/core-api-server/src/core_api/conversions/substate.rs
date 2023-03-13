@@ -8,37 +8,41 @@ use radix_engine::blueprints::resource::{
     NonFungible, NonFungibleSubstate, ResourceManagerSubstate, VaultInfoSubstate,
 };
 use radix_engine::system::node_modules::access_rules::{
-    FunctionAccessRulesSubstate, MethodAccessRulesChainSubstate,
+    FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
-use radix_engine::system::node_modules::metadata::MetadataSubstate;
+use radix_engine::system::node_modules::event_schema::PackageEventSchemaSubstate;
+use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::system::type_info::PackageCodeTypeSubstate;
 use std::collections::BTreeSet;
 
 use super::*;
 use crate::core_api::models;
-use radix_engine_interface::data::{IndexedScryptoValue, SchemaPath, SchemaSubPath};
 
 use radix_engine::types::{
     scrypto_encode, Decimal, KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId,
     ResourceAddress, RoyaltyConfig, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::api::component::{
-    ComponentAddress, ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate,
-    ComponentStateSubstate, KeyValueStoreEntrySubstate, TypeInfoSubstate,
+    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
+    KeyValueStoreEntrySubstate,
 };
 use radix_engine_interface::api::package::{
     PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate,
     PackageRoyaltyConfigSubstate,
 };
-use radix_engine_interface::api::types::{Address, NodeModuleId};
+use radix_engine_interface::api::types::{IndexedScryptoValue, NodeModuleId};
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, AccessRuleEntry, AccessRuleNode, AccessRules, LiquidFungibleResource,
+    AccessRule, AccessRuleEntry, AccessRuleNode, AccessRulesConfig, LiquidFungibleResource,
     LiquidNonFungibleResource, LockedFungibleResource, LockedNonFungibleResource, MethodKey,
-    NonFungibleIdType, NonFungibleLocalId, ProofRule, ResourceType, SoftCount, SoftDecimal,
-    SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
+    ProofRule, ResourceType, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible,
+    SoftResourceOrNonFungibleList,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::data::scrypto::model::{
+    Address, ComponentAddress, NonFungibleIdType, NonFungibleLocalId,
+};
+use radix_engine_interface::data::scrypto::{SchemaPath, SchemaSubPath};
 
 use super::MappingError;
 
@@ -49,13 +53,12 @@ pub fn to_api_substate(
 ) -> Result<models::Substate, MappingError> {
     Ok(match substate {
         // Shared
-        PersistedSubstate::AccessRulesChain(substate) => {
+        PersistedSubstate::MethodAccessRules(substate) => {
             to_api_access_rules_chain_substate(context, substate)?
         }
-        PersistedSubstate::PackageAccessRules(substate) => {
+        PersistedSubstate::FunctionAccessRules(substate) => {
             to_api_function_access_rules_substate(context, substate)?
         }
-        PersistedSubstate::Metadata(substate) => to_api_metadata_substate(context, substate)?,
         PersistedSubstate::TypeInfo(type_info) => to_api_type_info_substate(context, type_info)?,
         // Specific
         PersistedSubstate::ComponentState(component_state) => {
@@ -118,21 +121,21 @@ pub fn to_api_substate(
             to_api_access_controller_substate(context, access_controller)?
         }
         PersistedSubstate::Account(account) => to_api_account_substate(context, account)?,
+        PersistedSubstate::PackageEventSchema(event_schema) => {
+            to_api_package_event_schema(context, event_schema)?
+        }
     })
 }
 
 pub fn to_api_access_rules_chain_substate(
     context: &MappingContext,
-    substate: &MethodAccessRulesChainSubstate,
+    substate: &MethodAccessRulesSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
-    let MethodAccessRulesChainSubstate { access_rules_chain } = substate;
+    let MethodAccessRulesSubstate { access_rules } = substate;
 
-    Ok(models::Substate::AccessRulesChainSubstate {
-        chain: access_rules_chain
-            .iter()
-            .map(|access_rules| to_api_access_rules(context, access_rules))
-            .collect::<Result<_, _>>()?,
+    Ok(models::Substate::AccessRulesSubstate {
+        access_rules: Box::new(to_api_access_rules(context, access_rules)?),
     })
 }
 
@@ -144,24 +147,6 @@ pub fn to_api_function_access_rules_substate(
     //let FunctionAccessRulesSubstate { .. } = substate;
 
     Ok(models::Substate::FunctionAccessRulesSubstate {})
-}
-
-pub fn to_api_metadata_substate(
-    _context: &MappingContext,
-    substate: &MetadataSubstate,
-) -> Result<models::Substate, MappingError> {
-    // Use compiler to unpack to ensure we map all fields
-    let MetadataSubstate { metadata } = substate;
-
-    Ok(models::Substate::MetadataSubstate {
-        metadata: metadata
-            .iter()
-            .map(|(key, value)| models::MetadataSubstateAllOfMetadata {
-                key: key.to_owned(),
-                value: value.to_owned(),
-            })
-            .collect(),
-    })
 }
 
 pub fn to_api_resource_manager_substate(
@@ -214,17 +199,19 @@ pub fn to_api_type_info_substate(
     let TypeInfoSubstate {
         package_address,
         blueprint_name,
+        global,
     } = substate;
 
     Ok(models::Substate::TypeInfoSubstate {
         package_address: to_api_package_address(context, package_address),
         blueprint_name: blueprint_name.to_string(),
+        global: *global,
     })
 }
 
 pub fn to_api_access_rules(
     context: &MappingContext,
-    access_rules: &AccessRules,
+    access_rules: &AccessRulesConfig,
 ) -> Result<models::AccessRules, MappingError> {
     Ok(models::AccessRules {
         method_auth: access_rules
@@ -395,7 +382,7 @@ pub fn to_api_dynamic_count_from_soft_count(
             count: (*count)
                 .try_into()
                 .map_err(|err| MappingError::IntegerError {
-                    message: format!("Could not translate count into i32: {:?}", err),
+                    message: format!("Could not translate count into i32: {err:?}"),
                 })?,
         },
         SoftCount::Dynamic(schema_path) => models::DynamicCount::SchemaPathDynamicCount {
@@ -517,7 +504,7 @@ pub fn to_api_schema_subpath(
         SchemaSubPath::Index(index) => models::SchemaSubpath::IndexSchemaSubpath {
             index: to_api_u64_as_string((*index).try_into().map_err(|err| {
                 MappingError::IntegerError {
-                    message: format!("Couldn't map usize to u64: {:?}", err),
+                    message: format!("Couldn't map usize to u64: {err:?}"),
                 }
             })?),
         },
@@ -542,7 +529,7 @@ fn scrypto_value_to_api_data_struct(
         struct_data: Box::new(scrypto_value_to_api_sbor_data(
             context,
             scrypto_value.as_slice(),
-            scrypto_value.as_value(),
+            &scrypto_value.as_scrypto_value(),
         )?),
         owned_entities: entities.owned_entities,
         referenced_entities: entities.referenced_entities,
@@ -619,7 +606,7 @@ pub fn to_api_component_royalty_accumulator_substate(
     let ComponentRoyaltyAccumulatorSubstate { royalty } = substate;
 
     Ok(models::Substate::ComponentRoyaltyAccumulatorSubstate {
-        vault_entity: Box::new(to_api_entity_reference(RENodeId::Vault(
+        vault_entity: Box::new(to_api_entity_reference(RENodeId::Object(
             royalty.vault_id(),
         ))?),
     })
@@ -631,9 +618,9 @@ pub fn to_api_package_info_substate(
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
     let PackageInfoSubstate {
-        blueprint_abis,
         dependent_resources,
         dependent_components,
+        schema,
     } = substate;
 
     Ok(models::Substate::PackageInfoSubstate {
@@ -645,7 +632,8 @@ pub fn to_api_package_info_substate(
             .iter()
             .map(|address| to_api_component_address(context, address))
             .collect(),
-        blueprints: blueprint_abis
+        blueprints: schema
+            .blueprints
             .iter()
             .map(|(blueprint_name, abi)| {
                 let blueprint_data = models::BlueprintData {
@@ -681,7 +669,7 @@ pub fn to_api_package_code_type_substate(
 ) -> Result<models::Substate, MappingError> {
     Ok(models::Substate::PackageCodeTypeSubstate {
         code_type: match substate {
-            PackageCodeTypeSubstate::Precompiled => "native".to_string(),
+            PackageCodeTypeSubstate::Native => "native".to_string(),
             PackageCodeTypeSubstate::Wasm => "wasm".to_string(),
         },
     })
@@ -714,7 +702,7 @@ pub fn to_api_package_royalty_accumulator_substate(
     let PackageRoyaltyAccumulatorSubstate { royalty } = substate;
 
     Ok(models::Substate::PackageRoyaltyAccumulatorSubstate {
-        vault_entity: Box::new(to_api_entity_reference(RENodeId::Vault(
+        vault_entity: Box::new(to_api_entity_reference(RENodeId::Object(
             royalty.vault_id(),
         ))?),
     })
@@ -755,9 +743,9 @@ pub fn to_api_validator_substate(
         pending_xrd_withdraw_vault_id,
     } = substate;
 
-    let owned_stake_vault_id = MappedEntityId::try_from(RENodeId::Vault(*stake_xrd_vault_id))?;
+    let owned_stake_vault_id = MappedEntityId::try_from(RENodeId::Object(*stake_xrd_vault_id))?;
     let owned_unstake_vault_id =
-        MappedEntityId::try_from(RENodeId::Vault(*pending_xrd_withdraw_vault_id))?;
+        MappedEntityId::try_from(RENodeId::Object(*pending_xrd_withdraw_vault_id))?;
 
     Ok(models::Substate::ValidatorSubstate {
         epoch_manager_address: to_api_component_address(context, manager),
@@ -953,17 +941,57 @@ pub fn to_api_account_substate(
     Ok(substate)
 }
 
+pub fn to_api_package_event_schema(
+    _context: &MappingContext,
+    _substate: &PackageEventSchemaSubstate,
+) -> Result<models::Substate, MappingError> {
+    Ok(models::Substate::PackageEventSchemaSubstate {})
+}
+
 fn to_api_key_value_story_entry_substate(
     context: &MappingContext,
     substate_id: &SubstateId,
     key_value_store_entry: &KeyValueStoreEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
-    let key = match substate_id {
+    let substate = match substate_id {
         SubstateId(
             RENodeId::KeyValueStore(..),
             NodeModuleId::SELF,
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-        ) => key,
+        ) => match key_value_store_entry {
+            KeyValueStoreEntrySubstate::Some(value) => {
+                models::Substate::KeyValueStoreEntrySubstate {
+                    key_hex: to_hex(key),
+                    is_deleted: false,
+                    data_struct: Some(Box::new(to_api_data_struct(
+                        context,
+                        &scrypto_encode(&value).unwrap(),
+                    )?)),
+                }
+            }
+            KeyValueStoreEntrySubstate::None => models::Substate::KeyValueStoreEntrySubstate {
+                key_hex: to_hex(key),
+                is_deleted: true,
+                data_struct: None,
+            },
+        },
+        SubstateId(
+            _,
+            NodeModuleId::Metadata,
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+        ) => match key_value_store_entry {
+            KeyValueStoreEntrySubstate::Some(value) => models::Substate::MetadataEntrySubstate {
+                key_hex: to_hex(key),
+                data_struct: Some(Box::new(to_api_data_struct(
+                    context,
+                    &scrypto_encode(&value).unwrap(),
+                )?)),
+            },
+            KeyValueStoreEntrySubstate::None => models::Substate::MetadataEntrySubstate {
+                key_hex: to_hex(key),
+                data_struct: None,
+            },
+        },
         _ => {
             return Err(MappingError::MismatchedSubstateId {
                 message: "KVStoreEntry substate was matched with a different substate id"
@@ -972,23 +1000,7 @@ fn to_api_key_value_story_entry_substate(
         }
     };
 
-    Ok(match key_value_store_entry {
-        KeyValueStoreEntrySubstate::Some(_key, value) => {
-            models::Substate::KeyValueStoreEntrySubstate {
-                key_hex: to_hex(key),
-                is_deleted: false,
-                data_struct: Some(Box::new(to_api_data_struct(
-                    context,
-                    &scrypto_encode(&value).unwrap(),
-                )?)),
-            }
-        }
-        KeyValueStoreEntrySubstate::None => models::Substate::KeyValueStoreEntrySubstate {
-            key_hex: to_hex(key),
-            is_deleted: true,
-            data_struct: None,
-        },
-    })
+    Ok(substate)
 }
 
 fn to_api_data_struct(

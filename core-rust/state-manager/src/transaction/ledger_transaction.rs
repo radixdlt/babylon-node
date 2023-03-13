@@ -1,9 +1,9 @@
+use radix_engine_interface::data::manifest::{manifest_decode, manifest_encode};
 use radix_engine_interface::*;
 use sbor::*;
 
 use crate::transaction::validator_transaction::ValidatorTransaction;
 use crate::LedgerPayloadHash;
-use transaction::data::*;
 use transaction::model::*;
 
 #[allow(clippy::large_enum_variant)]

@@ -23,8 +23,6 @@ pub struct StateComponentResponse {
     pub royalty_config: Option<Box<crate::core_api::generated::models::Substate>>,
     #[serde(rename = "royalty_accumulator", skip_serializing_if = "Option::is_none")]
     pub royalty_accumulator: Option<Box<crate::core_api::generated::models::Substate>>,
-    #[serde(rename = "metadata")]
-    pub metadata: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     #[serde(rename = "access_rules")]
     pub access_rules: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
     /// Any vaults owned directly or indirectly by the component
@@ -36,14 +34,13 @@ pub struct StateComponentResponse {
 }
 
 impl StateComponentResponse {
-    pub fn new(info: crate::core_api::generated::models::Substate, metadata: crate::core_api::generated::models::Substate, access_rules: crate::core_api::generated::models::Substate, state_owned_vaults: Vec<crate::core_api::generated::models::ResourceAmount>, descendent_ids: Vec<crate::core_api::generated::models::StateComponentDescendentId>) -> StateComponentResponse {
+    pub fn new(info: crate::core_api::generated::models::Substate, access_rules: crate::core_api::generated::models::Substate, state_owned_vaults: Vec<crate::core_api::generated::models::ResourceAmount>, descendent_ids: Vec<crate::core_api::generated::models::StateComponentDescendentId>) -> StateComponentResponse {
         StateComponentResponse {
             info: Option::Some(info),
             state: None,
             account: None,
             royalty_config: None,
             royalty_accumulator: None,
-            metadata: Option::Some(metadata),
             access_rules: Option::Some(access_rules),
             state_owned_vaults,
             descendent_ids,

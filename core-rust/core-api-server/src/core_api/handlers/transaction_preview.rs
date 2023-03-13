@@ -3,6 +3,7 @@ use radix_engine::{
     transaction::{PreviewError, PreviewResult, TransactionResult},
     types::RENodeId,
 };
+use radix_engine_common::data::scrypto::scrypto_encode;
 use radix_engine_interface::network::NetworkDefinition;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::{LedgerTransactionReceipt, PreviewRequest};
@@ -29,7 +30,7 @@ fn handle_preview_internal(
         .preview(preview_request)
         .map_err(|err| match err {
             PreviewError::TransactionValidationError(err) => {
-                client_error(format!("Transaction validation error: {:?}", err))
+                client_error(format!("Transaction validation error: {err:?}"))
             }
         })?;
 
@@ -51,7 +52,7 @@ fn extract_preview_request(
         .map_err(|err| err.into_response_error("blobs"))?;
 
     let manifest = manifest::compile(&request.manifest, network, manifest_blobs)
-        .map_err(|err| client_error(format!("Invalid manifest - {:?}", err)))?;
+        .map_err(|err| client_error(format!("Invalid manifest - {err:?}")))?;
 
     let signer_public_keys: Vec<_> = request
         .signer_public_keys
@@ -96,23 +97,35 @@ fn to_api_response(
 ) -> Result<models::TransactionPreviewResponse, ResponseError<()>> {
     let receipt = result.receipt;
 
+    let encoded_receipt = to_hex(scrypto_encode(&receipt).unwrap());
+
     let response = match &receipt.result {
         TransactionResult::Commit(commit_result) => {
-            let api_resource_changes = commit_result
-                .resource_changes
-                .iter()
-                .map(|v| {
-                    Ok(models::ResourceChange {
-                        resource_address: to_api_resource_address(context, &v.resource_address),
-                        component_entity: Box::new(to_api_entity_reference(v.node_id)?),
-                        vault_entity: Box::new(to_api_entity_reference(RENodeId::Vault(
-                            v.vault_id,
-                        ))?),
-                        amount: to_api_decimal(&v.amount),
+            let mut instruction_resource_changes = Vec::new();
+
+            for (index, resource_changes) in &commit_result.resource_changes {
+                let resource_changes: Vec<models::ResourceChange> = resource_changes
+                    .iter()
+                    .map(|v| {
+                        Ok(models::ResourceChange {
+                            resource_address: to_api_resource_address(context, &v.resource_address),
+                            component_entity: Box::new(to_api_entity_reference(v.node_id)?),
+                            vault_entity: Box::new(to_api_entity_reference(RENodeId::Object(
+                                v.vault_id,
+                            ))?),
+                            amount: to_api_decimal(&v.amount),
+                        })
                     })
-                })
-                .collect::<Result<_, MappingError>>()
-                .map_err(|_| server_error("Can't map entity references"))?;
+                    .collect::<Result<_, MappingError>>()
+                    .map_err(|_| server_error("Can't map entity references"))?;
+
+                let instruction = models::InstructionResourceChanges {
+                    index: i32::try_from(*index).unwrap(),
+                    resource_changes,
+                };
+
+                instruction_resource_changes.push(instruction);
+            }
 
             let logs = commit_result
                 .application_logs
@@ -130,21 +143,23 @@ fn to_api_response(
                 .map_err(|_| server_error("Can't create a ledger receipt"))?;
 
             models::TransactionPreviewResponse {
+                encoded_receipt,
                 receipt: Box::new(to_api_receipt(context, ledger_receipt)?),
-                resource_changes: api_resource_changes,
+                instruction_resource_changes,
                 logs,
             }
         }
         TransactionResult::Reject(reject_result) => models::TransactionPreviewResponse {
+            encoded_receipt,
             receipt: Box::new(models::TransactionReceipt {
                 status: models::TransactionStatus::Rejected,
                 fee_summary: Box::new(to_api_fee_summary(context, receipt.execution.fee_summary)?),
                 state_updates: Box::default(),
                 output: None,
                 next_epoch: None,
-                error_message: Some(format!("{:?}", reject_result)),
+                error_message: Some(format!("{reject_result:?}")),
             }),
-            resource_changes: vec![],
+            instruction_resource_changes: vec![],
             logs: vec![],
         },
         TransactionResult::Abort(_) => {

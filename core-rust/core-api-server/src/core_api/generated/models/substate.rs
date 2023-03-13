@@ -18,11 +18,10 @@ pub enum Substate {
         #[serde(rename = "data_struct")]
         data_struct: Box<crate::core_api::generated::models::DataStruct>,
     },
-    #[serde(rename="AccessRulesChain")]
-    AccessRulesChainSubstate {
-        /// The layers of access rules applied. 
-        #[serde(rename = "chain")]
-        chain: Vec<crate::core_api::generated::models::AccessRules>,
+    #[serde(rename="AccessRules")]
+    AccessRulesSubstate {
+        #[serde(rename = "access_rules")]
+        access_rules: Box<crate::core_api::generated::models::AccessRules>,
     },
     #[serde(rename="Account")]
     AccountSubstate {
@@ -79,10 +78,13 @@ pub enum Substate {
         #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
         data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
     },
-    #[serde(rename="Metadata")]
-    MetadataSubstate {
-        #[serde(rename = "metadata")]
-        metadata: Vec<crate::core_api::generated::models::MetadataSubstateAllOfMetadata>,
+    #[serde(rename="MetadataEntry")]
+    MetadataEntrySubstate {
+        /// The hex-encoded bytes of its key
+        #[serde(rename = "key_hex")]
+        key_hex: String,
+        #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
+        data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
     },
     #[serde(rename="NonFungibleStoreEntry")]
     NonFungibleStoreEntrySubstate {
@@ -103,6 +105,9 @@ pub enum Substate {
     PackageCodeTypeSubstate {
         #[serde(rename = "code_type")]
         code_type: String,
+    },
+    #[serde(rename="PackageEventSchema")]
+    PackageEventSchemaSubstate {
     },
     #[serde(rename="PackageInfo")]
     PackageInfoSubstate {
@@ -145,6 +150,8 @@ pub enum Substate {
         package_address: String,
         #[serde(rename = "blueprint_name")]
         blueprint_name: String,
+        #[serde(rename = "global")]
+        global: bool,
     },
     #[serde(rename="Validator")]
     ValidatorSubstate {

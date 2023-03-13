@@ -12,10 +12,10 @@
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum SubstateType {
-    #[serde(rename = "Metadata")]
-    Metadata,
-    #[serde(rename = "AccessRulesChain")]
-    AccessRulesChain,
+    #[serde(rename = "MetadataEntry")]
+    MetadataEntry,
+    #[serde(rename = "AccessRules")]
+    AccessRules,
     #[serde(rename = "FunctionAccessRules")]
     FunctionAccessRules,
     #[serde(rename = "TypeInfo")]
@@ -64,14 +64,16 @@ pub enum SubstateType {
     AccessController,
     #[serde(rename = "Account")]
     Account,
+    #[serde(rename = "PackageEventSchema")]
+    PackageEventSchema,
 
 }
 
 impl ToString for SubstateType {
     fn to_string(&self) -> String {
         match self {
-            Self::Metadata => String::from("Metadata"),
-            Self::AccessRulesChain => String::from("AccessRulesChain"),
+            Self::MetadataEntry => String::from("MetadataEntry"),
+            Self::AccessRules => String::from("AccessRules"),
             Self::FunctionAccessRules => String::from("FunctionAccessRules"),
             Self::TypeInfo => String::from("TypeInfo"),
             Self::ComponentState => String::from("ComponentState"),
@@ -96,13 +98,14 @@ impl ToString for SubstateType {
             Self::VaultLockedNonFungible => String::from("VaultLockedNonFungible"),
             Self::AccessController => String::from("AccessController"),
             Self::Account => String::from("Account"),
+            Self::PackageEventSchema => String::from("PackageEventSchema"),
         }
     }
 }
 
 impl Default for SubstateType {
     fn default() -> SubstateType {
-        Self::Metadata
+        Self::MetadataEntry
     }
 }
 

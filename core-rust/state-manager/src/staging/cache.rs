@@ -75,7 +75,7 @@ use radix_engine::state_manager::StateDiff;
 use radix_engine::transaction::{TransactionReceipt, TransactionResult};
 use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
 use radix_engine_interface::crypto::{hash, Hash};
-use radix_engine_interface::data::scrypto_encode;
+use radix_engine_interface::data::scrypto::scrypto_encode;
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, Payload, ReNodeModulePayload, ReadableTreeStore, TreeNode, Version, WriteableTreeStore,
 };

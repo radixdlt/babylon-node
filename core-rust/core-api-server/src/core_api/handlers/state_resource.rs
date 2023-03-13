@@ -1,9 +1,7 @@
 use crate::core_api::*;
 use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::{
-    AccessRulesChainOffset, MetadataOffset, ResourceManagerOffset, SubstateOffset,
-};
-use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
+use radix_engine::types::{ResourceManagerOffset, SubstateOffset};
+use radix_engine_interface::api::types::{AccessRulesOffset, NodeModuleId, RENodeId};
 
 use state_manager::jni::state_manager::ActualStateManager;
 
@@ -29,7 +27,7 @@ fn handle_state_resource_internal(
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let loaded_substate = read_known_substate(
             state_manager,
-            RENodeId::GlobalResourceManager(resource_address),
+            RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::SELF,
             &substate_offset,
         )?;
@@ -38,43 +36,28 @@ fn handle_state_resource_internal(
         };
         substate
     };
-    let metadata = {
-        let substate_offset = SubstateOffset::Metadata(MetadataOffset::Metadata);
-        let loaded_substate = read_known_substate(
-            state_manager,
-            RENodeId::GlobalResourceManager(resource_address),
-            NodeModuleId::Metadata,
-            &substate_offset,
-        )?;
-        let PersistedSubstate::Metadata(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
     let access_rules = {
-        let substate_offset =
-            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
+        let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
         let loaded_substate = read_known_substate(
             state_manager,
-            RENodeId::GlobalResourceManager(resource_address),
+            RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::AccessRules,
             &substate_offset,
         )?;
-        let PersistedSubstate::AccessRulesChain(substate) = loaded_substate else {
+        let PersistedSubstate::MethodAccessRules(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
         };
         substate
     };
     let vault_access_rules = {
-        let substate_offset =
-            SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
+        let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
         let loaded_substate = read_known_substate(
             state_manager,
-            RENodeId::GlobalResourceManager(resource_address),
+            RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::AccessRules1,
             &substate_offset,
         )?;
-        let PersistedSubstate::AccessRulesChain(substate) = loaded_substate else {
+        let PersistedSubstate::MethodAccessRules(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
         };
         substate
@@ -87,7 +70,6 @@ fn handle_state_resource_internal(
             &mapping_context,
             &resource_manager,
         )?),
-        metadata: Some(to_api_metadata_substate(&mapping_context, &metadata)?),
         access_rules: Some(to_api_access_rules_chain_substate(
             &mapping_context,
             &access_rules,

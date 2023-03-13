@@ -12,25 +12,22 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct TypeInfoSubstate {
+pub struct MetadataEntrySubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// The Bech32m-encoded human readable version of the package address
-    #[serde(rename = "package_address")]
-    pub package_address: String,
-    #[serde(rename = "blueprint_name")]
-    pub blueprint_name: String,
-    #[serde(rename = "global")]
-    pub global: bool,
+    /// The hex-encoded bytes of its key
+    #[serde(rename = "key_hex")]
+    pub key_hex: String,
+    #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
+    pub data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
 }
 
-impl TypeInfoSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, package_address: String, blueprint_name: String, global: bool) -> TypeInfoSubstate {
-        TypeInfoSubstate {
+impl MetadataEntrySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, key_hex: String) -> MetadataEntrySubstate {
+        MetadataEntrySubstate {
             substate_type,
-            package_address,
-            blueprint_name,
-            global,
+            key_hex,
+            data_struct: None,
         }
     }
 }

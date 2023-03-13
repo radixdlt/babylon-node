@@ -343,7 +343,7 @@ impl Merklizable for String {
     }
 
     fn merge(left: &Self, right: &Self) -> Self {
-        format!("({}+{})", left, right)
+        format!("({left}+{right})")
     }
 }
 

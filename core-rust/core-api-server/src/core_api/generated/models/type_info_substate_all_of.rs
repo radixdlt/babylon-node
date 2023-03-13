@@ -18,13 +18,16 @@ pub struct TypeInfoSubstateAllOf {
     pub package_address: String,
     #[serde(rename = "blueprint_name")]
     pub blueprint_name: String,
+    #[serde(rename = "global")]
+    pub global: bool,
 }
 
 impl TypeInfoSubstateAllOf {
-    pub fn new(package_address: String, blueprint_name: String) -> TypeInfoSubstateAllOf {
+    pub fn new(package_address: String, blueprint_name: String, global: bool) -> TypeInfoSubstateAllOf {
         TypeInfoSubstateAllOf {
             package_address,
             blueprint_name,
+            global,
         }
     }
 }
