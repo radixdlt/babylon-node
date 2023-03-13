@@ -97,6 +97,8 @@ public final class LedgerHashes {
   private final HashCode transactionRoot;
 
   @JsonProperty("receipt_root")
+  // TODO(resolve during code review): this passes our tests, but shouldn't we exclude it from
+  // consensus currently as well? (see the `stateRoot` above)
   @DsonOutput(DsonOutput.Output.ALL)
   private final HashCode receiptRoot;
 

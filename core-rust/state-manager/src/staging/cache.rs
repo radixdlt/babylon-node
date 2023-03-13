@@ -62,58 +62,31 @@
  * permissions under this License.
  */
 
-use super::stage_tree::{DerivedStageKey, StageKey};
-use crate::staging::stage_tree::{Accumulator, Delta, StageTree};
+use super::stage_tree::{Accumulator, Delta, DerivedStageKey, StageKey, StageTree};
+use super::RootStore;
+
+use super::result::ProcessedResult;
+use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
+use crate::staging::{AccuTreeDiff, HashTreeDiff, ProcessedTransactionCommit};
 use crate::{
-    AccumulatorHash, LedgerHashes, LedgerPayloadHash, LedgerTransactionReceipt, ReceiptHash,
-    StateHash, TransactionHash,
+    AccumulatorHash, CommittedTransactionIdentifiers, EpochTransactionIdentifiers,
+    LedgerPayloadHash, ReceiptHash, TransactionHash,
 };
 use im::hashmap::HashMap as ImmutableHashMap;
-use lazy_static::lazy_static;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore};
-use radix_engine::state_manager::StateDiff;
-use radix_engine::transaction::{TransactionReceipt, TransactionResult};
+use radix_engine::transaction::TransactionReceipt;
 use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
-use radix_engine_interface::crypto::{hash, Hash};
-use radix_engine_interface::data::scrypto::scrypto_encode;
 use radix_engine_stores::hash_tree::tree_store::{
-    NodeKey, Payload, ReNodeModulePayload, ReadableTreeStore, TreeNode, Version, WriteableTreeStore,
+    NodeKey, ReNodeModulePayload, ReadableTreeStore, TreeNode,
 };
-use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use sbor::rust::collections::HashMap;
 use slotmap::SecondaryMap;
-
-pub trait ReadableLayeredTreeStore:
-    ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>
-{
-}
-impl<T: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>>
-    ReadableLayeredTreeStore for T
-{
-}
-
-pub trait RootStore: ReadableSubstateStore + ReadableLayeredTreeStore {}
-impl<T: ReadableSubstateStore + ReadableLayeredTreeStore> RootStore for T {}
 
 pub struct ExecutionCache {
     stage_tree: StageTree<ProcessedResult, ImmutableStore>,
     root_accumulator_hash: AccumulatorHash,
     accumulator_hash_to_key: HashMap<AccumulatorHash, DerivedStageKey>,
     key_to_accumulator_hash: SecondaryMap<DerivedStageKey, AccumulatorHash>,
-}
-
-pub struct ProcessedResult {
-    /// Raw transaction receipt.
-    receipt: TransactionReceipt,
-    /// The processing results, applicable only for committed transactions (i.e. not rejected).
-    committed_results: Option<(LedgerHashes, HashTreeDiff)>,
-}
-
-#[derive(Clone)]
-pub struct HashTreeDiff {
-    pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<ReNodeModulePayload>)>,
-    pub new_substate_layer_nodes: Vec<(NodeKey, TreeNode<SubstateOffset>)>,
-    pub stale_hash_tree_node_keys: Vec<NodeKey>,
 }
 
 impl ExecutionCache {
@@ -129,29 +102,37 @@ impl ExecutionCache {
     pub fn execute_transaction<S: RootStore, T: FnOnce(&StagedStore<S>) -> TransactionReceipt>(
         &mut self,
         root_store: &S,
-        state_version: Option<Version>,
-        parent_hash: &AccumulatorHash,
+        epoch_transaction_identifiers: &EpochTransactionIdentifiers,
+        parent_transaction_identifiers: &CommittedTransactionIdentifiers,
         transaction_hash: &LedgerPayloadHash,
-        new_hash: &AccumulatorHash,
         transaction: T,
     ) -> &ProcessedResult {
-        match self.accumulator_hash_to_key.get(new_hash) {
+        let parent_accumulator_hash = &parent_transaction_identifiers.accumulator_hash;
+        let transaction_accumulator_hash = parent_accumulator_hash.accumulate(transaction_hash);
+        match self
+            .accumulator_hash_to_key
+            .get(&transaction_accumulator_hash)
+        {
             Some(new_key) => self.stage_tree.get_delta(new_key),
             None => {
-                let parent_key = self.get_existing_substore_key(parent_hash);
+                let parent_key = self.get_existing_substore_key(parent_accumulator_hash);
                 let staged_store =
                     StagedStore::new(root_store, self.stage_tree.get_accumulator(&parent_key));
-                let receipt = transaction(&staged_store);
+                let transaction_receipt = transaction(&staged_store);
                 let processed = ProcessedResult::from_processed(
-                    transaction_hash,
-                    receipt,
-                    state_version,
                     &staged_store,
+                    epoch_transaction_identifiers,
+                    parent_transaction_identifiers,
+                    transaction_accumulator_hash,
+                    transaction_hash,
+                    transaction_receipt,
                 );
-                let new_key = self.stage_tree.new_child_node(parent_key, processed);
-                self.key_to_accumulator_hash.insert(new_key, *new_hash);
-                self.accumulator_hash_to_key.insert(*new_hash, new_key);
-                self.stage_tree.get_delta(&new_key)
+                let transaction_key = self.stage_tree.new_child_node(parent_key, processed);
+                self.key_to_accumulator_hash
+                    .insert(transaction_key, transaction_accumulator_hash);
+                self.accumulator_hash_to_key
+                    .insert(transaction_accumulator_hash, transaction_key);
+                self.stage_tree.get_delta(&transaction_key)
             }
         }
     }
@@ -188,58 +169,18 @@ impl ExecutionCache {
     }
 }
 
-struct CollectingTreeStore<'s, S> {
-    readable_delegate: &'s S,
-    diff: HashTreeDiff,
-}
-
-impl<'s, S: ReadableLayeredTreeStore> CollectingTreeStore<'s, S> {
-    pub fn new(readable_delegate: &'s S) -> Self {
-        Self {
-            readable_delegate,
-            diff: HashTreeDiff::new(),
-        }
-    }
-}
-
-impl<'s, S: ReadableTreeStore<P>, P: Payload> ReadableTreeStore<P> for CollectingTreeStore<'s, S> {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
-        self.readable_delegate.get_node(key)
-    }
-}
-
-impl<'s, S> WriteableTreeStore<ReNodeModulePayload> for CollectingTreeStore<'s, S> {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<ReNodeModulePayload>) {
-        self.diff.new_re_node_layer_nodes.push((key, node));
-    }
-
-    fn record_stale_node(&mut self, key: NodeKey) {
-        self.diff.stale_hash_tree_node_keys.push(key);
-    }
-}
-
-impl<'s, S> WriteableTreeStore<SubstateOffset> for CollectingTreeStore<'s, S> {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<SubstateOffset>) {
-        self.diff.new_substate_layer_nodes.push((key, node));
-    }
-
-    fn record_stale_node(&mut self, key: NodeKey) {
-        self.diff.stale_hash_tree_node_keys.push(key);
-    }
-}
-
-pub struct StagedStore<'s, S: RootStore> {
+pub struct StagedStore<'s, S> {
     root: &'s S,
     overlay: &'s ImmutableStore,
 }
 
-impl<'s, S: RootStore> StagedStore<'s, S> {
+impl<'s, S> StagedStore<'s, S> {
     pub fn new(root: &'s S, overlay: &'s ImmutableStore) -> Self {
         Self { root, overlay }
     }
 }
 
-impl<'s, S: RootStore> ReadableSubstateStore for StagedStore<'s, S> {
+impl<'s, S: ReadableSubstateStore> ReadableSubstateStore for StagedStore<'s, S> {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
         self.overlay
             .substate_values
@@ -249,134 +190,85 @@ impl<'s, S: RootStore> ReadableSubstateStore for StagedStore<'s, S> {
     }
 }
 
-impl<'s, S: RootStore> ReadableTreeStore<ReNodeModulePayload> for StagedStore<'s, S> {
+impl<'s, S: ReadableTreeStore<ReNodeModulePayload>> ReadableTreeStore<ReNodeModulePayload>
+    for StagedStore<'s, S>
+{
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode<ReNodeModulePayload>> {
         self.overlay
             .re_node_layer_nodes
             .get(key)
             .cloned()
-            .or_else(|| ReadableTreeStore::get_node(self.root, key))
+            .or_else(|| self.root.get_node(key))
     }
 }
 
-impl<'s, S: RootStore> ReadableTreeStore<SubstateOffset> for StagedStore<'s, S> {
+impl<'s, S: ReadableTreeStore<SubstateOffset>> ReadableTreeStore<SubstateOffset>
+    for StagedStore<'s, S>
+{
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode<SubstateOffset>> {
         self.overlay
             .substate_layer_nodes
             .get(key)
             .cloned()
-            .or_else(|| ReadableTreeStore::get_node(self.root, key))
+            .or_else(|| self.root.get_node(key))
     }
 }
 
-lazy_static! {
-    static ref EMPTY_STATE_DIFF: StateDiff = StateDiff::new();
+impl<'s, S: ReadableAccuTreeStore<u64, TransactionHash>> ReadableAccuTreeStore<u64, TransactionHash>
+    for StagedStore<'s, S>
+{
+    fn get_tree_slice(&self, key: &u64) -> Option<TreeSlice<TransactionHash>> {
+        self.overlay
+            .transaction_tree_slices
+            .get(key)
+            .cloned()
+            .or_else(|| self.root.get_tree_slice(key))
+    }
 }
 
-impl ProcessedResult {
-    fn from_processed<S: ReadableLayeredTreeStore>(
-        transaction_hash: &LedgerPayloadHash,
-        transaction_receipt: TransactionReceipt,
-        state_version: Option<Version>,
-        store: &S,
-    ) -> ProcessedResult {
-        let ledger_receipt = LedgerTransactionReceipt::try_from(transaction_receipt.clone()).ok();
-        let committed_results = ledger_receipt.map(|ledger_receipt| {
-            let state_diff = Self::extract_state_diff(&transaction_receipt);
-            let (state_tree_root_hash, state_tree_diff) =
-                Self::compute_state_tree_update(store, state_version, state_diff);
-            let ledger_hashes = LedgerHashes {
-                state_root: StateHash::from(state_tree_root_hash),
-                // TODO(wip): the values below are currently placeholders; they should be computed
-                // and returned together with "update slices" of their respective merkle trees.
-                transaction_root: TransactionHash::from_raw_bytes(transaction_hash.into_bytes()),
-                receipt_root: ReceiptHash::from_raw_bytes(ledger_receipt.get_hash().into_bytes()),
-            };
-            (ledger_hashes, state_tree_diff)
-        });
-        Self {
-            receipt: transaction_receipt,
-            committed_results,
-        }
-    }
-
-    pub fn receipt(&self) -> &TransactionReceipt {
-        &self.receipt
-    }
-
-    pub fn state_diff(&self) -> &StateDiff {
-        Self::extract_state_diff(&self.receipt)
-    }
-
-    pub fn ledger_hashes(&self) -> &LedgerHashes {
-        &self.committed_results().0
-    }
-
-    pub fn hash_tree_diff(&self) -> &HashTreeDiff {
-        &self.committed_results().1
-    }
-
-    fn committed_results(&self) -> &(LedgerHashes, HashTreeDiff) {
-        self.committed_results
-            .as_ref()
-            .expect("available only for committed transactions")
-    }
-
-    fn extract_state_diff(receipt: &TransactionReceipt) -> &StateDiff {
-        if let TransactionResult::Commit(commit) = &receipt.result {
-            &commit.state_updates
-        } else {
-            &EMPTY_STATE_DIFF
-        }
-    }
-
-    fn compute_state_tree_update<S: ReadableLayeredTreeStore>(
-        store: &S,
-        state_version: Option<Version>,
-        state_diff: &StateDiff,
-    ) -> (Hash, HashTreeDiff) {
-        // TODO: currently, only the hashes of changed (or created) substates are tracked, since
-        // the hash tree wants to stay consistent with the substate store (which does not support
-        // deletes yet). The underlying JMT implementation already supports deletion - and to use
-        // it, we simply can include `down_substates` with `None` hashes in the vector below.
-        let hash_changes = state_diff
-            .up_substates
-            .iter()
-            .map(|(id, value)| {
-                SubstateHashChange::new(
-                    id.clone(),
-                    Some(hash(scrypto_encode(&value.substate).unwrap())),
-                )
-            })
-            .collect::<Vec<_>>();
-        let mut collector = CollectingTreeStore::new(store);
-        let root_hash = put_at_next_version(&mut collector, state_version, hash_changes);
-        (root_hash, collector.diff)
+impl<'s, S: ReadableAccuTreeStore<u64, ReceiptHash>> ReadableAccuTreeStore<u64, ReceiptHash>
+    for StagedStore<'s, S>
+{
+    fn get_tree_slice(&self, key: &u64) -> Option<TreeSlice<ReceiptHash>> {
+        self.overlay
+            .receipt_tree_slices
+            .get(key)
+            .cloned()
+            .or_else(|| self.root.get_tree_slice(key))
     }
 }
 
 impl Delta for ProcessedResult {
     fn weight(&self) -> usize {
         let state_diff_weight = self.state_diff().up_substates.len();
-        let hash_tree_diff_weight = self
-            .committed_results
-            .as_ref()
-            .map(|results| results.1.weight());
-        state_diff_weight + hash_tree_diff_weight.unwrap_or(0)
+        let processed_commit_weight = self.processed_commit.as_ref().map(|commit| commit.weight());
+        state_diff_weight + processed_commit_weight.unwrap_or(0)
+    }
+}
+
+impl ProcessedTransactionCommit {
+    pub fn weight(&self) -> usize {
+        self.state_tree_diff.weight()
+            + self.transaction_tree_diff.weight()
+            + self.receipt_tree_diff.weight()
     }
 }
 
 impl HashTreeDiff {
-    pub fn new() -> Self {
-        Self {
-            new_re_node_layer_nodes: Vec::new(),
-            new_substate_layer_nodes: Vec::new(),
-            stale_hash_tree_node_keys: Vec::new(),
-        }
-    }
-
     pub fn weight(&self) -> usize {
         self.new_re_node_layer_nodes.len() + self.new_substate_layer_nodes.len()
+    }
+}
+
+impl<K, N> AccuTreeDiff<K, N> {
+    pub fn weight(&self) -> usize {
+        let leaf_count = self
+            .slice
+            .levels
+            .first()
+            .map(|leaf_level| leaf_level.nodes.len())
+            .unwrap_or(0);
+        leaf_count * self.slice.levels.len()
     }
 }
 
@@ -385,6 +277,8 @@ pub struct ImmutableStore {
     substate_values: ImmutableHashMap<SubstateId, OutputValue>,
     re_node_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<ReNodeModulePayload>>,
     substate_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<SubstateOffset>>,
+    transaction_tree_slices: ImmutableHashMap<u64, TreeSlice<TransactionHash>>,
+    receipt_tree_slices: ImmutableHashMap<u64, TreeSlice<ReceiptHash>>,
 }
 
 impl Accumulator<ProcessedResult> for ImmutableStore {
@@ -393,6 +287,8 @@ impl Accumulator<ProcessedResult> for ImmutableStore {
             substate_values: ImmutableHashMap::new(),
             re_node_layer_nodes: ImmutableHashMap::new(),
             substate_layer_nodes: ImmutableHashMap::new(),
+            transaction_tree_slices: ImmutableHashMap::new(),
+            receipt_tree_slices: ImmutableHashMap::new(),
         }
     }
 
@@ -404,11 +300,20 @@ impl Accumulator<ProcessedResult> for ImmutableStore {
                 .iter()
                 .map(|(id, value)| (id.clone(), value.clone())),
         );
-        if let Some((_, hash_tree_diff)) = &processed.committed_results {
+        if let Some(processed_commit) = &processed.processed_commit {
+            let state_tree_diff = &processed_commit.state_tree_diff;
             self.re_node_layer_nodes
-                .extend(hash_tree_diff.new_re_node_layer_nodes.iter().cloned());
+                .extend(state_tree_diff.new_re_node_layer_nodes.iter().cloned());
             self.substate_layer_nodes
-                .extend(hash_tree_diff.new_substate_layer_nodes.iter().cloned());
+                .extend(state_tree_diff.new_substate_layer_nodes.iter().cloned());
+            let transaction_tree_diff = &processed_commit.transaction_tree_diff;
+            self.transaction_tree_slices.insert(
+                transaction_tree_diff.key,
+                transaction_tree_diff.slice.clone(),
+            );
+            let receipt_tree_diff = &processed_commit.receipt_tree_diff;
+            self.receipt_tree_slices
+                .insert(receipt_tree_diff.key, receipt_tree_diff.slice.clone());
         }
     }
 

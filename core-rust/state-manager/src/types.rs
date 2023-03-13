@@ -63,8 +63,8 @@
  */
 
 use crate::{
-    jni::common_types::JavaHashCode, transaction::LedgerTransaction, LedgerTransactionOutcome,
-    LedgerTransactionReceipt, SubstateChanges,
+    accumulator_tree::IsHash, jni::common_types::JavaHashCode, transaction::LedgerTransaction,
+    LedgerTransactionOutcome, LedgerTransactionReceipt, SubstateChanges,
 };
 use radix_engine::types::*;
 use std::fmt;
@@ -513,6 +513,8 @@ impl From<Hash> for TransactionHash {
     }
 }
 
+impl IsHash for TransactionHash {}
+
 impl fmt::Display for TransactionHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(self.0))
@@ -553,6 +555,8 @@ impl From<Hash> for ReceiptHash {
         Self(hash.0)
     }
 }
+
+impl IsHash for ReceiptHash {}
 
 impl fmt::Display for ReceiptHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -701,4 +705,28 @@ pub struct LedgerHeader {
 pub struct AccumulatorState {
     pub state_version: u64,
     pub accumulator_hash: AccumulatorHash,
+}
+
+pub struct EpochTransactionIdentifiers {
+    pub state_version: u64,
+    pub transaction_hash: TransactionHash,
+    pub receipt_hash: ReceiptHash,
+}
+
+impl EpochTransactionIdentifiers {
+    pub fn pre_genesis() -> Self {
+        Self {
+            state_version: 0,
+            transaction_hash: TransactionHash([0; TransactionHash::LENGTH]),
+            receipt_hash: ReceiptHash([0; TransactionHash::LENGTH]),
+        }
+    }
+
+    pub fn from(epoch_header: LedgerHeader) -> Self {
+        Self {
+            state_version: epoch_header.accumulator_state.state_version,
+            transaction_hash: epoch_header.hashes.transaction_root,
+            receipt_hash: epoch_header.hashes.receipt_root,
+        }
+    }
 }

@@ -177,13 +177,10 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 }
 
 #[tracing::instrument(skip_all)]
-fn do_get_epoch_proof(
-    state_manager: &ActualStateManager,
-    state_version: u64,
-) -> Option<JavaLedgerProof> {
+fn do_get_epoch_proof(state_manager: &ActualStateManager, epoch: u64) -> Option<JavaLedgerProof> {
     state_manager
         .store()
-        .get_epoch_proof(state_version)
+        .get_epoch_proof(epoch)
         .map(|proof| proof.into())
 }
 

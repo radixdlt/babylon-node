@@ -136,16 +136,17 @@ pub mod proofs {
         ) -> Option<(Vec<Vec<u8>>, LedgerProof)>;
         fn get_epoch_proof(&self, epoch: u64) -> Option<LedgerProof>;
         fn get_last_proof(&self) -> Option<LedgerProof>;
+        fn get_last_epoch_proof(&self) -> Option<LedgerProof>;
     }
 }
 
 pub mod commit {
     use super::*;
+    use crate::accumulator_tree::storage::TreeSlice;
+    use crate::{ReceiptHash, TransactionHash};
     use radix_engine::ledger::OutputValue;
     use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
-    use radix_engine_stores::hash_tree::tree_store::{
-        NodeKey, ReNodeModulePayload, TreeNode, Version,
-    };
+    use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReNodeModulePayload, TreeNode};
     use std::collections::BTreeMap;
 
     pub struct CommitBundle {
@@ -153,13 +154,15 @@ pub mod commit {
         pub proof: LedgerProof,
         pub substates: BTreeMap<SubstateId, OutputValue>,
         pub vertex_store: Option<Vec<u8>>,
-        pub state_hash_tree_update: HashTreeUpdate,
+        pub state_tree_update: HashTreeUpdate,
+        pub transaction_tree_slice: TreeSlice<TransactionHash>,
+        pub receipt_tree_slice: TreeSlice<ReceiptHash>,
     }
 
     pub struct HashTreeUpdate {
         pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<ReNodeModulePayload>)>,
         pub new_substate_layer_nodes: Vec<(NodeKey, TreeNode<SubstateOffset>)>,
-        pub stale_node_keys_at_state_version: Vec<(Version, Vec<NodeKey>)>,
+        pub stale_node_keys_at_state_version: Vec<(u64, Vec<NodeKey>)>,
     }
 
     impl HashTreeUpdate {
@@ -171,13 +174,13 @@ pub mod commit {
             }
         }
 
-        pub fn add(&mut self, at_state_version: Version, diff: HashTreeDiff) {
+        pub fn add(&mut self, at_state_version: u64, diff: &HashTreeDiff) {
             self.new_re_node_layer_nodes
-                .extend(diff.new_re_node_layer_nodes);
+                .extend(diff.new_re_node_layer_nodes.clone());
             self.new_substate_layer_nodes
-                .extend(diff.new_substate_layer_nodes);
+                .extend(diff.new_substate_layer_nodes.clone());
             self.stale_node_keys_at_state_version
-                .push((at_state_version, diff.stale_hash_tree_node_keys));
+                .push((at_state_version, diff.stale_hash_tree_node_keys.clone()));
         }
     }
 

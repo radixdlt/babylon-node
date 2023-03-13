@@ -63,6 +63,41 @@
  */
 
 mod cache;
+mod result;
 mod stage_tree;
 
+use crate::accumulator_tree::storage::ReadableAccuTreeStore;
+use crate::{ReceiptHash, TransactionHash};
+use radix_engine::ledger::ReadableSubstateStore;
+use radix_engine_interface::api::types::SubstateOffset;
+use radix_engine_stores::hash_tree::tree_store::{ReNodeModulePayload, ReadableTreeStore};
+
 pub use cache::*;
+pub use result::*;
+
+pub trait ReadableLayeredTreeStore:
+    ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>
+{
+}
+impl<T: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>>
+    ReadableLayeredTreeStore for T
+{
+}
+
+pub trait ReadableTxAndRxTreeStore:
+    ReadableAccuTreeStore<u64, TransactionHash> + ReadableAccuTreeStore<u64, ReceiptHash>
+{
+}
+impl<T: ReadableAccuTreeStore<u64, TransactionHash> + ReadableAccuTreeStore<u64, ReceiptHash>>
+    ReadableTxAndRxTreeStore for T
+{
+}
+
+pub trait RootStore:
+    ReadableSubstateStore + ReadableLayeredTreeStore + ReadableTxAndRxTreeStore
+{
+}
+impl<T: ReadableSubstateStore + ReadableLayeredTreeStore + ReadableTxAndRxTreeStore> RootStore
+    for T
+{
+}

@@ -64,7 +64,6 @@
 
 use crate::jni::java_structure::*;
 
-use crate::query::{QueryableAccumulatorHash, TransactionIdentifierLoader};
 use crate::store::traits::CommitBundle;
 use crate::store::traits::*;
 use crate::store::{InMemoryStore, RocksDBStore};
@@ -77,11 +76,13 @@ use crate::types::UserPayloadHash;
 use radix_engine::ledger::{OutputValue, QueryableSubstateStore, ReadableSubstateStore};
 use radix_engine::system::node_substates::PersistedSubstate;
 
+use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
+use crate::query::TransactionIdentifierLoader;
 use crate::store::traits::RecoverableVertexStore;
 use crate::transaction::LedgerTransaction;
 use crate::{
-    AccumulatorHash, CommittedTransactionIdentifiers, IntentHash, LedgerPayloadHash, LedgerProof,
-    LedgerTransactionReceipt,
+    CommittedTransactionIdentifiers, IntentHash, LedgerPayloadHash, LedgerProof,
+    LedgerTransactionReceipt, ReceiptHash, TransactionHash,
 };
 use radix_engine::types::{KeyValueStoreId, SubstateId};
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeStore, TreeNode};
@@ -112,20 +113,6 @@ impl StateManagerDatabase {
     }
 }
 
-impl QueryableAccumulatorHash for StateManagerDatabase {
-    fn get_top_accumulator_hash(&self) -> AccumulatorHash {
-        match self {
-            StateManagerDatabase::InMemory(_) | StateManagerDatabase::RocksDB(_) => {
-                match self.get_top_of_ledger_transaction_identifiers() {
-                    None => AccumulatorHash::pre_genesis(),
-                    Some(top_of_ledger) => top_of_ledger.accumulator_hash,
-                }
-            }
-            StateManagerDatabase::None => AccumulatorHash::pre_genesis(),
-        }
-    }
-}
-
 impl ReadableSubstateStore for StateManagerDatabase {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
         match self {
@@ -141,6 +128,26 @@ impl<P: Payload> ReadableTreeStore<P> for StateManagerDatabase {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_node(key),
             StateManagerDatabase::RocksDB(store) => store.get_node(key),
+            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
+        }
+    }
+}
+
+impl ReadableAccuTreeStore<u64, TransactionHash> for StateManagerDatabase {
+    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<TransactionHash>> {
+        match self {
+            StateManagerDatabase::InMemory(store) => store.get_tree_slice(state_version),
+            StateManagerDatabase::RocksDB(store) => store.get_tree_slice(state_version),
+            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
+        }
+    }
+}
+
+impl ReadableAccuTreeStore<u64, ReceiptHash> for StateManagerDatabase {
+    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<ReceiptHash>> {
+        match self {
+            StateManagerDatabase::InMemory(store) => store.get_tree_slice(state_version),
+            StateManagerDatabase::RocksDB(store) => store.get_tree_slice(state_version),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
@@ -258,6 +265,18 @@ impl TransactionIndex<&LedgerPayloadHash> for StateManagerDatabase {
     }
 }
 
+impl TransactionIdentifierLoader for StateManagerDatabase {
+    fn get_top_transaction_identifiers(&self) -> CommittedTransactionIdentifiers {
+        match self {
+            StateManagerDatabase::InMemory(store) => store.get_top_transaction_identifiers(),
+            StateManagerDatabase::RocksDB(store) => store.get_top_transaction_identifiers(),
+            // This is a special case, where in tests, the Core API needs to construct a state
+            // manager with no database (stuck at pre-genesis).
+            StateManagerDatabase::None => CommittedTransactionIdentifiers::pre_genesis(),
+        }
+    }
+}
+
 impl QueryableProofStore for StateManagerDatabase {
     fn max_state_version(&self) -> u64 {
         match self {
@@ -300,6 +319,14 @@ impl QueryableProofStore for StateManagerDatabase {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_last_proof(),
             StateManagerDatabase::RocksDB(store) => store.get_last_proof(),
+            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
+        }
+    }
+
+    fn get_last_epoch_proof(&self) -> Option<LedgerProof> {
+        match self {
+            StateManagerDatabase::InMemory(store) => store.get_last_epoch_proof(),
+            StateManagerDatabase::RocksDB(store) => store.get_last_epoch_proof(),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
