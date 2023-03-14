@@ -62,88 +62,67 @@
  * permissions under this License.
  */
 
-use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
+use super::storage::TreeSlice;
 
-/// The "read" part of an accumulator tree storage SPI.
-/// Both the key type and node type are implementation-dependent.
-pub trait ReadableAccuTreeStore<K, N> {
-    /// Gets a vertical `TreeSlice` by the given key.
-    fn get_tree_slice(&self, key: &K) -> Option<TreeSlice<N>>;
+/// A merger (compactor) of consecutive `TreeSlice`s.
+pub struct AccuTreeSliceMerger<N> {
+    merged: TreeSlice<N>,
+    current_len: usize,
 }
 
-/// The "write" part of an accumulator tree storage SPI.
-/// Both the key type and node type are implementation-dependent.
-pub trait WriteableAccuTreeStore<K, N> {
-    /// Puts a vertical `TreeSlice` at the given end index.
-    /// This index is effectively equal to the number of leaf nodes stored in the tree by _all_ the
-    /// slices _including_ the given one.
-    fn put_tree_slice(&mut self, key: K, slice: TreeSlice<N>);
-}
-
-/// A convenience read+write storage trait.
-pub trait AccuTreeStore<K, N>: ReadableAccuTreeStore<K, N> + WriteableAccuTreeStore<K, N> {}
-impl<T: ReadableAccuTreeStore<K, N> + WriteableAccuTreeStore<K, N>, K, N> AccuTreeStore<K, N>
-    for T
-{
-}
-
-/// A vertical slice of an accumulator tree.
-/// This is an "incremental" persistence part of a tree representing a batch of appended leaf nodes
-/// and the resulting merkle updates, propagating up to a single root.
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct TreeSlice<N> {
-    /// The tree-levels of this slice, arranged from leafs to root.
-    pub levels: Vec<TreeSliceLevel<N>>,
-}
-
-impl<N> TreeSlice<N> {
-    /// Creates a vertical slice directly from levels.
-    pub fn new(levels: Vec<TreeSliceLevel<N>>) -> Self {
-        Self { levels }
-    }
-
-    /// Returns the root of the tree ending with this slice.
-    pub fn root(&self) -> &N {
-        self.levels
-            .last()
-            .expect("empty slice")
-            .nodes
-            .first()
-            .expect("empty slice level")
-    }
-
-    /// Returns the leaves contained in this slice.
-    pub fn leaves(&self) -> &Vec<N> {
-        &self.levels.first().expect("empty slice").nodes
-    }
-}
-
-/// A single tree-level of a `TreeSlice`.
-/// Effectively this means that it is a horizontal slice of a corresponding level of an entire
-/// accumulator tree.
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct TreeSliceLevel<N> {
-    /// The cached left sibling of the first node of that level slice, i.e. present if and only if
-    /// the `nodes` actually start with a right child.
-    /// This value was not computed (i.e. not updated) during the append to the accumulator tree,
-    /// but it needed to be loaded from the storage (i.e. coming from the previous vertical slice).
-    /// It is stored in this slice again (i.e. cached), because it will be needed to produce merkle
-    /// proofs for the nodes contained in this slice.
-    pub left_sibling_cache: Option<N>,
-
-    /// The actual nodes computed during the append to the accumulator tree.
-    /// Depending on the level, these might be exactly all the appended leafs, or their composite
-    /// merkle nodes, all the way up. The highest level of each `TreeSlice` contains a single
-    /// element in the `nodes`, representing the merkle root.
-    pub nodes: Vec<N>,
-}
-
-impl<N> TreeSliceLevel<N> {
-    /// Creates a single horizontal level slice (of some vertical tree slice).
-    pub fn new(left_sibling_cache: Option<N>, nodes: Vec<N>) -> Self {
+impl<N> AccuTreeSliceMerger<N> {
+    /// Creates a merger which will assume that the first `append()`-ed `TreeSlice` starts at the
+    /// given tree size.
+    pub fn new(current_len: usize) -> Self {
         Self {
-            left_sibling_cache,
-            nodes,
+            merged: TreeSlice::new(Vec::new()),
+            current_len,
         }
+    }
+
+    /// Appends the next `TreeSlice`.
+    pub fn append(&mut self, slice: TreeSlice<N>) {
+        let mut merged_levels = self.merged.levels.iter_mut();
+        let merged_leaves = merged_levels.next();
+        if merged_leaves.is_none() {
+            self.current_len += slice.leaves().len();
+            self.merged = slice;
+            return;
+        }
+        let merged_leaves = &mut merged_leaves.unwrap().nodes;
+        let mut appended_levels = slice.levels.into_iter();
+        let mut appended_leaves = appended_levels.next().expect("empty appended slice").nodes;
+        let appended_leaf_count = appended_leaves.len();
+        let mut merged_to = self.current_len;
+        let mut appended_from = self.current_len;
+        merged_leaves.append(&mut appended_leaves);
+        loop {
+            let merged_level = merged_levels.next();
+            if merged_level.is_none() {
+                self.merged.levels.extend(appended_levels);
+                break;
+            }
+            let merged_nodes = &mut merged_level.unwrap().nodes;
+            let appended_level = appended_levels.next();
+            if appended_level.is_none() {
+                break;
+            }
+            let mut appended_nodes = appended_level.unwrap().nodes;
+            merged_to = (merged_to + 1) / 2;
+            appended_from /= 2;
+            merged_nodes.truncate(merged_nodes.len() + appended_from - merged_to);
+            merged_nodes.append(&mut appended_nodes);
+        }
+        self.current_len += appended_leaf_count;
+    }
+
+    /// Finalizes the merge and returns a single `TreeSlice` resulting from all the `append()`-ed
+    /// ones.
+    pub fn into_slice(self) -> TreeSlice<N> {
+        let merged = self.merged;
+        if merged.levels.is_empty() {
+            panic!("no slice was appended")
+        }
+        merged
     }
 }

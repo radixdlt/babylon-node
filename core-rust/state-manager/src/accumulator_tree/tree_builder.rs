@@ -63,11 +63,10 @@
  */
 
 use super::storage::{AccuTreeStore, TreeSlice, TreeSliceLevel};
-use std::fmt::Debug;
 use std::marker::PhantomData;
 
 /// An element that a merkle tree can be built from (i.e. both a leaf and an internal node).
-pub trait Merklizable: Debug {
+pub trait Merklizable {
     /// A "zero" element, to be used as a right sibling to `merge()` with, when the actual right
     /// sibling does not exist.
     fn zero() -> Self;
@@ -157,7 +156,7 @@ impl<'s, S: AccuTreeStore<usize, M>, M: Merklizable> AccuTree<'s, S, M> {
 
         self.current_len = target_length;
         self.store
-            .put_tree_slice(&self.current_len, TreeSlice::new(levels));
+            .put_tree_slice(self.current_len, TreeSlice::new(levels));
     }
 }
 
