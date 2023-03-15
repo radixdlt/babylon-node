@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use super::{ReadableLayeredTreeStore, ReadableTxAndRxTreeStore};
+use super::{ReadableStateTreeStore, ReadableTransactionAndReceiptTreeStore};
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::{
@@ -92,7 +92,7 @@ pub struct ProcessedResult {
 }
 
 impl ProcessedResult {
-    pub fn from_processed<S: ReadableLayeredTreeStore + ReadableTxAndRxTreeStore>(
+    pub fn from_processed<S: ReadableStateTreeStore + ReadableTransactionAndReceiptTreeStore>(
         store: &S,
         epoch_transaction_identifiers: &EpochTransactionIdentifiers,
         parent_transaction_identifiers: &CommittedTransactionIdentifiers,
@@ -149,7 +149,7 @@ impl ProcessedResult {
         Self::extract_state_diff(&self.transaction_receipt)
     }
 
-    pub fn commit(&self) -> &ProcessedTransactionCommit {
+    pub fn commit_details(&self) -> &ProcessedTransactionCommit {
         self.processed_commit
             .as_ref()
             .expect("available only for committed transactions")
@@ -186,7 +186,7 @@ impl ProcessedResult {
         collector.into_diff()
     }
 
-    fn compute_state_tree_update<S: ReadableLayeredTreeStore>(
+    fn compute_state_tree_update<S: ReadableStateTreeStore>(
         store: &S,
         parent_state_version: u64,
         state_diff: &StateDiff,
@@ -318,7 +318,7 @@ struct CollectingTreeStore<'s, S> {
     diff: HashTreeDiff,
 }
 
-impl<'s, S: ReadableLayeredTreeStore> CollectingTreeStore<'s, S> {
+impl<'s, S: ReadableStateTreeStore> CollectingTreeStore<'s, S> {
     pub fn new(readable_delegate: &'s S) -> Self {
         Self {
             readable_delegate,

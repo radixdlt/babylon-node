@@ -587,7 +587,7 @@ where
                         .next_epoch
                         .clone()
                         .map(|next_epoch_result| NextEpoch::from(next_epoch_result).validator_set),
-                    ledger_hashes: processed.commit().ledger_hashes,
+                    ledger_hashes: processed.commit_details().ledger_hashes,
                 },
                 TransactionOutcome::Failure(error) => {
                     panic!("Genesis failed. Error: {error:?}")
@@ -685,7 +685,7 @@ where
             match &processed.receipt().result {
                 TransactionResult::Commit(_) => {
                     // TODO: Do we need to check that next epoch request has been prepared?
-                    state_tracker.update(processed.commit());
+                    state_tracker.update(processed.commit_details());
                 }
                 TransactionResult::Reject(reject_result) => {
                     panic!(
@@ -721,7 +721,7 @@ where
                 if let TransactionOutcome::Failure(error) = &commit_result.outcome {
                     panic!("Validator txn failed: {error:?}");
                 }
-                state_tracker.update(processed.commit());
+                state_tracker.update(processed.commit_details());
                 committed.push(manifest_encode(&validator_txn).unwrap());
 
                 commit_result.next_epoch.clone().map(NextEpoch::from)
@@ -803,7 +803,7 @@ where
 
                 match &processed.receipt().result {
                     TransactionResult::Commit(result) => {
-                        state_tracker.update(processed.commit());
+                        state_tracker.update(processed.commit_details());
 
                         already_committed_or_prepared_intent_hashes
                             .insert(intent_hash, AlreadyPreparedTransaction::Proposed);
@@ -1047,7 +1047,7 @@ where
                 intent_hashes.push(intent_hash);
             }
 
-            let processed_commit = processed.commit();
+            let processed_commit = processed.commit_details();
             state_tracker.update(processed_commit);
 
             committed_transaction_bundles.push((

@@ -75,31 +75,30 @@ use radix_engine_stores::hash_tree::tree_store::{ReNodeModulePayload, ReadableTr
 pub use cache::*;
 pub use result::*;
 
-pub trait ReadableLayeredTreeStore:
+pub trait ReadableStateTreeStore:
     ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>
 {
 }
-impl<T: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>>
-    ReadableLayeredTreeStore for T
+impl<T> ReadableStateTreeStore for T where
+    T: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>
 {
 }
 
-pub trait ReadableTxAndRxTreeStore:
+pub trait ReadableTransactionAndReceiptTreeStore:
     ReadableAccuTreeStore<u64, TransactionTreeHash> + ReadableAccuTreeStore<u64, ReceiptTreeHash>
 {
 }
-impl<
-        T: ReadableAccuTreeStore<u64, TransactionTreeHash>
-            + ReadableAccuTreeStore<u64, ReceiptTreeHash>,
-    > ReadableTxAndRxTreeStore for T
+impl<T> ReadableTransactionAndReceiptTreeStore for T where
+    T: ReadableAccuTreeStore<u64, TransactionTreeHash>
+        + ReadableAccuTreeStore<u64, ReceiptTreeHash>
 {
 }
 
 pub trait ReadableStore:
-    ReadableSubstateStore + ReadableLayeredTreeStore + ReadableTxAndRxTreeStore
+    ReadableSubstateStore + ReadableStateTreeStore + ReadableTransactionAndReceiptTreeStore
 {
 }
-impl<T: ReadableSubstateStore + ReadableLayeredTreeStore + ReadableTxAndRxTreeStore> ReadableStore
-    for T
+impl<T> ReadableStore for T where
+    T: ReadableSubstateStore + ReadableStateTreeStore + ReadableTransactionAndReceiptTreeStore
 {
 }

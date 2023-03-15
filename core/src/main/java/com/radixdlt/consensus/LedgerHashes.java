@@ -97,9 +97,9 @@ public final class LedgerHashes {
   private final HashCode transactionRoot;
 
   @JsonProperty("receipt_root")
-  // TODO(resolve during code review): this passes our tests, but shouldn't we exclude it from
-  // consensus currently as well? (see the `stateRoot` above)
-  @DsonOutput(DsonOutput.Output.ALL)
+  // TODO: restore `Output.ALL` after fixing non-determinism bugs
+  // The receipt root is as likely to contain such bugs as the state root (please see its comment).
+  @DsonOutput(value = DsonOutput.Output.HASH, include = false)
   private final HashCode receiptRoot;
 
   @JsonCreator
