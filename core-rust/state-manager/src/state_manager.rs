@@ -610,6 +610,11 @@ where
             .map(|epoch_proof| EpochTransactionIdentifiers::from(epoch_proof.ledger_header))
             .unwrap_or_else(EpochTransactionIdentifiers::pre_genesis);
 
+        debug_assert_eq!(
+            base_transaction_identifiers.accumulator_hash,
+            prepare_request.parent_accumulator
+        );
+
         // This hashmap is used to check for any proposed intents which have already been commited (or prepared)
         // in order to exclude them. This check will eventually live in the engine/executor.
         let mut already_committed_or_prepared_intent_hashes: HashMap<

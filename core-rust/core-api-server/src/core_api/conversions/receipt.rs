@@ -6,7 +6,7 @@ use radix_engine::{
     ledger::OutputValue,
     types::{hash, scrypto_encode, Decimal, RENodeId, SubstateId},
 };
-use radix_engine_interface::api::types::NodeModuleId;
+
 use radix_engine_interface::data::scrypto::model::{Address, ComponentAddress};
 use std::collections::BTreeMap;
 
@@ -34,40 +34,28 @@ pub fn to_api_receipt(
     let mut new_global_entities = Vec::new();
     let mut created = Vec::new();
 
+    for package_address in receipt.entity_changes.new_package_addresses {
+        new_global_entities.push(to_global_entity_reference(
+            context,
+            &package_address.into(),
+        )?);
+    }
+
+    for component_address in receipt.entity_changes.new_component_addresses {
+        new_global_entities.push(to_global_entity_reference(
+            context,
+            &component_address.into(),
+        )?);
+    }
+
+    for resource_address in receipt.entity_changes.new_resource_addresses {
+        new_global_entities.push(to_global_entity_reference(
+            context,
+            &resource_address.into(),
+        )?);
+    }
+
     for (id, output) in substate_changes.created {
-        match id {
-            SubstateId(
-                RENodeId::GlobalObject(Address::Package(package_address)),
-                NodeModuleId::TypeInfo,
-                ..,
-            ) => {
-                new_global_entities.push(to_global_entity_reference(
-                    context,
-                    &package_address.into(),
-                )?);
-            }
-            SubstateId(
-                RENodeId::GlobalObject(Address::Component(component_address)),
-                NodeModuleId::TypeInfo,
-                ..,
-            ) => {
-                new_global_entities.push(to_global_entity_reference(
-                    context,
-                    &component_address.into(),
-                )?);
-            }
-            SubstateId(
-                RENodeId::GlobalObject(Address::Resource(resource_address)),
-                NodeModuleId::TypeInfo,
-                ..,
-            ) => {
-                new_global_entities.push(to_global_entity_reference(
-                    context,
-                    &resource_address.into(),
-                )?);
-            }
-            _ => {}
-        }
         let substate_version = to_api_new_substate_version(context, (id.clone(), output))?;
         created.push(substate_version)
     }

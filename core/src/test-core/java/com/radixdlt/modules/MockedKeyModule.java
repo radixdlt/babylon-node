@@ -64,26 +64,25 @@
 
 package com.radixdlt.modules;
 
-import com.google.common.hash.HashFunction;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.monitoring.Metrics;
 import java.math.BigInteger;
 
 public final class MockedKeyModule extends AbstractModule {
   @Provides
-  private HashSigner hashSigner(
-      @Self ECDSASecp256k1PublicKey key, Metrics metrics, HashFunction hashFunction) {
+  private HashSigner hashSigner(@Self ECDSASecp256k1PublicKey key, Metrics metrics) {
     return h -> {
       var concat = new byte[64];
       System.arraycopy(h, 0, concat, 0, 32);
       System.arraycopy(key.getBytes(), 0, concat, 32, 32);
 
-      var hashCode = hashFunction.hashBytes(concat).asBytes();
+      var hashCode = HashUtils.blake2b256(concat).asBytes();
       metrics.crypto().signaturesSigned().inc();
 
       return ECDSASecp256k1Signature.create(

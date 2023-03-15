@@ -187,7 +187,7 @@ public final class EpochManager {
       this.bftEventProcessor = EmptyBFTEventProcessor.INSTANCE;
       this.syncLedgerUpdateProcessor = update -> {};
       this.syncTimeoutProcessor = timeout -> {};
-      if (self.getValidatorAddress() == null) {
+      if (self.getValidatorAddress().isEmpty()) {
         this.validationStatus = ValidationStatus.NOT_CONFIGURED_AS_VALIDATOR;
       } else {
         this.validationStatus = ValidationStatus.NOT_VALIDATING_IN_CURRENT_EPOCH;
