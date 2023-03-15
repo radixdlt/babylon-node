@@ -78,9 +78,11 @@ import org.junit.Test;
 
 public class TransactionAccuTreeTest extends DeterministicCoreApiTestBase {
 
+  private static final int EPOCH_TRANSACTION_LENGTH = 4;
+
   @Test
   public void stateManagerMaintainsCorrectTransactionMerkleTree() {
-    try (var test = buildRunningServerTest(6)) {
+    try (var test = buildRunningServerTest(EPOCH_TRANSACTION_LENGTH)) {
       // Run the setup until 2 epoch proofs are captured
       var reader = test.getInstance(0, REv2TransactionAndProofStore.class);
       test.runUntilState(nodeAt(0, NodePredicate.atOrOverEpoch(1)), 1000);
@@ -98,7 +100,7 @@ public class TransactionAccuTreeTest extends DeterministicCoreApiTestBase {
               .toList();
 
       // Assert a certain count (on which we rely during latter manual merkle computation)
-      assertThat(epochTransactions.size()).isEqualTo(6);
+      assertThat(epochTransactions.size()).isEqualTo(EPOCH_TRANSACTION_LENGTH);
 
       // Capture the transaction hashes
       var transactionHashes =
@@ -111,11 +113,12 @@ public class TransactionAccuTreeTest extends DeterministicCoreApiTestBase {
           .isEqualTo(
               merkle(
                   merkle(
+                      // previous epoch's root hash as first leaf
                       merkle(genesisHeader.hashes().transactionRoot(), transactionHashes[0]),
                       merkle(transactionHashes[1], transactionHashes[2])),
                   merkle(
-                      merkle(transactionHashes[3], transactionHashes[4]),
-                      merkle(transactionHashes[5], HashUtils.zero256()))));
+                      merkle(transactionHashes[3], HashUtils.zero256()), // placeholder hash at leaf
+                      HashUtils.zero256()))); // placeholder hash at internal node
 
       // TODO: currently, we cannot test the same for receipt hashes, because the returned receipt
       // bytes contain all ledger receipt fields, while the state manager only hashes the
