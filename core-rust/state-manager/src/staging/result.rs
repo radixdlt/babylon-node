@@ -62,12 +62,12 @@
  * permissions under this License.
  */
 
-use super::{ReadableLayeredTreeStore, ReadableTxAndRxTreeStore};
+use super::{ReadableStateTreeStore, ReadableTransactionAndReceiptTreeStore};
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::{
     AccumulatorHash, CommittedTransactionIdentifiers, EpochTransactionIdentifiers, LedgerHashes,
-    LedgerPayloadHash, LedgerTransactionReceipt, ReceiptHash, StateHash, TransactionHash,
+    LedgerPayloadHash, LedgerTransactionReceipt, ReceiptTreeHash, StateHash, TransactionTreeHash,
 };
 use lazy_static::lazy_static;
 use radix_engine::state_manager::StateDiff;
@@ -92,7 +92,7 @@ pub struct ProcessedResult {
 }
 
 impl ProcessedResult {
-    pub fn from_processed<S: ReadableLayeredTreeStore + ReadableTxAndRxTreeStore>(
+    pub fn from_processed<S: ReadableStateTreeStore + ReadableTransactionAndReceiptTreeStore>(
         store: &S,
         epoch_transaction_identifiers: &EpochTransactionIdentifiers,
         parent_transaction_identifiers: &CommittedTransactionIdentifiers,
@@ -108,19 +108,19 @@ impl ProcessedResult {
                 parent_transaction_identifiers.state_version,
                 state_diff,
             );
-            let transaction_tree_diff = Self::compute_accu_tree_update::<S, TransactionHash>(
+            let transaction_tree_diff = Self::compute_accu_tree_update::<S, TransactionTreeHash>(
                 store,
                 epoch_transaction_identifiers.state_version,
                 &epoch_transaction_identifiers.transaction_hash,
                 parent_transaction_identifiers.state_version,
-                TransactionHash::from_raw_bytes((*transaction_hash).into_bytes()),
+                TransactionTreeHash::from_raw_bytes((*transaction_hash).into_bytes()),
             );
-            let receipt_tree_diff = Self::compute_accu_tree_update::<S, ReceiptHash>(
+            let receipt_tree_diff = Self::compute_accu_tree_update::<S, ReceiptTreeHash>(
                 store,
                 epoch_transaction_identifiers.state_version,
                 &epoch_transaction_identifiers.receipt_hash,
                 parent_transaction_identifiers.state_version,
-                ReceiptHash::from_raw_bytes(ledger_receipt.get_hash().into_bytes()),
+                ReceiptTreeHash::from_raw_bytes(ledger_receipt.get_hash().into_bytes()),
             );
             let ledger_hashes = LedgerHashes {
                 state_root: state_tree_diff.new_root,
@@ -149,7 +149,7 @@ impl ProcessedResult {
         Self::extract_state_diff(&self.transaction_receipt)
     }
 
-    pub fn commit(&self) -> &ProcessedTransactionCommit {
+    pub fn commit_details(&self) -> &ProcessedTransactionCommit {
         self.processed_commit
             .as_ref()
             .expect("available only for committed transactions")
@@ -186,7 +186,7 @@ impl ProcessedResult {
         collector.into_diff()
     }
 
-    fn compute_state_tree_update<S: ReadableLayeredTreeStore>(
+    fn compute_state_tree_update<S: ReadableStateTreeStore>(
         store: &S,
         parent_state_version: u64,
         state_diff: &StateDiff,
@@ -219,8 +219,8 @@ pub struct ProcessedTransactionCommit {
     pub transaction_accumulator_hash: AccumulatorHash,
     pub ledger_hashes: LedgerHashes,
     pub state_tree_diff: HashTreeDiff,
-    pub transaction_tree_diff: AccuTreeDiff<u64, TransactionHash>,
-    pub receipt_tree_diff: AccuTreeDiff<u64, ReceiptHash>,
+    pub transaction_tree_diff: AccuTreeDiff<u64, TransactionTreeHash>,
+    pub receipt_tree_diff: AccuTreeDiff<u64, ReceiptTreeHash>,
 }
 
 pub struct HashTreeDiff {
@@ -318,7 +318,7 @@ struct CollectingTreeStore<'s, S> {
     diff: HashTreeDiff,
 }
 
-impl<'s, S: ReadableLayeredTreeStore> CollectingTreeStore<'s, S> {
+impl<'s, S: ReadableStateTreeStore> CollectingTreeStore<'s, S> {
     pub fn new(readable_delegate: &'s S) -> Self {
         Self {
             readable_delegate,

@@ -66,7 +66,7 @@ use crate::accumulator_tree::slice_merger::AccuTreeSliceMerger;
 use crate::jni::state_computer::JavaValidatorInfo;
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::query::*;
-use crate::staging::{ExecutionCache, ProcessedResult, ProcessedTransactionCommit, RootStore};
+use crate::staging::{ExecutionCache, ProcessedResult, ProcessedTransactionCommit, ReadableStore};
 use crate::store::traits::*;
 use crate::transaction::{
     LedgerTransaction, LedgerTransactionValidator, UserTransactionValidator, ValidatorTransaction,
@@ -262,7 +262,7 @@ where
     }
 }
 
-impl<S: RootStore> StateManager<S> {
+impl<S: ReadableStore> StateManager<S> {
     fn execute_for_staging_with_cache(
         &mut self,
         epoch_transaction_identifiers: &EpochTransactionIdentifiers,
@@ -315,7 +315,7 @@ enum AlreadyPreparedTransaction {
 
 impl<S> StateManager<S>
 where
-    S: RootStore,
+    S: ReadableStore,
     S: for<'a> TransactionIndex<&'a IntentHash>,
     S: QueryableProofStore + TransactionIdentifierLoader,
 {
@@ -587,7 +587,7 @@ where
                         .next_epoch
                         .clone()
                         .map(|next_epoch_result| NextEpoch::from(next_epoch_result).validator_set),
-                    ledger_hashes: processed.commit().ledger_hashes,
+                    ledger_hashes: processed.commit_details().ledger_hashes,
                 },
                 TransactionOutcome::Failure(error) => {
                     panic!("Genesis failed. Error: {error:?}")
@@ -609,6 +609,11 @@ where
             .get_last_epoch_proof()
             .map(|epoch_proof| EpochTransactionIdentifiers::from(epoch_proof.ledger_header))
             .unwrap_or_else(EpochTransactionIdentifiers::pre_genesis);
+
+        debug_assert_eq!(
+            base_transaction_identifiers.accumulator_hash,
+            prepare_request.parent_accumulator
+        );
 
         // This hashmap is used to check for any proposed intents which have already been commited (or prepared)
         // in order to exclude them. This check will eventually live in the engine/executor.
@@ -680,7 +685,7 @@ where
             match &processed.receipt().result {
                 TransactionResult::Commit(_) => {
                     // TODO: Do we need to check that next epoch request has been prepared?
-                    state_tracker.update(processed.commit());
+                    state_tracker.update(processed.commit_details());
                 }
                 TransactionResult::Reject(reject_result) => {
                     panic!(
@@ -716,7 +721,7 @@ where
                 if let TransactionOutcome::Failure(error) = &commit_result.outcome {
                     panic!("Validator txn failed: {error:?}");
                 }
-                state_tracker.update(processed.commit());
+                state_tracker.update(processed.commit_details());
                 committed.push(manifest_encode(&validator_txn).unwrap());
 
                 commit_result.next_epoch.clone().map(NextEpoch::from)
@@ -798,7 +803,7 @@ where
 
                 match &processed.receipt().result {
                     TransactionResult::Commit(result) => {
-                        state_tracker.update(processed.commit());
+                        state_tracker.update(processed.commit_details());
 
                         already_committed_or_prepared_intent_hashes
                             .insert(intent_hash, AlreadyPreparedTransaction::Proposed);
@@ -924,7 +929,7 @@ where
 impl<'db, S> StateManager<S>
 where
     S: CommitStore,
-    S: RootStore,
+    S: ReadableStore,
     S: QueryableProofStore + TransactionIdentifierLoader,
 {
     pub fn commit(&'db mut self, commit_request: CommitRequest) -> Result<(), CommitError> {
@@ -1042,7 +1047,7 @@ where
                 intent_hashes.push(intent_hash);
             }
 
-            let processed_commit = processed.commit();
+            let processed_commit = processed.commit_details();
             state_tracker.update(processed_commit);
 
             committed_transaction_bundles.push((

@@ -66,8 +66,8 @@ use crate::jni::mempool::JavaRawTransaction;
 use crate::transaction::UserTransactionValidator;
 use crate::{
     AccumulatorHash, AccumulatorState, ActiveValidatorInfo, LedgerHashes, LedgerHeader,
-    LedgerProof, PreviousVertex, ReceiptHash, StateHash, TimestampedValidatorSignature,
-    TransactionHash,
+    LedgerProof, PreviousVertex, ReceiptTreeHash, StateHash, TimestampedValidatorSignature,
+    TransactionTreeHash,
 };
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
@@ -336,10 +336,10 @@ impl From<JavaLedgerHashes> for LedgerHashes {
     fn from(ledger_hashes: JavaLedgerHashes) -> Self {
         Self {
             state_root: StateHash::from_raw_bytes(ledger_hashes.state_root.into_bytes()),
-            transaction_root: TransactionHash::from_raw_bytes(
+            transaction_root: TransactionTreeHash::from_raw_bytes(
                 ledger_hashes.transaction_root.into_bytes(),
             ),
-            receipt_root: ReceiptHash::from_raw_bytes(ledger_hashes.receipt_root.into_bytes()),
+            receipt_root: ReceiptTreeHash::from_raw_bytes(ledger_hashes.receipt_root.into_bytes()),
         }
     }
 }

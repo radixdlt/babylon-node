@@ -82,7 +82,7 @@ use crate::store::traits::RecoverableVertexStore;
 use crate::transaction::LedgerTransaction;
 use crate::{
     CommittedTransactionIdentifiers, IntentHash, LedgerPayloadHash, LedgerProof,
-    LedgerTransactionReceipt, ReceiptHash, TransactionHash,
+    LedgerTransactionReceipt, ReceiptTreeHash, TransactionTreeHash,
 };
 use radix_engine::types::{KeyValueStoreId, SubstateId};
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeStore, TreeNode};
@@ -133,8 +133,8 @@ impl<P: Payload> ReadableTreeStore<P> for StateManagerDatabase {
     }
 }
 
-impl ReadableAccuTreeStore<u64, TransactionHash> for StateManagerDatabase {
-    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<TransactionHash>> {
+impl ReadableAccuTreeStore<u64, TransactionTreeHash> for StateManagerDatabase {
+    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<TransactionTreeHash>> {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_tree_slice(state_version),
             StateManagerDatabase::RocksDB(store) => store.get_tree_slice(state_version),
@@ -143,8 +143,8 @@ impl ReadableAccuTreeStore<u64, TransactionHash> for StateManagerDatabase {
     }
 }
 
-impl ReadableAccuTreeStore<u64, ReceiptHash> for StateManagerDatabase {
-    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<ReceiptHash>> {
+impl ReadableAccuTreeStore<u64, ReceiptTreeHash> for StateManagerDatabase {
+    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<ReceiptTreeHash>> {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_tree_slice(state_version),
             StateManagerDatabase::RocksDB(store) => store.get_tree_slice(state_version),

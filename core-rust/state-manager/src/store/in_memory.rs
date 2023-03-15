@@ -68,8 +68,8 @@ use crate::transaction::LedgerTransaction;
 use crate::types::UserPayloadHash;
 use crate::{
     CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash, HasUserPayloadHash,
-    IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt, ReceiptHash,
-    TransactionHash,
+    IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt, ReceiptTreeHash,
+    TransactionTreeHash,
 };
 
 use crate::query::TransactionIdentifierLoader;
@@ -95,8 +95,8 @@ pub struct InMemoryStore {
     vertex_store: Option<Vec<u8>>,
     substate_store: SerializedInMemorySubstateStore,
     tree_node_store: SerializedInMemoryTreeStore,
-    transaction_tree_slices: BTreeMap<u64, TreeSlice<TransactionHash>>,
-    receipt_tree_slices: BTreeMap<u64, TreeSlice<ReceiptHash>>,
+    transaction_tree_slices: BTreeMap<u64, TreeSlice<TransactionTreeHash>>,
+    receipt_tree_slices: BTreeMap<u64, TreeSlice<ReceiptTreeHash>>,
 }
 
 impl InMemoryStore {
@@ -201,14 +201,14 @@ impl<P: Payload> ReadableTreeStore<P> for InMemoryStore {
     }
 }
 
-impl ReadableAccuTreeStore<u64, TransactionHash> for InMemoryStore {
-    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<TransactionHash>> {
+impl ReadableAccuTreeStore<u64, TransactionTreeHash> for InMemoryStore {
+    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<TransactionTreeHash>> {
         self.transaction_tree_slices.get(state_version).cloned()
     }
 }
 
-impl ReadableAccuTreeStore<u64, ReceiptHash> for InMemoryStore {
-    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<ReceiptHash>> {
+impl ReadableAccuTreeStore<u64, ReceiptTreeHash> for InMemoryStore {
+    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<ReceiptTreeHash>> {
         self.receipt_tree_slices.get(state_version).cloned()
     }
 }
