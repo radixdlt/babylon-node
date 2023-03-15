@@ -94,7 +94,7 @@ pub async fn create_server<F>(
 
     // TODO - Change this to be slightly larger than the double the max transaction payload size.
     // (We double due to the hex encoding of the payload)
-    const LARGE_REQUEST_MAX_BYTES: usize = 50 * 1024 * 1024;
+    const LARGE_REQUEST_MAX_BYTES: usize = 3 * 1024 * 1024;
 
     let router = Router::new()
         // This only adds a route for /core, /core/ doesn't seem possible using /nest
