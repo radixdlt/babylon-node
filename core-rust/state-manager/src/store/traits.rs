@@ -143,7 +143,7 @@ pub mod proofs {
 pub mod commit {
     use super::*;
     use crate::accumulator_tree::storage::TreeSlice;
-    use crate::{ReceiptHash, TransactionHash};
+    use crate::{ReceiptTreeHash, TransactionTreeHash};
     use radix_engine::ledger::OutputValue;
     use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
     use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReNodeModulePayload, TreeNode};
@@ -155,8 +155,8 @@ pub mod commit {
         pub substates: BTreeMap<SubstateId, OutputValue>,
         pub vertex_store: Option<Vec<u8>>,
         pub state_tree_update: HashTreeUpdate,
-        pub transaction_tree_slice: TreeSlice<TransactionHash>,
-        pub receipt_tree_slice: TreeSlice<ReceiptHash>,
+        pub transaction_tree_slice: TreeSlice<TransactionTreeHash>,
+        pub receipt_tree_slice: TreeSlice<ReceiptTreeHash>,
     }
 
     pub struct HashTreeUpdate {

@@ -487,9 +487,9 @@ impl fmt::Debug for StateHash {
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Categorize, Encode, Decode)]
-pub struct TransactionHash([u8; Self::LENGTH]);
+pub struct TransactionTreeHash([u8; Self::LENGTH]);
 
-impl TransactionHash {
+impl TransactionTreeHash {
     pub const LENGTH: usize = 32;
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -501,38 +501,38 @@ impl TransactionHash {
     }
 }
 
-impl AsRef<[u8]> for TransactionHash {
+impl AsRef<[u8]> for TransactionTreeHash {
     fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }
 
-impl From<Hash> for TransactionHash {
+impl From<Hash> for TransactionTreeHash {
     fn from(hash: Hash) -> Self {
         Self(hash.0)
     }
 }
 
-impl IsHash for TransactionHash {}
+impl IsHash for TransactionTreeHash {}
 
-impl fmt::Display for TransactionHash {
+impl fmt::Display for TransactionTreeHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(self.0))
     }
 }
 
-impl fmt::Debug for TransactionHash {
+impl fmt::Debug for TransactionTreeHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("TransactionHash")
+        f.debug_tuple("TransactionTreeHash")
             .field(&hex::encode(self.0))
             .finish()
     }
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Categorize, Encode, Decode)]
-pub struct ReceiptHash([u8; Self::LENGTH]);
+pub struct ReceiptTreeHash([u8; Self::LENGTH]);
 
-impl ReceiptHash {
+impl ReceiptTreeHash {
     pub const LENGTH: usize = 32;
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -544,29 +544,29 @@ impl ReceiptHash {
     }
 }
 
-impl AsRef<[u8]> for ReceiptHash {
+impl AsRef<[u8]> for ReceiptTreeHash {
     fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }
 
-impl From<Hash> for ReceiptHash {
+impl From<Hash> for ReceiptTreeHash {
     fn from(hash: Hash) -> Self {
         Self(hash.0)
     }
 }
 
-impl IsHash for ReceiptHash {}
+impl IsHash for ReceiptTreeHash {}
 
-impl fmt::Display for ReceiptHash {
+impl fmt::Display for ReceiptTreeHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(self.0))
     }
 }
 
-impl fmt::Debug for ReceiptHash {
+impl fmt::Debug for ReceiptTreeHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("ReceiptHash")
+        f.debug_tuple("ReceiptTreeHash")
             .field(&hex::encode(self.0))
             .finish()
     }
@@ -575,8 +575,8 @@ impl fmt::Debug for ReceiptHash {
 #[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Debug, Categorize, Encode, Decode)]
 pub struct LedgerHashes {
     pub state_root: StateHash,
-    pub transaction_root: TransactionHash,
-    pub receipt_root: ReceiptHash,
+    pub transaction_root: TransactionTreeHash,
+    pub receipt_root: ReceiptTreeHash,
 }
 
 /// An uncommitted user transaction, in eg the mempool
@@ -709,16 +709,16 @@ pub struct AccumulatorState {
 
 pub struct EpochTransactionIdentifiers {
     pub state_version: u64,
-    pub transaction_hash: TransactionHash,
-    pub receipt_hash: ReceiptHash,
+    pub transaction_hash: TransactionTreeHash,
+    pub receipt_hash: ReceiptTreeHash,
 }
 
 impl EpochTransactionIdentifiers {
     pub fn pre_genesis() -> Self {
         Self {
             state_version: 0,
-            transaction_hash: TransactionHash([0; TransactionHash::LENGTH]),
-            receipt_hash: ReceiptHash([0; TransactionHash::LENGTH]),
+            transaction_hash: TransactionTreeHash([0; TransactionTreeHash::LENGTH]),
+            receipt_hash: ReceiptTreeHash([0; TransactionTreeHash::LENGTH]),
         }
     }
 

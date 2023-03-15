@@ -70,7 +70,7 @@ use crate::store::traits::*;
 use crate::{
     AccumulatorHash, CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash,
     HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt,
-    ReceiptHash, TransactionHash,
+    ReceiptTreeHash, TransactionTreeHash,
 };
 use radix_engine::ledger::{OutputValue, QueryableSubstateStore, ReadableSubstateStore};
 use radix_engine::system::node_substates::PersistedSubstate;
@@ -275,7 +275,7 @@ impl RocksDBStore {
             .iterator_cf(self.cf_handle(cf), IteratorMode::End)
             .map(|res| res.unwrap())
             .next()
-            .map(|(_, proof)| scrypto_decode(proof.as_ref()).unwrap())
+            .map(|(_, value)| scrypto_decode(value.as_ref()).unwrap())
     }
 
     fn get_by_key<T: ScryptoDecode>(&self, cf: &RocksDBColumnFamily, key: &[u8]) -> Option<T> {
@@ -707,8 +707,8 @@ impl<P: Payload> ReadableTreeStore<P> for RocksDBStore {
     }
 }
 
-impl ReadableAccuTreeStore<u64, TransactionHash> for RocksDBStore {
-    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<TransactionHash>> {
+impl ReadableAccuTreeStore<u64, TransactionTreeHash> for RocksDBStore {
+    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<TransactionTreeHash>> {
         self.get_by_key(
             &TransactionAccuTreeSliceByStateVersion,
             &state_version.to_be_bytes(),
@@ -716,8 +716,8 @@ impl ReadableAccuTreeStore<u64, TransactionHash> for RocksDBStore {
     }
 }
 
-impl ReadableAccuTreeStore<u64, ReceiptHash> for RocksDBStore {
-    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<ReceiptHash>> {
+impl ReadableAccuTreeStore<u64, ReceiptTreeHash> for RocksDBStore {
+    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<ReceiptTreeHash>> {
         self.get_by_key(
             &ReceiptAccuTreeSliceByStateVersion,
             &state_version.to_be_bytes(),

@@ -67,7 +67,7 @@ use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, Writeab
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::{
     AccumulatorHash, CommittedTransactionIdentifiers, EpochTransactionIdentifiers, LedgerHashes,
-    LedgerPayloadHash, LedgerTransactionReceipt, ReceiptHash, StateHash, TransactionHash,
+    LedgerPayloadHash, LedgerTransactionReceipt, ReceiptTreeHash, StateHash, TransactionTreeHash,
 };
 use lazy_static::lazy_static;
 use radix_engine::state_manager::StateDiff;
@@ -108,19 +108,19 @@ impl ProcessedResult {
                 parent_transaction_identifiers.state_version,
                 state_diff,
             );
-            let transaction_tree_diff = Self::compute_accu_tree_update::<S, TransactionHash>(
+            let transaction_tree_diff = Self::compute_accu_tree_update::<S, TransactionTreeHash>(
                 store,
                 epoch_transaction_identifiers.state_version,
                 &epoch_transaction_identifiers.transaction_hash,
                 parent_transaction_identifiers.state_version,
-                TransactionHash::from_raw_bytes((*transaction_hash).into_bytes()),
+                TransactionTreeHash::from_raw_bytes((*transaction_hash).into_bytes()),
             );
-            let receipt_tree_diff = Self::compute_accu_tree_update::<S, ReceiptHash>(
+            let receipt_tree_diff = Self::compute_accu_tree_update::<S, ReceiptTreeHash>(
                 store,
                 epoch_transaction_identifiers.state_version,
                 &epoch_transaction_identifiers.receipt_hash,
                 parent_transaction_identifiers.state_version,
-                ReceiptHash::from_raw_bytes(ledger_receipt.get_hash().into_bytes()),
+                ReceiptTreeHash::from_raw_bytes(ledger_receipt.get_hash().into_bytes()),
             );
             let ledger_hashes = LedgerHashes {
                 state_root: state_tree_diff.new_root,
@@ -219,8 +219,8 @@ pub struct ProcessedTransactionCommit {
     pub transaction_accumulator_hash: AccumulatorHash,
     pub ledger_hashes: LedgerHashes,
     pub state_tree_diff: HashTreeDiff,
-    pub transaction_tree_diff: AccuTreeDiff<u64, TransactionHash>,
-    pub receipt_tree_diff: AccuTreeDiff<u64, ReceiptHash>,
+    pub transaction_tree_diff: AccuTreeDiff<u64, TransactionTreeHash>,
+    pub receipt_tree_diff: AccuTreeDiff<u64, ReceiptTreeHash>,
 }
 
 pub struct HashTreeDiff {

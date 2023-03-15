@@ -66,7 +66,7 @@ use crate::accumulator_tree::slice_merger::AccuTreeSliceMerger;
 use crate::jni::state_computer::JavaValidatorInfo;
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::query::*;
-use crate::staging::{ExecutionCache, ProcessedResult, ProcessedTransactionCommit, RootStore};
+use crate::staging::{ExecutionCache, ProcessedResult, ProcessedTransactionCommit, ReadableStore};
 use crate::store::traits::*;
 use crate::transaction::{
     LedgerTransaction, LedgerTransactionValidator, UserTransactionValidator, ValidatorTransaction,
@@ -262,7 +262,7 @@ where
     }
 }
 
-impl<S: RootStore> StateManager<S> {
+impl<S: ReadableStore> StateManager<S> {
     fn execute_for_staging_with_cache(
         &mut self,
         epoch_transaction_identifiers: &EpochTransactionIdentifiers,
@@ -315,7 +315,7 @@ enum AlreadyPreparedTransaction {
 
 impl<S> StateManager<S>
 where
-    S: RootStore,
+    S: ReadableStore,
     S: for<'a> TransactionIndex<&'a IntentHash>,
     S: QueryableProofStore + TransactionIdentifierLoader,
 {
@@ -929,7 +929,7 @@ where
 impl<'db, S> StateManager<S>
 where
     S: CommitStore,
-    S: RootStore,
+    S: ReadableStore,
     S: QueryableProofStore + TransactionIdentifierLoader,
 {
     pub fn commit(&'db mut self, commit_request: CommitRequest) -> Result<(), CommitError> {

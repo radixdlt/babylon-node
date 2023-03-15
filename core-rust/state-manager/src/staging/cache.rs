@@ -63,14 +63,14 @@
  */
 
 use super::stage_tree::{Accumulator, Delta, DerivedStageKey, StageKey, StageTree};
-use super::RootStore;
+use super::ReadableStore;
 
 use super::result::ProcessedResult;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::staging::{AccuTreeDiff, HashTreeDiff, ProcessedTransactionCommit};
 use crate::{
     AccumulatorHash, CommittedTransactionIdentifiers, EpochTransactionIdentifiers,
-    LedgerPayloadHash, ReceiptHash, TransactionHash,
+    LedgerPayloadHash, ReceiptTreeHash, TransactionTreeHash,
 };
 use im::hashmap::HashMap as ImmutableHashMap;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore};
@@ -99,7 +99,10 @@ impl ExecutionCache {
         }
     }
 
-    pub fn execute_transaction<S: RootStore, T: FnOnce(&StagedStore<S>) -> TransactionReceipt>(
+    pub fn execute_transaction<
+        S: ReadableStore,
+        T: FnOnce(&StagedStore<S>) -> TransactionReceipt,
+    >(
         &mut self,
         root_store: &S,
         epoch_transaction_identifiers: &EpochTransactionIdentifiers,
@@ -214,10 +217,10 @@ impl<'s, S: ReadableTreeStore<SubstateOffset>> ReadableTreeStore<SubstateOffset>
     }
 }
 
-impl<'s, S: ReadableAccuTreeStore<u64, TransactionHash>> ReadableAccuTreeStore<u64, TransactionHash>
-    for StagedStore<'s, S>
+impl<'s, S: ReadableAccuTreeStore<u64, TransactionTreeHash>>
+    ReadableAccuTreeStore<u64, TransactionTreeHash> for StagedStore<'s, S>
 {
-    fn get_tree_slice(&self, key: &u64) -> Option<TreeSlice<TransactionHash>> {
+    fn get_tree_slice(&self, key: &u64) -> Option<TreeSlice<TransactionTreeHash>> {
         self.overlay
             .transaction_tree_slices
             .get(key)
@@ -226,10 +229,10 @@ impl<'s, S: ReadableAccuTreeStore<u64, TransactionHash>> ReadableAccuTreeStore<u
     }
 }
 
-impl<'s, S: ReadableAccuTreeStore<u64, ReceiptHash>> ReadableAccuTreeStore<u64, ReceiptHash>
+impl<'s, S: ReadableAccuTreeStore<u64, ReceiptTreeHash>> ReadableAccuTreeStore<u64, ReceiptTreeHash>
     for StagedStore<'s, S>
 {
-    fn get_tree_slice(&self, key: &u64) -> Option<TreeSlice<ReceiptHash>> {
+    fn get_tree_slice(&self, key: &u64) -> Option<TreeSlice<ReceiptTreeHash>> {
         self.overlay
             .receipt_tree_slices
             .get(key)
@@ -277,8 +280,8 @@ pub struct ImmutableStore {
     substate_values: ImmutableHashMap<SubstateId, OutputValue>,
     re_node_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<ReNodeModulePayload>>,
     substate_layer_nodes: ImmutableHashMap<NodeKey, TreeNode<SubstateOffset>>,
-    transaction_tree_slices: ImmutableHashMap<u64, TreeSlice<TransactionHash>>,
-    receipt_tree_slices: ImmutableHashMap<u64, TreeSlice<ReceiptHash>>,
+    transaction_tree_slices: ImmutableHashMap<u64, TreeSlice<TransactionTreeHash>>,
+    receipt_tree_slices: ImmutableHashMap<u64, TreeSlice<ReceiptTreeHash>>,
 }
 
 impl Accumulator<ProcessedResult> for ImmutableStore {
