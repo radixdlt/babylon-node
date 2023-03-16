@@ -143,20 +143,50 @@ pub mod proofs {
 pub mod commit {
     use super::*;
     use crate::accumulator_tree::storage::TreeSlice;
-    use crate::{ReceiptTreeHash, TransactionTreeHash};
+    use crate::{ReceiptTreeHash, SubstateChanges, TransactionTreeHash};
     use radix_engine::ledger::OutputValue;
     use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
     use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReNodeModulePayload, TreeNode};
-    use std::collections::BTreeMap;
+    use std::collections::{HashMap, HashSet};
 
     pub struct CommitBundle {
         pub transactions: Vec<CommittedTransactionBundle>,
         pub proof: LedgerProof,
-        pub substates: BTreeMap<SubstateId, OutputValue>,
+        pub substate_store_update: SubstateStoreUpdate,
         pub vertex_store: Option<Vec<u8>>,
         pub state_tree_update: HashTreeUpdate,
         pub transaction_tree_slice: TreeSlice<TransactionTreeHash>,
         pub receipt_tree_slice: TreeSlice<ReceiptTreeHash>,
+    }
+
+    pub struct SubstateStoreUpdate {
+        pub upserted: HashMap<SubstateId, OutputValue>,
+        pub deleted_ids: HashSet<SubstateId>,
+    }
+
+    impl SubstateStoreUpdate {
+        pub fn new() -> Self {
+            Self {
+                upserted: HashMap::new(),
+                deleted_ids: HashSet::new(),
+            }
+        }
+
+        pub fn apply(&mut self, changes: &SubstateChanges) {
+            for (id, value) in &changes.created {
+                self.deleted_ids.remove(id);
+                self.upserted.insert(id.clone(), value.clone());
+            }
+            for (id, value) in &changes.updated {
+                self.upserted.insert(id.clone(), value.clone());
+            }
+            for (id, _) in &changes.deleted {
+                let previous_value = self.upserted.remove(id);
+                if previous_value.is_none() {
+                    self.deleted_ids.insert(id.clone());
+                }
+            }
+        }
     }
 
     pub struct HashTreeUpdate {

@@ -62,16 +62,18 @@
  * permissions under this License.
  */
 
-use super::{ReadableStateTreeStore, ReadableTransactionAndReceiptTreeStore};
+use super::{ReadableHashStructuresStore, ReadableStateTreeStore};
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::{
     AccumulatorHash, CommittedTransactionIdentifiers, EpochTransactionIdentifiers, LedgerHashes,
-    LedgerPayloadHash, LedgerTransactionReceipt, ReceiptTreeHash, StateHash, TransactionTreeHash,
+    LedgerPayloadHash, LedgerTransactionOutcome, LedgerTransactionReceipt, NextEpoch,
+    ReceiptTreeHash, StateHash, SubstateChanges, TransactionTreeHash,
 };
-use lazy_static::lazy_static;
-use radix_engine::state_manager::StateDiff;
-use radix_engine::transaction::{TransactionReceipt, TransactionResult};
+use radix_engine::transaction::{
+    AbortResult, CommitResult, RejectResult, TransactionExecution, TransactionReceipt,
+    TransactionResult,
+};
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::scrypto::scrypto_encode;
@@ -80,99 +82,142 @@ use radix_engine_stores::hash_tree::tree_store::{
 };
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 
-lazy_static! {
-    static ref EMPTY_STATE_DIFF: StateDiff = StateDiff::new();
+pub enum ProcessedTransactionReceipt {
+    Commit(ProcessedCommitResult),
+    Reject(RejectResult),
+    Abort(AbortResult),
 }
 
-pub struct ProcessedResult {
-    /// Raw transaction receipt.
-    pub transaction_receipt: TransactionReceipt,
-    /// The processing results, applicable only for committed transactions (i.e. not rejected).
-    pub processed_commit: Option<ProcessedTransactionCommit>,
+pub struct ProcessedCommitResult {
+    pub ledger_receipt: LedgerTransactionReceipt,
+    pub hash_structures_diff: HashStructuresDiff,
 }
 
-impl ProcessedResult {
-    pub fn from_processed<S: ReadableStateTreeStore + ReadableTransactionAndReceiptTreeStore>(
-        store: &S,
-        epoch_transaction_identifiers: &EpochTransactionIdentifiers,
-        parent_transaction_identifiers: &CommittedTransactionIdentifiers,
-        transaction_accumulator_hash: AccumulatorHash,
-        transaction_hash: &LedgerPayloadHash,
+pub struct HashUpdateContext<'s, S> {
+    pub store: &'s S,
+    pub epoch_transaction_identifiers: &'s EpochTransactionIdentifiers,
+    pub parent_transaction_identifiers: &'s CommittedTransactionIdentifiers,
+    pub transaction_hash: &'s LedgerPayloadHash,
+}
+
+impl ProcessedTransactionReceipt {
+    pub fn process<S: ReadableHashStructuresStore>(
+        hash_update_context: HashUpdateContext<S>,
         transaction_receipt: TransactionReceipt,
-    ) -> ProcessedResult {
-        let ledger_receipt = LedgerTransactionReceipt::try_from(transaction_receipt.clone()).ok();
-        let processed_commit = ledger_receipt.map(|ledger_receipt| {
-            let state_diff = Self::extract_state_diff(&transaction_receipt);
-            let state_tree_diff = Self::compute_state_tree_update(
-                store,
-                parent_transaction_identifiers.state_version,
-                state_diff,
-            );
-            let transaction_tree_diff = Self::compute_accu_tree_update::<S, TransactionTreeHash>(
-                store,
-                epoch_transaction_identifiers.state_version,
-                &epoch_transaction_identifiers.transaction_hash,
-                parent_transaction_identifiers.state_version,
-                TransactionTreeHash::from_raw_bytes((*transaction_hash).into_bytes()),
-            );
-            let receipt_tree_diff = Self::compute_accu_tree_update::<S, ReceiptTreeHash>(
-                store,
-                epoch_transaction_identifiers.state_version,
-                &epoch_transaction_identifiers.receipt_hash,
-                parent_transaction_identifiers.state_version,
-                ReceiptTreeHash::from_raw_bytes(ledger_receipt.get_hash().into_bytes()),
-            );
-            let ledger_hashes = LedgerHashes {
-                state_root: state_tree_diff.new_root,
-                transaction_root: *transaction_tree_diff.slice.root(),
-                receipt_root: *receipt_tree_diff.slice.root(),
-            };
-            ProcessedTransactionCommit {
+    ) -> Self {
+        match transaction_receipt.result {
+            TransactionResult::Commit(commit) => {
+                ProcessedTransactionReceipt::Commit(ProcessedCommitResult::process(
+                    hash_update_context,
+                    commit,
+                    transaction_receipt.execution,
+                ))
+            }
+            TransactionResult::Reject(reject) => ProcessedTransactionReceipt::Reject(reject),
+            TransactionResult::Abort(abort) => ProcessedTransactionReceipt::Abort(abort),
+        }
+    }
+
+    pub fn expect_commit(&self, description: &str) -> &ProcessedCommitResult {
+        match self {
+            ProcessedTransactionReceipt::Commit(commit) => commit,
+            ProcessedTransactionReceipt::Reject(reject) => {
+                panic!("Transaction ({description}) was rejected: {reject:?}")
+            }
+            ProcessedTransactionReceipt::Abort(abort) => {
+                panic!("Transaction ({description}) was aborted: {abort:?}")
+            }
+        }
+    }
+
+    pub fn expect_commit_or_reject(
+        &self,
+        description: &str,
+    ) -> Result<&ProcessedCommitResult, &RejectResult> {
+        match self {
+            ProcessedTransactionReceipt::Commit(commit) => Ok(commit),
+            ProcessedTransactionReceipt::Reject(reject) => Err(reject),
+            ProcessedTransactionReceipt::Abort(abort) => {
+                panic!("Transaction ({description}) was aborted: {abort:?}")
+            }
+        }
+    }
+}
+
+impl ProcessedCommitResult {
+    pub fn process<S: ReadableHashStructuresStore>(
+        hash_update_context: HashUpdateContext<S>,
+        commit_result: CommitResult,
+        transaction_execution: TransactionExecution,
+    ) -> Self {
+        let epoch_transaction_identifiers = hash_update_context.epoch_transaction_identifiers;
+        let parent_transaction_identifiers = hash_update_context.parent_transaction_identifiers;
+        let transaction_hash = hash_update_context.transaction_hash;
+        let transaction_accumulator_hash = parent_transaction_identifiers
+            .accumulator_hash
+            .accumulate(transaction_hash);
+        let ledger_receipt =
+            LedgerTransactionReceipt::from((commit_result, transaction_execution.fee_summary));
+        let store = hash_update_context.store;
+        let state_tree_diff = Self::compute_state_tree_update(
+            store,
+            parent_transaction_identifiers.state_version,
+            &ledger_receipt.substate_changes,
+        );
+        let transaction_tree_diff = Self::compute_accu_tree_update::<S, TransactionTreeHash>(
+            store,
+            epoch_transaction_identifiers.state_version,
+            epoch_transaction_identifiers.transaction_hash,
+            parent_transaction_identifiers.state_version,
+            TransactionTreeHash::from_raw_bytes(transaction_hash.into_bytes()),
+        );
+        let receipt_tree_diff = Self::compute_accu_tree_update::<S, ReceiptTreeHash>(
+            store,
+            epoch_transaction_identifiers.state_version,
+            epoch_transaction_identifiers.receipt_hash,
+            parent_transaction_identifiers.state_version,
+            ReceiptTreeHash::from_raw_bytes(ledger_receipt.get_hash().into_bytes()),
+        );
+        let ledger_hashes = LedgerHashes {
+            state_root: state_tree_diff.new_root,
+            transaction_root: *transaction_tree_diff.slice.root(),
+            receipt_root: *receipt_tree_diff.slice.root(),
+        };
+        Self {
+            ledger_receipt,
+            hash_structures_diff: HashStructuresDiff {
                 transaction_accumulator_hash,
                 ledger_hashes,
                 state_tree_diff,
                 transaction_tree_diff,
                 receipt_tree_diff,
-            }
-        });
-        Self {
-            transaction_receipt,
-            processed_commit,
+            },
         }
     }
 
-    pub fn receipt(&self) -> &TransactionReceipt {
-        &self.transaction_receipt
+    pub fn check_success(&self, description: &str) {
+        if let LedgerTransactionOutcome::Failure(error) = &self.ledger_receipt.outcome {
+            panic!("Transaction ({description}) was failed: {error:?}")
+        }
     }
 
-    pub fn state_diff(&self) -> &StateDiff {
-        Self::extract_state_diff(&self.transaction_receipt)
-    }
-
-    pub fn commit_details(&self) -> &ProcessedTransactionCommit {
-        self.processed_commit
+    pub fn next_epoch(&self) -> Option<NextEpoch> {
+        self.ledger_receipt
+            .next_epoch
             .as_ref()
-            .expect("available only for committed transactions")
-    }
-
-    fn extract_state_diff(receipt: &TransactionReceipt) -> &StateDiff {
-        if let TransactionResult::Commit(commit) = &receipt.result {
-            &commit.state_updates
-        } else {
-            &EMPTY_STATE_DIFF
-        }
+            .map(|next_epoch_result| NextEpoch::from(next_epoch_result.clone()))
     }
 
     fn compute_accu_tree_update<S: ReadableAccuTreeStore<u64, M>, M: Merklizable + Clone>(
         store: &S,
         epoch_state_version: u64,
-        epoch_root: &M,
+        epoch_root: M,
         parent_state_version: u64,
         new_leaf_hash: M,
     ) -> AccuTreeDiff<u64, M> {
         let epoch_transaction_count = parent_state_version - epoch_state_version;
         let (epoch_tree_size, appended_hashes) = if epoch_transaction_count == 0 {
-            (0, vec![epoch_root.clone(), new_leaf_hash])
+            (0, vec![epoch_root, new_leaf_hash])
         } else {
             (
                 usize::try_from(epoch_transaction_count).unwrap() + 1,
@@ -189,22 +234,22 @@ impl ProcessedResult {
     fn compute_state_tree_update<S: ReadableStateTreeStore>(
         store: &S,
         parent_state_version: u64,
-        state_diff: &StateDiff,
+        substate_changes: &SubstateChanges,
     ) -> HashTreeDiff {
-        // TODO: currently, only the hashes of changed (or created) substates are tracked, since
-        // the hash tree wants to stay consistent with the substate store (which does not support
-        // deletes yet). The underlying JMT implementation already supports deletion - and to use
-        // it, we simply can include `down_substates` with `None` hashes in the vector below.
-        let hash_changes = state_diff
-            .up_substates
-            .iter()
+        let hash_changes = substate_changes
+            .upserted()
             .map(|(id, value)| {
                 SubstateHashChange::new(
                     id.clone(),
                     Some(hash(scrypto_encode(&value.substate).unwrap())),
                 )
             })
-            .collect::<Vec<_>>();
+            .chain(
+                substate_changes
+                    .deleted_ids()
+                    .map(|id| SubstateHashChange::new(id.clone(), None)),
+            )
+            .collect::<Vec<SubstateHashChange>>();
         let mut collector = CollectingTreeStore::new(store);
         let root_hash = put_at_next_version(
             &mut collector,
@@ -215,7 +260,7 @@ impl ProcessedResult {
     }
 }
 
-pub struct ProcessedTransactionCommit {
+pub struct HashStructuresDiff {
     pub transaction_accumulator_hash: AccumulatorHash,
     pub ledger_hashes: LedgerHashes,
     pub state_tree_diff: HashTreeDiff,

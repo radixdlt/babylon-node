@@ -47,6 +47,16 @@ pub struct SubstateChanges {
     pub deleted: BTreeMap<SubstateId, DeletedSubstateVersion>,
 }
 
+impl SubstateChanges {
+    pub fn upserted(&self) -> impl Iterator<Item = (&SubstateId, &OutputValue)> {
+        self.created.iter().chain(self.updated.iter())
+    }
+
+    pub fn deleted_ids(&self) -> impl Iterator<Item = &SubstateId> {
+        self.deleted.keys()
+    }
+}
+
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct DeletedSubstateVersion {
     pub substate_hash: Hash,

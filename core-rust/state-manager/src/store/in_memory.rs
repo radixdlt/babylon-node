@@ -237,9 +237,10 @@ impl CommitStore for InMemoryStore {
         self.proofs
             .insert(commit_state_version, commit_bundle.proof);
 
-        for (substate_id, substate) in commit_bundle.substates {
+        for (substate_id, substate) in commit_bundle.substate_store_update.upserted {
             self.substate_store.put_substate(substate_id, substate);
         }
+        // TODO: handle the `substate_store_update.deleted_ids` once the store is ready for it
 
         if let Some(vertex_store) = commit_bundle.vertex_store {
             self.save_vertex_store(vertex_store)
