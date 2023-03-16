@@ -126,19 +126,19 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     private final long pacemakerBaseTimeoutMs;
     private final double pacemakerBackoffRate;
     private final long additionalRoundTimeIfProposalReceivedMs;
-    private final long timeoutQuorumProcessingDelayMs;
+    private final long timeoutQuorumResolutionDelayMs;
 
     private ConsensusConfig(
         int bftSyncPatienceMillis,
         long pacemakerBaseTimeoutMs,
         double pacemakerBackoffRate,
         long additionalRoundTimeIfProposalReceivedMs,
-        long timeoutQuorumProcessingDelayMs) {
+        long timeoutQuorumResolutionDelayMs) {
       this.bftSyncPatienceMillis = bftSyncPatienceMillis;
       this.pacemakerBaseTimeoutMs = pacemakerBaseTimeoutMs;
       this.pacemakerBackoffRate = pacemakerBackoffRate;
       this.additionalRoundTimeIfProposalReceivedMs = additionalRoundTimeIfProposalReceivedMs;
-      this.timeoutQuorumProcessingDelayMs = timeoutQuorumProcessingDelayMs;
+      this.timeoutQuorumResolutionDelayMs = timeoutQuorumResolutionDelayMs;
     }
 
     public static ConsensusConfig of(
@@ -146,13 +146,13 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         long pacemakerBaseTimeoutMs,
         double pacemakerBackoffRate,
         long additionalRoundTimeIfProposalReceivedMs,
-        long timeoutQuorumProcessingDelayMs) {
+        long timeoutQuorumResolutionDelayMs) {
       return new ConsensusConfig(
           bftSyncPatienceMillis,
           pacemakerBaseTimeoutMs,
           pacemakerBackoffRate,
           additionalRoundTimeIfProposalReceivedMs,
-          timeoutQuorumProcessingDelayMs);
+          timeoutQuorumResolutionDelayMs);
     }
 
     public static ConsensusConfig of(long pacemakerBaseTimeoutMs) {
@@ -192,8 +192,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
               .annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class)
               .to(additionalRoundTimeIfProposalReceivedMs);
           bindConstant()
-              .annotatedWith(TimeoutQuorumProcessingDelayMs.class)
-              .to(timeoutQuorumProcessingDelayMs);
+              .annotatedWith(TimeoutQuorumResolutionDelayMs.class)
+              .to(timeoutQuorumResolutionDelayMs);
           bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
         }
       };

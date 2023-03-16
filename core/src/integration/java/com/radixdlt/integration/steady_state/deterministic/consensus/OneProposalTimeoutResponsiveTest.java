@@ -116,8 +116,12 @@ public class OneProposalTimeoutResponsiveTest {
       Metrics metrics = test.getInstance(nodeIndex, Metrics.class);
       long numberOfIndirectParents = (long) metrics.bft().vertexStore().indirectParents().get();
       long totalNumberOfTimeouts = (long) metrics.bft().pacemaker().timeoutsSent().get();
-      long totalNumberOfTimeoutQuorums = (long) metrics.bft().timeoutQuorums().get();
-      long numOfCommittedFallbackVertices = (long) metrics.bft().committedFallbackVertices().get();
+      long totalNumberOfTimeoutQuorums =
+          (long)
+              metrics.bft().quorumResolutions().label(new Metrics.Bft.QuorumResolution(true)).get();
+      long numOfCommittedFallbackVertices =
+          (long)
+              metrics.bft().committedVertices().label(new Metrics.Bft.CommittedVertex(true)).get();
       assertThat(totalNumberOfTimeouts).isEqualTo(requiredTimeouts);
 
       // We expect the correct num of either QCs on fallback (timeout) vertices or TCs

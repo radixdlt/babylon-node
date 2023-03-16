@@ -80,4 +80,4 @@ import javax.inject.Qualifier;
 @Qualifier
 @Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-public @interface TimeoutQuorumProcessingDelayMs {}
+public @interface TimeoutQuorumResolutionDelayMs {}

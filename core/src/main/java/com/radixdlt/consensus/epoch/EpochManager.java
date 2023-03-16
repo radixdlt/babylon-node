@@ -70,7 +70,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
-import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.PostponedRoundQuorum;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.bft.processor.EmptyBFTEventProcessor;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerStateFactory;
@@ -249,7 +249,7 @@ public final class EpochManager {
             self,
             pacemaker,
             bftSync,
-            bftSync.roundQuorumReachedEventProcessor(),
+            bftSync.roundQuorumResolutionEventProcessor(),
             validatorSet,
             initialRoundUpdate,
             safetyRules,
@@ -381,12 +381,13 @@ public final class EpochManager {
     bftEventProcessor.processLocalTimeout(localTimeout.event());
   }
 
-  public void processPostponedRoundQuorum(Epoched<PostponedRoundQuorum> postponedRoundQuorum) {
-    if (postponedRoundQuorum.epoch() != this.currentEpoch()) {
+  public void processTimeoutQuorumDelayedResolution(
+      Epoched<TimeoutQuorumDelayedResolution> timeoutQuorumDelayedResolution) {
+    if (timeoutQuorumDelayedResolution.epoch() != this.currentEpoch()) {
       return;
     }
 
-    bftEventProcessor.processPostponedRoundQuorum(postponedRoundQuorum.event());
+    bftEventProcessor.processTimeoutQuorumDelayedResolution(timeoutQuorumDelayedResolution.event());
   }
 
   public EventProcessor<EpochRoundUpdate> epochRoundUpdateEventProcessor() {

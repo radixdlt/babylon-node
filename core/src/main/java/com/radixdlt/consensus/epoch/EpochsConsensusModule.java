@@ -75,7 +75,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.PostponedRoundQuorum;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.liveness.*;
 import com.radixdlt.consensus.sync.*;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
@@ -135,11 +135,12 @@ public class EpochsConsensusModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private EventProcessorOnRunner<?> postponedRoundQuorumProcessor(EpochManager epochManager) {
+  private EventProcessorOnRunner<?> timeoutQuorumDelayedResolutionProcessor(
+      EpochManager epochManager) {
     return new EventProcessorOnRunner<>(
         Runners.CONSENSUS,
-        new TypeLiteral<Epoched<PostponedRoundQuorum>>() {},
-        epochManager::processPostponedRoundQuorum);
+        new TypeLiteral<Epoched<TimeoutQuorumDelayedResolution>>() {},
+        epochManager::processTimeoutQuorumDelayedResolution);
   }
 
   @ProvidesIntoSet
@@ -248,14 +249,17 @@ public class EpochsConsensusModule extends AbstractModule {
 
   @ProvidesIntoSet
   @ProcessOnDispatch
-  private EventProcessor<PostponedRoundQuorum> initialEpochPostponedRoundQuorumDispatcher(
-      ScheduledEventDispatcher<Epoched<PostponedRoundQuorum>> epochedPostponedRoundQuorumDispatcher,
-      EpochChange initialEpoch) {
-    return postponedRoundQuorum -> {
-      final var epochedPostponedRoundQuorum =
-          Epoched.from(initialEpoch.getNextEpoch(), postponedRoundQuorum);
-      epochedPostponedRoundQuorumDispatcher.dispatch(
-          epochedPostponedRoundQuorum, postponedRoundQuorum.millisecondsWaitTime());
+  private EventProcessor<TimeoutQuorumDelayedResolution>
+      initialEpochtimeoutQuorumDelayedResolutionDispatcher(
+          ScheduledEventDispatcher<Epoched<TimeoutQuorumDelayedResolution>>
+              epochedtimeoutQuorumDelayedResolutionDispatcher,
+          EpochChange initialEpoch) {
+    return timeoutQuorumDelayedResolution -> {
+      final var epochedTimeoutQuorumDelayedResolution =
+          Epoched.from(initialEpoch.getNextEpoch(), timeoutQuorumDelayedResolution);
+      epochedtimeoutQuorumDelayedResolutionDispatcher.dispatch(
+          epochedTimeoutQuorumDelayedResolution,
+          timeoutQuorumDelayedResolution.millisecondsWaitTime());
     };
   }
 
@@ -341,15 +345,16 @@ public class EpochsConsensusModule extends AbstractModule {
       HashVerifier verifier,
       TimeSupplier timeSupplier,
       Metrics metrics,
-      EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
-      ScheduledEventDispatcher<Epoched<PostponedRoundQuorum>> postponedRoundQuorumDispatcher,
+      EventDispatcher<RoundQuorumResolution> roundQuorumResolutionEventDispatcher,
+      ScheduledEventDispatcher<Epoched<TimeoutQuorumDelayedResolution>>
+          timeoutQuorumDelayedResolutionDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
       EventDispatcher<EpochProposalRejected> proposalRejectedDispatcher,
-      @TimeoutQuorumProcessingDelayMs long timeoutQuorumProcessingDelayMs) {
+      @TimeoutQuorumResolutionDelayMs long timeoutQuorumResolutionDelayMs) {
     return (self,
         pacemaker,
         bftSyncer,
-        roundQuorumReachedEventProcessor,
+        roundQuorumResolutionEventProcessor,
         validatorSet,
         roundUpdate,
         safetyRules,
@@ -365,18 +370,18 @@ public class EpochsConsensusModule extends AbstractModule {
                         new EpochProposalRejected(epoch, proposalRejected)))
             .safetyRules(safetyRules)
             .pacemaker(pacemaker)
-            .roundQuorumReachedDispatcher(
-                roundQuorumReached -> {
+            .roundQuorumResolutionDispatcher(
+                roundQuorumResolution -> {
                   // FIXME: a hack for now until replacement of epochmanager factories
-                  roundQuorumReachedEventProcessor.process(roundQuorumReached);
-                  roundQuorumReachedEventDispatcher.dispatch(roundQuorumReached);
+                  roundQuorumResolutionEventProcessor.process(roundQuorumResolution);
+                  roundQuorumResolutionEventDispatcher.dispatch(roundQuorumResolution);
                 })
-            .postponedRoundQuorumDispatcher(
-                (postponedRoundQuorum, ms) -> {
-                  postponedRoundQuorumDispatcher.dispatch(
-                      Epoched.from(epoch, postponedRoundQuorum), ms);
+            .timeoutQuorumDelayedResolutionDispatcher(
+                (timeoutQuorumDelayedResolution, ms) -> {
+                  timeoutQuorumDelayedResolutionDispatcher.dispatch(
+                      Epoched.from(epoch, timeoutQuorumDelayedResolution), ms);
                 })
-            .timeoutQuorumProcessingDelayMs(timeoutQuorumProcessingDelayMs)
+            .timeoutQuorumResolutionDelayMs(timeoutQuorumResolutionDelayMs)
             .doubleVoteDispatcher(doubleVoteEventDispatcher)
             .roundUpdate(roundUpdate)
             .bftSyncer(bftSyncer)

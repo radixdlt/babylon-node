@@ -66,7 +66,7 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.processor.*;
-import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.PostponedRoundQuorum;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -87,11 +87,12 @@ public final class BFTBuilder {
   // BFT Stateful objects
   private Pacemaker pacemaker;
   private BFTSyncer bftSyncer;
-  private EventDispatcher<RoundQuorumReached> roundQuorumReachedDispatcher;
-  private ScheduledEventDispatcher<PostponedRoundQuorum> postponedRoundQuorumDispatcher;
+  private EventDispatcher<RoundQuorumResolution> roundQuorumResolutionDispatcher;
+  private ScheduledEventDispatcher<TimeoutQuorumDelayedResolution>
+      timeoutQuorumDelayedResolutionDispatcher;
   private EventDispatcher<ConsensusByzantineEvent> doubleVoteDispatcher;
   private EventDispatcher<ProposalRejected> proposalRejectedDispatcher;
-  private long timeoutQuorumProcessingDelayMs;
+  private long timeoutQuorumResolutionDelayMs;
 
   // Instance specific objects
   private BFTValidatorId self;
@@ -172,20 +173,21 @@ public final class BFTBuilder {
     return this;
   }
 
-  public BFTBuilder roundQuorumReachedDispatcher(
-      EventDispatcher<RoundQuorumReached> roundQuorumReachedDispatcher) {
-    this.roundQuorumReachedDispatcher = roundQuorumReachedDispatcher;
+  public BFTBuilder roundQuorumResolutionDispatcher(
+      EventDispatcher<RoundQuorumResolution> roundQuorumResolutionDispatcher) {
+    this.roundQuorumResolutionDispatcher = roundQuorumResolutionDispatcher;
     return this;
   }
 
-  public BFTBuilder postponedRoundQuorumDispatcher(
-      ScheduledEventDispatcher<PostponedRoundQuorum> postponedRoundQuorumDispatcher) {
-    this.postponedRoundQuorumDispatcher = postponedRoundQuorumDispatcher;
+  public BFTBuilder timeoutQuorumDelayedResolutionDispatcher(
+      ScheduledEventDispatcher<TimeoutQuorumDelayedResolution>
+          timeoutQuorumDelayedResolutionDispatcher) {
+    this.timeoutQuorumDelayedResolutionDispatcher = timeoutQuorumDelayedResolutionDispatcher;
     return this;
   }
 
-  public BFTBuilder timeoutQuorumProcessingDelayMs(long timeoutQuorumProcessingDelayMs) {
-    this.timeoutQuorumProcessingDelayMs = timeoutQuorumProcessingDelayMs;
+  public BFTBuilder timeoutQuorumResolutionDelayMs(long timeoutQuorumResolutionDelayMs) {
+    this.timeoutQuorumResolutionDelayMs = timeoutQuorumResolutionDelayMs;
     return this;
   }
 
@@ -214,12 +216,12 @@ public final class BFTBuilder {
         new BFTQuorumAssembler(
             pacemaker,
             self,
-            roundQuorumReachedDispatcher,
-            postponedRoundQuorumDispatcher,
+            roundQuorumResolutionDispatcher,
+            timeoutQuorumDelayedResolutionDispatcher,
             metrics,
             pendingVotes,
             roundUpdate,
-            timeoutQuorumProcessingDelayMs);
+            timeoutQuorumResolutionDelayMs);
 
     final var proposalTimestampVerifier =
         new ProposalTimestampVerifier(

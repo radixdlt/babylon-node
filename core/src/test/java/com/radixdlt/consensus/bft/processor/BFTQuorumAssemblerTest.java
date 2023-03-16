@@ -70,7 +70,7 @@ import static org.mockito.Mockito.*;
 
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.PostponedRoundQuorum;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
 import com.radixdlt.environment.EventDispatcher;
@@ -86,10 +86,10 @@ public final class BFTQuorumAssemblerTest {
   private PendingVotes pendingVotes = mock(PendingVotes.class);
   private VertexStoreAdapter vertexStore = mock(VertexStoreAdapter.class);
   private Pacemaker pacemaker = mock(Pacemaker.class);
-  private EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher =
+  private EventDispatcher<RoundQuorumResolution> roundQuorumResolutionDispatcher =
       rmock(EventDispatcher.class);
-  private ScheduledEventDispatcher<PostponedRoundQuorum> postponedRoundQuorumDispatcher =
-      rmock(ScheduledEventDispatcher.class);
+  private ScheduledEventDispatcher<TimeoutQuorumDelayedResolution>
+      timeoutQuorumDelayedResolutionDispatcher = rmock(ScheduledEventDispatcher.class);
 
   private BFTQuorumAssembler bftQuorumAssembler;
 
@@ -99,8 +99,8 @@ public final class BFTQuorumAssemblerTest {
         new BFTQuorumAssembler(
             this.pacemaker,
             this.self,
-            this.roundQuorumReachedEventDispatcher,
-            this.postponedRoundQuorumDispatcher,
+            this.roundQuorumResolutionDispatcher,
+            this.timeoutQuorumDelayedResolutionDispatcher,
             this.metrics,
             this.pendingVotes,
             mock(RoundUpdate.class),
@@ -128,7 +128,7 @@ public final class BFTQuorumAssemblerTest {
 
     this.bftQuorumAssembler.processVote(vote);
 
-    verify(this.roundQuorumReachedEventDispatcher, times(1)).dispatch(any());
+    verify(this.roundQuorumResolutionDispatcher, times(1)).dispatch(any());
     verify(this.pendingVotes, times(1)).insertVote(eq(vote));
     verifyNoMoreInteractions(this.pendingVotes);
   }

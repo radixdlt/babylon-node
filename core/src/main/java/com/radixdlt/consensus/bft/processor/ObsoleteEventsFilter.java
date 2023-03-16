@@ -150,6 +150,22 @@ public final class ObsoleteEventsFilter implements BFTEventProcessor {
   }
 
   @Override
+  public void processTimeoutQuorumDelayedResolution(
+      BFTQuorumAssembler.TimeoutQuorumDelayedResolution timeoutQuorumDelayedResolution) {
+    final var eventRound =
+        timeoutQuorumDelayedResolution.roundQuorumWithLastVote().roundQuorum().getRound();
+    if (eventRound.equals(currentRound())) {
+      forwardTo.processTimeoutQuorumDelayedResolution(timeoutQuorumDelayedResolution);
+    } else {
+      metrics.bft().obsoleteEventsIgnored().inc();
+      log.trace(
+          "Ignoring TimeoutQuorumDelayedResolution event for round {}, current round is {}",
+          eventRound,
+          currentRound());
+    }
+  }
+
+  @Override
   public Optional<BFTEventProcessor> forwardTo() {
     return Optional.of(forwardTo);
   }

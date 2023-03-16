@@ -167,14 +167,12 @@ public record Metrics(
       Counter preconditionViolations,
       Counter duplicateProposalsReceived,
       Counter eventsReceived,
-      Counter committedVertices,
-      Counter committedFallbackVertices,
+      LabelledCounter<CommittedVertex> committedVertices,
       Counter noVotesSent,
-      Counter voteQuorums,
-      Counter timeoutQuorums,
       Counter prolongedRoundTimeouts,
       Counter obsoleteEventsIgnored,
-      Counter postponedRoundQuorums,
+      LabelledCounter<QuorumResolution> quorumResolutions,
+      Counter timeoutQuorumDelayedResolutions,
       LabelledCounter<RoundChange> roundChanges,
       Timer consensusEventsQueueWait,
       LabelledCounter<RejectedConsensusEvent> rejectedConsensusEvents,
@@ -188,6 +186,10 @@ public record Metrics(
       Summary leaderTransactionBytesIncludedInProposal,
       Summary leaderTransactionBytesIncludedInProposalAndPreviousVertices,
       Summary numSignaturesInCertificate) {
+
+    public record QuorumResolution(boolean isTimeout) {}
+
+    public record CommittedVertex(boolean isFallback) {}
 
     public record IgnoredVote(VoteIgnoreReason reason) {}
 

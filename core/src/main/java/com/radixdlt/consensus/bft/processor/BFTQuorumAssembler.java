@@ -68,7 +68,7 @@ import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.RoundQuorum;
-import com.radixdlt.consensus.bft.RoundQuorumReached;
+import com.radixdlt.consensus.bft.RoundQuorumResolution;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.bft.VoteProcessingResult.QuorumReached;
 import com.radixdlt.consensus.bft.VoteProcessingResult.VoteAccepted;
@@ -93,44 +93,49 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
 
   public record RoundQuorumWithLastVote(RoundQuorum roundQuorum, Vote lastVote) {}
 
-  /** An event indicating that processing a round quorum has been postponed */
-  public record PostponedRoundQuorum(
+  /** A local event triggering a delayed resolution of a timeout quorum */
+  public record TimeoutQuorumDelayedResolution(
       RoundQuorumWithLastVote roundQuorumWithLastVote, long millisecondsWaitTime) {}
 
   private final BFTEventProcessorAtCurrentRound forwardTo;
   private final BFTValidatorId self;
-  private final EventDispatcher<RoundQuorumReached> roundQuorumReachedDispatcher;
-  private final ScheduledEventDispatcher<PostponedRoundQuorum> postponedRoundQuorumDispatcher;
+  private final EventDispatcher<RoundQuorumResolution> roundQuorumResolutionDispatcher;
+  private final ScheduledEventDispatcher<TimeoutQuorumDelayedResolution>
+      timeoutQuorumDelayedResolutionDispatcher;
   private final Metrics metrics;
   private final PendingVotes pendingVotes;
-  private final long timeoutQuorumProcessingDelayMs;
+  private final long timeoutQuorumResolutionDelayMs;
 
   private RoundUpdate latestRoundUpdate;
-  private Optional<RoundQuorumWithLastVote> bestQuorumFormedSoFarInCurrentRound = Optional.empty();
+  private boolean hasCurrentRoundBeenResolved = false;
+  private boolean hasTimeoutQuorumResolutionBeenDelayedInCurrentRound = false;
 
   public BFTQuorumAssembler(
       BFTEventProcessorAtCurrentRound forwardTo,
       BFTValidatorId self,
-      EventDispatcher<RoundQuorumReached> roundQuorumReachedDispatcher,
-      ScheduledEventDispatcher<PostponedRoundQuorum> postponedRoundQuorumDispatcher,
+      EventDispatcher<RoundQuorumResolution> roundQuorumResolutionDispatcher,
+      ScheduledEventDispatcher<TimeoutQuorumDelayedResolution>
+          timeoutQuorumDelayedResolutionDispatcher,
       Metrics metrics,
       PendingVotes pendingVotes,
       RoundUpdate initialRoundUpdate,
-      long timeoutQuorumProcessingDelayMs) {
+      long timeoutQuorumResolutionDelayMs) {
     this.forwardTo = Objects.requireNonNull(forwardTo);
     this.self = Objects.requireNonNull(self);
-    this.roundQuorumReachedDispatcher = Objects.requireNonNull(roundQuorumReachedDispatcher);
-    this.postponedRoundQuorumDispatcher = Objects.requireNonNull(postponedRoundQuorumDispatcher);
+    this.roundQuorumResolutionDispatcher = Objects.requireNonNull(roundQuorumResolutionDispatcher);
+    this.timeoutQuorumDelayedResolutionDispatcher =
+        Objects.requireNonNull(timeoutQuorumDelayedResolutionDispatcher);
     this.metrics = Objects.requireNonNull(metrics);
     this.pendingVotes = Objects.requireNonNull(pendingVotes);
     this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
-    this.timeoutQuorumProcessingDelayMs = timeoutQuorumProcessingDelayMs;
+    this.timeoutQuorumResolutionDelayMs = timeoutQuorumResolutionDelayMs;
   }
 
   @Override
   public void processRoundUpdate(RoundUpdate roundUpdate) {
     this.latestRoundUpdate = roundUpdate;
-    this.bestQuorumFormedSoFarInCurrentRound = Optional.empty();
+    this.hasCurrentRoundBeenResolved = false;
+    this.hasTimeoutQuorumResolutionBeenDelayedInCurrentRound = false;
     forwardTo.processRoundUpdate(roundUpdate);
   }
 
@@ -164,8 +169,8 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
   }
 
   private void processQuorum(RoundQuorum roundQuorum, Vote lastVote) {
-    if (hasRegularQuorumBeenFormedForCurrentRound()) {
-      // Nothing to do if regular form has already been formed
+    if (hasCurrentRoundBeenResolved) {
+      // Nothing to do if the round has already been resolved
       return;
     }
 
@@ -173,57 +178,43 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
 
     switch (roundQuorum) {
       case RoundQuorum.RegularRoundQuorum regularRoundQuorum -> {
-        // Regular quorum was formed, it's always "better" than any timeout quorum,
-        // so we dispatch it immediately.
-        this.bestQuorumFormedSoFarInCurrentRound = Optional.of(roundQuorumWithLastAuthor);
-        this.roundQuorumReachedDispatcher.dispatch(new RoundQuorumReached(roundQuorum, lastVote));
+        // Regular quorum was formed, we can immediately resolve the round
+        resolveCurrentRoundWithQuorum(roundQuorum, lastVote);
       }
       case RoundQuorum.TimeoutRoundQuorum timeoutRoundQuorum -> {
         // A timeout quorum has been formed.
-        // If this is the first quorum we've formed in this round, we're
-        // going to postpone its processing, in hope to form a QC (and continue the 3-chain).
-        // This can also be a subsequent timeout quorum (i.e. with another vote/signature included).
-        // In this case we don't want to dispatch a postponed quorum event
-        // (because it has already been dispatched when processing the previous TC),
-        // but we still replace our `bestQuorumFormedSoFarInCurrentRound` because
-        // (arguably) more signatures == a more trustworthy certificate.
-        final var isThisTheFirstQuorumFormedInThisRound =
-            this.bestQuorumFormedSoFarInCurrentRound.isEmpty();
-        this.bestQuorumFormedSoFarInCurrentRound = Optional.of(roundQuorumWithLastAuthor);
-        if (isThisTheFirstQuorumFormedInThisRound) {
-          metrics.bft().postponedRoundQuorums().inc();
-          this.postponedRoundQuorumDispatcher.dispatch(
-              new PostponedRoundQuorum(roundQuorumWithLastAuthor, timeoutQuorumProcessingDelayMs),
-              timeoutQuorumProcessingDelayMs);
+        // We're going to delay its processing, in hope to form a QC (and continue the 3-chain).
+        // We might have already formed (and delayed) a timeout quorum in this round, in which
+        // case any subsequent quorums (i.e. with additional votes) are ignored -
+        // no need to dispatch duplicate delayed resolution events.
+        if (!hasTimeoutQuorumResolutionBeenDelayedInCurrentRound) {
+          hasTimeoutQuorumResolutionBeenDelayedInCurrentRound = true;
+          metrics.bft().timeoutQuorumDelayedResolutions().inc();
+          this.timeoutQuorumDelayedResolutionDispatcher.dispatch(
+              new TimeoutQuorumDelayedResolution(
+                  roundQuorumWithLastAuthor, timeoutQuorumResolutionDelayMs),
+              timeoutQuorumResolutionDelayMs);
         }
       }
     }
   }
 
   @Override
-  public void processPostponedRoundQuorum(PostponedRoundQuorum postponedRoundQuorum) {
-    this.bestQuorumFormedSoFarInCurrentRound.ifPresent(
-        bestQuorum -> {
-          switch (bestQuorum.roundQuorum) {
-            case RoundQuorum.RegularRoundQuorum regularRoundQuorum -> {
-              // Regular round quorums are dispatched immediately, so nothing to do here
-            }
-            case RoundQuorum.TimeoutRoundQuorum timeoutRoundQuorum -> {
-              // We've failed to form a QC while the TC processing was being postponed,
-              // dispatch our current best TC then (note that the quorum we've received
-              // in the event is ignored).
-              this.roundQuorumReachedDispatcher.dispatch(
-                  new RoundQuorumReached(timeoutRoundQuorum, bestQuorum.lastVote));
-            }
-          }
-        });
+  public void processTimeoutQuorumDelayedResolution(
+      TimeoutQuorumDelayedResolution timeoutQuorumDelayedResolution) {
+    if (hasCurrentRoundBeenResolved) {
+      return; // no-op if current round has already been resolved
+    } else {
+      final var quorumAndLastVote = timeoutQuorumDelayedResolution.roundQuorumWithLastVote();
+      resolveCurrentRoundWithQuorum(quorumAndLastVote.roundQuorum(), quorumAndLastVote.lastVote());
+    }
 
-    forwardTo.processPostponedRoundQuorum(postponedRoundQuorum);
+    forwardTo.processTimeoutQuorumDelayedResolution(timeoutQuorumDelayedResolution);
   }
 
-  private boolean hasRegularQuorumBeenFormedForCurrentRound() {
-    return this.bestQuorumFormedSoFarInCurrentRound.stream()
-        .anyMatch(q -> q.roundQuorum instanceof RoundQuorum.RegularRoundQuorum);
+  private void resolveCurrentRoundWithQuorum(RoundQuorum roundQuorum, Vote lastVote) {
+    this.hasCurrentRoundBeenResolved = true;
+    this.roundQuorumResolutionDispatcher.dispatch(new RoundQuorumResolution(roundQuorum, lastVote));
   }
 
   @Override

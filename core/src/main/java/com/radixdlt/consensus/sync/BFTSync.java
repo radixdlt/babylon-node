@@ -212,12 +212,12 @@ public final class BFTSync implements BFTSyncer {
     this.metrics = Objects.requireNonNull(metrics);
   }
 
-  public EventProcessor<RoundQuorumReached> roundQuorumReachedEventProcessor() {
-    return roundQuorumReached -> {
+  public EventProcessor<RoundQuorumResolution> roundQuorumResolutionEventProcessor() {
+    return roundQuorumResolution -> {
       this.runOnThreads.add(Thread.currentThread().getName());
 
       final var highQC =
-          switch (roundQuorumReached.roundQuorum()) {
+          switch (roundQuorumResolution.roundQuorum()) {
             case RoundQuorum.RegularRoundQuorum regularRoundQuorum -> this.vertexStore
                 .highQC()
                 .withHighestQC(regularRoundQuorum.qc());
@@ -226,10 +226,11 @@ public final class BFTSync implements BFTSyncer {
                 .withHighestTC(timeoutRoundQuorum.tc());
           };
 
-      final var nodeId = NodeId.fromPublicKey(roundQuorumReached.lastVote().getAuthor().getKey());
+      final var nodeId =
+          NodeId.fromPublicKey(roundQuorumResolution.lastVote().getAuthor().getKey());
 
       final var highQcSource =
-          roundQuorumReached.lastVote().isTimeout()
+          roundQuorumResolution.lastVote().isTimeout()
               ? HighQcSource.CREATED_ON_RECEIVED_TIMEOUT_VOTE
               : HighQcSource.CREATED_ON_RECEIVED_NON_TIMEOUT_VOTE;
 

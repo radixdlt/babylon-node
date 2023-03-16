@@ -84,7 +84,7 @@ import org.junit.Test;
 /**
  * Test a scenario where a timeout cert is formed first, but its
  * processing is delayed, then a QC is formed
- * which results in a QC output (RoundQuorumReached event with a QC).
+ * which results in a QC output (RoundQuorumResolution event with a QC).
  *
  * The test works by dropping a proposal to 3 out of 4 nodes,
  * which results in:
@@ -134,10 +134,17 @@ public final class DelayAfterFormingTcAndFormAQcTest {
 
       for (var injector : test.getNodeInjectors()) {
         final var metrics = injector.getInstance(Metrics.class);
-        // Each node should have created and postponed a timeout cert...
-        assertEquals(1, (int) metrics.bft().postponedRoundQuorums().get());
+        // Each node should have created and delayed a timeout cert resolution...
+        assertEquals(1, (int) metrics.bft().timeoutQuorumDelayedResolutions().get());
         // ...and then form a QC, resulting in no TCs actually processed.
-        assertEquals(0, (int) metrics.bft().timeoutQuorums().get());
+        final var numTimeoutQuorums =
+            (int)
+                metrics
+                    .bft()
+                    .quorumResolutions()
+                    .label(new Metrics.Bft.QuorumResolution(true))
+                    .get();
+        assertEquals(0, numTimeoutQuorums);
       }
     }
   }

@@ -112,12 +112,20 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
       final Metrics metrics = test.getInstance(nodeIndex, Metrics.class);
       long numberOfIndirectParents = (long) metrics.bft().vertexStore().indirectParents().get();
       long totalNumberOfTimeouts = (long) metrics.bft().pacemaker().timeoutsSent().get();
-      long totalNumberOfTimeoutQuorums = (long) metrics.bft().timeoutQuorums().get();
-      long totalNumberOfVoteQuorums = (long) metrics.bft().voteQuorums().get();
+      long totalNumberOfTimeoutQuorums =
+          (long)
+              metrics.bft().quorumResolutions().label(new Metrics.Bft.QuorumResolution(true)).get();
+      long totalNumberOfRegularQuorums =
+          (long)
+              metrics
+                  .bft()
+                  .quorumResolutions()
+                  .label(new Metrics.Bft.QuorumResolution(false))
+                  .get();
       assertThat(totalNumberOfTimeoutQuorums).isEqualTo(0); // no TCs
       assertThat(numberOfIndirectParents).isEqualTo(0); // no indirect parents
       assertThat(totalNumberOfTimeouts).isEqualTo(numRounds - 1); // a timeout for each round
-      assertThat(totalNumberOfVoteQuorums)
+      assertThat(totalNumberOfRegularQuorums)
           .isBetween(numRounds - 2, numRounds); // quorum count matches rounds
     }
   }

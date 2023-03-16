@@ -70,7 +70,7 @@ import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.ProposalRejected;
 import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.PostponedRoundQuorum;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import java.util.Optional;
 
@@ -104,8 +104,10 @@ public interface BFTEventProcessor {
     forwardTo().ifPresent(p -> p.processLocalTimeout(scheduledLocalTimeout));
   }
 
-  default void processPostponedRoundQuorum(PostponedRoundQuorum postponedRoundQuorum) {
-    forwardTo().ifPresent(p -> p.processPostponedRoundQuorum(postponedRoundQuorum));
+  default void processTimeoutQuorumDelayedResolution(
+      TimeoutQuorumDelayedResolution timeoutQuorumDelayedResolution) {
+    forwardTo()
+        .ifPresent(p -> p.processTimeoutQuorumDelayedResolution(timeoutQuorumDelayedResolution));
   }
 
   default void processProposalRejected(ProposalRejected proposalRejected) {
