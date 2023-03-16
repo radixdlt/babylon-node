@@ -6,7 +6,7 @@ use radix_engine_interface::api::types::{AccessRulesOffset, NodeModuleId, RENode
 use state_manager::jni::state_manager::ActualStateManager;
 
 pub(crate) async fn handle_state_resource(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
     request: Json<models::StateResourceRequest>,
 ) -> Result<Json<models::StateResourceResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_state_resource_internal)

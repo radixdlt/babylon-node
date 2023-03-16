@@ -53,11 +53,7 @@ opentelemetry-jaeger = { version = "0.17", features = ["rt-tokio"] }
 
 ### TYPES FOR THE SERVER
 # Axum - see https://docs.rs/axum/latest/axum/#required-dependencies
-axum = { version = "0.5.15", features = ["http1", "json"] }
-# Tower HTTP - Axum middleware
-tower-http = { version = "0.3.4", default-features = false, features = [
-  "limit",
-] }
+axum = { version = "0.6.6", features = ["http1", "json"] }
 # Hyper - see https://docs.rs/axum/latest/axum/#required-dependencies
 hyper = { version = "0.14.20", features = ["server", "http1"] }
 # Tokio - see https://docs.rs/tokio/latest/tokio/

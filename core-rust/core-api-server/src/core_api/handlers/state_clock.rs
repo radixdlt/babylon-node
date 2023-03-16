@@ -6,7 +6,7 @@ use state_manager::jni::state_manager::ActualStateManager;
 
 #[tracing::instrument(skip(state), err(Debug))]
 pub(crate) async fn handle_state_clock(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
     request: Json<models::StateClockRequest>,
 ) -> Result<Json<models::StateClockResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_state_clock_internal)

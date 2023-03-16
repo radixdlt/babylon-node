@@ -6,7 +6,7 @@ use state_manager::CommittedTransactionIdentifiers;
 
 #[tracing::instrument(skip(state), err(Debug))]
 pub(crate) async fn handle_status_network_status(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
     request: Json<models::NetworkStatusRequest>,
 ) -> Result<Json<models::NetworkStatusResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_status_network_status_internal)

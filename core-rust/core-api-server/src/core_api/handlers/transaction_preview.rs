@@ -11,7 +11,7 @@ use transaction::manifest;
 use transaction::model::PreviewFlags;
 
 pub(crate) async fn handle_transaction_preview(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
     request: Json<models::TransactionPreviewRequest>,
 ) -> Result<Json<models::TransactionPreviewResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_preview_internal)

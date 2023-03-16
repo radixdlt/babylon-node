@@ -20,7 +20,7 @@ use super::{
 };
 
 pub(crate) async fn handle_transaction_parse(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
     request: Json<models::TransactionParseRequest>,
 ) -> Result<Json<models::TransactionParseResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_transaction_parse_internal)

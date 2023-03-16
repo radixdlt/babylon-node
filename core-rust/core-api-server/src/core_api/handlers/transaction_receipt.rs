@@ -5,7 +5,7 @@ use state_manager::store::traits::*;
 
 #[tracing::instrument(skip(state), err(Debug))]
 pub(crate) async fn handle_transaction_receipt(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
     request: Json<models::TransactionReceiptRequest>,
 ) -> Result<Json<models::TransactionReceiptResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_transaction_receipt_internal)
