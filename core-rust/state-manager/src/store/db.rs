@@ -91,13 +91,11 @@ use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeS
 pub enum DatabaseConfig {
     InMemory,
     RocksDB(String),
-    None,
 }
 
 pub enum StateManagerDatabase {
     InMemory(InMemoryStore),
     RocksDB(RocksDBStore),
-    None,
 }
 
 impl StateManagerDatabase {
@@ -108,7 +106,6 @@ impl StateManagerDatabase {
                 let db = RocksDBStore::new(PathBuf::from(path));
                 StateManagerDatabase::RocksDB(db)
             }
-            DatabaseConfig::None => StateManagerDatabase::None,
         }
     }
 }
@@ -118,7 +115,6 @@ impl ReadableSubstateStore for StateManagerDatabase {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_substate(substate_id),
             StateManagerDatabase::RocksDB(store) => store.get_substate(substate_id),
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 }
@@ -128,7 +124,6 @@ impl<P: Payload> ReadableTreeStore<P> for StateManagerDatabase {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_node(key),
             StateManagerDatabase::RocksDB(store) => store.get_node(key),
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 }
@@ -138,7 +133,6 @@ impl ReadableAccuTreeStore<u64, TransactionTreeHash> for StateManagerDatabase {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_tree_slice(state_version),
             StateManagerDatabase::RocksDB(store) => store.get_tree_slice(state_version),
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 }
@@ -148,7 +142,6 @@ impl ReadableAccuTreeStore<u64, ReceiptTreeHash> for StateManagerDatabase {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_tree_slice(state_version),
             StateManagerDatabase::RocksDB(store) => store.get_tree_slice(state_version),
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 }
@@ -158,7 +151,6 @@ impl CommitStore for StateManagerDatabase {
         match self {
             StateManagerDatabase::InMemory(store) => store.commit(commit_bundle),
             StateManagerDatabase::RocksDB(store) => store.commit(commit_bundle),
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 }
@@ -177,7 +169,6 @@ impl QueryableTransactionStore for StateManagerDatabase {
             StateManagerDatabase::RocksDB(store) => {
                 store.get_committed_transaction_bundles(start_state_version_inclusive, limit)
             }
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 
@@ -186,7 +177,6 @@ impl QueryableTransactionStore for StateManagerDatabase {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_committed_transaction(state_version),
             StateManagerDatabase::RocksDB(store) => store.get_committed_transaction(state_version),
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 
@@ -202,7 +192,6 @@ impl QueryableTransactionStore for StateManagerDatabase {
             StateManagerDatabase::RocksDB(store) => {
                 store.get_committed_transaction_receipt(state_version)
             }
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 
@@ -218,7 +207,6 @@ impl QueryableTransactionStore for StateManagerDatabase {
             StateManagerDatabase::RocksDB(store) => {
                 store.get_committed_transaction_identifiers(state_version)
             }
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 }
@@ -232,7 +220,6 @@ impl TransactionIndex<&IntentHash> for StateManagerDatabase {
             StateManagerDatabase::RocksDB(store) => {
                 store.get_txn_state_version_by_identifier(identifier)
             }
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 }
@@ -246,7 +233,6 @@ impl TransactionIndex<&UserPayloadHash> for StateManagerDatabase {
             StateManagerDatabase::RocksDB(store) => {
                 store.get_txn_state_version_by_identifier(identifier)
             }
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 }
@@ -260,7 +246,6 @@ impl TransactionIndex<&LedgerPayloadHash> for StateManagerDatabase {
             StateManagerDatabase::RocksDB(store) => {
                 store.get_txn_state_version_by_identifier(identifier)
             }
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 }
@@ -270,9 +255,6 @@ impl TransactionIdentifierLoader for StateManagerDatabase {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_top_transaction_identifiers(),
             StateManagerDatabase::RocksDB(store) => store.get_top_transaction_identifiers(),
-            // This is a special case, where in tests, the Core API needs to construct a state
-            // manager with no database (stuck at pre-genesis).
-            StateManagerDatabase::None => CommittedTransactionIdentifiers::pre_genesis(),
         }
     }
 }
@@ -282,7 +264,6 @@ impl QueryableProofStore for StateManagerDatabase {
         match self {
             StateManagerDatabase::InMemory(store) => store.max_state_version(),
             StateManagerDatabase::RocksDB(store) => store.max_state_version(),
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 
@@ -303,7 +284,6 @@ impl QueryableProofStore for StateManagerDatabase {
                 max_number_of_txns_if_more_than_one_proof,
                 max_payload_size_in_bytes,
             ),
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 
@@ -311,7 +291,6 @@ impl QueryableProofStore for StateManagerDatabase {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_epoch_proof(epoch),
             StateManagerDatabase::RocksDB(store) => store.get_epoch_proof(epoch),
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 
@@ -319,7 +298,6 @@ impl QueryableProofStore for StateManagerDatabase {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_last_proof(),
             StateManagerDatabase::RocksDB(store) => store.get_last_proof(),
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 
@@ -327,7 +305,6 @@ impl QueryableProofStore for StateManagerDatabase {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_last_epoch_proof(),
             StateManagerDatabase::RocksDB(store) => store.get_last_epoch_proof(),
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 }
@@ -340,7 +317,6 @@ impl QueryableSubstateStore for StateManagerDatabase {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_kv_store_entries(kv_store_id),
             StateManagerDatabase::RocksDB(store) => store.get_kv_store_entries(kv_store_id),
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 }
@@ -350,7 +326,6 @@ impl WriteableVertexStore for StateManagerDatabase {
         match self {
             StateManagerDatabase::InMemory(store) => store.save_vertex_store(vertex_store_bytes),
             StateManagerDatabase::RocksDB(store) => store.save_vertex_store(vertex_store_bytes),
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 }
@@ -360,7 +335,6 @@ impl RecoverableVertexStore for StateManagerDatabase {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_vertex_store(),
             StateManagerDatabase::RocksDB(store) => store.get_vertex_store(),
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 }
