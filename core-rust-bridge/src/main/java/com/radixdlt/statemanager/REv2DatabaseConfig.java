@@ -79,21 +79,11 @@ public sealed interface REv2DatabaseConfig {
     return new InMemory();
   }
 
-  static REv2DatabaseConfig none() {
-    return new None();
-  }
-
   static REv2DatabaseConfig rocksDB(String databasePath) {
     return new RocksDB(databasePath);
-  }
-
-  static boolean isNone(REv2DatabaseConfig config) {
-    return (config instanceof None);
   }
 
   record InMemory() implements REv2DatabaseConfig {}
 
   record RocksDB(String databasePath) implements REv2DatabaseConfig {}
-
-  record None() implements REv2DatabaseConfig {}
 }

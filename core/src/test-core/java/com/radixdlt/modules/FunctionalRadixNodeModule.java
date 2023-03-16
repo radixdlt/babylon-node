@@ -66,18 +66,13 @@ package com.radixdlt.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
-import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
 import com.radixdlt.environment.NodeAutoCloseable;
@@ -92,11 +87,8 @@ import com.radixdlt.rev2.modules.*;
 import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
-import com.radixdlt.statecomputer.REv2StatelessComputerModule;
 import com.radixdlt.statecomputer.RandomTransactionGenerator;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
-import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.SyncRelayConfig;
 
 /** Manages the functional components of a node */
@@ -373,58 +365,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           case REv2StateComputerConfig rev2Config -> {
             var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
 
-            if (REv2DatabaseConfig.isNone(rev2Config.databaseConfig())) {
-              install(new REv2StatelessComputerModule());
-              install(new MockedLedgerRecoveryModule());
-              install(
-                  new AbstractModule() {
-                    @Provides
-                    private RoundUpdate initialRoundUpdate(
-                        BFTConfiguration configuration, ProposerElection proposerElection) {
-                      var highQC = configuration.getVertexStoreState().getHighQC();
-                      var round = highQC.getHighestRound().next();
-                      var leader = proposerElection.getProposer(round);
-                      var nextLeader = proposerElection.getProposer(round.next());
-
-                      return RoundUpdate.create(round, highQC, leader, nextLeader);
-                    }
-
-                    @Provides
-                    private BFTConfiguration configuration(
-                        @LastEpochProof LedgerProof proof,
-                        BFTValidatorSet validatorSet,
-                        Hasher hasher) {
-                      var genesisVertex =
-                          Vertex.createInitialEpochVertex(
-                                  LedgerHeader.genesis(
-                                      initialAccumulatorState,
-                                      LedgerHashes.zero(),
-                                      validatorSet,
-                                      0,
-                                      0))
-                              .withId(hasher);
-                      var nextLedgerHeader =
-                          LedgerHeader.create(
-                              proof.getNextEpoch().orElseThrow().getEpoch(),
-                              Round.genesis(),
-                              proof.getAccumulatorState(),
-                              proof.getLedgerHashes(),
-                              proof.consensusParentRoundTimestamp(),
-                              proof.proposerTimestamp());
-                      var initialEpochQC =
-                          QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
-                      var proposerElection = new WeightedRotatingLeaders(validatorSet);
-                      return new BFTConfiguration(
-                          proposerElection,
-                          validatorSet,
-                          VertexStoreState.create(
-                              HighQC.ofInitialEpochQc(initialEpochQC), genesisVertex, hasher));
-                    }
-                  });
-            } else {
-              install(new REv2LedgerRecoveryModule(initialAccumulatorState, rev2Config.genesis()));
-              install(new REv2ConsensusRecoveryModule());
-            }
+            install(new REv2LedgerRecoveryModule(initialAccumulatorState, rev2Config.genesis()));
+            install(new REv2ConsensusRecoveryModule());
 
             switch (rev2Config.proposerConfig()) {
               case REV2ProposerConfig.Generated generated -> {
