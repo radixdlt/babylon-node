@@ -143,7 +143,9 @@ public final class RadixNodeModule extends AbstractModule {
           Network.HAMMUNET,
           Network.MARDUNET,
           Network.NERGALNET,
-          Network.NEBUNET);
+          Network.NEBUNET,
+          Network.ANSHARNET,
+          Network.KISHARNET);
   private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE =
       Decimal.of(700_000_000_000L); // 70% XRD_MAX_SUPPLY
   private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR =
