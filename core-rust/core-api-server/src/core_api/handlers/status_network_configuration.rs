@@ -5,7 +5,7 @@ use state_manager::jni::state_manager::ActualStateManager;
 
 #[tracing::instrument(err(Debug), skip(state))]
 pub(crate) async fn handle_status_network_configuration(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
 ) -> Result<Json<models::NetworkConfigurationResponse>, ResponseError<()>> {
     core_api_handler_empty_request(state, handle_status_network_configuration_internal)
 }

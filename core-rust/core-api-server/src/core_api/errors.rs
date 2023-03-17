@@ -109,3 +109,12 @@ pub(crate) fn detailed_error<E: ErrorDetails>(
         details: Some(details.into()),
     }
 }
+
+pub(crate) fn length_limit_error<E: ErrorDetails>() -> ResponseError<E> {
+    ResponseError {
+        status_code: StatusCode::PAYLOAD_TOO_LARGE,
+        public_error_message: "length limit exceeded".into(),
+        trace: None,
+        details: None,
+    }
+}

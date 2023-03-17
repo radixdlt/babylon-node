@@ -11,7 +11,7 @@ use state_manager::store::traits::*;
 
 #[tracing::instrument(err(Debug), skip(state))]
 pub(crate) async fn handle_transaction_status(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
     request: Json<models::TransactionStatusRequest>,
 ) -> Result<Json<models::TransactionStatusResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_transaction_status_internal)

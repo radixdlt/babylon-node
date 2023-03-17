@@ -10,7 +10,7 @@ use crate::core_api::models::StateNonFungibleResponse;
 use state_manager::jni::state_manager::ActualStateManager;
 
 pub(crate) async fn handle_state_non_fungible(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
     request: Json<models::StateNonFungibleRequest>,
 ) -> Result<Json<StateNonFungibleResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_state_non_fungible_internal)

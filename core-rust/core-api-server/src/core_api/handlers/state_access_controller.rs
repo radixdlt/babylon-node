@@ -8,7 +8,7 @@ use state_manager::query::{dump_component_state, VaultData};
 use super::map_to_descendent_id;
 
 pub(crate) async fn handle_state_access_controller(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
     request: Json<models::StateAccessControllerRequest>,
 ) -> Result<Json<models::StateAccessControllerResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_state_access_controller_internal)

@@ -5,7 +5,7 @@ use state_manager::jni::state_manager::ActualStateManager;
 use super::to_api_notarized_transaction;
 
 pub(crate) async fn handle_mempool_transaction(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
     request: Json<models::MempoolTransactionRequest>,
 ) -> Result<Json<models::MempoolTransactionResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_mempool_list_internal)

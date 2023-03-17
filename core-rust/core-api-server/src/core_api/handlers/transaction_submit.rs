@@ -24,7 +24,7 @@ impl ErrorDetails for TransactionSubmitErrorDetails {
 
 #[tracing::instrument(level = "debug", skip(state), err(Debug))]
 pub(crate) async fn handle_transaction_submit(
-    Extension(state): Extension<CoreApiState>,
+    State(state): State<CoreApiState>,
     Json(request): Json<models::TransactionSubmitRequest>,
 ) -> Result<Json<models::TransactionSubmitResponse>, ResponseError<TransactionSubmitErrorDetails>> {
     let mut state_manager = state.state_manager.write();
