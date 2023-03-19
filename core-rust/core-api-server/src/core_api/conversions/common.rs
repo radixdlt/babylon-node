@@ -1,4 +1,4 @@
-use radix_engine::types::scrypto_decode;
+use radix_engine::types::{scrypto_decode, scrypto_encode, ScryptoEncode};
 use radix_engine_common::data::scrypto::{ScryptoValue, SerializableScryptoValue};
 use serde_json::to_value;
 
@@ -11,6 +11,19 @@ pub fn to_hex<T: AsRef<[u8]>>(v: T) -> String {
 
 pub fn from_hex<T: AsRef<[u8]>>(v: T) -> Result<Vec<u8>, ExtractionError> {
     hex::decode(v).map_err(|_| ExtractionError::InvalidHex)
+}
+
+pub fn encodable_to_api_sbor_data(
+    context: &MappingContext,
+    value: &impl ScryptoEncode,
+) -> Result<models::SborData, MappingError> {
+    scrypto_bytes_to_api_sbor_data(
+        context,
+        &scrypto_encode(value).map_err(|err| MappingError::SborEncodeError {
+            encode_error: err,
+            message: "Could not encode sbor for SBOR data".to_string(),
+        })?,
+    )
 }
 
 pub fn scrypto_bytes_to_api_sbor_data(
@@ -34,7 +47,6 @@ pub fn scrypto_value_to_api_sbor_data(
         to_value(scrypto_value.simple_serializable(&context.bech32_encoder)).map_err(|err| {
             MappingError::SborSerializationError {
                 message: err.to_string(),
-                bytes: scrypto_bytes.to_vec(),
             }
         })?;
     Ok(models::SborData {

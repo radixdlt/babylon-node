@@ -29,20 +29,20 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * ClockCurrentMinuteSubstateAllOf
+ * ClockSubstateAllOf
  */
 @JsonPropertyOrder({
-  ClockCurrentMinuteSubstateAllOf.JSON_PROPERTY_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE
+  ClockSubstateAllOf.JSON_PROPERTY_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class ClockCurrentMinuteSubstateAllOf {
+public class ClockSubstateAllOf {
   public static final String JSON_PROPERTY_TIMESTAMP_ROUNDED_DOWN_TO_MINUTE = "timestamp_rounded_down_to_minute";
   private Instant timestampRoundedDownToMinute;
 
-  public ClockCurrentMinuteSubstateAllOf() { 
+  public ClockSubstateAllOf() { 
   }
 
-  public ClockCurrentMinuteSubstateAllOf timestampRoundedDownToMinute(Instant timestampRoundedDownToMinute) {
+  public ClockSubstateAllOf timestampRoundedDownToMinute(Instant timestampRoundedDownToMinute) {
     this.timestampRoundedDownToMinute = timestampRoundedDownToMinute;
     return this;
   }
@@ -69,7 +69,7 @@ public class ClockCurrentMinuteSubstateAllOf {
 
 
   /**
-   * Return true if this ClockCurrentMinuteSubstate_allOf object is equal to o.
+   * Return true if this ClockSubstate_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,8 +79,8 @@ public class ClockCurrentMinuteSubstateAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ClockCurrentMinuteSubstateAllOf clockCurrentMinuteSubstateAllOf = (ClockCurrentMinuteSubstateAllOf) o;
-    return Objects.equals(this.timestampRoundedDownToMinute, clockCurrentMinuteSubstateAllOf.timestampRoundedDownToMinute);
+    ClockSubstateAllOf clockSubstateAllOf = (ClockSubstateAllOf) o;
+    return Objects.equals(this.timestampRoundedDownToMinute, clockSubstateAllOf.timestampRoundedDownToMinute);
   }
 
   @Override
@@ -91,7 +91,7 @@ public class ClockCurrentMinuteSubstateAllOf {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ClockCurrentMinuteSubstateAllOf {\n");
+    sb.append("class ClockSubstateAllOf {\n");
     sb.append("    timestampRoundedDownToMinute: ").append(toIndentedString(timestampRoundedDownToMinute)).append("\n");
     sb.append("}");
     return sb.toString();

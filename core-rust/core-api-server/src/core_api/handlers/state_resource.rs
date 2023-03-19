@@ -66,7 +66,7 @@ fn handle_state_resource_internal(
     let mapping_context = MappingContext::new(&state_manager.network);
 
     Ok(models::StateResourceResponse {
-        manager: Some(to_api_resource_manager_substate(
+        manager: Some(to_api_fungible_resource_manager_substate(
             &mapping_context,
             &resource_manager,
         )?),

@@ -22,54 +22,54 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.SborData;
+import com.radixdlt.api.core.generated.models.KeyValueStoreSchema;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * BlueprintData
+ * KeyValueStoreTypeInfoDetailsAllOf
  */
 @JsonPropertyOrder({
-  BlueprintData.JSON_PROPERTY_ABI
+  KeyValueStoreTypeInfoDetailsAllOf.JSON_PROPERTY_KEY_VALUE_STORE_SCHEMA
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class BlueprintData {
-  public static final String JSON_PROPERTY_ABI = "abi";
-  private SborData abi;
+public class KeyValueStoreTypeInfoDetailsAllOf {
+  public static final String JSON_PROPERTY_KEY_VALUE_STORE_SCHEMA = "key_value_store_schema";
+  private KeyValueStoreSchema keyValueStoreSchema;
 
-  public BlueprintData() { 
+  public KeyValueStoreTypeInfoDetailsAllOf() { 
   }
 
-  public BlueprintData abi(SborData abi) {
-    this.abi = abi;
+  public KeyValueStoreTypeInfoDetailsAllOf keyValueStoreSchema(KeyValueStoreSchema keyValueStoreSchema) {
+    this.keyValueStoreSchema = keyValueStoreSchema;
     return this;
   }
 
    /**
-   * Get abi
-   * @return abi
+   * Get keyValueStoreSchema
+   * @return keyValueStoreSchema
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ABI)
+  @JsonProperty(JSON_PROPERTY_KEY_VALUE_STORE_SCHEMA)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public SborData getAbi() {
-    return abi;
+  public KeyValueStoreSchema getKeyValueStoreSchema() {
+    return keyValueStoreSchema;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ABI)
+  @JsonProperty(JSON_PROPERTY_KEY_VALUE_STORE_SCHEMA)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAbi(SborData abi) {
-    this.abi = abi;
+  public void setKeyValueStoreSchema(KeyValueStoreSchema keyValueStoreSchema) {
+    this.keyValueStoreSchema = keyValueStoreSchema;
   }
 
 
   /**
-   * Return true if this BlueprintData object is equal to o.
+   * Return true if this KeyValueStoreTypeInfoDetails_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -79,20 +79,20 @@ public class BlueprintData {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    BlueprintData blueprintData = (BlueprintData) o;
-    return Objects.equals(this.abi, blueprintData.abi);
+    KeyValueStoreTypeInfoDetailsAllOf keyValueStoreTypeInfoDetailsAllOf = (KeyValueStoreTypeInfoDetailsAllOf) o;
+    return Objects.equals(this.keyValueStoreSchema, keyValueStoreTypeInfoDetailsAllOf.keyValueStoreSchema);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(abi);
+    return Objects.hash(keyValueStoreSchema);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class BlueprintData {\n");
-    sb.append("    abi: ").append(toIndentedString(abi)).append("\n");
+    sb.append("class KeyValueStoreTypeInfoDetailsAllOf {\n");
+    sb.append("    keyValueStoreSchema: ").append(toIndentedString(keyValueStoreSchema)).append("\n");
     sb.append("}");
     return sb.toString();
   }

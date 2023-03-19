@@ -12,15 +12,22 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct PackageRoyaltyConfigSubstateAllOf {
-    #[serde(rename = "blueprint_royalties")]
-    pub blueprint_royalties: Vec<crate::core_api::generated::models::BlueprintRoyaltyConfig>,
+pub struct ObjectTypeInfoDetailsAllOf {
+    /// The Bech32m-encoded human readable version of the package address
+    #[serde(rename = "package_address")]
+    pub package_address: String,
+    #[serde(rename = "blueprint_name")]
+    pub blueprint_name: String,
+    #[serde(rename = "global")]
+    pub global: bool,
 }
 
-impl PackageRoyaltyConfigSubstateAllOf {
-    pub fn new(blueprint_royalties: Vec<crate::core_api::generated::models::BlueprintRoyaltyConfig>) -> PackageRoyaltyConfigSubstateAllOf {
-        PackageRoyaltyConfigSubstateAllOf {
-            blueprint_royalties,
+impl ObjectTypeInfoDetailsAllOf {
+    pub fn new(package_address: String, blueprint_name: String, global: bool) -> ObjectTypeInfoDetailsAllOf {
+        ObjectTypeInfoDetailsAllOf {
+            package_address,
+            blueprint_name,
+            global,
         }
     }
 }

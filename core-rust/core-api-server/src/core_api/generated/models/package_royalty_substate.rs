@@ -12,18 +12,21 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ClockCurrentMinuteSubstate {
+pub struct PackageRoyaltySubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "timestamp_rounded_down_to_minute")]
-    pub timestamp_rounded_down_to_minute: Box<crate::core_api::generated::models::Instant>,
+    #[serde(rename = "vault_entity", skip_serializing_if = "Option::is_none")]
+    pub vault_entity: Option<Box<crate::core_api::generated::models::EntityReference>>,
+    #[serde(rename = "blueprint_royalties")]
+    pub blueprint_royalties: Vec<crate::core_api::generated::models::BlueprintRoyaltyConfig>,
 }
 
-impl ClockCurrentMinuteSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, timestamp_rounded_down_to_minute: crate::core_api::generated::models::Instant) -> ClockCurrentMinuteSubstate {
-        ClockCurrentMinuteSubstate {
+impl PackageRoyaltySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, blueprint_royalties: Vec<crate::core_api::generated::models::BlueprintRoyaltyConfig>) -> PackageRoyaltySubstate {
+        PackageRoyaltySubstate {
             substate_type,
-            timestamp_rounded_down_to_minute: Box::new(timestamp_rounded_down_to_minute),
+            vault_entity: None,
+            blueprint_royalties,
         }
     }
 }

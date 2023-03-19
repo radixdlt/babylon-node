@@ -32,7 +32,6 @@ pub enum MappingError {
     },
     SborSerializationError {
         message: String,
-        bytes: Vec<u8>,
     },
     InvalidManifest {
         message: String,

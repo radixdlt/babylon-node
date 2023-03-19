@@ -12,15 +12,16 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct BlueprintData {
-    #[serde(rename = "abi")]
-    pub abi: Box<crate::core_api::generated::models::SborData>,
+pub struct PackageSchema {
+    /// A map from the blueprint name to BlueprintSchema
+    #[serde(rename = "blueprint_schemas")]
+    pub blueprint_schemas: ::std::collections::HashMap<String, crate::core_api::generated::models::BlueprintSchema>,
 }
 
-impl BlueprintData {
-    pub fn new(abi: crate::core_api::generated::models::SborData) -> BlueprintData {
-        BlueprintData {
-            abi: Box::new(abi),
+impl PackageSchema {
+    pub fn new(blueprint_schemas: ::std::collections::HashMap<String, crate::core_api::generated::models::BlueprintSchema>) -> PackageSchema {
+        PackageSchema {
+            blueprint_schemas,
         }
     }
 }

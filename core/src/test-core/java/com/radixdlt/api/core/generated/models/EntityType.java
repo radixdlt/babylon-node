@@ -48,8 +48,6 @@ public enum EntityType {
   
   KEYVALUESTORE("KeyValueStore"),
   
-  NONFUNGIBLESTORE("NonFungibleStore"),
-  
   VAULT("Vault");
 
   private String value;

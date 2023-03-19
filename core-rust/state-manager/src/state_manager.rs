@@ -139,6 +139,7 @@ pub struct StateManager<S> {
     pub prometheus_registry: Registry,
     execution_config: ExecutionConfig,
     execution_config_for_pending_transactions: ExecutionConfig,
+    execution_config_for_genesis: ExecutionConfig,
     scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
     fee_reserve_config: FeeReserveConfig,
     intent_hash_manager: TestIntentHashManager,
@@ -178,15 +179,11 @@ where
             execution_cache: ExecutionCache::new(accumulator_hash),
             user_transaction_validator,
             ledger_transaction_validator: committed_transaction_validator,
-            execution_config: ExecutionConfig {
-                debug: logging_config.engine_trace,
-                ..ExecutionConfig::standard()
-            },
-            execution_config_for_pending_transactions: ExecutionConfig {
-                debug: logging_config.engine_trace,
-                abort_when_loan_repaid: true,
-                ..ExecutionConfig::standard()
-            },
+            execution_config: ExecutionConfig::standard().with_trace(logging_config.engine_trace),
+            execution_config_for_pending_transactions: ExecutionConfig::up_to_loan_repayment()
+                .with_trace(logging_config.engine_trace),
+            execution_config_for_genesis: ExecutionConfig::genesis()
+                .with_trace(logging_config.engine_trace),
             scrypto_interpreter: ScryptoInterpreter {
                 wasm_engine: DefaultWasmEngine::default(),
                 wasm_instrumenter: WasmInstrumenter::default(),
@@ -282,7 +279,7 @@ impl<S: ReadableStore> StateManager<S> {
                     store,
                     &self.scrypto_interpreter,
                     &self.fee_reserve_config,
-                    &self.execution_config,
+                    if parent_transaction_identifiers.state_version == 0 { &self.execution_config_for_genesis } else { &self.execution_config },
                     executable,
                 );
 
@@ -584,8 +581,7 @@ where
             TransactionResult::Commit(commit) => match &commit.outcome {
                 TransactionOutcome::Success(..) => PrepareGenesisResult {
                     validator_set: commit
-                        .next_epoch
-                        .clone()
+                        .next_epoch()
                         .map(|next_epoch_result| NextEpoch::from(next_epoch_result).validator_set),
                     ledger_hashes: processed.commit_details().ledger_hashes,
                 },
@@ -724,7 +720,7 @@ where
                 state_tracker.update(processed.commit_details());
                 committed.push(manifest_encode(&validator_txn).unwrap());
 
-                commit_result.next_epoch.clone().map(NextEpoch::from)
+                commit_result.next_epoch().map(NextEpoch::from)
             }
             TransactionResult::Reject(reject_result) => {
                 panic!("Validator txn failed: {reject_result:?}")
@@ -815,8 +811,8 @@ where
                             None,
                         ));
 
-                        if let Some(next_epoch_result) = &result.next_epoch {
-                            next_epoch = Some(NextEpoch::from(next_epoch_result.clone()));
+                        if let Some(next_epoch_result) = result.next_epoch() {
+                            next_epoch = Some(NextEpoch::from(next_epoch_result));
                             break;
                         }
                     }
@@ -1011,9 +1007,9 @@ where
                 &payload_hash,
             );
 
-            let commit_result = match &processed.receipt().result {
+            match &processed.receipt().result {
                 TransactionResult::Commit(result) => {
-                    if result.next_epoch.is_some() {
+                    if result.next_epoch().is_some() {
                         let is_last = i == (commit_transactions_len - 1);
                         if !is_last {
                             return Err(CommitError::MissingEpochProof);
@@ -1022,7 +1018,6 @@ where
                         // (currently it would fail for some of our tests which create genesis proof
                         // directly, without caring about validator addresses)
                     }
-                    result.clone()
                 }
                 TransactionResult::Reject(error) => {
                     panic!(
@@ -1037,10 +1032,8 @@ where
                     );
                 }
             };
-            let ledger_receipt = LedgerTransactionReceipt::from((
-                commit_result,
-                processed.receipt().execution.fee_summary.clone(),
-            ));
+            let ledger_receipt = LedgerTransactionReceipt::try_from(processed.receipt().clone())
+                .expect("Failed to convert receipt to ledger receipt, despite knowing it was alread a commit result");
 
             if let LedgerTransaction::User(notarized_transaction) = &transaction {
                 let intent_hash = notarized_transaction.intent_hash();

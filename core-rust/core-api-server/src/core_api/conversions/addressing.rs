@@ -7,8 +7,8 @@ use crate::core_api::models::ModuleType;
 use models::{EntityType, SubstateKeyType, SubstateType};
 use radix_engine::types::{
     scrypto_encode, ClockOffset, ComponentAddress, ComponentOffset, EpochManagerOffset,
-    KeyValueStoreOffset, NonFungibleStoreOffset, PackageAddress, PackageOffset, RENodeId,
-    ResourceAddress, ResourceManagerOffset, SubstateId, SubstateOffset, VaultOffset,
+    KeyValueStoreOffset, PackageAddress, PackageOffset, RENodeId, ResourceAddress,
+    ResourceManagerOffset, SubstateId, SubstateOffset, VaultOffset,
 };
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::data::scrypto::model::{
@@ -123,13 +123,9 @@ impl TryFrom<RENodeId> for MappedEntityId {
                 EntityType::ResourceManager
             }
             RENodeId::KeyValueStore(_) => EntityType::KeyValueStore,
-            RENodeId::NonFungibleStore(_) => EntityType::NonFungibleStore,
             RENodeId::Object([INTERNAL_OBJECT_VAULT_ID, ..]) => EntityType::Vault,
             RENodeId::Object([..]) => EntityType::Component,
             RENodeId::AuthZoneStack => return Err(transient_renode_error("AuthZoneStack")),
-            RENodeId::TransactionRuntime => {
-                return Err(transient_renode_error("TransactionRuntime"))
-            }
         };
         Ok(MappedEntityId {
             entity_type,
@@ -181,7 +177,6 @@ impl From<MappedSubstateId> for models::EntityReference {
     }
 }
 
-#[tracing::instrument(skip_all)]
 fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, MappingError> {
     // Helper methods
     fn unknown_substate_error(renode_name: &'static str, substate_id: &SubstateId) -> MappingError {
@@ -211,6 +206,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
     //   we capture all possible substate types at compile time...
     // We can't capture new offset types under an RENode though - check nodes.rs after each merge to check we're not missing any
     let (entity_type, substate_type_key) = match &substate_id {
+        // GLOBAL NORMAL COMPONENTS
         SubstateId(
             RENodeId::GlobalObject(Address::Component(ComponentAddress::Normal(..))),
             module_id,
@@ -249,7 +245,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             };
             (EntityType::Component, substate_type_key)
         }
-
+        // GLOBAL ACCOUNT COMPONENTS
         SubstateId(
             RENodeId::GlobalObject(Address::Component(
                 ComponentAddress::Account(..)
@@ -280,6 +276,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::Account, substate_type_key)
         }
 
+        // GLOBAL ACCESS CONTROLLERS
         SubstateId(
             RENodeId::GlobalObject(Address::Component(ComponentAddress::AccessController(..))),
             module_id,
@@ -309,6 +306,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::AccessController, substate_type_key)
         }
 
+        // GLOBAL PACKAGES
         SubstateId(RENodeId::GlobalObject(Address::Package(..)), module_id, offset) => {
             let substate_type_key = match (module_id, offset) {
                 (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
@@ -325,15 +323,17 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         SubstateType::PackageCodeType,
                         SubstateKeyType::PackageCodeType,
                     ),
-                },
-                (NodeModuleId::PackageRoyalty, SubstateOffset::Royalty(offset)) => match offset {
-                    RoyaltyOffset::RoyaltyConfig => (
-                        SubstateType::PackageRoyaltyConfig,
-                        SubstateKeyType::PackageRoyaltyConfig,
+                    PackageOffset::Royalty => (
+                        SubstateType::PackageRoyalty,
+                        SubstateKeyType::PackageRoyalty,
                     ),
-                    RoyaltyOffset::RoyaltyAccumulator => (
-                        SubstateType::PackageRoyaltyAccumulator,
-                        SubstateKeyType::PackageRoyaltyAccumulator,
+                    PackageOffset::FunctionAccessRules => (
+                        SubstateType::PackageFunctionAccessRules,
+                        SubstateKeyType::PackageFunctionAccessRules,
+                    ),
+                    PackageOffset::EventSchema => (
+                        SubstateType::PackageEventSchema,
+                        SubstateKeyType::PackageEventSchema,
                     ),
                 },
                 (
@@ -345,24 +345,12 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
                     }
                 },
-                (NodeModuleId::FunctionAccessRules, SubstateOffset::PackageAccessRules) => (
-                    SubstateType::FunctionAccessRules,
-                    SubstateKeyType::FunctionAccessRules,
-                ),
-                (
-                    NodeModuleId::PackageEventSchema,
-                    SubstateOffset::PackageEventSchema(
-                        PackageEventSchemaOffset::PackageEventSchema,
-                    ),
-                ) => (
-                    SubstateType::PackageEventSchema,
-                    SubstateKeyType::PackageEventSchema,
-                ),
                 _ => return Err(unknown_substate_error("Package", &substate_id)),
             };
             (EntityType::Package, substate_type_key)
         }
 
+        // GLOBAL RESOURCES
         SubstateId(RENodeId::GlobalObject(Address::Resource(..)), module_id, offset) => {
             let substate_type_key = match (module_id, offset) {
                 (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
@@ -370,8 +358,8 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 },
                 (NodeModuleId::SELF, SubstateOffset::ResourceManager(offset)) => match offset {
                     ResourceManagerOffset::ResourceManager => (
-                        SubstateType::ResourceManager,
-                        SubstateKeyType::ResourceManager,
+                        SubstateType::EitherResourceManager,
+                        SubstateKeyType::EitherResourceManager,
                     ),
                 },
                 (
@@ -391,22 +379,13 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::ResourceManager, substate_type_key)
         }
 
-        SubstateId(RENodeId::NonFungibleStore(_), _, offset) => {
-            let substate_type_key = match offset {
-                SubstateOffset::NonFungibleStore(offset) => match offset {
-                    NonFungibleStoreOffset::Entry(_) => (
-                        SubstateType::NonFungibleStoreEntry,
-                        SubstateKeyType::NonFungibleStoreEntry,
-                    ),
+        // KEY VALUE STORES
+        SubstateId(RENodeId::KeyValueStore(_), module_id, offset) => {
+            let substate_type_key = match (module_id, offset) {
+                (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
+                    TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
                 },
-                _ => return Err(unknown_substate_error("NonFungibleStore", &substate_id)),
-            };
-            (EntityType::NonFungibleStore, substate_type_key)
-        }
-
-        SubstateId(RENodeId::KeyValueStore(_), _, offset) => {
-            let substate_type_key = match offset {
-                SubstateOffset::KeyValueStore(offset) => match offset {
+                (NodeModuleId::SELF, SubstateOffset::KeyValueStore(offset)) => match offset {
                     KeyValueStoreOffset::Entry(_) => (
                         SubstateType::KeyValueStoreEntry,
                         SubstateKeyType::KeyValueStoreEntry,
@@ -417,7 +396,130 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             (EntityType::KeyValueStore, substate_type_key)
         }
 
-        // TODO: Fix
+        // GLOBAL EPOCH MANAGER
+        SubstateId(
+            RENodeId::GlobalObject(Address::Component(ComponentAddress::EpochManager(..))),
+            module_id,
+            offset,
+        ) => {
+            let substate_type_key = match (module_id, offset) {
+                (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
+                    TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
+                },
+                (NodeModuleId::SELF, SubstateOffset::EpochManager(offset)) => match offset {
+                    EpochManagerOffset::EpochManager => {
+                        (SubstateType::EpochManager, SubstateKeyType::EpochManager)
+                    }
+                    EpochManagerOffset::CurrentValidatorSet => (
+                        SubstateType::EpochManager,
+                        SubstateKeyType::CurrentValidatorSet,
+                    ),
+                    EpochManagerOffset::PreparingValidatorSet => (
+                        SubstateType::EpochManager,
+                        SubstateKeyType::PreparingValidatorSet,
+                    ),
+                },
+                (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
+                    AccessRulesOffset::AccessRules => {
+                        (SubstateType::AccessRules, SubstateKeyType::AccessRules)
+                    }
+                },
+                (
+                    NodeModuleId::Metadata,
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                ) => (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry),
+                _ => return Err(unknown_substate_error("EpochManager", &substate_id)),
+            };
+            (EntityType::EpochManager, substate_type_key)
+        }
+
+        // GLOBAL VALIDATOR
+        SubstateId(
+            RENodeId::GlobalObject(Address::Component(ComponentAddress::Validator(..))),
+            module_id,
+            offset,
+        ) => {
+            let substate_type_key = match (module_id, offset) {
+                (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
+                    TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
+                },
+                (NodeModuleId::SELF, SubstateOffset::Validator(offset)) => match offset {
+                    ValidatorOffset::Validator => {
+                        (SubstateType::Validator, SubstateKeyType::Validator)
+                    }
+                },
+                (
+                    NodeModuleId::Metadata,
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                ) => (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry),
+                (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
+                    AccessRulesOffset::AccessRules => {
+                        (SubstateType::AccessRules, SubstateKeyType::AccessRules)
+                    }
+                },
+                _ => return Err(unknown_substate_error("Validator", &substate_id)),
+            };
+            (EntityType::Validator, substate_type_key)
+        }
+
+        // GLOBAL CLOCK
+        SubstateId(
+            RENodeId::GlobalObject(Address::Component(ComponentAddress::Clock(..))),
+            module_id,
+            offset,
+        ) => {
+            let substate_type_key = match (module_id, offset) {
+                (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
+                    TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
+                },
+                (NodeModuleId::SELF, SubstateOffset::Clock(offset)) => match offset {
+                    ClockOffset::CurrentTimeRoundedToMinutes => {
+                        (SubstateType::Clock, SubstateKeyType::Clock)
+                    }
+                },
+                (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
+                    AccessRulesOffset::AccessRules => {
+                        (SubstateType::AccessRules, SubstateKeyType::AccessRules)
+                    }
+                },
+                (
+                    NodeModuleId::Metadata,
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                ) => (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry),
+                _ => return Err(unknown_substate_error("Clock", &substate_id)),
+            };
+            (EntityType::Clock, substate_type_key)
+        }
+
+        // GLOBAL IDENTITY
+        SubstateId(
+            RENodeId::GlobalObject(Address::Component(
+                ComponentAddress::Identity(..)
+                | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
+                | ComponentAddress::EddsaEd25519VirtualIdentity(..),
+            )),
+            module_id,
+            offset,
+        ) => {
+            let substate_type_key = match (module_id, offset) {
+                (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
+                    TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
+                },
+                (
+                    NodeModuleId::Metadata,
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                ) => (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry),
+                (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
+                    AccessRulesOffset::AccessRules => {
+                        (SubstateType::AccessRules, SubstateKeyType::AccessRules)
+                    }
+                },
+                _ => return Err(unknown_substate_error("Identity", &substate_id)),
+            };
+            (EntityType::Identity, substate_type_key)
+        }
+
+        // INTERNAL OBJECTS
         SubstateId(RENodeId::Object(object_id), _, offset) => match object_id {
             [INTERNAL_OBJECT_VAULT_ID, ..] => {
                 let substate_type_key = match offset {
@@ -466,135 +568,12 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
 
                 (EntityType::Component, substate_type_key)
             }
-            _ => return Err(unknown_substate_error("Unknown RENode", &substate_id)),
+            _ => return Err(unknown_substate_error("Unmapped Object Type", &substate_id)),
         },
-
-        SubstateId(
-            RENodeId::GlobalObject(Address::Component(ComponentAddress::EpochManager(..))),
-            module_id,
-            offset,
-        ) => {
-            let substate_type_key = match (module_id, offset) {
-                (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
-                    TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
-                },
-                (NodeModuleId::SELF, SubstateOffset::EpochManager(offset)) => match offset {
-                    EpochManagerOffset::EpochManager => {
-                        (SubstateType::EpochManager, SubstateKeyType::EpochManager)
-                    }
-                    EpochManagerOffset::CurrentValidatorSet => (
-                        SubstateType::EpochManager,
-                        SubstateKeyType::CurrentValidatorSet,
-                    ),
-                    EpochManagerOffset::PreparingValidatorSet => (
-                        SubstateType::EpochManager,
-                        SubstateKeyType::PreparingValidatorSet,
-                    ),
-                },
-                (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
-                    AccessRulesOffset::AccessRules => {
-                        (SubstateType::AccessRules, SubstateKeyType::AccessRules)
-                    }
-                },
-                (
-                    NodeModuleId::Metadata,
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                ) => (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry),
-                _ => return Err(unknown_substate_error("EpochManager", &substate_id)),
-            };
-            (EntityType::EpochManager, substate_type_key)
-        }
-
-        SubstateId(
-            RENodeId::GlobalObject(Address::Component(ComponentAddress::Validator(..))),
-            module_id,
-            offset,
-        ) => {
-            let substate_type_key = match (module_id, offset) {
-                (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
-                    TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
-                },
-                (NodeModuleId::SELF, SubstateOffset::Validator(offset)) => match offset {
-                    ValidatorOffset::Validator => {
-                        (SubstateType::Validator, SubstateKeyType::Validator)
-                    }
-                },
-                (
-                    NodeModuleId::Metadata,
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                ) => (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry),
-                (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
-                    AccessRulesOffset::AccessRules => {
-                        (SubstateType::AccessRules, SubstateKeyType::AccessRules)
-                    }
-                },
-                _ => return Err(unknown_substate_error("Validator", &substate_id)),
-            };
-            (EntityType::Validator, substate_type_key)
-        }
-
-        SubstateId(
-            RENodeId::GlobalObject(Address::Component(ComponentAddress::Clock(..))),
-            module_id,
-            offset,
-        ) => {
-            let substate_type_key = match (module_id, offset) {
-                (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
-                    TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
-                },
-                (NodeModuleId::SELF, SubstateOffset::Clock(offset)) => match offset {
-                    ClockOffset::CurrentTimeRoundedToMinutes => (
-                        SubstateType::ClockCurrentMinute,
-                        SubstateKeyType::ClockCurrentMinute,
-                    ),
-                },
-                (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
-                    AccessRulesOffset::AccessRules => {
-                        (SubstateType::AccessRules, SubstateKeyType::AccessRules)
-                    }
-                },
-                (
-                    NodeModuleId::Metadata,
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                ) => (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry),
-                _ => return Err(unknown_substate_error("Clock", &substate_id)),
-            };
-            (EntityType::Clock, substate_type_key)
-        }
-
-        SubstateId(
-            RENodeId::GlobalObject(Address::Component(
-                ComponentAddress::Identity(..)
-                | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
-                | ComponentAddress::EddsaEd25519VirtualIdentity(..),
-            )),
-            module_id,
-            offset,
-        ) => {
-            let substate_type_key = match (module_id, offset) {
-                (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
-                    TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
-                },
-                (
-                    NodeModuleId::Metadata,
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                ) => (SubstateType::MetadataEntry, SubstateKeyType::MetadataEntry),
-                (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
-                    AccessRulesOffset::AccessRules => {
-                        (SubstateType::AccessRules, SubstateKeyType::AccessRules)
-                    }
-                },
-                _ => return Err(unknown_substate_error("Identity", &substate_id)),
-            };
-            (EntityType::Identity, substate_type_key)
-        }
 
         // TRANSIENT SUBSTATES
         SubstateId(RENodeId::AuthZoneStack, ..) => {
             return Err(transient_substate_error("AuthZoneStack", &substate_id))
-        }
-        SubstateId(RENodeId::TransactionRuntime, ..) => {
-            return Err(transient_substate_error("TransactionRuntime", &substate_id))
         }
     };
 
@@ -672,11 +651,8 @@ pub fn node_module_id_to_module_type(node_module_id: &NodeModuleId) -> ModuleTyp
         NodeModuleId::Metadata => ModuleType::Metadata,
         NodeModuleId::AccessRules => ModuleType::AccessRules,
         NodeModuleId::AccessRules1 => ModuleType::AccessRules1,
-        NodeModuleId::FunctionAccessRules => ModuleType::FunctionAccessRules,
         NodeModuleId::ComponentRoyalty => ModuleType::ComponentRoyalty,
-        NodeModuleId::PackageRoyalty => ModuleType::PackageRoyalty,
         NodeModuleId::TypeInfo => ModuleType::TypeInfo,
-        NodeModuleId::PackageEventSchema => ModuleType::PackageEventSchema,
     }
 }
 

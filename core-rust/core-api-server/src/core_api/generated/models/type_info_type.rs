@@ -9,20 +9,31 @@
  */
 
 
+/// 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
+pub enum TypeInfoType {
+    #[serde(rename = "Object")]
+    Object,
+    #[serde(rename = "KeyValueStore")]
+    KeyValueStore,
 
-
-#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct FunctionAccessRulesSubstate {
-    #[serde(rename = "substate_type")]
-    pub substate_type: crate::core_api::generated::models::SubstateType,
 }
 
-impl FunctionAccessRulesSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType) -> FunctionAccessRulesSubstate {
-        FunctionAccessRulesSubstate {
-            substate_type,
+impl ToString for TypeInfoType {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Object => String::from("Object"),
+            Self::KeyValueStore => String::from("KeyValueStore"),
         }
     }
 }
+
+impl Default for TypeInfoType {
+    fn default() -> TypeInfoType {
+        Self::Object
+    }
+}
+
+
 
 

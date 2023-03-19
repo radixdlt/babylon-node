@@ -241,6 +241,12 @@ impl HashTreeDiff {
     }
 }
 
+impl Default for HashTreeDiff {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct AccuTreeDiff<K, N> {
     pub key: K,
     pub slice: TreeSlice<N>,

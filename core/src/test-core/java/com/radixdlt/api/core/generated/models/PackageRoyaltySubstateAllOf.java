@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.BlueprintRoyaltyConfig;
+import com.radixdlt.api.core.generated.models.EntityReference;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -31,25 +32,55 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * PackageRoyaltyConfigSubstateAllOf
+ * PackageRoyaltySubstateAllOf
  */
 @JsonPropertyOrder({
-  PackageRoyaltyConfigSubstateAllOf.JSON_PROPERTY_BLUEPRINT_ROYALTIES
+  PackageRoyaltySubstateAllOf.JSON_PROPERTY_VAULT_ENTITY,
+  PackageRoyaltySubstateAllOf.JSON_PROPERTY_BLUEPRINT_ROYALTIES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class PackageRoyaltyConfigSubstateAllOf {
+public class PackageRoyaltySubstateAllOf {
+  public static final String JSON_PROPERTY_VAULT_ENTITY = "vault_entity";
+  private EntityReference vaultEntity;
+
   public static final String JSON_PROPERTY_BLUEPRINT_ROYALTIES = "blueprint_royalties";
   private List<BlueprintRoyaltyConfig> blueprintRoyalties = new ArrayList<>();
 
-  public PackageRoyaltyConfigSubstateAllOf() { 
+  public PackageRoyaltySubstateAllOf() { 
   }
 
-  public PackageRoyaltyConfigSubstateAllOf blueprintRoyalties(List<BlueprintRoyaltyConfig> blueprintRoyalties) {
+  public PackageRoyaltySubstateAllOf vaultEntity(EntityReference vaultEntity) {
+    this.vaultEntity = vaultEntity;
+    return this;
+  }
+
+   /**
+   * Get vaultEntity
+   * @return vaultEntity
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public EntityReference getVaultEntity() {
+    return vaultEntity;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_VAULT_ENTITY)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setVaultEntity(EntityReference vaultEntity) {
+    this.vaultEntity = vaultEntity;
+  }
+
+
+  public PackageRoyaltySubstateAllOf blueprintRoyalties(List<BlueprintRoyaltyConfig> blueprintRoyalties) {
     this.blueprintRoyalties = blueprintRoyalties;
     return this;
   }
 
-  public PackageRoyaltyConfigSubstateAllOf addBlueprintRoyaltiesItem(BlueprintRoyaltyConfig blueprintRoyaltiesItem) {
+  public PackageRoyaltySubstateAllOf addBlueprintRoyaltiesItem(BlueprintRoyaltyConfig blueprintRoyaltiesItem) {
     this.blueprintRoyalties.add(blueprintRoyaltiesItem);
     return this;
   }
@@ -76,7 +107,7 @@ public class PackageRoyaltyConfigSubstateAllOf {
 
 
   /**
-   * Return true if this PackageRoyaltyConfigSubstate_allOf object is equal to o.
+   * Return true if this PackageRoyaltySubstate_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -86,19 +117,21 @@ public class PackageRoyaltyConfigSubstateAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    PackageRoyaltyConfigSubstateAllOf packageRoyaltyConfigSubstateAllOf = (PackageRoyaltyConfigSubstateAllOf) o;
-    return Objects.equals(this.blueprintRoyalties, packageRoyaltyConfigSubstateAllOf.blueprintRoyalties);
+    PackageRoyaltySubstateAllOf packageRoyaltySubstateAllOf = (PackageRoyaltySubstateAllOf) o;
+    return Objects.equals(this.vaultEntity, packageRoyaltySubstateAllOf.vaultEntity) &&
+        Objects.equals(this.blueprintRoyalties, packageRoyaltySubstateAllOf.blueprintRoyalties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blueprintRoyalties);
+    return Objects.hash(vaultEntity, blueprintRoyalties);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class PackageRoyaltyConfigSubstateAllOf {\n");
+    sb.append("class PackageRoyaltySubstateAllOf {\n");
+    sb.append("    vaultEntity: ").append(toIndentedString(vaultEntity)).append("\n");
     sb.append("    blueprintRoyalties: ").append(toIndentedString(blueprintRoyalties)).append("\n");
     sb.append("}");
     return sb.toString();

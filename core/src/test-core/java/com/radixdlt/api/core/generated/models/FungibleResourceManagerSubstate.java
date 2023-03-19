@@ -28,26 +28,22 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessControllerSubstate;
 import com.radixdlt.api.core.generated.models.AccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.AccountSubstate;
-import com.radixdlt.api.core.generated.models.ClockCurrentMinuteSubstate;
+import com.radixdlt.api.core.generated.models.ClockSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyAccumulatorSubstate;
 import com.radixdlt.api.core.generated.models.ComponentRoyaltyConfigSubstate;
 import com.radixdlt.api.core.generated.models.ComponentStateSubstate;
-import com.radixdlt.api.core.generated.models.EntityReference;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
-import com.radixdlt.api.core.generated.models.FunctionAccessRulesSubstate;
+import com.radixdlt.api.core.generated.models.FungibleResourceManagerSubstate;
+import com.radixdlt.api.core.generated.models.FungibleResourceManagerSubstateAllOf;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.MetadataEntrySubstate;
-import com.radixdlt.api.core.generated.models.NonFungibleIdType;
-import com.radixdlt.api.core.generated.models.NonFungibleStoreEntrySubstate;
+import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerSubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeSubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeTypeSubstate;
 import com.radixdlt.api.core.generated.models.PackageEventSchemaSubstate;
+import com.radixdlt.api.core.generated.models.PackageFunctionAccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.PackageInfoSubstate;
-import com.radixdlt.api.core.generated.models.PackageRoyaltyAccumulatorSubstate;
-import com.radixdlt.api.core.generated.models.PackageRoyaltyConfigSubstate;
-import com.radixdlt.api.core.generated.models.ResourceManagerSubstate;
-import com.radixdlt.api.core.generated.models.ResourceManagerSubstateAllOf;
-import com.radixdlt.api.core.generated.models.ResourceType;
+import com.radixdlt.api.core.generated.models.PackageRoyaltySubstate;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TypeInfoSubstate;
@@ -65,14 +61,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * ResourceManagerSubstate
+ * FungibleResourceManagerSubstate
  */
 @JsonPropertyOrder({
-  ResourceManagerSubstate.JSON_PROPERTY_RESOURCE_TYPE,
-  ResourceManagerSubstate.JSON_PROPERTY_FUNGIBLE_DIVISIBILITY,
-  ResourceManagerSubstate.JSON_PROPERTY_NON_FUNGIBLE_ID_TYPE,
-  ResourceManagerSubstate.JSON_PROPERTY_TOTAL_SUPPLY,
-  ResourceManagerSubstate.JSON_PROPERTY_OWNED_NON_FUNGIBLE_STORE
+  FungibleResourceManagerSubstate.JSON_PROPERTY_DIVISIBILITY,
+  FungibleResourceManagerSubstate.JSON_PROPERTY_TOTAL_SUPPLY
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -84,22 +77,21 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = AccessControllerSubstate.class, name = "AccessController"),
   @JsonSubTypes.Type(value = AccessRulesSubstate.class, name = "AccessRules"),
   @JsonSubTypes.Type(value = AccountSubstate.class, name = "Account"),
-  @JsonSubTypes.Type(value = ClockCurrentMinuteSubstate.class, name = "ClockCurrentMinute"),
+  @JsonSubTypes.Type(value = ClockSubstate.class, name = "Clock"),
   @JsonSubTypes.Type(value = ComponentRoyaltyAccumulatorSubstate.class, name = "ComponentRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = ComponentRoyaltyConfigSubstate.class, name = "ComponentRoyaltyConfig"),
   @JsonSubTypes.Type(value = ComponentStateSubstate.class, name = "ComponentState"),
   @JsonSubTypes.Type(value = EpochManagerSubstate.class, name = "EpochManager"),
-  @JsonSubTypes.Type(value = FunctionAccessRulesSubstate.class, name = "FunctionAccessRules"),
+  @JsonSubTypes.Type(value = FungibleResourceManagerSubstate.class, name = "FungibleResourceManager"),
   @JsonSubTypes.Type(value = KeyValueStoreEntrySubstate.class, name = "KeyValueStoreEntry"),
   @JsonSubTypes.Type(value = MetadataEntrySubstate.class, name = "MetadataEntry"),
-  @JsonSubTypes.Type(value = NonFungibleStoreEntrySubstate.class, name = "NonFungibleStoreEntry"),
+  @JsonSubTypes.Type(value = NonFungibleResourceManagerSubstate.class, name = "NonFungibleResourceManager"),
   @JsonSubTypes.Type(value = PackageCodeSubstate.class, name = "PackageCode"),
   @JsonSubTypes.Type(value = PackageCodeTypeSubstate.class, name = "PackageCodeType"),
   @JsonSubTypes.Type(value = PackageEventSchemaSubstate.class, name = "PackageEventSchema"),
+  @JsonSubTypes.Type(value = PackageFunctionAccessRulesSubstate.class, name = "PackageFunctionAccessRules"),
   @JsonSubTypes.Type(value = PackageInfoSubstate.class, name = "PackageInfo"),
-  @JsonSubTypes.Type(value = PackageRoyaltyAccumulatorSubstate.class, name = "PackageRoyaltyAccumulator"),
-  @JsonSubTypes.Type(value = PackageRoyaltyConfigSubstate.class, name = "PackageRoyaltyConfig"),
-  @JsonSubTypes.Type(value = ResourceManagerSubstate.class, name = "ResourceManager"),
+  @JsonSubTypes.Type(value = PackageRoyaltySubstate.class, name = "PackageRoyalty"),
   @JsonSubTypes.Type(value = TypeInfoSubstate.class, name = "TypeInfo"),
   @JsonSubTypes.Type(value = ValidatorSubstate.class, name = "Validator"),
   @JsonSubTypes.Type(value = ValidatorSetSubstate.class, name = "ValidatorSet"),
@@ -110,106 +102,45 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = VaultNonFungibleSubstate.class, name = "VaultNonFungible"),
 })
 
-public class ResourceManagerSubstate extends Substate {
-  public static final String JSON_PROPERTY_RESOURCE_TYPE = "resource_type";
-  private ResourceType resourceType;
-
-  public static final String JSON_PROPERTY_FUNGIBLE_DIVISIBILITY = "fungible_divisibility";
-  private Integer fungibleDivisibility;
-
-  public static final String JSON_PROPERTY_NON_FUNGIBLE_ID_TYPE = "non_fungible_id_type";
-  private NonFungibleIdType nonFungibleIdType;
+public class FungibleResourceManagerSubstate extends Substate {
+  public static final String JSON_PROPERTY_DIVISIBILITY = "divisibility";
+  private Integer divisibility;
 
   public static final String JSON_PROPERTY_TOTAL_SUPPLY = "total_supply";
   private String totalSupply;
 
-  public static final String JSON_PROPERTY_OWNED_NON_FUNGIBLE_STORE = "owned_non_fungible_store";
-  private EntityReference ownedNonFungibleStore;
-
-  public ResourceManagerSubstate() { 
+  public FungibleResourceManagerSubstate() { 
   }
 
-  public ResourceManagerSubstate resourceType(ResourceType resourceType) {
-    this.resourceType = resourceType;
+  public FungibleResourceManagerSubstate divisibility(Integer divisibility) {
+    this.divisibility = divisibility;
     return this;
   }
 
    /**
-   * Get resourceType
-   * @return resourceType
+   * Get divisibility
+   * minimum: 0
+   * maximum: 18
+   * @return divisibility
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_RESOURCE_TYPE)
+  @JsonProperty(JSON_PROPERTY_DIVISIBILITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ResourceType getResourceType() {
-    return resourceType;
+  public Integer getDivisibility() {
+    return divisibility;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RESOURCE_TYPE)
+  @JsonProperty(JSON_PROPERTY_DIVISIBILITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResourceType(ResourceType resourceType) {
-    this.resourceType = resourceType;
+  public void setDivisibility(Integer divisibility) {
+    this.divisibility = divisibility;
   }
 
 
-  public ResourceManagerSubstate fungibleDivisibility(Integer fungibleDivisibility) {
-    this.fungibleDivisibility = fungibleDivisibility;
-    return this;
-  }
-
-   /**
-   * Get fungibleDivisibility
-   * minimum: 0
-   * maximum: 18
-   * @return fungibleDivisibility
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_FUNGIBLE_DIVISIBILITY)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public Integer getFungibleDivisibility() {
-    return fungibleDivisibility;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_FUNGIBLE_DIVISIBILITY)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setFungibleDivisibility(Integer fungibleDivisibility) {
-    this.fungibleDivisibility = fungibleDivisibility;
-  }
-
-
-  public ResourceManagerSubstate nonFungibleIdType(NonFungibleIdType nonFungibleIdType) {
-    this.nonFungibleIdType = nonFungibleIdType;
-    return this;
-  }
-
-   /**
-   * Get nonFungibleIdType
-   * @return nonFungibleIdType
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID_TYPE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public NonFungibleIdType getNonFungibleIdType() {
-    return nonFungibleIdType;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_NON_FUNGIBLE_ID_TYPE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setNonFungibleIdType(NonFungibleIdType nonFungibleIdType) {
-    this.nonFungibleIdType = nonFungibleIdType;
-  }
-
-
-  public ResourceManagerSubstate totalSupply(String totalSupply) {
+  public FungibleResourceManagerSubstate totalSupply(String totalSupply) {
     this.totalSupply = totalSupply;
     return this;
   }
@@ -235,34 +166,8 @@ public class ResourceManagerSubstate extends Substate {
   }
 
 
-  public ResourceManagerSubstate ownedNonFungibleStore(EntityReference ownedNonFungibleStore) {
-    this.ownedNonFungibleStore = ownedNonFungibleStore;
-    return this;
-  }
-
-   /**
-   * Get ownedNonFungibleStore
-   * @return ownedNonFungibleStore
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_OWNED_NON_FUNGIBLE_STORE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public EntityReference getOwnedNonFungibleStore() {
-    return ownedNonFungibleStore;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_OWNED_NON_FUNGIBLE_STORE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setOwnedNonFungibleStore(EntityReference ownedNonFungibleStore) {
-    this.ownedNonFungibleStore = ownedNonFungibleStore;
-  }
-
-
   /**
-   * Return true if this ResourceManagerSubstate object is equal to o.
+   * Return true if this FungibleResourceManagerSubstate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -272,30 +177,24 @@ public class ResourceManagerSubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ResourceManagerSubstate resourceManagerSubstate = (ResourceManagerSubstate) o;
-    return Objects.equals(this.resourceType, resourceManagerSubstate.resourceType) &&
-        Objects.equals(this.fungibleDivisibility, resourceManagerSubstate.fungibleDivisibility) &&
-        Objects.equals(this.nonFungibleIdType, resourceManagerSubstate.nonFungibleIdType) &&
-        Objects.equals(this.totalSupply, resourceManagerSubstate.totalSupply) &&
-        Objects.equals(this.ownedNonFungibleStore, resourceManagerSubstate.ownedNonFungibleStore) &&
+    FungibleResourceManagerSubstate fungibleResourceManagerSubstate = (FungibleResourceManagerSubstate) o;
+    return Objects.equals(this.divisibility, fungibleResourceManagerSubstate.divisibility) &&
+        Objects.equals(this.totalSupply, fungibleResourceManagerSubstate.totalSupply) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resourceType, fungibleDivisibility, nonFungibleIdType, totalSupply, ownedNonFungibleStore, super.hashCode());
+    return Objects.hash(divisibility, totalSupply, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ResourceManagerSubstate {\n");
+    sb.append("class FungibleResourceManagerSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    resourceType: ").append(toIndentedString(resourceType)).append("\n");
-    sb.append("    fungibleDivisibility: ").append(toIndentedString(fungibleDivisibility)).append("\n");
-    sb.append("    nonFungibleIdType: ").append(toIndentedString(nonFungibleIdType)).append("\n");
+    sb.append("    divisibility: ").append(toIndentedString(divisibility)).append("\n");
     sb.append("    totalSupply: ").append(toIndentedString(totalSupply)).append("\n");
-    sb.append("    ownedNonFungibleStore: ").append(toIndentedString(ownedNonFungibleStore)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -317,22 +216,21 @@ static {
   mappings.put("AccessController", AccessControllerSubstate.class);
   mappings.put("AccessRules", AccessRulesSubstate.class);
   mappings.put("Account", AccountSubstate.class);
-  mappings.put("ClockCurrentMinute", ClockCurrentMinuteSubstate.class);
+  mappings.put("Clock", ClockSubstate.class);
   mappings.put("ComponentRoyaltyAccumulator", ComponentRoyaltyAccumulatorSubstate.class);
   mappings.put("ComponentRoyaltyConfig", ComponentRoyaltyConfigSubstate.class);
   mappings.put("ComponentState", ComponentStateSubstate.class);
   mappings.put("EpochManager", EpochManagerSubstate.class);
-  mappings.put("FunctionAccessRules", FunctionAccessRulesSubstate.class);
+  mappings.put("FungibleResourceManager", FungibleResourceManagerSubstate.class);
   mappings.put("KeyValueStoreEntry", KeyValueStoreEntrySubstate.class);
   mappings.put("MetadataEntry", MetadataEntrySubstate.class);
-  mappings.put("NonFungibleStoreEntry", NonFungibleStoreEntrySubstate.class);
+  mappings.put("NonFungibleResourceManager", NonFungibleResourceManagerSubstate.class);
   mappings.put("PackageCode", PackageCodeSubstate.class);
   mappings.put("PackageCodeType", PackageCodeTypeSubstate.class);
   mappings.put("PackageEventSchema", PackageEventSchemaSubstate.class);
+  mappings.put("PackageFunctionAccessRules", PackageFunctionAccessRulesSubstate.class);
   mappings.put("PackageInfo", PackageInfoSubstate.class);
-  mappings.put("PackageRoyaltyAccumulator", PackageRoyaltyAccumulatorSubstate.class);
-  mappings.put("PackageRoyaltyConfig", PackageRoyaltyConfigSubstate.class);
-  mappings.put("ResourceManager", ResourceManagerSubstate.class);
+  mappings.put("PackageRoyalty", PackageRoyaltySubstate.class);
   mappings.put("TypeInfo", TypeInfoSubstate.class);
   mappings.put("Validator", ValidatorSubstate.class);
   mappings.put("ValidatorSet", ValidatorSetSubstate.class);
@@ -341,8 +239,8 @@ static {
   mappings.put("VaultLockedFungible", VaultLockedFungibleSubstate.class);
   mappings.put("VaultLockedNonFungible", VaultLockedNonFungibleSubstate.class);
   mappings.put("VaultNonFungible", VaultNonFungibleSubstate.class);
-  mappings.put("ResourceManagerSubstate", ResourceManagerSubstate.class);
-  JSON.registerDiscriminator(ResourceManagerSubstate.class, "substate_type", mappings);
+  mappings.put("FungibleResourceManagerSubstate", FungibleResourceManagerSubstate.class);
+  JSON.registerDiscriminator(FungibleResourceManagerSubstate.class, "substate_type", mappings);
 }
 }
 

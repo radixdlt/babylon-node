@@ -32,8 +32,6 @@ pub enum EntityType {
     Identity,
     #[serde(rename = "KeyValueStore")]
     KeyValueStore,
-    #[serde(rename = "NonFungibleStore")]
-    NonFungibleStore,
     #[serde(rename = "Vault")]
     Vault,
 
@@ -52,7 +50,6 @@ impl ToString for EntityType {
             Self::Account => String::from("Account"),
             Self::Identity => String::from("Identity"),
             Self::KeyValueStore => String::from("KeyValueStore"),
-            Self::NonFungibleStore => String::from("NonFungibleStore"),
             Self::Vault => String::from("Vault"),
         }
     }

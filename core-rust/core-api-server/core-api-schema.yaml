@@ -812,12 +812,12 @@ components:
       description: The transaction execution receipt
       required:
         - status
-        - fee_summary
         - state_updates
       properties:
         status:
           $ref: "#/components/schemas/TransactionStatus"
         fee_summary:
+          description: Only present if the `status` is not `Rejected`.
           $ref: "#/components/schemas/FeeSummary"
         state_updates:
           $ref: "#/components/schemas/StateUpdates"
@@ -825,12 +825,12 @@ components:
           $ref: "#/components/schemas/NextEpoch"
         output:
           type: array
-          description: The manifest line-by-line engine return data (only present if status is Succeeded)
+          description: The manifest line-by-line engine return data (only present if `status` is `Succeeded`)
           items:
             $ref: "#/components/schemas/SborData"
         error_message:
           type: string
-          description: Error message (only present if status is Failed or Rejected)
+          description: Error message (only present if status is `Failed` or `Rejected`)
     NotarizedTransaction:
       type: object
       required:
@@ -2122,7 +2122,6 @@ components:
         - Account
         - Identity
         - KeyValueStore
-        - NonFungibleStore
         - Vault
     ModuleType:
       type: string
@@ -2132,10 +2131,7 @@ components:
         - Metadata
         - AccessRules
         - AccessRules1
-        - FunctionAccessRules
         - ComponentRoyalty
-        - PackageRoyalty
-        - PackageEventSchema
     Substate:
       type: object
       required:
@@ -2149,7 +2145,6 @@ components:
           # NOTE: These need to match SubstateType options below
           MetadataEntry: '#/components/schemas/MetadataEntrySubstate'
           AccessRules: '#/components/schemas/AccessRulesSubstate'
-          FunctionAccessRules: '#/components/schemas/FunctionAccessRulesSubstate'
           TypeInfo: '#/components/schemas/TypeInfoSubstate'
           ComponentState: '#/components/schemas/ComponentStateSubstate'
           ComponentRoyaltyConfig: '#/components/schemas/ComponentRoyaltyConfigSubstate'
@@ -2157,47 +2152,48 @@ components:
           PackageInfo: '#/components/schemas/PackageInfoSubstate'
           PackageCode: '#/components/schemas/PackageCodeSubstate'
           PackageCodeType: '#/components/schemas/PackageCodeTypeSubstate'
-          PackageRoyaltyConfig: '#/components/schemas/PackageRoyaltyConfigSubstate'
-          PackageRoyaltyAccumulator: '#/components/schemas/PackageRoyaltyAccumulatorSubstate'
-          ResourceManager: '#/components/schemas/ResourceManagerSubstate'
+          PackageRoyalty: '#/components/schemas/PackageRoyaltySubstate'
+          PackageFunctionAccessRules: '#/components/schemas/PackageFunctionAccessRulesSubstate'
+          PackageEventSchema: '#/components/schemas/PackageEventSchemaSubstate'
+          FungibleResourceManager: '#/components/schemas/FungibleResourceManagerSubstate'
+          NonFungibleResourceManager: '#/components/schemas/NonFungibleResourceManagerSubstate'
           EpochManager: '#/components/schemas/EpochManagerSubstate'
           ValidatorSet: '#/components/schemas/ValidatorSetSubstate'
           Validator: '#/components/schemas/ValidatorSubstate'
-          ClockCurrentMinute: '#/components/schemas/ClockCurrentMinuteSubstate'
+          Clock: '#/components/schemas/ClockSubstate'
           KeyValueStoreEntry: '#/components/schemas/KeyValueStoreEntrySubstate'
           VaultInfo: '#/components/schemas/VaultInfoSubstate'
           VaultFungible: '#/components/schemas/VaultFungibleSubstate'
           VaultNonFungible: '#/components/schemas/VaultNonFungibleSubstate'
           VaultLockedFungible: '#/components/schemas/VaultLockedFungibleSubstate'
           VaultLockedNonFungible: '#/components/schemas/VaultLockedNonFungibleSubstate'
-          NonFungibleStoreEntry: '#/components/schemas/NonFungibleStoreEntrySubstate'
           AccessController: '#/components/schemas/AccessControllerSubstate'
           Account: '#/components/schemas/AccountSubstate'
-          PackageEventSchema: '#/components/schemas/PackageEventSchemaSubstate'
     SubstateType:
       type: string
       enum:
         # Common
+        - TypeInfo
         - MetadataEntry
         - AccessRules
-        - FunctionAccessRules
         # Specific
-        - TypeInfo
         - ComponentState
         - ComponentRoyaltyConfig
         - ComponentRoyaltyAccumulator
         - PackageInfo
         - PackageCode
         - PackageCodeType
-        - PackageRoyaltyConfig
-        - PackageRoyaltyAccumulator
-        - ResourceManager
+        - PackageRoyalty
+        - PackageFunctionAccessRules
+        - PackageEventSchema
+        - EitherResourceManager
+        - FungibleResourceManager
+        - NonFungibleResourceManager
         - EpochManager
         - ValidatorSet
         - Validator
-        - ClockCurrentMinute
+        - Clock
         - KeyValueStoreEntry
-        - NonFungibleStoreEntry
         - VaultInfo
         - VaultFungible
         - VaultNonFungible
@@ -2205,7 +2201,6 @@ components:
         - VaultLockedNonFungible
         - AccessController
         - Account
-        - PackageEventSchema
     SubstateKeyType:
       # This corresponds to what's currently referred to as the "SubstateOffset"
       # This is roughly the same as the substate type, but some entities have two of the same substates
@@ -2214,28 +2209,29 @@ components:
       description: |
         Slightly different to the SubstateType - some entities have two of the same substate (eg ResouceManager AccessRules)
       enum:
-        # Common
+        # Common Modules
+        - TypeInfo
         - MetadataEntry
         - AccessRules
-        - FunctionAccessRules
-        # Specific
-        - TypeInfo
+        # Self / Type-specific
         - ComponentState
         - ComponentRoyaltyConfig
         - ComponentRoyaltyAccumulator
         - PackageInfo
         - PackageCode
         - PackageCodeType
-        - PackageRoyaltyConfig
-        - PackageRoyaltyAccumulator
-        - ResourceManager
+        - PackageRoyalty
+        - PackageFunctionAccessRules
+        - PackageEventSchema
+        - EitherResourceManager
+        - FungibleResourceManager
+        - NonFungibleResourceManager
         - EpochManager
         - CurrentValidatorSet
         - PreparingValidatorSet
         - Validator
-        - ClockCurrentMinute
+        - Clock
         - KeyValueStoreEntry
-        - NonFungibleStoreEntry
         - VaultInfo
         - VaultFungible
         - VaultNonFungible
@@ -2243,39 +2239,37 @@ components:
         - VaultLockedNonFungible
         - AccessController
         - Account
-        - PackageEventSchema
 ### COMMON SUBSTATES
-    AccessRulesSubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-          required:
-            - access_rules
-          properties:
-            access_rules:
-              $ref: '#/components/schemas/AccessRules'
-    FunctionAccessRulesSubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-    MetadataEntrySubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-          required:
-            - key_hex
-          properties:
-            key_hex:
-              type: string
-              description: The hex-encoded bytes of its key
-            data_struct:
-              $ref: '#/components/schemas/DataStruct'
-    PackageEventSchemaSubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-### SPECIFIC SUBSTATES
     TypeInfoSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - details
+          properties:
+            details:
+              $ref: '#/components/schemas/TypeInfoDetails'
+    TypeInfoType:
+      type: string
+      enum:
+        - Object
+        - KeyValueStore
+    TypeInfoDetails:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/TypeInfoType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match TypeInfoType options above
+          Object: '#/components/schemas/ObjectTypeInfoDetails'
+          KeyValueStore: '#/components/schemas/KeyValueStoreTypeInfoDetails'
+    ObjectTypeInfoDetails:
+      allOf:
+        - $ref: '#/components/schemas/TypeInfoDetails'
         - type: object
           required:
             - package_address
@@ -2288,6 +2282,66 @@ components:
               type: string
             global:
               type: boolean
+    KeyValueStoreTypeInfoDetails:
+      allOf:
+        - $ref: '#/components/schemas/TypeInfoDetails'
+        - type: object
+          required:
+            - key_value_store_schema
+          properties:
+            key_value_store_schema:
+              description: The SBOR schema of the KeyValueStore
+              $ref: '#/components/schemas/KeyValueStoreSchema'
+    KeyValueStoreSchema:
+      type: object
+      required:
+        - schema
+        - key_type
+        - value_type
+        - can_own
+      properties:
+        schema:
+          $ref: '#/components/schemas/SborData'
+          description: The SBOR schema of the key value store.
+        key_type:
+          $ref: '#/components/schemas/LocalTypeIndex'
+          description: |
+            The type index of the key type in the context of this SBOR schema.
+        value_type:
+          $ref: '#/components/schemas/LocalTypeIndex'
+          description: |
+            The type index of the key type in the context of this SBOR schema.
+        can_own:
+          description: Whether the key value store can own any children.
+          type: boolean
+    AccessRulesSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - access_rules
+          properties:
+            access_rules:
+              $ref: '#/components/schemas/AccessRules'
+    MetadataEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - key_hex
+            - is_deleted
+          properties:
+            key_hex:
+              type: string
+              description: The hex-encoded bytes of its key
+            is_deleted:
+              type: boolean
+            data_struct:
+              $ref: '#/components/schemas/DataStruct'
+    PackageEventSchemaSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+### SELF MODULE / TYPE-SPECIFIC SUBSTATES
     ComponentStateSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -2310,8 +2364,6 @@ components:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
-          required:
-            - vault_entity
           properties:
             vault_entity:
               $ref: "#/components/schemas/EntityReference"
@@ -2320,15 +2372,12 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - blueprints
+            - package_schema
             - dependent_resources
             - dependent_components
           properties:
-            blueprints:
-              type: object
-              description: A map from the blueprint name to BlueprintData
-              additionalProperties:
-                $ref: '#/components/schemas/BlueprintData'
+            package_schema:
+              $ref: '#/components/schemas/PackageSchema'
             dependent_resources:
               type: array
               items:
@@ -2337,6 +2386,81 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/ComponentAddress'
+    PackageSchema:
+      type: object
+      required:
+        - blueprint_schemas
+      properties:
+        blueprint_schemas:
+          type: object
+          description: A map from the blueprint name to BlueprintSchema
+          additionalProperties:
+            $ref: '#/components/schemas/BlueprintSchema'
+    BlueprintSchema:
+      type: object
+      required:
+        - schema
+        - substates
+        - function_definitions
+      properties:
+        schema:
+          $ref: '#/components/schemas/SborData'
+          description: The SBOR schema of the blueprint
+        substates:
+          type: array
+          description: |
+            The type index of the substates under the SELF module - in the context of the blueprint's SBOR schema.
+          items:
+            $ref: '#/components/schemas/LocalTypeIndex'
+        function_definitions:
+          type: object
+          description: A map from the function name to the FunctionDefinition
+          additionalProperties:
+            $ref: '#/components/schemas/FunctionDefinition'
+    LocalTypeIndex:
+      type: object
+      required:
+        - kind
+        - index
+      properties:
+        kind:
+          type: string
+          description: |
+            The location against which to resolve this type reference against a given schema.
+            WellKnown indicates the index is a pointer to a well known scrypto type with that id.
+            SchemaLocal indicates the index is a pointer into the given schema.
+          enum:
+            - WellKnown
+            - SchemaLocal
+        index:
+          description: |
+            Either the well known identifier, of the schema-local index, depending on the kind.
+          type: integer
+          format: int32
+    FunctionDefinition:
+      type: object
+      required:
+        - receiver
+        - input
+        - output
+        - export_name
+      properties:
+        receiver:
+          format: string
+          enum:
+            - Function
+            - ComponentReadOnly
+            - ComponentMutable
+        input:
+          $ref: '#/components/schemas/LocalTypeIndex'
+          description: |
+            The type index of the function's parameter struct in the context of the blueprint's SBOR schema.
+        output:
+          $ref: '#/components/schemas/LocalTypeIndex'
+          description: |
+            The type index of the function output in the context of the blueprint's SBOR schema.
+        export_name:
+          type: string
     PackageCodeSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -2356,49 +2480,74 @@ components:
           properties:
             code_type:
               type: string
-    BlueprintData:
-      type: object
-      required:
-        - abi
-      properties:
-        abi:
-          $ref: '#/components/schemas/SborData'
-          description: The abi data
-    PackageRoyaltyConfigSubstate:
+    PackageRoyaltySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
             - blueprint_royalties
           properties:
+            vault_entity:
+              # This is optional - some early packages during bootstrapping don't have this
+              $ref: "#/components/schemas/EntityReference"
             blueprint_royalties:
               type: array
               items:
                 $ref: '#/components/schemas/BlueprintRoyaltyConfig'
-    PackageRoyaltyAccumulatorSubstate:
+    PackageFunctionAccessRulesSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - vault_entity
+            - function_auth
+            - default_auth
           properties:
-            vault_entity:
-              $ref: "#/components/schemas/EntityReference"
-    ResourceManagerSubstate:
+            function_auth:
+              items:
+                $ref: '#/components/schemas/PackageFunctionAccessRule'
+            default_auth:
+              $ref: '#/components/schemas/AccessRule'
+    PackageFunctionAccessRule:
+      type: object
+      required:
+        - blueprint
+        - function_name
+        - access_rule
+      properties:
+        blueprint:
+          type: string
+        function_name:
+          type: string
+        access_rule:
+          $ref: '#/components/schemas/AccessRule'
+    FungibleResourceManagerSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
-            - resource_type
+            - divisibility
             - total_supply
-            - auth_rules
           properties:
-            resource_type:
-              $ref: '#/components/schemas/ResourceType'
-            fungible_divisibility:
+            divisibility:
               type: integer
               minimum: 0
               maximum: 18
+            total_supply:
+              type: string
+              description: |
+                The string-encoded decimal representing the total supply of this resource.
+                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    NonFungibleResourceManagerSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          required:
+            - non_fungible_id_type
+            - total_supply
+            - non_fungible_data_table
+            - non_fungible_data_type_index
+            - non_fungible_data_mutable_fields
+          properties:
             non_fungible_id_type:
               $ref: '#/components/schemas/NonFungibleIdType'
             total_supply:
@@ -2406,8 +2555,20 @@ components:
               description: |
                 The string-encoded decimal representing the total supply of this resource.
                 A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
-            owned_non_fungible_store:
+            non_fungible_data_table:
+              description: |
+                The owned key value store.
               $ref: '#/components/schemas/EntityReference'
+            non_fungible_data_type_index:
+              $ref: '#/components/schemas/LocalTypeIndex'
+              description: |
+                The type index of the non fungible data - in the context of the schema on the owned `non_fungible_table` key value store.
+            non_fungible_data_mutable_fields:
+              type: array
+              description: |
+                The field names of the NF Metadata which are mutable.
+              items:
+                type: string
     EpochManagerSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -2492,7 +2653,7 @@ components:
               $ref: '#/components/schemas/ResourceAddress'
             is_registered:
               type: boolean
-    ClockCurrentMinuteSubstate:
+    ClockSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
@@ -3809,15 +3970,12 @@ components:
       type: object
       required:
         - info
-        - royalty_config
-        - royalty_accumulator
+        - royalty
         - access_rules
       properties:
         info:
           $ref: "#/components/schemas/Substate"
-        royalty_config:
-          $ref: "#/components/schemas/Substate"
-        royalty_accumulator:
+        royalty:
           $ref: "#/components/schemas/Substate"
         access_rules:
           $ref: "#/components/schemas/Substate"

@@ -12,15 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ClockCurrentMinuteSubstateAllOf {
-    #[serde(rename = "timestamp_rounded_down_to_minute")]
-    pub timestamp_rounded_down_to_minute: Box<crate::core_api::generated::models::Instant>,
+pub struct FungibleResourceManagerSubstateAllOf {
+    #[serde(rename = "divisibility")]
+    pub divisibility: i32,
+    /// The string-encoded decimal representing the total supply of this resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+    #[serde(rename = "total_supply")]
+    pub total_supply: String,
 }
 
-impl ClockCurrentMinuteSubstateAllOf {
-    pub fn new(timestamp_rounded_down_to_minute: crate::core_api::generated::models::Instant) -> ClockCurrentMinuteSubstateAllOf {
-        ClockCurrentMinuteSubstateAllOf {
-            timestamp_rounded_down_to_minute: Box::new(timestamp_rounded_down_to_minute),
+impl FungibleResourceManagerSubstateAllOf {
+    pub fn new(divisibility: i32, total_supply: String) -> FungibleResourceManagerSubstateAllOf {
+        FungibleResourceManagerSubstateAllOf {
+            divisibility,
+            total_supply,
         }
     }
 }

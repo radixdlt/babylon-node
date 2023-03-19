@@ -12,18 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct PackageRoyaltyConfigSubstate {
-    #[serde(rename = "substate_type")]
-    pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "blueprint_royalties")]
-    pub blueprint_royalties: Vec<crate::core_api::generated::models::BlueprintRoyaltyConfig>,
+pub struct ClockSubstateAllOf {
+    #[serde(rename = "timestamp_rounded_down_to_minute")]
+    pub timestamp_rounded_down_to_minute: Box<crate::core_api::generated::models::Instant>,
 }
 
-impl PackageRoyaltyConfigSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, blueprint_royalties: Vec<crate::core_api::generated::models::BlueprintRoyaltyConfig>) -> PackageRoyaltyConfigSubstate {
-        PackageRoyaltyConfigSubstate {
-            substate_type,
-            blueprint_royalties,
+impl ClockSubstateAllOf {
+    pub fn new(timestamp_rounded_down_to_minute: crate::core_api::generated::models::Instant) -> ClockSubstateAllOf {
+        ClockSubstateAllOf {
+            timestamp_rounded_down_to_minute: Box::new(timestamp_rounded_down_to_minute),
         }
     }
 }

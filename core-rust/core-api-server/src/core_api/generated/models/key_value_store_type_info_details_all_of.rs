@@ -12,18 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct PackageRoyaltyAccumulatorSubstate {
-    #[serde(rename = "substate_type")]
-    pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "vault_entity")]
-    pub vault_entity: Box<crate::core_api::generated::models::EntityReference>,
+pub struct KeyValueStoreTypeInfoDetailsAllOf {
+    #[serde(rename = "key_value_store_schema")]
+    pub key_value_store_schema: Box<crate::core_api::generated::models::KeyValueStoreSchema>,
 }
 
-impl PackageRoyaltyAccumulatorSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, vault_entity: crate::core_api::generated::models::EntityReference) -> PackageRoyaltyAccumulatorSubstate {
-        PackageRoyaltyAccumulatorSubstate {
-            substate_type,
-            vault_entity: Box::new(vault_entity),
+impl KeyValueStoreTypeInfoDetailsAllOf {
+    pub fn new(key_value_store_schema: crate::core_api::generated::models::KeyValueStoreSchema) -> KeyValueStoreTypeInfoDetailsAllOf {
+        KeyValueStoreTypeInfoDetailsAllOf {
+            key_value_store_schema: Box::new(key_value_store_schema),
         }
     }
 }

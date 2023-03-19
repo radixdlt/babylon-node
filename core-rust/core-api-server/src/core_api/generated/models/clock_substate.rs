@@ -12,22 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct KeyValueStoreEntrySubstateAllOf {
-    /// The hex-encoded bytes of its key
-    #[serde(rename = "key_hex")]
-    pub key_hex: String,
-    #[serde(rename = "is_deleted")]
-    pub is_deleted: bool,
-    #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
-    pub data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
+pub struct ClockSubstate {
+    #[serde(rename = "substate_type")]
+    pub substate_type: crate::core_api::generated::models::SubstateType,
+    #[serde(rename = "timestamp_rounded_down_to_minute")]
+    pub timestamp_rounded_down_to_minute: Box<crate::core_api::generated::models::Instant>,
 }
 
-impl KeyValueStoreEntrySubstateAllOf {
-    pub fn new(key_hex: String, is_deleted: bool) -> KeyValueStoreEntrySubstateAllOf {
-        KeyValueStoreEntrySubstateAllOf {
-            key_hex,
-            is_deleted,
-            data_struct: None,
+impl ClockSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, timestamp_rounded_down_to_minute: crate::core_api::generated::models::Instant) -> ClockSubstate {
+        ClockSubstate {
+            substate_type,
+            timestamp_rounded_down_to_minute: Box::new(timestamp_rounded_down_to_minute),
         }
     }
 }

@@ -1,9 +1,7 @@
 use crate::core_api::*;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{PackageOffset, SubstateOffset};
-use radix_engine_interface::api::types::{
-    AccessRulesOffset, NodeModuleId, RENodeId, RoyaltyOffset,
-};
+use radix_engine_interface::api::types::{AccessRulesOffset, NodeModuleId, RENodeId};
 
 use state_manager::jni::state_manager::ActualStateManager;
 
@@ -37,28 +35,15 @@ fn handle_state_package_internal(
         };
         substate
     };
-    let package_royalty_config = {
-        let substate_offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig);
+    let package_royalty = {
+        let substate_offset = SubstateOffset::Package(PackageOffset::Royalty);
         let loaded_substate = read_known_substate(
             state_manager,
             RENodeId::GlobalObject(package_address.into()),
-            NodeModuleId::PackageRoyalty,
+            NodeModuleId::SELF,
             &substate_offset,
         )?;
-        let PersistedSubstate::PackageRoyaltyConfig(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
-    let package_royalty_accumulator = {
-        let substate_offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator);
-        let loaded_substate = read_known_substate(
-            state_manager,
-            RENodeId::GlobalObject(package_address.into()),
-            NodeModuleId::PackageRoyalty,
-            &substate_offset,
-        )?;
-        let PersistedSubstate::PackageRoyaltyAccumulator(substate) = loaded_substate else {
+        let PersistedSubstate::PackageRoyalty(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_offset));
         };
         substate
@@ -84,12 +69,9 @@ fn handle_state_package_internal(
             &mapping_context,
             &package_info,
         )?),
-        royalty_config: Some(to_api_package_royalty_config_substate(
+        royalty: Some(to_api_package_royalty_substate(
             &mapping_context,
-            &package_royalty_config,
-        )?),
-        royalty_accumulator: Some(to_api_package_royalty_accumulator_substate(
-            &package_royalty_accumulator,
+            &package_royalty,
         )?),
         access_rules: Some(to_api_access_rules_chain_substate(
             &mapping_context,

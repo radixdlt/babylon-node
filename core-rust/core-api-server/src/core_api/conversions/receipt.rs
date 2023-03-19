@@ -1,13 +1,13 @@
 use super::addressing::*;
 use crate::core_api::*;
 use radix_engine::blueprints::epoch_manager::Validator;
-use radix_engine::system::kernel_modules::costing::{FeeSummary, RoyaltyReceiver};
+use radix_engine::system::kernel_modules::costing::FeeSummary;
 use radix_engine::{
     ledger::OutputValue,
-    types::{hash, scrypto_encode, Decimal, RENodeId, SubstateId},
+    types::{hash, scrypto_encode, Decimal, SubstateId},
 };
 
-use radix_engine_interface::data::scrypto::model::{Address, ComponentAddress};
+use radix_engine_interface::data::scrypto::model::ComponentAddress;
 use std::collections::BTreeMap;
 
 use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
@@ -34,21 +34,21 @@ pub fn to_api_receipt(
     let mut new_global_entities = Vec::new();
     let mut created = Vec::new();
 
-    for package_address in receipt.entity_changes.new_package_addresses {
+    for package_address in receipt.state_update_summary.new_packages {
         new_global_entities.push(to_global_entity_reference(
             context,
             &package_address.into(),
         )?);
     }
 
-    for component_address in receipt.entity_changes.new_component_addresses {
+    for component_address in receipt.state_update_summary.new_components {
         new_global_entities.push(to_global_entity_reference(
             context,
             &component_address.into(),
         )?);
     }
 
-    for resource_address in receipt.entity_changes.new_resource_addresses {
+    for resource_address in receipt.state_update_summary.new_resources {
         new_global_entities.push(to_global_entity_reference(
             context,
             &resource_address.into(),
@@ -99,7 +99,7 @@ pub fn to_api_receipt(
 
     Ok(models::TransactionReceipt {
         status,
-        fee_summary: Box::new(api_fee_summary),
+        fee_summary: Some(Box::new(api_fee_summary)),
         state_updates: Box::new(api_state_updates),
         output: api_output,
         next_epoch,
@@ -170,55 +170,59 @@ pub fn to_api_next_epoch(
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_fee_summary(
-    context: &MappingContext,
+    _context: &MappingContext,
     fee_summary: FeeSummary,
 ) -> Result<models::FeeSummary, MappingError> {
     Ok(models::FeeSummary {
         cost_unit_price: to_api_decimal(&fee_summary.cost_unit_price),
         tip_percentage: to_api_u16_as_i32(fee_summary.tip_percentage),
         cost_unit_limit: to_api_u32_as_i64(fee_summary.cost_unit_limit),
-        cost_units_consumed: to_api_u32_as_i64(fee_summary.total_cost_units_consumed),
+        cost_units_consumed: to_api_u32_as_i64(fee_summary.execution_cost_sum),
         xrd_total_execution_cost: to_api_decimal(&fee_summary.total_execution_cost_xrd),
         xrd_total_royalty_cost: to_api_decimal(&fee_summary.total_royalty_cost_xrd),
         xrd_total_tipped: to_api_decimal(&Decimal::ZERO),
-        xrd_vault_payments: fee_summary
-            .vault_payments_xrd
-            .map(|vault_payments| {
-                vault_payments
-                    .into_iter()
-                    .map(|(vault_id, amount)| {
-                        Ok(models::VaultPayment {
-                            vault_entity: Box::new(to_api_entity_reference(RENodeId::Object(
-                                vault_id,
-                            ))?),
-                            xrd_amount: to_api_decimal(&amount),
-                        })
-                    })
-                    .collect::<Result<_, _>>()
-            })
-            .transpose()?,
         cost_unit_execution_breakdown: fee_summary
-            .execution_cost_unit_breakdown
+            .execution_cost_breakdown
             .into_iter()
             .map(|(key, cost_unit_amount)| (key.to_string(), to_api_u32_as_i64(cost_unit_amount)))
             .collect(),
-        cost_unit_royalty_breakdown: fee_summary
-            .royalty_cost_unit_breakdown
-            .into_iter()
-            .filter_map(|(receiver, cost_unit_amount)| {
-                let global_address = match receiver {
-                    RoyaltyReceiver::Package(address) => Address::Package(address),
-                    RoyaltyReceiver::Component(RENodeId::GlobalObject(address)) => address,
-                    _ => return None,
-                };
-                let payment = models::RoyaltyPayment {
-                    royalty_receiver: Box::new(
-                        to_global_entity_reference(context, &global_address).ok()?,
-                    ),
-                    cost_unit_amount: to_api_u32_as_i64(cost_unit_amount),
-                };
-                Some(payment)
-            })
-            .collect(),
+        // TODO: Add these back when the (I think accidental?) removal in this PR is reverted:
+        // https://github.com/radixdlt/radixdlt-scrypto/pull/886/files#diff-61af75c3b006ad2d7be51f3aaf8abb00d19f2fcedec15e3898ed404090e44bd8
+        xrd_vault_payments: None,
+        // xrd_vault_payments: fee_summary
+        //     .vault_payments_xrd
+        //     .map(|vault_payments| {
+        //         vault_payments
+        //             .into_iter()
+        //             .map(|(vault_id, amount)| {
+        //                 Ok(models::VaultPayment {
+        //                     vault_entity: Box::new(to_api_entity_reference(RENodeId::Object(
+        //                         vault_id,
+        //                     ))?),
+        //                     xrd_amount: to_api_decimal(&amount),
+        //                 })
+        //             })
+        //             .collect::<Result<_, _>>()
+        //     })
+        //     .transpose()?,
+        cost_unit_royalty_breakdown: vec![],
+        // cost_unit_royalty_breakdown: fee_summary
+        //     .royalty_cost_unit_breakdown
+        //     .into_iter()
+        //     .filter_map(|(receiver, cost_unit_amount)| {
+        //         let global_address = match receiver {
+        //             RoyaltyReceiver::Package(address) => Address::Package(address),
+        //             RoyaltyReceiver::Component(RENodeId::GlobalObject(address)) => address,
+        //             _ => return None,
+        //         };
+        //         let payment = models::RoyaltyPayment {
+        //             royalty_receiver: Box::new(
+        //                 to_global_entity_reference(context, &global_address).ok()?,
+        //             ),
+        //             cost_unit_amount: to_api_u32_as_i64(cost_unit_amount),
+        //         };
+        //         Some(payment)
+        //     })
+        //     .collect(),
     })
 }
