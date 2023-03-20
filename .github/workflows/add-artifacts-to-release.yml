@@ -5,7 +5,7 @@ on:
 
 jobs:
   publish_libcorerust:
-    name: Build and upload core-rust
+    name: Build and upload libcorerust
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
@@ -31,13 +31,12 @@ jobs:
         run: ./gradlew :core-rust:buildRustForDocker -P rustBinaryBuildType="release"
       - name: Upload libcorerust
         run:
-          echo "This is used instead of the github action, because it closes the socket due to unrecognized file format errors."
           gh release upload ${{ github.event.release.tag_name }} --repo radixdlt/babylon-node ${{ github.workspace }}/core-rust/target/x86_64-unknown-linux-gnu/release/libcorerust.so --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-distribution-zip:
-    name: Add artifacts release ${{ github.event.release.tag_name }}
+    name: Upload and Build Binary
     runs-on: ubuntu-22.04
     environment: publish-artifacts
     steps:
