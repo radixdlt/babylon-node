@@ -29,11 +29,23 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: Run local core-rust docker build
         run: ./gradlew :core-rust:buildRustForDocker -P rustBinaryBuildType="release"
-      - name: Upload libcorerust
-        run:
-          gh release upload ${{ github.event.release.tag_name }} --repo radixdlt/babylon-node ${{ github.workspace }}/core-rust/target/x86_64-unknown-linux-gnu/release/libcorerust.so --clobber
+      - name: Package libcorerust
+        run: |
+          zip babylon-node-rust-arch-linux-x86_64-release-${{ github.event.release.tag_name }}.zip ${{ github.workspace }}/core-rust/target/x86_64-unknown-linux-gnu/release/libcorerust.so
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@f589ce0779c7bef1faf175f7488c972eb47dc046
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Upload distribution zip
+        uses: actions/upload-release-asset@e8f9f06c4b078e705bd2ea027f0926603fc9b4d5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ./babylon-node-rust-arch-linux-x86_64-release-${{ github.event.release.tag_name }}.zip
+          asset_name: babylon-node-rust-arch-linux-x86_64-release-${{ github.event.release.tag_name }}.zip
+          asset_content_type: application/zip
 
   publish-distribution-zip:
     name: Upload and Build Binary
@@ -84,5 +96,5 @@ jobs:
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: ./core/build/distributions/core-${{ steps.get_version.outputs.radixdlt_version }}.zip
-          asset_name: radixdlt-dist-${{ steps.get_version.outputs.radixdlt_version }}.zip
+          asset_name: babylon-node-${{ steps.get_version.outputs.radixdlt_version }}.zip
           asset_content_type: application/zip
