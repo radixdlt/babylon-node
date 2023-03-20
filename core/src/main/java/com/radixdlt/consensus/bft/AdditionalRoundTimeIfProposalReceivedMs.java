@@ -74,8 +74,8 @@ import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
 /**
- * the amount of time (in milliseconds) by which the round can be extended if proposal was received,
- * but hasn't yet been synced up.
+ * the amount of time (in milliseconds) by which the round can be prolonged if proposal was
+ * received, but hasn't yet been synced up.
  */
 @Qualifier
 @Target({FIELD, PARAMETER, METHOD})

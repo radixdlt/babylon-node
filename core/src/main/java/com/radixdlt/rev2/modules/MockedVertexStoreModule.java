@@ -65,8 +65,8 @@
 package com.radixdlt.rev2.modules;
 
 import com.google.inject.AbstractModule;
-import com.radixdlt.consensus.bft.PersistentVertexStore;
-import com.radixdlt.consensus.bft.VertexStoreState;
+import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 
 public final class MockedVertexStoreModule extends AbstractModule {
 

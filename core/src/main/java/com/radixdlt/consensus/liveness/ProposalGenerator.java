@@ -64,8 +64,8 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 

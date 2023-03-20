@@ -62,106 +62,59 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.vertexstore;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.VertexWithHash;
+import java.util.List;
+import java.util.Objects;
+import javax.annotation.concurrent.Immutable;
 
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
-import org.assertj.core.api.Condition;
-import org.junit.Test;
+/** A chain of vertices verified to have correct parent links. */
+@Immutable
+public final class VertexChain {
+  private final ImmutableList<VertexWithHash> vertices;
 
-/** Verifies pacemaker functionality */
-public final class PacemakerTest {
-  private DeterministicTest createTest() {
-    return DeterministicTest.builder()
-        .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(1))
-        .messageSelector(MessageSelector.firstSelector())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                false,
-                SafetyRecoveryConfig.mocked(),
-                ConsensusConfig.of(200, 0),
-                LedgerConfig.mocked(1)));
+  private VertexChain(ImmutableList<VertexWithHash> vertices) {
+    this.vertices = vertices;
   }
 
-  @Test
-  public void on_startup_pacemaker_should_schedule_timeouts() {
-    // Arrange
-    try (var test = createTest()) {
-
-      // Act
-      test.startAllNodes();
-
-      // Assert
-      assertThat(test.getNetwork().allMessages())
-          .hasSize(2)
-          .haveExactly(
-              1,
-              new Condition<>(
-                  msg -> msg.message() instanceof ScheduledLocalTimeout,
-                  "A single scheduled timeout update has been emitted"))
-          .haveExactly(
-              1,
-              new Condition<>(
-                  msg -> msg.message() instanceof Proposal, "A proposal has been emitted"));
+  public static VertexChain create(List<VertexWithHash> vertices) {
+    if (vertices.size() >= 2) {
+      for (int index = 1; index < vertices.size(); index++) {
+        HashCode parentId = vertices.get(index - 1).hash();
+        HashCode parentIdCheck = vertices.get(index).vertex().getParentVertexId();
+        if (!parentId.equals(parentIdCheck)) {
+          throw new IllegalArgumentException(String.format("Invalid chain: %s", vertices));
+        }
+      }
     }
+
+    return new VertexChain(ImmutableList.copyOf(vertices));
   }
 
-  @Test
-  public void on_timeout_pacemaker_should_send_vote_with_timeout() {
-    // Arrange
-    try (var test = createTest()) {
-      test.startAllNodes();
-
-      // Act
-      test.runNext(e -> e.message() instanceof ScheduledLocalTimeout);
-      test.runNext(e -> e.message() instanceof BFTInsertUpdate);
-
-      // Assert
-      assertThat(test.getNetwork().allMessages())
-          .haveExactly(
-              1,
-              new Condition<>(
-                  msg -> (msg.message() instanceof Vote) && ((Vote) msg.message()).isTimeout(),
-                  "A remote timeout vote has been emitted"));
-    }
+  public ImmutableList<VertexWithHash> getVertices() {
+    return vertices;
   }
 
-  @Test
-  public void on_round_timeout_quorum_pacemaker_should_move_to_next_round() {
-    // Arrange
-    try (var test = createTest()) {
-      test.startAllNodes();
-      test.runNext(e -> e.message() instanceof ScheduledLocalTimeout);
-      test.runNext(e -> e.message() instanceof BFTInsertUpdate);
+  @Override
+  public String toString() {
+    return String.format("%s{vertices=%s}", this.getClass().getSimpleName(), this.vertices);
+  }
 
-      // Act
-      test.runNext(e -> (e.message() instanceof Vote) && ((Vote) e.message()).isTimeout());
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(vertices);
+  }
 
-      // Assert
-      assertThat(test.getNetwork().allMessages())
-          .haveExactly(
-              1,
-              new Condition<>(
-                  msg -> msg.message() instanceof RoundUpdate,
-                  "A remote round timeout has been emitted"));
-      var nextRoundUpdate =
-          test.getNetwork().allMessages().stream()
-              .filter(msg -> msg.message() instanceof RoundUpdate)
-              .map(msg -> (RoundUpdate) msg.message())
-              .findAny()
-              .orElseThrow();
-      assertThat(nextRoundUpdate.getCurrentRound()).isEqualTo(Round.genesis().next().next());
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof VertexChain)) {
+      return false;
     }
+
+    VertexChain other = (VertexChain) o;
+    return Objects.equals(this.vertices, other.vertices);
   }
 }

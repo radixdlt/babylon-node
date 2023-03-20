@@ -68,7 +68,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.RoundLeaderFailure;
+import com.radixdlt.consensus.bft.ProposalRejected;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 
@@ -112,8 +112,8 @@ public interface BFTEventProcessor {
    */
   void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout);
 
-  /** Process a local RoundLeaderFailure event. */
-  void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure);
+  /** Process a local ProposalRejected event. */
+  void processProposalRejected(ProposalRejected proposalRejected);
 
   /**
    * Process a BFT update.

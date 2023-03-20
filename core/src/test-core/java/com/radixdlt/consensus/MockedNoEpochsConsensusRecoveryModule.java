@@ -69,6 +69,7 @@ import com.google.inject.Provides;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;

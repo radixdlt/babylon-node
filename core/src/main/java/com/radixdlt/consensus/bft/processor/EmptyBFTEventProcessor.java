@@ -68,13 +68,18 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.RoundLeaderFailure;
+import com.radixdlt.consensus.bft.ProposalRejected;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 
 /** An empty BFT event processor */
 public enum EmptyBFTEventProcessor implements BFTEventProcessor {
   INSTANCE;
+
+  @Override
+  public void start() {
+    // No-op
+  }
 
   @Override
   public void processVote(Vote vote) {
@@ -92,7 +97,7 @@ public enum EmptyBFTEventProcessor implements BFTEventProcessor {
   }
 
   @Override
-  public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
+  public void processProposalRejected(ProposalRejected proposalRejected) {
     // No-op
   }
 
@@ -103,11 +108,6 @@ public enum EmptyBFTEventProcessor implements BFTEventProcessor {
 
   @Override
   public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
-    // No-op
-  }
-
-  @Override
-  public void start() {
     // No-op
   }
 

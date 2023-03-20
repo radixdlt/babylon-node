@@ -68,7 +68,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.RoundLeaderFailure;
+import com.radixdlt.consensus.bft.ProposalRejected;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.monitoring.Metrics;
@@ -135,26 +135,12 @@ public final class BFTEventPostSyncUpVerifier implements BFTEventProcessorAtCurr
 
   @Override
   public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
-    if (!scheduledLocalTimeout.round().equals(this.latestRoundUpdate.getCurrentRound())) {
-      log.trace(
-          "Ignoring ScheduledLocalTimeout event for the past round {}, current is {}",
-          scheduledLocalTimeout.round(),
-          this.latestRoundUpdate.getCurrentRound());
-      return;
-    }
     forwardTo.processLocalTimeout(scheduledLocalTimeout);
   }
 
   @Override
-  public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
-    if (!roundLeaderFailure.round().equals(this.latestRoundUpdate.getCurrentRound())) {
-      log.trace(
-          "Ignoring RoundLeaderFailure event for the past round {}, current is {}",
-          roundLeaderFailure.round(),
-          this.latestRoundUpdate.getCurrentRound());
-      return;
-    }
-    forwardTo.processRoundLeaderFailure(roundLeaderFailure);
+  public void processProposalRejected(ProposalRejected proposalRejected) {
+    forwardTo.processProposalRejected(proposalRejected);
   }
 
   @Override

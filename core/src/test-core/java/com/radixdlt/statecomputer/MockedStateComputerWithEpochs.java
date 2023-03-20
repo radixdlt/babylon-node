@@ -69,6 +69,7 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;

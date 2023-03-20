@@ -74,6 +74,9 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.vertexstore.ExecutedVertex;
+import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -98,11 +101,10 @@ public class PacemakerTest {
   private ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
   private RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher =
       rmock(RemoteEventDispatcher.class);
-  private EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher =
-      rmock(EventDispatcher.class);
   private RemoteEventDispatcher<BFTValidatorId, Proposal> proposalDispatcher =
       rmock(RemoteEventDispatcher.class);
   private EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher = rmock(EventDispatcher.class);
+  private EventDispatcher<NoVote> noVoteDispatcher = rmock(EventDispatcher.class);
   private ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender =
       rmock(ScheduledEventDispatcher.class);
   private TimeSupplier timeSupplier = mock(TimeSupplier.class);
@@ -115,6 +117,7 @@ public class PacemakerTest {
     QuorumCertificate committedQc = mock(QuorumCertificate.class);
     when(committedQc.getRound()).thenReturn(Round.of(0));
     when(highQC.highestCommittedQC()).thenReturn(committedQc);
+    when(highQC.getHighestRound()).thenReturn(Round.of(0));
 
     RoundUpdate initialRoundUpdate =
         RoundUpdate.create(
@@ -132,7 +135,7 @@ public class PacemakerTest {
             this.proposalGenerator,
             this.proposalDispatcher,
             this.voteDispatcher,
-            this.roundLeaderFailureEventDispatcher,
+            this.noVoteDispatcher,
             hasher,
             timeSupplier,
             initialRoundUpdate,
@@ -189,6 +192,7 @@ public class PacemakerTest {
     Vote emptyVoteWithTimeout = mock(Vote.class);
     ImmutableSet<BFTValidatorId> validators = rmock(ImmutableSet.class);
     BFTHeader bftHeader = mock(BFTHeader.class);
+    when(bftHeader.getRound()).thenReturn(round);
     HighQC highQC = mock(HighQC.class);
     BFTInsertUpdate bftInsertUpdate = mock(BFTInsertUpdate.class);
     when(bftInsertUpdate.getHeader()).thenReturn(bftHeader);
@@ -199,7 +203,7 @@ public class PacemakerTest {
     when(vertexStoreState.getHighQC()).thenReturn(highQC);
     when(bftInsertUpdate.getInserted()).thenReturn(executedVertex);
     when(bftInsertUpdate.getVertexStoreState()).thenReturn(vertexStoreState);
-    final var vertexHash = hasher.hashDsonEncoded(Vertex.createTimeout(highestQc, round, leader));
+    final var vertexHash = hasher.hashDsonEncoded(Vertex.createFallback(highestQc, round, leader));
     when(executedVertex.getVertexHash()).thenReturn(vertexHash);
 
     when(this.safetyRules.getLastVote(round)).thenReturn(Optional.empty());
@@ -218,7 +222,7 @@ public class PacemakerTest {
     this.pacemaker.processBFTUpdate(bftInsertUpdate);
 
     verify(this.voteDispatcher, times(1)).dispatch(eq(validators), eq(emptyVoteWithTimeout));
-    verify(this.safetyRules, times(1)).getLastVote(round);
+    verify(this.safetyRules, times(2)).getLastVote(round);
     verify(this.safetyRules, times(1)).createVote(any(), any(), anyLong(), any());
     verify(this.safetyRules, times(1)).timeoutVote(emptyVote);
     verifyNoMoreInteractions(this.safetyRules);

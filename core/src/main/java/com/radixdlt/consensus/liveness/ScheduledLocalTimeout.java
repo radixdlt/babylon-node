@@ -66,64 +66,25 @@ package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
-import java.util.Objects;
 
 /** A potential timeout that is scheduled */
-public final class ScheduledLocalTimeout {
-  private final RoundUpdate roundUpdate;
-  private final long millisecondsWaitTime;
-  private final int count;
-
-  private ScheduledLocalTimeout(RoundUpdate roundUpdate, long millisecondsWaitTime, int count) {
-    this.roundUpdate = roundUpdate;
-    this.millisecondsWaitTime = millisecondsWaitTime;
-    this.count = count;
-  }
+public record ScheduledLocalTimeout(
+    RoundUpdate roundUpdate, long millisecondsWaitTime, int count, boolean hasBeenProlonged) {
 
   public static ScheduledLocalTimeout create(RoundUpdate roundUpdate, long millisecondsWaitTime) {
-    return new ScheduledLocalTimeout(roundUpdate, millisecondsWaitTime, 0);
+    return new ScheduledLocalTimeout(roundUpdate, millisecondsWaitTime, 0, false);
+  }
+
+  public ScheduledLocalTimeout prolong(long millisecondsWaitTime) {
+    return new ScheduledLocalTimeout(roundUpdate, millisecondsWaitTime, count, true);
   }
 
   public ScheduledLocalTimeout nextRetry(long millisecondsWaitTime) {
-    return new ScheduledLocalTimeout(roundUpdate, millisecondsWaitTime, this.count + 1);
-  }
-
-  public int count() {
-    return count;
-  }
-
-  public RoundUpdate roundUpdate() {
-    return roundUpdate;
+    return new ScheduledLocalTimeout(
+        roundUpdate, millisecondsWaitTime, this.count + 1, hasBeenProlonged);
   }
 
   public Round round() {
     return roundUpdate.getCurrentRound();
-  }
-
-  public long millisecondsWaitTime() {
-    return millisecondsWaitTime;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(roundUpdate, millisecondsWaitTime, count);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof ScheduledLocalTimeout)) {
-      return false;
-    }
-
-    ScheduledLocalTimeout other = (ScheduledLocalTimeout) o;
-    return Objects.equals(other.roundUpdate, this.roundUpdate)
-        && other.millisecondsWaitTime == this.millisecondsWaitTime
-        && other.count == this.count;
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{round=%s count=%s}", this.getClass().getSimpleName(), roundUpdate, count);
   }
 }

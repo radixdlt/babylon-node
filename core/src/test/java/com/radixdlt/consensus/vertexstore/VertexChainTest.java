@@ -62,20 +62,17 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.vertexstore;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-/** Basic tests for {@link VertexWithHash} */
-public class VertexWithHashTest {
-
+public class VertexChainTest {
   @Test
   public void equalsContract() {
-    EqualsVerifier.forClass(VertexWithHash.class)
+    EqualsVerifier.forClass(VertexChain.class)
         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
         .verify();
   }

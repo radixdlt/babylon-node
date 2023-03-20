@@ -145,7 +145,7 @@ public class REv2StateComputerTest {
     var validTransaction = REv2TestTransactions.constructValidRawTransaction(0, 0);
 
     // Act
-    var roundDetails = new RoundDetails(1, 1, 0, BFTValidatorId.random(), false, 1000, 1000);
+    var roundDetails = new RoundDetails(1, 1, 0, BFTValidatorId.random(), 1000, 1000);
     var result = stateComputer.prepare(List.of(), List.of(validTransaction), roundDetails);
 
     // Assert
@@ -162,7 +162,7 @@ public class REv2StateComputerTest {
     var invalidTransaction = RawNotarizedTransaction.create(new byte[1]);
 
     // Act
-    var roundDetails = new RoundDetails(1, 1, 0, BFTValidatorId.random(), false, 1000, 1000);
+    var roundDetails = new RoundDetails(1, 1, 0, BFTValidatorId.random(), 1000, 1000);
     var result = stateComputer.prepare(List.of(), List.of(invalidTransaction), roundDetails);
 
     // Assert

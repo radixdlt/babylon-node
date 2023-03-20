@@ -62,109 +62,85 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.vertexstore;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
-import com.radixdlt.transactions.RawLedgerTransaction;
-import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.Pair;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.lang.Option;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Stream;
 
-/**
- * A Vertex which has been executed by the engine.
- *
- * <p>In particular, a system transaction has been added, and user-transactions have been executed.
- * Some of these may fail, this is captured in transactionsWhichRaisedAnException. The system
- * transaction and user-transactions are captured in executedTransactions.
- *
- * <p>The ledger header captures an overview of the resultant state after ingesting these
- * transactions.
- */
-public final class ExecutedVertex {
-  private final long timeOfExecution;
-  private final VertexWithHash vertexWithHash;
+/** Manages the BFT Vertex chain. TODO: Move this logic into ledger package. */
+public interface VertexStore {
+  record CommittedUpdate(ImmutableList<ExecutedVertex> committedVertices) {}
 
-  private final LedgerHeader ledgerHeader;
+  sealed interface InsertQcResult {
+    record Inserted(
+        HighQC newHighQc,
+        // TODO: remove me once vertex store persistence and commit on the java side are gone
+        VertexStoreState vertexStoreState,
+        Option<CommittedUpdate> committedUpdate)
+        implements InsertQcResult {}
 
-  private final List<ExecutedTransaction> executedTransactions;
-  private final Map<RawNotarizedTransaction, Exception> transactionsWhichRaisedAnException;
+    record Ignored() implements InsertQcResult {}
 
-  public ExecutedVertex(
-      VertexWithHash vertexWithHash,
-      LedgerHeader ledgerHeader,
-      List<ExecutedTransaction> executedTransactions,
-      Map<RawNotarizedTransaction, Exception> transactionsWhichRaisedAnException,
-      long timeOfExecution) {
-    this.vertexWithHash = Objects.requireNonNull(vertexWithHash);
-    this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
-    this.executedTransactions = Objects.requireNonNull(executedTransactions);
-    this.transactionsWhichRaisedAnException =
-        Objects.requireNonNull(transactionsWhichRaisedAnException);
-    this.timeOfExecution = timeOfExecution;
+    record VertexIsMissing() implements InsertQcResult {}
   }
 
-  public Vertex vertex() {
-    return this.vertexWithHash.vertex();
-  }
+  record InsertVertexChainResult(
+      List<InsertQcResult.Inserted> insertedQcs, List<BFTInsertUpdate> insertUpdates) {}
 
-  public long getTimeOfExecution() {
-    return timeOfExecution;
-  }
-
-  public HashCode getVertexHash() {
-    return vertexWithHash.hash();
-  }
-
-  public HashCode getParentId() {
-    return vertex().getParentVertexId();
-  }
-
-  public Round getRound() {
-    return vertex().getRound();
-  }
-
-  public Stream<ExecutedTransaction> successfulTransactions() {
-    return executedTransactions.stream();
-  }
-
-  public Stream<Pair<RawNotarizedTransaction, Exception>> errorTransactions() {
-    return transactionsWhichRaisedAnException.entrySet().stream()
-        .map(e -> Pair.of(e.getKey(), e.getValue()));
-  }
-
-  public Stream<RawLedgerTransaction> getTransactions() {
-    return successfulTransactions().map(ExecutedTransaction::transaction);
-  }
+  InsertQcResult insertQc(QuorumCertificate qc);
 
   /**
-   * Retrieve the resulting header which is to be persisted on ledger
+   * Inserts a timeout certificate into the store.
    *
-   * @return the header
+   * @param timeoutCertificate the timeout certificate
+   * @return true if the timeout certificate was inserted, false if it was ignored because it's not
+   *     the highest
    */
-  public LedgerHeader getLedgerHeader() {
-    return ledgerHeader;
-  }
+  boolean insertTimeoutCertificate(TimeoutCertificate timeoutCertificate);
 
   /**
-   * Retrieve the vertex which was executed
+   * Inserts a vertex and then attempts to create the next header.
    *
-   * @return the executed vertex
+   * @param vertexWithHash vertex to insert
    */
-  public VertexWithHash getVertexWithHash() {
-    return vertexWithHash;
-  }
+  Option<BFTInsertUpdate> insertVertex(VertexWithHash vertexWithHash);
 
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{vertex=%s ledgerHeader=%s}",
-        this.getClass().getSimpleName(), this.vertex(), this.ledgerHeader);
-  }
+  InsertVertexChainResult insertVertexChain(VertexChain vertexChain);
+
+  Option<VertexStoreState> tryRebuild(VertexStoreState vertexStoreState);
+
+  boolean containsVertex(HashCode vertexId);
+
+  HighQC highQC();
+
+  VertexWithHash getRoot();
+
+  List<ExecutedVertex> getPathFromRoot(HashCode vertexId);
+
+  /**
+   * Returns the vertex with specified id or empty if not exists.
+   *
+   * @param vertexHash the id of a vertex
+   * @return the specified vertex or empty
+   */
+  Option<ExecutedVertex> getExecutedVertex(HashCode vertexHash);
+
+  /**
+   * Retrieves list of vertices starting with the given vertexId and then proceeding to its
+   * ancestors.
+   *
+   * <p>if the store does not contain some vertex then will return an empty list.
+   *
+   * @param vertexHash the id of the vertex
+   * @param count the number of vertices to retrieve
+   * @return the list of vertices if all found, otherwise an empty list
+   */
+  Option<ImmutableList<VertexWithHash>> getVertices(HashCode vertexHash, int count);
 }
