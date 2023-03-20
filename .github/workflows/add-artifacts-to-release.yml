@@ -1,0 +1,89 @@
+name: Release artifacts
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish_libcorerust:
+    name: Build and upload core-rust
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          distribution: "zulu"
+          java-version: "17"
+      - name: Cache Gradle packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+      - name: Run local core-rust docker build
+        run: ./gradlew :core-rust:buildRustForDocker -P rustBinaryBuildType="release"
+      - name: Upload libcorerust
+        run:
+          echo "This is used instead of the github action, because it closes the socket due to unrecognized file format errors."
+          gh release upload ${{ github.event.release.tag_name }} --repo radixdlt/babylon-node ${{ github.workspace }}/core-rust/target/x86_64-unknown-linux-gnu/release/libcorerust.so --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-distribution-zip:
+    name: Add artifacts release ${{ github.event.release.tag_name }}
+    runs-on: ubuntu-22.04
+    environment: publish-artifacts
+    steps:
+      - name: Dump context
+        uses: crazy-max/ghaction-dump-context@516dbb0c760f39b4cdd750ae095f1688780f68f4
+      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+      - name: Set up JDK 17
+        uses: actions/setup-java@3f07048e3d294f56e9b90ac5ea2c6f74e9ad0f98
+        with:
+          distribution: "zulu"
+          java-version: "17"
+      - name: Cache Gradle packages
+        uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      - name: Build radixdlt
+        uses: ./.github/actions/gradle-task
+        with:
+          is_release: true
+          gradle_command: clean build -x test
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@f589ce0779c7bef1faf175f7488c972eb47dc046
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - id: get_version
+        name: Get radixdlt version
+        uses: ./.github/actions/get-version
+        with:
+          is_release: true
+      - name: List files
+        run: ls -la ./core/build/distributions/
+      - name: Upload distribution zip
+        uses: actions/upload-release-asset@e8f9f06c4b078e705bd2ea027f0926603fc9b4d5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ./core/build/distributions/core-${{ steps.get_version.outputs.radixdlt_version }}.zip
+          asset_name: radixdlt-dist-${{ steps.get_version.outputs.radixdlt_version }}.zip
+          asset_content_type: application/zip
