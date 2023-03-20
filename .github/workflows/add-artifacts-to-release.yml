@@ -1,4 +1,4 @@
-name: radixdlt-artifacts-to-release
+name: Release artifacts
 on:
   release:
     types: [published]
