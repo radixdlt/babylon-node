@@ -70,6 +70,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.bft.processor.EmptyBFTEventProcessor;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerStateFactory;
@@ -248,7 +249,7 @@ public final class EpochManager {
             self,
             pacemaker,
             bftSync,
-            bftSync.roundQuorumReachedEventProcessor(),
+            bftSync.roundQuorumResolutionEventProcessor(),
             validatorSet,
             initialRoundUpdate,
             safetyRules,
@@ -378,6 +379,15 @@ public final class EpochManager {
     }
 
     bftEventProcessor.processLocalTimeout(localTimeout.event());
+  }
+
+  public void processTimeoutQuorumDelayedResolution(
+      Epoched<TimeoutQuorumDelayedResolution> timeoutQuorumDelayedResolution) {
+    if (timeoutQuorumDelayedResolution.epoch() != this.currentEpoch()) {
+      return;
+    }
+
+    bftEventProcessor.processTimeoutQuorumDelayedResolution(timeoutQuorumDelayedResolution.event());
   }
 
   public EventProcessor<EpochRoundUpdate> epochRoundUpdateEventProcessor() {

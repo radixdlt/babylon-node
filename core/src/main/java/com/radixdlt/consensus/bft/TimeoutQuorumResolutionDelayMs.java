@@ -64,32 +64,20 @@
 
 package com.radixdlt.consensus.bft;
 
-import static org.mockito.Mockito.mock;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimeoutCertificate;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-public class VoteProcessingResultTest {
-
-  @Test
-  public void equalsVoteAccepted() {
-    EqualsVerifier.forClass(VoteProcessingResult.VoteAccepted.class).verify();
-  }
-
-  @Test
-  public void equalsVoteRejected() {
-    EqualsVerifier.forClass(VoteProcessingResult.VoteRejected.class).verify();
-  }
-
-  @Test
-  public void equalsQuorumReached() {
-    EqualsVerifier.forClass(VoteProcessingResult.QuorumReached.class)
-        .withPrefabValues(
-            RoundVotingResult.class,
-            new RoundVotingResult.FormedQC(mock(QuorumCertificate.class)),
-            new RoundVotingResult.FormedTC(mock(TimeoutCertificate.class)))
-        .verify();
-  }
-}
+/**
+ * The amount of time (in milliseconds) by which the processing of a timeout quorum can be delayed
+ * (to try form a QC in the meantime)
+ */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface TimeoutQuorumResolutionDelayMs {}

@@ -327,6 +327,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
   public EventProcessor<BFTCommittedUpdate> bftCommittedUpdateEventProcessor() {
     return committedUpdate -> {
+      updateCommittedVerticesMetrics(committedUpdate);
+
       final ImmutableList<RawLedgerTransaction> transactions =
           committedUpdate.committed().stream()
               .flatMap(ExecutedVertex::successfulTransactions)
@@ -339,6 +341,25 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
           .commit()
           .measure(() -> this.commit(transactionsWithProof, committedUpdate.vertexStoreState()));
     };
+  }
+
+  private void updateCommittedVerticesMetrics(BFTCommittedUpdate committedUpdate) {
+    final var numCommittedFallbackVertices =
+        committedUpdate.committed().stream().filter(v -> v.vertex().isFallback()).count();
+    final var numCommittedNonFallbackVertices =
+        committedUpdate.committed().size() - numCommittedFallbackVertices;
+
+    metrics
+        .bft()
+        .committedVertices()
+        .label(new Metrics.Bft.CommittedVertex(true))
+        .inc(numCommittedFallbackVertices);
+
+    metrics
+        .bft()
+        .committedVertices()
+        .label(new Metrics.Bft.CommittedVertex(false))
+        .inc(numCommittedNonFallbackVertices);
   }
 
   public EventProcessor<CommittedTransactionsWithProof> syncEventProcessor() {

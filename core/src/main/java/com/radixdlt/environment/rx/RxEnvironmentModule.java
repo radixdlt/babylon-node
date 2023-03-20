@@ -73,6 +73,7 @@ import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.*;
@@ -121,7 +122,9 @@ public final class RxEnvironmentModule extends AbstractModule {
           Set<Class<?>> localProcessedEventClasses // TODO: remove, infer from ProcessorOnRunners
       ) {
     return new RxEnvironment(
-        Set.of(new TypeLiteral<Epoched<ScheduledLocalTimeout>>() {}),
+        Set.of(
+            new TypeLiteral<Epoched<ScheduledLocalTimeout>>() {},
+            new TypeLiteral<Epoched<TimeoutQuorumDelayedResolution>>() {}),
         localProcessedEventClasses,
         ses,
         dispatchers);

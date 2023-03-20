@@ -71,6 +71,7 @@ import static org.mockito.Mockito.times;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
@@ -80,6 +81,7 @@ import com.radixdlt.monitoring.Metrics.RoundChange.CertificateType;
 import com.radixdlt.monitoring.Metrics.RoundChange.HighQcSource;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -132,6 +134,10 @@ public class PacemakerStateTest {
   public void when_process_qc_for_current_round__then_processed() {
     HighQC highQC = mock(HighQC.class);
     when(highQC.getHighestRound()).thenReturn(Round.of(0));
+    final var highestQc = mock(QuorumCertificate.class);
+    when(highestQc.getTimestampedSignatures())
+        .thenReturn(TimestampedECDSASignatures.from(Map.of()));
+    when(highQC.highestQC()).thenReturn(highestQc);
 
     this.pacemakerState.processQC(highQC, highQcSource, certificateType);
     verify(roundUpdateSender, times(1))
@@ -146,10 +152,14 @@ public class PacemakerStateTest {
   @Test
   public void when_process_qc_with_a_high_tc__then_should_move_to_tc_round() {
     HighQC highQC = mock(HighQC.class);
-    QuorumCertificate qc = mock(QuorumCertificate.class);
-    when(qc.getRound()).thenReturn(Round.of(3));
+    QuorumCertificate highestCommittedQc = mock(QuorumCertificate.class);
+    final var highestQc = mock(QuorumCertificate.class);
+    when(highestQc.getTimestampedSignatures())
+        .thenReturn(TimestampedECDSASignatures.from(Map.of()));
+    when(highQC.highestQC()).thenReturn(highestQc);
+    when(highestCommittedQc.getRound()).thenReturn(Round.of(3));
     when(highQC.getHighestRound()).thenReturn(Round.of(5));
-    when(highQC.highestCommittedQC()).thenReturn(qc);
+    when(highQC.highestCommittedQC()).thenReturn(highestCommittedQc);
 
     this.pacemakerState.processQC(highQC, highQcSource, certificateType);
     verify(roundUpdateSender, times(1))
@@ -161,6 +171,7 @@ public class PacemakerStateTest {
     QuorumCertificate hqc = mock(QuorumCertificate.class);
     QuorumCertificate cqc = mock(QuorumCertificate.class);
     when(hqc.getRound()).thenReturn(round);
+    when(hqc.getTimestampedSignatures()).thenReturn(TimestampedECDSASignatures.from(Map.of()));
     when(cqc.getRound()).thenReturn(Round.of(0));
     when(highQC.highestQC()).thenReturn(hqc);
     when(highQC.highestCommittedQC()).thenReturn(cqc);

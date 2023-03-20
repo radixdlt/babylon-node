@@ -221,6 +221,8 @@ subprojects {
 
             // Make sure every file has the following copyright header
             licenseHeaderFile("${project.rootDir}/licence-header.txt")
+
+            toggleOffOn()
         }
     }
 

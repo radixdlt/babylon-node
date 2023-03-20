@@ -65,15 +65,11 @@
 package com.radixdlt.consensus.bft.processor;
 
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.ProposalRejected;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.monitoring.Metrics;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -96,19 +92,9 @@ public final class OneProposalPerRoundVerifier implements BFTEventProcessor {
   }
 
   @Override
-  public void start() {
-    forwardTo.start();
-  }
-
-  @Override
   public void processRoundUpdate(RoundUpdate roundUpdate) {
     this.receivedProposals.removeIf(r -> r.lt(roundUpdate.getCurrentRound()));
     forwardTo.processRoundUpdate(roundUpdate);
-  }
-
-  @Override
-  public void processVote(Vote vote) {
-    forwardTo.processVote(vote);
   }
 
   @Override
@@ -127,22 +113,7 @@ public final class OneProposalPerRoundVerifier implements BFTEventProcessor {
   }
 
   @Override
-  public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
-    forwardTo.processLocalTimeout(scheduledLocalTimeout);
-  }
-
-  @Override
-  public void processProposalRejected(ProposalRejected proposalRejected) {
-    forwardTo.processProposalRejected(proposalRejected);
-  }
-
-  @Override
-  public void processBFTUpdate(BFTInsertUpdate update) {
-    forwardTo.processBFTUpdate(update);
-  }
-
-  @Override
-  public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
-    forwardTo.processBFTRebuildUpdate(update);
+  public Optional<BFTEventProcessor> forwardTo() {
+    return Optional.of(forwardTo);
   }
 }

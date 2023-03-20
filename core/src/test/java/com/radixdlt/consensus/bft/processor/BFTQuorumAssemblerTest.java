@@ -70,9 +70,11 @@ import static org.mockito.Mockito.*;
 
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import org.junit.Before;
@@ -84,8 +86,10 @@ public final class BFTQuorumAssemblerTest {
   private PendingVotes pendingVotes = mock(PendingVotes.class);
   private VertexStoreAdapter vertexStore = mock(VertexStoreAdapter.class);
   private Pacemaker pacemaker = mock(Pacemaker.class);
-  private EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher =
+  private EventDispatcher<RoundQuorumResolution> roundQuorumResolutionDispatcher =
       rmock(EventDispatcher.class);
+  private ScheduledEventDispatcher<TimeoutQuorumDelayedResolution>
+      timeoutQuorumDelayedResolutionDispatcher = rmock(ScheduledEventDispatcher.class);
 
   private BFTQuorumAssembler bftQuorumAssembler;
 
@@ -95,10 +99,12 @@ public final class BFTQuorumAssemblerTest {
         new BFTQuorumAssembler(
             this.pacemaker,
             this.self,
-            this.roundQuorumReachedEventDispatcher,
+            this.roundQuorumResolutionDispatcher,
+            this.timeoutQuorumDelayedResolutionDispatcher,
             this.metrics,
             this.pendingVotes,
-            mock(RoundUpdate.class));
+            mock(RoundUpdate.class),
+            1000L);
   }
 
   @Test
@@ -113,7 +119,7 @@ public final class BFTQuorumAssemblerTest {
     when(highQc.highestCommittedQC()).thenReturn(highestCommittedQc);
     when(vote.getRound()).thenReturn(Round.of(1));
 
-    when(this.pendingVotes.insertVote(any())).thenReturn(VoteProcessingResult.qcQuorum(qc));
+    when(this.pendingVotes.insertVote(any())).thenReturn(VoteProcessingResult.regularQuorum(qc));
     when(this.vertexStore.highQC()).thenReturn(highQc);
 
     // Move to round 1
@@ -122,7 +128,7 @@ public final class BFTQuorumAssemblerTest {
 
     this.bftQuorumAssembler.processVote(vote);
 
-    verify(this.roundQuorumReachedEventDispatcher, times(1)).dispatch(any());
+    verify(this.roundQuorumResolutionDispatcher, times(1)).dispatch(any());
     verify(this.pendingVotes, times(1)).insertVote(eq(vote));
     verifyNoMoreInteractions(this.pendingVotes);
   }

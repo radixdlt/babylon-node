@@ -66,13 +66,10 @@ package com.radixdlt.consensus.bft.processor;
 
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.ProposalRejected;
 import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.monitoring.Metrics;
 import java.util.Objects;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -92,11 +89,6 @@ public final class BFTEventPostSyncUpVerifier implements BFTEventProcessorAtCurr
     this.forwardTo = Objects.requireNonNull(forwardTo);
     this.metrics = Objects.requireNonNull(metrics);
     this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
-  }
-
-  @Override
-  public void start() {
-    forwardTo.start();
   }
 
   @Override
@@ -134,32 +126,7 @@ public final class BFTEventPostSyncUpVerifier implements BFTEventProcessorAtCurr
   }
 
   @Override
-  public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
-    forwardTo.processLocalTimeout(scheduledLocalTimeout);
-  }
-
-  @Override
-  public void processProposalRejected(ProposalRejected proposalRejected) {
-    forwardTo.processProposalRejected(proposalRejected);
-  }
-
-  @Override
-  public void processBFTUpdate(BFTInsertUpdate update) {
-    forwardTo.processBFTUpdate(update);
-  }
-
-  @Override
-  public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
-    forwardTo.processBFTRebuildUpdate(update);
-  }
-
-  @Override
-  public void preProcessUnsyncedVoteForCurrentOrFutureRound(Vote vote) {
-    forwardTo.preProcessUnsyncedVoteForCurrentOrFutureRound(vote);
-  }
-
-  @Override
-  public void preProcessUnsyncedProposalForCurrentOrFutureRound(Proposal proposal) {
-    forwardTo.preProcessUnsyncedProposalForCurrentOrFutureRound(proposal);
+  public Optional<BFTEventProcessorAtCurrentRound> forwardTo() {
+    return Optional.of(forwardTo);
   }
 }
