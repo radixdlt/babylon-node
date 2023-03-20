@@ -74,10 +74,8 @@ import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
-import com.radixdlt.consensus.bft.ProposalRejected;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.RoundChange.HighQcSource;
 import com.radixdlt.p2p.NodeId;
@@ -87,6 +85,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
@@ -120,11 +119,6 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
     this.bftSyncer = Objects.requireNonNull(bftSyncer);
     this.metrics = Objects.requireNonNull(metrics);
     this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
-  }
-
-  @Override
-  public void start() {
-    forwardTo.start();
   }
 
   @Override
@@ -239,16 +233,6 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
     }
   }
 
-  @Override
-  public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
-    forwardTo.processLocalTimeout(scheduledLocalTimeout);
-  }
-
-  @Override
-  public void processProposalRejected(ProposalRejected proposalRejected) {
-    forwardTo.processProposalRejected(proposalRejected);
-  }
-
   private void processQueuedConsensusEvent(QueuedConsensusEvent queuedEvent) {
     metrics.bft().consensusEventsQueueWait().observe(queuedEvent.stopwatch.elapsed());
     switch (queuedEvent.event) {
@@ -309,5 +293,10 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
       default:
         throw new IllegalStateException("Unknown syncResult " + syncResult);
     }
+  }
+
+  @Override
+  public Optional<BFTEventProcessor> forwardTo() {
+    return Optional.of(forwardTo);
   }
 }

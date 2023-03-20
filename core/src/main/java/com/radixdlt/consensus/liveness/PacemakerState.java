@@ -120,6 +120,7 @@ public class PacemakerState implements PacemakerReducer {
       final BFTValidatorId leader = this.proposerElection.getProposer(nextRound);
       final BFTValidatorId nextLeader = this.proposerElection.getProposer(nextRound.next());
       final var roundUpdate = RoundUpdate.create(nextRound, highQC, leader, nextLeader);
+      updateNumSignaturesInCertificateMetrics(highQC);
       updateRoundChangesMetrics(roundUpdate, certificateType, highQcSource);
       this.highQC = highQC;
       this.currentRound = nextRound;
@@ -130,6 +131,22 @@ public class PacemakerState implements PacemakerReducer {
           highestRoundWithQuorum,
           this.currentRound);
     }
+  }
+
+  private void updateNumSignaturesInCertificateMetrics(HighQC highQC) {
+    highQC
+        .highestTC()
+        .ifPresentOrElse(
+            highestTc ->
+                metrics
+                    .bft()
+                    .numSignaturesInCertificate()
+                    .observe(highestTc.getTimestampedSignatures().getSignatures().size()),
+            () ->
+                metrics
+                    .bft()
+                    .numSignaturesInCertificate()
+                    .observe(highQC.highestQC().getTimestampedSignatures().getSignatures().size()));
   }
 
   private void updateRoundChangesMetrics(

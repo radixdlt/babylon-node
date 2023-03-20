@@ -91,6 +91,7 @@ import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -302,17 +303,21 @@ public final class DeterministicTest implements AutoCloseable {
     }
   }
 
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
   public DeterministicTest runUntilState(
       Predicate<List<Injector>> nodeStatePredicate,
       int max,
-      Predicate<ControlledMessage> predicate) {
+      Optional<Predicate<ControlledMessage>> predicate) {
     int count = 0;
 
     while (!nodeStatePredicate.test(getNodeInjectors())) {
       if (count == max) {
         throw new NeverReachedStateException(max);
       }
-      Timed<ControlledMessage> nextMsg = this.network.nextMessage(predicate);
+      // TODO: this is a bit of a hack, but `nextMessage` with predicate doesn't
+      // respect messageSelector, so not using it if not needed
+      final var nextMsg =
+          predicate.map(this.network::nextMessage).orElseGet(this.network::nextMessage);
       handleMessage(nextMsg);
       count++;
     }
@@ -321,16 +326,23 @@ public final class DeterministicTest implements AutoCloseable {
   }
 
   public DeterministicTest runUntilState(
+      Predicate<List<Injector>> nodeStatePredicate,
+      int max,
+      Predicate<ControlledMessage> predicate) {
+    return runUntilState(nodeStatePredicate, max, Optional.of(predicate));
+  }
+
+  public DeterministicTest runUntilState(
       Predicate<List<Injector>> nodeStatePredicate, Predicate<ControlledMessage> predicate) {
-    return runUntilState(nodeStatePredicate, 10000, predicate);
+    return runUntilState(nodeStatePredicate, 10000, Optional.of(predicate));
   }
 
   public DeterministicTest runUntilState(Predicate<List<Injector>> nodeStatePredicate, int max) {
-    return this.runUntilState(nodeStatePredicate, max, m -> true);
+    return this.runUntilState(nodeStatePredicate, max, Optional.empty());
   }
 
   public DeterministicTest runUntilState(Predicate<List<Injector>> nodeStatePredicate) {
-    return this.runUntilState(nodeStatePredicate, 10000, m -> true);
+    return this.runUntilState(nodeStatePredicate, 10000, Optional.empty());
   }
 
   public void runUntilOutOfMessagesOfType(int count, Predicate<ControlledMessage> predicate) {

@@ -65,9 +65,7 @@
 package com.radixdlt.consensus.bft.processor;
 
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent;
@@ -75,6 +73,7 @@ import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.TimestampIssue;
 import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.Type;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Objects;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -121,21 +120,6 @@ public final class ProposalTimestampVerifier implements BFTEventProcessorAtCurre
     this.timeSupplier = Objects.requireNonNull(timeSupplier);
     this.metrics = Objects.requireNonNull(metrics);
     this.proposalRejectedDispatcher = Objects.requireNonNull(proposalRejectedDispatcher);
-  }
-
-  @Override
-  public void start() {
-    forwardTo.start();
-  }
-
-  @Override
-  public void processRoundUpdate(RoundUpdate roundUpdate) {
-    forwardTo.processRoundUpdate(roundUpdate);
-  }
-
-  @Override
-  public void processVote(Vote vote) {
-    forwardTo.processVote(vote);
   }
 
   @Override
@@ -218,32 +202,7 @@ public final class ProposalTimestampVerifier implements BFTEventProcessorAtCurre
   }
 
   @Override
-  public void processLocalTimeout(ScheduledLocalTimeout localTimeout) {
-    forwardTo.processLocalTimeout(localTimeout);
-  }
-
-  @Override
-  public void processProposalRejected(ProposalRejected proposalRejected) {
-    forwardTo.processProposalRejected(proposalRejected);
-  }
-
-  @Override
-  public void processBFTUpdate(BFTInsertUpdate update) {
-    forwardTo.processBFTUpdate(update);
-  }
-
-  @Override
-  public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
-    forwardTo.processBFTRebuildUpdate(update);
-  }
-
-  @Override
-  public void preProcessUnsyncedVoteForCurrentOrFutureRound(Vote vote) {
-    forwardTo.preProcessUnsyncedVoteForCurrentOrFutureRound(vote);
-  }
-
-  @Override
-  public void preProcessUnsyncedProposalForCurrentOrFutureRound(Proposal proposal) {
-    forwardTo.preProcessUnsyncedProposalForCurrentOrFutureRound(proposal);
+  public Optional<BFTEventProcessorAtCurrentRound> forwardTo() {
+    return Optional.of(forwardTo);
   }
 }

@@ -167,12 +167,12 @@ public record Metrics(
       Counter preconditionViolations,
       Counter duplicateProposalsReceived,
       Counter eventsReceived,
-      Counter committedVertices,
+      LabelledCounter<CommittedVertex> committedVertices,
       Counter noVotesSent,
-      Counter voteQuorums,
-      Counter timeoutQuorums,
       Counter prolongedRoundTimeouts,
       Counter obsoleteEventsIgnored,
+      LabelledCounter<QuorumResolution> quorumResolutions,
+      Counter timeoutQuorumDelayedResolutions,
       LabelledCounter<RoundChange> roundChanges,
       Timer consensusEventsQueueWait,
       LabelledCounter<RejectedConsensusEvent> rejectedConsensusEvents,
@@ -184,12 +184,16 @@ public record Metrics(
       Summary leaderMaxProposalPayloadSize,
       Summary leaderNumTransactionsIncludedInProposal,
       Summary leaderTransactionBytesIncludedInProposal,
-      Summary leaderTransactionBytesIncludedInProposalAndPreviousVertices) {
+      Summary leaderTransactionBytesIncludedInProposalAndPreviousVertices,
+      Summary numSignaturesInCertificate) {
+
+    public record QuorumResolution(boolean isTimeout) {}
+
+    public record CommittedVertex(boolean isFallback) {}
 
     public record IgnoredVote(VoteIgnoreReason reason) {}
 
     public enum VoteIgnoreReason {
-      QUORUM_ALREADY_REACHED,
       UNEXPECTED_VOTE
     }
 

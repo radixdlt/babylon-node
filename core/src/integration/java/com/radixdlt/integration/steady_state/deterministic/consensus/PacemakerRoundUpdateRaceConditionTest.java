@@ -165,7 +165,10 @@ public class PacemakerRoundUpdateRaceConditionTest {
     test.runUntilMessage(nodeUnderTestReachesRound(Round.of(3)));
 
     final var counters = test.getInstance(nodeUnderTestIndex, Metrics.class);
-    assertThat(counters.bft().voteQuorums().get()).isEqualTo(2); // ensure that quorum was formed
+    final var numRegularQuorums =
+        (long)
+            counters.bft().quorumResolutions().label(new Metrics.Bft.QuorumResolution(false)).get();
+    assertThat(numRegularQuorums).isEqualTo(2); // ensure that quorum was formed
     assertThat(counters.bft().pacemaker().timeoutsSent().get())
         .isEqualTo(2); // ensure that timeouts were processed
   }
