@@ -27,8 +27,8 @@ use super::*;
 use crate::core_api::models;
 
 use radix_engine::types::{
-    scrypto_encode, Decimal, KeyValueStoreOffset, RENodeId, ResourceAddress, RoyaltyConfig,
-    ScryptoSchema, ScryptoValue, SubstateId, SubstateOffset,
+    scrypto_decode, scrypto_encode, Decimal, KeyValueStoreOffset, RENodeId, ResourceAddress,
+    RoyaltyConfig, ScryptoSchema, ScryptoValue, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
@@ -1064,16 +1064,22 @@ pub fn to_api_key_value_story_entry_substate(
             NodeModuleId::SELF,
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
         ) => match key_value_store_entry {
-            Some(value) => models::Substate::KeyValueStoreEntrySubstate {
-                key_hex: to_hex(key),
-                is_deleted: false,
-                data_struct: Some(Box::new(to_api_data_struct_from_bytes(
-                    context,
-                    &scrypto_encode(&value).unwrap(),
-                )?)),
-            },
+            Some(value) => {
+                let non_fungible_id: Option<NonFungibleLocalId> = scrypto_decode(key).ok();
+                models::Substate::KeyValueStoreEntrySubstate {
+                    key_hex: to_hex(key),
+                    key_non_fungible_local_id: non_fungible_id
+                        .map(|id| Box::new(to_api_non_fungible_id(&id))),
+                    is_deleted: false,
+                    data_struct: Some(Box::new(to_api_data_struct_from_bytes(
+                        context,
+                        &scrypto_encode(&value).unwrap(),
+                    )?)),
+                }
+            }
             None => models::Substate::KeyValueStoreEntrySubstate {
                 key_hex: to_hex(key),
+                key_non_fungible_local_id: None,
                 is_deleted: true,
                 data_struct: None,
             },

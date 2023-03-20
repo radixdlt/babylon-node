@@ -2674,6 +2674,11 @@ components:
             key_hex:
               type: string
               description: The hex-encoded bytes of its key
+            key_non_fungible_local_id:
+              description: |
+                This is only included if the key bytes deserialize into a NonFungibleLocalId.
+                This is a temporary measure to help with mapping NonFungibles in the Gateway.
+              $ref: '#/components/schemas/NonFungibleId'
             is_deleted:
               type: boolean
             data_struct:
@@ -2733,44 +2738,6 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/NonFungibleId'
-    NonFungibleStoreEntrySubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-          required:
-            - non_fungible_id
-            - is_deleted
-          properties:
-            non_fungible_id:
-              $ref: '#/components/schemas/NonFungibleId'
-            non_fungible_data:
-              $ref: '#/components/schemas/NonFungibleData'
-            is_deleted:
-              type: boolean
-    NonFungibleData:
-      type: object
-      description: |
-        Only present if the non fungible isn't deleted.
-        NOTE: Currently there is no schema for mutable/immutable data, and it's not even guaranteed to be SBOR-encoded.
-        But from scrypto, it likely always will be. For now, immutable_data / mutable_data is optional, and only included
-        if the data is valid SBOR. When the payload is validated, `immutable_data_raw_hex` / `mutable_data_raw_hex` will
-        be removed.
-      required:
-        - immutable_data_raw_hex
-        - mutable_data_raw_hex
-      properties:
-        immutable_data:
-          $ref: '#/components/schemas/DataStruct'
-        immutable_data_raw_hex:
-          type: string
-          description: |
-            The hex-encoded raw bytes of the immutable data of the NF.
-        mutable_data:
-          $ref: '#/components/schemas/DataStruct'
-        mutable_data_raw_hex:
-          type: string
-          description: |
-            The hex-encoded raw bytes of the mutadata data of the NF.
     AccessControllerSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'

@@ -36,8 +36,9 @@ import com.radixdlt.api.core.generated.models.DataStruct;
 import com.radixdlt.api.core.generated.models.EpochManagerSubstate;
 import com.radixdlt.api.core.generated.models.FungibleResourceManagerSubstate;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
+import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstateAllOf;
 import com.radixdlt.api.core.generated.models.MetadataEntrySubstate;
-import com.radixdlt.api.core.generated.models.MetadataEntrySubstateAllOf;
+import com.radixdlt.api.core.generated.models.NonFungibleId;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerSubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeSubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeTypeSubstate;
@@ -66,6 +67,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   KeyValueStoreEntrySubstate.JSON_PROPERTY_KEY_HEX,
+  KeyValueStoreEntrySubstate.JSON_PROPERTY_KEY_NON_FUNGIBLE_LOCAL_ID,
   KeyValueStoreEntrySubstate.JSON_PROPERTY_IS_DELETED,
   KeyValueStoreEntrySubstate.JSON_PROPERTY_DATA_STRUCT
 })
@@ -108,6 +110,9 @@ public class KeyValueStoreEntrySubstate extends Substate {
   public static final String JSON_PROPERTY_KEY_HEX = "key_hex";
   private String keyHex;
 
+  public static final String JSON_PROPERTY_KEY_NON_FUNGIBLE_LOCAL_ID = "key_non_fungible_local_id";
+  private NonFungibleId keyNonFungibleLocalId;
+
   public static final String JSON_PROPERTY_IS_DELETED = "is_deleted";
   private Boolean isDeleted;
 
@@ -140,6 +145,32 @@ public class KeyValueStoreEntrySubstate extends Substate {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setKeyHex(String keyHex) {
     this.keyHex = keyHex;
+  }
+
+
+  public KeyValueStoreEntrySubstate keyNonFungibleLocalId(NonFungibleId keyNonFungibleLocalId) {
+    this.keyNonFungibleLocalId = keyNonFungibleLocalId;
+    return this;
+  }
+
+   /**
+   * Get keyNonFungibleLocalId
+   * @return keyNonFungibleLocalId
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_KEY_NON_FUNGIBLE_LOCAL_ID)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public NonFungibleId getKeyNonFungibleLocalId() {
+    return keyNonFungibleLocalId;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_KEY_NON_FUNGIBLE_LOCAL_ID)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setKeyNonFungibleLocalId(NonFungibleId keyNonFungibleLocalId) {
+    this.keyNonFungibleLocalId = keyNonFungibleLocalId;
   }
 
 
@@ -208,6 +239,7 @@ public class KeyValueStoreEntrySubstate extends Substate {
     }
     KeyValueStoreEntrySubstate keyValueStoreEntrySubstate = (KeyValueStoreEntrySubstate) o;
     return Objects.equals(this.keyHex, keyValueStoreEntrySubstate.keyHex) &&
+        Objects.equals(this.keyNonFungibleLocalId, keyValueStoreEntrySubstate.keyNonFungibleLocalId) &&
         Objects.equals(this.isDeleted, keyValueStoreEntrySubstate.isDeleted) &&
         Objects.equals(this.dataStruct, keyValueStoreEntrySubstate.dataStruct) &&
         super.equals(o);
@@ -215,7 +247,7 @@ public class KeyValueStoreEntrySubstate extends Substate {
 
   @Override
   public int hashCode() {
-    return Objects.hash(keyHex, isDeleted, dataStruct, super.hashCode());
+    return Objects.hash(keyHex, keyNonFungibleLocalId, isDeleted, dataStruct, super.hashCode());
   }
 
   @Override
@@ -224,6 +256,7 @@ public class KeyValueStoreEntrySubstate extends Substate {
     sb.append("class KeyValueStoreEntrySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    keyHex: ").append(toIndentedString(keyHex)).append("\n");
+    sb.append("    keyNonFungibleLocalId: ").append(toIndentedString(keyNonFungibleLocalId)).append("\n");
     sb.append("    isDeleted: ").append(toIndentedString(isDeleted)).append("\n");
     sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
     sb.append("}");

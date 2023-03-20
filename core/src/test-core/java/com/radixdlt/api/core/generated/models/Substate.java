@@ -37,7 +37,6 @@ import com.radixdlt.api.core.generated.models.FungibleResourceManagerSubstate;
 import com.radixdlt.api.core.generated.models.KeyValueStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.MetadataEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerSubstate;
-import com.radixdlt.api.core.generated.models.NonFungibleStoreEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeSubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeTypeSubstate;
 import com.radixdlt.api.core.generated.models.PackageEventSchemaSubstate;
@@ -96,7 +95,6 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = MetadataEntrySubstate.class, name = "MetadataEntrySubstate"),
   @JsonSubTypes.Type(value = NonFungibleResourceManagerSubstate.class, name = "NonFungibleResourceManager"),
   @JsonSubTypes.Type(value = NonFungibleResourceManagerSubstate.class, name = "NonFungibleResourceManagerSubstate"),
-  @JsonSubTypes.Type(value = NonFungibleStoreEntrySubstate.class, name = "NonFungibleStoreEntrySubstate"),
   @JsonSubTypes.Type(value = PackageCodeSubstate.class, name = "PackageCode"),
   @JsonSubTypes.Type(value = PackageCodeSubstate.class, name = "PackageCodeSubstate"),
   @JsonSubTypes.Type(value = PackageCodeTypeSubstate.class, name = "PackageCodeType"),
@@ -227,7 +225,6 @@ static {
   mappings.put("MetadataEntrySubstate", MetadataEntrySubstate.class);
   mappings.put("NonFungibleResourceManager", NonFungibleResourceManagerSubstate.class);
   mappings.put("NonFungibleResourceManagerSubstate", NonFungibleResourceManagerSubstate.class);
-  mappings.put("NonFungibleStoreEntrySubstate", NonFungibleStoreEntrySubstate.class);
   mappings.put("PackageCode", PackageCodeSubstate.class);
   mappings.put("PackageCodeSubstate", PackageCodeSubstate.class);
   mappings.put("PackageCodeType", PackageCodeTypeSubstate.class);

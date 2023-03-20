@@ -262,6 +262,16 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 (NodeModuleId::SELF, SubstateOffset::Account(offset)) => match offset {
                     AccountOffset::Account => (SubstateType::Account, SubstateKeyType::Account),
                 },
+                (NodeModuleId::ComponentRoyalty, SubstateOffset::Royalty(offset)) => match offset {
+                    RoyaltyOffset::RoyaltyConfig => (
+                        SubstateType::ComponentRoyaltyConfig,
+                        SubstateKeyType::ComponentRoyaltyConfig,
+                    ),
+                    RoyaltyOffset::RoyaltyAccumulator => (
+                        SubstateType::ComponentRoyaltyAccumulator,
+                        SubstateKeyType::ComponentRoyaltyAccumulator,
+                    ),
+                },
                 (
                     NodeModuleId::Metadata,
                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
@@ -290,6 +300,16 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                     AccessControllerOffset::AccessController => (
                         SubstateType::AccessController,
                         SubstateKeyType::AccessController,
+                    ),
+                },
+                (NodeModuleId::ComponentRoyalty, SubstateOffset::Royalty(offset)) => match offset {
+                    RoyaltyOffset::RoyaltyConfig => (
+                        SubstateType::ComponentRoyaltyConfig,
+                        SubstateKeyType::ComponentRoyaltyConfig,
+                    ),
+                    RoyaltyOffset::RoyaltyAccumulator => (
+                        SubstateType::ComponentRoyaltyAccumulator,
+                        SubstateKeyType::ComponentRoyaltyAccumulator,
                     ),
                 },
                 (
@@ -336,6 +356,16 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         SubstateKeyType::PackageEventSchema,
                     ),
                 },
+                (NodeModuleId::ComponentRoyalty, SubstateOffset::Royalty(offset)) => match offset {
+                    RoyaltyOffset::RoyaltyConfig => (
+                        SubstateType::ComponentRoyaltyConfig,
+                        SubstateKeyType::ComponentRoyaltyConfig,
+                    ),
+                    RoyaltyOffset::RoyaltyAccumulator => (
+                        SubstateType::ComponentRoyaltyAccumulator,
+                        SubstateKeyType::ComponentRoyaltyAccumulator,
+                    ),
+                },
                 (
                     NodeModuleId::Metadata,
                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
@@ -360,6 +390,16 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                     ResourceManagerOffset::ResourceManager => (
                         SubstateType::EitherResourceManager,
                         SubstateKeyType::EitherResourceManager,
+                    ),
+                },
+                (NodeModuleId::ComponentRoyalty, SubstateOffset::Royalty(offset)) => match offset {
+                    RoyaltyOffset::RoyaltyConfig => (
+                        SubstateType::ComponentRoyaltyConfig,
+                        SubstateKeyType::ComponentRoyaltyConfig,
+                    ),
+                    RoyaltyOffset::RoyaltyAccumulator => (
+                        SubstateType::ComponentRoyaltyAccumulator,
+                        SubstateKeyType::ComponentRoyaltyAccumulator,
                     ),
                 },
                 (
@@ -419,6 +459,16 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         SubstateKeyType::PreparingValidatorSet,
                     ),
                 },
+                (NodeModuleId::ComponentRoyalty, SubstateOffset::Royalty(offset)) => match offset {
+                    RoyaltyOffset::RoyaltyConfig => (
+                        SubstateType::ComponentRoyaltyConfig,
+                        SubstateKeyType::ComponentRoyaltyConfig,
+                    ),
+                    RoyaltyOffset::RoyaltyAccumulator => (
+                        SubstateType::ComponentRoyaltyAccumulator,
+                        SubstateKeyType::ComponentRoyaltyAccumulator,
+                    ),
+                },
                 (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
                     AccessRulesOffset::AccessRules => {
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
@@ -447,6 +497,16 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                     ValidatorOffset::Validator => {
                         (SubstateType::Validator, SubstateKeyType::Validator)
                     }
+                },
+                (NodeModuleId::ComponentRoyalty, SubstateOffset::Royalty(offset)) => match offset {
+                    RoyaltyOffset::RoyaltyConfig => (
+                        SubstateType::ComponentRoyaltyConfig,
+                        SubstateKeyType::ComponentRoyaltyConfig,
+                    ),
+                    RoyaltyOffset::RoyaltyAccumulator => (
+                        SubstateType::ComponentRoyaltyAccumulator,
+                        SubstateKeyType::ComponentRoyaltyAccumulator,
+                    ),
                 },
                 (
                     NodeModuleId::Metadata,
@@ -477,6 +537,16 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         (SubstateType::Clock, SubstateKeyType::Clock)
                     }
                 },
+                (NodeModuleId::ComponentRoyalty, SubstateOffset::Royalty(offset)) => match offset {
+                    RoyaltyOffset::RoyaltyConfig => (
+                        SubstateType::ComponentRoyaltyConfig,
+                        SubstateKeyType::ComponentRoyaltyConfig,
+                    ),
+                    RoyaltyOffset::RoyaltyAccumulator => (
+                        SubstateType::ComponentRoyaltyAccumulator,
+                        SubstateKeyType::ComponentRoyaltyAccumulator,
+                    ),
+                },
                 (NodeModuleId::AccessRules, SubstateOffset::AccessRules(offset)) => match offset {
                     AccessRulesOffset::AccessRules => {
                         (SubstateType::AccessRules, SubstateKeyType::AccessRules)
@@ -504,6 +574,16 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             let substate_type_key = match (module_id, offset) {
                 (NodeModuleId::TypeInfo, SubstateOffset::TypeInfo(offset)) => match offset {
                     TypeInfoOffset::TypeInfo => (SubstateType::TypeInfo, SubstateKeyType::TypeInfo),
+                },
+                (NodeModuleId::ComponentRoyalty, SubstateOffset::Royalty(offset)) => match offset {
+                    RoyaltyOffset::RoyaltyConfig => (
+                        SubstateType::ComponentRoyaltyConfig,
+                        SubstateKeyType::ComponentRoyaltyConfig,
+                    ),
+                    RoyaltyOffset::RoyaltyAccumulator => (
+                        SubstateType::ComponentRoyaltyAccumulator,
+                        SubstateKeyType::ComponentRoyaltyAccumulator,
+                    ),
                 },
                 (
                     NodeModuleId::Metadata,
@@ -561,6 +641,25 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         ComponentOffset::State0 => (
                             SubstateType::ComponentState,
                             SubstateKeyType::ComponentState,
+                        ),
+                    },
+                    // FIXME: Temporary workaround for vaults using normal object address
+                    SubstateOffset::Vault(offset) => match offset {
+                        VaultOffset::Info => (SubstateType::VaultInfo, SubstateKeyType::VaultInfo),
+                        VaultOffset::LiquidNonFungible => (
+                            SubstateType::VaultNonFungible,
+                            SubstateKeyType::VaultNonFungible,
+                        ),
+                        VaultOffset::LockedNonFungible => (
+                            SubstateType::VaultLockedNonFungible,
+                            SubstateKeyType::VaultLockedNonFungible,
+                        ),
+                        VaultOffset::LiquidFungible => {
+                            (SubstateType::VaultFungible, SubstateKeyType::VaultFungible)
+                        }
+                        VaultOffset::LockedFungible => (
+                            SubstateType::VaultLockedFungible,
+                            SubstateKeyType::VaultLockedFungible,
                         ),
                     },
                     _ => return Err(unknown_substate_error("Internal Component", &substate_id)),

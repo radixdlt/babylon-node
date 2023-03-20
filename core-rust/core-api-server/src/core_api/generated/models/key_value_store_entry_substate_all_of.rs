@@ -12,9 +12,7 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct KeyValueStoreEntrySubstate {
-    #[serde(rename = "substate_type")]
-    pub substate_type: crate::core_api::generated::models::SubstateType,
+pub struct KeyValueStoreEntrySubstateAllOf {
     /// The hex-encoded bytes of its key
     #[serde(rename = "key_hex")]
     pub key_hex: String,
@@ -26,10 +24,9 @@ pub struct KeyValueStoreEntrySubstate {
     pub data_struct: Option<Box<crate::core_api::generated::models::DataStruct>>,
 }
 
-impl KeyValueStoreEntrySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, key_hex: String, is_deleted: bool) -> KeyValueStoreEntrySubstate {
-        KeyValueStoreEntrySubstate {
-            substate_type,
+impl KeyValueStoreEntrySubstateAllOf {
+    pub fn new(key_hex: String, is_deleted: bool) -> KeyValueStoreEntrySubstateAllOf {
+        KeyValueStoreEntrySubstateAllOf {
             key_hex,
             key_non_fungible_local_id: None,
             is_deleted,
