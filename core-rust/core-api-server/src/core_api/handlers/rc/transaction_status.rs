@@ -10,19 +10,19 @@ use state_manager::mempool::pending_transaction_result_cache::PendingTransaction
 use state_manager::store::traits::*;
 
 #[tracing::instrument(err(Debug), skip(state))]
-pub(crate) async fn handle_transaction_status(
+pub(crate) async fn handle_rc_transaction_status(
     state: State<CoreApiState>,
-    request: Json<models::TransactionStatusRequest>,
-) -> Result<Json<models::TransactionStatusResponse>, ResponseError<()>> {
-    core_api_read_handler(state, request, handle_transaction_status_internal)
+    request: Json<models::RcTransactionStatusRequest>,
+) -> Result<Json<models::RcTransactionStatusResponse>, ResponseError<()>> {
+    core_api_read_handler(state, request, handle_rc_transaction_status_internal)
 }
 
 use models::transaction_payload_status::Status as PayloadStatus;
 
-fn handle_transaction_status_internal(
+fn handle_rc_transaction_status_internal(
     state_manager: &ActualStateManager,
-    request: models::TransactionStatusRequest,
-) -> Result<models::TransactionStatusResponse, ResponseError<()>> {
+    request: models::RcTransactionStatusRequest,
+) -> Result<models::RcTransactionStatusResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
     let mapping_context = MappingContext::new_for_uncommitted_data(&state_manager.network);
@@ -103,7 +103,7 @@ fn handle_transaction_status_internal(
             known_pending_payloads,
         ));
 
-        return Ok(models::TransactionStatusResponse {
+        return Ok(models::RcTransactionStatusResponse {
             intent_status,
             status_description: format!("The transaction has been committed to the ledger, with an outcome of {outcome}. For more information, use the /transaction/receipt endpoint."),
             invalid_from_epoch: None,
@@ -138,7 +138,7 @@ fn handle_transaction_status_internal(
             known_payloads_not_in_mempool,
         ));
 
-        return Ok(models::TransactionStatusResponse {
+        return Ok(models::RcTransactionStatusResponse {
             intent_status: models::TransactionIntentStatus::InMempool,
             status_description: "At least one payload for the intent is in this node's mempool. This node believes it's possible the intent might be able to be committed. Whilst the transaction continues to live in the mempool, you can use the /mempool/transaction endpoint to read its payload.".to_owned(),
             invalid_from_epoch: invalid_from_epoch.map(|epoch| to_api_epoch(&mapping_context, epoch)).transpose()?,
@@ -149,7 +149,7 @@ fn handle_transaction_status_internal(
     let known_payloads = map_pending_payloads_not_in_mempool(known_pending_payloads);
 
     let response = if intent_is_permanently_rejected {
-        models::TransactionStatusResponse {
+        models::RcTransactionStatusResponse {
             intent_status: models::TransactionIntentStatus::PermanentRejection,
             status_description: "Based on the results from executing a payload for this intent, the node believes the intent is permanently rejected - this means that any transaction payload containing the intent should never be able to be committed.".to_owned(),
             invalid_from_epoch: None,
@@ -171,7 +171,7 @@ fn handle_transaction_status_internal(
                 (models::TransactionIntentStatus::FateUncertainButLikelyRejection, "All known payloads were rejected at their last execution. But none of these rejections implied that the intent itself is permanently rejected. It may still be possible for the intent to be committed.")
             }
         };
-        models::TransactionStatusResponse {
+        models::RcTransactionStatusResponse {
             intent_status: status,
             status_description: description.to_owned(),
             invalid_from_epoch: invalid_from_epoch

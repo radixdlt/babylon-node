@@ -5,10 +5,11 @@ use models::transaction_submit_error_details::TransactionSubmitErrorDetails;
 use state_manager::{MempoolAddError, MempoolAddSource};
 
 #[tracing::instrument(level = "debug", skip(state), err(Debug))]
-pub(crate) async fn handle_transaction_submit(
+pub(crate) async fn handle_rc_transaction_submit(
     State(state): State<CoreApiState>,
-    Json(request): Json<models::TransactionSubmitRequest>,
-) -> Result<Json<models::TransactionSubmitResponse>, ResponseError<TransactionSubmitErrorDetails>> {
+    Json(request): Json<models::RcTransactionSubmitRequest>,
+) -> Result<Json<models::RcTransactionSubmitResponse>, ResponseError<TransactionSubmitErrorDetails>>
+{
     let mut state_manager = state.state_manager.write();
 
     let mapping_context = MappingContext::new_for_uncommitted_data(&state_manager.network);
@@ -22,8 +23,8 @@ pub(crate) async fn handle_transaction_submit(
         .check_for_rejection_and_add_to_mempool(MempoolAddSource::CoreApi, notarized_transaction);
 
     match result {
-        Ok(_) => Ok(models::TransactionSubmitResponse::new(false)),
-        Err(MempoolAddError::Duplicate) => Ok(models::TransactionSubmitResponse::new(true)),
+        Ok(_) => Ok(models::RcTransactionSubmitResponse::new(false)),
+        Err(MempoolAddError::Duplicate) => Ok(models::RcTransactionSubmitResponse::new(true)),
         Err(MempoolAddError::Full { max_size, .. }) => Err(detailed_error(
             StatusCode::BAD_REQUEST,
             "Mempool is full",

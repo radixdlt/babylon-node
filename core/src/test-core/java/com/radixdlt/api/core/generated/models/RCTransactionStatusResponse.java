@@ -32,16 +32,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * TransactionStatusResponse
+ * RCTransactionStatusResponse
  */
 @JsonPropertyOrder({
-  TransactionStatusResponse.JSON_PROPERTY_INTENT_STATUS,
-  TransactionStatusResponse.JSON_PROPERTY_STATUS_DESCRIPTION,
-  TransactionStatusResponse.JSON_PROPERTY_INVALID_FROM_EPOCH,
-  TransactionStatusResponse.JSON_PROPERTY_KNOWN_PAYLOADS
+  RCTransactionStatusResponse.JSON_PROPERTY_INTENT_STATUS,
+  RCTransactionStatusResponse.JSON_PROPERTY_STATUS_DESCRIPTION,
+  RCTransactionStatusResponse.JSON_PROPERTY_INVALID_FROM_EPOCH,
+  RCTransactionStatusResponse.JSON_PROPERTY_KNOWN_PAYLOADS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class TransactionStatusResponse {
+public class RCTransactionStatusResponse {
   public static final String JSON_PROPERTY_INTENT_STATUS = "intent_status";
   private TransactionIntentStatus intentStatus;
 
@@ -54,10 +54,10 @@ public class TransactionStatusResponse {
   public static final String JSON_PROPERTY_KNOWN_PAYLOADS = "known_payloads";
   private List<TransactionPayloadStatus> knownPayloads = new ArrayList<>();
 
-  public TransactionStatusResponse() { 
+  public RCTransactionStatusResponse() { 
   }
 
-  public TransactionStatusResponse intentStatus(TransactionIntentStatus intentStatus) {
+  public RCTransactionStatusResponse intentStatus(TransactionIntentStatus intentStatus) {
     this.intentStatus = intentStatus;
     return this;
   }
@@ -83,7 +83,7 @@ public class TransactionStatusResponse {
   }
 
 
-  public TransactionStatusResponse statusDescription(String statusDescription) {
+  public RCTransactionStatusResponse statusDescription(String statusDescription) {
     this.statusDescription = statusDescription;
     return this;
   }
@@ -109,7 +109,7 @@ public class TransactionStatusResponse {
   }
 
 
-  public TransactionStatusResponse invalidFromEpoch(Long invalidFromEpoch) {
+  public RCTransactionStatusResponse invalidFromEpoch(Long invalidFromEpoch) {
     this.invalidFromEpoch = invalidFromEpoch;
     return this;
   }
@@ -137,12 +137,12 @@ public class TransactionStatusResponse {
   }
 
 
-  public TransactionStatusResponse knownPayloads(List<TransactionPayloadStatus> knownPayloads) {
+  public RCTransactionStatusResponse knownPayloads(List<TransactionPayloadStatus> knownPayloads) {
     this.knownPayloads = knownPayloads;
     return this;
   }
 
-  public TransactionStatusResponse addKnownPayloadsItem(TransactionPayloadStatus knownPayloadsItem) {
+  public RCTransactionStatusResponse addKnownPayloadsItem(TransactionPayloadStatus knownPayloadsItem) {
     this.knownPayloads.add(knownPayloadsItem);
     return this;
   }
@@ -169,7 +169,7 @@ public class TransactionStatusResponse {
 
 
   /**
-   * Return true if this TransactionStatusResponse object is equal to o.
+   * Return true if this RCTransactionStatusResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -179,11 +179,11 @@ public class TransactionStatusResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TransactionStatusResponse transactionStatusResponse = (TransactionStatusResponse) o;
-    return Objects.equals(this.intentStatus, transactionStatusResponse.intentStatus) &&
-        Objects.equals(this.statusDescription, transactionStatusResponse.statusDescription) &&
-        Objects.equals(this.invalidFromEpoch, transactionStatusResponse.invalidFromEpoch) &&
-        Objects.equals(this.knownPayloads, transactionStatusResponse.knownPayloads);
+    RCTransactionStatusResponse rcTransactionStatusResponse = (RCTransactionStatusResponse) o;
+    return Objects.equals(this.intentStatus, rcTransactionStatusResponse.intentStatus) &&
+        Objects.equals(this.statusDescription, rcTransactionStatusResponse.statusDescription) &&
+        Objects.equals(this.invalidFromEpoch, rcTransactionStatusResponse.invalidFromEpoch) &&
+        Objects.equals(this.knownPayloads, rcTransactionStatusResponse.knownPayloads);
   }
 
   @Override
@@ -194,7 +194,7 @@ public class TransactionStatusResponse {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TransactionStatusResponse {\n");
+    sb.append("class RCTransactionStatusResponse {\n");
     sb.append("    intentStatus: ").append(toIndentedString(intentStatus)).append("\n");
     sb.append("    statusDescription: ").append(toIndentedString(statusDescription)).append("\n");
     sb.append("    invalidFromEpoch: ").append(toIndentedString(invalidFromEpoch)).append("\n");

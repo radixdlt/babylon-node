@@ -12,7 +12,7 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct TransactionStatusResponse {
+pub struct RcTransactionStatusResponse {
     #[serde(rename = "intent_status")]
     pub intent_status: crate::core_api::generated::models::TransactionIntentStatus,
     /// An explanation as to why the intent status is resolved as it is. 
@@ -25,9 +25,9 @@ pub struct TransactionStatusResponse {
     pub known_payloads: Vec<crate::core_api::generated::models::TransactionPayloadStatus>,
 }
 
-impl TransactionStatusResponse {
-    pub fn new(intent_status: crate::core_api::generated::models::TransactionIntentStatus, status_description: String, known_payloads: Vec<crate::core_api::generated::models::TransactionPayloadStatus>) -> TransactionStatusResponse {
-        TransactionStatusResponse {
+impl RcTransactionStatusResponse {
+    pub fn new(intent_status: crate::core_api::generated::models::TransactionIntentStatus, status_description: String, known_payloads: Vec<crate::core_api::generated::models::TransactionPayloadStatus>) -> RcTransactionStatusResponse {
+        RcTransactionStatusResponse {
             intent_status,
             status_description,
             invalid_from_epoch: None,

@@ -18,6 +18,14 @@ import com.radixdlt.api.core.generated.client.ApiResponse;
 import com.radixdlt.api.core.generated.client.Pair;
 
 import com.radixdlt.api.core.generated.models.BasicErrorResponse;
+import com.radixdlt.api.core.generated.models.RCStreamEntityTransactionsBasicOutcomesRequest;
+import com.radixdlt.api.core.generated.models.RCStreamEntityTransactionsBasicOutcomesResponse;
+import com.radixdlt.api.core.generated.models.RCTransactionConstructionRequest;
+import com.radixdlt.api.core.generated.models.RCTransactionConstructionResponse;
+import com.radixdlt.api.core.generated.models.RCTransactionStatusRequest;
+import com.radixdlt.api.core.generated.models.RCTransactionStatusResponse;
+import com.radixdlt.api.core.generated.models.RCTransactionSubmitRequest;
+import com.radixdlt.api.core.generated.models.RCTransactionSubmitResponse;
 import com.radixdlt.api.core.generated.models.TransactionCallPreviewRequest;
 import com.radixdlt.api.core.generated.models.TransactionCallPreviewResponse;
 import com.radixdlt.api.core.generated.models.TransactionParseRequest;
@@ -87,6 +95,318 @@ public class TransactionApi {
     return operationId + " call failed with: " + statusCode + " - " + body;
   }
 
+  /**
+   * Get Entity Transactions Basic Outcomes
+   * TODO 
+   * @param rcStreamEntityTransactionsBasicOutcomesRequest  (required)
+   * @return RCStreamEntityTransactionsBasicOutcomesResponse
+   * @throws ApiException if fails to make API call
+   */
+  public RCStreamEntityTransactionsBasicOutcomesResponse rcStreamEntityTransactionsBasicOutcomesPost(RCStreamEntityTransactionsBasicOutcomesRequest rcStreamEntityTransactionsBasicOutcomesRequest) throws ApiException {
+    ApiResponse<RCStreamEntityTransactionsBasicOutcomesResponse> localVarResponse = rcStreamEntityTransactionsBasicOutcomesPostWithHttpInfo(rcStreamEntityTransactionsBasicOutcomesRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Get Entity Transactions Basic Outcomes
+   * TODO 
+   * @param rcStreamEntityTransactionsBasicOutcomesRequest  (required)
+   * @return ApiResponse&lt;RCStreamEntityTransactionsBasicOutcomesResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<RCStreamEntityTransactionsBasicOutcomesResponse> rcStreamEntityTransactionsBasicOutcomesPostWithHttpInfo(RCStreamEntityTransactionsBasicOutcomesRequest rcStreamEntityTransactionsBasicOutcomesRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = rcStreamEntityTransactionsBasicOutcomesPostRequestBuilder(rcStreamEntityTransactionsBasicOutcomesRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("rcStreamEntityTransactionsBasicOutcomesPost", localVarResponse);
+        }
+        return new ApiResponse<RCStreamEntityTransactionsBasicOutcomesResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<RCStreamEntityTransactionsBasicOutcomesResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder rcStreamEntityTransactionsBasicOutcomesPostRequestBuilder(RCStreamEntityTransactionsBasicOutcomesRequest rcStreamEntityTransactionsBasicOutcomesRequest) throws ApiException {
+    // verify the required parameter 'rcStreamEntityTransactionsBasicOutcomesRequest' is set
+    if (rcStreamEntityTransactionsBasicOutcomesRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'rcStreamEntityTransactionsBasicOutcomesRequest' when calling rcStreamEntityTransactionsBasicOutcomesPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/rc/stream/entity-transactions-basic-outcomes";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(rcStreamEntityTransactionsBasicOutcomesRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
+  /**
+   * Get Transaction Construction
+   * Returns information necessary to build a transaction
+   * @param rcTransactionConstructionRequest  (required)
+   * @return RCTransactionConstructionResponse
+   * @throws ApiException if fails to make API call
+   */
+  public RCTransactionConstructionResponse rcTransactionConstructionPost(RCTransactionConstructionRequest rcTransactionConstructionRequest) throws ApiException {
+    ApiResponse<RCTransactionConstructionResponse> localVarResponse = rcTransactionConstructionPostWithHttpInfo(rcTransactionConstructionRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Get Transaction Construction
+   * Returns information necessary to build a transaction
+   * @param rcTransactionConstructionRequest  (required)
+   * @return ApiResponse&lt;RCTransactionConstructionResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<RCTransactionConstructionResponse> rcTransactionConstructionPostWithHttpInfo(RCTransactionConstructionRequest rcTransactionConstructionRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = rcTransactionConstructionPostRequestBuilder(rcTransactionConstructionRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("rcTransactionConstructionPost", localVarResponse);
+        }
+        return new ApiResponse<RCTransactionConstructionResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<RCTransactionConstructionResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder rcTransactionConstructionPostRequestBuilder(RCTransactionConstructionRequest rcTransactionConstructionRequest) throws ApiException {
+    // verify the required parameter 'rcTransactionConstructionRequest' is set
+    if (rcTransactionConstructionRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'rcTransactionConstructionRequest' when calling rcTransactionConstructionPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/rc/transaction/construction";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(rcTransactionConstructionRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
+  /**
+   * Get Transaction Status
+   * Shares the node&#39;s knowledge of any payloads associated with the given intent hash. Generally there will be a single payload for a given intent, but it&#39;s theoretically possible there may be multiple. This knowledge is summarised into a status for the intent. This summarised status in the response is likely sufficient for most clients. 
+   * @param rcTransactionStatusRequest  (required)
+   * @return RCTransactionStatusResponse
+   * @throws ApiException if fails to make API call
+   */
+  public RCTransactionStatusResponse rcTransactionStatusPost(RCTransactionStatusRequest rcTransactionStatusRequest) throws ApiException {
+    ApiResponse<RCTransactionStatusResponse> localVarResponse = rcTransactionStatusPostWithHttpInfo(rcTransactionStatusRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Get Transaction Status
+   * Shares the node&#39;s knowledge of any payloads associated with the given intent hash. Generally there will be a single payload for a given intent, but it&#39;s theoretically possible there may be multiple. This knowledge is summarised into a status for the intent. This summarised status in the response is likely sufficient for most clients. 
+   * @param rcTransactionStatusRequest  (required)
+   * @return ApiResponse&lt;RCTransactionStatusResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<RCTransactionStatusResponse> rcTransactionStatusPostWithHttpInfo(RCTransactionStatusRequest rcTransactionStatusRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = rcTransactionStatusPostRequestBuilder(rcTransactionStatusRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("rcTransactionStatusPost", localVarResponse);
+        }
+        return new ApiResponse<RCTransactionStatusResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<RCTransactionStatusResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder rcTransactionStatusPostRequestBuilder(RCTransactionStatusRequest rcTransactionStatusRequest) throws ApiException {
+    // verify the required parameter 'rcTransactionStatusRequest' is set
+    if (rcTransactionStatusRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'rcTransactionStatusRequest' when calling rcTransactionStatusPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/rc/transaction/status";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(rcTransactionStatusRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
+  /**
+   * Transaction Submit
+   * Submits a notarized transaction to the network. Returns whether the transaction submission was already included in the node&#39;s mempool. 
+   * @param rcTransactionSubmitRequest  (required)
+   * @return RCTransactionSubmitResponse
+   * @throws ApiException if fails to make API call
+   */
+  public RCTransactionSubmitResponse rcTransactionSubmitPost(RCTransactionSubmitRequest rcTransactionSubmitRequest) throws ApiException {
+    ApiResponse<RCTransactionSubmitResponse> localVarResponse = rcTransactionSubmitPostWithHttpInfo(rcTransactionSubmitRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Transaction Submit
+   * Submits a notarized transaction to the network. Returns whether the transaction submission was already included in the node&#39;s mempool. 
+   * @param rcTransactionSubmitRequest  (required)
+   * @return ApiResponse&lt;RCTransactionSubmitResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<RCTransactionSubmitResponse> rcTransactionSubmitPostWithHttpInfo(RCTransactionSubmitRequest rcTransactionSubmitRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = rcTransactionSubmitPostRequestBuilder(rcTransactionSubmitRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("rcTransactionSubmitPost", localVarResponse);
+        }
+        return new ApiResponse<RCTransactionSubmitResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<RCTransactionSubmitResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder rcTransactionSubmitPostRequestBuilder(RCTransactionSubmitRequest rcTransactionSubmitRequest) throws ApiException {
+    // verify the required parameter 'rcTransactionSubmitRequest' is set
+    if (rcTransactionSubmitRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'rcTransactionSubmitRequest' when calling rcTransactionSubmitPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/rc/transaction/submit";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(rcTransactionSubmitRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
   /**
    * Scrypto Call Preview
    * Preview a scrypto function or method call against the latest network state. Returns the result of the scrypto function or method call. 

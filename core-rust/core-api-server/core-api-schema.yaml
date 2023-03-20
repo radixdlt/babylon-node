@@ -67,6 +67,7 @@ x-tagGroups:
       - Concepts
   - name: Endpoints
     tags:
+      - RC
       - Status
       - Transaction
       - Mempool
@@ -77,7 +78,8 @@ tags:
     x-displayName: Sub-APIs
     x-traitTag: true # Don't display endpoints under this tag
     description: |
-      The API is split into 5 sub apis:
+      The API is split into 6 sub apis:
+      - **Release Candidate** (`/rc/*`) - For long term support/backward compatible endpoints aimed at integrators such as exchanges.
       - **Status** (`/status/*`) - For status and configuration details for the node / engine.
       - **Transaction** (`/transaction/*`) - For transaction construction, preview, submission, and monitoring the status of an individual transaction.
       - **Mempool** (`/mempool/*`) - For information on the contents of the node's mempool.
@@ -126,6 +128,10 @@ tags:
 
       As an example, entities include concepts like Components, Packages, Vaults, Resource Managers and Key-Value Stores.
       Substates under a component include the Component Struct, Component Data, and Access Rules substates.
+  - name: RC
+    x-displayName: RC Endpoints
+    description: |
+      For long term support/backward compatible endpoints aimed at integrators such as exchanges.
   - name: Status
     x-displayName: Status Endpoints
     description: |
@@ -146,6 +152,222 @@ tags:
     x-displayName: Stream Endpoints
     description: To query the transaction stream of the ledger.
 paths:
+##################
+# Release Candidate backwards compatible Sub-API #
+##################
+  "/rc/transaction/construction":
+    post:
+      summary: Get Transaction Construction
+      description: Returns information necessary to build a transaction
+      tags:
+        - RC
+        - Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RCTransactionConstructionRequest"
+      responses:
+        '200':
+          description: All info needed to build a transaction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RCTransactionConstructionResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+  "/rc/transaction/submit":
+    post:
+      summary: Transaction Submit
+      description: |
+        Submits a notarized transaction to the network. Returns whether the transaction submission was already included in the node's mempool.
+      tags:
+        - RC
+        - Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RCTransactionSubmitRequest"
+      responses:
+        '200':
+          description: Transaction Submit Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RCTransactionSubmitResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionSubmitErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionSubmitErrorResponse"
+  "/rc/transaction/status":
+    post:
+      summary: Get Transaction Status
+      description: |
+        Shares the node's knowledge of any payloads associated with the given intent hash.
+        Generally there will be a single payload for a given intent, but it's theoretically possible there may be multiple.
+        This knowledge is summarised into a status for the intent. This summarised status in the response is likely sufficient
+        for most clients.
+      tags:
+        - RC
+        - Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RCTransactionStatusRequest"
+      responses:
+        '200':
+          description: Transaction status response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RCTransactionStatusResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+  "/rc/state/account-all-resource-balances":
+    post:
+      summary: Get All Resources Balances
+      description: Returns balances for all resources associated with an account
+      tags:
+        - RC
+        - State
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RCStateAccountAllResourceBalancesRequest"
+      responses:
+        '200':
+          description: Account all resource balances response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RCStateAccountAllResourceBalancesResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+  "/rc/state/account-resource-balance":
+    post:
+      summary: Get Resource Balance
+      description: Returns balance of the resource for an account
+      tags:
+        - RC
+        - State
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RCStateAccountResourceBalanceRequest"
+      responses:
+        '200':
+          description: Account resource balance response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RCStateAccountResourceBalanceResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+  "/rc/stream/entity-transactions-basic-outcomes":
+    post:
+      summary: Get Entity Transactions Basic Outcomes
+      description: |
+        TODO
+      tags:
+        - RC
+        - Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RCStreamEntityTransactionsBasicOutcomesRequest"
+      responses:
+        '200':
+          description: Transaction status response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RCStreamEntityTransactionsBasicOutcomesResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+  "/rc/stream/transactions-basic-outcomes":
+    post:
+      summary: Get Transactions Basic Outcomes
+      description: |
+        TODO
+      tags:
+        - RC
+        - Stream
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RCStreamTransactionsBasicOutcomesRequest"
+      responses:
+        '200':
+          description: Transaction status response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RCStreamTransactionsBasicOutcomesResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
 ##################
 # Status Sub-API #
 ##################
@@ -2729,7 +2951,265 @@ components:
             data_struct:
               $ref: '#/components/schemas/DataStruct'
 
-
+#########################################
+# REQUEST: /rc/transaction/construction #
+#########################################
+    RCTransactionConstructionRequest:
+      type: object
+      required:
+        - network
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+    RCTransactionConstructionResponse:
+      type: object
+      required:
+        - epoch
+      properties:
+        epoch:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`, marking the current epoch
+###################################
+# REQUEST: /rc/transaction/status #
+###################################
+    RCTransactionStatusRequest:
+      type: object
+      required:
+        - network
+        - intent_hash
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        intent_hash:
+          $ref: "#/components/schemas/IntentHash"
+    RCTransactionStatusResponse:
+      type: object
+      required:
+        - intent_status
+        - status_description
+        - known_payloads
+      properties:
+        intent_status:
+          $ref: "#/components/schemas/TransactionIntentStatus"
+        status_description:
+          type: string
+          description: |
+            An explanation as to why the intent status is resolved as it is.
+        invalid_from_epoch:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: |
+            An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be permanently rejected.
+            Only present if the intent status is InMempool or Unknown and we know about a payload.
+        known_payloads:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransactionPayloadStatus"
+###################################
+# REQUEST: /rc/transaction/submit #
+###################################
+    RCTransactionSubmitRequest:
+      type: object
+      required:
+        - network
+        - notarized_transaction_hex
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        notarized_transaction_hex:
+          description: A hex-encoded, compiled notarized transaction.
+          type: string
+    RCTransactionSubmitResponse:
+      type: object
+      required:
+        - duplicate
+      properties:
+        duplicate:
+          description: Is true if the transaction is a duplicate of an existing transaction in the mempool.
+          type: boolean
+####################################################
+# REQUEST: /rc/state/account-all-resource-balances #
+####################################################
+    RCStateAccountAllResourceBalancesRequest:
+      type: object
+      required:
+        - network
+        - account_address
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        account_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the account's address
+    RCStateAccountAllResourceBalancesResponse:
+      type: object
+      required:
+        - state_version
+        - account_address
+        - resource_balances
+      properties:
+        state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: |
+            An integer between `1` and `10^13`, giving the state version at which the account was read.
+        account_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the account's address
+        resource_balances:
+          description: A list containing all resource balances for the requested account.
+          type: array
+          items:
+            $ref: "#/components/schemas/FungibleResourceAmount"
+################################################
+# REQUEST: /rc/state/account-resource-balances #
+################################################
+    RCStateAccountResourceBalanceRequest:
+      type: object
+      required:
+        - network
+        - account_address
+        - resource_address
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        account_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the account's address
+        resource_address:
+          $ref: "#/components/schemas/ResourceAddress"
+    RCStateAccountResourceBalanceResponse:
+      type: object
+      required:
+        - state_version
+        - account_address
+        - resource_balance
+      properties:
+        state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: |
+            An integer between `1` and `10^13`, giving the state version at which the account was read.
+        account_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the account's address
+        resource_balance:
+          $ref: "#/components/schemas/FungibleResourceAmount"
+##########################################################
+# REQUEST: /rc/stream/entity-transactions-basic-outcomes #
+##########################################################
+    RCStreamEntityTransactionsBasicOutcomesRequest:
+      type: object
+      required:
+        - network
+        - account_address
+        - resource_address
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        account_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the account's address
+        resource_address:
+          $ref: "#/components/schemas/ResourceAddress"
+    RCStreamEntityTransactionsBasicOutcomesResponse:
+      type: object
+      required:
+        - from_state_version
+        - count
+        - max_ledger_state_version
+        - basic_outcomes
+      properties:
+        from_state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: |
+            An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response (if any).
+            This matches the `from_state_version` in the request.
+        count:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 10000
+          description: An integer between `0` and `10000`, giving the total count of transactions in the returned response
+        max_ledger_state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.
+        basic_outcomes:
+          description: A basic outcomes list starting from the `from_state_version` (inclusive).
+          type: array
+          items:
+            $ref: "#/components/schemas/CommittedTransaction"
+###################################################
+# REQUEST: /rc/stream/transactions-basic-outcomes #
+###################################################
+    RCStreamTransactionsBasicOutcomesRequest:
+      description: |
+        A request to retrieve a sublist of committed transactions from the ledger.
+      type: object
+      required:
+        - network
+        - from_state_version
+        - limit
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        from_state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: An integer between `1` and `10^13`, giving the first (resultant) state version to be returned
+        limit:
+          description: The maximum number of transactions that will be returned.
+          type: integer
+    RCStreamTransactionsBasicOutcomesResponse:
+      type: object
+      required:
+        - from_state_version
+        - count
+        - max_ledger_state_version
+        - basic_outcomes
+      properties:
+        from_state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: |
+            An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response (if any).
+            This matches the `from_state_version` in the request.
+        count:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 10000
+          description: An integer between `0` and `10000`, giving the total count of transactions in the returned response
+        max_ledger_state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.
+        basic_outcomes:
+          description: A basic outcomes list starting from the `from_state_version` (inclusive).
+          type: array
+          items:
+            $ref: "#/components/schemas/CommittedTransaction"
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################
@@ -3227,18 +3707,7 @@ components:
         - known_payloads
       properties:
         intent_status:
-          type: string
-          description: |
-            The status of the transaction intent, as determined by the node.
-            FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction 
-          enum:
-            - CommittedSuccess
-            - CommittedFailure
-            - PermanentRejection
-            - InMempool
-            - NotSeen
-            - FateUncertain
-            - FateUncertainButLikelyRejection
+          $ref: "#/components/schemas/TransactionIntentStatus"
         status_description:
           type: string
           description: |
@@ -3278,6 +3747,19 @@ components:
         error_message:
           description: An explanation for the error, if failed or rejected
           type: string
+    TransactionIntentStatus:
+      type: string
+      description: |
+        The status of the transaction intent, as determined by the node.
+        FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction 
+      enum:
+        - CommittedSuccess
+        - CommittedFailure
+        - PermanentRejection
+        - InMempool
+        - NotSeen
+        - FateUncertain
+        - FateUncertainButLikelyRejection
 ####################################
 # REQUEST: /transaction/receipt #
 ####################################

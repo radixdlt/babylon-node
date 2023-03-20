@@ -1,8 +1,11 @@
+use models::transaction_submit_error_details::TransactionSubmitErrorDetails;
 use radix_engine::types::{scrypto_encode, ScryptoCustomTypeExtension, ScryptoEncode};
 use sbor::serde_serialization::{
     SborPayloadWithoutSchema, SchemalessSerializationContext, SerializationMode,
 };
 use serde_json::to_value;
+use state_manager::transaction::UserTransactionValidator;
+use transaction::model::NotarizedTransaction;
 use utils::ContextualSerialize;
 
 use crate::core_api::*;
@@ -48,4 +51,31 @@ pub fn to_api_sbor_data_from_bytes(
         data_hex: to_hex(scrypto_sbor_bytes),
         data_json: Some(json),
     })
+}
+
+impl ErrorDetails for TransactionSubmitErrorDetails {
+    fn to_error_response(
+        details: Option<Self>,
+        code: i32,
+        message: String,
+        trace_id: Option<String>,
+    ) -> models::ErrorResponse {
+        models::ErrorResponse::TransactionSubmitErrorResponse {
+            code,
+            message,
+            trace_id,
+            details: details.map(Box::new),
+        }
+    }
+}
+
+pub fn extract_unvalidated_transaction(
+    payload: &str,
+) -> Result<NotarizedTransaction, ExtractionError> {
+    let transaction_bytes = from_hex(payload)?;
+    let notarized_transaction =
+        UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
+            &transaction_bytes,
+        )?;
+    Ok(notarized_transaction)
 }

@@ -18,6 +18,8 @@ import com.radixdlt.api.core.generated.client.ApiResponse;
 import com.radixdlt.api.core.generated.client.Pair;
 
 import com.radixdlt.api.core.generated.models.BasicErrorResponse;
+import com.radixdlt.api.core.generated.models.RCStreamTransactionsBasicOutcomesRequest;
+import com.radixdlt.api.core.generated.models.RCStreamTransactionsBasicOutcomesResponse;
 import com.radixdlt.api.core.generated.models.StreamTransactionsRequest;
 import com.radixdlt.api.core.generated.models.StreamTransactionsResponse;
 
@@ -76,6 +78,84 @@ public class StreamApi {
     return operationId + " call failed with: " + statusCode + " - " + body;
   }
 
+  /**
+   * Get Transactions Basic Outcomes
+   * TODO 
+   * @param rcStreamTransactionsBasicOutcomesRequest  (required)
+   * @return RCStreamTransactionsBasicOutcomesResponse
+   * @throws ApiException if fails to make API call
+   */
+  public RCStreamTransactionsBasicOutcomesResponse rcStreamTransactionsBasicOutcomesPost(RCStreamTransactionsBasicOutcomesRequest rcStreamTransactionsBasicOutcomesRequest) throws ApiException {
+    ApiResponse<RCStreamTransactionsBasicOutcomesResponse> localVarResponse = rcStreamTransactionsBasicOutcomesPostWithHttpInfo(rcStreamTransactionsBasicOutcomesRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Get Transactions Basic Outcomes
+   * TODO 
+   * @param rcStreamTransactionsBasicOutcomesRequest  (required)
+   * @return ApiResponse&lt;RCStreamTransactionsBasicOutcomesResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<RCStreamTransactionsBasicOutcomesResponse> rcStreamTransactionsBasicOutcomesPostWithHttpInfo(RCStreamTransactionsBasicOutcomesRequest rcStreamTransactionsBasicOutcomesRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = rcStreamTransactionsBasicOutcomesPostRequestBuilder(rcStreamTransactionsBasicOutcomesRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("rcStreamTransactionsBasicOutcomesPost", localVarResponse);
+        }
+        return new ApiResponse<RCStreamTransactionsBasicOutcomesResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<RCStreamTransactionsBasicOutcomesResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder rcStreamTransactionsBasicOutcomesPostRequestBuilder(RCStreamTransactionsBasicOutcomesRequest rcStreamTransactionsBasicOutcomesRequest) throws ApiException {
+    // verify the required parameter 'rcStreamTransactionsBasicOutcomesRequest' is set
+    if (rcStreamTransactionsBasicOutcomesRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'rcStreamTransactionsBasicOutcomesRequest' when calling rcStreamTransactionsBasicOutcomesPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/rc/stream/transactions-basic-outcomes";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(rcStreamTransactionsBasicOutcomesRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
   /**
    * Get Committed Transactions
    * Returns the list of committed transactions. 

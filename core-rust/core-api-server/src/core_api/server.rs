@@ -74,7 +74,7 @@ use parking_lot::RwLock;
 use radix_engine::types::{Categorize, Decode, Encode};
 use state_manager::jni::state_manager::ActualStateManager;
 
-use super::{handlers::*, not_found_error, ResponseError};
+use super::{constants::LARGE_REQUEST_MAX_BYTES, handlers::*, not_found_error, ResponseError};
 
 use handle_status_network_configuration as handle_provide_info_at_root_path;
 
@@ -92,13 +92,38 @@ pub async fn create_server<F>(
 {
     let core_api_state = CoreApiState { state_manager };
 
-    // TODO - Change this to be slightly larger than the double the max transaction payload size.
-    // (We double due to the hex encoding of the payload)
-    const LARGE_REQUEST_MAX_BYTES: usize = 3 * 1024 * 1024;
-
     let router = Router::new()
         // This only adds a route for /core, /core/ doesn't seem possible using /nest
         .route("/", get(handle_provide_info_at_root_path))
+        // Release Candidate backward compatible Sub-API
+        .route(
+            "/rc/transaction/construction",
+            post(rc::handle_rc_transaction_construction),
+        )
+        .route(
+            "/rc/transaction/status",
+            post(rc::handle_rc_transaction_status),
+        )
+        .route(
+            "/rc/transaction/submit",
+            post(rc::handle_rc_transaction_submit),
+        )
+        .route(
+            "/rc/stream/entity-transactions-basic-outcomes",
+            post(rc::handle_rc_stream_entity_transactions_basic_outcomes),
+        )
+        .route(
+            "/rc/stream/transactions-basic-outcomes",
+            post(rc::handle_rc_stream_transactions_basic_outcomes),
+        )
+        .route(
+            "/rc/state/account-all-resource-balances",
+            post(rc::handle_rc_state_account_all_resource_balances),
+        )
+        .route(
+            "/rc/state/account-resource-balances",
+            post(rc::handle_rc_state_account_resource_balance),
+        )
         // Status Sub-API
         .route(
             "/status/network-configuration",

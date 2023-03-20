@@ -18,6 +18,10 @@ import com.radixdlt.api.core.generated.client.ApiResponse;
 import com.radixdlt.api.core.generated.client.Pair;
 
 import com.radixdlt.api.core.generated.models.BasicErrorResponse;
+import com.radixdlt.api.core.generated.models.RCStateAccountAllResourceBalancesRequest;
+import com.radixdlt.api.core.generated.models.RCStateAccountAllResourceBalancesResponse;
+import com.radixdlt.api.core.generated.models.RCStateAccountResourceBalanceRequest;
+import com.radixdlt.api.core.generated.models.RCStateAccountResourceBalanceResponse;
 import com.radixdlt.api.core.generated.models.StateAccessControllerRequest;
 import com.radixdlt.api.core.generated.models.StateAccessControllerResponse;
 import com.radixdlt.api.core.generated.models.StateClockRequest;
@@ -90,6 +94,162 @@ public class StateApi {
     return operationId + " call failed with: " + statusCode + " - " + body;
   }
 
+  /**
+   * Get All Resources Balances
+   * Returns balances for all resources associated with an account
+   * @param rcStateAccountAllResourceBalancesRequest  (required)
+   * @return RCStateAccountAllResourceBalancesResponse
+   * @throws ApiException if fails to make API call
+   */
+  public RCStateAccountAllResourceBalancesResponse rcStateAccountAllResourceBalancesPost(RCStateAccountAllResourceBalancesRequest rcStateAccountAllResourceBalancesRequest) throws ApiException {
+    ApiResponse<RCStateAccountAllResourceBalancesResponse> localVarResponse = rcStateAccountAllResourceBalancesPostWithHttpInfo(rcStateAccountAllResourceBalancesRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Get All Resources Balances
+   * Returns balances for all resources associated with an account
+   * @param rcStateAccountAllResourceBalancesRequest  (required)
+   * @return ApiResponse&lt;RCStateAccountAllResourceBalancesResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<RCStateAccountAllResourceBalancesResponse> rcStateAccountAllResourceBalancesPostWithHttpInfo(RCStateAccountAllResourceBalancesRequest rcStateAccountAllResourceBalancesRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = rcStateAccountAllResourceBalancesPostRequestBuilder(rcStateAccountAllResourceBalancesRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("rcStateAccountAllResourceBalancesPost", localVarResponse);
+        }
+        return new ApiResponse<RCStateAccountAllResourceBalancesResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<RCStateAccountAllResourceBalancesResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder rcStateAccountAllResourceBalancesPostRequestBuilder(RCStateAccountAllResourceBalancesRequest rcStateAccountAllResourceBalancesRequest) throws ApiException {
+    // verify the required parameter 'rcStateAccountAllResourceBalancesRequest' is set
+    if (rcStateAccountAllResourceBalancesRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'rcStateAccountAllResourceBalancesRequest' when calling rcStateAccountAllResourceBalancesPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/rc/state/account-all-resource-balances";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(rcStateAccountAllResourceBalancesRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
+  /**
+   * Get Resource Balance
+   * Returns balance of the resource for an account
+   * @param rcStateAccountResourceBalanceRequest  (required)
+   * @return RCStateAccountResourceBalanceResponse
+   * @throws ApiException if fails to make API call
+   */
+  public RCStateAccountResourceBalanceResponse rcStateAccountResourceBalancePost(RCStateAccountResourceBalanceRequest rcStateAccountResourceBalanceRequest) throws ApiException {
+    ApiResponse<RCStateAccountResourceBalanceResponse> localVarResponse = rcStateAccountResourceBalancePostWithHttpInfo(rcStateAccountResourceBalanceRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Get Resource Balance
+   * Returns balance of the resource for an account
+   * @param rcStateAccountResourceBalanceRequest  (required)
+   * @return ApiResponse&lt;RCStateAccountResourceBalanceResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<RCStateAccountResourceBalanceResponse> rcStateAccountResourceBalancePostWithHttpInfo(RCStateAccountResourceBalanceRequest rcStateAccountResourceBalanceRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = rcStateAccountResourceBalancePostRequestBuilder(rcStateAccountResourceBalanceRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("rcStateAccountResourceBalancePost", localVarResponse);
+        }
+        return new ApiResponse<RCStateAccountResourceBalanceResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<RCStateAccountResourceBalanceResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder rcStateAccountResourceBalancePostRequestBuilder(RCStateAccountResourceBalanceRequest rcStateAccountResourceBalanceRequest) throws ApiException {
+    // verify the required parameter 'rcStateAccountResourceBalanceRequest' is set
+    if (rcStateAccountResourceBalanceRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'rcStateAccountResourceBalanceRequest' when calling rcStateAccountResourceBalancePost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/rc/state/account-resource-balance";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(rcStateAccountResourceBalanceRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
   /**
    * Get Access Controller Details
    * Reads the access controller&#39;s substate/s from the top of the current ledger. 
