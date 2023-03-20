@@ -66,14 +66,13 @@ package com.radixdlt.consensus.bft.processor;
 
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.ProposalRejected;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.monitoring.Metrics;
 import java.util.Objects;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -93,11 +92,6 @@ public final class ObsoleteEventsFilter implements BFTEventProcessor {
   }
 
   @Override
-  public void start() {
-    forwardTo.start();
-  }
-
-  @Override
   public void processRoundUpdate(RoundUpdate roundUpdate) {
     // FIXME: Check is required for now since Deterministic tests can randomize local messages
     if (roundUpdate.getCurrentRound().gt(currentRound())) {
@@ -106,16 +100,6 @@ public final class ObsoleteEventsFilter implements BFTEventProcessor {
     } else {
       metrics.bft().obsoleteEventsIgnored().inc();
     }
-  }
-
-  @Override
-  public void processBFTUpdate(BFTInsertUpdate update) {
-    forwardTo.processBFTUpdate(update);
-  }
-
-  @Override
-  public void processBFTRebuildUpdate(BFTRebuildUpdate rebuildUpdate) {
-    forwardTo.processBFTRebuildUpdate(rebuildUpdate);
   }
 
   @Override
@@ -163,6 +147,27 @@ public final class ObsoleteEventsFilter implements BFTEventProcessor {
           proposalRejected.round(),
           currentRound());
     }
+  }
+
+  @Override
+  public void processTimeoutQuorumDelayedResolution(
+      BFTQuorumAssembler.TimeoutQuorumDelayedResolution timeoutQuorumDelayedResolution) {
+    final var eventRound =
+        timeoutQuorumDelayedResolution.roundQuorumWithLastVote().roundQuorum().getRound();
+    if (eventRound.equals(currentRound())) {
+      forwardTo.processTimeoutQuorumDelayedResolution(timeoutQuorumDelayedResolution);
+    } else {
+      metrics.bft().obsoleteEventsIgnored().inc();
+      log.trace(
+          "Ignoring TimeoutQuorumDelayedResolution event for round {}, current round is {}",
+          eventRound,
+          currentRound());
+    }
+  }
+
+  @Override
+  public Optional<BFTEventProcessor> forwardTo() {
+    return Optional.of(forwardTo);
   }
 
   private Round currentRound() {

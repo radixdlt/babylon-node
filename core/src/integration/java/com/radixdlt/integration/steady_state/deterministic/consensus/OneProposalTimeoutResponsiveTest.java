@@ -103,26 +103,35 @@ public class OneProposalTimeoutResponsiveTest {
     test.startAllNodes();
     test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
-    long requiredIndirectParents =
+    long maxIndirectParents =
         numValidatorNodes <= 3
             ? 0 // there are no indirect parents for 3 nodes (QC is always formed)
             : (numRounds - 1) / dropPeriod; // Edge case if dropPeriod a factor of numRounds
 
     long requiredTimeouts = numRounds / dropPeriod * 2;
 
-    long timeoutQuorums =
-        numValidatorNodes <= 3
-            ? 0 // no timeout quorums for 3 nodes
-            : requiredTimeouts / 2; // otherwise, every 2nd timeout forms a TC
+    long expectedTimeoutQuorumsOrQCsOnFallbackVertices = requiredTimeouts / 2;
 
     for (int nodeIndex = 0; nodeIndex < numValidatorNodes; ++nodeIndex) {
       Metrics metrics = test.getInstance(nodeIndex, Metrics.class);
       long numberOfIndirectParents = (long) metrics.bft().vertexStore().indirectParents().get();
       long totalNumberOfTimeouts = (long) metrics.bft().pacemaker().timeoutsSent().get();
-      long totalNumberOfTimeoutQuorums = (long) metrics.bft().timeoutQuorums().get();
-      assertThat(numberOfIndirectParents).isEqualTo(requiredIndirectParents);
+      long totalNumberOfTimeoutQuorums =
+          (long)
+              metrics.bft().quorumResolutions().label(new Metrics.Bft.QuorumResolution(true)).get();
+      long numOfCommittedFallbackVertices =
+          (long)
+              metrics.bft().committedVertices().label(new Metrics.Bft.CommittedVertex(true)).get();
       assertThat(totalNumberOfTimeouts).isEqualTo(requiredTimeouts);
-      assertThat(totalNumberOfTimeoutQuorums).isBetween(timeoutQuorums - 1, timeoutQuorums);
+
+      // We expect the correct num of either QCs on fallback (timeout) vertices or TCs
+      final var timeoutQuorumsAndQCsOnFallbackVertices =
+          numOfCommittedFallbackVertices + totalNumberOfTimeoutQuorums;
+      assertThat(timeoutQuorumsAndQCsOnFallbackVertices)
+          .isBetween(
+              expectedTimeoutQuorumsOrQCsOnFallbackVertices - 1,
+              expectedTimeoutQuorumsOrQCsOnFallbackVertices);
+      assertThat(numberOfIndirectParents).isLessThanOrEqualTo(maxIndirectParents);
     }
   }
 

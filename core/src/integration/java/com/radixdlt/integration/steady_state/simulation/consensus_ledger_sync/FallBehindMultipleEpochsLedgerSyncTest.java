@@ -148,6 +148,6 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
     assertTrue(nodeCounters.ledger().stateVersion().get() > 200);
     // just to be sure that node wasn't a validator
     assertEquals(0, (long) nodeCounters.bft().pacemaker().proposalsSent().get());
-    assertEquals(0, (long) nodeCounters.bft().committedVertices().get());
+    assertEquals(0, (long) nodeCounters.bft().committedVertices().getSum());
   }
 }

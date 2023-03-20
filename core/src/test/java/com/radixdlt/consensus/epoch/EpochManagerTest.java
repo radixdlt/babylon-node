@@ -78,6 +78,7 @@ import com.google.inject.Module;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.liveness.*;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.sync.*;
@@ -189,8 +190,13 @@ public class EpochManagerTest {
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<LocalSyncRequest>>() {})
             .toInstance(syncLedgerRequestSender);
-        bind(new TypeLiteral<EventDispatcher<RoundQuorumReached>>() {})
+        bind(new TypeLiteral<EventDispatcher<RoundQuorumResolution>>() {})
             .toInstance(rmock(EventDispatcher.class));
+        bind(new TypeLiteral<ScheduledEventDispatcher<TimeoutQuorumDelayedResolution>>() {})
+            .toInstance(rmock(ScheduledEventDispatcher.class));
+        bind(new TypeLiteral<
+                ScheduledEventDispatcher<Epoched<TimeoutQuorumDelayedResolution>>>() {})
+            .toInstance(rmock(ScheduledEventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<RoundUpdate>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<EpochRoundUpdate>>() {})
@@ -242,6 +248,7 @@ public class EpochManagerTest {
         bindConstant().annotatedWith(PacemakerBackoffRate.class).to(2.0);
         bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
         bindConstant().annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class).to(10L);
+        bindConstant().annotatedWith(TimeoutQuorumResolutionDelayMs.class).to(10L);
         bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 
         bind(new TypeLiteral<Consumer<EpochRoundUpdate>>() {}).toInstance(rmock(Consumer.class));

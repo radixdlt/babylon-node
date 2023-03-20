@@ -73,6 +73,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSync;
@@ -93,6 +94,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
     var eventBinder =
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
             .permitDuplicates();
+    eventBinder.addBinding().toInstance(TimeoutQuorumDelayedResolution.class);
     eventBinder.addBinding().toInstance(ScheduledLocalTimeout.class);
     eventBinder.addBinding().toInstance(VertexRequestTimeout.class);
     eventBinder.addBinding().toInstance(ProposalRejected.class);
@@ -135,6 +137,15 @@ public class NoEpochsConsensusModule extends AbstractModule {
   private EventProcessorOnRunner<?> timeoutProcessor(BFTEventProcessor processor) {
     return new EventProcessorOnRunner<>(
         Runners.CONSENSUS, ScheduledLocalTimeout.class, processor::processLocalTimeout);
+  }
+
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> timeoutQuorumDelayedResolutionProcessor(
+      BFTEventProcessor processor) {
+    return new EventProcessorOnRunner<>(
+        Runners.CONSENSUS,
+        TimeoutQuorumDelayedResolution.class,
+        processor::processTimeoutQuorumDelayedResolution);
   }
 
   @ProvidesIntoSet
