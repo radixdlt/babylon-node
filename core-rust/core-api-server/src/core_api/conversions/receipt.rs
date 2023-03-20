@@ -7,6 +7,7 @@ use radix_engine::{
     types::{hash, scrypto_encode, Decimal, RENodeId, SubstateId},
 };
 
+use radix_engine_interface::api::types::{Emitter, EventTypeIdentifier};
 use radix_engine_interface::data::scrypto::model::{Address, ComponentAddress};
 use std::collections::BTreeMap;
 
@@ -79,28 +80,34 @@ pub fn to_api_receipt(
         new_global_entities,
     };
 
+    let api_events = receipt
+        .application_events
+        .into_iter()
+        .map(|event| to_api_event(context, event.0, event.1))
+        .collect::<Result<Vec<_>, _>>()?;
+
     let api_fee_summary = to_api_fee_summary(context, fee_summary)?;
 
-    let api_output = match output {
-        Some(output) => Some(
+    let api_output = output
+        .map(|output| {
             output
                 .into_iter()
                 .map(|line_output| scrypto_bytes_to_api_sbor_data(context, &line_output))
-                .collect::<Result<Vec<_>, _>>()?,
-        ),
-        None => None,
-    };
+                .collect::<Result<Vec<_>, _>>()
+        })
+        .transpose()?;
 
-    let next_epoch = if let Some(next_epoch) = receipt.next_epoch {
-        Some(Box::new(to_api_next_epoch(context, next_epoch)?))
-    } else {
-        None
-    };
+    let next_epoch = receipt
+        .next_epoch
+        .map(|next_epoch| to_api_next_epoch(context, next_epoch))
+        .transpose()?
+        .map(Box::new);
 
     Ok(models::TransactionReceipt {
         status,
         fee_summary: Box::new(api_fee_summary),
         state_updates: Box::new(api_state_updates),
+        events: Some(api_events),
         output: api_output,
         next_epoch,
         error_message,
@@ -166,6 +173,36 @@ pub fn to_api_next_epoch(
     };
 
     Ok(next_epoch)
+}
+
+#[tracing::instrument(skip_all)]
+pub fn to_api_event(
+    context: &MappingContext,
+    type_id: EventTypeIdentifier,
+    data: Vec<u8>,
+) -> Result<models::Event, MappingError> {
+    let EventTypeIdentifier(emitter, event_name) = type_id;
+    Ok(models::Event {
+        _type: Box::new(models::EventTypeIdentifier {
+            emitter: Some(match emitter {
+                Emitter::Function(node_id, node_module_id, blueprint_name) => {
+                    models::EventEmitterIdentifier::FunctionEventEmitterIdentifier {
+                        entity: Box::new(to_api_entity_reference(node_id)?),
+                        module_type: node_module_id_to_module_type(&node_module_id),
+                        blueprint_name,
+                    }
+                }
+                Emitter::Method(node_id, node_module_id) => {
+                    models::EventEmitterIdentifier::MethodEventEmitterIdentifier {
+                        entity: Box::new(to_api_entity_reference(node_id)?),
+                        module_type: node_module_id_to_module_type(&node_module_id),
+                    }
+                }
+            }),
+            event_name,
+        }),
+        data: Box::new(scrypto_bytes_to_api_sbor_data(context, &data)?),
+    })
 }
 
 #[tracing::instrument(skip_all)]

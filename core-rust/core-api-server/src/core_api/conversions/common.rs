@@ -37,8 +37,5 @@ pub fn scrypto_value_to_api_sbor_data(
                 bytes: scrypto_bytes.to_vec(),
             }
         })?;
-    Ok(models::SborData {
-        data_hex: to_hex(scrypto_bytes),
-        data_json: Some(json),
-    })
+    Ok(models::SborData::new(to_hex(scrypto_bytes), Some(json)))
 }

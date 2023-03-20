@@ -12,6 +12,7 @@ use radix_engine::transaction::{
     TransactionReceipt as EngineTransactionReceipt, TransactionResult,
 };
 use radix_engine::types::{hash, scrypto_encode, Hash, SubstateId};
+use radix_engine_interface::api::types::EventTypeIdentifier;
 use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::data::scrypto::model::ComponentAddress;
 use radix_engine_interface::*;
@@ -86,6 +87,7 @@ pub struct LedgerTransactionReceipt {
     pub outcome: LedgerTransactionOutcome,
     pub fee_summary: FeeSummary,
     pub application_logs: Vec<(Level, String)>,
+    pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     pub substate_changes: SubstateChanges,
     pub entity_changes: EntityChanges,
     pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
@@ -123,6 +125,7 @@ impl From<(CommitResult, FeeSummary)> for LedgerTransactionReceipt {
             outcome: commit_result.outcome.into(),
             fee_summary,
             application_logs: commit_result.application_logs,
+            application_events: commit_result.application_events,
             substate_changes: map_state_updates(commit_result.state_updates),
             entity_changes: commit_result.entity_changes,
             resource_changes: commit_result.resource_changes,

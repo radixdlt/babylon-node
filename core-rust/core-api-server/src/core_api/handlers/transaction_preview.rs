@@ -155,6 +155,7 @@ fn to_api_response(
                 status: models::TransactionStatus::Rejected,
                 fee_summary: Box::new(to_api_fee_summary(context, receipt.execution.fee_summary)?),
                 state_updates: Box::default(),
+                events: None,
                 output: None,
                 next_epoch: None,
                 error_message: Some(format!("{reject_result:?}")),
