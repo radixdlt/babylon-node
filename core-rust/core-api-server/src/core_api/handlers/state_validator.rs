@@ -35,7 +35,7 @@ fn handle_state_validator_internal(
 
     let component_state = {
         let substate_offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let loaded_substate = read_known_substate(
+        let loaded_substate = read_mandatory_substate_or_server_error(
             state_manager,
             RENodeId::GlobalObject(validator_address.into()),
             NodeModuleId::SELF,
@@ -48,7 +48,7 @@ fn handle_state_validator_internal(
     };
     let component_access_rules = {
         let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
-        let loaded_substate = read_known_substate(
+        let loaded_substate = read_mandatory_substate_or_server_error(
             state_manager,
             RENodeId::GlobalObject(validator_address.into()),
             NodeModuleId::AccessRules,

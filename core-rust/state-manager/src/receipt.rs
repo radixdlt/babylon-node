@@ -11,7 +11,7 @@ use radix_engine::transaction::{
     StateUpdateSummary, TransactionOutcome, TransactionReceipt as EngineTransactionReceipt,
     TransactionResult,
 };
-use radix_engine::types::{hash, scrypto_encode, Hash, Level, SubstateId};
+use radix_engine::types::{hash, scrypto_encode, Decimal, Hash, Level, ObjectId, SubstateId};
 use radix_engine_interface::data::scrypto::model::ComponentAddress;
 use radix_engine_interface::*;
 use sbor::rust::collections::IndexMap;
@@ -83,7 +83,10 @@ impl From<TransactionOutcome> for LedgerTransactionOutcome {
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LedgerTransactionReceipt {
     pub outcome: LedgerTransactionOutcome,
+    // The breakdown of the fee
     pub fee_summary: FeeSummary,
+    // Which vault/s paid the fee
+    pub fee_payments: IndexMap<ObjectId, Decimal>,
     pub application_logs: Vec<(Level, String)>,
     pub substate_changes: SubstateChanges,
     pub state_update_summary: StateUpdateSummary,
@@ -108,6 +111,7 @@ impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
                 let ledger_receipt = LedgerTransactionReceipt {
                     outcome: commit_result.outcome.into(),
                     fee_summary: commit_result.fee_summary,
+                    fee_payments: commit_result.fee_payments,
                     application_logs: commit_result.application_logs,
                     substate_changes: fix_state_updates(commit_result.state_updates),
                     state_update_summary: commit_result.state_update_summary,

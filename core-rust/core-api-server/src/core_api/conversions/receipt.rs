@@ -1,7 +1,9 @@
 use super::addressing::*;
 use crate::core_api::*;
 use radix_engine::blueprints::epoch_manager::Validator;
-use radix_engine::system::kernel_modules::costing::FeeSummary;
+use radix_engine::system::kernel_modules::costing::{FeeSummary, RoyaltyRecipient};
+use radix_engine::types::indexmap::IndexMap;
+use radix_engine::types::{Address, ObjectId, RENodeId};
 use radix_engine::{
     ledger::OutputValue,
     types::{hash, scrypto_encode, Decimal, SubstateId},
@@ -16,8 +18,6 @@ pub fn to_api_receipt(
     context: &MappingContext,
     receipt: LedgerTransactionReceipt,
 ) -> Result<models::TransactionReceipt, MappingError> {
-    let fee_summary = receipt.fee_summary;
-
     let (status, output, error_message) = match receipt.outcome {
         LedgerTransactionOutcome::Success(output) => {
             (models::TransactionStatus::Succeeded, Some(output), None)
@@ -79,7 +79,7 @@ pub fn to_api_receipt(
         new_global_entities,
     };
 
-    let api_fee_summary = to_api_fee_summary(context, fee_summary)?;
+    let api_fee_summary = to_api_fee_summary(context, &receipt.fee_summary, &receipt.fee_payments)?;
 
     let api_output = match output {
         Some(output) => Some(
@@ -170,8 +170,9 @@ pub fn to_api_next_epoch(
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_fee_summary(
-    _context: &MappingContext,
-    fee_summary: FeeSummary,
+    context: &MappingContext,
+    fee_summary: &FeeSummary,
+    fee_payments: &IndexMap<ObjectId, Decimal>,
 ) -> Result<models::FeeSummary, MappingError> {
     Ok(models::FeeSummary {
         cost_unit_price: to_api_decimal(&fee_summary.cost_unit_price),
@@ -183,46 +184,34 @@ pub fn to_api_fee_summary(
         xrd_total_tipped: to_api_decimal(&Decimal::ZERO),
         cost_unit_execution_breakdown: fee_summary
             .execution_cost_breakdown
-            .into_iter()
-            .map(|(key, cost_unit_amount)| (key.to_string(), to_api_u32_as_i64(cost_unit_amount)))
+            .iter()
+            .map(|(key, cost_unit_amount)| (key.to_string(), to_api_u32_as_i64(*cost_unit_amount)))
             .collect(),
-        // TODO: Add these back when the (I think accidental?) removal in this PR is reverted:
-        // https://github.com/radixdlt/radixdlt-scrypto/pull/886/files#diff-61af75c3b006ad2d7be51f3aaf8abb00d19f2fcedec15e3898ed404090e44bd8
-        xrd_vault_payments: None,
-        // xrd_vault_payments: fee_summary
-        //     .vault_payments_xrd
-        //     .map(|vault_payments| {
-        //         vault_payments
-        //             .into_iter()
-        //             .map(|(vault_id, amount)| {
-        //                 Ok(models::VaultPayment {
-        //                     vault_entity: Box::new(to_api_entity_reference(RENodeId::Object(
-        //                         vault_id,
-        //                     ))?),
-        //                     xrd_amount: to_api_decimal(&amount),
-        //                 })
-        //             })
-        //             .collect::<Result<_, _>>()
-        //     })
-        //     .transpose()?,
-        cost_unit_royalty_breakdown: vec![],
-        // cost_unit_royalty_breakdown: fee_summary
-        //     .royalty_cost_unit_breakdown
-        //     .into_iter()
-        //     .filter_map(|(receiver, cost_unit_amount)| {
-        //         let global_address = match receiver {
-        //             RoyaltyReceiver::Package(address) => Address::Package(address),
-        //             RoyaltyReceiver::Component(RENodeId::GlobalObject(address)) => address,
-        //             _ => return None,
-        //         };
-        //         let payment = models::RoyaltyPayment {
-        //             royalty_receiver: Box::new(
-        //                 to_global_entity_reference(context, &global_address).ok()?,
-        //             ),
-        //             cost_unit_amount: to_api_u32_as_i64(cost_unit_amount),
-        //         };
-        //         Some(payment)
-        //     })
-        //     .collect(),
+        xrd_vault_payments: fee_payments
+            .iter()
+            .map(|(vault_id, xrd_amount)| {
+                Ok(models::VaultPayment {
+                    vault_entity: Box::new(to_api_entity_reference(RENodeId::Object(*vault_id))?),
+                    xrd_amount: to_api_decimal(xrd_amount),
+                })
+            })
+            .collect::<Result<_, _>>()?,
+        xrd_royalty_receivers: fee_summary
+            .royalty_cost_breakdown
+            .iter()
+            .map(|(receiver, (_, xrd_amount))| {
+                let global_address = match receiver {
+                    RoyaltyRecipient::Package(address) => Address::Package(*address),
+                    RoyaltyRecipient::Component(address) => Address::Component(*address),
+                };
+                Ok(models::RoyaltyPayment {
+                    royalty_receiver: Box::new(to_global_entity_reference(
+                        context,
+                        &global_address,
+                    )?),
+                    xrd_amount: to_api_decimal(xrd_amount),
+                })
+            })
+            .collect::<Result<_, _>>()?,
     })
 }

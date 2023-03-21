@@ -25,7 +25,7 @@ fn handle_state_resource_internal(
     let resource_manager = {
         let substate_offset =
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let loaded_substate = read_known_substate(
+        let loaded_substate = read_mandatory_substate_or_server_error(
             state_manager,
             RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::SELF,
@@ -38,7 +38,7 @@ fn handle_state_resource_internal(
     };
     let access_rules = {
         let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
-        let loaded_substate = read_known_substate(
+        let loaded_substate = read_mandatory_substate_or_server_error(
             state_manager,
             RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::AccessRules,
@@ -51,7 +51,7 @@ fn handle_state_resource_internal(
     };
     let vault_access_rules = {
         let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
-        let loaded_substate = read_known_substate(
+        let loaded_substate = read_mandatory_substate_or_server_error(
             state_manager,
             RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::AccessRules1,

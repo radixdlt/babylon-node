@@ -31,7 +31,7 @@ fn handle_state_non_fungible_internal(
     let resource_manager = {
         let substate_offset =
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let loaded_substate = read_known_substate(
+        let loaded_substate = read_mandatory_substate_or_server_error(
             state_manager,
             RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::SELF,
@@ -67,7 +67,7 @@ fn handle_state_non_fungible_internal(
     );
 
     let key_value_store_entry_substate = {
-        let loaded_substate = read_known_substate_from_id(state_manager, &substate_id)?;
+        let loaded_substate = read_mandatory_substate_from_id_or_server_error(state_manager, &substate_id)?;
         let PersistedSubstate::KeyValueStoreEntry(substate) = loaded_substate else {
             return Err(wrong_substate_type(substate_id.2));
         };

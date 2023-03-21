@@ -1056,11 +1056,12 @@ components:
         - tip_percentage
         - cost_unit_limit
         - cost_units_consumed
+        - cost_unit_execution_breakdown
         - xrd_total_execution_cost
         - xrd_total_royalty_cost
         - xrd_total_tipped
-        - cost_unit_execution_breakdown
-        - cost_unit_royalty_breakdown
+        - xrd_vault_payments
+        - xrd_royalty_receivers
       properties:
         cost_unit_price:
           type: string
@@ -1085,6 +1086,16 @@ components:
           minimum: 0
           maximum: 4294967295
           description: An integer between `0` and `2^32 - 1`, representing the amount of cost units consumed by the transaction execution.
+        cost_unit_execution_breakdown:
+          type: string
+          description: |
+            A breakdown of where the execution cost went.
+          additionalProperties:
+            type: integer
+            format: int64
+            minimum: 0
+            maximum: 4294967295
+            description: An integer between `0` and `2^32 - 1`, representing the amount of cost units paid for this aspect of execution
         xrd_total_execution_cost:
           type: string
           description: |
@@ -1103,23 +1114,13 @@ components:
         xrd_vault_payments:
           type: array
           description: |
-            A summary of which vaults were used to pay the fee. This is only present if the transaction was committed.
+            A breakdown of which vaults were used to pay the fee.
           items:
             $ref: "#/components/schemas/VaultPayment"
-        cost_unit_execution_breakdown:
-          type: string
+        xrd_royalty_receivers:
+          type: array
           description: |
-            A summary of where the execution cost went.
-          additionalProperties:
-            type: integer
-            format: int64
-            minimum: 0
-            maximum: 4294967295
-            description: An integer between `0` and `2^32 - 1`, representing the amount of cost units paid for this aspect of execution
-        cost_unit_royalty_breakdown:
-          type: string
-          description: |
-            A summary of where the royalties were paid to.
+            A breakdown of where the royalties were paid to.
           items:
             $ref: "#/components/schemas/RoyaltyPayment"
     VaultPayment:
@@ -1139,16 +1140,15 @@ components:
       type: object
       required:
         - royalty_receiver
-        - cost_unit_amount
+        - xrd_amount
       properties:
         royalty_receiver:
           $ref: "#/components/schemas/GlobalEntityReference"
-        cost_unit_amount:
-          type: integer
-          format: int64
-          minimum: 0
-          maximum: 4294967295
-          description: An integer between `0` and `2^32 - 1`, representing the amount of cost units of royalty paid to this receiver.
+        xrd_amount:
+          type: string
+          description: |
+            The string-encoded decimal representing the amount of fee in XRD paid as royalty to this receiver.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
     StateUpdates:
       type: object
       description: Transaction state updates (only present if status is Succeeded or Failed)

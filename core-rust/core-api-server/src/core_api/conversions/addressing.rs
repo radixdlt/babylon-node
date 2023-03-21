@@ -362,12 +362,6 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         SubstateType::PackageFunctionAccessRules,
                         SubstateKeyType::PackageFunctionAccessRules,
                     ),
-                    PackageOffset::EventSchema => {
-                        return Err(unknown_substate_error(
-                            "PackageEventSchema should have been removed",
-                            &substate_id,
-                        ))
-                    }
                 },
                 // Packages still have ComponentRoyalties, because in the context of _their_ package (PACKAGE_LOADER),
                 // they themselves have methods (eg setting the PackageRoyalty details - which is for the components of the package)
