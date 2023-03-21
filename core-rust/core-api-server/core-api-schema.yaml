@@ -2164,8 +2164,6 @@ components:
           VaultInfo: '#/components/schemas/VaultInfoSubstate'
           VaultFungible: '#/components/schemas/VaultFungibleSubstate'
           VaultNonFungible: '#/components/schemas/VaultNonFungibleSubstate'
-          VaultLockedFungible: '#/components/schemas/VaultLockedFungibleSubstate'
-          VaultLockedNonFungible: '#/components/schemas/VaultLockedNonFungibleSubstate'
           AccessController: '#/components/schemas/AccessControllerSubstate'
           Account: '#/components/schemas/AccountSubstate'
     SubstateType:
@@ -2194,8 +2192,6 @@ components:
         - VaultInfo
         - VaultFungible
         - VaultNonFungible
-        - VaultLockedFungible
-        - VaultLockedNonFungible
         - AccessController
         - Account
     SubstateKeyType:
@@ -2230,8 +2226,6 @@ components:
         - VaultInfo
         - VaultFungible
         - VaultNonFungible
-        - VaultLockedFungible
-        - VaultLockedNonFungible
         - AccessController
         - Account
 ### COMMON SUBSTATES
@@ -2706,29 +2700,6 @@ components:
                 The string-encoded decimal representing the token amount in the vault.
                 A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
     VaultNonFungibleSubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-          required:
-            - non_fungible_ids
-          properties:
-            non_fungible_ids:
-              type: array
-              items:
-                $ref: '#/components/schemas/NonFungibleId'
-    VaultLockedFungibleSubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
-        - type: object
-          required:
-            - amount
-          properties:
-            amount:
-              type: string
-              description: |
-                The string-encoded decimal representing the token amount in the vault.
-                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
-    VaultLockedNonFungibleSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object

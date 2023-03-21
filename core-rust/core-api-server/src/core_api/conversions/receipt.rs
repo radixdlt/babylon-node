@@ -2,15 +2,17 @@ use super::addressing::*;
 use crate::core_api::*;
 use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine::system::kernel_modules::costing::{FeeSummary, RoyaltyRecipient};
+use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::indexmap::IndexMap;
-use radix_engine::types::{Address, ObjectId, RENodeId};
+use radix_engine::types::{Address, ObjectId, RENodeId, SubstateOffset, VaultOffset};
 use radix_engine::{
     ledger::OutputValue,
     types::{hash, scrypto_encode, Decimal, SubstateId},
 };
 
+use radix_engine_interface::blueprints::resource::ResourceType;
 use radix_engine_interface::data::scrypto::model::ComponentAddress;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
 
@@ -55,7 +57,60 @@ pub fn to_api_receipt(
         )?);
     }
 
-    for (id, output) in substate_changes.created {
+    // This was added as a temporary workaround to the Vault substate abstraction for the RCNet release
+    fn filter_out_incorrect_vault_substates_for_gateway(
+        created_substates: BTreeMap<SubstateId, OutputValue>,
+    ) -> BTreeMap<SubstateId, OutputValue> {
+        // First pass -> create mapping of Vault => ResourceType
+        let vault_resource_type_map: HashMap<ObjectId, ResourceType> = created_substates
+            .iter()
+            .filter_map(|(substate_id, output_value)| match substate_id {
+                SubstateId(
+                    RENodeId::Object(vault_id),
+                    _,
+                    SubstateOffset::Vault(VaultOffset::Info),
+                ) => match &output_value.substate {
+                    PersistedSubstate::VaultInfo(substate) => {
+                        Some((*vault_id, substate.resource_type))
+                    }
+                    _ => None,
+                },
+                _ => None,
+            })
+            .collect();
+        // Second pass -> filter out incorrect substates
+        created_substates
+            .into_iter()
+            .filter_map(|(substate_id, output_value)| {
+                let resource_type = match substate_id.0 {
+                    RENodeId::Object(object_id) => vault_resource_type_map.get(&object_id),
+                    _ => None,
+                };
+                let keep_substate = match (&output_value.substate, resource_type) {
+                    (
+                        PersistedSubstate::VaultLiquidFungible(_),
+                        Some(ResourceType::Fungible { .. }),
+                    ) => true,
+                    (PersistedSubstate::VaultLiquidFungible(_), _) => false,
+                    (
+                        PersistedSubstate::VaultLiquidNonFungible(_),
+                        Some(ResourceType::NonFungible { .. }),
+                    ) => true,
+                    (PersistedSubstate::VaultLiquidNonFungible(_), _) => false,
+                    (PersistedSubstate::VaultLockedFungible(_), _) => false,
+                    (PersistedSubstate::VaultLockedNonFungible(_), _) => false,
+                    _ => true,
+                };
+                if keep_substate {
+                    Some((substate_id, output_value))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    for (id, output) in filter_out_incorrect_vault_substates_for_gateway(substate_changes.created) {
         let substate_version = to_api_new_substate_version(context, (id.clone(), output))?;
         created.push(substate_version)
     }

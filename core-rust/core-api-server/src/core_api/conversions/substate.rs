@@ -35,9 +35,8 @@ use radix_engine_interface::api::component::{
 use radix_engine_interface::api::types::{IndexedScryptoValue, NodeModuleId};
 use radix_engine_interface::blueprints::resource::{
     AccessRule, AccessRuleEntry, AccessRuleNode, AccessRulesConfig, LiquidFungibleResource,
-    LiquidNonFungibleResource, LockedFungibleResource, LockedNonFungibleResource, MethodKey,
-    ProofRule, ResourceType, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible,
-    SoftResourceOrNonFungibleList,
+    LiquidNonFungibleResource, MethodKey, ProofRule, ResourceType, SoftCount, SoftDecimal,
+    SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::data::scrypto::model::{
@@ -107,10 +106,10 @@ pub fn to_api_substate(
             to_api_non_fungible_vault_substate(context, vault_non_fungible)?
         }
         PersistedSubstate::VaultLockedFungible(locked_fungible) => {
-            to_api_locked_fungible_vault_substate(context, locked_fungible)?
+            return Err(MappingError::TransientSubstatePersisted { message: format!("VaultLockedFungible {locked_fungible:?} for {substate_id:?} should have been filtered out on create, and should never be updated") })
         }
         PersistedSubstate::VaultLockedNonFungible(locked_non_fungible) => {
-            to_api_locked_non_fungible_vault_substate(context, locked_non_fungible)?
+            return Err(MappingError::TransientSubstatePersisted { message: format!("VaultLockedNonFungible {locked_non_fungible:?} for {substate_id:?} should have been filtered out on create, and should never be updated") })
         }
         PersistedSubstate::KeyValueStoreEntry(kv_store_entry) => {
             to_api_key_value_story_entry_substate(context, substate_id, kv_store_entry)?
@@ -1001,23 +1000,6 @@ pub fn to_api_non_fungible_vault_substate(
     let non_fungible_ids = vault.ids().iter().map(to_api_non_fungible_id).collect();
 
     Ok(models::Substate::VaultNonFungibleSubstate { non_fungible_ids })
-}
-
-pub fn to_api_locked_fungible_vault_substate(
-    _context: &MappingContext,
-    vault: &LockedFungibleResource,
-) -> Result<models::Substate, MappingError> {
-    Ok(models::Substate::VaultLockedFungibleSubstate {
-        amount: to_api_decimal(&vault.amount()),
-    })
-}
-
-pub fn to_api_locked_non_fungible_vault_substate(
-    _context: &MappingContext,
-    vault: &LockedNonFungibleResource,
-) -> Result<models::Substate, MappingError> {
-    let non_fungible_ids = vault.ids.keys().map(to_api_non_fungible_id).collect();
-    Ok(models::Substate::VaultLockedNonFungibleSubstate { non_fungible_ids })
 }
 
 pub fn to_api_fungible_resource_amount(

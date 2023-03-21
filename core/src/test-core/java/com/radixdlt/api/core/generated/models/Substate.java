@@ -48,8 +48,6 @@ import com.radixdlt.api.core.generated.models.ValidatorSetSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorSubstate;
 import com.radixdlt.api.core.generated.models.VaultFungibleSubstate;
 import com.radixdlt.api.core.generated.models.VaultInfoSubstate;
-import com.radixdlt.api.core.generated.models.VaultLockedFungibleSubstate;
-import com.radixdlt.api.core.generated.models.VaultLockedNonFungibleSubstate;
 import com.radixdlt.api.core.generated.models.VaultNonFungibleSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -114,10 +112,6 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = VaultFungibleSubstate.class, name = "VaultFungibleSubstate"),
   @JsonSubTypes.Type(value = VaultInfoSubstate.class, name = "VaultInfo"),
   @JsonSubTypes.Type(value = VaultInfoSubstate.class, name = "VaultInfoSubstate"),
-  @JsonSubTypes.Type(value = VaultLockedFungibleSubstate.class, name = "VaultLockedFungible"),
-  @JsonSubTypes.Type(value = VaultLockedFungibleSubstate.class, name = "VaultLockedFungibleSubstate"),
-  @JsonSubTypes.Type(value = VaultLockedNonFungibleSubstate.class, name = "VaultLockedNonFungible"),
-  @JsonSubTypes.Type(value = VaultLockedNonFungibleSubstate.class, name = "VaultLockedNonFungibleSubstate"),
   @JsonSubTypes.Type(value = VaultNonFungibleSubstate.class, name = "VaultNonFungible"),
   @JsonSubTypes.Type(value = VaultNonFungibleSubstate.class, name = "VaultNonFungibleSubstate"),
 })
@@ -242,10 +236,6 @@ static {
   mappings.put("VaultFungibleSubstate", VaultFungibleSubstate.class);
   mappings.put("VaultInfo", VaultInfoSubstate.class);
   mappings.put("VaultInfoSubstate", VaultInfoSubstate.class);
-  mappings.put("VaultLockedFungible", VaultLockedFungibleSubstate.class);
-  mappings.put("VaultLockedFungibleSubstate", VaultLockedFungibleSubstate.class);
-  mappings.put("VaultLockedNonFungible", VaultLockedNonFungibleSubstate.class);
-  mappings.put("VaultLockedNonFungibleSubstate", VaultLockedNonFungibleSubstate.class);
   mappings.put("VaultNonFungible", VaultNonFungibleSubstate.class);
   mappings.put("VaultNonFungibleSubstate", VaultNonFungibleSubstate.class);
   mappings.put("Substate", Substate.class);

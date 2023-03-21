@@ -50,8 +50,6 @@ import com.radixdlt.api.core.generated.models.ValidatorSetSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorSubstate;
 import com.radixdlt.api.core.generated.models.VaultFungibleSubstate;
 import com.radixdlt.api.core.generated.models.VaultInfoSubstate;
-import com.radixdlt.api.core.generated.models.VaultLockedFungibleSubstate;
-import com.radixdlt.api.core.generated.models.VaultLockedNonFungibleSubstate;
 import com.radixdlt.api.core.generated.models.VaultNonFungibleSubstate;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -94,8 +92,6 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = ValidatorSetSubstate.class, name = "ValidatorSet"),
   @JsonSubTypes.Type(value = VaultFungibleSubstate.class, name = "VaultFungible"),
   @JsonSubTypes.Type(value = VaultInfoSubstate.class, name = "VaultInfo"),
-  @JsonSubTypes.Type(value = VaultLockedFungibleSubstate.class, name = "VaultLockedFungible"),
-  @JsonSubTypes.Type(value = VaultLockedNonFungibleSubstate.class, name = "VaultLockedNonFungible"),
   @JsonSubTypes.Type(value = VaultNonFungibleSubstate.class, name = "VaultNonFungible"),
 })
 
@@ -199,8 +195,6 @@ static {
   mappings.put("ValidatorSet", ValidatorSetSubstate.class);
   mappings.put("VaultFungible", VaultFungibleSubstate.class);
   mappings.put("VaultInfo", VaultInfoSubstate.class);
-  mappings.put("VaultLockedFungible", VaultLockedFungibleSubstate.class);
-  mappings.put("VaultLockedNonFungible", VaultLockedNonFungibleSubstate.class);
   mappings.put("VaultNonFungible", VaultNonFungibleSubstate.class);
   mappings.put("PackageCodeSubstate", PackageCodeSubstate.class);
   JSON.registerDiscriminator(PackageCodeSubstate.class, "substate_type", mappings);

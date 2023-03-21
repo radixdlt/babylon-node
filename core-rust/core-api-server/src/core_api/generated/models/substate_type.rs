@@ -54,10 +54,6 @@ pub enum SubstateType {
     VaultFungible,
     #[serde(rename = "VaultNonFungible")]
     VaultNonFungible,
-    #[serde(rename = "VaultLockedFungible")]
-    VaultLockedFungible,
-    #[serde(rename = "VaultLockedNonFungible")]
-    VaultLockedNonFungible,
     #[serde(rename = "AccessController")]
     AccessController,
     #[serde(rename = "Account")]
@@ -89,8 +85,6 @@ impl ToString for SubstateType {
             Self::VaultInfo => String::from("VaultInfo"),
             Self::VaultFungible => String::from("VaultFungible"),
             Self::VaultNonFungible => String::from("VaultNonFungible"),
-            Self::VaultLockedFungible => String::from("VaultLockedFungible"),
-            Self::VaultLockedNonFungible => String::from("VaultLockedNonFungible"),
             Self::AccessController => String::from("AccessController"),
             Self::Account => String::from("Account"),
         }

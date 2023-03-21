@@ -676,21 +676,18 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                     },
                     (NodeModuleId::SELF, SubstateOffset::Vault(offset)) => match offset {
                         VaultOffset::Info => (SubstateType::VaultInfo, SubstateKeyType::VaultInfo),
+                        VaultOffset::LiquidFungible => {
+                            (SubstateType::VaultFungible, SubstateKeyType::VaultFungible)
+                        }
                         VaultOffset::LiquidNonFungible => (
                             SubstateType::VaultNonFungible,
                             SubstateKeyType::VaultNonFungible,
                         ),
-                        VaultOffset::LockedNonFungible => (
-                            SubstateType::VaultLockedNonFungible,
-                            SubstateKeyType::VaultLockedNonFungible,
-                        ),
-                        VaultOffset::LiquidFungible => {
-                            (SubstateType::VaultFungible, SubstateKeyType::VaultFungible)
-                        }
-                        VaultOffset::LockedFungible => (
-                            SubstateType::VaultLockedFungible,
-                            SubstateKeyType::VaultLockedFungible,
-                        ),
+                        // These substates shouldn't exist - they are filtered out of the transaction stream on their creation,
+                        // and _should_ never get updated, and never be a parent - so shouldn't ever go through this code path...
+                        // Unless there's a bug in the engine.
+                        VaultOffset::LockedNonFungible => return Err(transient_substate_error("LockedNonFungible", &substate_id)),
+                        VaultOffset::LockedFungible => return Err(transient_substate_error("LockedFungible", &substate_id)),
                     },
                     _ => return Err(unknown_substate_error("Vault", &substate_id)),
                 };

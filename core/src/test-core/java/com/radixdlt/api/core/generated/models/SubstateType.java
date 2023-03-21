@@ -70,10 +70,6 @@ public enum SubstateType {
   
   VAULTNONFUNGIBLE("VaultNonFungible"),
   
-  VAULTLOCKEDFUNGIBLE("VaultLockedFungible"),
-  
-  VAULTLOCKEDNONFUNGIBLE("VaultLockedNonFungible"),
-  
   ACCESSCONTROLLER("AccessController"),
   
   ACCOUNT("Account");
