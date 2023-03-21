@@ -3863,6 +3863,8 @@ components:
         - vault_access_rules
       properties:
         manager:
+          description: |
+            Either the Fungible or NonFungible Resource Manager substate, depending on the resource type.
           $ref: "#/components/schemas/Substate"
         access_rules:
           $ref: "#/components/schemas/Substate"
