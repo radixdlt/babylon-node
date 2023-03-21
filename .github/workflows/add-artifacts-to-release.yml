@@ -31,8 +31,7 @@ jobs:
         run: ./gradlew :core-rust:buildRustForDocker -P rustBinaryBuildType="release"
       - name: Package libcorerust
         run: |
-          cd ${{ github.workspace }}/core-rust/target/x86_64-unknown-linux-gnu/release/
-          zip babylon-node-rust-arch-linux-x86_64-release-${{ github.event.release.tag_name }}.zip libcorerust.so
+          zip -j babylon-node-rust-arch-linux-x86_64-release-${{ github.event.release.tag_name }}.zip ${{ github.workspace }}/core-rust/target/x86_64-unknown-linux-gnu/release/libcorerust.so
       - name: Get release
         id: get_release
         uses: bruceadams/get-release@f589ce0779c7bef1faf175f7488c972eb47dc046
