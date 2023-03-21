@@ -524,4 +524,9 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
   public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
     // no-op, Pacemaker doesn't process BFT rebuilds
   }
+
+  @Override
+  public Optional<BFTEventProcessorAtCurrentRound> forwardTo() {
+    return Optional.empty();
+  }
 }

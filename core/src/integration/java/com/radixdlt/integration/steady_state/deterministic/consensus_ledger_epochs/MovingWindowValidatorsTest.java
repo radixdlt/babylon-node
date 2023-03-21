@@ -130,7 +130,7 @@ public class MovingWindowValidatorsTest {
     long maxCount = maxProcessedFor(numNodes, windowSize, maxEpoch, epochMaxRound.number());
 
     assertThat(testCounters)
-        .extracting(sc -> (long) sc.bft().committedVertices().get())
+        .extracting(sc -> (long) sc.bft().committedVertices().getSum())
         .allMatch(between(maxCount - maxEpoch, maxCount));
   }
 

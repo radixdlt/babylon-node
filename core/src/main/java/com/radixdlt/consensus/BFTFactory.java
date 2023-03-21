@@ -67,7 +67,7 @@ package com.radixdlt.consensus;
 import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.RoundQuorumReached;
+import com.radixdlt.consensus.bft.RoundQuorumResolution;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -86,7 +86,7 @@ public interface BFTFactory {
       BFTValidatorId self,
       Pacemaker pacemaker,
       BFTSyncer bftSyncer,
-      EventProcessor<RoundQuorumReached> roundQuorumReachedEventProcessor,
+      EventProcessor<RoundQuorumResolution> roundQuorumResolutionEventProcessor,
       BFTValidatorSet validatorSet,
       RoundUpdate roundUpdate,
       SafetyRules safetyRules,

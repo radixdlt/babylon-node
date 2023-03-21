@@ -101,4 +101,8 @@ public class LabelledCounter<L extends Record> {
     return this.labelledChildren.computeIfAbsent(
         labelRecord, value -> this.wrapped.labels(NameRenderer.labelValues(value)));
   }
+
+  public double getSum() {
+    return this.labelledChildren.values().stream().map(Counter.Child::get).reduce(0.0, Double::sum);
+  }
 }

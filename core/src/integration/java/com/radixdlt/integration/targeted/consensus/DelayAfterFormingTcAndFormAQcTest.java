@@ -64,14 +64,14 @@
 
 package com.radixdlt.integration.targeted.consensus;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static com.radixdlt.harness.predicates.NodesPredicate.anyAtExactlyStateVersion;
+import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -79,24 +79,45 @@ import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.Metrics;
-import io.reactivex.rxjava3.schedulers.Timed;
-import java.util.Random;
-import java.util.function.Predicate;
 import org.junit.Test;
 
-public class ProcessCachedEventsWithTimeoutCertTest {
-
-  private static final int TEST_NODE = 4;
-  private final Random random = new Random(123456);
-
-  private DeterministicTest createTest() {
+// spotless:off
+/**
+ * Test a scenario where a timeout cert is formed first, but its
+ * processing is delayed, then a QC is formed
+ * which results in a QC output (RoundQuorumResolution event with a QC).
+ *
+ * The test works by dropping a proposal to 3 out of 4 nodes,
+ * which results in:
+ * a) 1 node receives a proposal, sends a regular vote and then a timeout vote
+ * b) 3 nodes don't receive a proposal and they send a timeout vote for a fallback vertex
+ *
+ * If the order of received votes is mixed (more specifically, if the three votes
+ * for the fallback vertex are not received first), then the node is able to
+ * create a TC (by using the timeout signatures) before it can
+ * create a QC (on a fallback vertex, voted on by 3 nodes).
+ *
+ * The test prioritizes votes from the node that received the proposal
+ * to ensure above condition is met.
+ * Here's the order of received votes:
+ *  1) vote for proposal vertex + timeout (prioritized)
+ *  2) vote for fallback vertex + timeout
+ *  3) vote for fallback vertex + timeout
+ *  4) vote for fallback vertex + timeout
+ *
+ *  Note that if the votes for fallback vertices were received first,
+ *  then the node could form a QC straight away (on a fallback vertex) and the test wouldn't
+ *  actually test what it's supposed to. So there's another assertion
+ *  that makes sure that the nodes have actually created (and ignored) a TC.
+ */
+// spotless:on
+public final class DelayAfterFormingTcAndFormAQcTest {
+  private DeterministicTest createTest(
+      MessageSelector messageSelector, MessageMutator messageMutator) {
     return DeterministicTest.builder()
-        .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(5))
-        .messageSelector(MessageSelector.randomSelector(random))
-        .messageMutators(
-            dropProposalToNodes(Round.of(1), ImmutableList.of(TEST_NODE)),
-            dropProposalToNodes(Round.of(2), ImmutableList.of(2, 3, TEST_NODE)),
-            dropVotesSentToNode(TEST_NODE))
+        .addPhysicalNodes(PhysicalNodeConfig.createBasicBatch(4))
+        .messageSelector(messageSelector)
+        .messageMutators(messageMutator)
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 true,
@@ -104,20 +125,75 @@ public class ProcessCachedEventsWithTimeoutCertTest {
                 FunctionalRadixNodeModule.ConsensusConfig.of(),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
                     StateComputerConfig.mockedWithEpochs(
-                        Round.of(100),
-                        EpochNodeWeightMapping.constant(5),
+                        Round.of(10000),
+                        EpochNodeWeightMapping.constant(4),
                         new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
   }
 
-  @Test
-  public void process_cached_sync_event_with_tc_test() {
-    try (var test = createTest()) {
-      test.startAllNodes();
-      test.runUntilMessage(nodeVotesForRound(Round.of(3), TEST_NODE));
+  private MessageSelector prioritizeVotesFrom(int nodeIdx) {
+    final var baseSelector = MessageSelector.firstSelector();
+    return messages -> {
+      for (var m : messages) {
+        if (m.message() instanceof Vote && m.channelId().senderIndex() == nodeIdx) {
+          return m;
+        }
+      }
+      return baseSelector.select(messages);
+    };
+  }
 
-      // just to check if the node indeed needed to sync
-      final var counters = test.getInstance(TEST_NODE, Metrics.class);
-      assertThat(counters.bft().quorumResolutions().getSum()).isEqualTo(0);
+  @Test
+  public void delay_tc_processing_and_form_a_qc_test() {
+    // This is the main test as described in a class-level comment
+    try (var test =
+        createTest(
+            prioritizeVotesFrom(3), dropProposalToNodes(Round.of(3), ImmutableList.of(0, 1, 2)))) {
+      test.startAllNodes();
+      test.runUntilState(anyAtExactlyStateVersion(10));
+
+      for (var injector : test.getNodeInjectors()) {
+        final var metrics = injector.getInstance(Metrics.class);
+        // Each node should have created and delayed a timeout cert resolution...
+        assertEquals(1, (int) metrics.bft().timeoutQuorumDelayedResolutions().get());
+        // ...and then form a QC, resulting in no TCs actually processed.
+        final var numTimeoutQuorums =
+            (int)
+                metrics
+                    .bft()
+                    .quorumResolutions()
+                    .label(new Metrics.Bft.QuorumResolution(true))
+                    .get();
+        assertEquals(0, numTimeoutQuorums);
+      }
+    }
+  }
+
+  @Test
+  public void delayed_tc_processing_without_qc_test() {
+    // This tests a 50/50 split (two nodes receive a proposal, two don't).
+    // In this scenario it's not possible to create a QC, so TC should be delayed
+    // and eventually processed.
+    try (var test =
+        createTest(
+            MessageSelector.firstSelector(),
+            dropProposalToNodes(Round.of(3), ImmutableList.of(0, 1)))) {
+      test.startAllNodes();
+      test.runUntilState(anyAtExactlyStateVersion(10));
+
+      for (var injector : test.getNodeInjectors()) {
+        final var metrics = injector.getInstance(Metrics.class);
+        // Each node should have created and delayed a timeout cert resolution...
+        assertEquals(1, (int) metrics.bft().timeoutQuorumDelayedResolutions().get());
+        // ...and then form a TC, resulting in a single TC processed.
+        final var numTimeoutQuorums =
+            (int)
+                metrics
+                    .bft()
+                    .quorumResolutions()
+                    .label(new Metrics.Bft.QuorumResolution(true))
+                    .get();
+        assertEquals(1, numTimeoutQuorums);
+      }
     }
   }
 
@@ -129,26 +205,6 @@ public class ProcessCachedEventsWithTimeoutCertTest {
             && nodes.contains(message.channelId().receiverIndex());
       }
       return false;
-    };
-  }
-
-  private static MessageMutator dropVotesSentToNode(int node) {
-    return (message, queue) -> {
-      final var msg = message.message();
-      if (msg instanceof Vote) {
-        return message.channelId().receiverIndex() == node;
-      }
-      return false;
-    };
-  }
-
-  public static Predicate<Timed<ControlledMessage>> nodeVotesForRound(Round round, int node) {
-    return timedMsg -> {
-      final var message = timedMsg.value();
-      if (!(message.message() instanceof final Vote vote)) {
-        return false;
-      }
-      return vote.getRound().equals(round) && message.channelId().senderIndex() == node;
     };
   }
 }

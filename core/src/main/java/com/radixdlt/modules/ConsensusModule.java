@@ -70,6 +70,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.liveness.*;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.*;
@@ -104,6 +105,7 @@ public final class ConsensusModule extends AbstractModule {
     var eventBinder =
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
             .permitDuplicates();
+    eventBinder.addBinding().toInstance(TimeoutQuorumDelayedResolution.class);
     eventBinder.addBinding().toInstance(RoundUpdate.class);
     eventBinder.addBinding().toInstance(BFTRebuildUpdate.class);
     eventBinder.addBinding().toInstance(BFTInsertUpdate.class);
@@ -141,10 +143,13 @@ public final class ConsensusModule extends AbstractModule {
       TimeSupplier timeSupplier,
       ProposerElection proposerElection,
       Metrics metrics,
-      EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
+      EventDispatcher<RoundQuorumResolution> roundQuorumResolutionEventDispatcher,
+      ScheduledEventDispatcher<TimeoutQuorumDelayedResolution>
+          timeoutQuorumDelayedResolutionDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
       EventDispatcher<ProposalRejected> proposalRejectedDispatcher,
-      RoundUpdate roundUpdate) {
+      RoundUpdate roundUpdate,
+      @TimeoutQuorumResolutionDelayMs long timeoutQuorumResolutionDelayMs) {
     return BFTBuilder.create()
         .self(self)
         .hasher(hasher)
@@ -152,13 +157,15 @@ public final class ConsensusModule extends AbstractModule {
         .proposalRejectedDispatcher(proposalRejectedDispatcher)
         .safetyRules(safetyRules)
         .pacemaker(pacemaker)
-        .roundQuorumReachedEventDispatcher(
-            roundQuorumReached -> {
+        .roundQuorumResolutionDispatcher(
+            roundQuorumResolution -> {
               // FIXME: a hack for now until replacement of epochmanager factories
-              bftSync.roundQuorumReachedEventProcessor().process(roundQuorumReached);
-              roundQuorumReachedEventDispatcher.dispatch(roundQuorumReached);
+              bftSync.roundQuorumResolutionEventProcessor().process(roundQuorumResolution);
+              roundQuorumResolutionEventDispatcher.dispatch(roundQuorumResolution);
             })
-        .doubleVoteEventDispatcher(doubleVoteEventDispatcher)
+        .timeoutQuorumDelayedResolutionDispatcher(timeoutQuorumDelayedResolutionDispatcher)
+        .timeoutQuorumResolutionDelayMs(timeoutQuorumResolutionDelayMs)
+        .doubleVoteDispatcher(doubleVoteEventDispatcher)
         .roundUpdate(roundUpdate)
         .bftSyncer(bftSync)
         .validatorSet(config.getValidatorSet())
