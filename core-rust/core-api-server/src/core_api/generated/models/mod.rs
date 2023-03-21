@@ -530,6 +530,8 @@ pub mod vault_fungible_substate_all_of;
 pub use self::vault_fungible_substate_all_of::VaultFungibleSubstateAllOf;
 pub mod vault_info_substate;
 pub use self::vault_info_substate::VaultInfoSubstate;
+pub mod vault_info_substate_all_of;
+pub use self::vault_info_substate_all_of::VaultInfoSubstateAllOf;
 pub mod vault_locked_fungible_substate;
 pub use self::vault_locked_fungible_substate::VaultLockedFungibleSubstate;
 pub mod vault_locked_non_fungible_substate;

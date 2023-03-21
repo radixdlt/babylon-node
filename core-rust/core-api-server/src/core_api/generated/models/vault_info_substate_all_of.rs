@@ -12,9 +12,7 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct VaultInfoSubstate {
-    #[serde(rename = "substate_type")]
-    pub substate_type: crate::core_api::generated::models::SubstateType,
+pub struct VaultInfoSubstateAllOf {
     #[serde(rename = "resource_type")]
     pub resource_type: crate::core_api::generated::models::ResourceType,
     /// The Bech32m-encoded human readable version of the resource address
@@ -22,10 +20,9 @@ pub struct VaultInfoSubstate {
     pub resource_address: String,
 }
 
-impl VaultInfoSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, resource_type: crate::core_api::generated::models::ResourceType, resource_address: String) -> VaultInfoSubstate {
-        VaultInfoSubstate {
-            substate_type,
+impl VaultInfoSubstateAllOf {
+    pub fn new(resource_type: crate::core_api::generated::models::ResourceType, resource_address: String) -> VaultInfoSubstateAllOf {
+        VaultInfoSubstateAllOf {
             resource_type,
             resource_address,
         }

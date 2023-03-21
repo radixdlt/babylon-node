@@ -42,7 +42,7 @@ import com.radixdlt.api.core.generated.models.PackageCodeTypeSubstate;
 import com.radixdlt.api.core.generated.models.PackageFunctionAccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.PackageInfoSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltySubstate;
-import com.radixdlt.api.core.generated.models.ResourceDynamicResourceDescriptorAllOf;
+import com.radixdlt.api.core.generated.models.ResourceType;
 import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TypeInfoSubstate;
@@ -50,6 +50,7 @@ import com.radixdlt.api.core.generated.models.ValidatorSetSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorSubstate;
 import com.radixdlt.api.core.generated.models.VaultFungibleSubstate;
 import com.radixdlt.api.core.generated.models.VaultInfoSubstate;
+import com.radixdlt.api.core.generated.models.VaultInfoSubstateAllOf;
 import com.radixdlt.api.core.generated.models.VaultLockedFungibleSubstate;
 import com.radixdlt.api.core.generated.models.VaultLockedNonFungibleSubstate;
 import com.radixdlt.api.core.generated.models.VaultNonFungibleSubstate;
@@ -63,6 +64,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * VaultInfoSubstate
  */
 @JsonPropertyOrder({
+  VaultInfoSubstate.JSON_PROPERTY_RESOURCE_TYPE,
   VaultInfoSubstate.JSON_PROPERTY_RESOURCE_ADDRESS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -100,11 +102,40 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class VaultInfoSubstate extends Substate {
+  public static final String JSON_PROPERTY_RESOURCE_TYPE = "resource_type";
+  private ResourceType resourceType;
+
   public static final String JSON_PROPERTY_RESOURCE_ADDRESS = "resource_address";
   private String resourceAddress;
 
   public VaultInfoSubstate() { 
   }
+
+  public VaultInfoSubstate resourceType(ResourceType resourceType) {
+    this.resourceType = resourceType;
+    return this;
+  }
+
+   /**
+   * Get resourceType
+   * @return resourceType
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_RESOURCE_TYPE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public ResourceType getResourceType() {
+    return resourceType;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_RESOURCE_TYPE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setResourceType(ResourceType resourceType) {
+    this.resourceType = resourceType;
+  }
+
 
   public VaultInfoSubstate resourceAddress(String resourceAddress) {
     this.resourceAddress = resourceAddress;
@@ -144,13 +175,14 @@ public class VaultInfoSubstate extends Substate {
       return false;
     }
     VaultInfoSubstate vaultInfoSubstate = (VaultInfoSubstate) o;
-    return Objects.equals(this.resourceAddress, vaultInfoSubstate.resourceAddress) &&
+    return Objects.equals(this.resourceType, vaultInfoSubstate.resourceType) &&
+        Objects.equals(this.resourceAddress, vaultInfoSubstate.resourceAddress) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resourceAddress, super.hashCode());
+    return Objects.hash(resourceType, resourceAddress, super.hashCode());
   }
 
   @Override
@@ -158,6 +190,7 @@ public class VaultInfoSubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class VaultInfoSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    resourceType: ").append(toIndentedString(resourceType)).append("\n");
     sb.append("    resourceAddress: ").append(toIndentedString(resourceAddress)).append("\n");
     sb.append("}");
     return sb.toString();

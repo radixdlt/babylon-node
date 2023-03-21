@@ -36,7 +36,7 @@ use radix_engine_interface::api::types::{IndexedScryptoValue, NodeModuleId};
 use radix_engine_interface::blueprints::resource::{
     AccessRule, AccessRuleEntry, AccessRuleNode, AccessRulesConfig, LiquidFungibleResource,
     LiquidNonFungibleResource, LockedFungibleResource, LockedNonFungibleResource, MethodKey,
-    ProofRule, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible,
+    ProofRule, ResourceType, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible,
     SoftResourceOrNonFungibleList,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
@@ -963,11 +963,26 @@ pub fn to_api_clock_current_time_rounded_down_to_minutes_substate(
 
 pub fn to_api_vault_info_substate(
     context: &MappingContext,
-    vault: &VaultInfoSubstate,
+    substate: &VaultInfoSubstate,
 ) -> Result<models::Substate, MappingError> {
+    let VaultInfoSubstate {
+        resource_address,
+        resource_type,
+    } = substate;
     Ok(models::Substate::VaultInfoSubstate {
-        resource_address: to_api_resource_address(context, &vault.resource_address),
+        resource_address: to_api_resource_address(context, resource_address),
+        resource_type: to_api_resource_type(context, resource_type),
     })
+}
+
+pub fn to_api_resource_type(
+    _context: &MappingContext,
+    resource_type: &ResourceType,
+) -> models::ResourceType {
+    match resource_type {
+        ResourceType::Fungible { .. } => models::ResourceType::Fungible,
+        ResourceType::NonFungible { .. } => models::ResourceType::NonFungible,
+    }
 }
 
 pub fn to_api_fungible_vault_substate(

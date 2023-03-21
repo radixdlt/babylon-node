@@ -188,6 +188,8 @@ pub enum Substate {
     },
     #[serde(rename="VaultInfo")]
     VaultInfoSubstate {
+        #[serde(rename = "resource_type")]
+        resource_type: crate::core_api::generated::models::ResourceType,
         /// The Bech32m-encoded human readable version of the resource address
         #[serde(rename = "resource_address")]
         resource_address: String,

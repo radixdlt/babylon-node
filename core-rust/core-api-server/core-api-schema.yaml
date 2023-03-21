@@ -2686,8 +2686,11 @@ components:
         - $ref: '#/components/schemas/Substate'
         - type: object
           required:
+            - resource_type
             - resource_address
           properties:
+            resource_type:
+              $ref: '#/components/schemas/ResourceType'
             resource_address:
               $ref: '#/components/schemas/ResourceAddress'
     VaultFungibleSubstate:
