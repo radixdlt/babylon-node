@@ -73,6 +73,8 @@ import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.genesis.GenesisConfig;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
@@ -87,12 +89,9 @@ import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statemanager.*;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.UInt64;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.Assert;
@@ -101,13 +100,7 @@ import org.junit.Test;
 public final class RustMempoolTest {
   private static CommittedTransactionsWithProof buildGenesis(LedgerAccumulator accumulator) {
     var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    var genesis =
-        TransactionBuilder.createGenesis(
-            Map.of(),
-            Map.of(),
-            UInt64.fromNonNegativeLong(1),
-            UInt64.fromNonNegativeLong(10),
-            UInt64.fromNonNegativeLong(1));
+    var genesis = GenesisData.empty().toGenesisTransaction(GenesisConfig.of(1, 10, 1));
     var accumulatorState =
         accumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
     var proof =

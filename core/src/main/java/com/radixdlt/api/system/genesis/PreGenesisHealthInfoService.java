@@ -62,15 +62,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.networks;
+package com.radixdlt.api.system.genesis;
 
-public sealed interface GenesisSource {
-  FromConfiguration fromConfiguration = new FromConfiguration();
-  AsynchronouslyProvided providedAsync = new AsynchronouslyProvided();
+import com.radixdlt.api.system.health.HealthInfoService;
+import com.radixdlt.api.system.health.NodeStatus;
+import com.radixdlt.api.system.health.ScheduledStatsCollecting;
+import com.radixdlt.environment.EventProcessor;
 
-  record Fixed(byte[] genesisTransactionPayload) implements GenesisSource {}
+public final class PreGenesisHealthInfoService implements HealthInfoService {
+  @Override
+  public NodeStatus nodeStatus() {
+    return NodeStatus.BOOTING_PRE_GENESIS;
+  }
 
-  record FromConfiguration() implements GenesisSource {}
-
-  record AsynchronouslyProvided() implements GenesisSource {}
+  @Override
+  public EventProcessor<ScheduledStatsCollecting> updateStats() {
+    return ev -> {};
+  }
 }

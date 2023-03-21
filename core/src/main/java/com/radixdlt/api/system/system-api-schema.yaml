@@ -200,7 +200,8 @@ components:
         status:
           type: string
           enum:
-            - BOOTING
+            - BOOTING_PRE_GENESIS
+            - BOOTING_AT_GENESIS
             - SYNCING
             - UP
             - STALLED

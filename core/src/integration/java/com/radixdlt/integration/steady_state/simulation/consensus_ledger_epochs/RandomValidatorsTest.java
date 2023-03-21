@@ -76,6 +76,7 @@ import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import java.time.Duration;
 import java.util.Optional;
@@ -136,8 +137,9 @@ public class RandomValidatorsTest {
         bftTestBuilder
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
+                    NodeStorageConfig.none(),
                     true,
-                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                    FunctionalRadixNodeModule.SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(5000),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mockedWithEpochs(
@@ -157,8 +159,9 @@ public class RandomValidatorsTest {
         bftTestBuilder
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
+                    NodeStorageConfig.none(),
                     true,
-                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                    FunctionalRadixNodeModule.SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(5000),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mockedWithEpochs(

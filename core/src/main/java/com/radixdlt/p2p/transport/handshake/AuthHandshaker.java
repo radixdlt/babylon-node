@@ -76,6 +76,7 @@ import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.capability.RemotePeerCapability;
@@ -113,7 +114,7 @@ public final class AuthHandshaker {
   private final ECKeyOps ecKeyOps;
   private final byte[] nonce;
   private final ECKeyPair ephemeralKey;
-  private final int networkId;
+  private final Network network;
   private final String newestForkName;
   private boolean isInitiator = false;
   private Optional<byte[]> initiatePacketOpt = Optional.empty();
@@ -125,7 +126,7 @@ public final class AuthHandshaker {
       Serialization serialization,
       SecureRandom secureRandom,
       ECKeyOps ecKeyOps,
-      int networkId,
+      Network network,
       String newestForkName,
       Capabilities capabilities) {
     this.serialization = Objects.requireNonNull(serialization);
@@ -134,7 +135,7 @@ public final class AuthHandshaker {
     this.capabilities = capabilities;
     this.nonce = randomBytes(NONCE_SIZE);
     this.ephemeralKey = ECKeyPair.generateNew();
-    this.networkId = networkId;
+    this.network = network;
     this.newestForkName = newestForkName;
   }
 
@@ -168,7 +169,7 @@ public final class AuthHandshaker {
         signature,
         HashCode.fromBytes(ecKeyOps.nodePubKey().getBytes()),
         HashCode.fromBytes(nonce),
-        networkId,
+        network.getId(),
         newestForkName,
         this.capabilities == null ? null : this.capabilities.toRemotePeerCapabilities());
   }
@@ -183,13 +184,13 @@ public final class AuthHandshaker {
       final var message = serialization.fromDson(plaintext, AuthInitiateMessage.class);
       final var remotePubKey = ECDSASecp256k1PublicKey.fromBytes(message.getPublicKey().asBytes());
 
-      if (message.getNetworkId() != this.networkId) {
+      if (message.getNetworkId() != this.network.getId()) {
         return Pair.of(
             new byte[] {STATUS_ERROR},
             AuthHandshakeResult.error(
                 String.format(
                     "Network ID mismatch (expected %s, got %s)",
-                    this.networkId, message.getNetworkId()),
+                    this.network.getId(), message.getNetworkId()),
                 Optional.of(NodeId.fromPublicKey(remotePubKey))));
       }
 

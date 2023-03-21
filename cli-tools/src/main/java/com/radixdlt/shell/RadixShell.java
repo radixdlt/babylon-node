@@ -64,6 +64,7 @@
 
 package com.radixdlt.shell;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -80,12 +81,13 @@ import com.radixdlt.environment.*;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
+import com.radixdlt.genesis.GenesisConfig;
+import com.radixdlt.genesis.GenesisFromPropertiesLoader;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.messaging.core.Message;
 import com.radixdlt.messaging.core.MessageCentral;
 import com.radixdlt.messaging.core.MessageFromPeer;
 import com.radixdlt.modules.ModuleRunner;
-import com.radixdlt.networks.GenesisSource;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerManager;
@@ -199,12 +201,19 @@ public final class RadixShell {
       }
 
       properties.set("network.id", network.getId());
-      if (network.genesisSource() instanceof GenesisSource.FromConfiguration
-          && properties.get("network.genesis_txn", "").isEmpty()) {
+      if (properties.get("network.genesis_txn", "").isEmpty()) {
         properties.set("network.genesis_txn", Network.DefaultHexGenesisTransaction);
       }
 
-      final var injector = Guice.createInjector(new RadixNodeModule(properties));
+      final var genesisTxn =
+          new GenesisFromPropertiesLoader(properties, network)
+              .loadGenesisDataFromProperties()
+              .orElseThrow()
+              .toGenesisTransaction(GenesisConfig.babylonDefault());
+
+      final var injector =
+          Guice.createInjector(
+              new RadixNodeModule(properties, network, genesisTxn, Stopwatch.createStarted()));
       final var node = new Node(injector);
 
       moduleRunnersBuilder.build().forEach(node::startRunner);

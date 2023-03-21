@@ -73,8 +73,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
-/** Identifies that the target is the last epoch proof */
+/** Specifies a folder where the node can store its files */
 @Qualifier
 @Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-public @interface LastEpochProof {}
+public @interface NodeStorageLocation {}

@@ -73,8 +73,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.rev2.HalfCorrectREv2TransactionGenerator;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
@@ -106,19 +105,19 @@ public sealed interface StateComputerConfig {
   static StateComputerConfig rev2(
       int networkId,
       RawLedgerTransaction genesis,
-      REv2DatabaseConfig databaseConfig,
+      REv2StateManagerModule.DatabaseType databaseType,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging) {
     return new REv2StateComputerConfig(
-        networkId, genesis, databaseConfig, proposerConfig, debugLogging);
+        networkId, genesis, databaseType, proposerConfig, debugLogging);
   }
 
   static StateComputerConfig rev2(
       int networkId,
       RawLedgerTransaction genesis,
-      REv2DatabaseConfig databaseConfig,
+      REv2StateManagerModule.DatabaseType databaseType,
       REV2ProposerConfig proposerConfig) {
-    return new REv2StateComputerConfig(networkId, genesis, databaseConfig, proposerConfig, false);
+    return new REv2StateComputerConfig(networkId, genesis, databaseType, proposerConfig, false);
   }
 
   sealed interface MockedMempoolConfig {
@@ -161,16 +160,12 @@ public sealed interface StateComputerConfig {
   record REv2StateComputerConfig(
       int networkId,
       RawLedgerTransaction genesis,
-      REv2DatabaseConfig databaseConfig,
+      REv2StateManagerModule.DatabaseType databaseType,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging)
       implements StateComputerConfig {}
 
   sealed interface REV2ProposerConfig {
-    static REV2ProposerConfig halfCorrectProposer() {
-      return new Generated(new HalfCorrectREv2TransactionGenerator());
-    }
-
     static REV2ProposerConfig transactionGenerator(
         TransactionGenerator<RawNotarizedTransaction> transactionGenerator, long count) {
       return new Generated(

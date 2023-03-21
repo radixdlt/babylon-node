@@ -62,14 +62,95 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store;
+package com.radixdlt.store.berkeley;
 
-public class BerkeleyStoreException extends RuntimeException {
-  public BerkeleyStoreException(String message) {
-    super(message);
+import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_CHECKPOINTER;
+import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_CLEANER;
+import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_EVICTOR;
+import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_VERIFIER;
+import static com.sleepycat.je.EnvironmentConfig.LOG_FILE_CACHE_SIZE;
+import static com.sleepycat.je.EnvironmentConfig.TREE_MAX_EMBEDDED_LN;
+
+import com.radixdlt.environment.NodeAutoCloseable;
+import com.sleepycat.je.CacheMode;
+import com.sleepycat.je.DatabaseException;
+import com.sleepycat.je.Durability;
+import com.sleepycat.je.Environment;
+import com.sleepycat.je.EnvironmentConfig;
+import java.io.File;
+import java.text.StringCharacterIterator;
+import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+public final class BerkeleyDatabaseEnvironment implements NodeAutoCloseable {
+  private static final Logger log = LogManager.getLogger();
+
+  private Environment environment;
+
+  public BerkeleyDatabaseEnvironment(String databaseLocation, long cacheSize) {
+    var dbHome = new File(databaseLocation);
+    dbHome.mkdirs();
+
+    System.setProperty("je.disable.java.adler32", "true");
+
+    EnvironmentConfig environmentConfig = new EnvironmentConfig();
+    environmentConfig.setTransactional(true);
+    environmentConfig.setAllowCreate(true);
+    environmentConfig.setLockTimeout(30, TimeUnit.SECONDS);
+    environmentConfig.setDurability(Durability.COMMIT_SYNC);
+    environmentConfig.setConfigParam(LOG_FILE_CACHE_SIZE, "256");
+    environmentConfig.setConfigParam(ENV_RUN_CHECKPOINTER, "true");
+    environmentConfig.setConfigParam(ENV_RUN_CLEANER, "true");
+    environmentConfig.setConfigParam(ENV_RUN_EVICTOR, "true");
+    environmentConfig.setConfigParam(ENV_RUN_VERIFIER, "false");
+    environmentConfig.setConfigParam(TREE_MAX_EMBEDDED_LN, "0");
+    environmentConfig.setCacheSize(cacheSize);
+    environmentConfig.setCacheMode(CacheMode.EVICT_LN);
+
+    environment = new Environment(dbHome, environmentConfig);
+
+    log.info("DB cache size set to {} ({} bytes)", toHumanReadable(cacheSize), cacheSize);
   }
 
-  public BerkeleyStoreException(String message, Throwable cause) {
-    super(message, cause);
+  public void stop() {
+    try {
+      environment.close();
+    } catch (DatabaseException e) {
+      log.error("Error while closing database. Possible DB corruption.");
+    }
+    environment = null;
+  }
+
+  public Environment getEnvironment() {
+    if (environment == null) {
+      throw new IllegalStateException("environment is not started");
+    }
+
+    return environment;
+  }
+
+  private static String toHumanReadable(long bytes) {
+    var absB = bytes == Long.MIN_VALUE ? Long.MAX_VALUE : Math.abs(bytes);
+
+    if (absB < 1024) {
+      return bytes + " B";
+    }
+
+    var value = absB;
+    var ci = new StringCharacterIterator("KMGTPE");
+
+    for (int i = 40; i >= 0 && absB > 0xfffccccccccccccL >> i; i -= 10) {
+      value >>= 10;
+      ci.next();
+    }
+
+    value *= Long.signum(bytes);
+    return String.format("%.1f %ciB", value / 1024.0, ci.current());
+  }
+
+  @Override
+  public void close() {
+    environment.close();
   }
 }

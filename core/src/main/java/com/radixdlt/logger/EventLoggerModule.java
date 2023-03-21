@@ -70,7 +70,6 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
@@ -93,15 +92,22 @@ import org.apache.logging.log4j.Logger;
 
 public final class EventLoggerModule extends AbstractModule {
   private static final Logger logger = LogManager.getLogger();
-  private final Function<ECDSASecp256k1PublicKey, String> nodeKeyToString;
 
-  public EventLoggerModule(EventLoggerConfig config) {
-    this.nodeKeyToString = config.nodeKeyToString();
+  private final EventLoggerConfig eventLoggerConfig;
+
+  public EventLoggerModule(EventLoggerConfig eventLoggerConfig) {
+    this.eventLoggerConfig = eventLoggerConfig;
   }
 
-  protected void configure() {
-    bind(new TypeLiteral<Function<ECDSASecp256k1PublicKey, String>>() {})
-        .toInstance(this.nodeKeyToString);
+  @Override
+  public void configure() {
+    bind(EventLoggerConfig.class).toInstance(eventLoggerConfig);
+  }
+
+  @Provides
+  @Singleton
+  Function<ECDSASecp256k1PublicKey, String> nodeKeyToStringFn(EventLoggerConfig eventLoggerConfig) {
+    return eventLoggerConfig.nodeKeyToString();
   }
 
   @Provides

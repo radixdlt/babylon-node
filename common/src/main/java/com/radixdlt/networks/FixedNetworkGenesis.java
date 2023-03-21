@@ -62,20 +62,18 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store;
+package com.radixdlt.networks;
 
-import com.radixdlt.identifiers.TID;
+public sealed interface FixedNetworkGenesis {
+  record Resource(String resourcePath) implements FixedNetworkGenesis {}
 
-/** A ledger cursor, bound to a specific ledger instance. */
-public interface SearchCursor {
-  long getStateVersion();
+  record Constant(byte[] genesisData) implements FixedNetworkGenesis {}
 
-  /**
-   * Gets the current AID at this cursor
-   *
-   * @return The current AID
-   */
-  TID get();
+  static FixedNetworkGenesis resource(String resourcePath) {
+    return new Resource(resourcePath);
+  }
 
-  SearchCursor next();
+  static FixedNetworkGenesis constant(byte[] genesisData) {
+    return new Constant(genesisData);
+  }
 }

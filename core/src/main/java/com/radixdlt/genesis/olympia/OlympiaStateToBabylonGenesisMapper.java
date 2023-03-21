@@ -62,19 +62,75 @@
  * permissions under this License.
  */
 
-package com.radixdlt.networks;
+package com.radixdlt.genesis.olympia;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.genesis.GenesisData;
+import com.radixdlt.genesis.olympia.state.OlympiaStateIR;
+import com.radixdlt.identifiers.Address;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.rev2.Decimal;
+import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt256;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+public final class OlympiaStateToBabylonGenesisMapper {
 
-/** Marker for network ID. */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface NetworkId {}
+  public static GenesisData toGenesisData(OlympiaStateIR olympiaStateIR) {
+    final var accounts = olympiaStateIR.accounts();
+    final var validators = olympiaStateIR.validators();
+    final var resources = olympiaStateIR.resources();
+
+    final var xrdAllocations =
+        olympiaStateIR.balances().stream()
+            .map(
+                bal -> {
+                  final var acc = accounts.get(bal.accountIndex());
+                  final var resource = resources.get(bal.resourceIndex());
+                  if (resource.addr().isNativeToken()) {
+                    return Optional.of(Pair.of(acc.publicKey(), Decimal.from(bal.amount())));
+                  } else {
+                    return Optional.<Pair<ECDSASecp256k1PublicKey, Decimal>>empty();
+                  }
+                })
+            .filter(Optional::isPresent)
+            .map(Optional::orElseThrow)
+            .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
+
+    final var stakesByValidator =
+        olympiaStateIR.stakes().stream()
+            .map(
+                stake -> {
+                  final var acc = accounts.get(stake.accountIndex());
+                  final var validator = validators.get(stake.validatorIndex());
+                  return Pair.of(
+                      validator.validatorKey(), Map.of(acc.publicKey(), stake.stakeUnitAmount()));
+                })
+            .collect(
+                Collectors.toMap(
+                    Pair::getFirst,
+                    Pair::getSecond,
+                    (m1, m2) -> {
+                      m2.forEach((k, v) -> m1.merge(k, v, UInt256::add));
+                      return m1;
+                    }));
+
+    final var validatorsAndStakeOwners =
+        stakesByValidator.entrySet().stream()
+            .map(
+                e -> {
+                  // TODO: this is just a mock for testing!
+                  // Just using the first stake entry for now
+                  // and the stake value is in stake units!
+                  final var firstStake = e.getValue().entrySet().stream().findFirst().get();
+                  final var firstStakeAddr = Address.virtualAccountAddress(firstStake.getKey());
+                  final var firstStakeValue = Decimal.from(firstStake.getValue());
+                  return Pair.of(e.getKey(), Tuple.Tuple2.of(firstStakeValue, firstStakeAddr));
+                })
+            .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
+
+    return new GenesisData(validatorsAndStakeOwners, xrdAllocations);
+  }
+}

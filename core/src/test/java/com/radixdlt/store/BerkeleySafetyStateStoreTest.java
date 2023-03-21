@@ -75,6 +75,7 @@ import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
 import com.sleepycat.je.*;
 import java.util.Optional;
 import org.junit.Test;
@@ -86,7 +87,7 @@ public class BerkeleySafetyStateStoreTest {
   public void should_be_able_to_restore_committed_state() {
     final var db = mock(Database.class);
     final var env = mock(Environment.class);
-    final var dbEnv = mock(DatabaseEnvironment.class);
+    final var dbEnv = mock(BerkeleyDatabaseEnvironment.class);
     final var tx = mock(com.sleepycat.je.Transaction.class);
     when(dbEnv.getEnvironment()).thenReturn(env);
     when(env.openDatabase(any(), any(), any())).thenReturn(db);

@@ -62,19 +62,41 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store;
+package com.radixdlt.genesis.olympia;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.Singleton;
+import com.radixdlt.addressing.Addressing;
+import com.radixdlt.api.system.genesis.PreGenesisSystemApiModule;
+import com.radixdlt.networks.Network;
+import com.radixdlt.utils.properties.RuntimeProperties;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+public final class GenesisFromOlympiaNodeModule extends AbstractModule {
 
-/** Marks the proof as the last one stored */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface LastStoredProof {}
+  private final RuntimeProperties properties;
+  private final Network network;
+
+  public GenesisFromOlympiaNodeModule(RuntimeProperties properties, Network network) {
+    this.properties = properties;
+    this.network = network;
+  }
+
+  @Override
+  public void configure() {
+    bind(RuntimeProperties.class).toInstance(this.properties);
+    bind(Network.class).toInstance(this.network);
+    bind(Addressing.class).toInstance(Addressing.ofNetwork(network));
+    bind(OlympiaEndStateApiClient.class).in(Scopes.SINGLETON);
+    bind(OlympiaGenesisService.class).in(Scopes.SINGLETON);
+
+    install(new PreGenesisSystemApiModule("127.0.0.1", 3334));
+  }
+
+  @Provides
+  @Singleton
+  OlympiaGenesisConfig olympiaGenesisConfig(RuntimeProperties properties) {
+    return OlympiaGenesisConfig.fromRuntimeProperties(properties);
+  }
+}

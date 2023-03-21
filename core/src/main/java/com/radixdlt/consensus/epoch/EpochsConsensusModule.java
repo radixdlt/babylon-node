@@ -86,7 +86,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
-import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.rev2.LastEpochProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Comparator;

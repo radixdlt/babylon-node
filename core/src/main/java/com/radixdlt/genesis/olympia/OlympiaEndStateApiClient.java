@@ -62,98 +62,104 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store;
-
-import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_CHECKPOINTER;
-import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_CLEANER;
-import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_EVICTOR;
-import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_VERIFIER;
-import static com.sleepycat.je.EnvironmentConfig.LOG_FILE_CACHE_SIZE;
-import static com.sleepycat.je.EnvironmentConfig.TREE_MAX_EMBEDDED_LN;
+package com.radixdlt.genesis.olympia;
 
 import com.google.inject.Inject;
-import com.radixdlt.environment.NodeAutoCloseable;
-import com.sleepycat.je.CacheMode;
-import com.sleepycat.je.DatabaseException;
-import com.sleepycat.je.Durability;
-import com.sleepycat.je.Environment;
-import com.sleepycat.je.EnvironmentConfig;
-import java.io.File;
-import java.text.StringCharacterIterator;
-import java.util.concurrent.TimeUnit;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.radixdlt.networks.Network;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import org.json.JSONException;
+import org.json.JSONObject;
 
-public final class DatabaseEnvironment implements NodeAutoCloseable {
-  private static final Logger log = LogManager.getLogger();
+public final class OlympiaEndStateApiClient {
+  private static final String END_STATE_API_PATH = "/olympia-end-state";
 
-  private Environment environment;
+  private static final String STATUS_FIELD = "status";
+  private static final String STATUS_READY = "ready";
+  private static final String STATUS_NOT_READY = "not_ready";
+
+  public sealed interface OlympiaEndStateResponse {
+    record Ready(String signature, String hash, String base64Contents)
+        implements OlympiaEndStateResponse {}
+
+    record NotReady(String signature, String placeholderHash) implements OlympiaEndStateResponse {}
+  }
+
+  private final URL endStateApiUrl;
+  private final Network network;
 
   @Inject
-  public DatabaseEnvironment(
-      @DatabaseLocation String databaseLocation, @DatabaseCacheSize long cacheSize) {
-    var dbHome = new File(databaseLocation);
-    dbHome.mkdir();
-
-    System.setProperty("je.disable.java.adler32", "true");
-
-    EnvironmentConfig environmentConfig = new EnvironmentConfig();
-    environmentConfig.setTransactional(true);
-    environmentConfig.setAllowCreate(true);
-    environmentConfig.setLockTimeout(30, TimeUnit.SECONDS);
-    environmentConfig.setDurability(Durability.COMMIT_SYNC);
-    environmentConfig.setConfigParam(LOG_FILE_CACHE_SIZE, "256");
-    environmentConfig.setConfigParam(ENV_RUN_CHECKPOINTER, "true");
-    environmentConfig.setConfigParam(ENV_RUN_CLEANER, "true");
-    environmentConfig.setConfigParam(ENV_RUN_EVICTOR, "true");
-    environmentConfig.setConfigParam(ENV_RUN_VERIFIER, "false");
-    environmentConfig.setConfigParam(TREE_MAX_EMBEDDED_LN, "0");
-    environmentConfig.setCacheSize(cacheSize);
-    environmentConfig.setCacheMode(CacheMode.EVICT_LN);
-
-    environment = new Environment(dbHome, environmentConfig);
-
-    log.info("DB cache size set to {} ({} bytes)", toHumanReadable(cacheSize), cacheSize);
-  }
-
-  public void stop() {
+  public OlympiaEndStateApiClient(OlympiaGenesisConfig config, Network network) {
     try {
-      environment.close();
-    } catch (DatabaseException e) {
-      log.error("Error while closing database. Possible DB corruption.");
+      this.endStateApiUrl = new URL(config.nodeCoreApiUrl(), END_STATE_API_PATH);
+    } catch (MalformedURLException e) {
+      throw new RuntimeException(
+          // Shouldn't really happen, nodeCoreApiUrl is verified earlier
+          String.format(
+              "Failed to create OlympiaEndStateApiClient. Invalid endStateApiUrl (coreApiUrl=%s"
+                  + " path=%s)",
+              config.nodeCoreApiUrl(), END_STATE_API_PATH));
     }
-    environment = null;
+    this.network = network;
   }
 
-  public Environment getEnvironment() {
-    if (environment == null) {
-      throw new IllegalStateException("environment is not started");
-    }
+  public OlympiaEndStateResponse getOlympiaEndState() throws IOException, JSONException {
+    final var requestData =
+        new JSONObject()
+            .put(
+                "network_identifier",
+                new JSONObject().put("network", toOlympiaNetworkIdentifier(network)));
 
-    return environment;
+    final var response = postForJson(endStateApiUrl, requestData);
+
+    final var status = response.getString(STATUS_FIELD);
+
+    switch (status) {
+      case STATUS_READY -> {
+        return new OlympiaEndStateResponse.Ready(
+            response.getString("signature"),
+            response.getString("hash"),
+            response.getString("contents"));
+      }
+      case STATUS_NOT_READY -> {
+        return new OlympiaEndStateResponse.NotReady(
+            response.getString("signature"), response.getString("placeholder_hash"));
+      }
+      default -> throw new RuntimeException("Unexpected response status " + status);
+    }
   }
 
-  private static String toHumanReadable(long bytes) {
-    var absB = bytes == Long.MIN_VALUE ? Long.MAX_VALUE : Math.abs(bytes);
-
-    if (absB < 1024) {
-      return bytes + " B";
+  private static JSONObject postForJson(URL url, JSONObject request) throws IOException {
+    final var conn = (HttpURLConnection) url.openConnection();
+    conn.setRequestMethod("POST");
+    conn.setRequestProperty("Content-Type", "application/json");
+    conn.setDoOutput(true);
+    final var requestPayload = request.toString();
+    try (var os = conn.getOutputStream()) {
+      byte[] input = requestPayload.getBytes(StandardCharsets.UTF_8);
+      os.write(input, 0, input.length);
     }
-
-    var value = absB;
-    var ci = new StringCharacterIterator("KMGTPE");
-
-    for (int i = 40; i >= 0 && absB > 0xfffccccccccccccL >> i; i -= 10) {
-      value >>= 10;
-      ci.next();
+    final var responseCode = conn.getResponseCode();
+    if (responseCode != 200) {
+      throw new RuntimeException("Unexpected response code: " + responseCode);
     }
-
-    value *= Long.signum(bytes);
-    return String.format("%.1f %ciB", value / 1024.0, ci.current());
+    try (var br =
+        new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+      final var response = new StringBuilder();
+      String responseLine;
+      while ((responseLine = br.readLine()) != null) {
+        response.append(responseLine.trim());
+      }
+      return new JSONObject(response.toString());
+    }
   }
 
-  @Override
-  public void close() {
-    environment.close();
+  private String toOlympiaNetworkIdentifier(Network network) {
+    return network.getLogicalName();
   }
 }

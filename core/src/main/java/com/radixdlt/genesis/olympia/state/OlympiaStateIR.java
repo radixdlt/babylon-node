@@ -62,32 +62,47 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store;
+package com.radixdlt.genesis.olympia.state;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.radixdlt.utils.properties.RuntimeProperties;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.UInt256;
+import java.util.Optional;
 
-/** Manages conversion of runtime properties to guice type properties */
-public final class DatabasePropertiesModule extends AbstractModule {
-  private final long maxMemory = Runtime.getRuntime().maxMemory();
-  private final long minCacheSizeLimit = Math.max(50_000_000L, (long) (maxMemory * 0.1));
-  private final long maxCacheSizeLimit = (long) (maxMemory * 0.25);
-  private final long defaultCacheSize = (long) (maxMemory * 0.125);
+/** The intermediate representation (IR) of the Olympia ledger state. */
+public record OlympiaStateIR(
+    ImmutableList<Validator> validators,
+    ImmutableList<Resource> resources,
+    ImmutableList<Account> accounts,
+    ImmutableList<AccountBalance> balances,
+    ImmutableList<Stake> stakes) {
 
-  @Provides
-  @DatabaseLocation
-  String databaseLocation(RuntimeProperties properties) {
-    return properties.get("db.location", ".//RADIXDB");
-  }
+  public record Validator(
+      ECDSASecp256k1PublicKey validatorKey,
+      String name,
+      String url,
+      boolean allowsDelegation,
+      boolean isRegistered,
+      UInt256 totalStakedXrd,
+      UInt256 totalStakeUnits,
+      int feeProportionInTenThousandths,
+      int ownerAccountIndex) {}
 
-  @Provides
-  @DatabaseCacheSize
-  long databaseCacheSize(RuntimeProperties properties) {
-    var minCacheSize = properties.get("db.cache_size.min", minCacheSizeLimit);
-    var maxCacheSize = properties.get("db.cache_size.max", maxCacheSizeLimit);
-    var cacheSize = properties.get("db.cache_size", defaultCacheSize);
+  public record Resource(
+      REAddr addr,
+      UInt256 granularity,
+      boolean isMutable,
+      Optional<Integer> ownerAccountIndex,
+      String symbol,
+      String name,
+      String description,
+      String iconUrl,
+      String url) {}
 
-    return Math.min(Math.max(cacheSize, minCacheSize), maxCacheSize);
-  }
+  public record Account(ECDSASecp256k1PublicKey publicKey) {}
+
+  public record AccountBalance(int accountIndex, int resourceIndex, UInt256 amount) {}
+
+  public record Stake(int accountIndex, int validatorIndex, UInt256 stakeUnitAmount) {}
 }

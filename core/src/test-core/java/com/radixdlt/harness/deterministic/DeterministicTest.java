@@ -191,6 +191,7 @@ public final class DeterministicTest implements AutoCloseable {
           new AbstractModule() {
             @Override
             public void configure() {
+              bind(Network.class).toInstance(Network.INTEGRATIONTESTNET);
               bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
               bind(Random.class).toInstance(new Random(123456));
             }

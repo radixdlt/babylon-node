@@ -69,8 +69,8 @@ import com.google.inject.Provides;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.store.LastProof;
+import com.radixdlt.rev2.LastEpochProof;
+import com.radixdlt.rev2.LastProof;
 
 /** Starting configuration for simulation/deterministic steady state tests. */
 public class MockedLedgerRecoveryModule extends AbstractModule {
