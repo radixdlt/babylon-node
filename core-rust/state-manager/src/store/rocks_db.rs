@@ -147,7 +147,9 @@ impl fmt::Display for RocksDBColumnFamily {
             TxnByStateVersion => "txn_by_state_version",
             TxnAccumulatorHashByStateVersion => "txn_accumulator_hash_by_state_version",
             LedgerReceiptByStateVersion => "ledger_receipt_by_state_version",
-            LocalTransactionExecutionByStateVersion => "unverifiable_receipt_by_state_version",
+            LocalTransactionExecutionByStateVersion => {
+                "local_transaction_execution_by_state_version"
+            }
             StateVersionByTxnIntentHash => "state_version_by_txn_intent_hash",
             StateVersionByTxnUserPayloadHash => "state_version_by_txn_user_payload_hash",
             StateVersionByTxnLedgerPayloadHash => "state_version_by_txn_ledger_payload_hash",
@@ -417,7 +419,7 @@ impl QueryableTransactionStore for RocksDBStore {
             IteratorMode::From(&start_state_version_bytes, Direction::Forward),
         );
 
-        let mut unverifiable_receipts_iter = self.db.iterator_cf(
+        let mut local_executions_iter = self.db.iterator_cf(
             self.cf_handle(&LocalTransactionExecutionByStateVersion),
             IteratorMode::From(&start_state_version_bytes, Direction::Forward),
         );
@@ -436,7 +438,7 @@ impl QueryableTransactionStore for RocksDBStore {
                 .next()
                 .expect("Missing ledger receipt")
                 .unwrap();
-            let next_local_execution_kv = unverifiable_receipts_iter
+            let next_local_execution_kv = local_executions_iter
                 .next()
                 .expect("Missing local transaction execution")
                 .unwrap();
@@ -490,23 +492,20 @@ impl QueryableTransactionStore for RocksDBStore {
         &self,
         state_version: u64,
     ) -> Option<LocalTransactionReceipt> {
-        let ledger_part =
+        let ledger_transaction_receipt =
             self.get_by_key(&LedgerReceiptByStateVersion, &state_version.to_be_bytes());
-        let unverifiable_part = self.get_by_key(
+        let local_transaction_execution = self.get_by_key(
             &LocalTransactionExecutionByStateVersion,
             &state_version.to_be_bytes(),
         );
-        match (ledger_part, unverifiable_part) {
+        match (ledger_transaction_receipt, local_transaction_execution) {
             (Some(on_ledger), Some(local_execution)) => Some(LocalTransactionReceipt {
                 on_ledger,
                 local_execution,
             }),
-            (None, Some(_)) => panic!("missing ledger receipt at state version {}", state_version),
+            (None, Some(_)) => panic!("missing ledger receipt at state version {state_version}"),
             // TODO: in future, we might want to support returning only the on-ledger part:
-            (Some(_), None) => panic!(
-                "missing local transaction execution at state version {}",
-                state_version
-            ),
+            (Some(_), None) => panic!("missing local execution at state version {state_version}"),
             (None, None) => None,
         }
     }
