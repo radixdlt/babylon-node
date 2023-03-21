@@ -69,7 +69,7 @@ use std::fmt;
 use crate::store::traits::*;
 use crate::{
     AccumulatorHash, CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash,
-    HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt,
+    HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerProof, LocalTransactionReceipt,
     ReceiptTreeHash, TransactionTreeHash,
 };
 use radix_engine::ledger::{OutputValue, QueryableSubstateStore, ReadableSubstateStore};
@@ -96,8 +96,10 @@ use crate::transaction::LedgerTransaction;
 enum RocksDBColumnFamily {
     /// Committed transactions
     TxnByStateVersion,
-    TxnReceiptByStateVersion,
     TxnAccumulatorHashByStateVersion,
+    /// Receipts of committed transactions
+    LedgerReceiptByStateVersion,
+    LocalTransactionExecutionByStateVersion,
     /// Transaction lookups
     StateVersionByTxnIntentHash,
     StateVersionByTxnUserPayloadHash,
@@ -121,10 +123,11 @@ use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
 use RocksDBColumnFamily::*;
 
-const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 14] = [
+const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 15] = [
     TxnByStateVersion,
-    TxnReceiptByStateVersion,
     TxnAccumulatorHashByStateVersion,
+    LedgerReceiptByStateVersion,
+    LocalTransactionExecutionByStateVersion,
     StateVersionByTxnIntentHash,
     StateVersionByTxnUserPayloadHash,
     StateVersionByTxnLedgerPayloadHash,
@@ -142,8 +145,9 @@ impl fmt::Display for RocksDBColumnFamily {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let str = match self {
             TxnByStateVersion => "txn_by_state_version",
-            TxnReceiptByStateVersion => "txn_receipt_by_state_version",
             TxnAccumulatorHashByStateVersion => "txn_accumulator_hash_by_state_version",
+            LedgerReceiptByStateVersion => "ledger_receipt_by_state_version",
+            LocalTransactionExecutionByStateVersion => "unverifiable_receipt_by_state_version",
             StateVersionByTxnIntentHash => "state_version_by_txn_intent_hash",
             StateVersionByTxnUserPayloadHash => "state_version_by_txn_user_payload_hash",
             StateVersionByTxnLedgerPayloadHash => "state_version_by_txn_ledger_payload_hash",
@@ -254,15 +258,21 @@ impl RocksDBStore {
         );
 
         batch.put_cf(
-            self.cf_handle(&TxnReceiptByStateVersion),
-            state_version.to_be_bytes(),
-            scrypto_encode(&receipt).unwrap(),
-        );
-
-        batch.put_cf(
             self.cf_handle(&TxnAccumulatorHashByStateVersion),
             state_version.to_be_bytes(),
             identifiers.accumulator_hash.into_bytes(),
+        );
+
+        batch.put_cf(
+            self.cf_handle(&LedgerReceiptByStateVersion),
+            state_version.to_be_bytes(),
+            scrypto_encode(&receipt.on_ledger).unwrap(),
+        );
+
+        batch.put_cf(
+            self.cf_handle(&LocalTransactionExecutionByStateVersion),
+            state_version.to_be_bytes(),
+            scrypto_encode(&receipt.local_execution).unwrap(),
         );
     }
 
@@ -397,13 +407,18 @@ impl QueryableTransactionStore for RocksDBStore {
         limit: usize,
     ) -> Vec<CommittedTransactionBundle> {
         let start_state_version_bytes = start_state_version_inclusive.to_be_bytes();
-        let mut txns_iter = self.db.iterator_cf(
+        let txns_iter = self.db.iterator_cf(
             self.cf_handle(&TxnByStateVersion),
             IteratorMode::From(&start_state_version_bytes, Direction::Forward),
         );
 
-        let mut receipts_iter = self.db.iterator_cf(
-            self.cf_handle(&TxnReceiptByStateVersion),
+        let mut ledger_receipts_iter = self.db.iterator_cf(
+            self.cf_handle(&LedgerReceiptByStateVersion),
+            IteratorMode::From(&start_state_version_bytes, Direction::Forward),
+        );
+
+        let mut unverifiable_receipts_iter = self.db.iterator_cf(
+            self.cf_handle(&LocalTransactionExecutionByStateVersion),
             IteratorMode::From(&start_state_version_bytes, Direction::Forward),
         );
 
@@ -413,57 +428,49 @@ impl QueryableTransactionStore for RocksDBStore {
         );
 
         let mut res = Vec::new();
+        for (txn_index, next_txn_result) in txns_iter.take(limit).enumerate() {
+            let next_state_version = start_state_version_inclusive + txn_index as u64;
+            let next_txn_kv = next_txn_result.unwrap();
 
-        while res.len() < limit {
-            match txns_iter.next() {
-                Some(next_txn_result) => {
-                    let next_txn_kv = next_txn_result.unwrap();
+            let next_ledger_receipt_kv = ledger_receipts_iter
+                .next()
+                .expect("Missing ledger receipt")
+                .unwrap();
+            let next_local_execution_kv = unverifiable_receipts_iter
+                .next()
+                .expect("Missing local transaction execution")
+                .unwrap();
+            let next_accumulator_hash_kv = accumulator_hashes_iter
+                .next()
+                .expect("Missing txn accumulator hash")
+                .unwrap();
 
-                    let next_txn_state_version =
-                        u64::from_be_bytes((*next_txn_kv.0).try_into().unwrap());
-
-                    let expected_state_version = start_state_version_inclusive + res.len() as u64;
-                    if expected_state_version != next_txn_state_version {
-                        panic!(
-                            "DB inconsistency! Missing txn at state version {expected_state_version}"
-                        );
-                    }
-
-                    let next_receipt_kv =
-                        receipts_iter.next().expect("Missing txn receipt").unwrap();
-                    let next_accumulator_hash_kv = accumulator_hashes_iter
-                        .next()
-                        .expect("Missing txn accumulator hash")
-                        .unwrap();
-
-                    let next_receipt_state_version =
-                        u64::from_be_bytes((*next_receipt_kv.0).try_into().unwrap());
-                    let next_accumulator_hash_state_version =
-                        u64::from_be_bytes((*next_accumulator_hash_kv.0).try_into().unwrap());
-
-                    if next_receipt_state_version != next_txn_state_version {
-                        panic!("DB inconsistency! Receipt state version ({next_receipt_state_version}) doesn't match txn state version ({next_txn_state_version})");
-                    }
-
-                    if next_accumulator_hash_state_version != next_txn_state_version {
-                        panic!("DB inconsistency! Accumulator hash state version ({next_accumulator_hash_state_version}) doesn't match txn state version ({next_txn_state_version})");
-                    }
-
-                    let next_txn = manifest_decode(next_txn_kv.1.as_ref()).unwrap();
-                    let next_receipt = scrypto_decode(next_receipt_kv.1.as_ref()).unwrap();
-                    let next_accumulator_hash = AccumulatorHash::from_raw_bytes(
-                        (*next_accumulator_hash_kv.1).try_into().unwrap(),
-                    );
-                    let next_identifiers = CommittedTransactionIdentifiers {
-                        state_version: next_txn_state_version,
-                        accumulator_hash: next_accumulator_hash,
-                    };
-                    res.push((next_txn, next_receipt, next_identifiers));
-                }
-                None => {
-                    break;
+            for (other_key_description, other_key_bytes) in [
+                ("transaction version", next_txn_kv.0),
+                ("ledger receipt version", next_ledger_receipt_kv.0),
+                ("local execution version", next_local_execution_kv.0),
+                ("accumulator hash version", next_accumulator_hash_kv.0),
+            ] {
+                let other_row_version = u64::from_be_bytes((*other_key_bytes).try_into().unwrap());
+                if other_row_version != next_state_version {
+                    panic!("DB inconsistency! {other_key_description} ({other_row_version}) doesn't match expected state version ({next_state_version})");
                 }
             }
+
+            let next_txn = manifest_decode(next_txn_kv.1.as_ref()).unwrap();
+            let next_ledger_receipt = scrypto_decode(next_ledger_receipt_kv.1.as_ref()).unwrap();
+            let next_local_execution = scrypto_decode(next_local_execution_kv.1.as_ref()).unwrap();
+            let next_complete_receipt = LocalTransactionReceipt {
+                on_ledger: next_ledger_receipt,
+                local_execution: next_local_execution,
+            };
+            let next_accumulator_hash =
+                AccumulatorHash::from_raw_bytes((*next_accumulator_hash_kv.1).try_into().unwrap());
+            let next_identifiers = CommittedTransactionIdentifiers {
+                state_version: next_state_version,
+                accumulator_hash: next_accumulator_hash,
+            };
+            res.push((next_txn, next_complete_receipt, next_identifiers));
         }
 
         res
@@ -482,14 +489,26 @@ impl QueryableTransactionStore for RocksDBStore {
     fn get_committed_transaction_receipt(
         &self,
         state_version: u64,
-    ) -> Option<LedgerTransactionReceipt> {
-        self.db
-            .get_cf(
-                self.cf_handle(&TxnReceiptByStateVersion),
-                state_version.to_be_bytes(),
-            )
-            .expect("DB error loading transaction")
-            .map(|v| scrypto_decode(&v).expect("Failed to decode a committed transaction receipt"))
+    ) -> Option<LocalTransactionReceipt> {
+        let ledger_part =
+            self.get_by_key(&LedgerReceiptByStateVersion, &state_version.to_be_bytes());
+        let unverifiable_part = self.get_by_key(
+            &LocalTransactionExecutionByStateVersion,
+            &state_version.to_be_bytes(),
+        );
+        match (ledger_part, unverifiable_part) {
+            (Some(on_ledger), Some(local_execution)) => Some(LocalTransactionReceipt {
+                on_ledger,
+                local_execution,
+            }),
+            (None, Some(_)) => panic!("missing ledger receipt at state version {}", state_version),
+            // TODO: in future, we might want to support returning only the on-ledger part:
+            (Some(_), None) => panic!(
+                "missing local transaction execution at state version {}",
+                state_version
+            ),
+            (None, None) => None,
+        }
     }
 
     fn get_committed_transaction_identifiers(

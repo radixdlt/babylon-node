@@ -82,7 +82,7 @@ use crate::store::traits::RecoverableVertexStore;
 use crate::transaction::LedgerTransaction;
 use crate::{
     CommittedTransactionIdentifiers, IntentHash, LedgerPayloadHash, LedgerProof,
-    LedgerTransactionReceipt, ReceiptTreeHash, TransactionTreeHash,
+    LocalTransactionReceipt, ReceiptTreeHash, TransactionTreeHash,
 };
 use radix_engine::types::{KeyValueStoreId, SubstateId};
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeStore, TreeNode};
@@ -184,7 +184,7 @@ impl QueryableTransactionStore for StateManagerDatabase {
     fn get_committed_transaction_receipt(
         &self,
         state_version: u64,
-    ) -> Option<LedgerTransactionReceipt> {
+    ) -> Option<LocalTransactionReceipt> {
         match self {
             StateManagerDatabase::InMemory(store) => {
                 store.get_committed_transaction_receipt(state_version)

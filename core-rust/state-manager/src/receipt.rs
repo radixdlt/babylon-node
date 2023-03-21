@@ -12,12 +12,13 @@ use radix_engine::transaction::{
     TransactionReceipt as EngineTransactionReceipt, TransactionResult,
 };
 use radix_engine::types::{hash, scrypto_encode, Hash, SubstateId};
+use radix_engine_common::crypto::blake2b_256_hash;
 use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::data::scrypto::model::ComponentAddress;
 use radix_engine_interface::*;
 use sbor::rust::collections::IndexMap;
 
-use crate::{AccumulatorHash, LedgerReceiptHash};
+use crate::{AccumulatorHash, ConsensusReceipt, SubstateChangeHash};
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct CommittedTransactionIdentifiers {
@@ -32,12 +33,6 @@ impl CommittedTransactionIdentifiers {
             accumulator_hash: AccumulatorHash::pre_genesis(),
         }
     }
-}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum CommittedTransactionStatus {
-    Success(Vec<Vec<u8>>),
-    Failure(RuntimeError),
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -65,15 +60,30 @@ pub struct DeletedSubstateVersion {
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum LedgerTransactionOutcome {
+    Success,
+    Failure,
+}
+
+impl From<&TransactionOutcome> for LedgerTransactionOutcome {
+    fn from(outcome: &TransactionOutcome) -> Self {
+        match outcome {
+            TransactionOutcome::Success(_) => LedgerTransactionOutcome::Success,
+            TransactionOutcome::Failure(_) => LedgerTransactionOutcome::Failure,
+        }
+    }
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum DetailedTransactionOutcome {
     Success(Vec<Vec<u8>>),
     Failure(RuntimeError),
 }
 
-impl From<TransactionOutcome> for LedgerTransactionOutcome {
+impl From<TransactionOutcome> for DetailedTransactionOutcome {
     fn from(outcome: TransactionOutcome) -> Self {
         match outcome {
             TransactionOutcome::Success(output) => {
-                LedgerTransactionOutcome::Success(
+                Self::Success(
                     output
                         .into_iter()
                         .map(|o| {
@@ -86,29 +96,48 @@ impl From<TransactionOutcome> for LedgerTransactionOutcome {
                         .collect(),
                 )
             }
-            TransactionOutcome::Failure(error) => LedgerTransactionOutcome::Failure(error),
+            TransactionOutcome::Failure(error) => Self::Failure(error),
         }
     }
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct LocalTransactionReceipt {
+    pub on_ledger: LedgerTransactionReceipt,
+    pub local_execution: LocalTransactionExecution,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LedgerTransactionReceipt {
     pub outcome: LedgerTransactionOutcome,
+    pub substate_changes: SubstateChanges,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct LocalTransactionExecution {
+    pub outcome: DetailedTransactionOutcome,
     pub fee_summary: FeeSummary,
     pub application_logs: Vec<(Level, String)>,
-    pub substate_changes: SubstateChanges,
     pub entity_changes: EntityChanges,
     pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
     pub next_epoch: Option<(BTreeMap<ComponentAddress, Validator>, u64)>,
 }
 
 impl LedgerTransactionReceipt {
-    pub fn get_hash(&self) -> LedgerReceiptHash {
-        LedgerReceiptHash::for_receipt(self)
+    pub fn get_consensus_receipt(&self) -> ConsensusReceipt {
+        ConsensusReceipt {
+            outcome: self.outcome.clone(),
+            substate_change_root: Self::compute_substate_change_root(&self.substate_changes),
+        }
+    }
+
+    fn compute_substate_change_root(substate_changes: &SubstateChanges) -> SubstateChangeHash {
+        // TODO: implement using a merkle tree
+        SubstateChangeHash::from(blake2b_256_hash(scrypto_encode(substate_changes).unwrap()))
     }
 }
 
-impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
+impl TryFrom<EngineTransactionReceipt> for LocalTransactionReceipt {
     type Error = String;
 
     fn try_from(engine_receipt: EngineTransactionReceipt) -> Result<Self, Self::Error> {
@@ -127,16 +156,21 @@ impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
 }
 
 /// For Genesis Transaction
-impl From<(CommitResult, FeeSummary)> for LedgerTransactionReceipt {
+impl From<(CommitResult, FeeSummary)> for LocalTransactionReceipt {
     fn from((commit_result, fee_summary): (CommitResult, FeeSummary)) -> Self {
-        LedgerTransactionReceipt {
-            outcome: commit_result.outcome.into(),
-            fee_summary,
-            application_logs: commit_result.application_logs,
-            substate_changes: map_state_updates(commit_result.state_updates),
-            entity_changes: commit_result.entity_changes,
-            resource_changes: commit_result.resource_changes,
-            next_epoch: commit_result.next_epoch,
+        Self {
+            on_ledger: LedgerTransactionReceipt {
+                outcome: LedgerTransactionOutcome::from(&commit_result.outcome),
+                substate_changes: map_state_updates(commit_result.state_updates),
+            },
+            local_execution: LocalTransactionExecution {
+                outcome: commit_result.outcome.into(),
+                fee_summary,
+                application_logs: commit_result.application_logs,
+                entity_changes: commit_result.entity_changes,
+                resource_changes: commit_result.resource_changes,
+                next_epoch: commit_result.next_epoch,
+            },
         }
     }
 }

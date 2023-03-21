@@ -6,7 +6,7 @@ use radix_engine::{
 use radix_engine_common::data::scrypto::scrypto_encode;
 use radix_engine_interface::network::NetworkDefinition;
 use state_manager::jni::state_manager::ActualStateManager;
-use state_manager::{LedgerTransactionReceipt, PreviewRequest};
+use state_manager::{LocalTransactionReceipt, PreviewRequest};
 use transaction::manifest;
 use transaction::model::PreviewFlags;
 
@@ -138,13 +138,13 @@ fn to_api_response(
                 )
                 .collect();
 
-            let ledger_receipt: LedgerTransactionReceipt = receipt
+            let complete_receipt: LocalTransactionReceipt = receipt
                 .try_into()
                 .map_err(|_| server_error("Can't create a ledger receipt"))?;
 
             models::TransactionPreviewResponse {
                 encoded_receipt,
-                receipt: Box::new(to_api_receipt(context, ledger_receipt)?),
+                receipt: Box::new(to_api_receipt(context, complete_receipt)?),
                 instruction_resource_changes,
                 logs,
             }

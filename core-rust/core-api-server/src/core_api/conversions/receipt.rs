@@ -10,55 +10,56 @@ use radix_engine::{
 use radix_engine_interface::data::scrypto::model::{Address, ComponentAddress};
 use std::collections::BTreeMap;
 
-use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
+use state_manager::{DeletedSubstateVersion, DetailedTransactionOutcome, LocalTransactionReceipt};
 
 pub fn to_api_receipt(
     context: &MappingContext,
-    receipt: LedgerTransactionReceipt,
+    receipt: LocalTransactionReceipt,
 ) -> Result<models::TransactionReceipt, MappingError> {
-    let fee_summary = receipt.fee_summary;
+    let fee_summary = receipt.local_execution.fee_summary;
 
-    let (status, output, error_message) = match receipt.outcome {
-        LedgerTransactionOutcome::Success(output) => {
+    let (status, output, error_message) = match receipt.local_execution.outcome {
+        DetailedTransactionOutcome::Success(output) => {
             (models::TransactionStatus::Succeeded, Some(output), None)
         }
-        LedgerTransactionOutcome::Failure(error) => (
+        DetailedTransactionOutcome::Failure(error) => (
             models::TransactionStatus::Failed,
             None,
             Some(format!("{error:?}")),
         ),
     };
 
-    let substate_changes = receipt.substate_changes;
-
+    let entity_changes = receipt.local_execution.entity_changes;
     let mut new_global_entities = Vec::new();
-    let mut created = Vec::new();
 
-    for package_address in receipt.entity_changes.new_package_addresses {
+    for package_address in entity_changes.new_package_addresses {
         new_global_entities.push(to_global_entity_reference(
             context,
             &package_address.into(),
         )?);
     }
 
-    for component_address in receipt.entity_changes.new_component_addresses {
+    for component_address in entity_changes.new_component_addresses {
         new_global_entities.push(to_global_entity_reference(
             context,
             &component_address.into(),
         )?);
     }
 
-    for resource_address in receipt.entity_changes.new_resource_addresses {
+    for resource_address in entity_changes.new_resource_addresses {
         new_global_entities.push(to_global_entity_reference(
             context,
             &resource_address.into(),
         )?);
     }
 
-    for (id, output) in substate_changes.created {
-        let substate_version = to_api_new_substate_version(context, (id.clone(), output))?;
-        created.push(substate_version)
-    }
+    let substate_changes = receipt.on_ledger.substate_changes;
+
+    let created = substate_changes
+        .created
+        .into_iter()
+        .map(|substate_kv| to_api_new_substate_version(context, substate_kv))
+        .collect::<Result<Vec<_>, _>>()?;
 
     let updated = substate_changes
         .updated
@@ -91,7 +92,7 @@ pub fn to_api_receipt(
         None => None,
     };
 
-    let next_epoch = if let Some(next_epoch) = receipt.next_epoch {
+    let next_epoch = if let Some(next_epoch) = receipt.local_execution.next_epoch {
         Some(Box::new(to_api_next_epoch(context, next_epoch)?))
     } else {
         None

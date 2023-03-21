@@ -64,7 +64,7 @@
 
 use crate::{
     accumulator_tree::IsHash, jni::common_types::JavaHashCode, transaction::LedgerTransaction,
-    LedgerTransactionOutcome, LedgerTransactionReceipt, SubstateChanges,
+    LedgerTransactionOutcome,
 };
 use radix_engine::types::*;
 use std::fmt;
@@ -215,25 +215,75 @@ impl HasLedgerPayloadHash for NotarizedTransaction {
     ScryptoEncode,
     ScryptoDecode,
 )]
+pub struct SubstateChangeHash([u8; Self::LENGTH]);
+
+impl SubstateChangeHash {
+    pub const LENGTH: usize = 32;
+
+    pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
+        Self(hash_bytes)
+    }
+
+    pub fn into_bytes(self) -> [u8; Self::LENGTH] {
+        self.0
+    }
+}
+
+impl AsRef<[u8]> for SubstateChangeHash {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl From<Hash> for SubstateChangeHash {
+    fn from(hash: Hash) -> Self {
+        Self(hash.0)
+    }
+}
+
+impl fmt::Display for SubstateChangeHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(self.0))
+    }
+}
+
+impl fmt::Debug for SubstateChangeHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("SubstateChangeHash")
+            .field(&hex::encode(self.0))
+            .finish()
+    }
+}
+
+#[derive(
+    PartialEq,
+    Eq,
+    Hash,
+    Clone,
+    Copy,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub struct LedgerReceiptHash([u8; Self::LENGTH]);
 
 #[derive(ScryptoCategorize, ScryptoEncode)]
-struct HashableLedgerReceiptPart {
-    successful: bool,
-    substate_changes: SubstateChanges,
+pub struct ConsensusReceipt {
+    pub outcome: LedgerTransactionOutcome,
+    pub substate_change_root: SubstateChangeHash,
+    // TODO: Add `event_root` after events are propagated to our receipt
+}
+
+impl ConsensusReceipt {
+    pub fn get_hash(&self) -> LedgerReceiptHash {
+        LedgerReceiptHash::from_raw_bytes(blake2b_256_hash(scrypto_encode(self).unwrap()).0)
+    }
 }
 
 impl LedgerReceiptHash {
     pub const LENGTH: usize = 32;
-
-    pub fn for_receipt(receipt: &LedgerTransactionReceipt) -> Self {
-        let hashable_part = HashableLedgerReceiptPart {
-            successful: matches!(receipt.outcome, LedgerTransactionOutcome::Success(_)),
-            substate_changes: receipt.substate_changes.clone(),
-        };
-        let hashable_part_bytes = scrypto_encode(&hashable_part).unwrap();
-        Self(blake2b_256_hash(hashable_part_bytes).0)
-    }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
         Self(hash_bytes)
