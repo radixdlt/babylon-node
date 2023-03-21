@@ -85,7 +85,7 @@ pub fn to_api_receipt(
         Some(output) => Some(
             output
                 .into_iter()
-                .map(|line_output| scrypto_bytes_to_api_sbor_data(context, &line_output))
+                .map(|line_output| to_api_sbor_data_from_bytes(context, &line_output))
                 .collect::<Result<Vec<_>, _>>()?,
         ),
         None => None,

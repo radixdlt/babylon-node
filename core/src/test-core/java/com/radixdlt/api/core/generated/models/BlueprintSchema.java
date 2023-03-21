@@ -40,7 +40,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   BlueprintSchema.JSON_PROPERTY_SCHEMA,
   BlueprintSchema.JSON_PROPERTY_SUBSTATES,
-  BlueprintSchema.JSON_PROPERTY_FUNCTION_DEFINITIONS
+  BlueprintSchema.JSON_PROPERTY_FUNCTION_DEFINITIONS,
+  BlueprintSchema.JSON_PROPERTY_EVENT_DEFINITIONS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BlueprintSchema {
@@ -52,6 +53,9 @@ public class BlueprintSchema {
 
   public static final String JSON_PROPERTY_FUNCTION_DEFINITIONS = "function_definitions";
   private Map<String, FunctionDefinition> functionDefinitions = new HashMap<>();
+
+  public static final String JSON_PROPERTY_EVENT_DEFINITIONS = "event_definitions";
+  private Map<String, LocalTypeIndex> eventDefinitions = new HashMap<>();
 
   public BlueprintSchema() { 
   }
@@ -144,6 +148,37 @@ public class BlueprintSchema {
   }
 
 
+  public BlueprintSchema eventDefinitions(Map<String, LocalTypeIndex> eventDefinitions) {
+    this.eventDefinitions = eventDefinitions;
+    return this;
+  }
+
+  public BlueprintSchema putEventDefinitionsItem(String key, LocalTypeIndex eventDefinitionsItem) {
+    this.eventDefinitions.put(key, eventDefinitionsItem);
+    return this;
+  }
+
+   /**
+   * A map from the event name to the local type index for the event payload under the blueprint schema.
+   * @return eventDefinitions
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "A map from the event name to the local type index for the event payload under the blueprint schema.")
+  @JsonProperty(JSON_PROPERTY_EVENT_DEFINITIONS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Map<String, LocalTypeIndex> getEventDefinitions() {
+    return eventDefinitions;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_EVENT_DEFINITIONS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setEventDefinitions(Map<String, LocalTypeIndex> eventDefinitions) {
+    this.eventDefinitions = eventDefinitions;
+  }
+
+
   /**
    * Return true if this BlueprintSchema object is equal to o.
    */
@@ -158,12 +193,13 @@ public class BlueprintSchema {
     BlueprintSchema blueprintSchema = (BlueprintSchema) o;
     return Objects.equals(this.schema, blueprintSchema.schema) &&
         Objects.equals(this.substates, blueprintSchema.substates) &&
-        Objects.equals(this.functionDefinitions, blueprintSchema.functionDefinitions);
+        Objects.equals(this.functionDefinitions, blueprintSchema.functionDefinitions) &&
+        Objects.equals(this.eventDefinitions, blueprintSchema.eventDefinitions);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(schema, substates, functionDefinitions);
+    return Objects.hash(schema, substates, functionDefinitions, eventDefinitions);
   }
 
   @Override
@@ -173,6 +209,7 @@ public class BlueprintSchema {
     sb.append("    schema: ").append(toIndentedString(schema)).append("\n");
     sb.append("    substates: ").append(toIndentedString(substates)).append("\n");
     sb.append("    functionDefinitions: ").append(toIndentedString(functionDefinitions)).append("\n");
+    sb.append("    eventDefinitions: ").append(toIndentedString(eventDefinitions)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -121,9 +121,6 @@ pub enum Substate {
         #[serde(rename = "code_type")]
         code_type: String,
     },
-    #[serde(rename="PackageEventSchema")]
-    PackageEventSchemaSubstate {
-    },
     #[serde(rename="PackageFunctionAccessRules")]
     PackageFunctionAccessRulesSubstate {
         #[serde(rename = "function_auth")]

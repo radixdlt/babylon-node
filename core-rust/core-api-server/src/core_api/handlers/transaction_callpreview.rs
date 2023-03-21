@@ -128,7 +128,7 @@ pub(crate) async fn handle_transaction_callpreview(
                                 InstructionOutput::None => scrypto_encode(&()).unwrap(),
                                 InstructionOutput::CallReturn(r) => r,
                             };
-                            scrypto_bytes_to_api_sbor_data(&mapping_context, &bytes)
+                            to_api_sbor_data_from_bytes(&mapping_context, &bytes)
                         })
                         .next()
                     {

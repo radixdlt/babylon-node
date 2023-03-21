@@ -11,7 +11,6 @@ use radix_engine::blueprints::resource::{
 use radix_engine::system::node_modules::access_rules::{
     FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
 };
-use radix_engine::system::node_modules::event_schema::PackageEventSchemaSubstate;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine_interface::blueprints::package::{
@@ -120,9 +119,6 @@ pub fn to_api_substate(
             to_api_access_controller_substate(context, access_controller)?
         }
         PersistedSubstate::Account(account) => to_api_account_substate(context, account)?,
-        PersistedSubstate::PackageEventSchema(event_schema) => {
-            to_api_package_event_schema(context, event_schema)?
-        }
     })
 }
 
@@ -258,7 +254,7 @@ pub fn to_api_key_value_store_schema(
         can_own,
     } = key_value_store_schema;
     Ok(models::KeyValueStoreSchema {
-        schema: Box::new(encodable_to_api_sbor_data(context, schema)?),
+        schema: Box::new(to_api_sbor_data_from_encodable(context, schema)?),
         key_type: Box::new(to_api_local_type_index(context, key)?),
         value_type: Box::new(to_api_local_type_index(context, value)?),
         can_own: *can_own,
@@ -606,10 +602,9 @@ pub fn to_api_data_struct_from_indexed_scrypto_value(
 ) -> Result<models::DataStruct, MappingError> {
     let entities = extract_entities(context, &scrypto_value)?;
     Ok(models::DataStruct {
-        struct_data: Box::new(scrypto_value_to_api_sbor_data(
+        struct_data: Box::new(to_api_sbor_data_from_bytes(
             context,
             scrypto_value.as_slice(),
-            &scrypto_value.as_scrypto_value(),
         )?),
         owned_entities: entities.owned_entities,
         referenced_entities: entities.referenced_entities,
@@ -746,6 +741,7 @@ pub fn to_api_blueprint_schema(
         schema,
         substates,
         functions,
+        event_schema,
     } = blueprint_schema;
     Ok(models::BlueprintSchema {
         schema: Box::new(to_api_schema(context, schema)?),
@@ -759,6 +755,15 @@ pub fn to_api_blueprint_schema(
                 Ok((
                     function_name.to_string(),
                     to_api_function_definition(context, function_schema)?,
+                ))
+            })
+            .collect::<Result<_, _>>()?,
+        event_definitions: event_schema
+            .iter()
+            .map(|(event_name, type_index)| {
+                Ok((
+                    event_name.to_string(),
+                    to_api_local_type_index(context, type_index)?,
                 ))
             })
             .collect::<Result<_, _>>()?,
@@ -811,7 +816,7 @@ pub fn to_api_schema(
     context: &MappingContext,
     schema: &ScryptoSchema,
 ) -> Result<models::SborData, MappingError> {
-    encodable_to_api_sbor_data(context, schema)
+    to_api_sbor_data_from_encodable(context, schema)
 }
 
 pub fn to_api_package_code_substate(
@@ -1044,13 +1049,6 @@ pub fn to_api_account_substate(
         data_struct: Box::new(to_api_data_struct_from_bytes(context, &data)?),
     };
     Ok(substate)
-}
-
-pub fn to_api_package_event_schema(
-    _context: &MappingContext,
-    _substate: &PackageEventSchemaSubstate,
-) -> Result<models::Substate, MappingError> {
-    Ok(models::Substate::PackageEventSchemaSubstate {})
 }
 
 pub fn to_api_key_value_story_entry_substate(

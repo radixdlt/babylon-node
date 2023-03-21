@@ -21,14 +21,18 @@ pub struct BlueprintSchema {
     /// A map from the function name to the FunctionDefinition
     #[serde(rename = "function_definitions")]
     pub function_definitions: ::std::collections::HashMap<String, crate::core_api::generated::models::FunctionDefinition>,
+    /// A map from the event name to the local type index for the event payload under the blueprint schema.
+    #[serde(rename = "event_definitions")]
+    pub event_definitions: ::std::collections::HashMap<String, crate::core_api::generated::models::LocalTypeIndex>,
 }
 
 impl BlueprintSchema {
-    pub fn new(schema: crate::core_api::generated::models::SborData, substates: Vec<crate::core_api::generated::models::LocalTypeIndex>, function_definitions: ::std::collections::HashMap<String, crate::core_api::generated::models::FunctionDefinition>) -> BlueprintSchema {
+    pub fn new(schema: crate::core_api::generated::models::SborData, substates: Vec<crate::core_api::generated::models::LocalTypeIndex>, function_definitions: ::std::collections::HashMap<String, crate::core_api::generated::models::FunctionDefinition>, event_definitions: ::std::collections::HashMap<String, crate::core_api::generated::models::LocalTypeIndex>) -> BlueprintSchema {
         BlueprintSchema {
             schema: Box::new(schema),
             substates,
             function_definitions,
+            event_definitions,
         }
     }
 }

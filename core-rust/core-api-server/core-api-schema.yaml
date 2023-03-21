@@ -2111,16 +2111,16 @@ components:
     EntityType:
       type: string
       enum:
-        - Component
         - Package
-        - ResourceManager
-        # Below are Native Components -> Eventually they'll be Component
-        - EpochManager
-        - Clock
-        - Validator
-        - AccessController
+        - NonFungibleResource
+        - FungibleResource
+        - NormalComponent
         - Account
         - Identity
+        - EpochManager
+        - Validator
+        - Clock
+        - AccessController
         - KeyValueStore
         - Vault
     ModuleType:
@@ -2154,7 +2154,6 @@ components:
           PackageCodeType: '#/components/schemas/PackageCodeTypeSubstate'
           PackageRoyalty: '#/components/schemas/PackageRoyaltySubstate'
           PackageFunctionAccessRules: '#/components/schemas/PackageFunctionAccessRulesSubstate'
-          PackageEventSchema: '#/components/schemas/PackageEventSchemaSubstate'
           FungibleResourceManager: '#/components/schemas/FungibleResourceManagerSubstate'
           NonFungibleResourceManager: '#/components/schemas/NonFungibleResourceManagerSubstate'
           EpochManager: '#/components/schemas/EpochManagerSubstate'
@@ -2185,8 +2184,6 @@ components:
         - PackageCodeType
         - PackageRoyalty
         - PackageFunctionAccessRules
-        - PackageEventSchema
-        - EitherResourceManager
         - FungibleResourceManager
         - NonFungibleResourceManager
         - EpochManager
@@ -2222,8 +2219,6 @@ components:
         - PackageCodeType
         - PackageRoyalty
         - PackageFunctionAccessRules
-        - PackageEventSchema
-        - EitherResourceManager
         - FungibleResourceManager
         - NonFungibleResourceManager
         - EpochManager
@@ -2338,9 +2333,6 @@ components:
               type: boolean
             data_struct:
               $ref: '#/components/schemas/DataStruct'
-    PackageEventSchemaSubstate:
-      allOf:
-        - $ref: '#/components/schemas/Substate'
 ### SELF MODULE / TYPE-SPECIFIC SUBSTATES
     ComponentStateSubstate:
       allOf:
@@ -2402,6 +2394,7 @@ components:
         - schema
         - substates
         - function_definitions
+        - event_definitions
       properties:
         schema:
           $ref: '#/components/schemas/SborData'
@@ -2417,6 +2410,11 @@ components:
           description: A map from the function name to the FunctionDefinition
           additionalProperties:
             $ref: '#/components/schemas/FunctionDefinition'
+        event_definitions:
+          type: object
+          description: A map from the event name to the local type index for the event payload under the blueprint schema.
+          additionalProperties:
+            $ref: '#/components/schemas/LocalTypeIndex'
     LocalTypeIndex:
       type: object
       required:
@@ -2828,8 +2826,9 @@ components:
         subtype:
           type: string
           enum:
-            - Resource
             - Package
+            - FungibleResource
+            - NonFungibleResource
             - NormalComponent
             - AccountComponent
             - EcdsaSecp256k1VirtualAccountComponent

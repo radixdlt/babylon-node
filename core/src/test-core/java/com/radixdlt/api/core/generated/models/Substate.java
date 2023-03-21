@@ -39,7 +39,6 @@ import com.radixdlt.api.core.generated.models.MetadataEntrySubstate;
 import com.radixdlt.api.core.generated.models.NonFungibleResourceManagerSubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeSubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeTypeSubstate;
-import com.radixdlt.api.core.generated.models.PackageEventSchemaSubstate;
 import com.radixdlt.api.core.generated.models.PackageFunctionAccessRulesSubstate;
 import com.radixdlt.api.core.generated.models.PackageInfoSubstate;
 import com.radixdlt.api.core.generated.models.PackageRoyaltySubstate;
@@ -99,8 +98,6 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageCodeSubstate.class, name = "PackageCodeSubstate"),
   @JsonSubTypes.Type(value = PackageCodeTypeSubstate.class, name = "PackageCodeType"),
   @JsonSubTypes.Type(value = PackageCodeTypeSubstate.class, name = "PackageCodeTypeSubstate"),
-  @JsonSubTypes.Type(value = PackageEventSchemaSubstate.class, name = "PackageEventSchema"),
-  @JsonSubTypes.Type(value = PackageEventSchemaSubstate.class, name = "PackageEventSchemaSubstate"),
   @JsonSubTypes.Type(value = PackageFunctionAccessRulesSubstate.class, name = "PackageFunctionAccessRules"),
   @JsonSubTypes.Type(value = PackageFunctionAccessRulesSubstate.class, name = "PackageFunctionAccessRulesSubstate"),
   @JsonSubTypes.Type(value = PackageInfoSubstate.class, name = "PackageInfo"),
@@ -229,8 +226,6 @@ static {
   mappings.put("PackageCodeSubstate", PackageCodeSubstate.class);
   mappings.put("PackageCodeType", PackageCodeTypeSubstate.class);
   mappings.put("PackageCodeTypeSubstate", PackageCodeTypeSubstate.class);
-  mappings.put("PackageEventSchema", PackageEventSchemaSubstate.class);
-  mappings.put("PackageEventSchemaSubstate", PackageEventSchemaSubstate.class);
   mappings.put("PackageFunctionAccessRules", PackageFunctionAccessRulesSubstate.class);
   mappings.put("PackageFunctionAccessRulesSubstate", PackageFunctionAccessRulesSubstate.class);
   mappings.put("PackageInfo", PackageInfoSubstate.class);

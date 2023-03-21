@@ -12,6 +12,9 @@ pub enum MappingError {
     UnsupportedSubstatePersisted {
         message: String,
     },
+    UnknownNodeTypePersisted {
+        message: String,
+    },
     TransientSubstatePersisted {
         message: String,
     },
@@ -23,14 +26,11 @@ pub enum MappingError {
         bytes: Vec<u8>,
     },
     InvalidSbor {
-        decode_error: DecodeError,
+        decode_error: String,
         bytes: Vec<u8>,
     },
     SborEncodeError {
         encode_error: EncodeError,
-        message: String,
-    },
-    SborSerializationError {
         message: String,
     },
     InvalidManifest {

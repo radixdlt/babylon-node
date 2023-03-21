@@ -34,10 +34,6 @@ pub enum SubstateType {
     PackageRoyalty,
     #[serde(rename = "PackageFunctionAccessRules")]
     PackageFunctionAccessRules,
-    #[serde(rename = "PackageEventSchema")]
-    PackageEventSchema,
-    #[serde(rename = "EitherResourceManager")]
-    EitherResourceManager,
     #[serde(rename = "FungibleResourceManager")]
     FungibleResourceManager,
     #[serde(rename = "NonFungibleResourceManager")]
@@ -83,8 +79,6 @@ impl ToString for SubstateType {
             Self::PackageCodeType => String::from("PackageCodeType"),
             Self::PackageRoyalty => String::from("PackageRoyalty"),
             Self::PackageFunctionAccessRules => String::from("PackageFunctionAccessRules"),
-            Self::PackageEventSchema => String::from("PackageEventSchema"),
-            Self::EitherResourceManager => String::from("EitherResourceManager"),
             Self::FungibleResourceManager => String::from("FungibleResourceManager"),
             Self::NonFungibleResourceManager => String::from("NonFungibleResourceManager"),
             Self::EpochManager => String::from("EpochManager"),

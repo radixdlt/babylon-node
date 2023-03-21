@@ -51,10 +51,6 @@ public enum SubstateKeyType {
   
   PACKAGEFUNCTIONACCESSRULES("PackageFunctionAccessRules"),
   
-  PACKAGEEVENTSCHEMA("PackageEventSchema"),
-  
-  EITHERRESOURCEMANAGER("EitherResourceManager"),
-  
   FUNGIBLERESOURCEMANAGER("FungibleResourceManager"),
   
   NONFUNGIBLERESOURCEMANAGER("NonFungibleResourceManager"),
