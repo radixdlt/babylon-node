@@ -86,7 +86,7 @@ public record ComponentAddress(byte[] value) {
   private static final int BYTE_LENGTH = 27;
 
   // See entity.rs
-  public static byte NORMAL_COMPONENT_ADDRESS_ENTITY_ID = (byte) 2;
+  public static byte NORMAL_COMPONENT_ADDRESS_ENTITY_ID = (byte) 3;
 
   public static final ComponentAddress NON_EXISTENT_COMPONENT_ADDRESS =
       // See constants.rs (component.rs defines the encoding)
