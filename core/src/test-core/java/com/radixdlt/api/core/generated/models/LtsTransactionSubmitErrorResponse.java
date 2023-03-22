@@ -28,7 +28,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.BasicErrorResponse;
 import com.radixdlt.api.core.generated.models.ErrorResponse;
 import com.radixdlt.api.core.generated.models.ErrorResponseType;
+import com.radixdlt.api.core.generated.models.LtsTransactionSubmitErrorDetails;
 import com.radixdlt.api.core.generated.models.LtsTransactionSubmitErrorResponse;
+import com.radixdlt.api.core.generated.models.LtsTransactionSubmitErrorResponseAllOf;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorResponse;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -37,9 +39,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * BasicErrorResponse
+ * LtsTransactionSubmitErrorResponse
  */
 @JsonPropertyOrder({
+  LtsTransactionSubmitErrorResponse.JSON_PROPERTY_DETAILS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -53,12 +56,41 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = TransactionSubmitErrorResponse.class, name = "TransactionSubmit"),
 })
 
-public class BasicErrorResponse extends ErrorResponse {
-  public BasicErrorResponse() { 
+public class LtsTransactionSubmitErrorResponse extends ErrorResponse {
+  public static final String JSON_PROPERTY_DETAILS = "details";
+  private LtsTransactionSubmitErrorDetails details;
+
+  public LtsTransactionSubmitErrorResponse() { 
   }
 
+  public LtsTransactionSubmitErrorResponse details(LtsTransactionSubmitErrorDetails details) {
+    this.details = details;
+    return this;
+  }
+
+   /**
+   * Get details
+   * @return details
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_DETAILS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public LtsTransactionSubmitErrorDetails getDetails() {
+    return details;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_DETAILS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setDetails(LtsTransactionSubmitErrorDetails details) {
+    this.details = details;
+  }
+
+
   /**
-   * Return true if this BasicErrorResponse object is equal to o.
+   * Return true if this LtsTransactionSubmitErrorResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -68,19 +100,22 @@ public class BasicErrorResponse extends ErrorResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    return super.equals(o);
+    LtsTransactionSubmitErrorResponse ltsTransactionSubmitErrorResponse = (LtsTransactionSubmitErrorResponse) o;
+    return Objects.equals(this.details, ltsTransactionSubmitErrorResponse.details) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode());
+    return Objects.hash(details, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class BasicErrorResponse {\n");
+    sb.append("class LtsTransactionSubmitErrorResponse {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    details: ").append(toIndentedString(details)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -102,8 +137,8 @@ static {
   mappings.put("Basic", BasicErrorResponse.class);
   mappings.put("LtsTransactionSubmit", LtsTransactionSubmitErrorResponse.class);
   mappings.put("TransactionSubmit", TransactionSubmitErrorResponse.class);
-  mappings.put("BasicErrorResponse", BasicErrorResponse.class);
-  JSON.registerDiscriminator(BasicErrorResponse.class, "error_type", mappings);
+  mappings.put("LtsTransactionSubmitErrorResponse", LtsTransactionSubmitErrorResponse.class);
+  JSON.registerDiscriminator(LtsTransactionSubmitErrorResponse.class, "error_type", mappings);
 }
 }
 

@@ -1,4 +1,7 @@
-use models::transaction_submit_error_details::TransactionSubmitErrorDetails;
+use models::{
+    lts_transaction_submit_error_details::LtsTransactionSubmitErrorDetails,
+    transaction_submit_error_details::TransactionSubmitErrorDetails,
+};
 use radix_engine::types::{scrypto_encode, ScryptoCustomTypeExtension, ScryptoEncode};
 use sbor::serde_serialization::{
     SborPayloadWithoutSchema, SchemalessSerializationContext, SerializationMode,
@@ -61,6 +64,22 @@ impl ErrorDetails for TransactionSubmitErrorDetails {
         trace_id: Option<String>,
     ) -> models::ErrorResponse {
         models::ErrorResponse::TransactionSubmitErrorResponse {
+            code,
+            message,
+            trace_id,
+            details: details.map(Box::new),
+        }
+    }
+}
+
+impl ErrorDetails for LtsTransactionSubmitErrorDetails {
+    fn to_error_response(
+        details: Option<Self>,
+        code: i32,
+        message: String,
+        trace_id: Option<String>,
+    ) -> models::ErrorResponse {
+        models::ErrorResponse::LtsTransactionSubmitErrorResponse {
             code,
             message,
             trace_id,

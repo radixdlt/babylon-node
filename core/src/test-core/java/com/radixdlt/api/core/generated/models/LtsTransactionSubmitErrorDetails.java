@@ -25,11 +25,9 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LtsTransactionSubmitMempoolFullErrorDetailsAllOf;
-import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetails;
-import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetailsType;
-import com.radixdlt.api.core.generated.models.TransactionSubmitMempoolFullErrorDetails;
-import com.radixdlt.api.core.generated.models.TransactionSubmitRejectedErrorDetails;
+import com.radixdlt.api.core.generated.models.LtsTransactionSubmitErrorDetailsType;
+import com.radixdlt.api.core.generated.models.LtsTransactionSubmitMempoolFullErrorDetails;
+import com.radixdlt.api.core.generated.models.LtsTransactionSubmitRejectedErrorDetails;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -37,10 +35,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * TransactionSubmitMempoolFullErrorDetails
+ * LtsTransactionSubmitErrorDetails
  */
 @JsonPropertyOrder({
-  TransactionSubmitMempoolFullErrorDetails.JSON_PROPERTY_MEMPOOL_CAPACITY
+  LtsTransactionSubmitErrorDetails.JSON_PROPERTY_TYPE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -49,47 +47,47 @@ import com.radixdlt.api.core.generated.client.JSON;
 )
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = TransactionSubmitMempoolFullErrorDetails.class, name = "MempoolFull"),
-  @JsonSubTypes.Type(value = TransactionSubmitRejectedErrorDetails.class, name = "Rejected"),
+  @JsonSubTypes.Type(value = LtsTransactionSubmitMempoolFullErrorDetails.class, name = "LtsTransactionSubmitMempoolFullErrorDetails"),
+  @JsonSubTypes.Type(value = LtsTransactionSubmitRejectedErrorDetails.class, name = "LtsTransactionSubmitRejectedErrorDetails"),
+  @JsonSubTypes.Type(value = LtsTransactionSubmitMempoolFullErrorDetails.class, name = "MempoolFull"),
+  @JsonSubTypes.Type(value = LtsTransactionSubmitRejectedErrorDetails.class, name = "Rejected"),
 })
 
-public class TransactionSubmitMempoolFullErrorDetails extends TransactionSubmitErrorDetails {
-  public static final String JSON_PROPERTY_MEMPOOL_CAPACITY = "mempool_capacity";
-  private Integer mempoolCapacity;
+public class LtsTransactionSubmitErrorDetails {
+  public static final String JSON_PROPERTY_TYPE = "type";
+  private LtsTransactionSubmitErrorDetailsType type;
 
-  public TransactionSubmitMempoolFullErrorDetails() { 
+  public LtsTransactionSubmitErrorDetails() { 
   }
 
-  public TransactionSubmitMempoolFullErrorDetails mempoolCapacity(Integer mempoolCapacity) {
-    this.mempoolCapacity = mempoolCapacity;
+  public LtsTransactionSubmitErrorDetails type(LtsTransactionSubmitErrorDetailsType type) {
+    this.type = type;
     return this;
   }
 
    /**
-   * Get mempoolCapacity
-   * minimum: 0
-   * maximum: 10000
-   * @return mempoolCapacity
+   * Get type
+   * @return type
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_MEMPOOL_CAPACITY)
+  @JsonProperty(JSON_PROPERTY_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getMempoolCapacity() {
-    return mempoolCapacity;
+  public LtsTransactionSubmitErrorDetailsType getType() {
+    return type;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MEMPOOL_CAPACITY)
+  @JsonProperty(JSON_PROPERTY_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMempoolCapacity(Integer mempoolCapacity) {
-    this.mempoolCapacity = mempoolCapacity;
+  public void setType(LtsTransactionSubmitErrorDetailsType type) {
+    this.type = type;
   }
 
 
   /**
-   * Return true if this TransactionSubmitMempoolFullErrorDetails object is equal to o.
+   * Return true if this LtsTransactionSubmitErrorDetails object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -99,22 +97,20 @@ public class TransactionSubmitMempoolFullErrorDetails extends TransactionSubmitE
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TransactionSubmitMempoolFullErrorDetails transactionSubmitMempoolFullErrorDetails = (TransactionSubmitMempoolFullErrorDetails) o;
-    return Objects.equals(this.mempoolCapacity, transactionSubmitMempoolFullErrorDetails.mempoolCapacity) &&
-        super.equals(o);
+    LtsTransactionSubmitErrorDetails ltsTransactionSubmitErrorDetails = (LtsTransactionSubmitErrorDetails) o;
+    return Objects.equals(this.type, ltsTransactionSubmitErrorDetails.type);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(mempoolCapacity, super.hashCode());
+    return Objects.hash(type);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TransactionSubmitMempoolFullErrorDetails {\n");
-    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    mempoolCapacity: ").append(toIndentedString(mempoolCapacity)).append("\n");
+    sb.append("class LtsTransactionSubmitErrorDetails {\n");
+    sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -133,10 +129,12 @@ public class TransactionSubmitMempoolFullErrorDetails extends TransactionSubmitE
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("MempoolFull", TransactionSubmitMempoolFullErrorDetails.class);
-  mappings.put("Rejected", TransactionSubmitRejectedErrorDetails.class);
-  mappings.put("TransactionSubmitMempoolFullErrorDetails", TransactionSubmitMempoolFullErrorDetails.class);
-  JSON.registerDiscriminator(TransactionSubmitMempoolFullErrorDetails.class, "type", mappings);
+  mappings.put("LtsTransactionSubmitMempoolFullErrorDetails", LtsTransactionSubmitMempoolFullErrorDetails.class);
+  mappings.put("LtsTransactionSubmitRejectedErrorDetails", LtsTransactionSubmitRejectedErrorDetails.class);
+  mappings.put("MempoolFull", LtsTransactionSubmitMempoolFullErrorDetails.class);
+  mappings.put("Rejected", LtsTransactionSubmitRejectedErrorDetails.class);
+  mappings.put("LtsTransactionSubmitErrorDetails", LtsTransactionSubmitErrorDetails.class);
+  JSON.registerDiscriminator(LtsTransactionSubmitErrorDetails.class, "type", mappings);
 }
 }
 

@@ -1238,6 +1238,7 @@ components:
       enum:
         - Basic
         - TransactionSubmit
+        - LtsTransactionSubmit
     ErrorResponse:
       type: object
       discriminator:
@@ -1247,6 +1248,7 @@ components:
           # NOTE: To ease 
           Basic: "#/components/schemas/BasicErrorResponse"
           TransactionSubmit: "#/components/schemas/TransactionSubmitErrorResponse"
+          LtsTransactionSubmit: "#/components/schemas/LtsTransactionSubmitErrorResponse"
       required:
         - error_type
         - code
@@ -3032,6 +3034,97 @@ components:
         duplicate:
           description: Is true if the transaction is a duplicate of an existing transaction in the mempool.
           type: boolean
+    LtsTransactionSubmitErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+        - type: object
+          properties:
+            details:
+              $ref: "#/components/schemas/LtsTransactionSubmitErrorDetails"
+    LtsTransactionSubmitErrorDetailsType:
+      type: string
+      enum:
+        - MempoolFull
+        - Rejected
+    LtsTransactionSubmitErrorDetails:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/LtsTransactionSubmitErrorDetailsType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match LtsTransactionSubmitErrorDetailsType
+          MempoolFull: "#/components/schemas/LtsTransactionSubmitMempoolFullErrorDetails"
+          Rejected: "#/components/schemas/LtsTransactionSubmitRejectedErrorDetails"
+    LtsTransactionSubmitMempoolFullErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/LtsTransactionSubmitErrorDetails"
+        - type: object
+          required:
+            - mempool_capacity
+          properties:
+            mempool_capacity:
+              type: integer
+              format: int32
+              minimum: 0
+              maximum: 10000
+    LtsTransactionSubmitRejectedErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/LtsTransactionSubmitErrorDetails"
+        - type: object
+          required:
+            - error_message
+            - is_fresh
+            - is_payload_rejection_permanent
+            - is_intent_rejection_permanent
+            - is_rejected_because_intent_already_committed
+          properties:
+            error_message:
+              type: string
+              description: An explanation of the error
+            is_fresh:
+              type: boolean
+              description: |
+                Whether (true) this rejected status has just been calculated fresh, or (false) the status is from the pending
+                transaction result cache.
+            is_payload_rejection_permanent:
+              type: boolean
+              description: |
+                Whether the rejection of this payload is known to be permanent.
+            is_intent_rejection_permanent:
+              type: boolean
+              description: |
+                Whether the rejection of this intent is known to be permanent - this is a stronger statement than the payload rejection
+                being permanent, as it implies any payloads containing the intent will also be permanently rejected.
+            is_rejected_because_intent_already_committed:
+              type: boolean
+              description: |
+                Whether the cached rejection of this intent is due to the intent already having been committed.
+                If so, see the /transaction/receipt endpoint for further information.
+            retry_from_timestamp:
+              $ref: "#/components/schemas/Instant"
+              description: |
+                The time after which the node will consider recalculating the validity of the transaction.
+                Only present if the rejection is temporary, and not due to the header specifying a "from epoch" in the future.
+            retry_from_epoch:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description: |
+                An integer between `0` and `10^10`, marking the epoch after which the node will consider recalculating the validity of the transaction.
+                Only present if the rejection is temporary due to a header specifying a "from epoch" in the future.
+            invalid_from_epoch:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description: |
+                An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be permanently rejected.
+                Only present if the rejection isn't permanent.
 ####################################################
 # REQUEST: /lts/state/account-all-resource-balances #
 ####################################################

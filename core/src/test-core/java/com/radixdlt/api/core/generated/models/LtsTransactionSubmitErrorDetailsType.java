@@ -24,19 +24,17 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Gets or Sets ErrorResponseType
+ * Gets or Sets LtsTransactionSubmitErrorDetailsType
  */
-public enum ErrorResponseType {
+public enum LtsTransactionSubmitErrorDetailsType {
   
-  BASIC("Basic"),
+  MEMPOOLFULL("MempoolFull"),
   
-  TRANSACTIONSUBMIT("TransactionSubmit"),
-  
-  LTSTRANSACTIONSUBMIT("LtsTransactionSubmit");
+  REJECTED("Rejected");
 
   private String value;
 
-  ErrorResponseType(String value) {
+  LtsTransactionSubmitErrorDetailsType(String value) {
     this.value = value;
   }
 
@@ -51,8 +49,8 @@ public enum ErrorResponseType {
   }
 
   @JsonCreator
-  public static ErrorResponseType fromValue(String value) {
-    for (ErrorResponseType b : ErrorResponseType.values()) {
+  public static LtsTransactionSubmitErrorDetailsType fromValue(String value) {
+    for (LtsTransactionSubmitErrorDetailsType b : LtsTransactionSubmitErrorDetailsType.values()) {
       if (b.value.equals(value)) {
         return b;
       }

@@ -11,29 +11,26 @@
 
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
-pub enum ErrorResponseType {
-    #[serde(rename = "Basic")]
-    Basic,
-    #[serde(rename = "TransactionSubmit")]
-    TransactionSubmit,
-    #[serde(rename = "LtsTransactionSubmit")]
-    LtsTransactionSubmit,
+pub enum LtsTransactionSubmitErrorDetailsType {
+    #[serde(rename = "MempoolFull")]
+    MempoolFull,
+    #[serde(rename = "Rejected")]
+    Rejected,
 
 }
 
-impl ToString for ErrorResponseType {
+impl ToString for LtsTransactionSubmitErrorDetailsType {
     fn to_string(&self) -> String {
         match self {
-            Self::Basic => String::from("Basic"),
-            Self::TransactionSubmit => String::from("TransactionSubmit"),
-            Self::LtsTransactionSubmit => String::from("LtsTransactionSubmit"),
+            Self::MempoolFull => String::from("MempoolFull"),
+            Self::Rejected => String::from("Rejected"),
         }
     }
 }
 
-impl Default for ErrorResponseType {
-    fn default() -> ErrorResponseType {
-        Self::Basic
+impl Default for LtsTransactionSubmitErrorDetailsType {
+    fn default() -> LtsTransactionSubmitErrorDetailsType {
+        Self::MempoolFull
     }
 }
 

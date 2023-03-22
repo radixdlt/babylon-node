@@ -12,15 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct TransactionSubmitMempoolFullErrorDetailsAllOf {
-    #[serde(rename = "mempool_capacity")]
-    pub mempool_capacity: i32,
+pub struct LtsTransactionSubmitErrorResponseAllOf {
+    #[serde(rename = "details", skip_serializing_if = "Option::is_none")]
+    pub details: Option<Box<crate::core_api::generated::models::LtsTransactionSubmitErrorDetails>>,
 }
 
-impl TransactionSubmitMempoolFullErrorDetailsAllOf {
-    pub fn new(mempool_capacity: i32) -> TransactionSubmitMempoolFullErrorDetailsAllOf {
-        TransactionSubmitMempoolFullErrorDetailsAllOf {
-            mempool_capacity,
+impl LtsTransactionSubmitErrorResponseAllOf {
+    pub fn new() -> LtsTransactionSubmitErrorResponseAllOf {
+        LtsTransactionSubmitErrorResponseAllOf {
+            details: None,
         }
     }
 }

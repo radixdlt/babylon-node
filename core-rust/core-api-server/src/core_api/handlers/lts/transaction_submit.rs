@@ -1,15 +1,17 @@
 use crate::core_api::*;
 
 use hyper::StatusCode;
-use models::transaction_submit_error_details::TransactionSubmitErrorDetails;
+use models::lts_transaction_submit_error_details::LtsTransactionSubmitErrorDetails;
 use state_manager::{MempoolAddError, MempoolAddSource};
 
 #[tracing::instrument(level = "debug", skip(state), err(Debug))]
 pub(crate) async fn handle_rc_transaction_submit(
     State(state): State<CoreApiState>,
     Json(request): Json<models::LtsTransactionSubmitRequest>,
-) -> Result<Json<models::LtsTransactionSubmitResponse>, ResponseError<TransactionSubmitErrorDetails>>
-{
+) -> Result<
+    Json<models::LtsTransactionSubmitResponse>,
+    ResponseError<LtsTransactionSubmitErrorDetails>,
+> {
     let mut state_manager = state.state_manager.write();
 
     let mapping_context = MappingContext::new_for_uncommitted_data(&state_manager.network);
@@ -28,14 +30,14 @@ pub(crate) async fn handle_rc_transaction_submit(
         Err(MempoolAddError::Full { max_size, .. }) => Err(detailed_error(
             StatusCode::BAD_REQUEST,
             "Mempool is full",
-            TransactionSubmitErrorDetails::TransactionSubmitMempoolFullErrorDetails {
+            LtsTransactionSubmitErrorDetails::LtsTransactionSubmitMempoolFullErrorDetails {
                 mempool_capacity: max_size as i32,
             },
         )),
         Err(MempoolAddError::Rejected(rejection)) => Err(detailed_error(
             StatusCode::BAD_REQUEST,
             "Transaction was rejected",
-            TransactionSubmitErrorDetails::TransactionSubmitRejectedErrorDetails {
+            LtsTransactionSubmitErrorDetails::LtsTransactionSubmitRejectedErrorDetails {
                 error_message: format!("{}", rejection.reason),
                 is_fresh: !rejection.was_cached,
                 is_payload_rejection_permanent: rejection.is_permanent_for_payload(),
