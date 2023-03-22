@@ -1,5 +1,5 @@
 use radix_engine::blueprints::epoch_manager::Validator;
-use radix_engine::blueprints::transaction_processor::InstructionOutput;
+use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use std::collections::BTreeMap;
 
 use radix_engine::errors::RuntimeError;
@@ -8,11 +8,10 @@ use radix_engine::state_manager::StateDiff;
 use radix_engine::system::kernel_modules::costing::FeeSummary;
 use radix_engine::system::kernel_modules::execution_trace::ResourceChange;
 use radix_engine::transaction::{
-    CommitResult, EntityChanges, TransactionOutcome,
-    TransactionReceipt as EngineTransactionReceipt, TransactionResult,
+    StateUpdateSummary, TransactionOutcome, TransactionReceipt as EngineTransactionReceipt,
+    TransactionResult,
 };
-use radix_engine::types::{hash, scrypto_encode, Hash, SubstateId};
-use radix_engine_interface::blueprints::logger::Level;
+use radix_engine::types::{hash, scrypto_encode, Decimal, Hash, Level, ObjectId, SubstateId};
 use radix_engine_interface::data::scrypto::model::ComponentAddress;
 use radix_engine_interface::*;
 use sbor::rust::collections::IndexMap;
@@ -94,10 +93,14 @@ impl From<TransactionOutcome> for LedgerTransactionOutcome {
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LedgerTransactionReceipt {
     pub outcome: LedgerTransactionOutcome,
+    // The breakdown of the fee
     pub fee_summary: FeeSummary,
+    // Which vault/s paid the fee
+    pub fee_payments: IndexMap<ObjectId, Decimal>,
     pub application_logs: Vec<(Level, String)>,
     pub substate_changes: SubstateChanges,
-    pub entity_changes: EntityChanges,
+    pub state_update_summary: StateUpdateSummary,
+    // These will be removed once we have the parent_map for the toolkit to use
     pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
     pub next_epoch: Option<(BTreeMap<ComponentAddress, Validator>, u64)>,
 }
@@ -114,7 +117,18 @@ impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
     fn try_from(engine_receipt: EngineTransactionReceipt) -> Result<Self, Self::Error> {
         match engine_receipt.result {
             TransactionResult::Commit(commit_result) => {
-                Ok((commit_result, engine_receipt.execution.fee_summary).into())
+                let next_epoch = commit_result.next_epoch();
+                let ledger_receipt = LedgerTransactionReceipt {
+                    outcome: commit_result.outcome.into(),
+                    fee_summary: commit_result.fee_summary,
+                    fee_payments: commit_result.fee_payments,
+                    application_logs: commit_result.application_logs,
+                    substate_changes: fix_state_updates(commit_result.state_updates),
+                    state_update_summary: commit_result.state_update_summary,
+                    resource_changes: engine_receipt.execution_trace.resource_changes,
+                    next_epoch,
+                };
+                Ok(ledger_receipt)
             }
             TransactionResult::Reject(error) => Err(format!(
                 "Can't create a ledger receipt for rejected txn: {error:?}"
@@ -126,22 +140,7 @@ impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
     }
 }
 
-/// For Genesis Transaction
-impl From<(CommitResult, FeeSummary)> for LedgerTransactionReceipt {
-    fn from((commit_result, fee_summary): (CommitResult, FeeSummary)) -> Self {
-        LedgerTransactionReceipt {
-            outcome: commit_result.outcome.into(),
-            fee_summary,
-            application_logs: commit_result.application_logs,
-            substate_changes: map_state_updates(commit_result.state_updates),
-            entity_changes: commit_result.entity_changes,
-            resource_changes: commit_result.resource_changes,
-            next_epoch: commit_result.next_epoch,
-        }
-    }
-}
-
-fn map_state_updates(state_updates: StateDiff) -> SubstateChanges {
+fn fix_state_updates(state_updates: StateDiff) -> SubstateChanges {
     // As of end of August 2022, the engine's statediff erroneously includes substate reads
     // (even if the content didn't change) as ups and downs.
     // This needs fixing, but for now, we work around this here, by removing such up/down pairs.

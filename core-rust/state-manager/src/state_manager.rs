@@ -139,6 +139,7 @@ pub struct StateManager<S> {
     pub prometheus_registry: Registry,
     execution_config: ExecutionConfig,
     execution_config_for_pending_transactions: ExecutionConfig,
+    execution_config_for_genesis: ExecutionConfig,
     scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
     fee_reserve_config: FeeReserveConfig,
     intent_hash_manager: TestIntentHashManager,
@@ -178,15 +179,11 @@ where
             execution_cache: ExecutionCache::new(accumulator_hash),
             user_transaction_validator,
             ledger_transaction_validator: committed_transaction_validator,
-            execution_config: ExecutionConfig {
-                debug: logging_config.engine_trace,
-                ..ExecutionConfig::standard()
-            },
-            execution_config_for_pending_transactions: ExecutionConfig {
-                debug: logging_config.engine_trace,
-                abort_when_loan_repaid: true,
-                ..ExecutionConfig::standard()
-            },
+            execution_config: ExecutionConfig::standard().with_trace(logging_config.engine_trace),
+            execution_config_for_pending_transactions: ExecutionConfig::up_to_loan_repayment()
+                .with_trace(logging_config.engine_trace),
+            execution_config_for_genesis: ExecutionConfig::genesis()
+                .with_trace(logging_config.engine_trace),
             scrypto_interpreter: ScryptoInterpreter {
                 wasm_engine: DefaultWasmEngine::default(),
                 wasm_instrumenter: WasmInstrumenter::default(),
@@ -271,6 +268,7 @@ impl<S: ReadableStore> StateManager<S> {
         executable: &Executable,
         transaction_hash: &LedgerPayloadHash,
     ) -> &ProcessedTransactionReceipt {
+        let execution_config = self.resolve_execution_config(parent_transaction_identifiers);
         let processed = self.execution_cache.execute_transaction(
             &self.store,
             epoch_transaction_identifiers,
@@ -281,7 +279,7 @@ impl<S: ReadableStore> StateManager<S> {
                     executable,
                     &self.scrypto_interpreter,
                     &self.fee_reserve_config,
-                    &self.execution_config,
+                    execution_config,
                 ),
                 FULL_TRANSACTION_WARN_TIME_LIMIT,
                 format!(
@@ -291,6 +289,16 @@ impl<S: ReadableStore> StateManager<S> {
             ),
         );
         processed
+    }
+
+    fn resolve_execution_config(
+        &self, parent_transaction_identifiers: &CommittedTransactionIdentifiers
+    ) -> &ExecutionConfig {
+        if parent_transaction_identifiers.state_version == 0 {
+            &self.execution_config_for_genesis
+        } else {
+            &self.execution_config
+        }
     }
 }
 

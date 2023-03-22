@@ -15,15 +15,15 @@
 pub struct ComponentRoyaltyAccumulatorSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "vault_entity")]
-    pub vault_entity: Box<crate::core_api::generated::models::EntityReference>,
+    #[serde(rename = "vault_entity", skip_serializing_if = "Option::is_none")]
+    pub vault_entity: Option<Box<crate::core_api::generated::models::EntityReference>>,
 }
 
 impl ComponentRoyaltyAccumulatorSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, vault_entity: crate::core_api::generated::models::EntityReference) -> ComponentRoyaltyAccumulatorSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType) -> ComponentRoyaltyAccumulatorSubstate {
         ComponentRoyaltyAccumulatorSubstate {
             substate_type,
-            vault_entity: Box::new(vault_entity),
+            vault_entity: None,
         }
     }
 }

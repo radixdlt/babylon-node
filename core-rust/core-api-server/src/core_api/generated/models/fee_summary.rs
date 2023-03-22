@@ -26,6 +26,9 @@ pub struct FeeSummary {
     /// An integer between `0` and `2^32 - 1`, representing the amount of cost units consumed by the transaction execution.
     #[serde(rename = "cost_units_consumed")]
     pub cost_units_consumed: i64,
+    /// A breakdown of where the execution cost went. 
+    #[serde(rename = "cost_unit_execution_breakdown")]
+    pub cost_unit_execution_breakdown: ::std::collections::HashMap<String, i64>,
     /// The string-encoded decimal representing the total amount of XRD burned in the transaction as part of execution costs. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
     #[serde(rename = "xrd_total_execution_cost")]
     pub xrd_total_execution_cost: String,
@@ -35,31 +38,28 @@ pub struct FeeSummary {
     /// The string-encoded decimal representing the total amount of XRD tipped to validators in the transaction. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
     #[serde(rename = "xrd_total_tipped")]
     pub xrd_total_tipped: String,
-    /// A summary of which vaults were used to pay the fee. This is only present if the transaction was committed. 
-    #[serde(rename = "xrd_vault_payments", skip_serializing_if = "Option::is_none")]
-    pub xrd_vault_payments: Option<Vec<crate::core_api::generated::models::VaultPayment>>,
-    /// A summary of where the execution cost went. 
-    #[serde(rename = "cost_unit_execution_breakdown")]
-    pub cost_unit_execution_breakdown: ::std::collections::HashMap<String, i64>,
-    /// A summary of where the royalties were paid to. 
-    #[serde(rename = "cost_unit_royalty_breakdown")]
-    pub cost_unit_royalty_breakdown: Vec<crate::core_api::generated::models::RoyaltyPayment>,
+    /// A breakdown of which vaults were used to pay the fee. 
+    #[serde(rename = "xrd_vault_payments")]
+    pub xrd_vault_payments: Vec<crate::core_api::generated::models::VaultPayment>,
+    /// A breakdown of where the royalties were paid to. 
+    #[serde(rename = "xrd_royalty_receivers")]
+    pub xrd_royalty_receivers: Vec<crate::core_api::generated::models::RoyaltyPayment>,
 }
 
 impl FeeSummary {
     /// Fees paid
-    pub fn new(cost_unit_price: String, tip_percentage: i32, cost_unit_limit: i64, cost_units_consumed: i64, xrd_total_execution_cost: String, xrd_total_royalty_cost: String, xrd_total_tipped: String, cost_unit_execution_breakdown: ::std::collections::HashMap<String, i64>, cost_unit_royalty_breakdown: Vec<crate::core_api::generated::models::RoyaltyPayment>) -> FeeSummary {
+    pub fn new(cost_unit_price: String, tip_percentage: i32, cost_unit_limit: i64, cost_units_consumed: i64, cost_unit_execution_breakdown: ::std::collections::HashMap<String, i64>, xrd_total_execution_cost: String, xrd_total_royalty_cost: String, xrd_total_tipped: String, xrd_vault_payments: Vec<crate::core_api::generated::models::VaultPayment>, xrd_royalty_receivers: Vec<crate::core_api::generated::models::RoyaltyPayment>) -> FeeSummary {
         FeeSummary {
             cost_unit_price,
             tip_percentage,
             cost_unit_limit,
             cost_units_consumed,
+            cost_unit_execution_breakdown,
             xrd_total_execution_cost,
             xrd_total_royalty_cost,
             xrd_total_tipped,
-            xrd_vault_payments: None,
-            cost_unit_execution_breakdown,
-            cost_unit_royalty_breakdown,
+            xrd_vault_payments,
+            xrd_royalty_receivers,
         }
     }
 }

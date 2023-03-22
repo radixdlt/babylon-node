@@ -72,6 +72,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.models.ObjectTypeInfoDetails;
 import com.radixdlt.api.core.generated.models.StateComponentRequest;
 import com.radixdlt.api.core.generated.models.TransactionReceiptRequest;
 import com.radixdlt.api.core.generated.models.TypeInfoSubstate;
@@ -146,8 +147,11 @@ public final class AccountComponentStateTest extends DeterministicCoreApiTestBas
                       .network(networkLogicalName)
                       .componentAddress(newAccountAddress));
 
+      final var substateDetails =
+          (ObjectTypeInfoDetails) ((TypeInfoSubstate) stateResp.getInfo()).getDetails();
+
       // Assert that the component state request succeeds
-      assertThat(((TypeInfoSubstate) stateResp.getInfo()).getBlueprintName()).isEqualTo("Account");
+      assertThat(substateDetails.getBlueprintName()).isEqualTo("Account");
     }
   }
 }
