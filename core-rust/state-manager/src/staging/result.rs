@@ -71,7 +71,7 @@ use crate::{
     NextEpoch, ReceiptTreeHash, StateHash, SubstateChanges, TransactionTreeHash,
 };
 use radix_engine::transaction::{
-    AbortResult, CommitResult, RejectResult, TransactionExecution, TransactionReceipt,
+    AbortResult, CommitResult, RejectResult, TransactionExecutionTrace, TransactionReceipt,
     TransactionResult,
 };
 use radix_engine_interface::api::types::SubstateOffset;
@@ -110,7 +110,7 @@ impl ProcessedTransactionReceipt {
                 ProcessedTransactionReceipt::Commit(ProcessedCommitResult::process(
                     hash_update_context,
                     commit,
-                    transaction_receipt.execution,
+                    transaction_receipt.execution_trace,
                 ))
             }
             TransactionResult::Reject(reject) => ProcessedTransactionReceipt::Reject(reject),
@@ -148,7 +148,7 @@ impl ProcessedCommitResult {
     pub fn process<S: ReadableHashStructuresStore>(
         hash_update_context: HashUpdateContext<S>,
         commit_result: CommitResult,
-        transaction_execution: TransactionExecution,
+        execution_trace: TransactionExecutionTrace,
     ) -> Self {
         let epoch_transaction_identifiers = hash_update_context.epoch_transaction_identifiers;
         let parent_transaction_identifiers = hash_update_context.parent_transaction_identifiers;
@@ -156,10 +156,9 @@ impl ProcessedCommitResult {
         let transaction_accumulator_hash = parent_transaction_identifiers
             .accumulator_hash
             .accumulate(transaction_hash);
-        let complete_receipt =
-            LocalTransactionReceipt::from((commit_result, transaction_execution.fee_summary));
+        let complete_receipt = LocalTransactionReceipt::from((commit_result, execution_trace));
         let store = hash_update_context.store;
-        let state_tree_diff = Self::compute_state_tree_update(
+        let state_hash_tree_diff = Self::compute_state_tree_update(
             store,
             parent_transaction_identifiers.state_version,
             &complete_receipt.on_ledger.substate_changes,
@@ -180,7 +179,7 @@ impl ProcessedCommitResult {
             ReceiptTreeHash::from_raw_bytes(consensus_receipt.get_hash().into_bytes()),
         );
         let ledger_hashes = LedgerHashes {
-            state_root: state_tree_diff.new_root,
+            state_root: state_hash_tree_diff.new_root,
             transaction_root: *transaction_tree_diff.slice.root(),
             receipt_root: *receipt_tree_diff.slice.root(),
         };
@@ -189,7 +188,7 @@ impl ProcessedCommitResult {
             hash_structures_diff: HashStructuresDiff {
                 transaction_accumulator_hash,
                 ledger_hashes,
-                state_tree_diff,
+                state_hash_tree_diff,
                 transaction_tree_diff,
                 receipt_tree_diff,
             },
@@ -238,7 +237,7 @@ impl ProcessedCommitResult {
         store: &S,
         parent_state_version: u64,
         substate_changes: &SubstateChanges,
-    ) -> HashTreeDiff {
+    ) -> StateHashTreeDiff {
         let hash_changes = substate_changes
             .upserted()
             .map(|(id, value)| {
@@ -266,19 +265,19 @@ impl ProcessedCommitResult {
 pub struct HashStructuresDiff {
     pub transaction_accumulator_hash: AccumulatorHash,
     pub ledger_hashes: LedgerHashes,
-    pub state_tree_diff: HashTreeDiff,
+    pub state_hash_tree_diff: StateHashTreeDiff,
     pub transaction_tree_diff: AccuTreeDiff<u64, TransactionTreeHash>,
     pub receipt_tree_diff: AccuTreeDiff<u64, ReceiptTreeHash>,
 }
 
-pub struct HashTreeDiff {
+pub struct StateHashTreeDiff {
     pub new_root: StateHash,
     pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<ReNodeModulePayload>)>,
     pub new_substate_layer_nodes: Vec<(NodeKey, TreeNode<SubstateOffset>)>,
     pub stale_hash_tree_node_keys: Vec<NodeKey>,
 }
 
-impl HashTreeDiff {
+impl StateHashTreeDiff {
     pub fn new() -> Self {
         Self {
             new_root: StateHash::from_raw_bytes([0; StateHash::LENGTH]),
@@ -286,6 +285,12 @@ impl HashTreeDiff {
             new_substate_layer_nodes: Vec::new(),
             stale_hash_tree_node_keys: Vec::new(),
         }
+    }
+}
+
+impl Default for StateHashTreeDiff {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -363,18 +368,18 @@ impl<'s, S, K, N> WriteableAccuTreeStore<K, N> for CollectingAccuTreeStore<'s, S
 
 struct CollectingTreeStore<'s, S> {
     readable_delegate: &'s S,
-    diff: HashTreeDiff,
+    diff: StateHashTreeDiff,
 }
 
 impl<'s, S: ReadableStateTreeStore> CollectingTreeStore<'s, S> {
     pub fn new(readable_delegate: &'s S) -> Self {
         Self {
             readable_delegate,
-            diff: HashTreeDiff::new(),
+            diff: StateHashTreeDiff::new(),
         }
     }
 
-    pub fn into_diff_with(self, new_root: Hash) -> HashTreeDiff {
+    pub fn into_diff_with(self, new_root: Hash) -> StateHashTreeDiff {
         let mut diff = self.diff;
         diff.new_root = StateHash::from(new_root);
         diff

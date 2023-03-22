@@ -85,6 +85,7 @@ use radix_engine_interface::data::scrypto::model::ComponentAddress;
 pub enum StateTreeTraverserError {
     ExpectedNodeSubstateNotInStore(SubstateId),
     UnexpectedPersistedNode(RENodeId),
+    UnexpectedTypeIdForObject(RENodeId),
     MaxDepthExceeded,
 }
 
@@ -156,72 +157,81 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                 ))?;
                 let type_info: TypeInfoSubstate = info_substate.to_runtime().into();
 
-                match (type_info.package_address, type_info.blueprint_name.as_str()) {
-                    (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT) => {
-                        let info_substate = self.read_substate(&SubstateId(
-                            node_id,
-                            NodeModuleId::SELF,
-                            SubstateOffset::Vault(VaultOffset::Info),
-                        ))?;
-                        let vault_info: VaultInfoSubstate = info_substate.to_runtime().into();
-                        match vault_info.resource_type {
-                            ResourceType::Fungible { .. } => {
-                                let liquid_substate = self.read_substate(&SubstateId(
-                                    node_id,
-                                    NodeModuleId::SELF,
-                                    SubstateOffset::Vault(VaultOffset::LiquidFungible),
-                                ))?;
+                match type_info {
+                    TypeInfoSubstate::Object {
+                        package_address,
+                        blueprint_name,
+                        ..
+                    } => match (package_address, blueprint_name.as_str()) {
+                        (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT) => {
+                            let info_substate = self.read_substate(&SubstateId(
+                                node_id,
+                                NodeModuleId::SELF,
+                                SubstateOffset::Vault(VaultOffset::Info),
+                            ))?;
+                            let vault_info: VaultInfoSubstate = info_substate.to_runtime().into();
+                            match vault_info.resource_type {
+                                ResourceType::Fungible { .. } => {
+                                    let liquid_substate = self.read_substate(&SubstateId(
+                                        node_id,
+                                        NodeModuleId::SELF,
+                                        SubstateOffset::Vault(VaultOffset::LiquidFungible),
+                                    ))?;
 
-                                self.visitor.visit_fungible_vault(
-                                    parent,
-                                    &vault_info,
-                                    &liquid_substate.into(),
-                                );
-                            }
-                            ResourceType::NonFungible { .. } => {
-                                let liquid_substate = self.read_substate(&SubstateId(
-                                    node_id,
-                                    NodeModuleId::SELF,
-                                    SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
-                                ))?;
+                                    self.visitor.visit_fungible_vault(
+                                        parent,
+                                        &vault_info,
+                                        &liquid_substate.into(),
+                                    );
+                                }
+                                ResourceType::NonFungible { .. } => {
+                                    let liquid_substate = self.read_substate(&SubstateId(
+                                        node_id,
+                                        NodeModuleId::SELF,
+                                        SubstateOffset::Vault(VaultOffset::LiquidNonFungible),
+                                    ))?;
 
-                                self.visitor.visit_non_fungible_vault(
-                                    parent,
-                                    &vault_info,
-                                    &liquid_substate.into(),
-                                );
+                                    self.visitor.visit_non_fungible_vault(
+                                        parent,
+                                        &vault_info,
+                                        &liquid_substate.into(),
+                                    );
+                                }
                             }
                         }
-                    }
-                    (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => {
-                        self.recurse_via_self_substate(
-                            node_id,
-                            SubstateOffset::Account(AccountOffset::Account),
-                            depth,
-                        )?;
-                    }
-                    (EPOCH_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT) => {
-                        self.recurse_via_self_substate(
-                            node_id,
-                            SubstateOffset::Validator(ValidatorOffset::Validator),
-                            depth,
-                        )?;
-                    }
-                    (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
-                        self.recurse_via_self_substate(
-                            node_id,
-                            SubstateOffset::AccessController(
-                                AccessControllerOffset::AccessController,
-                            ),
-                            depth,
-                        )?;
-                    }
-                    _ => {
-                        self.recurse_via_self_substate(
-                            node_id,
-                            SubstateOffset::Component(ComponentOffset::State0),
-                            depth,
-                        )?;
+                        (ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT) => {
+                            self.recurse_via_self_substate(
+                                node_id,
+                                SubstateOffset::Account(AccountOffset::Account),
+                                depth,
+                            )?;
+                        }
+                        (EPOCH_MANAGER_PACKAGE, VALIDATOR_BLUEPRINT) => {
+                            self.recurse_via_self_substate(
+                                node_id,
+                                SubstateOffset::Validator(ValidatorOffset::Validator),
+                                depth,
+                            )?;
+                        }
+                        (ACCESS_CONTROLLER_PACKAGE, ACCESS_CONTROLLER_BLUEPRINT) => {
+                            self.recurse_via_self_substate(
+                                node_id,
+                                SubstateOffset::AccessController(
+                                    AccessControllerOffset::AccessController,
+                                ),
+                                depth,
+                            )?;
+                        }
+                        _ => {
+                            self.recurse_via_self_substate(
+                                node_id,
+                                SubstateOffset::Component(ComponentOffset::State0),
+                                depth,
+                            )?;
+                        }
+                    },
+                    TypeInfoSubstate::KeyValueStore(_) => {
+                        return Err(StateTreeTraverserError::UnexpectedTypeIdForObject(node_id))
                     }
                 }
             }
@@ -281,11 +291,10 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                 | ComponentAddress::EcdsaSecp256k1VirtualIdentity(..)
                 | ComponentAddress::EddsaEd25519VirtualIdentity(..),
             )) => {} // Contains no children
-            RENodeId::NonFungibleStore(_) => {} // Contains no children
             RENodeId::GlobalObject(Address::Resource(..)) => {} // Contains no children
-            RENodeId::GlobalObject(Address::Package(..)) => {} // Contains no children
+            RENodeId::GlobalObject(Address::Package(..)) => {}  // Contains no children
             // TRANSIENT
-            RENodeId::AuthZoneStack | RENodeId::TransactionRuntime => {
+            RENodeId::AuthZoneStack => {
                 return Err(StateTreeTraverserError::UnexpectedPersistedNode(node_id))
             } // END - NB - we list all types so that we get a compile error if a new type is added
         };

@@ -38,13 +38,7 @@ public enum ModuleType {
   
   ACCESSRULES1("AccessRules1"),
   
-  FUNCTIONACCESSRULES("FunctionAccessRules"),
-  
-  COMPONENTROYALTY("ComponentRoyalty"),
-  
-  PACKAGEROYALTY("PackageRoyalty"),
-  
-  PACKAGEEVENTSCHEMA("PackageEventSchema");
+  COMPONENTROYALTY("ComponentRoyalty");
 
   private String value;
 

@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.TypeInfoDetails;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -31,99 +32,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * TypeInfoSubstateAllOf
  */
 @JsonPropertyOrder({
-  TypeInfoSubstateAllOf.JSON_PROPERTY_PACKAGE_ADDRESS,
-  TypeInfoSubstateAllOf.JSON_PROPERTY_BLUEPRINT_NAME,
-  TypeInfoSubstateAllOf.JSON_PROPERTY_GLOBAL
+  TypeInfoSubstateAllOf.JSON_PROPERTY_DETAILS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TypeInfoSubstateAllOf {
-  public static final String JSON_PROPERTY_PACKAGE_ADDRESS = "package_address";
-  private String packageAddress;
-
-  public static final String JSON_PROPERTY_BLUEPRINT_NAME = "blueprint_name";
-  private String blueprintName;
-
-  public static final String JSON_PROPERTY_GLOBAL = "global";
-  private Boolean global;
+  public static final String JSON_PROPERTY_DETAILS = "details";
+  private TypeInfoDetails details;
 
   public TypeInfoSubstateAllOf() { 
   }
 
-  public TypeInfoSubstateAllOf packageAddress(String packageAddress) {
-    this.packageAddress = packageAddress;
+  public TypeInfoSubstateAllOf details(TypeInfoDetails details) {
+    this.details = details;
     return this;
   }
 
    /**
-   * The Bech32m-encoded human readable version of the package address
-   * @return packageAddress
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the package address")
-  @JsonProperty(JSON_PROPERTY_PACKAGE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getPackageAddress() {
-    return packageAddress;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_PACKAGE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPackageAddress(String packageAddress) {
-    this.packageAddress = packageAddress;
-  }
-
-
-  public TypeInfoSubstateAllOf blueprintName(String blueprintName) {
-    this.blueprintName = blueprintName;
-    return this;
-  }
-
-   /**
-   * Get blueprintName
-   * @return blueprintName
+   * Get details
+   * @return details
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
+  @JsonProperty(JSON_PROPERTY_DETAILS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getBlueprintName() {
-    return blueprintName;
+  public TypeInfoDetails getDetails() {
+    return details;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_BLUEPRINT_NAME)
+  @JsonProperty(JSON_PROPERTY_DETAILS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBlueprintName(String blueprintName) {
-    this.blueprintName = blueprintName;
-  }
-
-
-  public TypeInfoSubstateAllOf global(Boolean global) {
-    this.global = global;
-    return this;
-  }
-
-   /**
-   * Get global
-   * @return global
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_GLOBAL)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Boolean getGlobal() {
-    return global;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_GLOBAL)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setGlobal(Boolean global) {
-    this.global = global;
+  public void setDetails(TypeInfoDetails details) {
+    this.details = details;
   }
 
 
@@ -139,23 +80,19 @@ public class TypeInfoSubstateAllOf {
       return false;
     }
     TypeInfoSubstateAllOf typeInfoSubstateAllOf = (TypeInfoSubstateAllOf) o;
-    return Objects.equals(this.packageAddress, typeInfoSubstateAllOf.packageAddress) &&
-        Objects.equals(this.blueprintName, typeInfoSubstateAllOf.blueprintName) &&
-        Objects.equals(this.global, typeInfoSubstateAllOf.global);
+    return Objects.equals(this.details, typeInfoSubstateAllOf.details);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageAddress, blueprintName, global);
+    return Objects.hash(details);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TypeInfoSubstateAllOf {\n");
-    sb.append("    packageAddress: ").append(toIndentedString(packageAddress)).append("\n");
-    sb.append("    blueprintName: ").append(toIndentedString(blueprintName)).append("\n");
-    sb.append("    global: ").append(toIndentedString(global)).append("\n");
+    sb.append("    details: ").append(toIndentedString(details)).append("\n");
     sb.append("}");
     return sb.toString();
   }

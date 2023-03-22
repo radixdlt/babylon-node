@@ -4,14 +4,15 @@ use models::{
     transaction_call_preview_response::TransactionCallPreviewResponse,
     transaction_status::TransactionStatus,
 };
-use radix_engine::blueprints::transaction_processor::InstructionOutput;
 use radix_engine::{
     transaction::{PreviewError, TransactionOutcome, TransactionResult},
     types::{Decimal, FAUCET_COMPONENT},
 };
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
-use radix_engine_interface::data::scrypto::scrypto_encode;
 use radix_engine_interface::manifest_args;
+use radix_engine_interface::{
+    blueprints::transaction_processor::InstructionOutput, data::scrypto::scrypto_encode,
+};
 use state_manager::PreviewRequest;
 use transaction::model::{Instruction, PreviewFlags, TransactionManifest};
 
@@ -19,10 +20,9 @@ macro_rules! args_from_bytes_vec {
     ($args: expr) => {{
         let mut fields = Vec::new();
         for arg in $args {
-            fields.push(::radix_engine_interface::data::scrypto::scrypto_decode(&arg).unwrap());
+            fields.push(::radix_engine::types::manifest_decode(&arg).unwrap());
         }
-        let input_struct = ::radix_engine_interface::data::scrypto::ScryptoValue::Tuple { fields };
-        ::radix_engine_interface::data::scrypto::scrypto_encode(&input_struct).unwrap()
+        ::radix_engine::types::ManifestValue::Tuple { fields }
     }};
 }
 
@@ -128,7 +128,7 @@ pub(crate) async fn handle_transaction_callpreview(
                                 InstructionOutput::None => scrypto_encode(&()).unwrap(),
                                 InstructionOutput::CallReturn(r) => r,
                             };
-                            scrypto_bytes_to_api_sbor_data(&mapping_context, &bytes)
+                            to_api_sbor_data_from_bytes(&mapping_context, &bytes)
                         })
                         .next()
                     {

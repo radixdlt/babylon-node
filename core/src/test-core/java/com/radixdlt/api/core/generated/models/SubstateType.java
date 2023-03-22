@@ -28,13 +28,11 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum SubstateType {
   
+  TYPEINFO("TypeInfo"),
+  
   METADATAENTRY("MetadataEntry"),
   
   ACCESSRULES("AccessRules"),
-  
-  FUNCTIONACCESSRULES("FunctionAccessRules"),
-  
-  TYPEINFO("TypeInfo"),
   
   COMPONENTSTATE("ComponentState"),
   
@@ -48,11 +46,13 @@ public enum SubstateType {
   
   PACKAGECODETYPE("PackageCodeType"),
   
-  PACKAGEROYALTYCONFIG("PackageRoyaltyConfig"),
+  PACKAGEROYALTY("PackageRoyalty"),
   
-  PACKAGEROYALTYACCUMULATOR("PackageRoyaltyAccumulator"),
+  PACKAGEFUNCTIONACCESSRULES("PackageFunctionAccessRules"),
   
-  RESOURCEMANAGER("ResourceManager"),
+  FUNGIBLERESOURCEMANAGER("FungibleResourceManager"),
+  
+  NONFUNGIBLERESOURCEMANAGER("NonFungibleResourceManager"),
   
   EPOCHMANAGER("EpochManager"),
   
@@ -60,11 +60,9 @@ public enum SubstateType {
   
   VALIDATOR("Validator"),
   
-  CLOCKCURRENTMINUTE("ClockCurrentMinute"),
+  CLOCK("Clock"),
   
   KEYVALUESTOREENTRY("KeyValueStoreEntry"),
-  
-  NONFUNGIBLESTOREENTRY("NonFungibleStoreEntry"),
   
   VAULTINFO("VaultInfo"),
   
@@ -72,15 +70,9 @@ public enum SubstateType {
   
   VAULTNONFUNGIBLE("VaultNonFungible"),
   
-  VAULTLOCKEDFUNGIBLE("VaultLockedFungible"),
-  
-  VAULTLOCKEDNONFUNGIBLE("VaultLockedNonFungible"),
-  
   ACCESSCONTROLLER("AccessController"),
   
-  ACCOUNT("Account"),
-  
-  PACKAGEEVENTSCHEMA("PackageEventSchema");
+  ACCOUNT("Account");
 
   private String value;
 

@@ -36,7 +36,7 @@ fn handle_state_component_internal(
 
     let type_info = {
         let substate_offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
-        let loaded_substate = read_known_substate(
+        let loaded_substate = read_mandatory_substate(
             state_manager,
             RENodeId::GlobalObject(component_address.into()),
             NodeModuleId::TypeInfo,
@@ -106,7 +106,7 @@ fn handle_state_component_internal(
     };
     let component_access_rules = {
         let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
-        let loaded_substate = read_known_substate(
+        let loaded_substate = read_mandatory_substate(
             state_manager,
             RENodeId::GlobalObject(component_address.into()),
             NodeModuleId::AccessRules,

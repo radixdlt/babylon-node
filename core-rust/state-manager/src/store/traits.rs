@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::staging::HashTreeDiff;
+use crate::staging::StateHashTreeDiff;
 use crate::transaction::LedgerTransaction;
 use crate::{CommittedTransactionIdentifiers, LedgerProof, LocalTransactionReceipt};
 pub use commit::*;
@@ -180,12 +180,18 @@ pub mod commit {
             for (id, value) in &changes.updated {
                 self.upserted.insert(id.clone(), value.clone());
             }
-            for (id, _) in &changes.deleted {
+            for id in changes.deleted.keys() {
                 let previous_value = self.upserted.remove(id);
                 if previous_value.is_none() {
                     self.deleted_ids.insert(id.clone());
                 }
             }
+        }
+    }
+
+    impl Default for SubstateStoreUpdate {
+        fn default() -> Self {
+            Self::new()
         }
     }
 
@@ -204,13 +210,19 @@ pub mod commit {
             }
         }
 
-        pub fn add(&mut self, at_state_version: u64, diff: &HashTreeDiff) {
+        pub fn add(&mut self, at_state_version: u64, diff: &StateHashTreeDiff) {
             self.new_re_node_layer_nodes
                 .extend(diff.new_re_node_layer_nodes.clone());
             self.new_substate_layer_nodes
                 .extend(diff.new_substate_layer_nodes.clone());
             self.stale_node_keys_at_state_version
                 .push((at_state_version, diff.stale_hash_tree_node_keys.clone()));
+        }
+    }
+
+    impl Default for HashTreeUpdate {
+        fn default() -> Self {
+            Self::new()
         }
     }
 

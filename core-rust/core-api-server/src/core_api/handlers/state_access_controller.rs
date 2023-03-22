@@ -36,7 +36,7 @@ fn handle_state_access_controller_internal(
     let component_state = {
         let substate_offset =
             SubstateOffset::AccessController(AccessControllerOffset::AccessController);
-        let loaded_substate = read_known_substate(
+        let loaded_substate = read_mandatory_substate(
             state_manager,
             RENodeId::GlobalObject(controller_address.into()),
             NodeModuleId::SELF,
@@ -49,7 +49,7 @@ fn handle_state_access_controller_internal(
     };
     let component_access_rules = {
         let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
-        let loaded_substate = read_known_substate(
+        let loaded_substate = read_mandatory_substate(
             state_manager,
             RENodeId::GlobalObject(controller_address.into()),
             NodeModuleId::AccessRules,
