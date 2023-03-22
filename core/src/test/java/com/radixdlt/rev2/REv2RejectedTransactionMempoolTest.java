@@ -178,19 +178,57 @@ public class REv2RejectedTransactionMempoolTest {
     try (var test = createTest(2)) {
       // Arrange: Two conflicting transactions in mempool
       test.startAllNodes();
+
+      // create account
       var accountTxn =
-          REv2TestTransactions.constructNewAccountTransaction(NetworkDefinition.INT_TEST_NET, 0, 0);
+          REv2TestTransactions.constructRawTransaction(
+              NetworkDefinition.INT_TEST_NET,
+              0,
+              0,
+              REv2TestTransactions.constructNewAccountManifest(NetworkDefinition.INT_TEST_NET),
+              REv2TestTransactions.DEFAULT_NOTARY,
+              false,
+              List.of());
       var executedTransaction = executeTransaction(test, accountTxn);
       var accountAddress = executedTransaction.newComponentAddresses().get(0);
+
+      // deposit xrd into it
+      var depositTxn =
+          REv2TestTransactions.constructRawTransaction(
+              NetworkDefinition.INT_TEST_NET,
+              0,
+              0,
+              REv2TestTransactions.constructDepositFromFaucetManifest(
+                  NetworkDefinition.INT_TEST_NET, accountAddress),
+              REv2TestTransactions.DEFAULT_NOTARY,
+              false,
+              List.of());
+      executeTransaction(test, depositTxn);
+
+      // dispatch 2 competing transactions (depositing from the above account)
       var mempoolDispatcher =
           test.getInstance(0, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
       var transferTxn1 =
-          REv2TestTransactions.constructNewAccountFromAccountTransaction(
-              NetworkDefinition.INT_TEST_NET, accountAddress, 0, 0);
+          REv2TestTransactions.constructRawTransaction(
+              NetworkDefinition.INT_TEST_NET,
+              0,
+              0,
+              REv2TestTransactions.constructDepositFromAccountManifest(
+                  NetworkDefinition.INT_TEST_NET, accountAddress),
+              REv2TestTransactions.DEFAULT_NOTARY,
+              false,
+              List.of());
       mempoolDispatcher.dispatch(MempoolAdd.create(transferTxn1));
       var transferTxn2 =
-          REv2TestTransactions.constructNewAccountFromAccountTransaction(
-              NetworkDefinition.INT_TEST_NET, accountAddress, 0, 1);
+          REv2TestTransactions.constructRawTransaction(
+              NetworkDefinition.INT_TEST_NET,
+              0,
+              1,
+              REv2TestTransactions.constructDepositFromAccountManifest(
+                  NetworkDefinition.INT_TEST_NET, accountAddress),
+              REv2TestTransactions.DEFAULT_NOTARY,
+              false,
+              List.of());
       mempoolDispatcher.dispatch(MempoolAdd.create(transferTxn2));
       test.runUntilOutOfMessagesOfType(100, onlyLocalMempoolAddEvents());
 

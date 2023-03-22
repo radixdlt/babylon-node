@@ -64,7 +64,6 @@
 
 package com.radixdlt.statemanager;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.NetworkDefinition;
@@ -79,18 +78,6 @@ public record StateManagerConfig(
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         StateManagerConfig.class,
-        codecs ->
-            StructCodec.with(
-                StateManagerConfig::new,
-                codecs.of(NetworkDefinition.class),
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                (s, encoder) ->
-                    encoder.encode(
-                        s.networkDefinition,
-                        s.mempoolConfigOpt,
-                        s.databaseConfig,
-                        s.loggingConfig)));
+        codecs -> StructCodec.fromRecordComponents(StateManagerConfig.class, codecs));
   }
 }

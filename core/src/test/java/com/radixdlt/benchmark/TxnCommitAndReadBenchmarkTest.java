@@ -77,15 +77,13 @@ import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2TestTransactions;
 import com.radixdlt.rev2.REv2TestTransactions.NotarizedTransactionBuilder;
+import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.rev2.REv2TransactionsAndProofReader;
-import com.radixdlt.serialization.DefaultSerialization;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.Longs;
-import com.radixdlt.utils.UInt64;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -113,13 +111,10 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
         When that happens, make sure this benchmark is still relevant before spending the time
         fixing the lines below :) */
         final var proof = LedgerProof.mockAtStateVersion(stateVersion + NUM_TXNS_IN_A_COMMIT);
-        final var proofBytes =
-            DefaultSerialization.getInstance().toDson(proof, DsonOutput.Output.ALL);
         final var commitRequest =
             new CommitRequest(
                 createUniqueTransactions(NUM_TXNS_IN_A_COMMIT, i),
-                UInt64.fromNonNegativeLong(proof.getStateVersion()),
-                proofBytes,
+                REv2ToConsensus.ledgerProof(proof),
                 Option.none());
         stateComputer.commit(commitRequest);
         stateVersion = proof.getStateVersion();

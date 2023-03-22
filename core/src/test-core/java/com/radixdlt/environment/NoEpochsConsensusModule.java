@@ -73,6 +73,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSync;
@@ -93,9 +94,10 @@ public class NoEpochsConsensusModule extends AbstractModule {
     var eventBinder =
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
             .permitDuplicates();
+    eventBinder.addBinding().toInstance(TimeoutQuorumDelayedResolution.class);
     eventBinder.addBinding().toInstance(ScheduledLocalTimeout.class);
     eventBinder.addBinding().toInstance(VertexRequestTimeout.class);
-    eventBinder.addBinding().toInstance(RoundLeaderFailure.class);
+    eventBinder.addBinding().toInstance(ProposalRejected.class);
     eventBinder.addBinding().toInstance(RoundUpdate.class);
     eventBinder.addBinding().toInstance(LedgerUpdate.class);
   }
@@ -138,6 +140,15 @@ public class NoEpochsConsensusModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
+  private EventProcessorOnRunner<?> timeoutQuorumDelayedResolutionProcessor(
+      BFTEventProcessor processor) {
+    return new EventProcessorOnRunner<>(
+        Runners.CONSENSUS,
+        TimeoutQuorumDelayedResolution.class,
+        processor::processTimeoutQuorumDelayedResolution);
+  }
+
+  @ProvidesIntoSet
   public EventProcessorOnRunner<?> bftSyncTimeoutProcessor(BFTSync bftSync) {
     return new EventProcessorOnRunner<>(
         Runners.CONSENSUS,
@@ -152,9 +163,9 @@ public class NoEpochsConsensusModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private EventProcessorOnRunner<?> roundLeaderFailureProcessor(BFTEventProcessor processor) {
+  private EventProcessorOnRunner<?> proposalRejectedProcessor(BFTEventProcessor processor) {
     return new EventProcessorOnRunner<>(
-        Runners.CONSENSUS, RoundLeaderFailure.class, processor::processRoundLeaderFailure);
+        Runners.CONSENSUS, ProposalRejected.class, processor::processProposalRejected);
   }
 
   @ProvidesIntoSet

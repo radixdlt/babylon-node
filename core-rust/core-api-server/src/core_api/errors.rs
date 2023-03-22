@@ -3,7 +3,7 @@ use axum::{
     Json,
 };
 use hyper::StatusCode;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::network::NetworkDefinition;
 
 use super::models;
 
@@ -107,5 +107,14 @@ pub(crate) fn detailed_error<E: ErrorDetails>(
         public_error_message: public_message.into(),
         trace: None,
         details: Some(details.into()),
+    }
+}
+
+pub(crate) fn length_limit_error<E: ErrorDetails>() -> ResponseError<E> {
+    ResponseError {
+        status_code: StatusCode::PAYLOAD_TOO_LARGE,
+        public_error_message: "length limit exceeded".into(),
+        trace: None,
+        details: None,
     }
 }

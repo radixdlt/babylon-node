@@ -1,17 +1,16 @@
 use radix_engine::types::*;
 
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::blueprints::clock::{
+    ClockSetCurrentTimeInput, CLOCK_SET_CURRENT_TIME_IDENT,
+};
+use radix_engine_interface::blueprints::epoch_manager::{
+    EpochManagerNextRoundInput, EPOCH_MANAGER_NEXT_ROUND_IDENT,
+};
 use radix_engine_interface::constants::{CLOCK, EPOCH_MANAGER};
 use radix_engine_interface::crypto::{hash, Hash};
-use radix_engine_interface::data::scrypto_encode;
-use radix_engine_interface::model::{
-    ClockInvocation, ClockSetCurrentTimeInvocation, EpochManagerInvocation,
-    EpochManagerNextRoundInvocation, NativeInvocation,
-};
-use radix_engine_interface::modules::auth::AuthAddresses;
 use std::collections::BTreeSet;
-use transaction::model::{
-    AuthZoneParams, Executable, ExecutionContext, FeePayment, Instruction, InstructionList,
-};
+use transaction::model::{AuthZoneParams, Executable, ExecutionContext, FeePayment, Instruction};
 
 #[derive(Debug, Copy, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub enum ValidatorTransaction {
@@ -28,7 +27,7 @@ pub enum ValidatorTransaction {
 impl ValidatorTransaction {
     pub fn prepare(&self) -> PreparedValidatorTransaction {
         // TODO: Figure out better way to do this or if we even do need it
-        let hash = hash(scrypto_encode(self).unwrap());
+        let hash = hash(manifest_encode(self).unwrap());
 
         let instructions = match self {
             ValidatorTransaction::RoundUpdate {
@@ -36,23 +35,31 @@ impl ValidatorTransaction {
                 round_in_epoch,
                 ..
             } => {
-                let update_time = NativeInvocation::Clock(ClockInvocation::SetCurrentTime(
-                    ClockSetCurrentTimeInvocation {
-                        receiver: CLOCK,
-                        current_time_ms: *timestamp_ms,
-                    },
-                ));
-                let update_round = NativeInvocation::EpochManager(
-                    EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
-                        receiver: EPOCH_MANAGER,
-                        round: *round_in_epoch,
-                    }),
-                );
+                let update_time = Instruction::CallMethod {
+                    component_address: CLOCK,
+                    method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
+                    args: manifest_decode::<ManifestValue>(
+                        &manifest_encode(&ClockSetCurrentTimeInput {
+                            current_time_ms: *timestamp_ms,
+                        })
+                        .unwrap(),
+                    )
+                    .unwrap(),
+                };
 
-                vec![
-                    Instruction::System(update_time),
-                    Instruction::System(update_round),
-                ]
+                let update_round = Instruction::CallMethod {
+                    component_address: EPOCH_MANAGER,
+                    method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
+                    args: manifest_decode::<ManifestValue>(
+                        &manifest_encode(&EpochManagerNextRoundInput {
+                            round: *round_in_epoch,
+                        })
+                        .unwrap(),
+                    )
+                    .unwrap(),
+                };
+
+                vec![update_time, update_round]
             }
         };
 
@@ -70,11 +77,11 @@ impl PreparedValidatorTransaction {
     pub fn to_executable(self) -> Executable<'static> {
         let auth_zone_params = AuthZoneParams {
             initial_proofs: vec![AuthAddresses::validator_role()],
-            virtualizable_proofs_resource_addresses: BTreeSet::new(),
+            virtual_resources: BTreeSet::new(),
         };
 
         Executable::new_no_blobs(
-            InstructionList::AnyOwned(self.instructions),
+            self.instructions,
             ExecutionContext {
                 transaction_hash: self.hash,
                 payload_size: 0,

@@ -73,14 +73,19 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.*;
 import com.google.inject.Module;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.sync.*;
+import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
+import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
@@ -90,7 +95,9 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.RoundChange.HighQcSource;
 import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.store.LastProof;
@@ -109,7 +116,7 @@ public class ConsensusModuleTest {
 
   @Inject private VertexStoreAdapter vertexStore;
 
-  private Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
+  private Hasher hasher = new Blake2b256Hasher(DefaultSerialization.getInstance());
 
   private ECKeyPair validatorKeyPair;
 
@@ -125,11 +132,12 @@ public class ConsensusModuleTest {
   public void setup() {
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     var genesisVertex =
-        Vertex.createInitialEpochVertex(LedgerHeader.genesis(accumulatorState, null, 0, 0))
+        Vertex.createInitialEpochVertex(
+                LedgerHeader.genesis(accumulatorState, LedgerHashes.zero(), null, 0, 0))
             .withId(ZeroHasher.INSTANCE);
     var qc =
         QuorumCertificate.createInitialEpochQC(
-            genesisVertex, LedgerHeader.genesis(accumulatorState, null, 0, 0));
+            genesisVertex, LedgerHeader.genesis(accumulatorState, LedgerHashes.zero(), null, 0, 0));
     this.validatorKeyPair = ECKeyPair.generateNew();
     this.validatorId = BFTValidatorId.create(this.validatorKeyPair.getPublicKey());
     var validatorSet =
@@ -171,9 +179,11 @@ public class ConsensusModuleTest {
             .toInstance(rmock(ScheduledEventDispatcher.class));
         bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledLocalTimeout>>() {})
             .toInstance(rmock(ScheduledEventDispatcher.class));
-        bind(new TypeLiteral<EventDispatcher<RoundQuorumReached>>() {})
+        bind(new TypeLiteral<EventDispatcher<RoundQuorumResolution>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<EventDispatcher<RoundLeaderFailure>>() {})
+        bind(new TypeLiteral<ScheduledEventDispatcher<TimeoutQuorumDelayedResolution>>() {})
+            .toInstance(rmock(ScheduledEventDispatcher.class));
+        bind(new TypeLiteral<EventDispatcher<ProposalRejected>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<RemoteEventDispatcher<NodeId, Vote>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
@@ -209,11 +219,13 @@ public class ConsensusModuleTest {
         bind(RateLimiter.class)
             .annotatedWith(GetVerticesRequestRateLimit.class)
             .toInstance(RateLimiter.create(Double.MAX_VALUE));
+        bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
         bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
         bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(1000L);
         bindConstant().annotatedWith(PacemakerBackoffRate.class).to(2.0);
         bindConstant().annotatedWith(PacemakerMaxExponent.class).to(6);
         bindConstant().annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class).to(1000L);
+        bindConstant().annotatedWith(TimeoutQuorumResolutionDelayMs.class).to(1000L);
 
         ECKeyPair ecKeyPair = ECKeyPair.generateNew();
         bind(HashSigner.class).toInstance(ecKeyPair::sign);
@@ -248,7 +260,12 @@ public class ConsensusModuleTest {
             Round.of(1),
             vertex.hash(),
             LedgerHeader.create(
-                1, Round.of(1), new AccumulatorState(1, HashUtils.zero256()), 1, 1));
+                1,
+                Round.of(1),
+                new AccumulatorState(1, HashUtils.zero256()),
+                LedgerHashes.zero(),
+                1,
+                1));
     final var voteData = new VoteData(next, parent.getProposedHeader(), parent.getParentHeader());
     final var timestamp = 1;
     final var voteDataHash = Vote.getHashOfData(hasher, voteData, timestamp);
@@ -269,7 +286,10 @@ public class ConsensusModuleTest {
     Pair<QuorumCertificate, VertexWithHash> nextVertex = createNextVertex(parent, validatorKeyPair);
     HighQC unsyncedHighQC =
         HighQC.from(nextVertex.getFirst(), nextVertex.getFirst(), Optional.empty());
-    bftSync.syncToQC(unsyncedHighQC, NodeId.fromPublicKey(validatorId.getKey()));
+    bftSync.syncToQC(
+        unsyncedHighQC,
+        NodeId.fromPublicKey(validatorId.getKey()),
+        HighQcSource.RECEIVED_ALONG_WITH_PROPOSAL);
     GetVerticesRequest request = new GetVerticesRequest(nextVertex.getSecond().hash(), 1);
     VertexRequestTimeout timeout = VertexRequestTimeout.create(request);
 
@@ -295,7 +315,7 @@ public class ConsensusModuleTest {
         createNextVertex(nextVertex.getFirst(), validatorKeyPair);
     HighQC unsyncedHighQC =
         HighQC.from(nextNextVertex.getFirst(), nextNextVertex.getFirst(), Optional.empty());
-    bftSync.syncToQC(unsyncedHighQC, nodeId);
+    bftSync.syncToQC(unsyncedHighQC, nodeId, HighQcSource.RECEIVED_ALONG_WITH_PROPOSAL);
 
     // Act
     nothrowSleep(100); // FIXME: Remove when rate limit on send removed
@@ -332,8 +352,8 @@ public class ConsensusModuleTest {
     final var unsyncedHighQC2 =
         HighQC.from(proposedVertex2.getFirst(), proposedVertex2.getFirst(), Optional.empty());
 
-    bftSync.syncToQC(unsyncedHighQC1, nodeId);
-    bftSync.syncToQC(unsyncedHighQC2, nodeId);
+    bftSync.syncToQC(unsyncedHighQC1, nodeId, HighQcSource.RECEIVED_ALONG_WITH_PROPOSAL);
+    bftSync.syncToQC(unsyncedHighQC2, nodeId, HighQcSource.RECEIVED_ALONG_WITH_PROPOSAL);
 
     nothrowSleep(100);
     final var response1 = new GetVerticesResponse(ImmutableList.of(proposedVertex1.getSecond()));

@@ -70,6 +70,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTEventProcessor;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.bft.processor.EmptyBFTEventProcessor;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerStateFactory;
@@ -187,10 +188,10 @@ public final class EpochManager {
       this.bftEventProcessor = EmptyBFTEventProcessor.INSTANCE;
       this.syncLedgerUpdateProcessor = update -> {};
       this.syncTimeoutProcessor = timeout -> {};
-      if (self.getValidatorAddress() == null) {
+      if (self.getValidatorAddress().isEmpty()) {
         this.validationStatus = ValidationStatus.NOT_CONFIGURED_AS_VALIDATOR;
       } else {
-        this.validationStatus = ValidationStatus.VALIDATING_IN_CURRENT_EPOCH;
+        this.validationStatus = ValidationStatus.NOT_VALIDATING_IN_CURRENT_EPOCH;
       }
       return;
     }
@@ -247,15 +248,13 @@ public final class EpochManager {
         bftFactory.create(
             self,
             pacemaker,
-            vertexStore,
             bftSync,
-            bftSync.roundQuorumReachedEventProcessor(),
+            bftSync.roundQuorumResolutionEventProcessor(),
             validatorSet,
             initialRoundUpdate,
             safetyRules,
             nextEpoch,
-            proposerElection,
-            timeoutCalculator);
+            proposerElection);
 
     this.syncResponseProcessors = Set.of(bftSync.responseProcessor());
     this.syncErrorResponseProcessors = Set.of(bftSync.errorResponseProcessor());
@@ -382,6 +381,15 @@ public final class EpochManager {
     bftEventProcessor.processLocalTimeout(localTimeout.event());
   }
 
+  public void processTimeoutQuorumDelayedResolution(
+      Epoched<TimeoutQuorumDelayedResolution> timeoutQuorumDelayedResolution) {
+    if (timeoutQuorumDelayedResolution.epoch() != this.currentEpoch()) {
+      return;
+    }
+
+    bftEventProcessor.processTimeoutQuorumDelayedResolution(timeoutQuorumDelayedResolution.event());
+  }
+
   public EventProcessor<EpochRoundUpdate> epochRoundUpdateEventProcessor() {
     return epochRoundUpdate -> {
       if (epochRoundUpdate.getEpoch() != this.currentEpoch()) {
@@ -393,12 +401,12 @@ public final class EpochManager {
     };
   }
 
-  public EventProcessor<EpochRoundLeaderFailure> epochRoundLeaderFailureEventProcessor() {
-    return epochRoundLeaderFailure -> {
-      if (epochRoundLeaderFailure.getEpoch() != this.currentEpoch()) {
+  public EventProcessor<EpochProposalRejected> epochProposalRejectedEventProcessor() {
+    return epochProposalRejected -> {
+      if (epochProposalRejected.epoch() != this.currentEpoch()) {
         return;
       }
-      bftEventProcessor.processRoundLeaderFailure(epochRoundLeaderFailure.getRoundLeaderFailure());
+      bftEventProcessor.processProposalRejected(epochProposalRejected.proposalRejected());
     };
   }
 

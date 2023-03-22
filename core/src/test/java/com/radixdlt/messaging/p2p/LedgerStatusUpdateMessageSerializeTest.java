@@ -64,6 +64,7 @@
 
 package com.radixdlt.messaging.p2p;
 
+import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
@@ -78,6 +79,7 @@ public class LedgerStatusUpdateMessageSerializeTest
 
   private static LedgerStatusUpdateMessage get() {
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    return new LedgerStatusUpdateMessage(LedgerProof.genesis(accumulatorState, null, 0, 0));
+    return new LedgerStatusUpdateMessage(
+        LedgerProof.genesis(accumulatorState, LedgerHashes.zero(), null, 0, 0));
   }
 }

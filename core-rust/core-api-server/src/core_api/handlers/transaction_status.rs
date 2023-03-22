@@ -11,7 +11,7 @@ use state_manager::store::traits::*;
 
 #[tracing::instrument(err(Debug), skip(state))]
 pub(crate) async fn handle_transaction_status(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
     request: Json<models::TransactionStatusRequest>,
 ) -> Result<Json<models::TransactionStatusResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_transaction_status_internal)
@@ -85,7 +85,7 @@ fn handle_transaction_status_internal(
             LedgerTransactionOutcome::Failure(reason) => (
                 PayloadStatus::CommittedFailure,
                 "FAILURE",
-                Some(format!("{:?}", reason)),
+                Some(format!("{reason:?}")),
             ),
         };
 
@@ -102,7 +102,7 @@ fn handle_transaction_status_internal(
 
         return Ok(models::TransactionStatusResponse {
             intent_status,
-            status_description: format!("The transaction has been committed to the ledger, with an outcome of {}. For more information, use the /transaction/receipt endpoint.", outcome),
+            status_description: format!("The transaction has been committed to the ledger, with an outcome of {outcome}. For more information, use the /transaction/receipt endpoint."),
             invalid_from_epoch: None,
             known_payloads,
         });
@@ -110,6 +110,7 @@ fn handle_transaction_status_internal(
 
     let mempool_payloads_hashes = state_manager
         .mempool
+        .read()
         .get_payload_hashes_for_intent(&intent_hash);
 
     if !mempool_payloads_hashes.is_empty() {

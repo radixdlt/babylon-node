@@ -73,6 +73,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
@@ -164,7 +165,10 @@ public class PacemakerRoundUpdateRaceConditionTest {
     test.runUntilMessage(nodeUnderTestReachesRound(Round.of(3)));
 
     final var counters = test.getInstance(nodeUnderTestIndex, Metrics.class);
-    assertThat(counters.bft().voteQuorums().get()).isEqualTo(2); // ensure that quorum was formed
+    final var numRegularQuorums =
+        (long)
+            counters.bft().quorumResolutions().label(new Metrics.Bft.QuorumResolution(false)).get();
+    assertThat(numRegularQuorums).isEqualTo(2); // ensure that quorum was formed
     assertThat(counters.bft().pacemaker().timeoutsSent().get())
         .isEqualTo(2); // ensure that timeouts were processed
   }

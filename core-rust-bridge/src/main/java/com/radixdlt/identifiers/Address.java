@@ -67,7 +67,7 @@ package com.radixdlt.identifiers;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.sbor.NativeCalls;
+import com.radixdlt.sbor.Natives;
 
 public final class Address {
   static {
@@ -76,13 +76,12 @@ public final class Address {
   }
 
   public static ComponentAddress virtualAccountAddress(ECDSASecp256k1PublicKey key) {
-    return virtualAccountAddress.call(key);
+    return virtualAccountAddressFunc.call(key);
   }
 
-  private static final NativeCalls.StaticFunc1<ECDSASecp256k1PublicKey, ComponentAddress>
-      virtualAccountAddress =
-          NativeCalls.StaticFunc1.with(
-              new TypeToken<>() {}, new TypeToken<>() {}, Address::virtualAccountAddress);
+  private static final Natives.Call1<ECDSASecp256k1PublicKey, ComponentAddress>
+      virtualAccountAddressFunc =
+          Natives.builder(Address::virtualAccountAddress).build(new TypeToken<>() {});
 
   private static native byte[] virtualAccountAddress(byte[] requestPayload);
 }

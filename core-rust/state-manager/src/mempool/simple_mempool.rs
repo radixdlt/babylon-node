@@ -151,20 +151,17 @@ impl SimpleMempool {
         &mut self,
         intent_hashes: &[IntentHash],
     ) -> Vec<PendingTransaction> {
-        let mut removed_transactions = Vec::new();
-        for intent_hash in intent_hashes {
-            if let Some(payload_hashes) = self.intent_lookup.remove(intent_hash) {
-                for payload_hash in payload_hashes {
-                    let removed_option = self.data.remove(&payload_hash);
-                    if let Some(mempool_data) = removed_option {
-                        removed_transactions.push(mempool_data.transaction);
-                    } else {
-                        panic!("Mempool intent hash lookup out of sync on handle committed");
-                    }
-                }
-            }
-        }
-        removed_transactions
+        intent_hashes
+            .iter()
+            .filter_map(|intent_hash| self.intent_lookup.remove(intent_hash))
+            .flat_map(|payload_hashes| payload_hashes.into_iter())
+            .map(|payload_hash| {
+                self.data
+                    .remove(&payload_hash)
+                    .expect("Mempool intent hash lookup out of sync on handle committed")
+                    .transaction
+            })
+            .collect()
     }
 
     pub fn get_count(&self) -> u64 {
@@ -178,7 +175,6 @@ impl SimpleMempool {
         user_payload_hashes_to_exclude: &HashSet<UserPayloadHash>,
     ) -> Vec<PendingTransaction> {
         let mut payload_size_so_far = 0u64;
-        let mut count_so_far = 0u64;
         self.data
             .iter()
             .filter_map(|(tid, data)| {
@@ -188,27 +184,20 @@ impl SimpleMempool {
                     None
                 }
             })
-            .take_while(|tx| {
-                count_so_far += 1;
-                if count_so_far > max_count {
-                    return false;
+            .filter_map(|tx| {
+                if payload_size_so_far + tx.payload_size as u64 <= max_payload_size_bytes {
+                    payload_size_so_far += tx.payload_size as u64;
+                    Some(tx)
+                } else {
+                    None
                 }
-
-                payload_size_so_far += tx.payload_size;
-                if payload_size_so_far > max_payload_size_bytes {
-                    // Note that with this naive approach there might be other txns
-                    // in a mempool that could still fit in the available space.
-                    // This should be good enough for now, but consider optimizing at some point.
-                    return false;
-                }
-
-                true
             })
+            .take(max_count as usize)
             .collect()
     }
 
-    pub fn get_transactions(&self) -> HashMap<UserPayloadHash, MempoolData> {
-        self.data.clone()
+    pub fn transactions(&self) -> &HashMap<UserPayloadHash, MempoolData> {
+        &self.data
     }
 
     pub fn remove_transaction(
@@ -240,7 +229,7 @@ impl SimpleMempool {
         }
     }
 
-    pub fn list_all_hashes(&self) -> Vec<(&IntentHash, &UserPayloadHash)> {
+    pub fn all_hashes_iter(&self) -> impl Iterator<Item = (&IntentHash, &UserPayloadHash)> {
         self.intent_lookup
             .iter()
             .flat_map(|(intent_hash, payload_hashes)| {
@@ -248,7 +237,6 @@ impl SimpleMempool {
                     .iter()
                     .map(move |payload_hash| (intent_hash, payload_hash))
             })
-            .collect()
     }
 
     pub fn get_payload(&self, payload_hash: &UserPayloadHash) -> Option<&PendingTransaction> {
@@ -260,13 +248,12 @@ impl SimpleMempool {
 mod tests {
     use std::matches;
 
-    use radix_engine::types::{
-        EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, PublicKey, Signature,
-        SignatureWithPublicKey,
-    };
+    use radix_engine::types::PublicKey;
+    use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+    use transaction::ecdsa_secp256k1::EcdsaSecp256k1Signature;
     use transaction::model::{
-        NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
-        TransactionManifest,
+        NotarizedTransaction, Signature, SignatureWithPublicKey, SignedTransactionIntent,
+        TransactionHeader, TransactionIntent, TransactionManifest,
     };
 
     use crate::mempool::simple_mempool::*;
@@ -322,7 +309,7 @@ mod tests {
         let notarized_transaction = create_fake_notarized_transaction(nonce, sigs_count);
         let payload_hash = notarized_transaction.user_payload_hash();
         let intent_hash = notarized_transaction.intent_hash();
-        let payload_size = notarized_transaction.to_bytes().unwrap().len() as u64;
+        let payload_size = notarized_transaction.to_bytes().unwrap().len();
         PendingTransaction {
             payload: notarized_transaction,
             payload_hash,

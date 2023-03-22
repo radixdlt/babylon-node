@@ -65,7 +65,9 @@
 package com.radixdlt.rev2;
 
 import com.radixdlt.addressing.Addressing;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
+import com.radixdlt.identifiers.Address;
 import com.radixdlt.networks.Network;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -75,20 +77,15 @@ import java.util.Random;
 
 /**
  * A simple fuzzer for transactions which randomly arranges 4 manifest instructions: 1. sys-faucet
- * lock_fee 2. sys-faucet free 3. Account new 4. Account new_with_resource
+ * lock_fee 2. sys-faucet free 3. Create account 4. Deposit from worktop to a new virtual account.
  */
 public final class REv2SimpleFuzzerTransactionGenerator
     implements TransactionGenerator<RawNotarizedTransaction> {
   private static final Addressing ADDRESSING = Addressing.ofNetwork(Network.LOCALSIMULATOR);
-  private static final String SIM_XRD_ADDRESS =
-      ADDRESSING.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
   private static final String SIM_FAUCET_ADDRESS =
       ADDRESSING.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
-  private static final String SIM_ACCOUNT_PACKAGE_ADDRESS =
-      ADDRESSING.encodePackageAddress(ScryptoConstants.ACCOUNT_PACKAGE_ADDRESS);
 
   private final Random random;
-  private int count = 0;
   private int transactionNonce = 0;
 
   public REv2SimpleFuzzerTransactionGenerator(Random random) {
@@ -96,22 +93,21 @@ public final class REv2SimpleFuzzerTransactionGenerator
   }
 
   private String nextInstruction() {
-    count++;
-
     return switch (random.nextInt(4)) {
       case 0 -> String.format(
           "CALL_METHOD ComponentAddress(\"%s\") \"lock_fee\" Decimal(\"100\");",
           SIM_FAUCET_ADDRESS);
       case 1 -> String.format("CALL_METHOD ComponentAddress(\"%s\") \"free\";", SIM_FAUCET_ADDRESS);
-      case 2 -> String.format(
-          "CALL_FUNCTION PackageAddress(\"%s\") \"Account\" \"new\" Enum(\"AllowAll\");",
-          SIM_ACCOUNT_PACKAGE_ADDRESS);
-      default -> String.format(
-          """
-                              TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("%s");
-                              CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AllowAll") Bucket("%s");
-                          """,
-          SIM_XRD_ADDRESS, "bucket" + count, SIM_ACCOUNT_PACKAGE_ADDRESS, "bucket" + count);
+      case 2 -> "CREATE_ACCOUNT Enum(\"AccessRule::AllowAll\");";
+      default -> {
+        ComponentAddress accountAddress =
+            Address.virtualAccountAddress(ECKeyPair.generateNew().getPublicKey());
+        yield String.format(
+            """
+                CALL_METHOD ComponentAddress("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
+                """,
+            ADDRESSING.encodeAccountAddress(accountAddress));
+      }
     };
   }
 

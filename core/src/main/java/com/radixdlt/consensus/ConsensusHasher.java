@@ -85,12 +85,14 @@ public final class ConsensusHasher {
       if (header != null) {
         outputStream.write(header.getAccumulatorState().getAccumulatorHash().asBytes()); // 32 bytes
         outputStream.writeLong(header.getAccumulatorState().getStateVersion()); // 8 bytes
+        // TODO: include the header.getStateHash().asBytes() when we are ready to affect consensus
         outputStream.writeLong(header.getEpoch()); // 8 bytes
         outputStream.writeLong(header.getRound().number()); // 8 bytes
         outputStream.writeLong(header.consensusParentRoundTimestamp()); // 8 bytes
         outputStream.writeLong(header.proposerTimestamp()); // 8 bytes
-        if (header.getNextEpoch().isPresent()) {
-          var nextEpoch = header.getNextEpoch().get();
+        var optNextEpoch = header.getNextEpoch();
+        if (optNextEpoch.isPresent()) {
+          var nextEpoch = optNextEpoch.get();
           outputStream.writeByte(1); // 1 byte
           outputStream.writeInt(nextEpoch.getValidators().size()); // 4 bytes
           outputStream.writeLong(nextEpoch.getEpoch()); // 8 bytes

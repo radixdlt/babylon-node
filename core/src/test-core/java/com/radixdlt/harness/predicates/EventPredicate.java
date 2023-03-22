@@ -102,9 +102,9 @@ public final class EventPredicate {
         msg.message() instanceof ConsensusEvent
             || msg.message() instanceof BFTHighQCUpdate
             || msg.message() instanceof BFTInsertUpdate
-            || msg.message() instanceof RoundQuorumReached
+            || msg.message() instanceof RoundQuorumResolution
             || msg.message() instanceof RoundUpdate
-            || msg.message() instanceof RoundLeaderFailure
+            || msg.message() instanceof ProposalRejected
             || msg.message() instanceof EpochRoundUpdate;
   }
 

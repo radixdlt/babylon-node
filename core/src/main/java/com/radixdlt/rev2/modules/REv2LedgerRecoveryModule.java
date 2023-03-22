@@ -69,6 +69,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.AccumulatorState;
@@ -76,7 +77,6 @@ import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
@@ -86,7 +86,6 @@ import com.radixdlt.store.LastProof;
 import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transactions.RawLedgerTransaction;
-import com.radixdlt.utils.UInt64;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -125,11 +124,13 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
                       .or((BFTValidatorSet) null);
               var accumulatorState =
                   ledgerAccumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
-              var proof = LedgerProof.genesis(accumulatorState, validatorSet, timestamp, timestamp);
-              var proofBytes = serialization.toDson(proof, DsonOutput.Output.ALL);
-              var stateVersion = UInt64.fromNonNegativeLong(proof.getStateVersion());
+              var ledgerHashes = REv2ToConsensus.ledgerHashes(result.ledgerHashes());
+              var proof =
+                  LedgerProof.genesis(
+                      accumulatorState, ledgerHashes, validatorSet, timestamp, timestamp);
               var commitRequest =
-                  new CommitRequest(List.of(genesis), stateVersion, proofBytes, Option.none());
+                  new CommitRequest(
+                      List.of(genesis), REv2ToConsensus.ledgerProof(proof), Option.none());
               var commitResult = stateComputer.commit(commitRequest);
               commitResult.unwrap();
 

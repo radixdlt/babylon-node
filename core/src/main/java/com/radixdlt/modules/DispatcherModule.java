@@ -71,7 +71,8 @@ import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.epoch.EpochRoundLeaderFailure;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
+import com.radixdlt.consensus.epoch.EpochProposalRejected;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
@@ -139,6 +140,11 @@ public class DispatcherModule extends AbstractModule {
             Dispatchers.scheduledDispatcherProvider(
                 new TypeLiteral<Epoched<ScheduledLocalTimeout>>() {}))
         .in(Scopes.SINGLETON);
+    bind(new TypeLiteral<ScheduledEventDispatcher<Epoched<TimeoutQuorumDelayedResolution>>>() {})
+        .toProvider(
+            Dispatchers.scheduledDispatcherProvider(
+                new TypeLiteral<Epoched<TimeoutQuorumDelayedResolution>>() {}))
+        .in(Scopes.SINGLETON);
     bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() {})
         .toProvider(Dispatchers.scheduledDispatcherProvider(VertexRequestTimeout.class))
         .in(Scopes.SINGLETON);
@@ -184,6 +190,11 @@ public class DispatcherModule extends AbstractModule {
     Multibinder.newSetBinder(binder(), scheduledTimeoutKey, ProcessOnDispatch.class);
     Multibinder.newSetBinder(binder(), scheduledTimeoutKey);
 
+    final var timeoutQuorumDelayedResolutionKey =
+        new TypeLiteral<EventProcessor<TimeoutQuorumDelayedResolution>>() {};
+    Multibinder.newSetBinder(binder(), timeoutQuorumDelayedResolutionKey, ProcessOnDispatch.class);
+    Multibinder.newSetBinder(binder(), timeoutQuorumDelayedResolutionKey);
+
     final var syncRequestKey = new TypeLiteral<EventProcessor<LocalSyncRequest>>() {};
     Multibinder.newSetBinder(binder(), syncRequestKey, ProcessOnDispatch.class);
     Multibinder.newSetBinder(binder(), syncRequestKey);
@@ -195,12 +206,12 @@ public class DispatcherModule extends AbstractModule {
         .toProvider(Dispatchers.dispatcherProvider(EpochLocalTimeoutOccurrence.class))
         .in(Scopes.SINGLETON);
 
-    final var roundLeaderFailureKey = new TypeLiteral<EventProcessor<RoundLeaderFailure>>() {};
-    Multibinder.newSetBinder(binder(), roundLeaderFailureKey, ProcessOnDispatch.class);
-    Multibinder.newSetBinder(binder(), roundLeaderFailureKey);
+    final var proposalRejectedKey = new TypeLiteral<EventProcessor<ProposalRejected>>() {};
+    Multibinder.newSetBinder(binder(), proposalRejectedKey, ProcessOnDispatch.class);
+    Multibinder.newSetBinder(binder(), proposalRejectedKey);
 
-    bind(new TypeLiteral<EventDispatcher<EpochRoundLeaderFailure>>() {})
-        .toProvider(Dispatchers.dispatcherProvider(EpochRoundLeaderFailure.class))
+    bind(new TypeLiteral<EventDispatcher<EpochProposalRejected>>() {})
+        .toProvider(Dispatchers.dispatcherProvider(EpochProposalRejected.class))
         .in(Scopes.SINGLETON);
 
     final var roundUpdateKey = new TypeLiteral<EventProcessor<RoundUpdate>>() {};
@@ -229,16 +240,18 @@ public class DispatcherModule extends AbstractModule {
     final var verticesRequestKey = new TypeLiteral<EventProcessor<GetVerticesRequest>>() {};
     Multibinder.newSetBinder(binder(), verticesRequestKey, ProcessOnDispatch.class);
 
-    bind(new TypeLiteral<EventDispatcher<RoundQuorumReached>>() {})
+    bind(new TypeLiteral<EventDispatcher<RoundQuorumResolution>>() {})
         .toProvider(
             Dispatchers.dispatcherProvider(
-                RoundQuorumReached.class,
+                RoundQuorumResolution.class,
                 (counters, event) -> {
-                  if (event.votingResult() instanceof RoundVotingResult.FormedTC) {
-                    counters.bft().timeoutQuorums().inc();
-                  } else {
-                    counters.bft().voteQuorums().inc();
-                  }
+                  final var isTimeout =
+                      event.roundQuorum() instanceof RoundQuorum.TimeoutRoundQuorum;
+                  counters
+                      .bft()
+                      .quorumResolutions()
+                      .label(new Metrics.Bft.QuorumResolution(isTimeout))
+                      .inc();
                 }));
 
     Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() {});
@@ -338,6 +351,18 @@ public class DispatcherModule extends AbstractModule {
   }
 
   @Provides
+  private ScheduledEventDispatcher<TimeoutQuorumDelayedResolution>
+      timeoutQuorumDelayedResolutionDispatcher(
+          @ProcessOnDispatch Set<EventProcessor<TimeoutQuorumDelayedResolution>> processors,
+          Environment environment) {
+    var dispatcher = environment.getScheduledDispatcher(TimeoutQuorumDelayedResolution.class);
+    return (timeoutQuorumDelayedResolution, ms) -> {
+      dispatcher.dispatch(timeoutQuorumDelayedResolution, ms);
+      processors.forEach(e -> e.process(timeoutQuorumDelayedResolution));
+    };
+  }
+
+  @Provides
   private EventDispatcher<BFTInsertUpdate> bftInsertUpdateEventDispatcher(
       @ProcessOnDispatch Set<EventProcessor<BFTInsertUpdate>> processors,
       Environment environment,
@@ -395,14 +420,12 @@ public class DispatcherModule extends AbstractModule {
       Metrics metrics) {
     if (asyncProcessors.isEmpty()) {
       return commit -> {
-        metrics.bft().committedVertices().inc(commit.committed().size());
         metrics.bft().vertexStore().size().set(commit.vertexStoreSize());
         processors.forEach(e -> e.process(commit));
       };
     } else {
       var dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
       return commit -> {
-        metrics.bft().committedVertices().inc(commit.committed().size());
         metrics.bft().vertexStore().size().set(commit.vertexStoreSize());
         processors.forEach(e -> e.process(commit));
         dispatcher.dispatch(commit);
@@ -452,13 +475,13 @@ public class DispatcherModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private EventDispatcher<RoundLeaderFailure> roundLeaderFailureEventDispatcher(
-      @ProcessOnDispatch Set<EventProcessor<RoundLeaderFailure>> processors,
+  private EventDispatcher<ProposalRejected> proposalRejectedDispatcher(
+      @ProcessOnDispatch Set<EventProcessor<ProposalRejected>> processors,
       Environment environment) {
-    final var dispatcher = environment.getDispatcher(RoundLeaderFailure.class);
-    return roundLeaderFailure -> {
-      processors.forEach(e -> e.process(roundLeaderFailure));
-      dispatcher.dispatch(roundLeaderFailure);
+    final var dispatcher = environment.getDispatcher(ProposalRejected.class);
+    return proposalRejected -> {
+      processors.forEach(e -> e.process(proposalRejected));
+      dispatcher.dispatch(proposalRejected);
     };
   }
 }

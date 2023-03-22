@@ -65,9 +65,7 @@
 package com.radixdlt.consensus.bft.processor;
 
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent;
@@ -75,10 +73,14 @@ import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.TimestampIssue;
 import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.Type;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Objects;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/** Verifies proposal timestamps against the local system time. */
+/**
+ * Verifies proposal timestamps against the local system time. Warning: operates under the
+ * assumption that all received events are for the current round.
+ */
 /*
 TODO: address the following
 Currently max allowed daley time is quite permissive to account for
@@ -86,11 +88,11 @@ processing proposals that take much time to sync.
 Consider moving this verifier before the SyncUp processor.
 That'd require some refactoring though:
 f.e. it would no longer be guaranteed that the proposal is for the current round
-so dispatching a RoundLeaderFailure event would need to change.
+so dispatching a ProposalRejected event would need to change.
 Alternatively, we could record Proposal's reception time at an earlier stage, pass it together
 with the proposal, and use the value here, for verification (in place of timeSupplier).
 */
-public final class ProposalTimestampVerifier implements BFTEventProcessor {
+public final class ProposalTimestampVerifier implements BFTEventProcessorAtCurrentRound {
   private static final Logger log = LogManager.getLogger();
 
   /* These two constants specify the bounds for acceptable proposal timestamps in relation to
@@ -104,35 +106,20 @@ public final class ProposalTimestampVerifier implements BFTEventProcessor {
   static final long LOG_AT_PROPOSAL_TIMESTAMP_DELAY_MS = 2000;
   static final long LOG_AT_PROPOSAL_TIMESTAMP_RUSH_MS = 1200;
 
-  private final BFTEventProcessor forwardTo;
+  private final BFTEventProcessorAtCurrentRound forwardTo;
   private final TimeSupplier timeSupplier;
   private final Metrics metrics;
-  private final EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher;
+  private final EventDispatcher<ProposalRejected> proposalRejectedDispatcher;
 
   public ProposalTimestampVerifier(
-      BFTEventProcessor forwardTo,
+      BFTEventProcessorAtCurrentRound forwardTo,
       TimeSupplier timeSupplier,
       Metrics metrics,
-      EventDispatcher<RoundLeaderFailure> roundLeaderFailureDispatcher) {
+      EventDispatcher<ProposalRejected> proposalRejectedDispatcher) {
     this.forwardTo = Objects.requireNonNull(forwardTo);
     this.timeSupplier = Objects.requireNonNull(timeSupplier);
     this.metrics = Objects.requireNonNull(metrics);
-    this.roundLeaderFailureDispatcher = Objects.requireNonNull(roundLeaderFailureDispatcher);
-  }
-
-  @Override
-  public void start() {
-    forwardTo.start();
-  }
-
-  @Override
-  public void processRoundUpdate(RoundUpdate roundUpdate) {
-    forwardTo.processRoundUpdate(roundUpdate);
-  }
-
-  @Override
-  public void processVote(Vote vote) {
-    forwardTo.processVote(vote);
+    this.proposalRejectedDispatcher = Objects.requireNonNull(proposalRejectedDispatcher);
   }
 
   @Override
@@ -203,9 +190,7 @@ public final class ProposalTimestampVerifier implements BFTEventProcessor {
     if (isAcceptable) {
       forwardTo.processProposal(proposal);
     } else {
-      roundLeaderFailureDispatcher.dispatch(
-          new RoundLeaderFailure(
-              proposal.getRound(), RoundLeaderFailureReason.PROPOSED_TIMESTAMP_UNACCEPTABLE));
+      proposalRejectedDispatcher.dispatch(new ProposalRejected(proposal.getRound()));
     }
   }
 
@@ -217,22 +202,7 @@ public final class ProposalTimestampVerifier implements BFTEventProcessor {
   }
 
   @Override
-  public void processLocalTimeout(ScheduledLocalTimeout localTimeout) {
-    forwardTo.processLocalTimeout(localTimeout);
-  }
-
-  @Override
-  public void processRoundLeaderFailure(RoundLeaderFailure roundLeaderFailure) {
-    forwardTo.processRoundLeaderFailure(roundLeaderFailure);
-  }
-
-  @Override
-  public void processBFTUpdate(BFTInsertUpdate update) {
-    forwardTo.processBFTUpdate(update);
-  }
-
-  @Override
-  public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
-    forwardTo.processBFTRebuildUpdate(update);
+  public Optional<BFTEventProcessorAtCurrentRound> forwardTo() {
+    return Optional.of(forwardTo);
   }
 }

@@ -143,7 +143,9 @@ public final class RadixNodeModule extends AbstractModule {
           Network.HAMMUNET,
           Network.MARDUNET,
           Network.NERGALNET,
-          Network.NEBUNET);
+          Network.NEBUNET,
+          Network.KISHARNET,
+          Network.ANSHARNET);
   private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE =
       Decimal.of(700_000_000_000L); // 70% XRD_MAX_SUPPLY
   private static final Decimal GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_STAKE_PER_VALIDATOR =
@@ -202,6 +204,7 @@ public final class RadixNodeModule extends AbstractModule {
     bindConstant().annotatedWith(PacemakerBackoffRate.class).to(1.1);
     bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
     bindConstant().annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class).to(30_000L);
+    bindConstant().annotatedWith(TimeoutQuorumResolutionDelayMs.class).to(1500L);
 
     // System (e.g. time, random)
     install(new SystemModule());

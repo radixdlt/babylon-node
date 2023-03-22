@@ -65,12 +65,12 @@
 package com.radixdlt.modules;
 
 import com.google.common.hash.HashCode;
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hashing;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.radixdlt.consensus.Blake2b256Hasher;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.serialization.DefaultSerialization;
@@ -78,19 +78,12 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /** For testing where verification and signing is skipped */
 public class MockedCryptoModule extends AbstractModule {
-  private static final Logger log = LogManager.getLogger();
-  private static final HashFunction hashFunction = Hashing.goodFastHash(8 * 32);
-
   @Override
   public void configure() {
     bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
-    bind(HashFunction.class).toInstance(hashFunction);
   }
 
   @Provides
@@ -99,7 +92,7 @@ public class MockedCryptoModule extends AbstractModule {
       byte[] concat = new byte[64];
       System.arraycopy(hash.asBytes(), 0, concat, 0, hash.asBytes().length);
       System.arraycopy(pubKey.getBytes(), 0, concat, 32, 32);
-      var hashCode = hashFunction.hashBytes(concat).asBytes();
+      var hashCode = HashUtils.blake2b256(concat).asBytes();
       metrics.crypto().signaturesVerified().inc();
       var hashCodeBI = new BigInteger(1, hashCode);
       return sig.getR().equals(hashCodeBI);
@@ -111,6 +104,8 @@ public class MockedCryptoModule extends AbstractModule {
     AtomicBoolean running = new AtomicBoolean(false);
     Hasher hasher =
         new Hasher() {
+          private final Blake2b256Hasher hasher = new Blake2b256Hasher(serialization);
+
           @Override
           public int hashSizeInBytes() {
             return 32;
@@ -118,25 +113,12 @@ public class MockedCryptoModule extends AbstractModule {
 
           @Override
           public HashCode hashDsonEncoded(Object o) {
-            byte[] dson = timeWhinge("Serialization", () -> serialization.toDson(o, Output.HASH));
-            return this.hashBytes(dson);
+            return this.hashBytes(serialization.toDson(o, Output.HASH));
           }
 
           @Override
           public HashCode hashBytes(byte[] bytes) {
-            byte[] hashCode = timeWhinge("Hashing", () -> hashFunction.hashBytes(bytes).asBytes());
-            return HashCode.fromBytes(hashCode);
-          }
-
-          private <T> T timeWhinge(String what, Supplier<T> exec) {
-            long start = System.nanoTime();
-            T result = exec.get();
-            long end = System.nanoTime();
-            long durationMs = (end - start) / 1_000_000L;
-            if (durationMs > 50) {
-              log.warn("{} took {}ms", what, durationMs);
-            }
-            return result;
+            return hasher.hashBytes(bytes);
           }
         };
 

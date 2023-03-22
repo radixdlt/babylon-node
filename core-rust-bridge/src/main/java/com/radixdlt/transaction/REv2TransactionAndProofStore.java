@@ -67,7 +67,11 @@ package com.radixdlt.transaction;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
-import com.radixdlt.sbor.NativeCalls;
+import com.radixdlt.monitoring.LabelledTimer;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.MethodId;
+import com.radixdlt.sbor.Natives;
+import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
@@ -76,39 +80,37 @@ import java.util.Objects;
 import java.util.Optional;
 
 public final class REv2TransactionAndProofStore {
-  public REv2TransactionAndProofStore(StateManager stateManager) {
+  public REv2TransactionAndProofStore(Metrics metrics, StateManager stateManager) {
     Objects.requireNonNull(stateManager);
+
+    LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
     this.getTransactionAtStateVersionFunc =
-        NativeCalls.Func1.with(
-            stateManager,
-            new TypeToken<>() {},
-            new TypeToken<>() {},
-            REv2TransactionAndProofStore::getTransactionAtStateVersion);
+        Natives.builder(stateManager, REv2TransactionAndProofStore::getTransactionAtStateVersion)
+            .measure(
+                timer.label(
+                    new MethodId(
+                        REv2TransactionAndProofStore.class, "getTransactionAtStateVersion")))
+            .build(new TypeToken<>() {});
     this.getTxnsAndProof =
-        NativeCalls.Func1.with(
-            stateManager,
-            new TypeToken<>() {},
-            new TypeToken<>() {},
-            REv2TransactionAndProofStore::getTxnsAndProof);
+        Natives.builder(stateManager, REv2TransactionAndProofStore::getTxnsAndProof)
+            .measure(
+                timer.label(new MethodId(REv2TransactionAndProofStore.class, "getTxnsAndProof")))
+            .build(new TypeToken<>() {});
     this.getLastProofFunc =
-        NativeCalls.Func1.with(
-            stateManager,
-            new TypeToken<>() {},
-            new TypeToken<>() {},
-            REv2TransactionAndProofStore::getLastProof);
+        Natives.builder(stateManager, REv2TransactionAndProofStore::getLastProof)
+            .measure(timer.label(new MethodId(REv2TransactionAndProofStore.class, "getLastProof")))
+            .build(new TypeToken<>() {});
     this.getEpochProofFunc =
-        NativeCalls.Func1.with(
-            stateManager,
-            new TypeToken<>() {},
-            new TypeToken<>() {},
-            REv2TransactionAndProofStore::getEpochProof);
+        Natives.builder(stateManager, REv2TransactionAndProofStore::getEpochProof)
+            .measure(timer.label(new MethodId(REv2TransactionAndProofStore.class, "getEpochProof")))
+            .build(new TypeToken<>() {});
   }
 
   public Option<ExecutedTransaction> getTransactionAtStateVersion(long stateVersion) {
     return this.getTransactionAtStateVersionFunc.call(UInt64.fromNonNegativeLong(stateVersion));
   }
 
-  public Option<Tuple.Tuple2<List<byte[]>, byte[]>> getTxnsAndProof(
+  public Option<Tuple.Tuple2<List<byte[]>, LedgerProof>> getTxnsAndProof(
       long startStateVersionInclusive,
       int maxNumberOfTxnsIfMoreThanOneProof,
       int maxPayloadSizeInBytes) {
@@ -119,33 +121,30 @@ public final class REv2TransactionAndProofStore {
             UInt32.fromNonNegativeInt(maxPayloadSizeInBytes)));
   }
 
-  public Optional<byte[]> getLastProof() {
+  public Optional<LedgerProof> getLastProof() {
     return this.getLastProofFunc.call(Tuple.tuple()).toOptional();
   }
 
-  public Optional<byte[]> getEpochProof(long epoch) {
+  public Optional<LedgerProof> getEpochProof(long epoch) {
     return this.getEpochProofFunc.call(UInt64.fromNonNegativeLong(epoch)).toOptional();
   }
 
-  private final NativeCalls.Func1<StateManager, UInt64, Option<ExecutedTransaction>>
-      getTransactionAtStateVersionFunc;
+  private final Natives.Call1<UInt64, Option<ExecutedTransaction>> getTransactionAtStateVersionFunc;
 
   private static native byte[] getTransactionAtStateVersion(
       StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<
-          StateManager,
-          Tuple.Tuple3<UInt64, UInt32, UInt32>,
-          Option<Tuple.Tuple2<List<byte[]>, byte[]>>>
+  private final Natives.Call1<
+          Tuple.Tuple3<UInt64, UInt32, UInt32>, Option<Tuple.Tuple2<List<byte[]>, LedgerProof>>>
       getTxnsAndProof;
 
   private static native byte[] getTxnsAndProof(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<StateManager, Tuple.Tuple0, Option<byte[]>> getLastProofFunc;
+  private final Natives.Call1<Tuple.Tuple0, Option<LedgerProof>> getLastProofFunc;
 
   private static native byte[] getLastProof(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<StateManager, UInt64, Option<byte[]>> getEpochProofFunc;
+  private final Natives.Call1<UInt64, Option<LedgerProof>> getEpochProofFunc;
 
   private static native byte[] getEpochProof(StateManager stateManager, byte[] payload);
 }

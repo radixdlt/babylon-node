@@ -139,9 +139,11 @@ public class TimeoutPreviousVoteWithDroppedProposalsTest {
               final var timeoutsSent = (long) metrics.bft().pacemaker().timeoutsSent().get();
               final var timedOutRounds = (long) metrics.bft().pacemaker().timedOutRounds().get();
 
-              // this ensures that we only need a maximum of two local timeouts per round
-              // BFT_PACEMAKER_TIMEOUTS_SENT not higher than 2x BFT_PACEMAKER_TIMED_OUT_ROUNDS
-              assertTrue(timeoutsSent <= timedOutRounds * 2);
+              // This ensures that we only need a maximum of three local timeouts per round.
+              // Three are allowed because there might be an extra timeout if TC processing
+              // is being delayed (see BFTQuorumAssembler).
+              // BFT_PACEMAKER_TIMEOUTS_SENT not higher than 3x BFT_PACEMAKER_TIMED_OUT_ROUNDS
+              assertTrue(timeoutsSent <= timedOutRounds * 3);
             });
 
     assertThat(results)

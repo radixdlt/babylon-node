@@ -71,6 +71,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;

@@ -98,7 +98,7 @@ pub enum MempoolAddError {
 pub struct MempoolAddRejection {
     pub reason: RejectionReason,
     pub against_state: AtState,
-    pub recalculation_due: RecalculationDue,
+    pub retry_from: RetryFrom,
     pub was_cached: bool,
     /// The epoch when the payload will definitely be permanently rejected
     pub invalid_from_epoch: u64,
@@ -149,7 +149,7 @@ impl ToString for MempoolAddError {
             MempoolAddError::Full {
                 current_size,
                 max_size,
-            } => format!("Mempool Full [{} - {}]", current_size, max_size),
+            } => format!("Mempool Full [{current_size} - {max_size}]"),
             MempoolAddError::Duplicate => "Duplicate Entry".to_string(),
             MempoolAddError::Rejected(rejection) => rejection.reason.to_string(),
         }

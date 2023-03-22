@@ -68,6 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
+import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.MockedEpochsConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
@@ -108,7 +109,8 @@ public class OneByzantineGenesisTest {
                     new MockedEpochsConsensusRecoveryModule(
                         Round.of(1000000),
                         EpochNodeWeightMapping.constant(3, 1),
-                        HashUtils.random256()))
+                        HashUtils.random256(),
+                        LedgerHashes.zero()))
             .addTestModules(ConsensusMonitors.noneCommitted())
             .build();
 

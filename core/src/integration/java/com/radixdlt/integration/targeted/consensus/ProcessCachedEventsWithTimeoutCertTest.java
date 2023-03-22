@@ -117,8 +117,7 @@ public class ProcessCachedEventsWithTimeoutCertTest {
 
       // just to check if the node indeed needed to sync
       final var counters = test.getInstance(TEST_NODE, Metrics.class);
-      assertThat(counters.bft().timeoutQuorums().get()).isEqualTo(0);
-      assertThat(counters.bft().voteQuorums().get()).isEqualTo(0);
+      assertThat(counters.bft().quorumResolutions().getSum()).isEqualTo(0);
     }
   }
 

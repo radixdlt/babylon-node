@@ -64,7 +64,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.bft.ExecutedVertex;
+import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import java.util.LinkedList;
 import java.util.Optional;
 

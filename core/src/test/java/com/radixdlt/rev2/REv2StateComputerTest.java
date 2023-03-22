@@ -71,6 +71,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
+import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorId;
@@ -90,7 +91,6 @@ import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 import org.junit.Test;
@@ -121,17 +121,20 @@ public class REv2StateComputerTest {
 
   private CommittedTransactionsWithProof buildGenesis(LedgerAccumulator accumulator) {
     var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
+    var stake = Decimal.of(1);
     var genesis =
-        TransactionBuilder.createGenesisWithNumValidators(
-            1, Decimal.of(1), UInt64.fromNonNegativeLong(10));
+        TransactionBuilder.createGenesisWithNumValidators(1, stake, UInt64.fromNonNegativeLong(10));
     var accumulatorState =
         accumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
     var validatorSet =
         BFTValidatorSet.from(
             PrivateKeys.numeric(1)
-                .map(k -> BFTValidator.from(BFTValidatorId.create(k.getPublicKey()), UInt256.ONE))
+                .map(
+                    k ->
+                        BFTValidator.from(
+                            BFTValidatorId.create(k.getPublicKey()), stake.toUInt256()))
                 .limit(1));
-    var proof = LedgerProof.genesis(accumulatorState, validatorSet, 0, 0);
+    var proof = LedgerProof.genesis(accumulatorState, LedgerHashes.zero(), validatorSet, 0, 0);
     return CommittedTransactionsWithProof.create(List.of(genesis), proof);
   }
 
@@ -141,12 +144,18 @@ public class REv2StateComputerTest {
     var injector = createInjector();
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
     var accumulator = injector.getInstance(LedgerAccumulator.class);
-    stateComputer.commit(buildGenesis(accumulator), null);
+    var genesis = buildGenesis(accumulator);
+    stateComputer.commit(genesis, null);
     var validTransaction = REv2TestTransactions.constructValidRawTransaction(0, 0);
 
     // Act
-    var roundDetails = new RoundDetails(1, 1, 0, BFTValidatorId.random(), false, 1000, 1000);
-    var result = stateComputer.prepare(List.of(), List.of(validTransaction), roundDetails);
+    var roundDetails = new RoundDetails(1, 1, 0, BFTValidatorId.random(), 1000, 1000);
+    var result =
+        stateComputer.prepare(
+            genesis.getProof().getAccumulatorState().getAccumulatorHash(),
+            List.of(),
+            List.of(validTransaction),
+            roundDetails);
 
     // Assert
     assertThat(result.getFailedTransactions()).isEmpty();
@@ -158,12 +167,18 @@ public class REv2StateComputerTest {
     var injector = createInjector();
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
     var accumulator = injector.getInstance(LedgerAccumulator.class);
-    stateComputer.commit(buildGenesis(accumulator), null);
+    var genesis = buildGenesis(accumulator);
+    stateComputer.commit(genesis, null);
     var invalidTransaction = RawNotarizedTransaction.create(new byte[1]);
 
     // Act
-    var roundDetails = new RoundDetails(1, 1, 0, BFTValidatorId.random(), false, 1000, 1000);
-    var result = stateComputer.prepare(List.of(), List.of(invalidTransaction), roundDetails);
+    var roundDetails = new RoundDetails(1, 1, 0, BFTValidatorId.random(), 1000, 1000);
+    var result =
+        stateComputer.prepare(
+            genesis.getProof().getAccumulatorState().getAccumulatorHash(),
+            List.of(),
+            List.of(invalidTransaction),
+            roundDetails);
 
     // Assert
     assertThat(result.getFailedTransactions()).hasSize(1);

@@ -72,11 +72,6 @@ public record CoreApiServerConfig(String bindInterface, UInt32 port) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         CoreApiServerConfig.class,
-        codecs ->
-            StructCodec.with(
-                CoreApiServerConfig::new,
-                codecs.of(String.class),
-                codecs.of(UInt32.class),
-                (t, encoder) -> encoder.encode(t.bindInterface, t.port)));
+        codecs -> StructCodec.fromRecordComponents(CoreApiServerConfig.class, codecs));
   }
 }

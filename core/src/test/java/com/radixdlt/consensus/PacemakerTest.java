@@ -95,7 +95,7 @@ public final class PacemakerTest {
   }
 
   @Test
-  public void on_startup_pacemaker_should_schedule_timeouts() throws Exception {
+  public void on_startup_pacemaker_should_schedule_timeouts() {
     // Arrange
     try (var test = createTest()) {
 
@@ -118,7 +118,7 @@ public final class PacemakerTest {
   }
 
   @Test
-  public void on_timeout_pacemaker_should_send_vote_with_timeout() throws Exception {
+  public void on_timeout_pacemaker_should_send_vote_with_timeout() {
     // Arrange
     try (var test = createTest()) {
       test.startAllNodes();
@@ -138,7 +138,7 @@ public final class PacemakerTest {
   }
 
   @Test
-  public void on_round_timeout_quorum_pacemaker_should_move_to_next_round() throws Exception {
+  public void on_round_timeout_quorum_pacemaker_should_move_to_next_round() {
     // Arrange
     try (var test = createTest()) {
       test.startAllNodes();

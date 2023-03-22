@@ -66,6 +66,7 @@ package com.radixdlt.consensus.bft.processor;
 
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
+import java.util.Optional;
 
 /**
  * Processor of BFT events that are guaranteed to be received at a current round.
@@ -77,11 +78,17 @@ public interface BFTEventProcessorAtCurrentRound extends BFTEventProcessor {
    * A callback which allows this processor to take action on a vote as soon as it's received,
    * before BFT fully syncs up to its round.
    */
-  void preProcessUnsyncedVoteForCurrentOrFutureRound(Vote vote);
+  default void preProcessUnsyncedVoteForCurrentOrFutureRound(Vote vote) {
+    forwardTo().ifPresent(p -> p.preProcessUnsyncedVoteForCurrentOrFutureRound(vote));
+  }
 
   /**
    * A callback which allows this processor to take action on a proposal as soon as it's received,
    * before BFT fully syncs up to its round.
    */
-  void preProcessUnsyncedProposalForCurrentOrFutureRound(Proposal proposal);
+  default void preProcessUnsyncedProposalForCurrentOrFutureRound(Proposal proposal) {
+    forwardTo().ifPresent(p -> p.preProcessUnsyncedProposalForCurrentOrFutureRound(proposal));
+  }
+
+  Optional<BFTEventProcessorAtCurrentRound> forwardTo();
 }

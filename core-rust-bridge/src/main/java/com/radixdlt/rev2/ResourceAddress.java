@@ -76,7 +76,7 @@ public record ResourceAddress(byte[] value) {
         ResourceAddress.class,
         codecs ->
             new CustomTypeKnownLengthCodec<>(
-                TypeId.TYPE_CUSTOM_RESOURCE_ADDRESS,
+                TypeId.TYPE_CUSTOM_ADDRESS,
                 BYTE_LENGTH,
                 ResourceAddress::value,
                 ResourceAddress::new));

@@ -71,6 +71,7 @@ import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
@@ -196,94 +197,91 @@ public final class REv2StateManagerModule extends AbstractModule {
           });
     }
 
-    if (!REv2DatabaseConfig.isNone(this.databaseConfig)) {
-      bind(StateComputerLedger.StateComputer.class).to(REv2StateComputer.class);
-      bind(REv2TransactionsAndProofReader.class).in(Scopes.SINGLETON);
-      bind(TransactionsAndProofReader.class).to(REv2TransactionsAndProofReader.class);
-      install(
-          new AbstractModule() {
-            @Provides
-            @Singleton
-            REv2StateComputer rEv2StateComputer(
-                RustStateComputer stateComputer,
-                EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
-                Hasher hasher,
-                EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
-                EventDispatcher<ConsensusByzantineEvent> byzantineEventEventDispatcher,
-                Serialization serialization,
-                Metrics metrics) {
-              return new REv2StateComputer(
-                  stateComputer,
-                  maxNumTransactionsPerProposal,
-                  maxProposalTotalTxnsPayloadSize,
-                  maxUncommittedUserTransactionsTotalPayloadSize,
-                  hasher,
-                  ledgerUpdateEventDispatcher,
-                  mempoolAddSuccessEventDispatcher,
-                  byzantineEventEventDispatcher,
-                  serialization,
-                  metrics);
-            }
+    bind(StateComputerLedger.StateComputer.class).to(REv2StateComputer.class);
+    bind(REv2TransactionsAndProofReader.class).in(Scopes.SINGLETON);
+    bind(TransactionsAndProofReader.class).to(REv2TransactionsAndProofReader.class);
+    install(
+        new AbstractModule() {
+          @Provides
+          @Singleton
+          REv2StateComputer rEv2StateComputer(
+              RustStateComputer stateComputer,
+              EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
+              Hasher hasher,
+              EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
+              EventDispatcher<ConsensusByzantineEvent> byzantineEventEventDispatcher,
+              Serialization serialization,
+              Metrics metrics) {
+            return new REv2StateComputer(
+                stateComputer,
+                maxNumTransactionsPerProposal,
+                maxProposalTotalTxnsPayloadSize,
+                maxUncommittedUserTransactionsTotalPayloadSize,
+                hasher,
+                ledgerUpdateEventDispatcher,
+                mempoolAddSuccessEventDispatcher,
+                byzantineEventEventDispatcher,
+                serialization,
+                metrics);
+          }
 
-            @Provides
-            REv2TransactionAndProofStore transactionAndProofStore(RustStateComputer stateComputer) {
-              return stateComputer.getTransactionAndProofStore();
-            }
+          @Provides
+          REv2TransactionAndProofStore transactionAndProofStore(RustStateComputer stateComputer) {
+            return stateComputer.getTransactionAndProofStore();
+          }
 
-            @Provides
-            VertexStoreRecovery rEv2VertexStoreRecovery(RustStateComputer stateComputer) {
-              return stateComputer.getVertexStoreRecovery();
-            }
+          @Provides
+          VertexStoreRecovery rEv2VertexStoreRecovery(RustStateComputer stateComputer) {
+            return stateComputer.getVertexStoreRecovery();
+          }
 
-            @Provides
-            REv2StateReader stateReader(RustStateComputer stateComputer) {
-              return new REv2StateReader() {
-                @Override
-                public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
-                  return stateComputer.getComponentXrdAmount(componentAddress);
-                }
+          @Provides
+          REv2StateReader stateReader(RustStateComputer stateComputer) {
+            return new REv2StateReader() {
+              @Override
+              public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
+                return stateComputer.getComponentXrdAmount(componentAddress);
+              }
 
-                @Override
-                public ValidatorInfo getValidatorInfo(ComponentAddress systemAddress) {
-                  return stateComputer.getValidatorInfo(systemAddress);
-                }
+              @Override
+              public ValidatorInfo getValidatorInfo(ComponentAddress systemAddress) {
+                return stateComputer.getValidatorInfo(systemAddress);
+              }
 
-                @Override
-                public long getEpoch() {
-                  return stateComputer
-                      .getEpoch()
-                      .toNonNegativeLong()
-                      .unwrap(() -> new IllegalStateException("Epoch is not non-negative"));
-                }
-              };
-            }
+              @Override
+              public long getEpoch() {
+                return stateComputer
+                    .getEpoch()
+                    .toNonNegativeLong()
+                    .unwrap(() -> new IllegalStateException("Epoch is not non-negative"));
+              }
+            };
+          }
 
-            @Provides
-            PersistentVertexStore vertexStore(
-                RustStateComputer stateComputer, Metrics metrics, Serialization serialization) {
-              return s -> {
-                metrics.misc().vertexStoreSaved().inc();
-                var vertexStoreBytes =
-                    serialization.toDson(s.toSerialized(), DsonOutput.Output.ALL);
-                stateComputer.saveVertexStore(vertexStoreBytes);
-              };
-            }
+          @Provides
+          PersistentVertexStore vertexStore(
+              RustStateComputer stateComputer, Metrics metrics, Serialization serialization) {
+            return s -> {
+              metrics.misc().vertexStoreSaved().inc();
+              var vertexStoreBytes = serialization.toDson(s.toSerialized(), DsonOutput.Output.ALL);
+              stateComputer.saveVertexStore(vertexStoreBytes);
+            };
+          }
 
-            @ProvidesIntoSet
-            @ProcessOnDispatch
-            EventProcessor<BFTHighQCUpdate> onQCUpdatePersistVertexStore(
-                PersistentVertexStore persistentVertexStore) {
-              return update -> persistentVertexStore.save(update.getVertexStoreState());
-            }
+          @ProvidesIntoSet
+          @ProcessOnDispatch
+          EventProcessor<BFTHighQCUpdate> onQCUpdatePersistVertexStore(
+              PersistentVertexStore persistentVertexStore) {
+            return update -> persistentVertexStore.save(update.getVertexStoreState());
+          }
 
-            @ProvidesIntoSet
-            @ProcessOnDispatch
-            EventProcessor<BFTInsertUpdate> onInsertUpdatePersistVertexStore(
-                PersistentVertexStore persistentVertexStore) {
-              return update -> persistentVertexStore.save(update.getVertexStoreState());
-            }
-          });
-    }
+          @ProvidesIntoSet
+          @ProcessOnDispatch
+          EventProcessor<BFTInsertUpdate> onInsertUpdatePersistVertexStore(
+              PersistentVertexStore persistentVertexStore) {
+            return update -> persistentVertexStore.save(update.getVertexStoreState());
+          }
+        });
 
     if (mempoolConfig.isPresent()) {
       install(

@@ -66,7 +66,6 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimeoutCertificate;
-import java.util.Objects;
 
 /** The result of processing a received vote. */
 public sealed interface VoteProcessingResult {
@@ -79,114 +78,31 @@ public sealed interface VoteProcessingResult {
     return new VoteRejected(reason);
   }
 
-  static QuorumReached quorum(RoundVotingResult result) {
-    return new QuorumReached(result);
+  static QuorumReached quorum(RoundQuorum roundQuorum) {
+    return new QuorumReached(roundQuorum);
   }
 
-  static QuorumReached qcQuorum(QuorumCertificate qc) {
-    return quorum(RoundVotingResult.qc(qc));
+  static QuorumReached regularQuorum(QuorumCertificate qc) {
+    return quorum(RoundQuorum.regular(qc));
   }
 
-  static QuorumReached tcQuorum(TimeoutCertificate tc) {
-    return quorum(RoundVotingResult.tc(tc));
+  static QuorumReached timeoutQuorum(TimeoutCertificate tc) {
+    return quorum(RoundQuorum.timeout(tc));
   }
 
   /** Signifies that a vote has been accepted, but the quorum hasn't been reached. */
-  final class VoteAccepted implements VoteProcessingResult {
-
+  record VoteAccepted() implements VoteProcessingResult {
     public static final VoteAccepted INSTANCE = new VoteAccepted();
-
-    private VoteAccepted() {}
-
-    @Override
-    public String toString() {
-      return "VoteAccepted";
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      return o != null && getClass() == o.getClass();
-    }
-
-    @Override
-    public int hashCode() {
-      return 1;
-    }
   }
 
   /** Signifies that a vote has been rejected. */
-  final class VoteRejected implements VoteProcessingResult {
+  record VoteRejected(VoteRejectedReason reason) implements VoteProcessingResult {
     public enum VoteRejectedReason {
       INVALID_AUTHOR,
       DUPLICATE_VOTE
     }
-
-    private final VoteRejectedReason reason;
-
-    public VoteRejected(VoteRejectedReason reason) {
-      this.reason = Objects.requireNonNull(reason);
-    }
-
-    public VoteRejectedReason getReason() {
-      return this.reason;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      VoteRejected that = (VoteRejected) o;
-      return reason == that.reason;
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(reason);
-    }
-
-    @Override
-    public String toString() {
-      return String.format("VoteRejected{reason=%s}", reason);
-    }
   }
 
   /** Signifies that a vote has been accepted and quorum has been reached. */
-  final class QuorumReached implements VoteProcessingResult {
-
-    private final RoundVotingResult roundVotingResult;
-
-    public QuorumReached(RoundVotingResult roundVotingResult) {
-      this.roundVotingResult = Objects.requireNonNull(roundVotingResult);
-    }
-
-    public RoundVotingResult getRoundVotingResult() {
-      return this.roundVotingResult;
-    }
-
-    @Override
-    public String toString() {
-      return String.format("QuorumReached{votingResult=%s}", roundVotingResult);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      QuorumReached that = (QuorumReached) o;
-      return Objects.equals(roundVotingResult, that.roundVotingResult);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(roundVotingResult);
-    }
-  }
+  record QuorumReached(RoundQuorum roundQuorum) implements VoteProcessingResult {}
 }

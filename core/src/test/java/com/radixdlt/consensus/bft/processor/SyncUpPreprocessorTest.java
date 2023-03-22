@@ -120,14 +120,14 @@ public class SyncUpPreprocessorTest {
     when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
     when(proposalHighestCommittedQc.getCommittedHeader()).thenReturn(Optional.of(header));
     when(proposalLedgerProof.isEndOfEpoch()).thenReturn(false);
-    when(bftSyncer.syncToQC(any(), any())).thenReturn(SyncResult.IN_PROGRESS);
+    when(bftSyncer.syncToQC(any(), any(), any())).thenReturn(SyncResult.IN_PROGRESS);
 
     // we're at v2, proposal for v4 should get cached as sync returns IN_PROGRESS
     this.syncUpPreprocessor.processProposal(proposal);
 
     final var newRoundUpdate = mock(RoundUpdate.class);
     when(newRoundUpdate.getCurrentRound()).thenReturn(Round.of(4));
-    when(bftSyncer.syncToQC(any(), any())).thenReturn(SyncResult.SYNCED);
+    when(bftSyncer.syncToQC(any(), any(), any())).thenReturn(SyncResult.SYNCED);
 
     // we're going straight to v4, cached proposal should get processed
     this.syncUpPreprocessor.processRoundUpdate(newRoundUpdate);

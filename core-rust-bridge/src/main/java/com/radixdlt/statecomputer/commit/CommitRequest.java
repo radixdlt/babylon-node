@@ -64,37 +64,22 @@
 
 package com.radixdlt.statecomputer.commit;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transactions.RawLedgerTransaction;
-import com.radixdlt.utils.UInt64;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 public record CommitRequest(
     List<RawLedgerTransaction> transactions,
-    UInt64 stateVersion,
-    byte[] proofBytes,
+    LedgerProof proof,
     Option<byte[]> postCommitVertexStoreBytes) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         CommitRequest.class,
-        codecs ->
-            StructCodec.with(
-                CommitRequest::new,
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(UInt64.class),
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                (t, encoder) ->
-                    encoder.encode(
-                        t.transactions,
-                        t.stateVersion,
-                        t.proofBytes,
-                        t.postCommitVertexStoreBytes)));
+        codecs -> StructCodec.fromRecordComponents(CommitRequest.class, codecs));
   }
 
   @Override
@@ -103,29 +88,25 @@ public record CommitRequest(
     if (o == null || getClass() != o.getClass()) return false;
     CommitRequest that = (CommitRequest) o;
     return Objects.equals(transactions, that.transactions)
-        && Objects.equals(stateVersion, that.stateVersion)
-        && Arrays.equals(proofBytes, that.proofBytes)
-        && Objects.equals(postCommitVertexStoreBytes, that.postCommitVertexStoreBytes);
+        && Objects.equals(proof, that.proof)
+        && Arrays.equals(
+            postCommitVertexStoreBytes.or((byte[]) null),
+            that.postCommitVertexStoreBytes.or((byte[]) null));
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(transactions, stateVersion, postCommitVertexStoreBytes);
-    result = 31 * result + Arrays.hashCode(proofBytes);
-    return result;
+    return Objects.hash(
+        transactions, proof, Arrays.hashCode(postCommitVertexStoreBytes.or((byte[]) null)));
   }
 
   @Override
   public String toString() {
-    return "CommitRequest{"
-        + "transactions="
-        + transactions
-        + ", stateVersion="
-        + stateVersion
-        + ", proofBytes="
-        + Arrays.toString(proofBytes)
-        + ", postCommitVertexStoreBytes="
-        + postCommitVertexStoreBytes
-        + '}';
+    return "%s{transactions=%s, proof=%s, postCommitVertexStoreBytes.length=%s}"
+        .formatted(
+            CommitRequest.class.getSimpleName(),
+            transactions,
+            proof,
+            postCommitVertexStoreBytes.map(bytes -> bytes.length));
   }
 }

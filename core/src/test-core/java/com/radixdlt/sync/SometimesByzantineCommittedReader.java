@@ -172,6 +172,7 @@ public final class SometimesByzantineCommittedReader implements TransactionsAndP
               base.getProof().getEpoch(),
               base.getProof().getRound(),
               accumulatorState,
+              base.getProof().getLedgerHashes(),
               base.getProof().consensusParentRoundTimestamp(),
               base.getProof().proposerTimestamp(),
               base.getProof()

@@ -1,5 +1,5 @@
-use radix_engine::types::AddressError;
-use radix_engine_interface::model::ParseNonFungibleLocalIdError;
+use radix_engine::types::{AddressError, NonFungibleIdType};
+use radix_engine_interface::data::scrypto::model::ParseNonFungibleLocalIdError;
 use sbor::{DecodeError, EncodeError};
 use tracing::warn;
 use transaction::errors::TransactionValidationError;
@@ -10,6 +10,9 @@ use crate::core_api::*;
 #[derive(Debug, Clone)]
 pub enum MappingError {
     UnsupportedSubstatePersisted {
+        message: String,
+    },
+    UnknownNodeTypePersisted {
         message: String,
     },
     TransientSubstatePersisted {
@@ -23,18 +26,11 @@ pub enum MappingError {
         bytes: Vec<u8>,
     },
     InvalidSbor {
-        decode_error: DecodeError,
+        decode_error: String,
         bytes: Vec<u8>,
     },
     SborEncodeError {
         encode_error: EncodeError,
-        message: String,
-    },
-    SborSerializationError {
-        message: String,
-        bytes: Vec<u8>,
-    },
-    InvalidComponentStateEntities {
         message: String,
     },
     InvalidManifest {
@@ -59,7 +55,9 @@ impl<E: ErrorDetails> From<MappingError> for ResponseError<E> {
 #[derive(Debug, Clone)]
 #[allow(clippy::enum_variant_names)]
 pub enum ExtractionError {
-    InvalidInteger { message: String },
+    InvalidInteger {
+        message: String,
+    },
     InvalidHex,
     InvalidSignature,
     InvalidPublicKey,
@@ -67,13 +65,16 @@ pub enum ExtractionError {
     InvalidTransaction(TransactionValidationError),
     InvalidAddress(AddressError),
     InvalidNonFungibleId(ParseNonFungibleLocalIdError),
+    WrongNonFungibleIdType {
+        expected: NonFungibleIdType,
+        actual: NonFungibleIdType,
+    },
 }
 
 impl ExtractionError {
     pub(crate) fn into_response_error<E: ErrorDetails>(self, field_name: &str) -> ResponseError<E> {
         client_error(format!(
-            "Error extracting {} from request: {:?}",
-            field_name, self
+            "Error extracting {field_name} from request: {self:?}"
         ))
     }
 }

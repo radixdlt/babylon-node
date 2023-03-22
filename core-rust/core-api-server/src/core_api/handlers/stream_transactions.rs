@@ -2,8 +2,6 @@ use crate::core_api::*;
 
 use radix_engine::types::hash;
 
-use radix_engine_interface::data::scrypto_encode;
-
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
 use state_manager::transaction::{LedgerTransaction, ValidatorTransaction};
@@ -12,6 +10,7 @@ use state_manager::{
     UserPayloadHash,
 };
 
+use radix_engine_interface::data::manifest::manifest_encode;
 use std::collections::HashMap;
 use transaction::manifest;
 use transaction::model::{
@@ -21,7 +20,7 @@ use transaction::model::{
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_stream_transactions(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
     request: Json<models::StreamTransactionsRequest>,
 ) -> Result<Json<models::StreamTransactionsResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_stream_transactions_internal)
@@ -50,8 +49,7 @@ fn handle_stream_transactions_internal(
 
     if limit > MAX_TXN_COUNT_PER_REQUEST.into() {
         return Err(client_error(format!(
-            "limit must <= {}",
-            MAX_TXN_COUNT_PER_REQUEST
+            "limit must <= {MAX_TXN_COUNT_PER_REQUEST}"
         )));
     }
 
@@ -251,8 +249,7 @@ pub fn to_api_validator_transaction(
             proposer_timestamp_ms,
             consensus_epoch,
             round_in_epoch,
-            // TODO - update to RoundUpdateValidatorTransaction once the BetanetV2 compatability freeze is over
-        } => models::ValidatorTransaction::TimeUpdateValidatorTransaction {
+        } => models::ValidatorTransaction::RoundUpdateValidatorTransaction {
             proposer_timestamp: Box::new(to_api_instant_from_safe_timestamp(
                 *proposer_timestamp_ms,
             )?),
@@ -269,7 +266,7 @@ pub fn to_api_system_transaction(
     // NOTE: We don't use the .hash() method on the struct impls themselves,
     //       because they use the wrong hash function
     let payload =
-        scrypto_encode(system_transaction).map_err(|err| MappingError::SborEncodeError {
+        manifest_encode(system_transaction).map_err(|err| MappingError::SborEncodeError {
             encode_error: err,
             message: "Error encoding user system sbor".to_string(),
         })?;
