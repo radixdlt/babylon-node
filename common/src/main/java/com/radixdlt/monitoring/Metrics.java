@@ -194,6 +194,7 @@ public record Metrics(
     public record IgnoredVote(VoteIgnoreReason reason) {}
 
     public enum VoteIgnoreReason {
+      QUORUM_ALREADY_REACHED,
       UNEXPECTED_VOTE
     }
 

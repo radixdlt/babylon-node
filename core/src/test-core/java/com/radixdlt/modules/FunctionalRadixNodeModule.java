@@ -72,6 +72,7 @@ import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
