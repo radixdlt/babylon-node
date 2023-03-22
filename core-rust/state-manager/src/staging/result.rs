@@ -71,7 +71,7 @@ use crate::{
     ReceiptTreeHash, StateHash, SubstateChanges, TransactionTreeHash,
 };
 use radix_engine::transaction::{
-    AbortResult, CommitResult, RejectResult, TransactionExecution, TransactionReceipt,
+    AbortResult, CommitResult, RejectResult, TransactionExecutionTrace, TransactionReceipt,
     TransactionResult,
 };
 use radix_engine_interface::api::types::SubstateOffset;
@@ -110,7 +110,7 @@ impl ProcessedTransactionReceipt {
                 ProcessedTransactionReceipt::Commit(ProcessedCommitResult::process(
                     hash_update_context,
                     commit,
-                    transaction_receipt.execution,
+                    transaction_receipt.execution_trace,
                 ))
             }
             TransactionResult::Reject(reject) => ProcessedTransactionReceipt::Reject(reject),
@@ -148,7 +148,7 @@ impl ProcessedCommitResult {
     pub fn process<S: ReadableHashStructuresStore>(
         hash_update_context: HashUpdateContext<S>,
         commit_result: CommitResult,
-        transaction_execution: TransactionExecution,
+        execution_trace: TransactionExecutionTrace,
     ) -> Self {
         let epoch_transaction_identifiers = hash_update_context.epoch_transaction_identifiers;
         let parent_transaction_identifiers = hash_update_context.parent_transaction_identifiers;
@@ -156,8 +156,7 @@ impl ProcessedCommitResult {
         let transaction_accumulator_hash = parent_transaction_identifiers
             .accumulator_hash
             .accumulate(transaction_hash);
-        let ledger_receipt =
-            LedgerTransactionReceipt::from((commit_result, transaction_execution.fee_summary));
+        let ledger_receipt = LedgerTransactionReceipt::from((commit_result, execution_trace));
         let store = hash_update_context.store;
         let state_hash_tree_diff = Self::compute_state_tree_update(
             store,
@@ -286,7 +285,7 @@ impl StateHashTreeDiff {
     }
 }
 
-impl Default for HashTreeDiff {
+impl Default for StateHashTreeDiff {
     fn default() -> Self {
         Self::new()
     }

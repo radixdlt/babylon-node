@@ -268,7 +268,6 @@ impl<S: ReadableStore> StateManager<S> {
         executable: &Executable,
         transaction_hash: &LedgerPayloadHash,
     ) -> &ProcessedTransactionReceipt {
-        let execution_config = self.resolve_execution_config(parent_transaction_identifiers);
         let processed = self.execution_cache.execute_transaction(
             &self.store,
             epoch_transaction_identifiers,
@@ -279,7 +278,11 @@ impl<S: ReadableStore> StateManager<S> {
                     executable,
                     &self.scrypto_interpreter,
                     &self.fee_reserve_config,
-                    execution_config,
+                    if parent_transaction_identifiers.state_version == 0 {
+                        &self.execution_config_for_genesis
+                    } else {
+                        &self.execution_config
+                    },
                 ),
                 FULL_TRANSACTION_WARN_TIME_LIMIT,
                 format!(
@@ -289,16 +292,6 @@ impl<S: ReadableStore> StateManager<S> {
             ),
         );
         processed
-    }
-
-    fn resolve_execution_config(
-        &self, parent_transaction_identifiers: &CommittedTransactionIdentifiers
-    ) -> &ExecutionConfig {
-        if parent_transaction_identifiers.state_version == 0 {
-            &self.execution_config_for_genesis
-        } else {
-            &self.execution_config
-        }
     }
 }
 

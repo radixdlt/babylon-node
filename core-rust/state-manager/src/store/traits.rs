@@ -180,7 +180,7 @@ pub mod commit {
             for (id, value) in &changes.updated {
                 self.upserted.insert(id.clone(), value.clone());
             }
-            for (id, _) in &changes.deleted {
+            for id in changes.deleted.keys() {
                 let previous_value = self.upserted.remove(id);
                 if previous_value.is_none() {
                     self.deleted_ids.insert(id.clone());
