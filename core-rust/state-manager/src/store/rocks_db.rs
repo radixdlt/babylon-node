@@ -333,11 +333,17 @@ impl CommitStore for RocksDBStore {
             );
         }
 
-        for (substate_id, substate) in commit_bundle.substates {
+        for (substate_id, substate) in commit_bundle.substate_store_update.upserted {
             batch.put_cf(
                 self.cf_handle(&Substates),
                 scrypto_encode(&substate_id).unwrap(),
                 scrypto_encode(&substate).unwrap(),
+            );
+        }
+        for substate_id in commit_bundle.substate_store_update.deleted_ids {
+            batch.delete_cf(
+                self.cf_handle(&Substates),
+                scrypto_encode(&substate_id).unwrap(),
             );
         }
 
