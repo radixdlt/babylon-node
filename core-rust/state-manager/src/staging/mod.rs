@@ -84,21 +84,18 @@ impl<T> ReadableStateTreeStore for T where
 {
 }
 
-pub trait ReadableTransactionAndReceiptTreeStore:
-    ReadableAccuTreeStore<u64, TransactionTreeHash> + ReadableAccuTreeStore<u64, ReceiptTreeHash>
+pub trait ReadableHashStructuresStore:
+    ReadableStateTreeStore
+    + ReadableAccuTreeStore<u64, TransactionTreeHash>
+    + ReadableAccuTreeStore<u64, ReceiptTreeHash>
 {
 }
-impl<T> ReadableTransactionAndReceiptTreeStore for T where
-    T: ReadableAccuTreeStore<u64, TransactionTreeHash>
+impl<T> ReadableHashStructuresStore for T where
+    T: ReadableStateTreeStore
+        + ReadableAccuTreeStore<u64, TransactionTreeHash>
         + ReadableAccuTreeStore<u64, ReceiptTreeHash>
 {
 }
 
-pub trait ReadableStore:
-    ReadableSubstateStore + ReadableStateTreeStore + ReadableTransactionAndReceiptTreeStore
-{
-}
-impl<T> ReadableStore for T where
-    T: ReadableSubstateStore + ReadableStateTreeStore + ReadableTransactionAndReceiptTreeStore
-{
-}
+pub trait ReadableStore: ReadableSubstateStore + ReadableHashStructuresStore {}
+impl<T> ReadableStore for T where T: ReadableSubstateStore + ReadableHashStructuresStore {}
