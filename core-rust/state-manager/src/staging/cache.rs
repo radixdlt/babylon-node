@@ -65,9 +65,11 @@
 use super::stage_tree::{Accumulator, Delta, DerivedStageKey, StageKey, StageTree};
 use super::ReadableStore;
 
-use super::result::ProcessedResult;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
-use crate::staging::{AccuTreeDiff, HashTreeDiff, ProcessedTransactionCommit};
+use crate::staging::{
+    AccuTreeDiff, HashStructuresDiff, HashUpdateContext, ProcessedTransactionReceipt,
+    StateHashTreeDiff,
+};
 use crate::{
     AccumulatorHash, CommittedTransactionIdentifiers, EpochTransactionIdentifiers,
     LedgerPayloadHash, ReceiptTreeHash, TransactionTreeHash,
@@ -83,10 +85,14 @@ use sbor::rust::collections::HashMap;
 use slotmap::SecondaryMap;
 
 pub struct ExecutionCache {
-    stage_tree: StageTree<ProcessedResult, ImmutableStore>,
+    stage_tree: StageTree<ProcessedTransactionReceipt, ImmutableStore>,
     root_accumulator_hash: AccumulatorHash,
     accumulator_hash_to_key: HashMap<AccumulatorHash, DerivedStageKey>,
     key_to_accumulator_hash: SecondaryMap<DerivedStageKey, AccumulatorHash>,
+}
+
+pub trait TransactionLogic<S> {
+    fn execute_on(&self, store: &S) -> TransactionReceipt;
 }
 
 impl ExecutionCache {
@@ -101,15 +107,15 @@ impl ExecutionCache {
 
     pub fn execute_transaction<
         S: ReadableStore,
-        T: FnOnce(&StagedStore<S>) -> TransactionReceipt,
+        T: for<'s> TransactionLogic<StagedStore<'s, S>>,
     >(
         &mut self,
         root_store: &S,
         epoch_transaction_identifiers: &EpochTransactionIdentifiers,
         parent_transaction_identifiers: &CommittedTransactionIdentifiers,
         transaction_hash: &LedgerPayloadHash,
-        transaction: T,
-    ) -> &ProcessedResult {
+        transaction: &T,
+    ) -> &ProcessedTransactionReceipt {
         let parent_accumulator_hash = &parent_transaction_identifiers.accumulator_hash;
         let transaction_accumulator_hash = parent_accumulator_hash.accumulate(transaction_hash);
         match self
@@ -121,13 +127,14 @@ impl ExecutionCache {
                 let parent_key = self.get_existing_substore_key(parent_accumulator_hash);
                 let staged_store =
                     StagedStore::new(root_store, self.stage_tree.get_accumulator(&parent_key));
-                let transaction_receipt = transaction(&staged_store);
-                let processed = ProcessedResult::from_processed(
-                    &staged_store,
-                    epoch_transaction_identifiers,
-                    parent_transaction_identifiers,
-                    transaction_accumulator_hash,
-                    transaction_hash,
+                let transaction_receipt = transaction.execute_on(&staged_store);
+                let processed = ProcessedTransactionReceipt::process(
+                    HashUpdateContext {
+                        store: &staged_store,
+                        epoch_transaction_identifiers,
+                        parent_transaction_identifiers,
+                        transaction_hash,
+                    },
                     transaction_receipt,
                 );
                 let transaction_key = self.stage_tree.new_child_node(parent_key, processed);
@@ -241,23 +248,30 @@ impl<'s, S: ReadableAccuTreeStore<u64, ReceiptTreeHash>> ReadableAccuTreeStore<u
     }
 }
 
-impl Delta for ProcessedResult {
+impl Delta for ProcessedTransactionReceipt {
     fn weight(&self) -> usize {
-        let state_diff_weight = self.state_diff().up_substates.len();
-        let processed_commit_weight = self.processed_commit.as_ref().map(|commit| commit.weight());
-        state_diff_weight + processed_commit_weight.unwrap_or(0)
+        match self {
+            ProcessedTransactionReceipt::Commit(commit) => {
+                let substate_changes = &commit.ledger_receipt.substate_changes;
+                substate_changes.created.len()
+                    + substate_changes.updated.len()
+                    + substate_changes.deleted.len()
+                    + commit.hash_structures_diff.weight()
+            }
+            ProcessedTransactionReceipt::Reject(_) | ProcessedTransactionReceipt::Abort(_) => 0,
+        }
     }
 }
 
-impl ProcessedTransactionCommit {
+impl HashStructuresDiff {
     pub fn weight(&self) -> usize {
-        self.state_tree_diff.weight()
+        self.state_hash_tree_diff.weight()
             + self.transaction_tree_diff.weight()
             + self.receipt_tree_diff.weight()
     }
 }
 
-impl HashTreeDiff {
+impl StateHashTreeDiff {
     pub fn weight(&self) -> usize {
         self.new_re_node_layer_nodes.len() + self.new_substate_layer_nodes.len()
     }
@@ -284,7 +298,7 @@ pub struct ImmutableStore {
     receipt_tree_slices: ImmutableHashMap<u64, TreeSlice<ReceiptTreeHash>>,
 }
 
-impl Accumulator<ProcessedResult> for ImmutableStore {
+impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
     fn create_empty() -> Self {
         Self {
             substate_values: ImmutableHashMap::new(),
@@ -295,26 +309,27 @@ impl Accumulator<ProcessedResult> for ImmutableStore {
         }
     }
 
-    fn accumulate(&mut self, processed: &ProcessedResult) {
-        self.substate_values.extend(
-            processed
-                .state_diff()
-                .up_substates
-                .iter()
-                .map(|(id, value)| (id.clone(), value.clone())),
-        );
-        if let Some(processed_commit) = &processed.processed_commit {
-            let state_tree_diff = &processed_commit.state_tree_diff;
+    fn accumulate(&mut self, processed: &ProcessedTransactionReceipt) {
+        if let ProcessedTransactionReceipt::Commit(commit) = processed {
+            let substate_changes = &commit.ledger_receipt.substate_changes;
+            for (id, value) in substate_changes.upserted() {
+                self.substate_values.insert(id.clone(), value.clone());
+            }
+            for deleted_id in substate_changes.deleted_ids() {
+                self.substate_values.remove(deleted_id);
+            }
+            let hash_structures_diff = &commit.hash_structures_diff;
+            let state_tree_diff = &hash_structures_diff.state_hash_tree_diff;
             self.re_node_layer_nodes
                 .extend(state_tree_diff.new_re_node_layer_nodes.iter().cloned());
             self.substate_layer_nodes
                 .extend(state_tree_diff.new_substate_layer_nodes.iter().cloned());
-            let transaction_tree_diff = &processed_commit.transaction_tree_diff;
+            let transaction_tree_diff = &hash_structures_diff.transaction_tree_diff;
             self.transaction_tree_slices.insert(
                 transaction_tree_diff.key,
                 transaction_tree_diff.slice.clone(),
             );
-            let receipt_tree_diff = &processed_commit.receipt_tree_diff;
+            let receipt_tree_diff = &hash_structures_diff.receipt_tree_diff;
             self.receipt_tree_slices
                 .insert(receipt_tree_diff.key, receipt_tree_diff.slice.clone());
         }

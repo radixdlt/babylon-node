@@ -8,8 +8,8 @@ use radix_engine::state_manager::StateDiff;
 use radix_engine::system::kernel_modules::costing::FeeSummary;
 use radix_engine::system::kernel_modules::execution_trace::ResourceChange;
 use radix_engine::transaction::{
-    StateUpdateSummary, TransactionOutcome, TransactionReceipt as EngineTransactionReceipt,
-    TransactionResult,
+    CommitResult, StateUpdateSummary, TransactionExecutionTrace, TransactionOutcome,
+    TransactionReceipt as EngineTransactionReceipt, TransactionResult,
 };
 use radix_engine::types::{hash, scrypto_encode, Decimal, Hash, Level, ObjectId, SubstateId};
 use radix_engine_interface::api::types::EventTypeIdentifier;
@@ -45,6 +45,16 @@ pub struct SubstateChanges {
     pub created: BTreeMap<SubstateId, OutputValue>,
     pub updated: BTreeMap<SubstateId, OutputValue>,
     pub deleted: BTreeMap<SubstateId, DeletedSubstateVersion>,
+}
+
+impl SubstateChanges {
+    pub fn upserted(&self) -> impl Iterator<Item = (&SubstateId, &OutputValue)> {
+        self.created.iter().chain(self.updated.iter())
+    }
+
+    pub fn deleted_ids(&self) -> impl Iterator<Item = &SubstateId> {
+        self.deleted.keys()
+    }
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -103,26 +113,32 @@ impl LedgerTransactionReceipt {
     }
 }
 
+impl From<(CommitResult, TransactionExecutionTrace)> for LedgerTransactionReceipt {
+    fn from((commit_result, execution_trace): (CommitResult, TransactionExecutionTrace)) -> Self {
+        let next_epoch = commit_result.next_epoch();
+        Self {
+            outcome: commit_result.outcome.into(),
+            fee_summary: commit_result.fee_summary,
+            fee_payments: commit_result.fee_payments,
+            application_logs: commit_result.application_logs,
+            application_events: commit_result.application_events,
+            substate_changes: fix_state_updates(commit_result.state_updates),
+            state_update_summary: commit_result.state_update_summary,
+            resource_changes: execution_trace.resource_changes,
+            next_epoch,
+        }
+    }
+}
+
 impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
     type Error = String;
 
     fn try_from(engine_receipt: EngineTransactionReceipt) -> Result<Self, Self::Error> {
         match engine_receipt.result {
-            TransactionResult::Commit(commit_result) => {
-                let next_epoch = commit_result.next_epoch();
-                let ledger_receipt = LedgerTransactionReceipt {
-                    outcome: commit_result.outcome.into(),
-                    fee_summary: commit_result.fee_summary,
-                    fee_payments: commit_result.fee_payments,
-                    application_logs: commit_result.application_logs,
-                    application_events: commit_result.application_events,
-                    substate_changes: fix_state_updates(commit_result.state_updates),
-                    state_update_summary: commit_result.state_update_summary,
-                    resource_changes: engine_receipt.execution_trace.resource_changes,
-                    next_epoch,
-                };
-                Ok(ledger_receipt)
-            }
+            TransactionResult::Commit(commit_result) => Ok(LedgerTransactionReceipt::from((
+                commit_result,
+                engine_receipt.execution_trace,
+            ))),
             TransactionResult::Reject(error) => Err(format!(
                 "Can't create a ledger receipt for rejected txn: {error:?}"
             )),
