@@ -1,7 +1,9 @@
 use crate::core_api::*;
-use radix_engine::blueprints::resource::{FungibleResourceManagerSubstate, NonFungibleResourceManagerSubstate};
+use radix_engine::blueprints::resource::{
+    FungibleResourceManagerSubstate, NonFungibleResourceManagerSubstate,
+};
 use radix_engine::system::node_substates::PersistedSubstate;
-use radix_engine::types::{ResourceManagerOffset, SubstateOffset, ResourceAddress};
+use radix_engine::types::{ResourceAddress, ResourceManagerOffset, SubstateOffset};
 use radix_engine_interface::api::types::{AccessRulesOffset, NodeModuleId, RENodeId};
 
 use state_manager::jni::state_manager::ActualStateManager;
@@ -32,7 +34,7 @@ fn handle_state_resource_internal(
         ResourceAddress::Fungible(_) => {
             let substate_offset =
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-            let loaded_substate = read_mandatory_substate_or_server_error(
+            let loaded_substate = read_mandatory_substate(
                 state_manager,
                 RENodeId::GlobalObject(resource_address.into()),
                 NodeModuleId::SELF,
@@ -42,11 +44,11 @@ fn handle_state_resource_internal(
                 return Err(wrong_substate_type(substate_offset));
             };
             ManagerByType::Fungible(substate)
-        },
+        }
         ResourceAddress::NonFungible(_) => {
             let substate_offset =
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-            let loaded_substate = read_mandatory_substate_or_server_error(
+            let loaded_substate = read_mandatory_substate(
                 state_manager,
                 RENodeId::GlobalObject(resource_address.into()),
                 NodeModuleId::SELF,
@@ -56,11 +58,11 @@ fn handle_state_resource_internal(
                 return Err(wrong_substate_type(substate_offset));
             };
             ManagerByType::NonFungible(substate)
-        },
+        }
     };
     let access_rules = {
         let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
-        let loaded_substate = read_mandatory_substate_or_server_error(
+        let loaded_substate = read_mandatory_substate(
             state_manager,
             RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::AccessRules,
@@ -74,7 +76,7 @@ fn handle_state_resource_internal(
 
     let vault_access_rules = {
         let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
-        let loaded_substate = read_mandatory_substate_or_server_error(
+        let loaded_substate = read_mandatory_substate(
             state_manager,
             RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::AccessRules1,
@@ -106,5 +108,4 @@ fn handle_state_resource_internal(
             &vault_access_rules,
         )?),
     })
-
 }

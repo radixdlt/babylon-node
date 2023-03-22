@@ -27,7 +27,7 @@ pub(crate) fn core_api_read_handler<Request, Response>(
 }
 
 #[tracing::instrument(skip_all)]
-pub(crate) fn read_mandatory_substate_or_server_error(
+pub(crate) fn read_mandatory_substate(
     state_manager: &ActualStateManager,
     renode_id: RENodeId,
     node_module_id: NodeModuleId,
@@ -46,7 +46,7 @@ pub(crate) fn read_mandatory_substate_or_server_error(
 }
 
 #[tracing::instrument(skip_all)]
-pub(crate) fn read_mandatory_substate_from_id_or_server_error(
+pub(crate) fn read_mandatory_substate_from_id(
     state_manager: &ActualStateManager,
     substate_id: &SubstateId,
 ) -> Result<PersistedSubstate, ResponseError<()>> {

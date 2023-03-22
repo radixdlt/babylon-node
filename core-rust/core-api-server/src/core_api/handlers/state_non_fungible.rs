@@ -31,7 +31,7 @@ fn handle_state_non_fungible_internal(
     let resource_manager = {
         let substate_offset =
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let loaded_substate = read_mandatory_substate_or_server_error(
+        let loaded_substate = read_mandatory_substate(
             state_manager,
             RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::SELF,
@@ -50,11 +50,17 @@ fn handle_state_non_fungible_internal(
 
     let non_fungible_id_type = resource_manager.id_type;
 
-    let non_fungible_id = extract_non_fungible_id_from_simple_representation(
-        non_fungible_id_type,
-        &request.non_fungible_id,
-    )
-    .map_err(|err| err.into_response_error("non_fungible_id"))?;
+    let non_fungible_id =
+        extract_non_fungible_id_from_simple_representation(&request.non_fungible_id)
+            .map_err(|err| err.into_response_error("non_fungible_id"))?;
+
+    if non_fungible_id.id_type() != non_fungible_id_type {
+        return Err(ExtractionError::WrongNonFungibleIdType {
+            expected: non_fungible_id_type,
+            actual: non_fungible_id.id_type(),
+        }
+        .into_response_error("non_fungible_id"));
+    }
 
     let non_fungible_substate_offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
         scrypto_encode(&non_fungible_id).unwrap(),
@@ -66,14 +72,17 @@ fn handle_state_non_fungible_internal(
         non_fungible_substate_offset,
     );
 
-    let key_value_store_entry_substate = {
-        let loaded_substate =
-            read_mandatory_substate_from_id_or_server_error(state_manager, &substate_id)?;
-        let PersistedSubstate::KeyValueStoreEntry(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_id.2));
+    let key_value_store_entry_substate =
+        {
+            let loaded_substate = read_optional_substate_from_id(state_manager, &substate_id);
+            match loaded_substate {
+                Some(PersistedSubstate::KeyValueStoreEntry(substate)) => substate,
+                None => return Err(not_found_error(
+                    "The specified non-fungible id does not exist under that non-fungible resource",
+                )),
+                _ => return Err(wrong_substate_type(substate_id.2)),
+            }
         };
-        substate
-    };
 
     Ok(StateNonFungibleResponse {
         non_fungible: Some(to_api_key_value_story_entry_substate(

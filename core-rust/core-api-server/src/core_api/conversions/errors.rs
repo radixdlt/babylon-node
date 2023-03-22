@@ -1,4 +1,4 @@
-use radix_engine::types::AddressError;
+use radix_engine::types::{AddressError, NonFungibleIdType};
 use radix_engine_interface::data::scrypto::model::ParseNonFungibleLocalIdError;
 use sbor::{DecodeError, EncodeError};
 use tracing::warn;
@@ -55,7 +55,9 @@ impl<E: ErrorDetails> From<MappingError> for ResponseError<E> {
 #[derive(Debug, Clone)]
 #[allow(clippy::enum_variant_names)]
 pub enum ExtractionError {
-    InvalidInteger { message: String },
+    InvalidInteger {
+        message: String,
+    },
     InvalidHex,
     InvalidSignature,
     InvalidPublicKey,
@@ -63,6 +65,10 @@ pub enum ExtractionError {
     InvalidTransaction(TransactionValidationError),
     InvalidAddress(AddressError),
     InvalidNonFungibleId(ParseNonFungibleLocalIdError),
+    WrongNonFungibleIdType {
+        expected: NonFungibleIdType,
+        actual: NonFungibleIdType,
+    },
 }
 
 impl ExtractionError {

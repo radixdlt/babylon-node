@@ -24,7 +24,7 @@ fn handle_state_package_internal(
 
     let package_info = {
         let substate_offset = SubstateOffset::Package(PackageOffset::Info);
-        let loaded_substate = read_mandatory_substate_or_server_error(
+        let loaded_substate = read_mandatory_substate(
             state_manager,
             RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::SELF,
@@ -37,7 +37,7 @@ fn handle_state_package_internal(
     };
     let package_royalty = {
         let substate_offset = SubstateOffset::Package(PackageOffset::Royalty);
-        let loaded_substate = read_mandatory_substate_or_server_error(
+        let loaded_substate = read_mandatory_substate(
             state_manager,
             RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::SELF,
@@ -50,7 +50,7 @@ fn handle_state_package_internal(
     };
     let package_access_rules = {
         let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
-        let loaded_substate = read_mandatory_substate_or_server_error(
+        let loaded_substate = read_mandatory_substate(
             state_manager,
             RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::AccessRules,

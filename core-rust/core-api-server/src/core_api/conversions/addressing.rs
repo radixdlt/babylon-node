@@ -11,9 +11,7 @@ use radix_engine::types::{
     ResourceManagerOffset, SubstateId, SubstateOffset, VaultOffset,
 };
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::data::scrypto::model::{
-    Address, NonFungibleIdType, NonFungibleLocalId,
-};
+use radix_engine_interface::data::scrypto::model::{Address, NonFungibleLocalId};
 
 pub fn to_api_component_address(
     context: &MappingContext,
@@ -686,8 +684,12 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                         // These substates shouldn't exist - they are filtered out of the transaction stream on their creation,
                         // and _should_ never get updated, and never be a parent - so shouldn't ever go through this code path...
                         // Unless there's a bug in the engine.
-                        VaultOffset::LockedNonFungible => return Err(transient_substate_error("LockedNonFungible", &substate_id)),
-                        VaultOffset::LockedFungible => return Err(transient_substate_error("LockedFungible", &substate_id)),
+                        VaultOffset::LockedNonFungible => {
+                            return Err(transient_substate_error("LockedNonFungible", &substate_id))
+                        }
+                        VaultOffset::LockedFungible => {
+                            return Err(transient_substate_error("LockedFungible", &substate_id))
+                        }
                     },
                     _ => return Err(unknown_substate_error("Vault", &substate_id)),
                 };
@@ -791,11 +793,9 @@ pub fn extract_resource_address(
 }
 
 pub fn extract_non_fungible_id_from_simple_representation(
-    _id_type: NonFungibleIdType,
     simple_rep: &str,
 ) -> Result<NonFungibleLocalId, ExtractionError> {
-    let non_fungible_local_id = NonFungibleLocalId::from_str(simple_rep)?;
-    Ok(non_fungible_local_id)
+    Ok(NonFungibleLocalId::from_str(simple_rep)?)
 }
 
 pub fn re_node_id_to_entity_id_bytes(re_node_id: &RENodeId) -> Vec<u8> {
