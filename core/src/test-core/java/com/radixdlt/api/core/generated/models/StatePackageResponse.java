@@ -33,8 +33,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   StatePackageResponse.JSON_PROPERTY_INFO,
-  StatePackageResponse.JSON_PROPERTY_ROYALTY_CONFIG,
-  StatePackageResponse.JSON_PROPERTY_ROYALTY_ACCUMULATOR,
+  StatePackageResponse.JSON_PROPERTY_ROYALTY,
   StatePackageResponse.JSON_PROPERTY_ACCESS_RULES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -42,11 +41,8 @@ public class StatePackageResponse {
   public static final String JSON_PROPERTY_INFO = "info";
   private Substate info;
 
-  public static final String JSON_PROPERTY_ROYALTY_CONFIG = "royalty_config";
-  private Substate royaltyConfig;
-
-  public static final String JSON_PROPERTY_ROYALTY_ACCUMULATOR = "royalty_accumulator";
-  private Substate royaltyAccumulator;
+  public static final String JSON_PROPERTY_ROYALTY = "royalty";
+  private Substate royalty;
 
   public static final String JSON_PROPERTY_ACCESS_RULES = "access_rules";
   private Substate accessRules;
@@ -80,55 +76,29 @@ public class StatePackageResponse {
   }
 
 
-  public StatePackageResponse royaltyConfig(Substate royaltyConfig) {
-    this.royaltyConfig = royaltyConfig;
+  public StatePackageResponse royalty(Substate royalty) {
+    this.royalty = royalty;
     return this;
   }
 
    /**
-   * Get royaltyConfig
-   * @return royaltyConfig
+   * Get royalty
+   * @return royalty
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
+  @JsonProperty(JSON_PROPERTY_ROYALTY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Substate getRoyaltyConfig() {
-    return royaltyConfig;
+  public Substate getRoyalty() {
+    return royalty;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ROYALTY_CONFIG)
+  @JsonProperty(JSON_PROPERTY_ROYALTY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRoyaltyConfig(Substate royaltyConfig) {
-    this.royaltyConfig = royaltyConfig;
-  }
-
-
-  public StatePackageResponse royaltyAccumulator(Substate royaltyAccumulator) {
-    this.royaltyAccumulator = royaltyAccumulator;
-    return this;
-  }
-
-   /**
-   * Get royaltyAccumulator
-   * @return royaltyAccumulator
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ROYALTY_ACCUMULATOR)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public Substate getRoyaltyAccumulator() {
-    return royaltyAccumulator;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ROYALTY_ACCUMULATOR)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setRoyaltyAccumulator(Substate royaltyAccumulator) {
-    this.royaltyAccumulator = royaltyAccumulator;
+  public void setRoyalty(Substate royalty) {
+    this.royalty = royalty;
   }
 
 
@@ -171,14 +141,13 @@ public class StatePackageResponse {
     }
     StatePackageResponse statePackageResponse = (StatePackageResponse) o;
     return Objects.equals(this.info, statePackageResponse.info) &&
-        Objects.equals(this.royaltyConfig, statePackageResponse.royaltyConfig) &&
-        Objects.equals(this.royaltyAccumulator, statePackageResponse.royaltyAccumulator) &&
+        Objects.equals(this.royalty, statePackageResponse.royalty) &&
         Objects.equals(this.accessRules, statePackageResponse.accessRules);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(info, royaltyConfig, royaltyAccumulator, accessRules);
+    return Objects.hash(info, royalty, accessRules);
   }
 
   @Override
@@ -186,8 +155,7 @@ public class StatePackageResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class StatePackageResponse {\n");
     sb.append("    info: ").append(toIndentedString(info)).append("\n");
-    sb.append("    royaltyConfig: ").append(toIndentedString(royaltyConfig)).append("\n");
-    sb.append("    royaltyAccumulator: ").append(toIndentedString(royaltyAccumulator)).append("\n");
+    sb.append("    royalty: ").append(toIndentedString(royalty)).append("\n");
     sb.append("    accessRules: ").append(toIndentedString(accessRules)).append("\n");
     sb.append("}");
     return sb.toString();

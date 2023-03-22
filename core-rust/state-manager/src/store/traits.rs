@@ -184,6 +184,12 @@ pub mod commit {
         }
     }
 
+    impl Default for HashTreeUpdate {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
     pub trait CommitStore {
         fn commit(&mut self, commit_bundle: CommitBundle);
     }

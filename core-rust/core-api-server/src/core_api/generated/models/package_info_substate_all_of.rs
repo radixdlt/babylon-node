@@ -13,9 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct PackageInfoSubstateAllOf {
-    /// A map from the blueprint name to BlueprintData
-    #[serde(rename = "blueprints")]
-    pub blueprints: ::std::collections::HashMap<String, crate::core_api::generated::models::BlueprintData>,
+    #[serde(rename = "package_schema")]
+    pub package_schema: Box<crate::core_api::generated::models::PackageSchema>,
     #[serde(rename = "dependent_resources")]
     pub dependent_resources: Vec<String>,
     #[serde(rename = "dependent_components")]
@@ -23,9 +22,9 @@ pub struct PackageInfoSubstateAllOf {
 }
 
 impl PackageInfoSubstateAllOf {
-    pub fn new(blueprints: ::std::collections::HashMap<String, crate::core_api::generated::models::BlueprintData>, dependent_resources: Vec<String>, dependent_components: Vec<String>) -> PackageInfoSubstateAllOf {
+    pub fn new(package_schema: crate::core_api::generated::models::PackageSchema, dependent_resources: Vec<String>, dependent_components: Vec<String>) -> PackageInfoSubstateAllOf {
         PackageInfoSubstateAllOf {
-            blueprints,
+            package_schema: Box::new(package_schema),
             dependent_resources,
             dependent_components,
         }

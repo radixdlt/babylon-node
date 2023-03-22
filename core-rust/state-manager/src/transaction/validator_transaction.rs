@@ -38,18 +38,24 @@ impl ValidatorTransaction {
                 let update_time = Instruction::CallMethod {
                     component_address: CLOCK,
                     method_name: CLOCK_SET_CURRENT_TIME_IDENT.to_string(),
-                    args: manifest_encode(&ClockSetCurrentTimeInput {
-                        current_time_ms: *timestamp_ms,
-                    })
+                    args: manifest_decode::<ManifestValue>(
+                        &manifest_encode(&ClockSetCurrentTimeInput {
+                            current_time_ms: *timestamp_ms,
+                        })
+                        .unwrap(),
+                    )
                     .unwrap(),
                 };
 
                 let update_round = Instruction::CallMethod {
                     component_address: EPOCH_MANAGER,
                     method_name: EPOCH_MANAGER_NEXT_ROUND_IDENT.to_string(),
-                    args: manifest_encode(&EpochManagerNextRoundInput {
-                        round: *round_in_epoch,
-                    })
+                    args: manifest_decode::<ManifestValue>(
+                        &manifest_encode(&EpochManagerNextRoundInput {
+                            round: *round_in_epoch,
+                        })
+                        .unwrap(),
+                    )
                     .unwrap(),
                 };
 
@@ -71,7 +77,7 @@ impl PreparedValidatorTransaction {
     pub fn to_executable(self) -> Executable<'static> {
         let auth_zone_params = AuthZoneParams {
             initial_proofs: vec![AuthAddresses::validator_role()],
-            virtualizable_proofs_resource_addresses: BTreeSet::new(),
+            virtual_resources: BTreeSet::new(),
         };
 
         Executable::new_no_blobs(
