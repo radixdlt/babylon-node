@@ -23,7 +23,7 @@ RUN apt-get -y update > /dev/null && \
 COPY scripts/fix-vulnerabilities.sh /tmp
 
 RUN apt update -y
-RUN apt-get -y --no-install-recommends install openjdk-17-jdk
+RUN apt-get -y --no-install-recommends install openjdk-17-jre-headless
 RUN /tmp/fix-vulnerabilities.sh
 RUN apt autoremove -y
 
