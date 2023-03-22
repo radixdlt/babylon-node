@@ -16,6 +16,8 @@ pub struct KeyValueStoreEntrySubstateAllOf {
     /// The hex-encoded bytes of its key
     #[serde(rename = "key_hex")]
     pub key_hex: String,
+    #[serde(rename = "key_non_fungible_local_id", skip_serializing_if = "Option::is_none")]
+    pub key_non_fungible_local_id: Option<Box<crate::core_api::generated::models::NonFungibleId>>,
     #[serde(rename = "is_deleted")]
     pub is_deleted: bool,
     #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
@@ -26,6 +28,7 @@ impl KeyValueStoreEntrySubstateAllOf {
     pub fn new(key_hex: String, is_deleted: bool) -> KeyValueStoreEntrySubstateAllOf {
         KeyValueStoreEntrySubstateAllOf {
             key_hex,
+            key_non_fungible_local_id: None,
             is_deleted,
             data_struct: None,
         }

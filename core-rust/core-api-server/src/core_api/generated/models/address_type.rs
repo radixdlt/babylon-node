@@ -40,10 +40,12 @@ impl AddressType {
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum Subtype {
-    #[serde(rename = "Resource")]
-    Resource,
     #[serde(rename = "Package")]
     Package,
+    #[serde(rename = "FungibleResource")]
+    FungibleResource,
+    #[serde(rename = "NonFungibleResource")]
+    NonFungibleResource,
     #[serde(rename = "NormalComponent")]
     NormalComponent,
     #[serde(rename = "AccountComponent")]
@@ -70,7 +72,7 @@ pub enum Subtype {
 
 impl Default for Subtype {
     fn default() -> Subtype {
-        Self::Resource
+        Self::Package
     }
 }
 

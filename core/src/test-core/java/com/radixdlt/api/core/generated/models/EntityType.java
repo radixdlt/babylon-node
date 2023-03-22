@@ -28,27 +28,27 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum EntityType {
   
-  COMPONENT("Component"),
-  
   PACKAGE("Package"),
   
-  RESOURCEMANAGER("ResourceManager"),
+  NONFUNGIBLERESOURCE("NonFungibleResource"),
   
-  EPOCHMANAGER("EpochManager"),
+  FUNGIBLERESOURCE("FungibleResource"),
   
-  CLOCK("Clock"),
-  
-  VALIDATOR("Validator"),
-  
-  ACCESSCONTROLLER("AccessController"),
+  NORMALCOMPONENT("NormalComponent"),
   
   ACCOUNT("Account"),
   
   IDENTITY("Identity"),
   
-  KEYVALUESTORE("KeyValueStore"),
+  EPOCHMANAGER("EpochManager"),
   
-  NONFUNGIBLESTORE("NonFungibleStore"),
+  VALIDATOR("Validator"),
+  
+  CLOCK("Clock"),
+  
+  ACCESSCONTROLLER("AccessController"),
+  
+  KEYVALUESTORE("KeyValueStore"),
   
   VAULT("Vault");
 

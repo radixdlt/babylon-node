@@ -109,10 +109,10 @@ public class TransactionReceipt {
    * Get feeSummary
    * @return feeSummary
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
   @JsonProperty(JSON_PROPERTY_FEE_SUMMARY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public FeeSummary getFeeSummary() {
     return feeSummary;
@@ -120,7 +120,7 @@ public class TransactionReceipt {
 
 
   @JsonProperty(JSON_PROPERTY_FEE_SUMMARY)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setFeeSummary(FeeSummary feeSummary) {
     this.feeSummary = feeSummary;
   }
@@ -226,11 +226,11 @@ public class TransactionReceipt {
   }
 
    /**
-   * The manifest line-by-line engine return data (only present if status is Succeeded)
+   * The manifest line-by-line engine return data (only present if &#x60;status&#x60; is &#x60;Succeeded&#x60;)
    * @return output
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "The manifest line-by-line engine return data (only present if status is Succeeded)")
+  @ApiModelProperty(value = "The manifest line-by-line engine return data (only present if `status` is `Succeeded`)")
   @JsonProperty(JSON_PROPERTY_OUTPUT)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
@@ -252,11 +252,11 @@ public class TransactionReceipt {
   }
 
    /**
-   * Error message (only present if status is Failed or Rejected)
+   * Error message (only present if status is &#x60;Failed&#x60; or &#x60;Rejected&#x60;)
    * @return errorMessage
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "Error message (only present if status is Failed or Rejected)")
+  @ApiModelProperty(value = "Error message (only present if status is `Failed` or `Rejected`)")
   @JsonProperty(JSON_PROPERTY_ERROR_MESSAGE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 

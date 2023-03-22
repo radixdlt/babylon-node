@@ -22,13 +22,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.BlueprintData;
+import com.radixdlt.api.core.generated.models.PackageSchema;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -36,14 +34,14 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * PackageInfoSubstateAllOf
  */
 @JsonPropertyOrder({
-  PackageInfoSubstateAllOf.JSON_PROPERTY_BLUEPRINTS,
+  PackageInfoSubstateAllOf.JSON_PROPERTY_PACKAGE_SCHEMA,
   PackageInfoSubstateAllOf.JSON_PROPERTY_DEPENDENT_RESOURCES,
   PackageInfoSubstateAllOf.JSON_PROPERTY_DEPENDENT_COMPONENTS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PackageInfoSubstateAllOf {
-  public static final String JSON_PROPERTY_BLUEPRINTS = "blueprints";
-  private Map<String, BlueprintData> blueprints = new HashMap<>();
+  public static final String JSON_PROPERTY_PACKAGE_SCHEMA = "package_schema";
+  private PackageSchema packageSchema;
 
   public static final String JSON_PROPERTY_DEPENDENT_RESOURCES = "dependent_resources";
   private List<String> dependentResources = new ArrayList<>();
@@ -54,34 +52,29 @@ public class PackageInfoSubstateAllOf {
   public PackageInfoSubstateAllOf() { 
   }
 
-  public PackageInfoSubstateAllOf blueprints(Map<String, BlueprintData> blueprints) {
-    this.blueprints = blueprints;
-    return this;
-  }
-
-  public PackageInfoSubstateAllOf putBlueprintsItem(String key, BlueprintData blueprintsItem) {
-    this.blueprints.put(key, blueprintsItem);
+  public PackageInfoSubstateAllOf packageSchema(PackageSchema packageSchema) {
+    this.packageSchema = packageSchema;
     return this;
   }
 
    /**
-   * A map from the blueprint name to BlueprintData
-   * @return blueprints
+   * Get packageSchema
+   * @return packageSchema
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A map from the blueprint name to BlueprintData")
-  @JsonProperty(JSON_PROPERTY_BLUEPRINTS)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_PACKAGE_SCHEMA)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Map<String, BlueprintData> getBlueprints() {
-    return blueprints;
+  public PackageSchema getPackageSchema() {
+    return packageSchema;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_BLUEPRINTS)
+  @JsonProperty(JSON_PROPERTY_PACKAGE_SCHEMA)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBlueprints(Map<String, BlueprintData> blueprints) {
-    this.blueprints = blueprints;
+  public void setPackageSchema(PackageSchema packageSchema) {
+    this.packageSchema = packageSchema;
   }
 
 
@@ -159,21 +152,21 @@ public class PackageInfoSubstateAllOf {
       return false;
     }
     PackageInfoSubstateAllOf packageInfoSubstateAllOf = (PackageInfoSubstateAllOf) o;
-    return Objects.equals(this.blueprints, packageInfoSubstateAllOf.blueprints) &&
+    return Objects.equals(this.packageSchema, packageInfoSubstateAllOf.packageSchema) &&
         Objects.equals(this.dependentResources, packageInfoSubstateAllOf.dependentResources) &&
         Objects.equals(this.dependentComponents, packageInfoSubstateAllOf.dependentComponents);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blueprints, dependentResources, dependentComponents);
+    return Objects.hash(packageSchema, dependentResources, dependentComponents);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class PackageInfoSubstateAllOf {\n");
-    sb.append("    blueprints: ").append(toIndentedString(blueprints)).append("\n");
+    sb.append("    packageSchema: ").append(toIndentedString(packageSchema)).append("\n");
     sb.append("    dependentResources: ").append(toIndentedString(dependentResources)).append("\n");
     sb.append("    dependentComponents: ").append(toIndentedString(dependentComponents)).append("\n");
     sb.append("}");

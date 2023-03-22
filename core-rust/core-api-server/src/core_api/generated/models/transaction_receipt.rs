@@ -16,28 +16,28 @@
 pub struct TransactionReceipt {
     #[serde(rename = "status")]
     pub status: crate::core_api::generated::models::TransactionStatus,
-    #[serde(rename = "fee_summary")]
-    pub fee_summary: Box<crate::core_api::generated::models::FeeSummary>,
+    #[serde(rename = "fee_summary", skip_serializing_if = "Option::is_none")]
+    pub fee_summary: Option<Box<crate::core_api::generated::models::FeeSummary>>,
     #[serde(rename = "state_updates")]
     pub state_updates: Box<crate::core_api::generated::models::StateUpdates>,
     #[serde(rename = "events", skip_serializing_if = "Option::is_none")]
     pub events: Option<Vec<crate::core_api::generated::models::Event>>,
     #[serde(rename = "next_epoch", skip_serializing_if = "Option::is_none")]
     pub next_epoch: Option<Box<crate::core_api::generated::models::NextEpoch>>,
-    /// The manifest line-by-line engine return data (only present if status is Succeeded)
+    /// The manifest line-by-line engine return data (only present if `status` is `Succeeded`)
     #[serde(rename = "output", skip_serializing_if = "Option::is_none")]
     pub output: Option<Vec<crate::core_api::generated::models::SborData>>,
-    /// Error message (only present if status is Failed or Rejected)
+    /// Error message (only present if status is `Failed` or `Rejected`)
     #[serde(rename = "error_message", skip_serializing_if = "Option::is_none")]
     pub error_message: Option<String>,
 }
 
 impl TransactionReceipt {
     /// The transaction execution receipt
-    pub fn new(status: crate::core_api::generated::models::TransactionStatus, fee_summary: crate::core_api::generated::models::FeeSummary, state_updates: crate::core_api::generated::models::StateUpdates) -> TransactionReceipt {
+    pub fn new(status: crate::core_api::generated::models::TransactionStatus, state_updates: crate::core_api::generated::models::StateUpdates) -> TransactionReceipt {
         TransactionReceipt {
             status,
-            fee_summary: Box::new(fee_summary),
+            fee_summary: None,
             state_updates: Box::new(state_updates),
             events: None,
             next_epoch: None,
