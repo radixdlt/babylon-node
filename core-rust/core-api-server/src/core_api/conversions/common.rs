@@ -44,5 +44,8 @@ pub fn to_api_sbor_data_from_bytes(
         decode_error: err.to_string(),
         bytes: scrypto_sbor_bytes.to_vec(),
     })?;
-    Ok(models::SborData::new(to_hex(scrypto_sbor_bytes), Some(json)))
+    Ok(models::SborData::new(
+        to_hex(scrypto_sbor_bytes),
+        Some(json),
+    ))
 }

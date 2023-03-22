@@ -11,7 +11,7 @@ use radix_engine::transaction::{
     StateUpdateSummary, TransactionOutcome, TransactionReceipt as EngineTransactionReceipt,
     TransactionResult,
 };
-use radix_engine::types::{hash, scrypto_encode, Hash, SubstateId, Decimal, Level, ObjectId};
+use radix_engine::types::{hash, scrypto_encode, Decimal, Hash, Level, ObjectId, SubstateId};
 use radix_engine_interface::api::types::EventTypeIdentifier;
 use radix_engine_interface::data::scrypto::model::ComponentAddress;
 use radix_engine_interface::*;

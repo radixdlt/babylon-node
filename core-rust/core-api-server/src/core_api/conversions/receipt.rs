@@ -4,15 +4,17 @@ use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine::system::kernel_modules::costing::{FeeSummary, RoyaltyRecipient};
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::indexmap::IndexMap;
-use radix_engine::types::{Address, ObjectId, RENodeId, SubstateOffset, VaultOffset, ComponentAddress};
+use radix_engine::types::{
+    Address, ComponentAddress, ObjectId, RENodeId, SubstateOffset, VaultOffset,
+};
 use radix_engine::{
     ledger::OutputValue,
     types::{hash, scrypto_encode, Decimal, SubstateId},
 };
 
 use radix_engine_interface::api::types::{Emitter, EventTypeIdentifier};
-use std::collections::{BTreeMap, HashMap};
 use radix_engine_interface::blueprints::resource::ResourceType;
+use std::collections::{BTreeMap, HashMap};
 
 use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
 
@@ -235,7 +237,7 @@ pub fn to_api_event(
     type_id: EventTypeIdentifier,
     data: Vec<u8>,
 ) -> Result<models::Event, MappingError> {
-    let EventTypeIdentifier(emitter, local_type_index) = type_id;
+    let EventTypeIdentifier(emitter, _local_type_index) = type_id;
     Ok(models::Event {
         _type: Box::new(models::EventTypeIdentifier {
             emitter: Some(match emitter {
