@@ -1,10 +1,10 @@
 use crate::core_api::*;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{
-    NonFungibleStoreOffset, RENodeId, ResourceManagerOffset, SubstateId, SubstateOffset,
+    scrypto_encode, KeyValueStoreOffset, RENodeId, ResourceManagerOffset, SubstateId,
+    SubstateOffset,
 };
 use radix_engine_interface::api::types::NodeModuleId;
-use radix_engine_interface::blueprints::resource::ResourceType;
 
 use crate::core_api::models::StateNonFungibleResponse;
 use state_manager::jni::state_manager::ActualStateManager;
@@ -31,69 +31,64 @@ fn handle_state_non_fungible_internal(
     let resource_manager = {
         let substate_offset =
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let loaded_substate = read_known_substate(
+        let loaded_substate = read_mandatory_substate(
             state_manager,
             RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::SELF,
             &substate_offset,
         )?;
-        let PersistedSubstate::ResourceManager(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
-
-    let non_fungible_id_type = match resource_manager.resource_type {
-        ResourceType::Fungible { .. } => {
-            return Err(client_error(
-                "The specified resource is fungible, not non-fungible",
-            ))
+        match loaded_substate {
+            PersistedSubstate::ResourceManager(_) => {
+                return Err(client_error(
+                    "The specified resource is fungible, not non-fungible",
+                ))
+            }
+            PersistedSubstate::NonFungibleResourceManager(substate) => substate,
+            _ => return Err(wrong_substate_type(substate_offset)),
         }
-        ResourceType::NonFungible { id_type } => id_type,
     };
 
-    let non_fungible_id = extract_non_fungible_id_from_simple_representation(
-        non_fungible_id_type,
-        &request.non_fungible_id,
-    )
-    .map_err(|err| err.into_response_error("non_fungible_id"))?;
+    let non_fungible_id_type = resource_manager.id_type;
 
-    let Some(non_fungible_store_id) = resource_manager.nf_store_id else {
-        return Err(MappingError::MismatchedSubstateId {
-            message: "Resource is not an NFT".to_owned(),
+    let non_fungible_id =
+        extract_non_fungible_id_from_simple_representation(&request.non_fungible_id)
+            .map_err(|err| err.into_response_error("non_fungible_id"))?;
+
+    if non_fungible_id.id_type() != non_fungible_id_type {
+        return Err(ExtractionError::WrongNonFungibleIdType {
+            expected: non_fungible_id_type,
+            actual: non_fungible_id.id_type(),
         }
-        .into())
-    };
+        .into_response_error("non_fungible_id"));
+    }
 
-    let non_fungible_node_id = RENodeId::NonFungibleStore(non_fungible_store_id);
-    let non_fungible_substate_offset =
-        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(non_fungible_id));
+    let non_fungible_substate_offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+        scrypto_encode(&non_fungible_id).unwrap(),
+    ));
 
-    let non_fungible = {
-        let substate_offset = non_fungible_substate_offset.clone();
-        let loaded_substate = read_known_substate(
-            state_manager,
-            non_fungible_node_id,
-            NodeModuleId::SELF,
-            &substate_offset,
-        )?;
-        let PersistedSubstate::NonFungible(substate) = loaded_substate else {
-            return Err(wrong_substate_type(substate_offset));
-        };
-        substate
-    };
-
-    let non_fungible_substate_id = SubstateId(
-        non_fungible_node_id,
+    let substate_id = SubstateId(
+        RENodeId::KeyValueStore(resource_manager.non_fungible_table),
         NodeModuleId::SELF,
         non_fungible_substate_offset,
     );
 
+    let key_value_store_entry_substate =
+        {
+            let loaded_substate = read_optional_substate_from_id(state_manager, &substate_id);
+            match loaded_substate {
+                Some(PersistedSubstate::KeyValueStoreEntry(substate)) => substate,
+                None => return Err(not_found_error(
+                    "The specified non-fungible id does not exist under that non-fungible resource",
+                )),
+                _ => return Err(wrong_substate_type(substate_id.2)),
+            }
+        };
+
     Ok(StateNonFungibleResponse {
-        non_fungible: Some(to_api_non_fungible_substate(
+        non_fungible: Some(to_api_key_value_story_entry_substate(
             &mapping_context,
-            &non_fungible_substate_id,
-            &non_fungible,
+            &substate_id,
+            &key_value_store_entry_substate,
         )?),
     })
 }

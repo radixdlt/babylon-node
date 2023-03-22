@@ -1017,16 +1017,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "292a948cd991e376cf75541fe5b97a1081d713c618b4f1b9500f8844e49eb565"
 
 [[package]]
-name = "libmimalloc-sys"
-version = "0.1.30"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd8c7cbf8b89019683667e347572e6d55a7df7ea36b0c4ce69961b0cde67b174"
-dependencies = [
- "cc",
- "libc",
-]
-
-[[package]]
 name = "librocksdb-sys"
 version = "0.8.0+7.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1108,15 +1098,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mimalloc"
-version = "0.1.34"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9dcb174b18635f7561a0c6c9fc2ce57218ac7523cf72c50af80e2d79ab8f3ba1"
-dependencies = [
- "libmimalloc-sys",
-]
-
-[[package]]
 name = "mime"
 version = "0.3.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1165,7 +1146,7 @@ dependencies = [
 [[package]]
 name = "native-sdk"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-f78089#f78089ced0c9e5608f31cdf2139fdb86c14de787"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=rcnet-v1-fac7a0c0f#fac7a0c0f0d026cd99d6dd914e4df1fadd1ad33e"
 dependencies = [
  "radix-engine-derive",
  "radix-engine-interface",
@@ -1471,12 +1452,11 @@ dependencies = [
 [[package]]
 name = "radix-engine"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-f78089#f78089ced0c9e5608f31cdf2139fdb86c14de787"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=rcnet-v1-fac7a0c0f#fac7a0c0f0d026cd99d6dd914e4df1fadd1ad33e"
 dependencies = [
  "bitflags",
  "colored",
  "hex",
- "mimalloc",
  "moka",
  "native-sdk",
  "parity-wasm",
@@ -1494,7 +1474,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-common"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-f78089#f78089ced0c9e5608f31cdf2139fdb86c14de787"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=rcnet-v1-fac7a0c0f#fac7a0c0f0d026cd99d6dd914e4df1fadd1ad33e"
 dependencies = [
  "bech32",
  "blake2",
@@ -1515,12 +1495,12 @@ dependencies = [
 [[package]]
 name = "radix-engine-constants"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-f78089#f78089ced0c9e5608f31cdf2139fdb86c14de787"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=rcnet-v1-fac7a0c0f#fac7a0c0f0d026cd99d6dd914e4df1fadd1ad33e"
 
 [[package]]
 name = "radix-engine-derive"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-f78089#f78089ced0c9e5608f31cdf2139fdb86c14de787"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=rcnet-v1-fac7a0c0f#fac7a0c0f0d026cd99d6dd914e4df1fadd1ad33e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1531,7 +1511,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-interface"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-f78089#f78089ced0c9e5608f31cdf2139fdb86c14de787"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=rcnet-v1-fac7a0c0f#fac7a0c0f0d026cd99d6dd914e4df1fadd1ad33e"
 dependencies = [
  "bitflags",
  "hex",
@@ -1546,7 +1526,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-stores"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-f78089#f78089ced0c9e5608f31cdf2139fdb86c14de787"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=rcnet-v1-fac7a0c0f#fac7a0c0f0d026cd99d6dd914e4df1fadd1ad33e"
 dependencies = [
  "itertools",
  "radix-engine",
@@ -1716,19 +1696,20 @@ dependencies = [
 [[package]]
 name = "sbor"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-f78089#f78089ced0c9e5608f31cdf2139fdb86c14de787"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=rcnet-v1-fac7a0c0f#fac7a0c0f0d026cd99d6dd914e4df1fadd1ad33e"
 dependencies = [
  "const-sha1",
- "indexmap 2.0.0-pre",
+ "hex",
  "lazy_static",
  "sbor-derive",
  "serde",
+ "utils",
 ]
 
 [[package]]
 name = "sbor-derive"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-f78089#f78089ced0c9e5608f31cdf2139fdb86c14de787"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=rcnet-v1-fac7a0c0f#fac7a0c0f0d026cd99d6dd914e4df1fadd1ad33e"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -1737,7 +1718,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive-common"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-f78089#f78089ced0c9e5608f31cdf2139fdb86c14de787"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=rcnet-v1-fac7a0c0f#fac7a0c0f0d026cd99d6dd914e4df1fadd1ad33e"
 dependencies = [
  "const-sha1",
  "proc-macro2",
@@ -1769,7 +1750,7 @@ checksum = "1792db035ce95be60c3f8853017b3999209281c24e2ba5bc8e59bf97a0c590c1"
 [[package]]
 name = "scrypto-schema"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-f78089#f78089ced0c9e5608f31cdf2139fdb86c14de787"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=rcnet-v1-fac7a0c0f#fac7a0c0f0d026cd99d6dd914e4df1fadd1ad33e"
 dependencies = [
  "radix-engine-common",
  "sbor",
@@ -2328,7 +2309,7 @@ dependencies = [
 [[package]]
 name = "transaction"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-f78089#f78089ced0c9e5608f31cdf2139fdb86c14de787"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=rcnet-v1-fac7a0c0f#fac7a0c0f0d026cd99d6dd914e4df1fadd1ad33e"
 dependencies = [
  "ed25519-dalek",
  "hex",
@@ -2388,9 +2369,9 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 [[package]]
 name = "utils"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-f78089#f78089ced0c9e5608f31cdf2139fdb86c14de787"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=rcnet-v1-fac7a0c0f#fac7a0c0f0d026cd99d6dd914e4df1fadd1ad33e"
 dependencies = [
- "sbor",
+ "indexmap 2.0.0-pre",
  "serde",
 ]
 

@@ -12,28 +12,28 @@
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum EntityType {
-    #[serde(rename = "Component")]
-    Component,
     #[serde(rename = "Package")]
     Package,
-    #[serde(rename = "ResourceManager")]
-    ResourceManager,
-    #[serde(rename = "EpochManager")]
-    EpochManager,
-    #[serde(rename = "Clock")]
-    Clock,
-    #[serde(rename = "Validator")]
-    Validator,
-    #[serde(rename = "AccessController")]
-    AccessController,
+    #[serde(rename = "NonFungibleResource")]
+    NonFungibleResource,
+    #[serde(rename = "FungibleResource")]
+    FungibleResource,
+    #[serde(rename = "NormalComponent")]
+    NormalComponent,
     #[serde(rename = "Account")]
     Account,
     #[serde(rename = "Identity")]
     Identity,
+    #[serde(rename = "EpochManager")]
+    EpochManager,
+    #[serde(rename = "Validator")]
+    Validator,
+    #[serde(rename = "Clock")]
+    Clock,
+    #[serde(rename = "AccessController")]
+    AccessController,
     #[serde(rename = "KeyValueStore")]
     KeyValueStore,
-    #[serde(rename = "NonFungibleStore")]
-    NonFungibleStore,
     #[serde(rename = "Vault")]
     Vault,
 
@@ -42,17 +42,17 @@ pub enum EntityType {
 impl ToString for EntityType {
     fn to_string(&self) -> String {
         match self {
-            Self::Component => String::from("Component"),
             Self::Package => String::from("Package"),
-            Self::ResourceManager => String::from("ResourceManager"),
-            Self::EpochManager => String::from("EpochManager"),
-            Self::Clock => String::from("Clock"),
-            Self::Validator => String::from("Validator"),
-            Self::AccessController => String::from("AccessController"),
+            Self::NonFungibleResource => String::from("NonFungibleResource"),
+            Self::FungibleResource => String::from("FungibleResource"),
+            Self::NormalComponent => String::from("NormalComponent"),
             Self::Account => String::from("Account"),
             Self::Identity => String::from("Identity"),
+            Self::EpochManager => String::from("EpochManager"),
+            Self::Validator => String::from("Validator"),
+            Self::Clock => String::from("Clock"),
+            Self::AccessController => String::from("AccessController"),
             Self::KeyValueStore => String::from("KeyValueStore"),
-            Self::NonFungibleStore => String::from("NonFungibleStore"),
             Self::Vault => String::from("Vault"),
         }
     }
@@ -60,7 +60,7 @@ impl ToString for EntityType {
 
 impl Default for EntityType {
     fn default() -> EntityType {
-        Self::Component
+        Self::Package
     }
 }
 

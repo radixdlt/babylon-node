@@ -66,6 +66,7 @@ package com.radixdlt.integration.steady_state.deterministic.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
+import static com.radixdlt.rev2.ComponentAddress.VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
@@ -135,7 +136,9 @@ public final class RandomValidatorsTest {
       var genesis = NodesReader.getCommittedLedgerTransaction(test.getNodeInjectors(), GENESIS);
       var componentAddresses =
           genesis.newComponentAddresses().stream()
-              .filter(componentAddress -> componentAddress.value()[0] == 5)
+              .filter(
+                  componentAddress ->
+                      componentAddress.value()[0] == VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID)
               .toList();
       for (int i = 0; i < NUM_VALIDATORS / 2; i++) {
         validators.put(i, componentAddresses.get(i));
