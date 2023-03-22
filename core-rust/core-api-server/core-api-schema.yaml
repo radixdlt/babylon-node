@@ -1359,13 +1359,16 @@ components:
       type: object
       required:
         - emitter
-        - event_name
+        - schema_local_index
       properties:
         emitter:
           $ref: "#/components/schemas/EventEmitterIdentifier"
-        event_name:
-          type: string
-          description: Event name.
+        schema_local_index:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: An integer between `0` and `2^32 - 1`, specifying the index of the event's type definition within the emitter's schema.
     EventEmitterIdentifierType:
       type: string
       enum:
