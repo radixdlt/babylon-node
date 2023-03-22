@@ -53,12 +53,12 @@ jobs:
         with:
           toolchain: stable
       - name: Set up JDK 17
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
           java-version: '17'
       - name: Cache Gradle packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}-deb
@@ -72,11 +72,11 @@ jobs:
         uses: 'google-github-actions/setup-gcloud@d51b5346f85640ec2aa2fa057354d2b82c2fcbce'
       - name: 'Register gcloud as Docker credential helper'
         run: |
-            gcloud auth configure-docker -q
+          gcloud auth configure-docker -q
       - name: Create deb package
         run: |
-            sudo apt-get update && sudo apt-get install make
-            cd core && make build-core
+          sudo apt-get update && sudo apt-get install make
+          cd core && make build-core
       - name: Upload generated debian package
         uses: actions/upload-artifact@v3.1.0
         with:
@@ -84,113 +84,54 @@ jobs:
           path: "${{ github.workspace }}/docker/*.deb"
 
   build_push_container:
-    name: Build/Push GCR
-    needs:
-      - build_deb
-    runs-on: ubuntu-22.04
-    permissions:
-      id-token: write
-      contents: read
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Download generated debian package
-        uses: actions/download-artifact@v3
-        with:
-          name: deb4docker
-          path: docker
-      - name: Display structure of downloaded files
-        run: ls -R docker
-      - id: auth
-        uses: google-github-actions/auth@a61909d048e0be579b6c15b27088d19668493851
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-      - name: 'Register gcloud as Docker credential helper'
-        run: |
-            gcloud auth configure-docker -q
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Build and push
-        uses: docker/build-push-action@v2
-        with:
-          file: ./docker/Dockerfile.core
-          context: docker
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ needs.build_deb.outputs.tags }}
-          labels: ${{ needs.build_deb.outputs.labels }}
-      - name: Add docker tags to PR comment
-        uses: thollander/actions-comment-pull-request@632cf9ce90574d125be56b5f3405cda41a84e2fd
-        with:
-          message: |
-            Docker tags
-            ${{ needs.build_deb.outputs.tags }}
-          comment_tag: dockerTags
-        if: github.event_name == 'pull_request'
+    name: (GCR) Docker
+    needs: build_deb
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      runs_on: ubuntu-latest
+      image_registry: "eu.gcr.io"
+      image_organization: "dev-container-repo"
+      image_name: "babylon-node"
+      tags: |
+        type=ref,event=branch
+        type=ref,event=pr
+        type=semver,pattern={{version}}
+        type=semver,pattern={{major}}.{{minor}}
+        type=semver,pattern={{major}}
+        type=sha
+      context: "docker"
+      dockerfile: "./docker/Dockerfile.core"
+      platforms: "linux/amd64,linux/arm64"
+      restore_artifact: "true"
+      artifact_name: "deb4docker"
+      artifact_location: "docker"
+    secrets:
+      workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
+      service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
   build_push_container_dockerhub:
     if: github.event_name == 'release'
-    name: Build/Push Dockerhub
-    needs:
-      - build_deb
-    runs-on: ubuntu-22.04
-    environment: release
-    permissions:
-      id-token: write
-      contents: read
-      pull-requests: write
-    steps:
-      - name: Dump context
-        uses: crazy-max/ghaction-dump-context@516dbb0c760f39b4cdd750ae095f1688780f68f4
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Download generated debian package
-        uses: actions/download-artifact@v3
-        with:
-          name: deb4docker
-          path: docker
-      - name: Display structure of downloaded files
-        run: ls -R docker
-      - name: "Configure AWS credentials"
-        uses: aws-actions/configure-aws-credentials@v1-node16
-        with:
-          role-to-assume: arn:aws:iam::${{ secrets.GH_ACCOUNT_NUMBER }}:role/gh-dockerhub-releaser
-          aws-region: eu-west-2
-      - name: Read secrets from AWS Secrets Manager into environment variables
-        uses: aws-actions/aws-secretsmanager-get-secrets@v1
-        with:
-          secret-ids: |
-            DOCKERHUB, github-actions/rdxworks/dockerhub-images/release-credentials
-          parse-json-secrets: true
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{env.DOCKERHUB_USERNAME}}
-          password: ${{env.DOCKERHUB_TOKEN}}
-      - name: Docker meta
-        id: meta
-        run: |
-          echo "RELEASE_TAG=radixdlt/babylon-node:${{ github.event.release.tag_name }}"
-          echo "RELEASE_TAG=radixdlt/babylon-node:${{ github.event.release.tag_name }}" >> $GITHUB_ENV
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Build and push
-        uses: docker/build-push-action@v2
-        with:
-          file: ./docker/Dockerfile.core
-          context: docker
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ env.RELEASE_TAG }}
-
+    name: (DockerHub) Docker
+    needs: build_deb
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      environment: release
+      runs_on: ubuntu-latest
+      image_registry: "registry.hub.docker.com"
+      image_organization: "radixdlt"
+      image_name: "babylon-node"
+      tag: ${{ github.event.release.tag_name }}
+      context: "docker"
+      dockerfile: "./docker/Dockerfile.core"
+      platforms: "linux/amd64,linux/arm64"
+      restore_artifact: "true"
+      artifact_name: "deb4docker"
+      artifact_location: "docker"
+      enable_dockerhub: "true"
+    secrets:
+      workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
+      service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
 
 # TEMPORARILY REMOVE EPHEMERAL TESTS
 # => Until we can change them to only run the "node" tests and not the transaction tests
