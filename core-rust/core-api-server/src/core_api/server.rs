@@ -97,32 +97,32 @@ pub async fn create_server<F>(
         .route("/", get(handle_provide_info_at_root_path))
         // Release Candidate backward compatible Sub-API
         .route(
-            "/rc/transaction/construction",
-            post(rc::handle_rc_transaction_construction),
+            "/lts/transaction/construction",
+            post(lts::handle_rc_transaction_construction),
         )
         .route(
-            "/rc/transaction/status",
-            post(rc::handle_rc_transaction_status),
+            "/lts/transaction/status",
+            post(lts::handle_rc_transaction_status),
         )
         .route(
-            "/rc/transaction/submit",
-            post(rc::handle_rc_transaction_submit),
+            "/lts/transaction/submit",
+            post(lts::handle_rc_transaction_submit),
         )
         .route(
-            "/rc/stream/entity-transactions-basic-outcomes",
-            post(rc::handle_rc_stream_entity_transactions_basic_outcomes),
+            "/lts/stream/entity-transactions-basic-outcomes",
+            post(lts::handle_rc_stream_entity_transactions_basic_outcomes),
         )
         .route(
-            "/rc/stream/transactions-basic-outcomes",
-            post(rc::handle_rc_stream_transactions_basic_outcomes),
+            "/lts/stream/transactions-basic-outcomes",
+            post(lts::handle_rc_stream_transactions_basic_outcomes),
         )
         .route(
-            "/rc/state/account-all-resource-balances",
-            post(rc::handle_rc_state_account_all_resource_balances),
+            "/lts/state/account-all-resource-balances",
+            post(lts::handle_rc_state_account_all_resource_balances),
         )
         .route(
-            "/rc/state/account-resource-balances",
-            post(rc::handle_rc_state_account_resource_balance),
+            "/lts/state/account-resource-balances",
+            post(lts::handle_rc_state_account_resource_balance),
         )
         // Status Sub-API
         .route(

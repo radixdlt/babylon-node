@@ -18,8 +18,8 @@ import com.radixdlt.api.core.generated.client.ApiResponse;
 import com.radixdlt.api.core.generated.client.Pair;
 
 import com.radixdlt.api.core.generated.models.BasicErrorResponse;
-import com.radixdlt.api.core.generated.models.RCStreamTransactionsBasicOutcomesRequest;
-import com.radixdlt.api.core.generated.models.RCStreamTransactionsBasicOutcomesResponse;
+import com.radixdlt.api.core.generated.models.LtsStreamTransactionsBasicOutcomesRequest;
+import com.radixdlt.api.core.generated.models.LtsStreamTransactionsBasicOutcomesResponse;
 import com.radixdlt.api.core.generated.models.StreamTransactionsRequest;
 import com.radixdlt.api.core.generated.models.StreamTransactionsResponse;
 
@@ -81,24 +81,24 @@ public class StreamApi {
   /**
    * Get Transactions Basic Outcomes
    * TODO 
-   * @param rcStreamTransactionsBasicOutcomesRequest  (required)
-   * @return RCStreamTransactionsBasicOutcomesResponse
+   * @param ltsStreamTransactionsBasicOutcomesRequest  (required)
+   * @return LtsStreamTransactionsBasicOutcomesResponse
    * @throws ApiException if fails to make API call
    */
-  public RCStreamTransactionsBasicOutcomesResponse rcStreamTransactionsBasicOutcomesPost(RCStreamTransactionsBasicOutcomesRequest rcStreamTransactionsBasicOutcomesRequest) throws ApiException {
-    ApiResponse<RCStreamTransactionsBasicOutcomesResponse> localVarResponse = rcStreamTransactionsBasicOutcomesPostWithHttpInfo(rcStreamTransactionsBasicOutcomesRequest);
+  public LtsStreamTransactionsBasicOutcomesResponse ltsStreamTransactionsBasicOutcomesPost(LtsStreamTransactionsBasicOutcomesRequest ltsStreamTransactionsBasicOutcomesRequest) throws ApiException {
+    ApiResponse<LtsStreamTransactionsBasicOutcomesResponse> localVarResponse = ltsStreamTransactionsBasicOutcomesPostWithHttpInfo(ltsStreamTransactionsBasicOutcomesRequest);
     return localVarResponse.getData();
   }
 
   /**
    * Get Transactions Basic Outcomes
    * TODO 
-   * @param rcStreamTransactionsBasicOutcomesRequest  (required)
-   * @return ApiResponse&lt;RCStreamTransactionsBasicOutcomesResponse&gt;
+   * @param ltsStreamTransactionsBasicOutcomesRequest  (required)
+   * @return ApiResponse&lt;LtsStreamTransactionsBasicOutcomesResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<RCStreamTransactionsBasicOutcomesResponse> rcStreamTransactionsBasicOutcomesPostWithHttpInfo(RCStreamTransactionsBasicOutcomesRequest rcStreamTransactionsBasicOutcomesRequest) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = rcStreamTransactionsBasicOutcomesPostRequestBuilder(rcStreamTransactionsBasicOutcomesRequest);
+  public ApiResponse<LtsStreamTransactionsBasicOutcomesResponse> ltsStreamTransactionsBasicOutcomesPostWithHttpInfo(LtsStreamTransactionsBasicOutcomesRequest ltsStreamTransactionsBasicOutcomesRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = ltsStreamTransactionsBasicOutcomesPostRequestBuilder(ltsStreamTransactionsBasicOutcomesRequest);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -108,12 +108,12 @@ public class StreamApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("rcStreamTransactionsBasicOutcomesPost", localVarResponse);
+          throw getApiException("ltsStreamTransactionsBasicOutcomesPost", localVarResponse);
         }
-        return new ApiResponse<RCStreamTransactionsBasicOutcomesResponse>(
+        return new ApiResponse<LtsStreamTransactionsBasicOutcomesResponse>(
           localVarResponse.statusCode(),
           localVarResponse.headers().map(),
-          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<RCStreamTransactionsBasicOutcomesResponse>() {}) // closes the InputStream
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<LtsStreamTransactionsBasicOutcomesResponse>() {}) // closes the InputStream
           
         );
       } finally {
@@ -127,15 +127,15 @@ public class StreamApi {
     }
   }
 
-  private HttpRequest.Builder rcStreamTransactionsBasicOutcomesPostRequestBuilder(RCStreamTransactionsBasicOutcomesRequest rcStreamTransactionsBasicOutcomesRequest) throws ApiException {
-    // verify the required parameter 'rcStreamTransactionsBasicOutcomesRequest' is set
-    if (rcStreamTransactionsBasicOutcomesRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'rcStreamTransactionsBasicOutcomesRequest' when calling rcStreamTransactionsBasicOutcomesPost");
+  private HttpRequest.Builder ltsStreamTransactionsBasicOutcomesPostRequestBuilder(LtsStreamTransactionsBasicOutcomesRequest ltsStreamTransactionsBasicOutcomesRequest) throws ApiException {
+    // verify the required parameter 'ltsStreamTransactionsBasicOutcomesRequest' is set
+    if (ltsStreamTransactionsBasicOutcomesRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'ltsStreamTransactionsBasicOutcomesRequest' when calling ltsStreamTransactionsBasicOutcomesPost");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
-    String localVarPath = "/rc/stream/transactions-basic-outcomes";
+    String localVarPath = "/lts/stream/transactions-basic-outcomes";
 
     localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
 
@@ -143,7 +143,7 @@ public class StreamApi {
     localVarRequestBuilder.header("Accept", "application/json");
 
     try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(rcStreamTransactionsBasicOutcomesRequest);
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(ltsStreamTransactionsBasicOutcomesRequest);
       localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
     } catch (IOException e) {
       throw new ApiException(e);

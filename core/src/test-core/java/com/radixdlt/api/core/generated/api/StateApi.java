@@ -18,10 +18,10 @@ import com.radixdlt.api.core.generated.client.ApiResponse;
 import com.radixdlt.api.core.generated.client.Pair;
 
 import com.radixdlt.api.core.generated.models.BasicErrorResponse;
-import com.radixdlt.api.core.generated.models.RCStateAccountAllResourceBalancesRequest;
-import com.radixdlt.api.core.generated.models.RCStateAccountAllResourceBalancesResponse;
-import com.radixdlt.api.core.generated.models.RCStateAccountResourceBalanceRequest;
-import com.radixdlt.api.core.generated.models.RCStateAccountResourceBalanceResponse;
+import com.radixdlt.api.core.generated.models.LtsStateAccountAllResourceBalancesRequest;
+import com.radixdlt.api.core.generated.models.LtsStateAccountAllResourceBalancesResponse;
+import com.radixdlt.api.core.generated.models.LtsStateAccountResourceBalanceRequest;
+import com.radixdlt.api.core.generated.models.LtsStateAccountResourceBalanceResponse;
 import com.radixdlt.api.core.generated.models.StateAccessControllerRequest;
 import com.radixdlt.api.core.generated.models.StateAccessControllerResponse;
 import com.radixdlt.api.core.generated.models.StateClockRequest;
@@ -97,24 +97,24 @@ public class StateApi {
   /**
    * Get All Resources Balances
    * Returns balances for all resources associated with an account
-   * @param rcStateAccountAllResourceBalancesRequest  (required)
-   * @return RCStateAccountAllResourceBalancesResponse
+   * @param ltsStateAccountAllResourceBalancesRequest  (required)
+   * @return LtsStateAccountAllResourceBalancesResponse
    * @throws ApiException if fails to make API call
    */
-  public RCStateAccountAllResourceBalancesResponse rcStateAccountAllResourceBalancesPost(RCStateAccountAllResourceBalancesRequest rcStateAccountAllResourceBalancesRequest) throws ApiException {
-    ApiResponse<RCStateAccountAllResourceBalancesResponse> localVarResponse = rcStateAccountAllResourceBalancesPostWithHttpInfo(rcStateAccountAllResourceBalancesRequest);
+  public LtsStateAccountAllResourceBalancesResponse ltsStateAccountAllResourceBalancesPost(LtsStateAccountAllResourceBalancesRequest ltsStateAccountAllResourceBalancesRequest) throws ApiException {
+    ApiResponse<LtsStateAccountAllResourceBalancesResponse> localVarResponse = ltsStateAccountAllResourceBalancesPostWithHttpInfo(ltsStateAccountAllResourceBalancesRequest);
     return localVarResponse.getData();
   }
 
   /**
    * Get All Resources Balances
    * Returns balances for all resources associated with an account
-   * @param rcStateAccountAllResourceBalancesRequest  (required)
-   * @return ApiResponse&lt;RCStateAccountAllResourceBalancesResponse&gt;
+   * @param ltsStateAccountAllResourceBalancesRequest  (required)
+   * @return ApiResponse&lt;LtsStateAccountAllResourceBalancesResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<RCStateAccountAllResourceBalancesResponse> rcStateAccountAllResourceBalancesPostWithHttpInfo(RCStateAccountAllResourceBalancesRequest rcStateAccountAllResourceBalancesRequest) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = rcStateAccountAllResourceBalancesPostRequestBuilder(rcStateAccountAllResourceBalancesRequest);
+  public ApiResponse<LtsStateAccountAllResourceBalancesResponse> ltsStateAccountAllResourceBalancesPostWithHttpInfo(LtsStateAccountAllResourceBalancesRequest ltsStateAccountAllResourceBalancesRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = ltsStateAccountAllResourceBalancesPostRequestBuilder(ltsStateAccountAllResourceBalancesRequest);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -124,12 +124,12 @@ public class StateApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("rcStateAccountAllResourceBalancesPost", localVarResponse);
+          throw getApiException("ltsStateAccountAllResourceBalancesPost", localVarResponse);
         }
-        return new ApiResponse<RCStateAccountAllResourceBalancesResponse>(
+        return new ApiResponse<LtsStateAccountAllResourceBalancesResponse>(
           localVarResponse.statusCode(),
           localVarResponse.headers().map(),
-          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<RCStateAccountAllResourceBalancesResponse>() {}) // closes the InputStream
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<LtsStateAccountAllResourceBalancesResponse>() {}) // closes the InputStream
           
         );
       } finally {
@@ -143,15 +143,15 @@ public class StateApi {
     }
   }
 
-  private HttpRequest.Builder rcStateAccountAllResourceBalancesPostRequestBuilder(RCStateAccountAllResourceBalancesRequest rcStateAccountAllResourceBalancesRequest) throws ApiException {
-    // verify the required parameter 'rcStateAccountAllResourceBalancesRequest' is set
-    if (rcStateAccountAllResourceBalancesRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'rcStateAccountAllResourceBalancesRequest' when calling rcStateAccountAllResourceBalancesPost");
+  private HttpRequest.Builder ltsStateAccountAllResourceBalancesPostRequestBuilder(LtsStateAccountAllResourceBalancesRequest ltsStateAccountAllResourceBalancesRequest) throws ApiException {
+    // verify the required parameter 'ltsStateAccountAllResourceBalancesRequest' is set
+    if (ltsStateAccountAllResourceBalancesRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'ltsStateAccountAllResourceBalancesRequest' when calling ltsStateAccountAllResourceBalancesPost");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
-    String localVarPath = "/rc/state/account-all-resource-balances";
+    String localVarPath = "/lts/state/account-all-resource-balances";
 
     localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
 
@@ -159,7 +159,7 @@ public class StateApi {
     localVarRequestBuilder.header("Accept", "application/json");
 
     try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(rcStateAccountAllResourceBalancesRequest);
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(ltsStateAccountAllResourceBalancesRequest);
       localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
     } catch (IOException e) {
       throw new ApiException(e);
@@ -175,24 +175,24 @@ public class StateApi {
   /**
    * Get Resource Balance
    * Returns balance of the resource for an account
-   * @param rcStateAccountResourceBalanceRequest  (required)
-   * @return RCStateAccountResourceBalanceResponse
+   * @param ltsStateAccountResourceBalanceRequest  (required)
+   * @return LtsStateAccountResourceBalanceResponse
    * @throws ApiException if fails to make API call
    */
-  public RCStateAccountResourceBalanceResponse rcStateAccountResourceBalancePost(RCStateAccountResourceBalanceRequest rcStateAccountResourceBalanceRequest) throws ApiException {
-    ApiResponse<RCStateAccountResourceBalanceResponse> localVarResponse = rcStateAccountResourceBalancePostWithHttpInfo(rcStateAccountResourceBalanceRequest);
+  public LtsStateAccountResourceBalanceResponse ltsStateAccountResourceBalancePost(LtsStateAccountResourceBalanceRequest ltsStateAccountResourceBalanceRequest) throws ApiException {
+    ApiResponse<LtsStateAccountResourceBalanceResponse> localVarResponse = ltsStateAccountResourceBalancePostWithHttpInfo(ltsStateAccountResourceBalanceRequest);
     return localVarResponse.getData();
   }
 
   /**
    * Get Resource Balance
    * Returns balance of the resource for an account
-   * @param rcStateAccountResourceBalanceRequest  (required)
-   * @return ApiResponse&lt;RCStateAccountResourceBalanceResponse&gt;
+   * @param ltsStateAccountResourceBalanceRequest  (required)
+   * @return ApiResponse&lt;LtsStateAccountResourceBalanceResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<RCStateAccountResourceBalanceResponse> rcStateAccountResourceBalancePostWithHttpInfo(RCStateAccountResourceBalanceRequest rcStateAccountResourceBalanceRequest) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = rcStateAccountResourceBalancePostRequestBuilder(rcStateAccountResourceBalanceRequest);
+  public ApiResponse<LtsStateAccountResourceBalanceResponse> ltsStateAccountResourceBalancePostWithHttpInfo(LtsStateAccountResourceBalanceRequest ltsStateAccountResourceBalanceRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = ltsStateAccountResourceBalancePostRequestBuilder(ltsStateAccountResourceBalanceRequest);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -202,12 +202,12 @@ public class StateApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("rcStateAccountResourceBalancePost", localVarResponse);
+          throw getApiException("ltsStateAccountResourceBalancePost", localVarResponse);
         }
-        return new ApiResponse<RCStateAccountResourceBalanceResponse>(
+        return new ApiResponse<LtsStateAccountResourceBalanceResponse>(
           localVarResponse.statusCode(),
           localVarResponse.headers().map(),
-          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<RCStateAccountResourceBalanceResponse>() {}) // closes the InputStream
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<LtsStateAccountResourceBalanceResponse>() {}) // closes the InputStream
           
         );
       } finally {
@@ -221,15 +221,15 @@ public class StateApi {
     }
   }
 
-  private HttpRequest.Builder rcStateAccountResourceBalancePostRequestBuilder(RCStateAccountResourceBalanceRequest rcStateAccountResourceBalanceRequest) throws ApiException {
-    // verify the required parameter 'rcStateAccountResourceBalanceRequest' is set
-    if (rcStateAccountResourceBalanceRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'rcStateAccountResourceBalanceRequest' when calling rcStateAccountResourceBalancePost");
+  private HttpRequest.Builder ltsStateAccountResourceBalancePostRequestBuilder(LtsStateAccountResourceBalanceRequest ltsStateAccountResourceBalanceRequest) throws ApiException {
+    // verify the required parameter 'ltsStateAccountResourceBalanceRequest' is set
+    if (ltsStateAccountResourceBalanceRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'ltsStateAccountResourceBalanceRequest' when calling ltsStateAccountResourceBalancePost");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
-    String localVarPath = "/rc/state/account-resource-balance";
+    String localVarPath = "/lts/state/account-resource-balance";
 
     localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
 
@@ -237,7 +237,7 @@ public class StateApi {
     localVarRequestBuilder.header("Accept", "application/json");
 
     try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(rcStateAccountResourceBalanceRequest);
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(ltsStateAccountResourceBalanceRequest);
       localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
     } catch (IOException e) {
       throw new ApiException(e);

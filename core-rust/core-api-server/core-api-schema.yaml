@@ -67,7 +67,7 @@ x-tagGroups:
       - Concepts
   - name: Endpoints
     tags:
-      - RC
+      - LTS
       - Status
       - Transaction
       - Mempool
@@ -79,7 +79,7 @@ tags:
     x-traitTag: true # Don't display endpoints under this tag
     description: |
       The API is split into 6 sub apis:
-      - **Release Candidate** (`/rc/*`) - For long term support/backward compatible endpoints aimed at integrators such as exchanges.
+      - **Long Term Support** (`/lts/*`) - For long term support/backward compatible endpoints aimed at integrators such as exchanges.
       - **Status** (`/status/*`) - For status and configuration details for the node / engine.
       - **Transaction** (`/transaction/*`) - For transaction construction, preview, submission, and monitoring the status of an individual transaction.
       - **Mempool** (`/mempool/*`) - For information on the contents of the node's mempool.
@@ -128,8 +128,8 @@ tags:
 
       As an example, entities include concepts like Components, Packages, Vaults, Resource Managers and Key-Value Stores.
       Substates under a component include the Component Struct, Component Data, and Access Rules substates.
-  - name: RC
-    x-displayName: RC Endpoints
+  - name: LTS
+    x-displayName: LTS Endpoints
     description: |
       For long term support/backward compatible endpoints aimed at integrators such as exchanges.
   - name: Status
@@ -153,55 +153,55 @@ tags:
     description: To query the transaction stream of the ledger.
 paths:
 ##################
-# Release Candidate backwards compatible Sub-API #
+# Long Term Support backwards compatible Sub-API #
 ##################
-  "/rc/transaction/construction":
+  "/lts/transaction/construction":
     post:
       summary: Get Transaction Construction
       description: Returns information necessary to build a transaction
       tags:
-        - RC
+        - LTS
         - Transaction
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RCTransactionConstructionRequest"
+              $ref: "#/components/schemas/LtsTransactionConstructionRequest"
       responses:
         '200':
           description: All info needed to build a transaction
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RCTransactionConstructionResponse"
+                $ref: "#/components/schemas/LtsTransactionConstructionResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicErrorResponse"
-  "/rc/transaction/submit":
+  "/lts/transaction/submit":
     post:
       summary: Transaction Submit
       description: |
         Submits a notarized transaction to the network. Returns whether the transaction submission was already included in the node's mempool.
       tags:
-        - RC
+        - LTS
         - Transaction
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RCTransactionSubmitRequest"
+              $ref: "#/components/schemas/LtsTransactionSubmitRequest"
       responses:
         '200':
           description: Transaction Submit Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RCTransactionSubmitResponse"
+                $ref: "#/components/schemas/LtsTransactionSubmitResponse"
         '400':
           description: Client error
           content:
@@ -214,7 +214,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TransactionSubmitErrorResponse"
-  "/rc/transaction/status":
+  "/lts/transaction/status":
     post:
       summary: Get Transaction Status
       description: |
@@ -223,21 +223,21 @@ paths:
         This knowledge is summarised into a status for the intent. This summarised status in the response is likely sufficient
         for most clients.
       tags:
-        - RC
+        - LTS
         - Transaction
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RCTransactionStatusRequest"
+              $ref: "#/components/schemas/LtsTransactionStatusRequest"
       responses:
         '200':
           description: Transaction status response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RCTransactionStatusResponse"
+                $ref: "#/components/schemas/LtsTransactionStatusResponse"
         '400':
           description: Client error
           content:
@@ -250,79 +250,79 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicErrorResponse"
-  "/rc/state/account-all-resource-balances":
+  "/lts/state/account-all-resource-balances":
     post:
       summary: Get All Resources Balances
       description: Returns balances for all resources associated with an account
       tags:
-        - RC
+        - LTS
         - State
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RCStateAccountAllResourceBalancesRequest"
+              $ref: "#/components/schemas/LtsStateAccountAllResourceBalancesRequest"
       responses:
         '200':
           description: Account all resource balances response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RCStateAccountAllResourceBalancesResponse"
+                $ref: "#/components/schemas/LtsStateAccountAllResourceBalancesResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicErrorResponse"
-  "/rc/state/account-resource-balance":
+  "/lts/state/account-resource-balance":
     post:
       summary: Get Resource Balance
       description: Returns balance of the resource for an account
       tags:
-        - RC
+        - LTS
         - State
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RCStateAccountResourceBalanceRequest"
+              $ref: "#/components/schemas/LtsStateAccountResourceBalanceRequest"
       responses:
         '200':
           description: Account resource balance response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RCStateAccountResourceBalanceResponse"
+                $ref: "#/components/schemas/LtsStateAccountResourceBalanceResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicErrorResponse"
-  "/rc/stream/entity-transactions-basic-outcomes":
+  "/lts/stream/entity-transactions-basic-outcomes":
     post:
       summary: Get Entity Transactions Basic Outcomes
       description: |
         TODO
       tags:
-        - RC
+        - LTS
         - Transaction
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RCStreamEntityTransactionsBasicOutcomesRequest"
+              $ref: "#/components/schemas/LtsStreamEntityTransactionsBasicOutcomesRequest"
       responses:
         '200':
           description: Transaction status response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RCStreamEntityTransactionsBasicOutcomesResponse"
+                $ref: "#/components/schemas/LtsStreamEntityTransactionsBasicOutcomesResponse"
         '400':
           description: Client error
           content:
@@ -335,27 +335,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicErrorResponse"
-  "/rc/stream/transactions-basic-outcomes":
+  "/lts/stream/transactions-basic-outcomes":
     post:
       summary: Get Transactions Basic Outcomes
       description: |
         TODO
       tags:
-        - RC
+        - LTS
         - Stream
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RCStreamTransactionsBasicOutcomesRequest"
+              $ref: "#/components/schemas/LtsStreamTransactionsBasicOutcomesRequest"
       responses:
         '200':
           description: Transaction status response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RCStreamTransactionsBasicOutcomesResponse"
+                $ref: "#/components/schemas/LtsStreamTransactionsBasicOutcomesResponse"
         '400':
           description: Client error
           content:
@@ -2952,16 +2952,16 @@ components:
               $ref: '#/components/schemas/DataStruct'
 
 #########################################
-# REQUEST: /rc/transaction/construction #
+# REQUEST: /lts/transaction/construction #
 #########################################
-    RCTransactionConstructionRequest:
+    LtsTransactionConstructionRequest:
       type: object
       required:
         - network
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
-    RCTransactionConstructionResponse:
+    LtsTransactionConstructionResponse:
       type: object
       required:
         - epoch
@@ -2973,9 +2973,9 @@ components:
           maximum: 10000000000
           description: An integer between `0` and `10^10`, marking the current epoch
 ###################################
-# REQUEST: /rc/transaction/status #
+# REQUEST: /lts/transaction/status #
 ###################################
-    RCTransactionStatusRequest:
+    LtsTransactionStatusRequest:
       type: object
       required:
         - network
@@ -2985,7 +2985,7 @@ components:
           $ref: "#/components/schemas/NetworkIdentifier"
         intent_hash:
           $ref: "#/components/schemas/IntentHash"
-    RCTransactionStatusResponse:
+    LtsTransactionStatusResponse:
       type: object
       required:
         - intent_status
@@ -3011,9 +3011,9 @@ components:
           items:
             $ref: "#/components/schemas/TransactionPayloadStatus"
 ###################################
-# REQUEST: /rc/transaction/submit #
+# REQUEST: /lts/transaction/submit #
 ###################################
-    RCTransactionSubmitRequest:
+    LtsTransactionSubmitRequest:
       type: object
       required:
         - network
@@ -3024,7 +3024,7 @@ components:
         notarized_transaction_hex:
           description: A hex-encoded, compiled notarized transaction.
           type: string
-    RCTransactionSubmitResponse:
+    LtsTransactionSubmitResponse:
       type: object
       required:
         - duplicate
@@ -3033,9 +3033,9 @@ components:
           description: Is true if the transaction is a duplicate of an existing transaction in the mempool.
           type: boolean
 ####################################################
-# REQUEST: /rc/state/account-all-resource-balances #
+# REQUEST: /lts/state/account-all-resource-balances #
 ####################################################
-    RCStateAccountAllResourceBalancesRequest:
+    LtsStateAccountAllResourceBalancesRequest:
       type: object
       required:
         - network
@@ -3046,7 +3046,7 @@ components:
         account_address:
           type: string
           description: The Bech32m-encoded human readable version of the account's address
-    RCStateAccountAllResourceBalancesResponse:
+    LtsStateAccountAllResourceBalancesResponse:
       type: object
       required:
         - state_version
@@ -3069,9 +3069,9 @@ components:
           items:
             $ref: "#/components/schemas/FungibleResourceAmount"
 ################################################
-# REQUEST: /rc/state/account-resource-balances #
+# REQUEST: /lts/state/account-resource-balances #
 ################################################
-    RCStateAccountResourceBalanceRequest:
+    LtsStateAccountResourceBalanceRequest:
       type: object
       required:
         - network
@@ -3085,7 +3085,7 @@ components:
           description: The Bech32m-encoded human readable version of the account's address
         resource_address:
           $ref: "#/components/schemas/ResourceAddress"
-    RCStateAccountResourceBalanceResponse:
+    LtsStateAccountResourceBalanceResponse:
       type: object
       required:
         - state_version
@@ -3105,9 +3105,9 @@ components:
         resource_balance:
           $ref: "#/components/schemas/FungibleResourceAmount"
 ##########################################################
-# REQUEST: /rc/stream/entity-transactions-basic-outcomes #
+# REQUEST: /lts/stream/entity-transactions-basic-outcomes #
 ##########################################################
-    RCStreamEntityTransactionsBasicOutcomesRequest:
+    LtsStreamEntityTransactionsBasicOutcomesRequest:
       type: object
       required:
         - network
@@ -3121,7 +3121,7 @@ components:
           description: The Bech32m-encoded human readable version of the account's address
         resource_address:
           $ref: "#/components/schemas/ResourceAddress"
-    RCStreamEntityTransactionsBasicOutcomesResponse:
+    LtsStreamEntityTransactionsBasicOutcomesResponse:
       type: object
       required:
         - from_state_version
@@ -3153,11 +3153,18 @@ components:
           description: A basic outcomes list starting from the `from_state_version` (inclusive).
           type: array
           items:
-            $ref: "#/components/schemas/CommittedTransaction"
+            $ref: "#/components/schemas/LtsBasicOutcomes"
+    LtsBasicOutcomes:
+      type: object
+      required:
+        - dummy
+      properties:
+        dummy:
+          type: string
 ###################################################
-# REQUEST: /rc/stream/transactions-basic-outcomes #
+# REQUEST: /lts/stream/transactions-basic-outcomes #
 ###################################################
-    RCStreamTransactionsBasicOutcomesRequest:
+    LtsStreamTransactionsBasicOutcomesRequest:
       description: |
         A request to retrieve a sublist of committed transactions from the ledger.
       type: object
@@ -3177,7 +3184,7 @@ components:
         limit:
           description: The maximum number of transactions that will be returned.
           type: integer
-    RCStreamTransactionsBasicOutcomesResponse:
+    LtsStreamTransactionsBasicOutcomesResponse:
       type: object
       required:
         - from_state_version
@@ -3209,7 +3216,7 @@ components:
           description: A basic outcomes list starting from the `from_state_version` (inclusive).
           type: array
           items:
-            $ref: "#/components/schemas/CommittedTransaction"
+            $ref: "#/components/schemas/LtsBasicOutcomes"
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################
