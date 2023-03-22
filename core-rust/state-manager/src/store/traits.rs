@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::staging::HashTreeDiff;
+use crate::staging::StateHashTreeDiff;
 use crate::transaction::LedgerTransaction;
 use crate::{CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt};
 pub use commit::*;
@@ -204,7 +204,7 @@ pub mod commit {
             }
         }
 
-        pub fn add(&mut self, at_state_version: u64, diff: &HashTreeDiff) {
+        pub fn add(&mut self, at_state_version: u64, diff: &StateHashTreeDiff) {
             self.new_re_node_layer_nodes
                 .extend(diff.new_re_node_layer_nodes.clone());
             self.new_substate_layer_nodes

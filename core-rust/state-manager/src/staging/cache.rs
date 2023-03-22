@@ -67,7 +67,8 @@ use super::ReadableStore;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::staging::{
-    AccuTreeDiff, HashStructuresDiff, HashTreeDiff, HashUpdateContext, ProcessedTransactionReceipt,
+    AccuTreeDiff, HashStructuresDiff, HashUpdateContext, ProcessedTransactionReceipt,
+    StateHashTreeDiff,
 };
 use crate::{
     AccumulatorHash, CommittedTransactionIdentifiers, EpochTransactionIdentifiers,
@@ -264,13 +265,13 @@ impl Delta for ProcessedTransactionReceipt {
 
 impl HashStructuresDiff {
     pub fn weight(&self) -> usize {
-        self.state_tree_diff.weight()
+        self.state_hash_tree_diff.weight()
             + self.transaction_tree_diff.weight()
             + self.receipt_tree_diff.weight()
     }
 }
 
-impl HashTreeDiff {
+impl StateHashTreeDiff {
     pub fn weight(&self) -> usize {
         self.new_re_node_layer_nodes.len() + self.new_substate_layer_nodes.len()
     }
@@ -318,7 +319,7 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
                 self.substate_values.remove(deleted_id);
             }
             let hash_structures_diff = &commit.hash_structures_diff;
-            let state_tree_diff = &hash_structures_diff.state_tree_diff;
+            let state_tree_diff = &hash_structures_diff.state_hash_tree_diff;
             self.re_node_layer_nodes
                 .extend(state_tree_diff.new_re_node_layer_nodes.iter().cloned());
             self.substate_layer_nodes

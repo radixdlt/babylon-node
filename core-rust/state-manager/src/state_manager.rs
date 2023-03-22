@@ -983,7 +983,7 @@ where
             substate_store_update.apply(&commit.ledger_receipt.substate_changes);
             state_tree_update.add(
                 state_tracker.latest_transaction_identifiers().state_version,
-                &hash_structures_diff.state_tree_diff,
+                &hash_structures_diff.state_hash_tree_diff,
             );
             transaction_tree_slice_merger
                 .append(hash_structures_diff.transaction_tree_diff.slice.clone());
