@@ -72,6 +72,8 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import com.radixdlt.api.common.JSON;
+import com.radixdlt.api.system.health.HealthInfoService;
+import com.radixdlt.api.system.health.HealthInfoServiceImpl;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
@@ -156,6 +158,8 @@ public abstract class SystemApiTestBase {
                     .toInstance(NodeId.fromPublicKey(TEST_KEY.getPublicKey()));
                 var runtimeProperties = mock(RuntimeProperties.class);
                 bind(RuntimeProperties.class).toInstance(runtimeProperties);
+                bind(HealthInfoService.class).to(HealthInfoServiceImpl.class);
+                bind(HealthInfoServiceImpl.class).in(Scopes.SINGLETON);
               }
             });
     injector.injectMembers(this);
