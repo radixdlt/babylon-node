@@ -188,11 +188,10 @@ public final class Checkers {
                   var executedTxn = executedTxnOption.unwrap();
                   var maybeExistingExecutedTxn = executedTxns.get(txnStateVersion);
                   if (maybeExistingExecutedTxn != null) {
-                    // TODO (SCRY-248): this should compare executedTxn to maybeExistingExecutedTxn
-                    //                  but the generated receipt isn't yet deterministic!
-                    //                  So for now `ledgerReceiptBytes` field is excluded.
                     assertThat(maybeExistingExecutedTxn.transactionBytes())
                         .isEqualTo(executedTxn.transactionBytes());
+                    assertThat(maybeExistingExecutedTxn.consensusReceiptBytes())
+                        .isEqualTo(executedTxn.consensusReceiptBytes());
                     assertThat(maybeExistingExecutedTxn.newComponentAddresses())
                         .isEqualTo(executedTxn.newComponentAddresses());
                   } else {

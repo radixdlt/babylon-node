@@ -62,8 +62,8 @@ pub enum LedgerTransactionOutcome {
     Failure,
 }
 
-impl From<&TransactionOutcome> for LedgerTransactionOutcome {
-    fn from(outcome: &TransactionOutcome) -> Self {
+impl LedgerTransactionOutcome {
+    fn resolve(outcome: &TransactionOutcome) -> Self {
         match outcome {
             TransactionOutcome::Success(_) => LedgerTransactionOutcome::Success,
             TransactionOutcome::Failure(_) => LedgerTransactionOutcome::Failure,
@@ -99,18 +99,31 @@ impl From<TransactionOutcome> for DetailedTransactionOutcome {
     }
 }
 
+/// A committed transaction (success or failure), extracted from the Engine's `TransactionReceipt`
+/// of any locally-executed transaction (slightly post-processed).
+/// It contains all the critical, deterministic pieces of the Engine's receipt, but also some of its
+/// other parts - for this reason, it is very clearly split into 2 parts (on-ledger vs off-ledger).
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LocalTransactionReceipt {
     pub on_ledger: LedgerTransactionReceipt,
     pub local_execution: LocalTransactionExecution,
 }
 
+/// A part of the `LocalTransactionReceipt` which is completely stored on ledger. It contains only
+/// the critical, deterministic pieces of the original Engine's `TransactionReceipt`.
+/// All these pieces can be verified against the Receipt Root hash (found in the Ledger Proof).
+/// Note: the Ledger Receipt is still a pretty large structure (i.e. containing entire collections,
+/// like substate changes) and is not supposed to be hashed directly - it should instead go through
+/// a `Consensus Receipt`.
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LedgerTransactionReceipt {
     pub outcome: LedgerTransactionOutcome,
     pub substate_changes: SubstateChanges,
 }
 
+/// A computable/non-critical/non-deterministic part of the `LocalTransactionReceipt` (e.g. logs,
+/// summaries).
+/// It is not verifiable against ledger, but may still be useful for debugging.
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LocalTransactionExecution {
     pub outcome: DetailedTransactionOutcome,
@@ -144,7 +157,7 @@ impl From<(CommitResult, TransactionExecutionTrace)> for LocalTransactionReceipt
         let next_epoch = commit_result.next_epoch();
         Self {
             on_ledger: LedgerTransactionReceipt {
-                outcome: LedgerTransactionOutcome::from(&commit_result.outcome),
+                outcome: LedgerTransactionOutcome::resolve(&commit_result.outcome),
                 substate_changes: fix_state_updates(commit_result.state_updates),
             },
             local_execution: LocalTransactionExecution {

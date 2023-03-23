@@ -138,12 +138,12 @@ fn to_api_response(
                 )
                 .collect();
 
-            let complete_receipt =
+            let local_receipt =
                 LocalTransactionReceipt::from((commit_result, receipt.execution_trace));
 
             models::TransactionPreviewResponse {
                 encoded_receipt,
-                receipt: Box::new(to_api_receipt(context, complete_receipt)?),
+                receipt: Box::new(to_api_receipt(context, local_receipt)?),
                 instruction_resource_changes,
                 logs,
             }

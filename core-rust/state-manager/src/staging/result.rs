@@ -89,7 +89,7 @@ pub enum ProcessedTransactionReceipt {
 }
 
 pub struct ProcessedCommitResult {
-    pub complete_receipt: LocalTransactionReceipt,
+    pub local_receipt: LocalTransactionReceipt,
     pub hash_structures_diff: HashStructuresDiff,
 }
 
@@ -156,12 +156,12 @@ impl ProcessedCommitResult {
         let transaction_accumulator_hash = parent_transaction_identifiers
             .accumulator_hash
             .accumulate(transaction_hash);
-        let complete_receipt = LocalTransactionReceipt::from((commit_result, execution_trace));
+        let local_receipt = LocalTransactionReceipt::from((commit_result, execution_trace));
         let store = hash_update_context.store;
         let state_hash_tree_diff = Self::compute_state_tree_update(
             store,
             parent_transaction_identifiers.state_version,
-            &complete_receipt.on_ledger.substate_changes,
+            &local_receipt.on_ledger.substate_changes,
         );
         let transaction_tree_diff = Self::compute_accu_tree_update::<S, TransactionTreeHash>(
             store,
@@ -170,7 +170,7 @@ impl ProcessedCommitResult {
             parent_transaction_identifiers.state_version,
             TransactionTreeHash::from_raw_bytes(transaction_hash.into_bytes()),
         );
-        let consensus_receipt = complete_receipt.on_ledger.get_consensus_receipt();
+        let consensus_receipt = local_receipt.on_ledger.get_consensus_receipt();
         let receipt_tree_diff = Self::compute_accu_tree_update::<S, ReceiptTreeHash>(
             store,
             epoch_transaction_identifiers.state_version,
@@ -184,7 +184,7 @@ impl ProcessedCommitResult {
             receipt_root: *receipt_tree_diff.slice.root(),
         };
         Self {
-            complete_receipt,
+            local_receipt,
             hash_structures_diff: HashStructuresDiff {
                 transaction_accumulator_hash,
                 ledger_hashes,
@@ -196,14 +196,14 @@ impl ProcessedCommitResult {
     }
 
     pub fn check_success(&self, description: &str) {
-        let local_detailed_outcome = &self.complete_receipt.local_execution.outcome;
+        let local_detailed_outcome = &self.local_receipt.local_execution.outcome;
         if let DetailedTransactionOutcome::Failure(error) = local_detailed_outcome {
             panic!("Transaction ({description}) was failed: {error:?}")
         }
     }
 
     pub fn next_epoch(&self) -> Option<NextEpoch> {
-        self.complete_receipt
+        self.local_receipt
             .local_execution
             .next_epoch
             .as_ref()

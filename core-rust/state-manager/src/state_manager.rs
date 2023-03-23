@@ -977,11 +977,11 @@ where
 
             committed_transaction_bundles.push((
                 transaction,
-                commit.complete_receipt.clone(),
+                commit.local_receipt.clone(),
                 state_tracker.latest_transaction_identifiers().clone(),
             ));
 
-            substate_store_update.apply(&commit.complete_receipt.on_ledger.substate_changes);
+            substate_store_update.apply(&commit.local_receipt.on_ledger.substate_changes);
             state_tree_update.add(
                 state_tracker.latest_transaction_identifiers().state_version,
                 &hash_structures_diff.state_hash_tree_diff,
