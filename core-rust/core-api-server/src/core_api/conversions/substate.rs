@@ -1058,27 +1058,28 @@ pub fn to_api_key_value_story_entry_substate(
             RENodeId::KeyValueStore(..),
             NodeModuleId::SELF,
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-        ) => match key_value_store_entry {
-            Some(value) => {
-                let non_fungible_id: Option<NonFungibleLocalId> = scrypto_decode(key).ok();
-                models::Substate::KeyValueStoreEntrySubstate {
+        ) => {
+            let key_non_fungible_local_id = scrypto_decode::<NonFungibleLocalId>(key)
+                .ok()
+                .map(|id| Box::new(to_api_non_fungible_id(&id)));
+            match key_value_store_entry {
+                Some(value) => models::Substate::KeyValueStoreEntrySubstate {
                     key_hex: to_hex(key),
-                    key_non_fungible_local_id: non_fungible_id
-                        .map(|id| Box::new(to_api_non_fungible_id(&id))),
+                    key_non_fungible_local_id,
                     is_deleted: false,
                     data_struct: Some(Box::new(to_api_data_struct_from_bytes(
                         context,
                         &scrypto_encode(&value).unwrap(),
                     )?)),
-                }
+                },
+                None => models::Substate::KeyValueStoreEntrySubstate {
+                    key_hex: to_hex(key),
+                    key_non_fungible_local_id,
+                    is_deleted: true,
+                    data_struct: None,
+                },
             }
-            None => models::Substate::KeyValueStoreEntrySubstate {
-                key_hex: to_hex(key),
-                key_non_fungible_local_id: None,
-                is_deleted: true,
-                data_struct: None,
-            },
-        },
+        }
         SubstateId(
             _,
             NodeModuleId::Metadata,
