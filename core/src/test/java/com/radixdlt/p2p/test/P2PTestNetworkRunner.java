@@ -87,7 +87,6 @@ import com.radixdlt.modules.PrefixedNodeStorageLocationModule;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.*;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
@@ -207,7 +206,7 @@ public final class P2PTestNetworkRunner {
         new AbstractModule() {
           @Override
           protected void configure() {
-            bindConstant().annotatedWith(NetworkId.class).to(Network.INTEGRATIONTESTNET.getId());
+            bind(Network.class).toInstance(Network.INTEGRATIONTESTNET);
             bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
             bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(nodeKey);
             bind(ECDSASecp256k1PublicKey.class)

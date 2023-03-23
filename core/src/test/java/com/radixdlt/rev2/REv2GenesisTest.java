@@ -75,6 +75,10 @@ import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.*;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
@@ -99,9 +103,9 @@ public final class REv2GenesisTest {
             new FunctionalRadixNodeModule(
                 NodeStorageConfig.none(),
                 false,
-                FunctionalRadixNodeModule.SafetyRecoveryConfig.MOCKED,
-                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                SafetyRecoveryConfig.MOCKED,
+                ConsensusConfig.of(1000),
+                LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidatorsAndXrdAlloc(

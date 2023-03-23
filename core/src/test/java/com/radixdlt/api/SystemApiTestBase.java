@@ -83,7 +83,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.RadixNodeUri;
@@ -142,9 +141,7 @@ public abstract class SystemApiTestBase {
             new AbstractModule() {
               @Override
               protected void configure() {
-                bindConstant()
-                    .annotatedWith(NetworkId.class)
-                    .to(Network.INTEGRATIONTESTNET.getId());
+                bind(Network.class).toInstance(Network.INTEGRATIONTESTNET);
                 bind(P2PConfig.class).toInstance(mock(P2PConfig.class));
                 bind(AddressBook.class).in(Scopes.SINGLETON);
                 var selfUri =

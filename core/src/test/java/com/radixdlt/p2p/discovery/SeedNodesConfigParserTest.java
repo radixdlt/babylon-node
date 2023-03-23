@@ -101,7 +101,7 @@ public class SeedNodesConfigParserTest {
     final var testSubject =
         new SeedNodesConfigParser(
             p2pConfig,
-            Network.INTEGRATIONTESTNET.getId(),
+            Network.INTEGRATIONTESTNET,
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
     assertEquals(1, testSubject.getResolvedSeedNodes().size());
   }
