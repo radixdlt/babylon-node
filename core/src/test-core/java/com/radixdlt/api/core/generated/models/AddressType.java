@@ -44,9 +44,11 @@ public class AddressType {
    * Gets or Sets subtype
    */
   public enum SubtypeEnum {
-    RESOURCE("Resource"),
-    
     PACKAGE("Package"),
+    
+    FUNGIBLERESOURCE("FungibleResource"),
+    
+    NONFUNGIBLERESOURCE("NonFungibleResource"),
     
     NORMALCOMPONENT("NormalComponent"),
     

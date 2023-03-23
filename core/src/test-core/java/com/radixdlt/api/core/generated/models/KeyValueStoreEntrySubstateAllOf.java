@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.DataStruct;
+import com.radixdlt.api.core.generated.models.NonFungibleId;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -33,6 +34,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   KeyValueStoreEntrySubstateAllOf.JSON_PROPERTY_KEY_HEX,
+  KeyValueStoreEntrySubstateAllOf.JSON_PROPERTY_KEY_NON_FUNGIBLE_LOCAL_ID,
   KeyValueStoreEntrySubstateAllOf.JSON_PROPERTY_IS_DELETED,
   KeyValueStoreEntrySubstateAllOf.JSON_PROPERTY_DATA_STRUCT
 })
@@ -40,6 +42,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class KeyValueStoreEntrySubstateAllOf {
   public static final String JSON_PROPERTY_KEY_HEX = "key_hex";
   private String keyHex;
+
+  public static final String JSON_PROPERTY_KEY_NON_FUNGIBLE_LOCAL_ID = "key_non_fungible_local_id";
+  private NonFungibleId keyNonFungibleLocalId;
 
   public static final String JSON_PROPERTY_IS_DELETED = "is_deleted";
   private Boolean isDeleted;
@@ -73,6 +78,32 @@ public class KeyValueStoreEntrySubstateAllOf {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setKeyHex(String keyHex) {
     this.keyHex = keyHex;
+  }
+
+
+  public KeyValueStoreEntrySubstateAllOf keyNonFungibleLocalId(NonFungibleId keyNonFungibleLocalId) {
+    this.keyNonFungibleLocalId = keyNonFungibleLocalId;
+    return this;
+  }
+
+   /**
+   * Get keyNonFungibleLocalId
+   * @return keyNonFungibleLocalId
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_KEY_NON_FUNGIBLE_LOCAL_ID)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public NonFungibleId getKeyNonFungibleLocalId() {
+    return keyNonFungibleLocalId;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_KEY_NON_FUNGIBLE_LOCAL_ID)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setKeyNonFungibleLocalId(NonFungibleId keyNonFungibleLocalId) {
+    this.keyNonFungibleLocalId = keyNonFungibleLocalId;
   }
 
 
@@ -141,13 +172,14 @@ public class KeyValueStoreEntrySubstateAllOf {
     }
     KeyValueStoreEntrySubstateAllOf keyValueStoreEntrySubstateAllOf = (KeyValueStoreEntrySubstateAllOf) o;
     return Objects.equals(this.keyHex, keyValueStoreEntrySubstateAllOf.keyHex) &&
+        Objects.equals(this.keyNonFungibleLocalId, keyValueStoreEntrySubstateAllOf.keyNonFungibleLocalId) &&
         Objects.equals(this.isDeleted, keyValueStoreEntrySubstateAllOf.isDeleted) &&
         Objects.equals(this.dataStruct, keyValueStoreEntrySubstateAllOf.dataStruct);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(keyHex, isDeleted, dataStruct);
+    return Objects.hash(keyHex, keyNonFungibleLocalId, isDeleted, dataStruct);
   }
 
   @Override
@@ -155,6 +187,7 @@ public class KeyValueStoreEntrySubstateAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class KeyValueStoreEntrySubstateAllOf {\n");
     sb.append("    keyHex: ").append(toIndentedString(keyHex)).append("\n");
+    sb.append("    keyNonFungibleLocalId: ").append(toIndentedString(keyNonFungibleLocalId)).append("\n");
     sb.append("    isDeleted: ").append(toIndentedString(isDeleted)).append("\n");
     sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
     sb.append("}");

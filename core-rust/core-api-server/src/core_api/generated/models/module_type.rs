@@ -22,14 +22,8 @@ pub enum ModuleType {
     AccessRules,
     #[serde(rename = "AccessRules1")]
     AccessRules1,
-    #[serde(rename = "FunctionAccessRules")]
-    FunctionAccessRules,
     #[serde(rename = "ComponentRoyalty")]
     ComponentRoyalty,
-    #[serde(rename = "PackageRoyalty")]
-    PackageRoyalty,
-    #[serde(rename = "PackageEventSchema")]
-    PackageEventSchema,
 
 }
 
@@ -41,10 +35,7 @@ impl ToString for ModuleType {
             Self::Metadata => String::from("Metadata"),
             Self::AccessRules => String::from("AccessRules"),
             Self::AccessRules1 => String::from("AccessRules1"),
-            Self::FunctionAccessRules => String::from("FunctionAccessRules"),
             Self::ComponentRoyalty => String::from("ComponentRoyalty"),
-            Self::PackageRoyalty => String::from("PackageRoyalty"),
-            Self::PackageEventSchema => String::from("PackageEventSchema"),
         }
     }
 }

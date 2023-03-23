@@ -33,12 +33,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({
   MetadataEntrySubstateAllOf.JSON_PROPERTY_KEY_HEX,
+  MetadataEntrySubstateAllOf.JSON_PROPERTY_IS_DELETED,
   MetadataEntrySubstateAllOf.JSON_PROPERTY_DATA_STRUCT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class MetadataEntrySubstateAllOf {
   public static final String JSON_PROPERTY_KEY_HEX = "key_hex";
   private String keyHex;
+
+  public static final String JSON_PROPERTY_IS_DELETED = "is_deleted";
+  private Boolean isDeleted;
 
   public static final String JSON_PROPERTY_DATA_STRUCT = "data_struct";
   private DataStruct dataStruct;
@@ -69,6 +73,32 @@ public class MetadataEntrySubstateAllOf {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setKeyHex(String keyHex) {
     this.keyHex = keyHex;
+  }
+
+
+  public MetadataEntrySubstateAllOf isDeleted(Boolean isDeleted) {
+    this.isDeleted = isDeleted;
+    return this;
+  }
+
+   /**
+   * Get isDeleted
+   * @return isDeleted
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IS_DELETED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsDeleted() {
+    return isDeleted;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_DELETED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsDeleted(Boolean isDeleted) {
+    this.isDeleted = isDeleted;
   }
 
 
@@ -111,12 +141,13 @@ public class MetadataEntrySubstateAllOf {
     }
     MetadataEntrySubstateAllOf metadataEntrySubstateAllOf = (MetadataEntrySubstateAllOf) o;
     return Objects.equals(this.keyHex, metadataEntrySubstateAllOf.keyHex) &&
+        Objects.equals(this.isDeleted, metadataEntrySubstateAllOf.isDeleted) &&
         Objects.equals(this.dataStruct, metadataEntrySubstateAllOf.dataStruct);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(keyHex, dataStruct);
+    return Objects.hash(keyHex, isDeleted, dataStruct);
   }
 
   @Override
@@ -124,6 +155,7 @@ public class MetadataEntrySubstateAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class MetadataEntrySubstateAllOf {\n");
     sb.append("    keyHex: ").append(toIndentedString(keyHex)).append("\n");
+    sb.append("    isDeleted: ").append(toIndentedString(isDeleted)).append("\n");
     sb.append("    dataStruct: ").append(toIndentedString(dataStruct)).append("\n");
     sb.append("}");
     return sb.toString();

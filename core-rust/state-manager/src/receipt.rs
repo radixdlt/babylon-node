@@ -1,5 +1,5 @@
 use radix_engine::blueprints::epoch_manager::Validator;
-use radix_engine::blueprints::transaction_processor::InstructionOutput;
+use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use std::collections::BTreeMap;
 
 use radix_engine::errors::RuntimeError;
@@ -8,12 +8,10 @@ use radix_engine::state_manager::StateDiff;
 use radix_engine::system::kernel_modules::costing::FeeSummary;
 use radix_engine::system::kernel_modules::execution_trace::ResourceChange;
 use radix_engine::transaction::{
-    CommitResult, EntityChanges, TransactionOutcome,
-    TransactionReceipt as EngineTransactionReceipt, TransactionResult,
+    CommitResult, StateUpdateSummary, TransactionExecutionTrace, TransactionOutcome,
 };
-use radix_engine::types::{hash, scrypto_encode, Hash, SubstateId};
+use radix_engine::types::{hash, scrypto_encode, Decimal, Hash, Level, ObjectId, SubstateId};
 use radix_engine_common::crypto::blake2b_256_hash;
-use radix_engine_interface::blueprints::logger::Level;
 use radix_engine_interface::data::scrypto::model::ComponentAddress;
 use radix_engine_interface::*;
 use sbor::rust::collections::IndexMap;
@@ -123,9 +121,13 @@ pub struct LedgerTransactionReceipt {
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LocalTransactionExecution {
     pub outcome: DetailedTransactionOutcome,
+    // The breakdown of the fee
     pub fee_summary: FeeSummary,
+    // Which vault/s paid the fee
+    pub fee_payments: IndexMap<ObjectId, Decimal>,
     pub application_logs: Vec<(Level, String)>,
-    pub entity_changes: EntityChanges,
+    pub state_update_summary: StateUpdateSummary,
+    // These will be removed once we have the parent_map for the toolkit to use
     pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
     pub next_epoch: Option<(BTreeMap<ComponentAddress, Validator>, u64)>,
 }
@@ -145,45 +147,28 @@ impl LedgerTransactionReceipt {
     }
 }
 
-impl TryFrom<EngineTransactionReceipt> for LocalTransactionReceipt {
-    type Error = String;
-
-    fn try_from(engine_receipt: EngineTransactionReceipt) -> Result<Self, Self::Error> {
-        match engine_receipt.result {
-            TransactionResult::Commit(commit_result) => {
-                Ok((commit_result, engine_receipt.execution.fee_summary).into())
-            }
-            TransactionResult::Reject(error) => Err(format!(
-                "Can't create a ledger receipt for rejected txn: {error:?}"
-            )),
-            TransactionResult::Abort(result) => Err(format!(
-                "Can't create a ledger receipt for aborted txn: {result:?}"
-            )),
-        }
-    }
-}
-
-/// For Genesis Transaction
-impl From<(CommitResult, FeeSummary)> for LocalTransactionReceipt {
-    fn from((commit_result, fee_summary): (CommitResult, FeeSummary)) -> Self {
+impl From<(CommitResult, TransactionExecutionTrace)> for LocalTransactionReceipt {
+    fn from((commit_result, execution_trace): (CommitResult, TransactionExecutionTrace)) -> Self {
+        let next_epoch = commit_result.next_epoch();
         Self {
             on_ledger: LedgerTransactionReceipt {
                 outcome: LedgerTransactionOutcome::from(&commit_result.outcome),
-                substate_changes: map_state_updates(commit_result.state_updates),
+                substate_changes: fix_state_updates(commit_result.state_updates),
             },
             local_execution: LocalTransactionExecution {
                 outcome: commit_result.outcome.into(),
-                fee_summary,
+                fee_summary: commit_result.fee_summary,
+                fee_payments: commit_result.fee_payments,
                 application_logs: commit_result.application_logs,
-                entity_changes: commit_result.entity_changes,
-                resource_changes: commit_result.resource_changes,
-                next_epoch: commit_result.next_epoch,
+                state_update_summary: commit_result.state_update_summary,
+                resource_changes: execution_trace.resource_changes,
+                next_epoch,
             },
         }
     }
 }
 
-fn map_state_updates(state_updates: StateDiff) -> Vec<SubstateChange> {
+fn fix_state_updates(state_updates: StateDiff) -> Vec<SubstateChange> {
     // As of end of August 2022, the engine's statediff erroneously includes substate reads
     // (even if the content didn't change) as ups and downs.
     // This needs fixing, but for now, we work around this here, by removing such up/down pairs.

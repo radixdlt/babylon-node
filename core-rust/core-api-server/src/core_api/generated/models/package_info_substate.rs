@@ -15,9 +15,8 @@
 pub struct PackageInfoSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// A map from the blueprint name to BlueprintData
-    #[serde(rename = "blueprints")]
-    pub blueprints: ::std::collections::HashMap<String, crate::core_api::generated::models::BlueprintData>,
+    #[serde(rename = "package_schema")]
+    pub package_schema: Box<crate::core_api::generated::models::PackageSchema>,
     #[serde(rename = "dependent_resources")]
     pub dependent_resources: Vec<String>,
     #[serde(rename = "dependent_components")]
@@ -25,10 +24,10 @@ pub struct PackageInfoSubstate {
 }
 
 impl PackageInfoSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, blueprints: ::std::collections::HashMap<String, crate::core_api::generated::models::BlueprintData>, dependent_resources: Vec<String>, dependent_components: Vec<String>) -> PackageInfoSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, package_schema: crate::core_api::generated::models::PackageSchema, dependent_resources: Vec<String>, dependent_components: Vec<String>) -> PackageInfoSubstate {
         PackageInfoSubstate {
             substate_type,
-            blueprints,
+            package_schema: Box::new(package_schema),
             dependent_resources,
             dependent_components,
         }

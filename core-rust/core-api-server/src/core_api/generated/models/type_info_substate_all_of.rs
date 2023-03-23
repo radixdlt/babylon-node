@@ -13,21 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TypeInfoSubstateAllOf {
-    /// The Bech32m-encoded human readable version of the package address
-    #[serde(rename = "package_address")]
-    pub package_address: String,
-    #[serde(rename = "blueprint_name")]
-    pub blueprint_name: String,
-    #[serde(rename = "global")]
-    pub global: bool,
+    #[serde(rename = "details")]
+    pub details: Option<crate::core_api::generated::models::TypeInfoDetails>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl TypeInfoSubstateAllOf {
-    pub fn new(package_address: String, blueprint_name: String, global: bool) -> TypeInfoSubstateAllOf {
+    pub fn new(details: crate::core_api::generated::models::TypeInfoDetails) -> TypeInfoSubstateAllOf {
         TypeInfoSubstateAllOf {
-            package_address,
-            blueprint_name,
-            global,
+            details: Option::Some(details),
         }
     }
 }

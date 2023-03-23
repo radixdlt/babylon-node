@@ -99,11 +99,11 @@ fn to_api_response(
 
     let encoded_receipt = to_hex(scrypto_encode(&receipt).unwrap());
 
-    let response = match &receipt.result {
+    let response = match receipt.result {
         TransactionResult::Commit(commit_result) => {
             let mut instruction_resource_changes = Vec::new();
 
-            for (index, resource_changes) in &commit_result.resource_changes {
+            for (index, resource_changes) in &receipt.execution_trace.resource_changes {
                 let resource_changes: Vec<models::ResourceChange> = resource_changes
                     .iter()
                     .map(|v| {
@@ -138,9 +138,8 @@ fn to_api_response(
                 )
                 .collect();
 
-            let complete_receipt: LocalTransactionReceipt = receipt
-                .try_into()
-                .map_err(|_| server_error("Can't create a ledger receipt"))?;
+            let complete_receipt =
+                LocalTransactionReceipt::from((commit_result, receipt.execution_trace));
 
             models::TransactionPreviewResponse {
                 encoded_receipt,
@@ -153,7 +152,7 @@ fn to_api_response(
             encoded_receipt,
             receipt: Box::new(models::TransactionReceipt {
                 status: models::TransactionStatus::Rejected,
-                fee_summary: Box::new(to_api_fee_summary(context, receipt.execution.fee_summary)?),
+                fee_summary: None,
                 state_updates: Box::default(),
                 output: None,
                 next_epoch: None,

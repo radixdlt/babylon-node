@@ -20,7 +20,7 @@ fn handle_state_clock_internal(
 
     let rounded_to_minutes_substate = {
         let substate_offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
-        let loaded_substate = read_known_substate(
+        let loaded_substate = read_mandatory_substate(
             state_manager,
             RENodeId::GlobalObject(CLOCK.into()),
             NodeModuleId::SELF,

@@ -1,14 +1,18 @@
 use super::addressing::*;
 use crate::core_api::*;
 use radix_engine::blueprints::epoch_manager::Validator;
-use radix_engine::system::kernel_modules::costing::{FeeSummary, RoyaltyReceiver};
+use radix_engine::system::kernel_modules::costing::{FeeSummary, RoyaltyRecipient};
+use radix_engine::system::node_substates::PersistedSubstate;
+use radix_engine::types::indexmap::IndexMap;
+use radix_engine::types::{Address, ObjectId, RENodeId, SubstateOffset, VaultOffset};
 use radix_engine::{
     ledger::OutputValue,
-    types::{hash, scrypto_encode, Decimal, RENodeId, SubstateId},
+    types::{hash, scrypto_encode, Decimal, SubstateId},
 };
 
-use radix_engine_interface::data::scrypto::model::{Address, ComponentAddress};
-use std::collections::BTreeMap;
+use radix_engine_interface::blueprints::resource::ResourceType;
+use radix_engine_interface::data::scrypto::model::ComponentAddress;
+use std::collections::{BTreeMap, HashMap};
 
 use state_manager::{
     ChangeAction, DeletedSubstateVersion, DetailedTransactionOutcome, LocalTransactionReceipt,
@@ -18,8 +22,6 @@ pub fn to_api_receipt(
     context: &MappingContext,
     receipt: LocalTransactionReceipt,
 ) -> Result<models::TransactionReceipt, MappingError> {
-    let fee_summary = receipt.local_execution.fee_summary;
-
     let (status, output, error_message) = match receipt.local_execution.outcome {
         DetailedTransactionOutcome::Success(output) => {
             (models::TransactionStatus::Succeeded, Some(output), None)
@@ -31,38 +33,91 @@ pub fn to_api_receipt(
         ),
     };
 
-    let entity_changes = receipt.local_execution.entity_changes;
+    let state_update_summary = receipt.local_execution.state_update_summary;
     let mut new_global_entities = Vec::new();
 
-    for package_address in entity_changes.new_package_addresses {
+    for package_address in state_update_summary.new_packages {
         new_global_entities.push(to_global_entity_reference(
             context,
             &package_address.into(),
         )?);
     }
 
-    for component_address in entity_changes.new_component_addresses {
+    for component_address in state_update_summary.new_components {
         new_global_entities.push(to_global_entity_reference(
             context,
             &component_address.into(),
         )?);
     }
 
-    for resource_address in entity_changes.new_resource_addresses {
+    for resource_address in state_update_summary.new_resources {
         new_global_entities.push(to_global_entity_reference(
             context,
             &resource_address.into(),
         )?);
     }
 
-    let mut created_substates = Vec::new();
+    // This was added as a temporary workaround to the Vault substate abstraction for the RCNet release
+    fn filter_out_incorrect_vault_substates_for_gateway(
+        created_substates: Vec<(SubstateId, OutputValue)>,
+    ) -> Vec<(SubstateId, OutputValue)> {
+        // First pass -> create mapping of Vault => ResourceType
+        let vault_resource_type_map: HashMap<ObjectId, ResourceType> = created_substates
+            .iter()
+            .filter_map(|(substate_id, output_value)| match substate_id {
+                SubstateId(
+                    RENodeId::Object(vault_id),
+                    _,
+                    SubstateOffset::Vault(VaultOffset::Info),
+                ) => match &output_value.substate {
+                    PersistedSubstate::VaultInfo(substate) => {
+                        Some((*vault_id, substate.resource_type))
+                    }
+                    _ => None,
+                },
+                _ => None,
+            })
+            .collect();
+        // Second pass -> filter out incorrect substates
+        created_substates
+            .into_iter()
+            .filter_map(|(substate_id, output_value)| {
+                let resource_type = match substate_id.0 {
+                    RENodeId::Object(object_id) => vault_resource_type_map.get(&object_id),
+                    _ => None,
+                };
+                let keep_substate = match (&output_value.substate, resource_type) {
+                    (
+                        PersistedSubstate::VaultLiquidFungible(_),
+                        Some(ResourceType::Fungible { .. }),
+                    ) => true,
+                    (PersistedSubstate::VaultLiquidFungible(_), _) => false,
+                    (
+                        PersistedSubstate::VaultLiquidNonFungible(_),
+                        Some(ResourceType::NonFungible { .. }),
+                    ) => true,
+                    (PersistedSubstate::VaultLiquidNonFungible(_), _) => false,
+                    (PersistedSubstate::VaultLockedFungible(_), _) => false,
+                    (PersistedSubstate::VaultLockedNonFungible(_), _) => false,
+                    _ => true,
+                };
+                if keep_substate {
+                    Some((substate_id, output_value))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    let mut unfiltered_creations = Vec::new();
     let mut updated_substates = Vec::new();
     let mut deleted_substates = Vec::new();
     for substate_change in receipt.on_ledger.substate_changes {
         let id = substate_change.substate_id;
         match substate_change.action {
             ChangeAction::Create(value) => {
-                created_substates.push(to_api_new_substate_version(context, id, value)?);
+                unfiltered_creations.push((id, value));
             }
             ChangeAction::Update(value) => {
                 updated_substates.push(to_api_new_substate_version(context, id, value)?);
@@ -72,6 +127,12 @@ pub fn to_api_receipt(
             }
         }
     }
+
+    let created_substates = filter_out_incorrect_vault_substates_for_gateway(unfiltered_creations)
+        .into_iter()
+        .map(|(id, value)| to_api_new_substate_version(context, id, value))
+        .collect::<Result<Vec<_>, _>>()?;
+
     let api_state_updates = models::StateUpdates {
         created_substates,
         updated_substates,
@@ -79,13 +140,17 @@ pub fn to_api_receipt(
         new_global_entities,
     };
 
-    let api_fee_summary = to_api_fee_summary(context, fee_summary)?;
+    let api_fee_summary = to_api_fee_summary(
+        context,
+        &receipt.local_execution.fee_summary,
+        &receipt.local_execution.fee_payments,
+    )?;
 
     let api_output = match output {
         Some(output) => Some(
             output
                 .into_iter()
-                .map(|line_output| scrypto_bytes_to_api_sbor_data(context, &line_output))
+                .map(|line_output| to_api_sbor_data_from_bytes(context, &line_output))
                 .collect::<Result<Vec<_>, _>>()?,
         ),
         None => None,
@@ -99,7 +164,7 @@ pub fn to_api_receipt(
 
     Ok(models::TransactionReceipt {
         status,
-        fee_summary: Box::new(api_fee_summary),
+        fee_summary: Some(Box::new(api_fee_summary)),
         state_updates: Box::new(api_state_updates),
         output: api_output,
         next_epoch,
@@ -173,54 +238,47 @@ pub fn to_api_next_epoch(
 #[tracing::instrument(skip_all)]
 pub fn to_api_fee_summary(
     context: &MappingContext,
-    fee_summary: FeeSummary,
+    fee_summary: &FeeSummary,
+    fee_payments: &IndexMap<ObjectId, Decimal>,
 ) -> Result<models::FeeSummary, MappingError> {
     Ok(models::FeeSummary {
         cost_unit_price: to_api_decimal(&fee_summary.cost_unit_price),
         tip_percentage: to_api_u16_as_i32(fee_summary.tip_percentage),
         cost_unit_limit: to_api_u32_as_i64(fee_summary.cost_unit_limit),
-        cost_units_consumed: to_api_u32_as_i64(fee_summary.total_cost_units_consumed),
+        cost_units_consumed: to_api_u32_as_i64(fee_summary.execution_cost_sum),
         xrd_total_execution_cost: to_api_decimal(&fee_summary.total_execution_cost_xrd),
         xrd_total_royalty_cost: to_api_decimal(&fee_summary.total_royalty_cost_xrd),
         xrd_total_tipped: to_api_decimal(&Decimal::ZERO),
-        xrd_vault_payments: fee_summary
-            .vault_payments_xrd
-            .map(|vault_payments| {
-                vault_payments
-                    .into_iter()
-                    .map(|(vault_id, amount)| {
-                        Ok(models::VaultPayment {
-                            vault_entity: Box::new(to_api_entity_reference(RENodeId::Object(
-                                vault_id,
-                            ))?),
-                            xrd_amount: to_api_decimal(&amount),
-                        })
-                    })
-                    .collect::<Result<_, _>>()
-            })
-            .transpose()?,
         cost_unit_execution_breakdown: fee_summary
-            .execution_cost_unit_breakdown
-            .into_iter()
-            .map(|(key, cost_unit_amount)| (key.to_string(), to_api_u32_as_i64(cost_unit_amount)))
+            .execution_cost_breakdown
+            .iter()
+            .map(|(key, cost_unit_amount)| (key.to_string(), to_api_u32_as_i64(*cost_unit_amount)))
             .collect(),
-        cost_unit_royalty_breakdown: fee_summary
-            .royalty_cost_unit_breakdown
-            .into_iter()
-            .filter_map(|(receiver, cost_unit_amount)| {
-                let global_address = match receiver {
-                    RoyaltyReceiver::Package(address) => Address::Package(address),
-                    RoyaltyReceiver::Component(RENodeId::GlobalObject(address)) => address,
-                    _ => return None,
-                };
-                let payment = models::RoyaltyPayment {
-                    royalty_receiver: Box::new(
-                        to_global_entity_reference(context, &global_address).ok()?,
-                    ),
-                    cost_unit_amount: to_api_u32_as_i64(cost_unit_amount),
-                };
-                Some(payment)
+        xrd_vault_payments: fee_payments
+            .iter()
+            .map(|(vault_id, xrd_amount)| {
+                Ok(models::VaultPayment {
+                    vault_entity: Box::new(to_api_entity_reference(RENodeId::Object(*vault_id))?),
+                    xrd_amount: to_api_decimal(xrd_amount),
+                })
             })
-            .collect(),
+            .collect::<Result<_, _>>()?,
+        xrd_royalty_receivers: fee_summary
+            .royalty_cost_breakdown
+            .iter()
+            .map(|(receiver, (_, xrd_amount))| {
+                let global_address = match receiver {
+                    RoyaltyRecipient::Package(address) => Address::Package(*address),
+                    RoyaltyRecipient::Component(address) => Address::Component(*address),
+                };
+                Ok(models::RoyaltyPayment {
+                    royalty_receiver: Box::new(to_global_entity_reference(
+                        context,
+                        &global_address,
+                    )?),
+                    xrd_amount: to_api_decimal(xrd_amount),
+                })
+            })
+            .collect::<Result<_, _>>()?,
     })
 }
