@@ -22,18 +22,18 @@ pub struct LtsStreamEntityTransactionsBasicOutcomesResponse {
     /// An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.
     #[serde(rename = "max_ledger_state_version")]
     pub max_ledger_state_version: i64,
-    /// A basic outcomes list starting from the `from_state_version` (inclusive).
-    #[serde(rename = "basic_outcomes")]
-    pub basic_outcomes: Vec<crate::core_api::generated::models::LtsBasicOutcomes>,
+    /// A committed transaction basic outcomes list starting from the `from_state_version` (inclusive).
+    #[serde(rename = "committed_transaction_basic_outcomes")]
+    pub committed_transaction_basic_outcomes: Vec<crate::core_api::generated::models::LtsCommittedTransactionBasicOutcome>,
 }
 
 impl LtsStreamEntityTransactionsBasicOutcomesResponse {
-    pub fn new(from_state_version: i64, count: i32, max_ledger_state_version: i64, basic_outcomes: Vec<crate::core_api::generated::models::LtsBasicOutcomes>) -> LtsStreamEntityTransactionsBasicOutcomesResponse {
+    pub fn new(from_state_version: i64, count: i32, max_ledger_state_version: i64, committed_transaction_basic_outcomes: Vec<crate::core_api::generated::models::LtsCommittedTransactionBasicOutcome>) -> LtsStreamEntityTransactionsBasicOutcomesResponse {
         LtsStreamEntityTransactionsBasicOutcomesResponse {
             from_state_version,
             count,
             max_ledger_state_version,
-            basic_outcomes,
+            committed_transaction_basic_outcomes,
         }
     }
 }

@@ -12,15 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LtsBasicOutcomes {
-    #[serde(rename = "dummy")]
-    pub dummy: String,
+pub struct LtsAccountBalanceUpdates {
+    /// The Bech32m-encoded human readable version of the account's address
+    #[serde(rename = "account_address")]
+    pub account_address: String,
+    #[serde(rename = "resource_balance_updates")]
+    pub resource_balance_updates: Vec<crate::core_api::generated::models::LtsResourceBalanceUpdate>,
 }
 
-impl LtsBasicOutcomes {
-    pub fn new(dummy: String) -> LtsBasicOutcomes {
-        LtsBasicOutcomes {
-            dummy,
+impl LtsAccountBalanceUpdates {
+    pub fn new(account_address: String, resource_balance_updates: Vec<crate::core_api::generated::models::LtsResourceBalanceUpdate>) -> LtsAccountBalanceUpdates {
+        LtsAccountBalanceUpdates {
+            account_address,
+            resource_balance_updates,
         }
     }
 }

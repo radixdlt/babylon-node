@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LtsBasicOutcomes;
+import com.radixdlt.api.core.generated.models.LtsCommittedTransactionBasicOutcome;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -37,7 +37,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   LtsStreamTransactionsBasicOutcomesResponse.JSON_PROPERTY_FROM_STATE_VERSION,
   LtsStreamTransactionsBasicOutcomesResponse.JSON_PROPERTY_COUNT,
   LtsStreamTransactionsBasicOutcomesResponse.JSON_PROPERTY_MAX_LEDGER_STATE_VERSION,
-  LtsStreamTransactionsBasicOutcomesResponse.JSON_PROPERTY_BASIC_OUTCOMES
+  LtsStreamTransactionsBasicOutcomesResponse.JSON_PROPERTY_COMMITTED_TRANSACTION_BASIC_OUTCOMES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class LtsStreamTransactionsBasicOutcomesResponse {
@@ -50,8 +50,8 @@ public class LtsStreamTransactionsBasicOutcomesResponse {
   public static final String JSON_PROPERTY_MAX_LEDGER_STATE_VERSION = "max_ledger_state_version";
   private Long maxLedgerStateVersion;
 
-  public static final String JSON_PROPERTY_BASIC_OUTCOMES = "basic_outcomes";
-  private List<LtsBasicOutcomes> basicOutcomes = new ArrayList<>();
+  public static final String JSON_PROPERTY_COMMITTED_TRANSACTION_BASIC_OUTCOMES = "committed_transaction_basic_outcomes";
+  private List<LtsCommittedTransactionBasicOutcome> committedTransactionBasicOutcomes = new ArrayList<>();
 
   public LtsStreamTransactionsBasicOutcomesResponse() { 
   }
@@ -140,34 +140,34 @@ public class LtsStreamTransactionsBasicOutcomesResponse {
   }
 
 
-  public LtsStreamTransactionsBasicOutcomesResponse basicOutcomes(List<LtsBasicOutcomes> basicOutcomes) {
-    this.basicOutcomes = basicOutcomes;
+  public LtsStreamTransactionsBasicOutcomesResponse committedTransactionBasicOutcomes(List<LtsCommittedTransactionBasicOutcome> committedTransactionBasicOutcomes) {
+    this.committedTransactionBasicOutcomes = committedTransactionBasicOutcomes;
     return this;
   }
 
-  public LtsStreamTransactionsBasicOutcomesResponse addBasicOutcomesItem(LtsBasicOutcomes basicOutcomesItem) {
-    this.basicOutcomes.add(basicOutcomesItem);
+  public LtsStreamTransactionsBasicOutcomesResponse addCommittedTransactionBasicOutcomesItem(LtsCommittedTransactionBasicOutcome committedTransactionBasicOutcomesItem) {
+    this.committedTransactionBasicOutcomes.add(committedTransactionBasicOutcomesItem);
     return this;
   }
 
    /**
-   * A basic outcomes list starting from the &#x60;from_state_version&#x60; (inclusive).
-   * @return basicOutcomes
+   * A committed transaction basic outcomes list starting from the &#x60;from_state_version&#x60; (inclusive).
+   * @return committedTransactionBasicOutcomes
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A basic outcomes list starting from the `from_state_version` (inclusive).")
-  @JsonProperty(JSON_PROPERTY_BASIC_OUTCOMES)
+  @ApiModelProperty(required = true, value = "A committed transaction basic outcomes list starting from the `from_state_version` (inclusive).")
+  @JsonProperty(JSON_PROPERTY_COMMITTED_TRANSACTION_BASIC_OUTCOMES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<LtsBasicOutcomes> getBasicOutcomes() {
-    return basicOutcomes;
+  public List<LtsCommittedTransactionBasicOutcome> getCommittedTransactionBasicOutcomes() {
+    return committedTransactionBasicOutcomes;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_BASIC_OUTCOMES)
+  @JsonProperty(JSON_PROPERTY_COMMITTED_TRANSACTION_BASIC_OUTCOMES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBasicOutcomes(List<LtsBasicOutcomes> basicOutcomes) {
-    this.basicOutcomes = basicOutcomes;
+  public void setCommittedTransactionBasicOutcomes(List<LtsCommittedTransactionBasicOutcome> committedTransactionBasicOutcomes) {
+    this.committedTransactionBasicOutcomes = committedTransactionBasicOutcomes;
   }
 
 
@@ -186,12 +186,12 @@ public class LtsStreamTransactionsBasicOutcomesResponse {
     return Objects.equals(this.fromStateVersion, ltsStreamTransactionsBasicOutcomesResponse.fromStateVersion) &&
         Objects.equals(this.count, ltsStreamTransactionsBasicOutcomesResponse.count) &&
         Objects.equals(this.maxLedgerStateVersion, ltsStreamTransactionsBasicOutcomesResponse.maxLedgerStateVersion) &&
-        Objects.equals(this.basicOutcomes, ltsStreamTransactionsBasicOutcomesResponse.basicOutcomes);
+        Objects.equals(this.committedTransactionBasicOutcomes, ltsStreamTransactionsBasicOutcomesResponse.committedTransactionBasicOutcomes);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(fromStateVersion, count, maxLedgerStateVersion, basicOutcomes);
+    return Objects.hash(fromStateVersion, count, maxLedgerStateVersion, committedTransactionBasicOutcomes);
   }
 
   @Override
@@ -201,7 +201,7 @@ public class LtsStreamTransactionsBasicOutcomesResponse {
     sb.append("    fromStateVersion: ").append(toIndentedString(fromStateVersion)).append("\n");
     sb.append("    count: ").append(toIndentedString(count)).append("\n");
     sb.append("    maxLedgerStateVersion: ").append(toIndentedString(maxLedgerStateVersion)).append("\n");
-    sb.append("    basicOutcomes: ").append(toIndentedString(basicOutcomes)).append("\n");
+    sb.append("    committedTransactionBasicOutcomes: ").append(toIndentedString(committedTransactionBasicOutcomes)).append("\n");
     sb.append("}");
     return sb.toString();
   }
