@@ -108,7 +108,8 @@ public final class P2PModule extends AbstractModule {
     bind(PeersView.class).to(PeerManagerPeersView.class).in(Scopes.SINGLETON);
     bind(PeerControl.class).to(AddressBookPeerControl.class).in(Scopes.SINGLETON);
     bind(PeerOutboundBootstrap.class).to(PeerOutboundBootstrapImpl.class).in(Scopes.SINGLETON);
-    bind(AddressBookPersistence.class).to(BerkeleyAddressBookStore.class).in(Scopes.SINGLETON);
+    bind(AddressBookPersistence.class).to(BerkeleyAddressBookStore.class);
+    bind(BerkeleyAddressBookStore.class).in(Scopes.SINGLETON);
     bind(PeerServerBootstrap.class).in(Scopes.SINGLETON);
     bind(PendingOutboundChannelsManager.class).in(Scopes.SINGLETON);
     bind(PeerManager.class).in(Scopes.SINGLETON);

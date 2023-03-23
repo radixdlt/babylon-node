@@ -89,6 +89,7 @@ import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.*;
 import com.radixdlt.p2p.addressbook.AddressBook;
+import com.radixdlt.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.serialization.DefaultSerialization;
@@ -244,6 +245,7 @@ public final class P2PTestNetworkRunner {
   public void cleanup() {
     this.nodes.forEach(
         node -> {
+          node.injector.getInstance(AddressBookPersistence.class).close();
           node.injector.getInstance(BerkeleyDatabaseEnvironment.class).stop();
         });
   }

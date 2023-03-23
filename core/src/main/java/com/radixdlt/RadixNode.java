@@ -74,7 +74,7 @@ import com.radixdlt.api.prometheus.PrometheusApi;
 import com.radixdlt.api.system.SystemApi;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.genesis.GenesisConfig;
 import com.radixdlt.genesis.GenesisData;
@@ -88,7 +88,7 @@ import com.radixdlt.monitoring.MetricInstaller;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.FixedNetworkGenesis;
 import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.addressbook.BerkeleyAddressBookStore;
+import com.radixdlt.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.transaction.ExecutedTransaction;
@@ -354,13 +354,13 @@ public final class RadixNode {
               .forEach((k, moduleRunner) -> moduleRunner.stop());
 
           try {
-            radixNodeInjector.getInstance(BerkeleyAddressBookStore.class).close();
+            radixNodeInjector.getInstance(AddressBookPersistence.class).close();
           } catch (Exception e) {
             // no-op
           }
 
           try {
-            radixNodeInjector.getInstance(BerkeleySafetyStateStore.class).close();
+            radixNodeInjector.getInstance(PersistentSafetyStateStore.class).close();
           } catch (Exception e) {
             // no-op
           }
