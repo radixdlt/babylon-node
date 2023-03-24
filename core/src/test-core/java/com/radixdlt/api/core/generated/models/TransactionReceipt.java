@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.Event;
 import com.radixdlt.api.core.generated.models.FeeSummary;
 import com.radixdlt.api.core.generated.models.NextEpoch;
 import com.radixdlt.api.core.generated.models.SborData;
@@ -42,6 +43,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   TransactionReceipt.JSON_PROPERTY_STATUS,
   TransactionReceipt.JSON_PROPERTY_FEE_SUMMARY,
   TransactionReceipt.JSON_PROPERTY_STATE_UPDATES,
+  TransactionReceipt.JSON_PROPERTY_EVENTS,
   TransactionReceipt.JSON_PROPERTY_NEXT_EPOCH,
   TransactionReceipt.JSON_PROPERTY_OUTPUT,
   TransactionReceipt.JSON_PROPERTY_ERROR_MESSAGE
@@ -56,6 +58,9 @@ public class TransactionReceipt {
 
   public static final String JSON_PROPERTY_STATE_UPDATES = "state_updates";
   private StateUpdates stateUpdates;
+
+  public static final String JSON_PROPERTY_EVENTS = "events";
+  private List<Event> events = null;
 
   public static final String JSON_PROPERTY_NEXT_EPOCH = "next_epoch";
   private NextEpoch nextEpoch;
@@ -144,6 +149,40 @@ public class TransactionReceipt {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setStateUpdates(StateUpdates stateUpdates) {
     this.stateUpdates = stateUpdates;
+  }
+
+
+  public TransactionReceipt events(List<Event> events) {
+    this.events = events;
+    return this;
+  }
+
+  public TransactionReceipt addEventsItem(Event eventsItem) {
+    if (this.events == null) {
+      this.events = new ArrayList<>();
+    }
+    this.events.add(eventsItem);
+    return this;
+  }
+
+   /**
+   * Get events
+   * @return events
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_EVENTS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public List<Event> getEvents() {
+    return events;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_EVENTS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setEvents(List<Event> events) {
+    this.events = events;
   }
 
 
@@ -248,6 +287,7 @@ public class TransactionReceipt {
     return Objects.equals(this.status, transactionReceipt.status) &&
         Objects.equals(this.feeSummary, transactionReceipt.feeSummary) &&
         Objects.equals(this.stateUpdates, transactionReceipt.stateUpdates) &&
+        Objects.equals(this.events, transactionReceipt.events) &&
         Objects.equals(this.nextEpoch, transactionReceipt.nextEpoch) &&
         Objects.equals(this.output, transactionReceipt.output) &&
         Objects.equals(this.errorMessage, transactionReceipt.errorMessage);
@@ -255,7 +295,7 @@ public class TransactionReceipt {
 
   @Override
   public int hashCode() {
-    return Objects.hash(status, feeSummary, stateUpdates, nextEpoch, output, errorMessage);
+    return Objects.hash(status, feeSummary, stateUpdates, events, nextEpoch, output, errorMessage);
   }
 
   @Override
@@ -265,6 +305,7 @@ public class TransactionReceipt {
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    feeSummary: ").append(toIndentedString(feeSummary)).append("\n");
     sb.append("    stateUpdates: ").append(toIndentedString(stateUpdates)).append("\n");
+    sb.append("    events: ").append(toIndentedString(events)).append("\n");
     sb.append("    nextEpoch: ").append(toIndentedString(nextEpoch)).append("\n");
     sb.append("    output: ").append(toIndentedString(output)).append("\n");
     sb.append("    errorMessage: ").append(toIndentedString(errorMessage)).append("\n");

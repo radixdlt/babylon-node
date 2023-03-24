@@ -115,7 +115,7 @@ public class TransactionAccuTreeTest extends DeterministicCoreApiTestBase {
     // Compute the ledger receipt hashes
     var receiptHashes =
         epoch.transactions().stream()
-            .map(transaction -> HashUtils.blake2b256(transaction.ledgerReceiptBytes()))
+            .map(transaction -> HashUtils.blake2b256(transaction.consensusReceiptBytes()))
             .toArray(HashCode[]::new);
 
     // Assert that header's root hash is equal to manually computed one

@@ -22,84 +22,85 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EntityType;
+import com.radixdlt.api.core.generated.models.EntityReference;
+import com.radixdlt.api.core.generated.models.ModuleType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * EntityReference
+ * MethodEventEmitterIdentifierAllOf
  */
 @JsonPropertyOrder({
-  EntityReference.JSON_PROPERTY_ENTITY_TYPE,
-  EntityReference.JSON_PROPERTY_ENTITY_ID_HEX
+  MethodEventEmitterIdentifierAllOf.JSON_PROPERTY_ENTITY,
+  MethodEventEmitterIdentifierAllOf.JSON_PROPERTY_MODULE_TYPE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class EntityReference {
-  public static final String JSON_PROPERTY_ENTITY_TYPE = "entity_type";
-  private EntityType entityType;
+public class MethodEventEmitterIdentifierAllOf {
+  public static final String JSON_PROPERTY_ENTITY = "entity";
+  private EntityReference entity;
 
-  public static final String JSON_PROPERTY_ENTITY_ID_HEX = "entity_id_hex";
-  private String entityIdHex;
+  public static final String JSON_PROPERTY_MODULE_TYPE = "module_type";
+  private ModuleType moduleType;
 
-  public EntityReference() { 
+  public MethodEventEmitterIdentifierAllOf() { 
   }
 
-  public EntityReference entityType(EntityType entityType) {
-    this.entityType = entityType;
+  public MethodEventEmitterIdentifierAllOf entity(EntityReference entity) {
+    this.entity = entity;
     return this;
   }
 
    /**
-   * Get entityType
-   * @return entityType
+   * Get entity
+   * @return entity
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ENTITY_TYPE)
+  @JsonProperty(JSON_PROPERTY_ENTITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityType getEntityType() {
-    return entityType;
+  public EntityReference getEntity() {
+    return entity;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ENTITY_TYPE)
+  @JsonProperty(JSON_PROPERTY_ENTITY)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEntityType(EntityType entityType) {
-    this.entityType = entityType;
+  public void setEntity(EntityReference entity) {
+    this.entity = entity;
   }
 
 
-  public EntityReference entityIdHex(String entityIdHex) {
-    this.entityIdHex = entityIdHex;
+  public MethodEventEmitterIdentifierAllOf moduleType(ModuleType moduleType) {
+    this.moduleType = moduleType;
     return this;
   }
 
    /**
-   * The hex-encoded bytes of the entity id.
-   * @return entityIdHex
+   * Get moduleType
+   * @return moduleType
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded bytes of the entity id.")
-  @JsonProperty(JSON_PROPERTY_ENTITY_ID_HEX)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_MODULE_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getEntityIdHex() {
-    return entityIdHex;
+  public ModuleType getModuleType() {
+    return moduleType;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ENTITY_ID_HEX)
+  @JsonProperty(JSON_PROPERTY_MODULE_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEntityIdHex(String entityIdHex) {
-    this.entityIdHex = entityIdHex;
+  public void setModuleType(ModuleType moduleType) {
+    this.moduleType = moduleType;
   }
 
 
   /**
-   * Return true if this EntityReference object is equal to o.
+   * Return true if this MethodEventEmitterIdentifier_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -109,22 +110,22 @@ public class EntityReference {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EntityReference entityReference = (EntityReference) o;
-    return Objects.equals(this.entityType, entityReference.entityType) &&
-        Objects.equals(this.entityIdHex, entityReference.entityIdHex);
+    MethodEventEmitterIdentifierAllOf methodEventEmitterIdentifierAllOf = (MethodEventEmitterIdentifierAllOf) o;
+    return Objects.equals(this.entity, methodEventEmitterIdentifierAllOf.entity) &&
+        Objects.equals(this.moduleType, methodEventEmitterIdentifierAllOf.moduleType);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityType, entityIdHex);
+    return Objects.hash(entity, moduleType);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class EntityReference {\n");
-    sb.append("    entityType: ").append(toIndentedString(entityType)).append("\n");
-    sb.append("    entityIdHex: ").append(toIndentedString(entityIdHex)).append("\n");
+    sb.append("class MethodEventEmitterIdentifierAllOf {\n");
+    sb.append("    entity: ").append(toIndentedString(entity)).append("\n");
+    sb.append("    moduleType: ").append(toIndentedString(moduleType)).append("\n");
     sb.append("}");
     return sb.toString();
   }

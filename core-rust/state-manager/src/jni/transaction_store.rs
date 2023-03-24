@@ -77,7 +77,7 @@ use super::utils::jni_state_manager_sbor_read_call;
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 struct ExecutedTransaction {
     outcome: TransactionOutcomeJava,
-    ledger_receipt_bytes: Vec<u8>,
+    consensus_receipt_bytes: Vec<u8>,
     transaction_bytes: Vec<u8>,
     /// Used by some Java tests, consider removing at some point as it doesn't really fit here
     new_component_addresses: Vec<ComponentAddress>,
@@ -126,7 +126,7 @@ fn do_get_transaction_at_state_version(
                 TransactionOutcomeJava::Failure(format!("{err:?}"))
             }
         },
-        ledger_receipt_bytes: scrypto_encode(&ledger_receipt.get_consensus_receipt()).unwrap(),
+        consensus_receipt_bytes: scrypto_encode(&ledger_receipt.get_consensus_receipt()).unwrap(),
         transaction_bytes: committed_transaction.create_payload().unwrap(),
         new_component_addresses: local_execution.state_update_summary.new_components,
         new_resource_addresses: local_execution.state_update_summary.new_resources,

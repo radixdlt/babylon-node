@@ -257,6 +257,9 @@ impl fmt::Debug for SubstateChangeHash {
     }
 }
 
+/// A hash of an SBOR-encoded `ConsensusReceipt`, capturing all the critical, on-ledger effects of
+/// executing a transaction.
+/// This is the hash that consensus agrees on.
 #[derive(
     PartialEq,
     Eq,
@@ -271,6 +274,11 @@ impl fmt::Debug for SubstateChangeHash {
 )]
 pub struct LedgerReceiptHash([u8; Self::LENGTH]);
 
+/// A “compressed”, merklizable derivative of a `LedgerTransactionReceipt`.
+/// It is of constant size, which means that some parts are included directly (simple fields, e.g.
+/// the boolean outcome) while the rest is included via merkle root hashes (collections, e.g.
+/// substate changes).
+/// This receipt is directly used for computing a `LedgerReceiptHash`.
 #[derive(ScryptoCategorize, ScryptoEncode)]
 pub struct ConsensusReceipt {
     pub outcome: LedgerTransactionOutcome,

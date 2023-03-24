@@ -252,7 +252,7 @@ impl Delta for ProcessedTransactionReceipt {
     fn weight(&self) -> usize {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => {
-                commit.complete_receipt.on_ledger.substate_changes.len()
+                commit.local_receipt.on_ledger.substate_changes.len()
                     + commit.hash_structures_diff.weight()
             }
             ProcessedTransactionReceipt::Reject(_) | ProcessedTransactionReceipt::Abort(_) => 0,
@@ -308,7 +308,7 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
 
     fn accumulate(&mut self, processed: &ProcessedTransactionReceipt) {
         if let ProcessedTransactionReceipt::Commit(commit) = processed {
-            let substate_changes = &commit.complete_receipt.on_ledger.substate_changes;
+            let substate_changes = &commit.local_receipt.on_ledger.substate_changes;
             for substate_change in substate_changes {
                 let id = &substate_change.substate_id;
                 match &substate_change.action {
