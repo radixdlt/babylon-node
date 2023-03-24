@@ -117,7 +117,7 @@ pub async fn create_server<F>(
             post(lts::handle_rc_state_account_all_fungible_resource_balances),
         )
         .route(
-            "/lts/state/account-fungible-resource-balances",
+            "/lts/state/account-fungible-resource-balance",
             post(lts::handle_rc_state_account_fungible_resource_balance),
         )
         // Status Sub-API

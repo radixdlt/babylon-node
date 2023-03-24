@@ -80,7 +80,7 @@ public class StreamApi {
 
   /**
    * Get Transactions Basic Outcomes
-   * TODO 
+   * Returns a list of committed transaction&#39;s basic outcomes (this contains resource balance changes). 
    * @param ltsStreamTransactionsBasicOutcomesRequest  (required)
    * @return LtsStreamTransactionsBasicOutcomesResponse
    * @throws ApiException if fails to make API call
@@ -92,7 +92,7 @@ public class StreamApi {
 
   /**
    * Get Transactions Basic Outcomes
-   * TODO 
+   * Returns a list of committed transaction&#39;s basic outcomes (this contains resource balance changes). 
    * @param ltsStreamTransactionsBasicOutcomesRequest  (required)
    * @return ApiResponse&lt;LtsStreamTransactionsBasicOutcomesResponse&gt;
    * @throws ApiException if fails to make API call

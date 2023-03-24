@@ -306,7 +306,7 @@ paths:
     post:
       summary: Get Transactions Basic Outcomes
       description: |
-        TODO
+        Returns a list of committed transaction's basic outcomes (this contains resource balance changes).
       tags:
         - LTS
         - Stream
@@ -3234,11 +3234,18 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/LtsCommittedTransactionFungibleOutcome"
+    LtsCommittedTransactionStatus:
+      type: string
+      enum:
+        - Succeeded
+        - Failed
+      description: The status of the transaction
     LtsCommittedTransactionFungibleOutcome:
       type: object
       required:
         - state_version
         - accumulator_hash
+        - status
         - fungible_outcome
       properties:
         state_version:
@@ -3254,25 +3261,10 @@ components:
           description: |
             The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger.
             This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator.
-        fungible_outcome:
-          $ref: "#/components/schemas/LtsFungibleOutcome"
-    LtsCommittedTransactionStatus:
-      type: string
-      enum:
-        - Succeeded
-        - Failed
-      description: The status of the transaction
-    LtsFungibleOutcome:
-      type: object
-      description: The transaction execution receipt
-      required:
-        - status
-        - account_fungible_balance_changes
-      properties:
         status:
           $ref: "#/components/schemas/LtsCommittedTransactionStatus"
-        account_fungible_balance_changes:
-          description: A list containing all account balance updates
+        fungible_outcome:
+          description: A list containing all account fungible balance updates
           type: array
           items:
             $ref: "#/components/schemas/LtsAccountFungibleBalanceChanges"

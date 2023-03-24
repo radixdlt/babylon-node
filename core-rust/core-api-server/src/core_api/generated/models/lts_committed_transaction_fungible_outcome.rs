@@ -19,16 +19,20 @@ pub struct LtsCommittedTransactionFungibleOutcome {
     /// The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger. This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator. 
     #[serde(rename = "accumulator_hash")]
     pub accumulator_hash: String,
+    #[serde(rename = "status")]
+    pub status: crate::core_api::generated::models::LtsCommittedTransactionStatus,
+    /// A list containing all account fungible balance updates
     #[serde(rename = "fungible_outcome")]
-    pub fungible_outcome: Box<crate::core_api::generated::models::LtsFungibleOutcome>,
+    pub fungible_outcome: Vec<crate::core_api::generated::models::LtsAccountFungibleBalanceChanges>,
 }
 
 impl LtsCommittedTransactionFungibleOutcome {
-    pub fn new(state_version: i64, accumulator_hash: String, fungible_outcome: crate::core_api::generated::models::LtsFungibleOutcome) -> LtsCommittedTransactionFungibleOutcome {
+    pub fn new(state_version: i64, accumulator_hash: String, status: crate::core_api::generated::models::LtsCommittedTransactionStatus, fungible_outcome: Vec<crate::core_api::generated::models::LtsAccountFungibleBalanceChanges>) -> LtsCommittedTransactionFungibleOutcome {
         LtsCommittedTransactionFungibleOutcome {
             state_version,
             accumulator_hash,
-            fungible_outcome: Box::new(fungible_outcome),
+            status,
+            fungible_outcome,
         }
     }
 }

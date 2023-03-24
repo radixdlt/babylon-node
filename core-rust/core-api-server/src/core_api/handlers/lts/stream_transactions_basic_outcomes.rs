@@ -93,18 +93,6 @@ pub fn to_api_lts_comitted_transaction_basic_outcome(
     receipt: LedgerTransactionReceipt,
     identifiers: CommittedTransactionIdentifiers,
 ) -> Result<models::LtsCommittedTransactionFungibleOutcome, MappingError> {
-    Ok(models::LtsCommittedTransactionFungibleOutcome {
-        state_version: to_api_state_version(identifiers.state_version)?,
-        accumulator_hash: to_api_accumulator_hash(&identifiers.accumulator_hash),
-        fungible_outcome: Box::new(to_api_lts_fungible_outcome(context, receipt)?),
-    })
-}
-
-#[tracing::instrument(skip_all)]
-pub fn to_api_lts_fungible_outcome(
-    context: &MappingContext,
-    receipt: LedgerTransactionReceipt,
-) -> Result<models::LtsFungibleOutcome, MappingError> {
     let status = match receipt.outcome {
         LedgerTransactionOutcome::Success(_) => models::LtsCommittedTransactionStatus::Succeeded,
         LedgerTransactionOutcome::Failure(_) => models::LtsCommittedTransactionStatus::Failed,
@@ -139,8 +127,10 @@ pub fn to_api_lts_fungible_outcome(
         )
         .collect();
 
-    Ok(models::LtsFungibleOutcome {
+    Ok(models::LtsCommittedTransactionFungibleOutcome {
+        state_version: to_api_state_version(identifiers.state_version)?,
+        accumulator_hash: to_api_accumulator_hash(&identifiers.accumulator_hash),
         status,
-        account_fungible_balance_changes,
+        fungible_outcome: account_fungible_balance_changes,
     })
 }

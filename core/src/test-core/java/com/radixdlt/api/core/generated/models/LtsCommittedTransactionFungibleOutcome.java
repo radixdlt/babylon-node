@@ -22,9 +22,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LtsFungibleOutcome;
+import com.radixdlt.api.core.generated.models.LtsAccountFungibleBalanceChanges;
+import com.radixdlt.api.core.generated.models.LtsCommittedTransactionStatus;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -34,6 +37,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   LtsCommittedTransactionFungibleOutcome.JSON_PROPERTY_STATE_VERSION,
   LtsCommittedTransactionFungibleOutcome.JSON_PROPERTY_ACCUMULATOR_HASH,
+  LtsCommittedTransactionFungibleOutcome.JSON_PROPERTY_STATUS,
   LtsCommittedTransactionFungibleOutcome.JSON_PROPERTY_FUNGIBLE_OUTCOME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -44,8 +48,11 @@ public class LtsCommittedTransactionFungibleOutcome {
   public static final String JSON_PROPERTY_ACCUMULATOR_HASH = "accumulator_hash";
   private String accumulatorHash;
 
+  public static final String JSON_PROPERTY_STATUS = "status";
+  private LtsCommittedTransactionStatus status;
+
   public static final String JSON_PROPERTY_FUNGIBLE_OUTCOME = "fungible_outcome";
-  private LtsFungibleOutcome fungibleOutcome;
+  private List<LtsAccountFungibleBalanceChanges> fungibleOutcome = new ArrayList<>();
 
   public LtsCommittedTransactionFungibleOutcome() { 
   }
@@ -104,28 +111,59 @@ public class LtsCommittedTransactionFungibleOutcome {
   }
 
 
-  public LtsCommittedTransactionFungibleOutcome fungibleOutcome(LtsFungibleOutcome fungibleOutcome) {
-    this.fungibleOutcome = fungibleOutcome;
+  public LtsCommittedTransactionFungibleOutcome status(LtsCommittedTransactionStatus status) {
+    this.status = status;
     return this;
   }
 
    /**
-   * Get fungibleOutcome
-   * @return fungibleOutcome
+   * Get status
+   * @return status
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_STATUS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public LtsCommittedTransactionStatus getStatus() {
+    return status;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_STATUS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setStatus(LtsCommittedTransactionStatus status) {
+    this.status = status;
+  }
+
+
+  public LtsCommittedTransactionFungibleOutcome fungibleOutcome(List<LtsAccountFungibleBalanceChanges> fungibleOutcome) {
+    this.fungibleOutcome = fungibleOutcome;
+    return this;
+  }
+
+  public LtsCommittedTransactionFungibleOutcome addFungibleOutcomeItem(LtsAccountFungibleBalanceChanges fungibleOutcomeItem) {
+    this.fungibleOutcome.add(fungibleOutcomeItem);
+    return this;
+  }
+
+   /**
+   * A list containing all account fungible balance updates
+   * @return fungibleOutcome
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "A list containing all account fungible balance updates")
   @JsonProperty(JSON_PROPERTY_FUNGIBLE_OUTCOME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LtsFungibleOutcome getFungibleOutcome() {
+  public List<LtsAccountFungibleBalanceChanges> getFungibleOutcome() {
     return fungibleOutcome;
   }
 
 
   @JsonProperty(JSON_PROPERTY_FUNGIBLE_OUTCOME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFungibleOutcome(LtsFungibleOutcome fungibleOutcome) {
+  public void setFungibleOutcome(List<LtsAccountFungibleBalanceChanges> fungibleOutcome) {
     this.fungibleOutcome = fungibleOutcome;
   }
 
@@ -144,12 +182,13 @@ public class LtsCommittedTransactionFungibleOutcome {
     LtsCommittedTransactionFungibleOutcome ltsCommittedTransactionFungibleOutcome = (LtsCommittedTransactionFungibleOutcome) o;
     return Objects.equals(this.stateVersion, ltsCommittedTransactionFungibleOutcome.stateVersion) &&
         Objects.equals(this.accumulatorHash, ltsCommittedTransactionFungibleOutcome.accumulatorHash) &&
+        Objects.equals(this.status, ltsCommittedTransactionFungibleOutcome.status) &&
         Objects.equals(this.fungibleOutcome, ltsCommittedTransactionFungibleOutcome.fungibleOutcome);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(stateVersion, accumulatorHash, fungibleOutcome);
+    return Objects.hash(stateVersion, accumulatorHash, status, fungibleOutcome);
   }
 
   @Override
@@ -158,6 +197,7 @@ public class LtsCommittedTransactionFungibleOutcome {
     sb.append("class LtsCommittedTransactionFungibleOutcome {\n");
     sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
     sb.append("    accumulatorHash: ").append(toIndentedString(accumulatorHash)).append("\n");
+    sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    fungibleOutcome: ").append(toIndentedString(fungibleOutcome)).append("\n");
     sb.append("}");
     return sb.toString();

@@ -206,8 +206,6 @@ pub mod lts_committed_transaction_fungible_outcome;
 pub use self::lts_committed_transaction_fungible_outcome::LtsCommittedTransactionFungibleOutcome;
 pub mod lts_committed_transaction_status;
 pub use self::lts_committed_transaction_status::LtsCommittedTransactionStatus;
-pub mod lts_fungible_outcome;
-pub use self::lts_fungible_outcome::LtsFungibleOutcome;
 pub mod lts_fungible_resource_balance;
 pub use self::lts_fungible_resource_balance::LtsFungibleResourceBalance;
 pub mod lts_fungible_resource_balance_change;
