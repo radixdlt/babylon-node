@@ -13,13 +13,17 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct LocalMethodReference {
+    #[serde(rename = "module")]
+    pub module: crate::core_api::generated::models::ModuleType,
+    /// The name of the method
     #[serde(rename = "name")]
     pub name: String,
 }
 
 impl LocalMethodReference {
-    pub fn new(name: String) -> LocalMethodReference {
+    pub fn new(module: crate::core_api::generated::models::ModuleType, name: String) -> LocalMethodReference {
         LocalMethodReference {
+            module,
             name,
         }
     }

@@ -1515,9 +1515,13 @@ components:
     LocalMethodReference:
       type: object
       required:
+        - module
         - name
       properties:
+        module:
+          $ref: '#/components/schemas/ModuleType'
         name:
+          description: The name of the method
           type: string
     AccessRuleReferenceType:
       type: string
