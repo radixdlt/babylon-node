@@ -143,8 +143,9 @@ public final class OlympiaGenesisService {
       response = olympiaEndStateApiClient.getOlympiaEndState();
     } catch (Exception ex /* just catch anything */) {
       log.warn(
-          "An error occurred while querying the Olympia node for the genesis state. Retrying in {}"
-              + " ms... ({})",
+          """
+              An error occurred while querying the Olympia node for the genesis state. \
+              Retrying in {} ms... ({})""",
           POLL_INTERVAL_AFTER_ERROR_MS,
           ex.getMessage());
       this.executor
@@ -179,8 +180,9 @@ public final class OlympiaGenesisService {
         } catch (IOException e) {
           handleUnrecoverableError.accept(
               new RuntimeException(
-                  "Successfully connected to the Olympia node, but the received genesis data"
-                      + " couldn't be uncompressed.",
+                  """
+                      Successfully connected to the Olympia node, but the received genesis data \
+                      couldn't be uncompressed.""",
                   e));
           return;
         }
@@ -216,8 +218,9 @@ public final class OlympiaGenesisService {
 
         if (notReadyLogRateLimiter.tryAcquire()) {
           log.info(
-              "Successfully connected to the Olympia node ({}), but the end state hasn't yet been"
-                  + " generated (will keep polling)...",
+              """
+                  Successfully connected to the Olympia node ({}), \
+                  but the end state hasn't yet been generated (will keep polling)...""",
               network.getLogicalName());
         }
 
@@ -233,19 +236,22 @@ public final class OlympiaGenesisService {
 
   private RuntimeException signatureErr() {
     return new RuntimeException(
-        "Successfully connected to the Olympia node, but the signature received along with the"
-            + " response doesn't match a configured value. Double check that the"
-            + " genesis.olympia.node_public_key configuration matches the public key of Olympia"
-            + " node running at "
-            + olympiaGenesisConfig.nodeCoreApiUrl());
+        String.format(
+            """
+            Successfully connected to the Olympia node, but the signature received along with the \
+            response doesn't match a configured value. Double check that the \
+            genesis.olympia.node_public_key configuration matches the public key of Olympia \
+            node running at %s""",
+            olympiaGenesisConfig.nodeCoreApiUrl()));
   }
 
   private RuntimeException hashMismatchErr(String hashType) {
     return new RuntimeException(
-        "Successfully connected to the Olympia node, but the "
-            + hashType
-            + " hash received along with the response "
-            + "doesn't match expected value.");
+        String.format(
+            """
+            Successfully connected to the Olympia node, but the %s hash \
+            received along with the response doesn't match expected value.""",
+            hashType));
   }
 
   public void shutdown() {

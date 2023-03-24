@@ -101,8 +101,9 @@ public final class OlympiaEndStateApiClient {
       throw new RuntimeException(
           // Shouldn't really happen, nodeCoreApiUrl is verified earlier
           String.format(
-              "Failed to create OlympiaEndStateApiClient. Invalid endStateApiUrl (coreApiUrl=%s"
-                  + " path=%s)",
+              """
+                  Failed to create OlympiaEndStateApiClient. \
+                  Invalid endStateApiUrl (coreApiUrl=%s path=%s)""",
               config.nodeCoreApiUrl(), END_STATE_API_PATH));
     }
     this.network = network;

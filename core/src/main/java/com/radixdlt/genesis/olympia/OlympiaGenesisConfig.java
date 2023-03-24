@@ -79,8 +79,9 @@ public record OlympiaGenesisConfig(URL nodeCoreApiUrl, ECDSASecp256k1PublicKey n
       nodeCoreApiUrl = new URL(properties.get(String.format("%s.node_core_api_url", PREFIX)));
     } catch (MalformedURLException e) {
       throw new RuntimeException(
-          "Olympia genesis was configured, but the provided genesis.olympia.node_core_api_url value"
-              + " is invalid (expected a valid URL)",
+          """
+              Olympia genesis was configured, but the provided genesis.olympia.node_core_api_url value \
+              is invalid (expected a valid URL)""",
           e);
     }
 
@@ -91,8 +92,9 @@ public record OlympiaGenesisConfig(URL nodeCoreApiUrl, ECDSASecp256k1PublicKey n
               properties.get(String.format("%s.node_public_key", PREFIX)));
     } catch (Exception e) {
       throw new RuntimeException(
-          "Olympia genesis was configured, but the provided genesis.olympia.node_public_key value"
-              + " is invalid (expected hex-encoded ECDSA public key)",
+          """
+              Olympia genesis was configured, but the provided genesis.olympia.node_public_key value \
+              is invalid (expected hex-encoded ECDSA public key)""",
           e);
     }
 

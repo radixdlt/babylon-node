@@ -120,6 +120,8 @@ public final class RadixNode {
 
     final var network = readNetworkFromProperties();
     final var fixedNetworkGenesis = network.fixedGenesis().map(this::resolveFixedNetworkGenesis);
+    final var useOlympiaFlagIsSet =
+        properties.get("genesis.use_olympia", BooleanUtils::parseBoolean).orElse(false);
 
     final var nodeBootStopwatch = Stopwatch.createStarted();
 
@@ -180,25 +182,26 @@ public final class RadixNode {
       // transaction matches the properties and/or network.
       final var executedTx = executedGenesisTransaction.get();
 
-      if (!configuredGenesisTransaction.stream()
-          .allMatch(configuredGenesisTx -> configuredGenesisTx.equals(executedTx))) {
+      if (isPresentAndNotEqual(executedTx, configuredGenesisTransaction)) {
         throw new RuntimeException(
             String.format(
-                "Configured genesis transaction (%s) doesn't match the genesis transaction that has"
-                    + " already been executed and stored on ledger (%s). Make sure your"
-                    + " `network.genesis_txn` and/or `network.genesis_file` config options are set"
-                    + " correctly (or clear them).",
+                """
+                    Configured genesis transaction (%s) doesn't match the genesis transaction that has \
+                    already been executed and stored on ledger (%s). Make sure your \
+                    `network.genesis_txn` and/or `network.genesis_file` config options are set \
+                    correctly (or clear them).""",
                 configuredGenesisTransaction.orElseThrow().getPayloadHash(),
                 executedTx.getPayloadHash()));
       }
 
-      if (!fixedNetworkGenesis.stream().allMatch(networkTxn -> networkTxn.equals(executedTx))) {
+      if (isPresentAndNotEqual(executedTx, fixedNetworkGenesis)) {
         throw new RuntimeException(
             String.format(
-                "Network %s has a genesis transaction (%s) that doesn't match the genesis"
-                    + " transaction that has previously been executed and stored on ledger (%s)."
-                    + " Make sure your configuration is correct (`network.id` and/or"
-                    + " `db.location`).",
+                """
+                    Network %s has a genesis transaction (%s) that doesn't match the genesis" \
+                    transaction that has previously been executed and stored on ledger (%s)." \
+                    Make sure your configuration is correct (`network.id` and/or" \
+                    `db.location`).""",
                 network.getLogicalName(),
                 fixedNetworkGenesis.orElseThrow().getPayloadHash(),
                 executedTx.getPayloadHash()));
@@ -210,13 +213,14 @@ public final class RadixNode {
       // So just need to make sure it matches the fixed network genesis
       final var genesisTx = configuredGenesisTransaction.get();
 
-      if (!fixedNetworkGenesis.stream().allMatch(networkTxn -> networkTxn.equals(genesisTx))) {
+      if (isPresentAndNotEqual(genesisTx, fixedNetworkGenesis)) {
         throw new RuntimeException(
             String.format(
-                "Network %s has a genesis transaction (%s) that doesn't match "
-                    + "the genesis transaction that has been configured for this node (%s). "
-                    + "Make sure your configuration is correct (`network.id` and/or "
-                    + "`network.genesis_txn` and/or `network.genesis_file`).",
+                """
+                    Network %s has a genesis transaction (%s) that doesn't match \
+                    the genesis transaction that has been configured for this node (%s). \
+                    Make sure your configuration is correct (`network.id` and/or \
+                    `network.genesis_txn` and/or `network.genesis_file`).""",
                 network.getLogicalName(),
                 fixedNetworkGenesis.orElseThrow().getPayloadHash(),
                 genesisTx.getPayloadHash()));
@@ -227,17 +231,18 @@ public final class RadixNode {
       // There's nothing on ledger and/or properties, so we can just use
       // the network fixed genesis without any additional validation
       startRadixNodeModule(fixedNetworkGenesis.get(), nodeBootStopwatch);
-    } else if (properties.get("genesis.use_olympia", BooleanUtils::parseBoolean).orElse(false)) {
+    } else if (useOlympiaFlagIsSet) {
       // No genesis transaction known beforehand was found, but we can get it from Olympia...
       startOlympiaGenesisModule(network, nodeBootStopwatch);
     } else {
       // TODO(post-babylon): remove Olympia ref from the message below
       throw new RuntimeException(
-          "Radix node couldn't be initialized. No genesis transaction has been configured. Make"
-              + " sure that either `network.genesis_txn` or `network.genesis_file` is set or that"
-              + " you're using a well known network (`network.id`). If you're running an Olympia"
-              + " node consider using it as your genesis source (`genesis.use_olympia`). Refer to"
-              + " documentation for more details.");
+          """
+              Radix node couldn't be initialized. No genesis transaction has been configured. Make \
+              sure that either `network.genesis_txn` or `network.genesis_file` is set or that \
+              you're using a well known network (`network.id`). If you're running an Olympia \
+              node consider using it as your genesis source (`genesis.use_olympia`). Refer to \
+              documentation for more details.""");
     }
   }
 
@@ -263,8 +268,9 @@ public final class RadixNode {
                 nodeBootStopwatch, genesisFromOlympiaInjector, genesisData),
         ex -> {
           log.warn(
-              "Radix node couldn't be initialized. The Olympia-based genesis was configured but"
-                  + " an error occurred.",
+              """
+                  Radix node couldn't be initialized. The Olympia-based genesis was configured but \
+                  an error occurred.""",
               ex);
           this.shutdown();
         });
@@ -273,8 +279,9 @@ public final class RadixNode {
   private void proceedWithGenesisFromOlympia(
       Stopwatch nodeBootStopwatch, Injector genesisFromOlympiaInjector, GenesisData genesisData) {
     log.info(
-        "Genesis data has been successfully received from the Olympia node ({} accounts,"
-            + " {} validators). Initializing the Babylon node...",
+        """
+            Genesis data has been successfully received from the Olympia node \
+            ({} accounts, {} validators). Initializing the Babylon node...""",
         genesisData.accountXrdAllocations().size(),
         genesisData.validatorSetAndStakeOwners().size());
     cleanupOlympiaGenesisModule(genesisFromOlympiaInjector);
@@ -380,8 +387,9 @@ public final class RadixNode {
             .orElseThrow(
                 () ->
                     new IllegalStateException(
-                        "Can't determine the Radix network (missing or invalid network.id"
-                            + " config)."));
+                        """
+                        Can't determine the Radix network \
+                        (missing or invalid network.id config)."""));
 
     if (networkId <= 0) {
       throw new IllegalStateException(
@@ -398,5 +406,10 @@ public final class RadixNode {
   private RawLedgerTransaction resolveFixedNetworkGenesis(FixedNetworkGenesis fixedNetworkGenesis) {
     // TODO: read genesis data from resources or parse from raw bytes
     throw new RuntimeException("Not implemented yet");
+  }
+
+  /** @return true if `valueToCheck` is present and not equal to `baseValue` */
+  private <T> boolean isPresentAndNotEqual(T baseValue, Optional<T> valueToCheck) {
+    return valueToCheck.isPresent() && !valueToCheck.get().equals(baseValue);
   }
 }
