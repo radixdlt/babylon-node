@@ -252,7 +252,9 @@ impl Delta for ProcessedTransactionReceipt {
     fn weight(&self) -> usize {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => {
-                commit.local_receipt.on_ledger.substate_changes.len()
+                let ledger_receipt = &commit.local_receipt.on_ledger;
+                ledger_receipt.substate_changes.len()
+                    + ledger_receipt.application_events.len()
                     + commit.hash_structures_diff.weight()
             }
             ProcessedTransactionReceipt::Reject(_) | ProcessedTransactionReceipt::Abort(_) => 0,

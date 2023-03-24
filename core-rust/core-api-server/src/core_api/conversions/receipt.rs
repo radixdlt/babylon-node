@@ -18,7 +18,8 @@ use radix_engine_interface::blueprints::resource::ResourceType;
 use std::collections::{BTreeMap, HashMap};
 
 use state_manager::{
-    ChangeAction, DeletedSubstateVersion, DetailedTransactionOutcome, LocalTransactionReceipt,
+    ApplicationEvent, ChangeAction, DeletedSubstateVersion, DetailedTransactionOutcome,
+    LocalTransactionReceipt,
 };
 
 pub fn to_api_receipt(
@@ -153,7 +154,7 @@ pub fn to_api_receipt(
         .on_ledger
         .application_events
         .into_iter()
-        .map(|event| to_api_event(context, event.0, event.1))
+        .map(|event| to_api_event(context, event))
         .collect::<Result<Vec<_>, _>>()?;
 
     let api_output = output
@@ -249,10 +250,9 @@ pub fn to_api_next_epoch(
 #[tracing::instrument(skip_all)]
 pub fn to_api_event(
     context: &MappingContext,
-    type_id: EventTypeIdentifier,
-    data: Vec<u8>,
+    event: ApplicationEvent,
 ) -> Result<models::Event, MappingError> {
-    let EventTypeIdentifier(emitter, local_type_index) = type_id;
+    let EventTypeIdentifier(emitter, local_type_index) = event.type_id;
     Ok(models::Event {
         _type: Box::new(models::EventTypeIdentifier {
             emitter: Some(match emitter {
@@ -272,7 +272,7 @@ pub fn to_api_event(
             }),
             local_type_index: Box::new(to_api_local_type_index(context, &local_type_index)?),
         }),
-        data: Box::new(to_api_sbor_data_from_bytes(context, &data)?),
+        data: Box::new(to_api_sbor_data_from_bytes(context, &event.data)?),
     })
 }
 
