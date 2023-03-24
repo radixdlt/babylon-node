@@ -1359,16 +1359,13 @@ components:
       type: object
       required:
         - emitter
-        - schema_local_index
+        - local_type_index
       properties:
         emitter:
           $ref: "#/components/schemas/EventEmitterIdentifier"
-        schema_local_index:
-          type: integer
-          format: int64
-          minimum: 0
-          maximum: 4294967295
-          description: An integer between `0` and `2^32 - 1`, specifying the index of the event's type definition within the emitter's schema.
+        local_type_index:
+          $ref: '#/components/schemas/LocalTypeIndex'
+          description: The type index of the event's type in the context of the emitter's SBOR schema.
     EventEmitterIdentifierType:
       type: string
       enum:

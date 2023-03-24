@@ -14,7 +14,7 @@ use radix_engine::{
 
 use radix_engine_interface::api::types::{Emitter, EventTypeIdentifier};
 use radix_engine_interface::blueprints::resource::ResourceType;
-use sbor::LocalTypeIndex;
+
 use std::collections::{BTreeMap, HashMap};
 
 use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
@@ -241,10 +241,6 @@ pub fn to_api_event(
     let EventTypeIdentifier(emitter, local_type_index) = type_id;
     Ok(models::Event {
         _type: Box::new(models::EventTypeIdentifier {
-            schema_local_index: match local_type_index {
-                LocalTypeIndex::SchemaLocalIndex(index) => index.try_into().unwrap(),
-                LocalTypeIndex::WellKnown(index) => panic!("events should not use well-known types (index {index} was used by emitter {emitter:?})"),
-            },
             emitter: Some(match emitter {
                 Emitter::Function(node_id, node_module_id, blueprint_name) => {
                     models::EventEmitterIdentifier::FunctionEventEmitterIdentifier {
@@ -260,6 +256,7 @@ pub fn to_api_event(
                     }
                 }
             }),
+            local_type_index: Box::new(to_api_local_type_index(context, &local_type_index)?),
         }),
         data: Box::new(to_api_sbor_data_from_bytes(context, &data)?),
     })

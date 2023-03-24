@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.EventEmitterIdentifier;
+import com.radixdlt.api.core.generated.models.LocalTypeIndex;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -34,15 +35,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @ApiModel(description = "Identifier of a specific event schema.")
 @JsonPropertyOrder({
   EventTypeIdentifier.JSON_PROPERTY_EMITTER,
-  EventTypeIdentifier.JSON_PROPERTY_SCHEMA_LOCAL_INDEX
+  EventTypeIdentifier.JSON_PROPERTY_LOCAL_TYPE_INDEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class EventTypeIdentifier {
   public static final String JSON_PROPERTY_EMITTER = "emitter";
   private EventEmitterIdentifier emitter;
 
-  public static final String JSON_PROPERTY_SCHEMA_LOCAL_INDEX = "schema_local_index";
-  private Long schemaLocalIndex;
+  public static final String JSON_PROPERTY_LOCAL_TYPE_INDEX = "local_type_index";
+  private LocalTypeIndex localTypeIndex;
 
   public EventTypeIdentifier() { 
   }
@@ -73,31 +74,29 @@ public class EventTypeIdentifier {
   }
 
 
-  public EventTypeIdentifier schemaLocalIndex(Long schemaLocalIndex) {
-    this.schemaLocalIndex = schemaLocalIndex;
+  public EventTypeIdentifier localTypeIndex(LocalTypeIndex localTypeIndex) {
+    this.localTypeIndex = localTypeIndex;
     return this;
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;2^32 - 1&#x60;, specifying the index of the event&#39;s type definition within the emitter&#39;s schema.
-   * minimum: 0
-   * maximum: 4294967295
-   * @return schemaLocalIndex
+   * Get localTypeIndex
+   * @return localTypeIndex
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `2^32 - 1`, specifying the index of the event's type definition within the emitter's schema.")
-  @JsonProperty(JSON_PROPERTY_SCHEMA_LOCAL_INDEX)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getSchemaLocalIndex() {
-    return schemaLocalIndex;
+  public LocalTypeIndex getLocalTypeIndex() {
+    return localTypeIndex;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_SCHEMA_LOCAL_INDEX)
+  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSchemaLocalIndex(Long schemaLocalIndex) {
-    this.schemaLocalIndex = schemaLocalIndex;
+  public void setLocalTypeIndex(LocalTypeIndex localTypeIndex) {
+    this.localTypeIndex = localTypeIndex;
   }
 
 
@@ -114,12 +113,12 @@ public class EventTypeIdentifier {
     }
     EventTypeIdentifier eventTypeIdentifier = (EventTypeIdentifier) o;
     return Objects.equals(this.emitter, eventTypeIdentifier.emitter) &&
-        Objects.equals(this.schemaLocalIndex, eventTypeIdentifier.schemaLocalIndex);
+        Objects.equals(this.localTypeIndex, eventTypeIdentifier.localTypeIndex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(emitter, schemaLocalIndex);
+    return Objects.hash(emitter, localTypeIndex);
   }
 
   @Override
@@ -127,7 +126,7 @@ public class EventTypeIdentifier {
     StringBuilder sb = new StringBuilder();
     sb.append("class EventTypeIdentifier {\n");
     sb.append("    emitter: ").append(toIndentedString(emitter)).append("\n");
-    sb.append("    schemaLocalIndex: ").append(toIndentedString(schemaLocalIndex)).append("\n");
+    sb.append("    localTypeIndex: ").append(toIndentedString(localTypeIndex)).append("\n");
     sb.append("}");
     return sb.toString();
   }
