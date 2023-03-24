@@ -66,9 +66,9 @@ use super::{ReadableHashStructuresStore, ReadableStateTreeStore};
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::{
-    AccumulatorHash, CommittedTransactionIdentifiers, EpochTransactionIdentifiers, LedgerHashes,
-    LedgerPayloadHash, LedgerTransactionOutcome, LedgerTransactionReceipt, NextEpoch,
-    ReceiptTreeHash, StateHash, SubstateChanges, TransactionTreeHash,
+    AccumulatorHash, CommittedTransactionIdentifiers, DetailedTransactionOutcome,
+    EpochTransactionIdentifiers, LedgerHashes, LedgerPayloadHash, LocalTransactionReceipt,
+    NextEpoch, ReceiptTreeHash, StateHash, SubstateChanges, TransactionTreeHash,
 };
 use radix_engine::transaction::{
     AbortResult, CommitResult, RejectResult, TransactionExecutionTrace, TransactionReceipt,
@@ -89,7 +89,7 @@ pub enum ProcessedTransactionReceipt {
 }
 
 pub struct ProcessedCommitResult {
-    pub ledger_receipt: LedgerTransactionReceipt,
+    pub local_receipt: LocalTransactionReceipt,
     pub hash_structures_diff: HashStructuresDiff,
 }
 
@@ -156,12 +156,12 @@ impl ProcessedCommitResult {
         let transaction_accumulator_hash = parent_transaction_identifiers
             .accumulator_hash
             .accumulate(transaction_hash);
-        let ledger_receipt = LedgerTransactionReceipt::from((commit_result, execution_trace));
+        let local_receipt = LocalTransactionReceipt::from((commit_result, execution_trace));
         let store = hash_update_context.store;
         let state_hash_tree_diff = Self::compute_state_tree_update(
             store,
             parent_transaction_identifiers.state_version,
-            &ledger_receipt.substate_changes,
+            &local_receipt.on_ledger.substate_changes,
         );
         let transaction_tree_diff = Self::compute_accu_tree_update::<S, TransactionTreeHash>(
             store,
@@ -170,12 +170,13 @@ impl ProcessedCommitResult {
             parent_transaction_identifiers.state_version,
             TransactionTreeHash::from_raw_bytes(transaction_hash.into_bytes()),
         );
+        let consensus_receipt = local_receipt.on_ledger.get_consensus_receipt();
         let receipt_tree_diff = Self::compute_accu_tree_update::<S, ReceiptTreeHash>(
             store,
             epoch_transaction_identifiers.state_version,
             epoch_transaction_identifiers.receipt_hash,
             parent_transaction_identifiers.state_version,
-            ReceiptTreeHash::from_raw_bytes(ledger_receipt.get_hash().into_bytes()),
+            ReceiptTreeHash::from_raw_bytes(consensus_receipt.get_hash().into_bytes()),
         );
         let ledger_hashes = LedgerHashes {
             state_root: state_hash_tree_diff.new_root,
@@ -183,7 +184,7 @@ impl ProcessedCommitResult {
             receipt_root: *receipt_tree_diff.slice.root(),
         };
         Self {
-            ledger_receipt,
+            local_receipt,
             hash_structures_diff: HashStructuresDiff {
                 transaction_accumulator_hash,
                 ledger_hashes,
@@ -195,13 +196,15 @@ impl ProcessedCommitResult {
     }
 
     pub fn check_success(&self, description: &str) {
-        if let LedgerTransactionOutcome::Failure(error) = &self.ledger_receipt.outcome {
+        let local_detailed_outcome = &self.local_receipt.local_execution.outcome;
+        if let DetailedTransactionOutcome::Failure(error) = local_detailed_outcome {
             panic!("Transaction ({description}) was failed: {error:?}")
         }
     }
 
     pub fn next_epoch(&self) -> Option<NextEpoch> {
-        self.ledger_receipt
+        self.local_receipt
+            .local_execution
             .next_epoch
             .as_ref()
             .map(|next_epoch_result| NextEpoch::from(next_epoch_result.clone()))

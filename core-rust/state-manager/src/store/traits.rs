@@ -64,7 +64,7 @@
 
 use crate::staging::StateHashTreeDiff;
 use crate::transaction::LedgerTransaction;
-use crate::{CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt};
+use crate::{CommittedTransactionIdentifiers, LedgerProof, LocalTransactionReceipt};
 pub use commit::*;
 pub use proofs::*;
 pub use substate::*;
@@ -73,7 +73,7 @@ pub use vertex::*;
 
 pub type CommittedTransactionBundle = (
     LedgerTransaction,
-    LedgerTransactionReceipt,
+    LocalTransactionReceipt,
     CommittedTransactionIdentifiers,
 );
 
@@ -96,7 +96,7 @@ pub mod substate {
 pub mod transactions {
     use crate::store::traits::CommittedTransactionBundle;
     use crate::transaction::LedgerTransaction;
-    use crate::{CommittedTransactionIdentifiers, LedgerTransactionReceipt};
+    use crate::{CommittedTransactionIdentifiers, LocalTransactionReceipt};
 
     pub trait QueryableTransactionStore {
         fn get_committed_transaction_bundles(
@@ -110,7 +110,7 @@ pub mod transactions {
         fn get_committed_transaction_receipt(
             &self,
             state_version: u64,
-        ) -> Option<LedgerTransactionReceipt>;
+        ) -> Option<LocalTransactionReceipt>;
 
         fn get_committed_transaction_identifiers(
             &self,
@@ -186,6 +186,12 @@ pub mod commit {
                     self.deleted_ids.insert(id.clone());
                 }
             }
+        }
+    }
+
+    impl Default for SubstateStoreUpdate {
+        fn default() -> Self {
+            Self::new()
         }
     }
 

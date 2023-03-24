@@ -17,43 +17,41 @@ use radix_engine_interface::blueprints::resource::ResourceType;
 
 use std::collections::{BTreeMap, HashMap};
 
-use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
+use state_manager::{DeletedSubstateVersion, DetailedTransactionOutcome, LocalTransactionReceipt};
 
 pub fn to_api_receipt(
     context: &MappingContext,
-    receipt: LedgerTransactionReceipt,
+    receipt: LocalTransactionReceipt,
 ) -> Result<models::TransactionReceipt, MappingError> {
-    let (status, output, error_message) = match receipt.outcome {
-        LedgerTransactionOutcome::Success(output) => {
+    let (status, output, error_message) = match receipt.local_execution.outcome {
+        DetailedTransactionOutcome::Success(output) => {
             (models::TransactionStatus::Succeeded, Some(output), None)
         }
-        LedgerTransactionOutcome::Failure(error) => (
+        DetailedTransactionOutcome::Failure(error) => (
             models::TransactionStatus::Failed,
             None,
             Some(format!("{error:?}")),
         ),
     };
 
-    let substate_changes = receipt.substate_changes;
-
+    let state_update_summary = receipt.local_execution.state_update_summary;
     let mut new_global_entities = Vec::new();
-    let mut created = Vec::new();
 
-    for package_address in receipt.state_update_summary.new_packages {
+    for package_address in state_update_summary.new_packages {
         new_global_entities.push(to_global_entity_reference(
             context,
             &package_address.into(),
         )?);
     }
 
-    for component_address in receipt.state_update_summary.new_components {
+    for component_address in state_update_summary.new_components {
         new_global_entities.push(to_global_entity_reference(
             context,
             &component_address.into(),
         )?);
     }
 
-    for resource_address in receipt.state_update_summary.new_resources {
+    for resource_address in state_update_summary.new_resources {
         new_global_entities.push(to_global_entity_reference(
             context,
             &resource_address.into(),
@@ -113,10 +111,12 @@ pub fn to_api_receipt(
             .collect()
     }
 
-    for (id, output) in filter_out_incorrect_vault_substates_for_gateway(substate_changes.created) {
-        let substate_version = to_api_new_substate_version(context, (id.clone(), output))?;
-        created.push(substate_version)
-    }
+    let substate_changes = receipt.on_ledger.substate_changes;
+
+    let created = filter_out_incorrect_vault_substates_for_gateway(substate_changes.created)
+        .into_iter()
+        .map(|substate_kv| to_api_new_substate_version(context, substate_kv))
+        .collect::<Result<Vec<_>, _>>()?;
 
     let updated = substate_changes
         .updated
@@ -137,13 +137,18 @@ pub fn to_api_receipt(
         new_global_entities,
     };
 
+    let api_fee_summary = to_api_fee_summary(
+        context,
+        &receipt.local_execution.fee_summary,
+        &receipt.local_execution.fee_payments,
+    )?;
+
     let api_events = receipt
+        .on_ledger
         .application_events
         .into_iter()
         .map(|event| to_api_event(context, event.0, event.1))
         .collect::<Result<Vec<_>, _>>()?;
-
-    let api_fee_summary = to_api_fee_summary(context, &receipt.fee_summary, &receipt.fee_payments)?;
 
     let api_output = output
         .map(|output| {
@@ -155,6 +160,7 @@ pub fn to_api_receipt(
         .transpose()?;
 
     let next_epoch = receipt
+        .local_execution
         .next_epoch
         .map(|next_epoch| to_api_next_epoch(context, next_epoch))
         .transpose()?
