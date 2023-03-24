@@ -4,14 +4,17 @@ use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine::system::kernel_modules::costing::{FeeSummary, RoyaltyRecipient};
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::indexmap::IndexMap;
-use radix_engine::types::{Address, ObjectId, RENodeId, SubstateOffset, VaultOffset};
+use radix_engine::types::{
+    Address, ComponentAddress, ObjectId, RENodeId, SubstateOffset, VaultOffset,
+};
 use radix_engine::{
     ledger::OutputValue,
     types::{hash, scrypto_encode, Decimal, SubstateId},
 };
 
+use radix_engine_interface::api::types::{Emitter, EventTypeIdentifier};
 use radix_engine_interface::blueprints::resource::ResourceType;
-use radix_engine_interface::data::scrypto::model::ComponentAddress;
+
 use std::collections::{BTreeMap, HashMap};
 
 use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
@@ -134,28 +137,34 @@ pub fn to_api_receipt(
         new_global_entities,
     };
 
+    let api_events = receipt
+        .application_events
+        .into_iter()
+        .map(|event| to_api_event(context, event.0, event.1))
+        .collect::<Result<Vec<_>, _>>()?;
+
     let api_fee_summary = to_api_fee_summary(context, &receipt.fee_summary, &receipt.fee_payments)?;
 
-    let api_output = match output {
-        Some(output) => Some(
+    let api_output = output
+        .map(|output| {
             output
                 .into_iter()
                 .map(|line_output| to_api_sbor_data_from_bytes(context, &line_output))
-                .collect::<Result<Vec<_>, _>>()?,
-        ),
-        None => None,
-    };
+                .collect::<Result<Vec<_>, _>>()
+        })
+        .transpose()?;
 
-    let next_epoch = if let Some(next_epoch) = receipt.next_epoch {
-        Some(Box::new(to_api_next_epoch(context, next_epoch)?))
-    } else {
-        None
-    };
+    let next_epoch = receipt
+        .next_epoch
+        .map(|next_epoch| to_api_next_epoch(context, next_epoch))
+        .transpose()?
+        .map(Box::new);
 
     Ok(models::TransactionReceipt {
         status,
         fee_summary: Some(Box::new(api_fee_summary)),
         state_updates: Box::new(api_state_updates),
+        events: Some(api_events),
         output: api_output,
         next_epoch,
         error_message,
@@ -221,6 +230,36 @@ pub fn to_api_next_epoch(
     };
 
     Ok(next_epoch)
+}
+
+#[tracing::instrument(skip_all)]
+pub fn to_api_event(
+    context: &MappingContext,
+    type_id: EventTypeIdentifier,
+    data: Vec<u8>,
+) -> Result<models::Event, MappingError> {
+    let EventTypeIdentifier(emitter, local_type_index) = type_id;
+    Ok(models::Event {
+        _type: Box::new(models::EventTypeIdentifier {
+            emitter: Some(match emitter {
+                Emitter::Function(node_id, node_module_id, blueprint_name) => {
+                    models::EventEmitterIdentifier::FunctionEventEmitterIdentifier {
+                        entity: Box::new(to_api_entity_reference(node_id)?),
+                        module_type: node_module_id_to_module_type(&node_module_id),
+                        blueprint_name,
+                    }
+                }
+                Emitter::Method(node_id, node_module_id) => {
+                    models::EventEmitterIdentifier::MethodEventEmitterIdentifier {
+                        entity: Box::new(to_api_entity_reference(node_id)?),
+                        module_type: node_module_id_to_module_type(&node_module_id),
+                    }
+                }
+            }),
+            local_type_index: Box::new(to_api_local_type_index(context, &local_type_index)?),
+        }),
+        data: Box::new(to_api_sbor_data_from_bytes(context, &data)?),
+    })
 }
 
 #[tracing::instrument(skip_all)]

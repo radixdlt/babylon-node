@@ -22,84 +22,86 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EntityType;
+import com.radixdlt.api.core.generated.models.EventEmitterIdentifier;
+import com.radixdlt.api.core.generated.models.LocalTypeIndex;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * EntityReference
+ * Identifier of a specific event schema.
  */
+@ApiModel(description = "Identifier of a specific event schema.")
 @JsonPropertyOrder({
-  EntityReference.JSON_PROPERTY_ENTITY_TYPE,
-  EntityReference.JSON_PROPERTY_ENTITY_ID_HEX
+  EventTypeIdentifier.JSON_PROPERTY_EMITTER,
+  EventTypeIdentifier.JSON_PROPERTY_LOCAL_TYPE_INDEX
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class EntityReference {
-  public static final String JSON_PROPERTY_ENTITY_TYPE = "entity_type";
-  private EntityType entityType;
+public class EventTypeIdentifier {
+  public static final String JSON_PROPERTY_EMITTER = "emitter";
+  private EventEmitterIdentifier emitter;
 
-  public static final String JSON_PROPERTY_ENTITY_ID_HEX = "entity_id_hex";
-  private String entityIdHex;
+  public static final String JSON_PROPERTY_LOCAL_TYPE_INDEX = "local_type_index";
+  private LocalTypeIndex localTypeIndex;
 
-  public EntityReference() { 
+  public EventTypeIdentifier() { 
   }
 
-  public EntityReference entityType(EntityType entityType) {
-    this.entityType = entityType;
+  public EventTypeIdentifier emitter(EventEmitterIdentifier emitter) {
+    this.emitter = emitter;
     return this;
   }
 
    /**
-   * Get entityType
-   * @return entityType
+   * Get emitter
+   * @return emitter
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ENTITY_TYPE)
+  @JsonProperty(JSON_PROPERTY_EMITTER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityType getEntityType() {
-    return entityType;
+  public EventEmitterIdentifier getEmitter() {
+    return emitter;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ENTITY_TYPE)
+  @JsonProperty(JSON_PROPERTY_EMITTER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEntityType(EntityType entityType) {
-    this.entityType = entityType;
+  public void setEmitter(EventEmitterIdentifier emitter) {
+    this.emitter = emitter;
   }
 
 
-  public EntityReference entityIdHex(String entityIdHex) {
-    this.entityIdHex = entityIdHex;
+  public EventTypeIdentifier localTypeIndex(LocalTypeIndex localTypeIndex) {
+    this.localTypeIndex = localTypeIndex;
     return this;
   }
 
    /**
-   * The hex-encoded bytes of the entity id.
-   * @return entityIdHex
+   * Get localTypeIndex
+   * @return localTypeIndex
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded bytes of the entity id.")
-  @JsonProperty(JSON_PROPERTY_ENTITY_ID_HEX)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getEntityIdHex() {
-    return entityIdHex;
+  public LocalTypeIndex getLocalTypeIndex() {
+    return localTypeIndex;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ENTITY_ID_HEX)
+  @JsonProperty(JSON_PROPERTY_LOCAL_TYPE_INDEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEntityIdHex(String entityIdHex) {
-    this.entityIdHex = entityIdHex;
+  public void setLocalTypeIndex(LocalTypeIndex localTypeIndex) {
+    this.localTypeIndex = localTypeIndex;
   }
 
 
   /**
-   * Return true if this EntityReference object is equal to o.
+   * Return true if this EventTypeIdentifier object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -109,22 +111,22 @@ public class EntityReference {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EntityReference entityReference = (EntityReference) o;
-    return Objects.equals(this.entityType, entityReference.entityType) &&
-        Objects.equals(this.entityIdHex, entityReference.entityIdHex);
+    EventTypeIdentifier eventTypeIdentifier = (EventTypeIdentifier) o;
+    return Objects.equals(this.emitter, eventTypeIdentifier.emitter) &&
+        Objects.equals(this.localTypeIndex, eventTypeIdentifier.localTypeIndex);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityType, entityIdHex);
+    return Objects.hash(emitter, localTypeIndex);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class EntityReference {\n");
-    sb.append("    entityType: ").append(toIndentedString(entityType)).append("\n");
-    sb.append("    entityIdHex: ").append(toIndentedString(entityIdHex)).append("\n");
+    sb.append("class EventTypeIdentifier {\n");
+    sb.append("    emitter: ").append(toIndentedString(emitter)).append("\n");
+    sb.append("    localTypeIndex: ").append(toIndentedString(localTypeIndex)).append("\n");
     sb.append("}");
     return sb.toString();
   }
