@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LtsAccountBalanceUpdates;
+import com.radixdlt.api.core.generated.models.LtsAccountFungibleBalanceChanges;
 import com.radixdlt.api.core.generated.models.LtsCommittedTransactionStatus;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -36,21 +36,21 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @ApiModel(description = "The transaction execution receipt")
 @JsonPropertyOrder({
-  LtsBasicOutcome.JSON_PROPERTY_STATUS,
-  LtsBasicOutcome.JSON_PROPERTY_ACCOUNT_BALANCE_UPDATES
+  LtsFungibleOutcome.JSON_PROPERTY_STATUS,
+  LtsFungibleOutcome.JSON_PROPERTY_ACCOUNT_FUNGIBLE_BALANCE_CHANGES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LtsBasicOutcome {
+public class LtsFungibleOutcome {
   public static final String JSON_PROPERTY_STATUS = "status";
   private LtsCommittedTransactionStatus status;
 
-  public static final String JSON_PROPERTY_ACCOUNT_BALANCE_UPDATES = "account_balance_updates";
-  private List<LtsAccountBalanceUpdates> accountBalanceUpdates = new ArrayList<>();
+  public static final String JSON_PROPERTY_ACCOUNT_FUNGIBLE_BALANCE_CHANGES = "account_fungible_balance_changes";
+  private List<LtsAccountFungibleBalanceChanges> accountFungibleBalanceChanges = new ArrayList<>();
 
-  public LtsBasicOutcome() { 
+  public LtsFungibleOutcome() { 
   }
 
-  public LtsBasicOutcome status(LtsCommittedTransactionStatus status) {
+  public LtsFungibleOutcome status(LtsCommittedTransactionStatus status) {
     this.status = status;
     return this;
   }
@@ -76,39 +76,39 @@ public class LtsBasicOutcome {
   }
 
 
-  public LtsBasicOutcome accountBalanceUpdates(List<LtsAccountBalanceUpdates> accountBalanceUpdates) {
-    this.accountBalanceUpdates = accountBalanceUpdates;
+  public LtsFungibleOutcome accountFungibleBalanceChanges(List<LtsAccountFungibleBalanceChanges> accountFungibleBalanceChanges) {
+    this.accountFungibleBalanceChanges = accountFungibleBalanceChanges;
     return this;
   }
 
-  public LtsBasicOutcome addAccountBalanceUpdatesItem(LtsAccountBalanceUpdates accountBalanceUpdatesItem) {
-    this.accountBalanceUpdates.add(accountBalanceUpdatesItem);
+  public LtsFungibleOutcome addAccountFungibleBalanceChangesItem(LtsAccountFungibleBalanceChanges accountFungibleBalanceChangesItem) {
+    this.accountFungibleBalanceChanges.add(accountFungibleBalanceChangesItem);
     return this;
   }
 
    /**
    * A list containing all account balance updates
-   * @return accountBalanceUpdates
+   * @return accountFungibleBalanceChanges
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "A list containing all account balance updates")
-  @JsonProperty(JSON_PROPERTY_ACCOUNT_BALANCE_UPDATES)
+  @JsonProperty(JSON_PROPERTY_ACCOUNT_FUNGIBLE_BALANCE_CHANGES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<LtsAccountBalanceUpdates> getAccountBalanceUpdates() {
-    return accountBalanceUpdates;
+  public List<LtsAccountFungibleBalanceChanges> getAccountFungibleBalanceChanges() {
+    return accountFungibleBalanceChanges;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ACCOUNT_BALANCE_UPDATES)
+  @JsonProperty(JSON_PROPERTY_ACCOUNT_FUNGIBLE_BALANCE_CHANGES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccountBalanceUpdates(List<LtsAccountBalanceUpdates> accountBalanceUpdates) {
-    this.accountBalanceUpdates = accountBalanceUpdates;
+  public void setAccountFungibleBalanceChanges(List<LtsAccountFungibleBalanceChanges> accountFungibleBalanceChanges) {
+    this.accountFungibleBalanceChanges = accountFungibleBalanceChanges;
   }
 
 
   /**
-   * Return true if this LtsBasicOutcome object is equal to o.
+   * Return true if this LtsFungibleOutcome object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -118,22 +118,22 @@ public class LtsBasicOutcome {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LtsBasicOutcome ltsBasicOutcome = (LtsBasicOutcome) o;
-    return Objects.equals(this.status, ltsBasicOutcome.status) &&
-        Objects.equals(this.accountBalanceUpdates, ltsBasicOutcome.accountBalanceUpdates);
+    LtsFungibleOutcome ltsFungibleOutcome = (LtsFungibleOutcome) o;
+    return Objects.equals(this.status, ltsFungibleOutcome.status) &&
+        Objects.equals(this.accountFungibleBalanceChanges, ltsFungibleOutcome.accountFungibleBalanceChanges);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(status, accountBalanceUpdates);
+    return Objects.hash(status, accountFungibleBalanceChanges);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LtsBasicOutcome {\n");
+    sb.append("class LtsFungibleOutcome {\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
-    sb.append("    accountBalanceUpdates: ").append(toIndentedString(accountBalanceUpdates)).append("\n");
+    sb.append("    accountFungibleBalanceChanges: ").append(toIndentedString(accountFungibleBalanceChanges)).append("\n");
     sb.append("}");
     return sb.toString();
   }

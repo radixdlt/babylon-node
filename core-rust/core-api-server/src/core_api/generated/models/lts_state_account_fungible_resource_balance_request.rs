@@ -12,20 +12,24 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LtsStateAccountAllResourceBalancesRequest {
+pub struct LtsStateAccountFungibleResourceBalanceRequest {
     /// The logical name of the network
     #[serde(rename = "network")]
     pub network: String,
     /// The Bech32m-encoded human readable version of the account's address
     #[serde(rename = "account_address")]
     pub account_address: String,
+    /// The Bech32m-encoded human readable version of the resource address
+    #[serde(rename = "fungible_resource_address")]
+    pub fungible_resource_address: String,
 }
 
-impl LtsStateAccountAllResourceBalancesRequest {
-    pub fn new(network: String, account_address: String) -> LtsStateAccountAllResourceBalancesRequest {
-        LtsStateAccountAllResourceBalancesRequest {
+impl LtsStateAccountFungibleResourceBalanceRequest {
+    pub fn new(network: String, account_address: String, fungible_resource_address: String) -> LtsStateAccountFungibleResourceBalanceRequest {
+        LtsStateAccountFungibleResourceBalanceRequest {
             network,
             account_address,
+            fungible_resource_address,
         }
     }
 }

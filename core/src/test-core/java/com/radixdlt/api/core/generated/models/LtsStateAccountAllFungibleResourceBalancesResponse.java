@@ -22,35 +22,37 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.FungibleResourceAmount;
+import com.radixdlt.api.core.generated.models.LtsFungibleResourceBalance;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * LtsStateAccountResourceBalanceResponse
+ * LtsStateAccountAllFungibleResourceBalancesResponse
  */
 @JsonPropertyOrder({
-  LtsStateAccountResourceBalanceResponse.JSON_PROPERTY_STATE_VERSION,
-  LtsStateAccountResourceBalanceResponse.JSON_PROPERTY_ACCOUNT_ADDRESS,
-  LtsStateAccountResourceBalanceResponse.JSON_PROPERTY_RESOURCE_BALANCE
+  LtsStateAccountAllFungibleResourceBalancesResponse.JSON_PROPERTY_STATE_VERSION,
+  LtsStateAccountAllFungibleResourceBalancesResponse.JSON_PROPERTY_ACCOUNT_ADDRESS,
+  LtsStateAccountAllFungibleResourceBalancesResponse.JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LtsStateAccountResourceBalanceResponse {
+public class LtsStateAccountAllFungibleResourceBalancesResponse {
   public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
   private Long stateVersion;
 
   public static final String JSON_PROPERTY_ACCOUNT_ADDRESS = "account_address";
   private String accountAddress;
 
-  public static final String JSON_PROPERTY_RESOURCE_BALANCE = "resource_balance";
-  private FungibleResourceAmount resourceBalance;
+  public static final String JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCES = "fungible_resource_balances";
+  private List<LtsFungibleResourceBalance> fungibleResourceBalances = new ArrayList<>();
 
-  public LtsStateAccountResourceBalanceResponse() { 
+  public LtsStateAccountAllFungibleResourceBalancesResponse() { 
   }
 
-  public LtsStateAccountResourceBalanceResponse stateVersion(Long stateVersion) {
+  public LtsStateAccountAllFungibleResourceBalancesResponse stateVersion(Long stateVersion) {
     this.stateVersion = stateVersion;
     return this;
   }
@@ -78,7 +80,7 @@ public class LtsStateAccountResourceBalanceResponse {
   }
 
 
-  public LtsStateAccountResourceBalanceResponse accountAddress(String accountAddress) {
+  public LtsStateAccountAllFungibleResourceBalancesResponse accountAddress(String accountAddress) {
     this.accountAddress = accountAddress;
     return this;
   }
@@ -104,34 +106,39 @@ public class LtsStateAccountResourceBalanceResponse {
   }
 
 
-  public LtsStateAccountResourceBalanceResponse resourceBalance(FungibleResourceAmount resourceBalance) {
-    this.resourceBalance = resourceBalance;
+  public LtsStateAccountAllFungibleResourceBalancesResponse fungibleResourceBalances(List<LtsFungibleResourceBalance> fungibleResourceBalances) {
+    this.fungibleResourceBalances = fungibleResourceBalances;
+    return this;
+  }
+
+  public LtsStateAccountAllFungibleResourceBalancesResponse addFungibleResourceBalancesItem(LtsFungibleResourceBalance fungibleResourceBalancesItem) {
+    this.fungibleResourceBalances.add(fungibleResourceBalancesItem);
     return this;
   }
 
    /**
-   * Get resourceBalance
-   * @return resourceBalance
+   * A list containing all resource balances for the requested account.
+   * @return fungibleResourceBalances
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_RESOURCE_BALANCE)
+  @ApiModelProperty(required = true, value = "A list containing all resource balances for the requested account.")
+  @JsonProperty(JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public FungibleResourceAmount getResourceBalance() {
-    return resourceBalance;
+  public List<LtsFungibleResourceBalance> getFungibleResourceBalances() {
+    return fungibleResourceBalances;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RESOURCE_BALANCE)
+  @JsonProperty(JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResourceBalance(FungibleResourceAmount resourceBalance) {
-    this.resourceBalance = resourceBalance;
+  public void setFungibleResourceBalances(List<LtsFungibleResourceBalance> fungibleResourceBalances) {
+    this.fungibleResourceBalances = fungibleResourceBalances;
   }
 
 
   /**
-   * Return true if this LtsStateAccountResourceBalanceResponse object is equal to o.
+   * Return true if this LtsStateAccountAllFungibleResourceBalancesResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -141,24 +148,24 @@ public class LtsStateAccountResourceBalanceResponse {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LtsStateAccountResourceBalanceResponse ltsStateAccountResourceBalanceResponse = (LtsStateAccountResourceBalanceResponse) o;
-    return Objects.equals(this.stateVersion, ltsStateAccountResourceBalanceResponse.stateVersion) &&
-        Objects.equals(this.accountAddress, ltsStateAccountResourceBalanceResponse.accountAddress) &&
-        Objects.equals(this.resourceBalance, ltsStateAccountResourceBalanceResponse.resourceBalance);
+    LtsStateAccountAllFungibleResourceBalancesResponse ltsStateAccountAllFungibleResourceBalancesResponse = (LtsStateAccountAllFungibleResourceBalancesResponse) o;
+    return Objects.equals(this.stateVersion, ltsStateAccountAllFungibleResourceBalancesResponse.stateVersion) &&
+        Objects.equals(this.accountAddress, ltsStateAccountAllFungibleResourceBalancesResponse.accountAddress) &&
+        Objects.equals(this.fungibleResourceBalances, ltsStateAccountAllFungibleResourceBalancesResponse.fungibleResourceBalances);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(stateVersion, accountAddress, resourceBalance);
+    return Objects.hash(stateVersion, accountAddress, fungibleResourceBalances);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LtsStateAccountResourceBalanceResponse {\n");
+    sb.append("class LtsStateAccountAllFungibleResourceBalancesResponse {\n");
     sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
     sb.append("    accountAddress: ").append(toIndentedString(accountAddress)).append("\n");
-    sb.append("    resourceBalance: ").append(toIndentedString(resourceBalance)).append("\n");
+    sb.append("    fungibleResourceBalances: ").append(toIndentedString(fungibleResourceBalances)).append("\n");
     sb.append("}");
     return sb.toString();
   }

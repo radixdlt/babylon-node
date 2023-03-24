@@ -28,24 +28,28 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * LtsStateAccountAllResourceBalancesRequest
+ * LtsStateAccountFungibleResourceBalanceRequest
  */
 @JsonPropertyOrder({
-  LtsStateAccountAllResourceBalancesRequest.JSON_PROPERTY_NETWORK,
-  LtsStateAccountAllResourceBalancesRequest.JSON_PROPERTY_ACCOUNT_ADDRESS
+  LtsStateAccountFungibleResourceBalanceRequest.JSON_PROPERTY_NETWORK,
+  LtsStateAccountFungibleResourceBalanceRequest.JSON_PROPERTY_ACCOUNT_ADDRESS,
+  LtsStateAccountFungibleResourceBalanceRequest.JSON_PROPERTY_FUNGIBLE_RESOURCE_ADDRESS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LtsStateAccountAllResourceBalancesRequest {
+public class LtsStateAccountFungibleResourceBalanceRequest {
   public static final String JSON_PROPERTY_NETWORK = "network";
   private String network;
 
   public static final String JSON_PROPERTY_ACCOUNT_ADDRESS = "account_address";
   private String accountAddress;
 
-  public LtsStateAccountAllResourceBalancesRequest() { 
+  public static final String JSON_PROPERTY_FUNGIBLE_RESOURCE_ADDRESS = "fungible_resource_address";
+  private String fungibleResourceAddress;
+
+  public LtsStateAccountFungibleResourceBalanceRequest() { 
   }
 
-  public LtsStateAccountAllResourceBalancesRequest network(String network) {
+  public LtsStateAccountFungibleResourceBalanceRequest network(String network) {
     this.network = network;
     return this;
   }
@@ -71,7 +75,7 @@ public class LtsStateAccountAllResourceBalancesRequest {
   }
 
 
-  public LtsStateAccountAllResourceBalancesRequest accountAddress(String accountAddress) {
+  public LtsStateAccountFungibleResourceBalanceRequest accountAddress(String accountAddress) {
     this.accountAddress = accountAddress;
     return this;
   }
@@ -97,8 +101,34 @@ public class LtsStateAccountAllResourceBalancesRequest {
   }
 
 
+  public LtsStateAccountFungibleResourceBalanceRequest fungibleResourceAddress(String fungibleResourceAddress) {
+    this.fungibleResourceAddress = fungibleResourceAddress;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable version of the resource address
+   * @return fungibleResourceAddress
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
+  @JsonProperty(JSON_PROPERTY_FUNGIBLE_RESOURCE_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getFungibleResourceAddress() {
+    return fungibleResourceAddress;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_FUNGIBLE_RESOURCE_ADDRESS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setFungibleResourceAddress(String fungibleResourceAddress) {
+    this.fungibleResourceAddress = fungibleResourceAddress;
+  }
+
+
   /**
-   * Return true if this LtsStateAccountAllResourceBalancesRequest object is equal to o.
+   * Return true if this LtsStateAccountFungibleResourceBalanceRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -108,22 +138,24 @@ public class LtsStateAccountAllResourceBalancesRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LtsStateAccountAllResourceBalancesRequest ltsStateAccountAllResourceBalancesRequest = (LtsStateAccountAllResourceBalancesRequest) o;
-    return Objects.equals(this.network, ltsStateAccountAllResourceBalancesRequest.network) &&
-        Objects.equals(this.accountAddress, ltsStateAccountAllResourceBalancesRequest.accountAddress);
+    LtsStateAccountFungibleResourceBalanceRequest ltsStateAccountFungibleResourceBalanceRequest = (LtsStateAccountFungibleResourceBalanceRequest) o;
+    return Objects.equals(this.network, ltsStateAccountFungibleResourceBalanceRequest.network) &&
+        Objects.equals(this.accountAddress, ltsStateAccountFungibleResourceBalanceRequest.accountAddress) &&
+        Objects.equals(this.fungibleResourceAddress, ltsStateAccountFungibleResourceBalanceRequest.fungibleResourceAddress);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, accountAddress);
+    return Objects.hash(network, accountAddress, fungibleResourceAddress);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LtsStateAccountAllResourceBalancesRequest {\n");
+    sb.append("class LtsStateAccountFungibleResourceBalanceRequest {\n");
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
     sb.append("    accountAddress: ").append(toIndentedString(accountAddress)).append("\n");
+    sb.append("    fungibleResourceAddress: ").append(toIndentedString(fungibleResourceAddress)).append("\n");
     sb.append("}");
     return sb.toString();
   }

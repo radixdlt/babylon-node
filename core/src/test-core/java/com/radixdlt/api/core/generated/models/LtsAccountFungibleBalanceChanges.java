@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LtsResourceBalanceUpdate;
+import com.radixdlt.api.core.generated.models.LtsFungibleResourceBalanceChange;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -31,24 +31,24 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * LtsAccountBalanceUpdates
+ * LtsAccountFungibleBalanceChanges
  */
 @JsonPropertyOrder({
-  LtsAccountBalanceUpdates.JSON_PROPERTY_ACCOUNT_ADDRESS,
-  LtsAccountBalanceUpdates.JSON_PROPERTY_RESOURCE_BALANCE_UPDATES
+  LtsAccountFungibleBalanceChanges.JSON_PROPERTY_ACCOUNT_ADDRESS,
+  LtsAccountFungibleBalanceChanges.JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCE_CHANGES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LtsAccountBalanceUpdates {
+public class LtsAccountFungibleBalanceChanges {
   public static final String JSON_PROPERTY_ACCOUNT_ADDRESS = "account_address";
   private String accountAddress;
 
-  public static final String JSON_PROPERTY_RESOURCE_BALANCE_UPDATES = "resource_balance_updates";
-  private List<LtsResourceBalanceUpdate> resourceBalanceUpdates = new ArrayList<>();
+  public static final String JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCE_CHANGES = "fungible_resource_balance_changes";
+  private List<LtsFungibleResourceBalanceChange> fungibleResourceBalanceChanges = new ArrayList<>();
 
-  public LtsAccountBalanceUpdates() { 
+  public LtsAccountFungibleBalanceChanges() { 
   }
 
-  public LtsAccountBalanceUpdates accountAddress(String accountAddress) {
+  public LtsAccountFungibleBalanceChanges accountAddress(String accountAddress) {
     this.accountAddress = accountAddress;
     return this;
   }
@@ -74,39 +74,39 @@ public class LtsAccountBalanceUpdates {
   }
 
 
-  public LtsAccountBalanceUpdates resourceBalanceUpdates(List<LtsResourceBalanceUpdate> resourceBalanceUpdates) {
-    this.resourceBalanceUpdates = resourceBalanceUpdates;
+  public LtsAccountFungibleBalanceChanges fungibleResourceBalanceChanges(List<LtsFungibleResourceBalanceChange> fungibleResourceBalanceChanges) {
+    this.fungibleResourceBalanceChanges = fungibleResourceBalanceChanges;
     return this;
   }
 
-  public LtsAccountBalanceUpdates addResourceBalanceUpdatesItem(LtsResourceBalanceUpdate resourceBalanceUpdatesItem) {
-    this.resourceBalanceUpdates.add(resourceBalanceUpdatesItem);
+  public LtsAccountFungibleBalanceChanges addFungibleResourceBalanceChangesItem(LtsFungibleResourceBalanceChange fungibleResourceBalanceChangesItem) {
+    this.fungibleResourceBalanceChanges.add(fungibleResourceBalanceChangesItem);
     return this;
   }
 
    /**
-   * Get resourceBalanceUpdates
-   * @return resourceBalanceUpdates
+   * Get fungibleResourceBalanceChanges
+   * @return fungibleResourceBalanceChanges
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_RESOURCE_BALANCE_UPDATES)
+  @JsonProperty(JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCE_CHANGES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<LtsResourceBalanceUpdate> getResourceBalanceUpdates() {
-    return resourceBalanceUpdates;
+  public List<LtsFungibleResourceBalanceChange> getFungibleResourceBalanceChanges() {
+    return fungibleResourceBalanceChanges;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RESOURCE_BALANCE_UPDATES)
+  @JsonProperty(JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCE_CHANGES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResourceBalanceUpdates(List<LtsResourceBalanceUpdate> resourceBalanceUpdates) {
-    this.resourceBalanceUpdates = resourceBalanceUpdates;
+  public void setFungibleResourceBalanceChanges(List<LtsFungibleResourceBalanceChange> fungibleResourceBalanceChanges) {
+    this.fungibleResourceBalanceChanges = fungibleResourceBalanceChanges;
   }
 
 
   /**
-   * Return true if this LtsAccountBalanceUpdates object is equal to o.
+   * Return true if this LtsAccountFungibleBalanceChanges object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -116,22 +116,22 @@ public class LtsAccountBalanceUpdates {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LtsAccountBalanceUpdates ltsAccountBalanceUpdates = (LtsAccountBalanceUpdates) o;
-    return Objects.equals(this.accountAddress, ltsAccountBalanceUpdates.accountAddress) &&
-        Objects.equals(this.resourceBalanceUpdates, ltsAccountBalanceUpdates.resourceBalanceUpdates);
+    LtsAccountFungibleBalanceChanges ltsAccountFungibleBalanceChanges = (LtsAccountFungibleBalanceChanges) o;
+    return Objects.equals(this.accountAddress, ltsAccountFungibleBalanceChanges.accountAddress) &&
+        Objects.equals(this.fungibleResourceBalanceChanges, ltsAccountFungibleBalanceChanges.fungibleResourceBalanceChanges);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(accountAddress, resourceBalanceUpdates);
+    return Objects.hash(accountAddress, fungibleResourceBalanceChanges);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LtsAccountBalanceUpdates {\n");
+    sb.append("class LtsAccountFungibleBalanceChanges {\n");
     sb.append("    accountAddress: ").append(toIndentedString(accountAddress)).append("\n");
-    sb.append("    resourceBalanceUpdates: ").append(toIndentedString(resourceBalanceUpdates)).append("\n");
+    sb.append("    fungibleResourceBalanceChanges: ").append(toIndentedString(fungibleResourceBalanceChanges)).append("\n");
     sb.append("}");
     return sb.toString();
   }

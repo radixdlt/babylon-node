@@ -22,60 +22,63 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.LtsFungibleResourceBalance;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * LtsStreamEntityTransactionsBasicOutcomesRequest
+ * LtsStateAccountFungibleResourceBalanceResponse
  */
 @JsonPropertyOrder({
-  LtsStreamEntityTransactionsBasicOutcomesRequest.JSON_PROPERTY_NETWORK,
-  LtsStreamEntityTransactionsBasicOutcomesRequest.JSON_PROPERTY_ACCOUNT_ADDRESS,
-  LtsStreamEntityTransactionsBasicOutcomesRequest.JSON_PROPERTY_RESOURCE_ADDRESS
+  LtsStateAccountFungibleResourceBalanceResponse.JSON_PROPERTY_STATE_VERSION,
+  LtsStateAccountFungibleResourceBalanceResponse.JSON_PROPERTY_ACCOUNT_ADDRESS,
+  LtsStateAccountFungibleResourceBalanceResponse.JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LtsStreamEntityTransactionsBasicOutcomesRequest {
-  public static final String JSON_PROPERTY_NETWORK = "network";
-  private String network;
+public class LtsStateAccountFungibleResourceBalanceResponse {
+  public static final String JSON_PROPERTY_STATE_VERSION = "state_version";
+  private Long stateVersion;
 
   public static final String JSON_PROPERTY_ACCOUNT_ADDRESS = "account_address";
   private String accountAddress;
 
-  public static final String JSON_PROPERTY_RESOURCE_ADDRESS = "resource_address";
-  private String resourceAddress;
+  public static final String JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCE = "fungible_resource_balance";
+  private LtsFungibleResourceBalance fungibleResourceBalance;
 
-  public LtsStreamEntityTransactionsBasicOutcomesRequest() { 
+  public LtsStateAccountFungibleResourceBalanceResponse() { 
   }
 
-  public LtsStreamEntityTransactionsBasicOutcomesRequest network(String network) {
-    this.network = network;
+  public LtsStateAccountFungibleResourceBalanceResponse stateVersion(Long stateVersion) {
+    this.stateVersion = stateVersion;
     return this;
   }
 
    /**
-   * The logical name of the network
-   * @return network
+   * An integer between &#x60;1&#x60; and &#x60;10^13&#x60;, giving the state version at which the account was read. 
+   * minimum: 1
+   * maximum: 100000000000000
+   * @return stateVersion
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(example = "{{network}}", required = true, value = "The logical name of the network")
-  @JsonProperty(JSON_PROPERTY_NETWORK)
+  @ApiModelProperty(required = true, value = "An integer between `1` and `10^13`, giving the state version at which the account was read. ")
+  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getNetwork() {
-    return network;
+  public Long getStateVersion() {
+    return stateVersion;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_NETWORK)
+  @JsonProperty(JSON_PROPERTY_STATE_VERSION)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setNetwork(String network) {
-    this.network = network;
+  public void setStateVersion(Long stateVersion) {
+    this.stateVersion = stateVersion;
   }
 
 
-  public LtsStreamEntityTransactionsBasicOutcomesRequest accountAddress(String accountAddress) {
+  public LtsStateAccountFungibleResourceBalanceResponse accountAddress(String accountAddress) {
     this.accountAddress = accountAddress;
     return this;
   }
@@ -101,34 +104,34 @@ public class LtsStreamEntityTransactionsBasicOutcomesRequest {
   }
 
 
-  public LtsStreamEntityTransactionsBasicOutcomesRequest resourceAddress(String resourceAddress) {
-    this.resourceAddress = resourceAddress;
+  public LtsStateAccountFungibleResourceBalanceResponse fungibleResourceBalance(LtsFungibleResourceBalance fungibleResourceBalance) {
+    this.fungibleResourceBalance = fungibleResourceBalance;
     return this;
   }
 
    /**
-   * The Bech32m-encoded human readable version of the resource address
-   * @return resourceAddress
+   * Get fungibleResourceBalance
+   * @return fungibleResourceBalance
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
-  @JsonProperty(JSON_PROPERTY_RESOURCE_ADDRESS)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getResourceAddress() {
-    return resourceAddress;
+  public LtsFungibleResourceBalance getFungibleResourceBalance() {
+    return fungibleResourceBalance;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_RESOURCE_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResourceAddress(String resourceAddress) {
-    this.resourceAddress = resourceAddress;
+  public void setFungibleResourceBalance(LtsFungibleResourceBalance fungibleResourceBalance) {
+    this.fungibleResourceBalance = fungibleResourceBalance;
   }
 
 
   /**
-   * Return true if this LtsStreamEntityTransactionsBasicOutcomesRequest object is equal to o.
+   * Return true if this LtsStateAccountFungibleResourceBalanceResponse object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -138,24 +141,24 @@ public class LtsStreamEntityTransactionsBasicOutcomesRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LtsStreamEntityTransactionsBasicOutcomesRequest ltsStreamEntityTransactionsBasicOutcomesRequest = (LtsStreamEntityTransactionsBasicOutcomesRequest) o;
-    return Objects.equals(this.network, ltsStreamEntityTransactionsBasicOutcomesRequest.network) &&
-        Objects.equals(this.accountAddress, ltsStreamEntityTransactionsBasicOutcomesRequest.accountAddress) &&
-        Objects.equals(this.resourceAddress, ltsStreamEntityTransactionsBasicOutcomesRequest.resourceAddress);
+    LtsStateAccountFungibleResourceBalanceResponse ltsStateAccountFungibleResourceBalanceResponse = (LtsStateAccountFungibleResourceBalanceResponse) o;
+    return Objects.equals(this.stateVersion, ltsStateAccountFungibleResourceBalanceResponse.stateVersion) &&
+        Objects.equals(this.accountAddress, ltsStateAccountFungibleResourceBalanceResponse.accountAddress) &&
+        Objects.equals(this.fungibleResourceBalance, ltsStateAccountFungibleResourceBalanceResponse.fungibleResourceBalance);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, accountAddress, resourceAddress);
+    return Objects.hash(stateVersion, accountAddress, fungibleResourceBalance);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LtsStreamEntityTransactionsBasicOutcomesRequest {\n");
-    sb.append("    network: ").append(toIndentedString(network)).append("\n");
+    sb.append("class LtsStateAccountFungibleResourceBalanceResponse {\n");
+    sb.append("    stateVersion: ").append(toIndentedString(stateVersion)).append("\n");
     sb.append("    accountAddress: ").append(toIndentedString(accountAddress)).append("\n");
-    sb.append("    resourceAddress: ").append(toIndentedString(resourceAddress)).append("\n");
+    sb.append("    fungibleResourceBalance: ").append(toIndentedString(fungibleResourceBalance)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -12,23 +12,23 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LtsCommittedTransactionBasicOutcome {
+pub struct LtsCommittedTransactionFungibleOutcome {
     /// An integer between `1` and `10^13`, giving the resultant state version after the transaction has been committed
     #[serde(rename = "state_version")]
     pub state_version: i64,
     /// The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger. This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator. 
     #[serde(rename = "accumulator_hash")]
     pub accumulator_hash: String,
-    #[serde(rename = "basic_outcome")]
-    pub basic_outcome: Box<crate::core_api::generated::models::LtsBasicOutcome>,
+    #[serde(rename = "fungible_outcome")]
+    pub fungible_outcome: Box<crate::core_api::generated::models::LtsFungibleOutcome>,
 }
 
-impl LtsCommittedTransactionBasicOutcome {
-    pub fn new(state_version: i64, accumulator_hash: String, basic_outcome: crate::core_api::generated::models::LtsBasicOutcome) -> LtsCommittedTransactionBasicOutcome {
-        LtsCommittedTransactionBasicOutcome {
+impl LtsCommittedTransactionFungibleOutcome {
+    pub fn new(state_version: i64, accumulator_hash: String, fungible_outcome: crate::core_api::generated::models::LtsFungibleOutcome) -> LtsCommittedTransactionFungibleOutcome {
+        LtsCommittedTransactionFungibleOutcome {
             state_version,
             accumulator_hash,
-            basic_outcome: Box::new(basic_outcome),
+            fungible_outcome: Box::new(fungible_outcome),
         }
     }
 }

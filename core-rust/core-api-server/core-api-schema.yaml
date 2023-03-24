@@ -152,9 +152,9 @@ tags:
     x-displayName: Stream Endpoints
     description: To query the transaction stream of the ledger.
 paths:
-##################
+##################################################
 # Long Term Support backwards compatible Sub-API #
-##################
+##################################################
   "/lts/transaction/construction":
     post:
       summary: Get Transaction Construction
@@ -250,7 +250,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicErrorResponse"
-  "/lts/state/account-all-resource-balances":
+  "/lts/state/account-all-fungible-resource-balances":
     post:
       summary: Get All Resources Balances
       description: Returns balances for all resources associated with an account
@@ -262,21 +262,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/LtsStateAccountAllResourceBalancesRequest"
+              $ref: "#/components/schemas/LtsStateAccountAllFungibleResourceBalancesRequest"
       responses:
         '200':
           description: Account all resource balances response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LtsStateAccountAllResourceBalancesResponse"
+                $ref: "#/components/schemas/LtsStateAccountAllFungibleResourceBalancesResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicErrorResponse"
-  "/lts/state/account-resource-balance":
+  "/lts/state/account-fungible-resource-balance":
     post:
       summary: Get Resource Balance
       description: Returns balance of the resource for an account
@@ -288,47 +288,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/LtsStateAccountResourceBalanceRequest"
+              $ref: "#/components/schemas/LtsStateAccountFungibleResourceBalanceRequest"
       responses:
         '200':
           description: Account resource balance response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LtsStateAccountResourceBalanceResponse"
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BasicErrorResponse"
-  "/lts/stream/entity-transactions-basic-outcomes":
-    post:
-      summary: Get Entity Transactions Basic Outcomes
-      description: |
-        TODO
-      tags:
-        - LTS
-        - Transaction
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/LtsStreamEntityTransactionsBasicOutcomesRequest"
-      responses:
-        '200':
-          description: Transaction status response
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/LtsStreamEntityTransactionsBasicOutcomesResponse"
-        '400':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BasicErrorResponse"
+                $ref: "#/components/schemas/LtsStateAccountFungibleResourceBalanceResponse"
         '500':
           description: Server error
           content:
@@ -3012,9 +2979,9 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TransactionPayloadStatus"
-###################################
+####################################
 # REQUEST: /lts/transaction/submit #
-###################################
+####################################
     LtsTransactionSubmitRequest:
       type: object
       required:
@@ -3125,10 +3092,10 @@ components:
               description: |
                 An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be permanently rejected.
                 Only present if the rejection isn't permanent.
-####################################################
-# REQUEST: /lts/state/account-all-resource-balances #
-####################################################
-    LtsStateAccountAllResourceBalancesRequest:
+##############################################################
+# REQUEST: /lts/state/account-all-fungible-resource-balances #
+##############################################################
+    LtsStateAccountAllFungibleResourceBalancesRequest:
       type: object
       required:
         - network
@@ -3139,12 +3106,12 @@ components:
         account_address:
           type: string
           description: The Bech32m-encoded human readable version of the account's address
-    LtsStateAccountAllResourceBalancesResponse:
+    LtsStateAccountAllFungibleResourceBalancesResponse:
       type: object
       required:
         - state_version
         - account_address
-        - resource_balances
+        - fungible_resource_balances
       properties:
         state_version:
           type: integer
@@ -3156,34 +3123,48 @@ components:
         account_address:
           type: string
           description: The Bech32m-encoded human readable version of the account's address
-        resource_balances:
+        fungible_resource_balances:
           description: A list containing all resource balances for the requested account.
           type: array
           items:
-            $ref: "#/components/schemas/FungibleResourceAmount"
-################################################
-# REQUEST: /lts/state/account-resource-balances #
-################################################
-    LtsStateAccountResourceBalanceRequest:
+            $ref: "#/components/schemas/LtsFungibleResourceBalance"
+    LtsFungibleResourceBalance:
+      type: object
+      required:
+        - fungible_resource_address
+        - amount
+      properties:
+        fungible_resource_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the fungible resource's global address
+        amount:
+          type: string
+          description: |
+            The string-encoded decimal representing the amount of the fungible resource.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+#########################################################
+# REQUEST: /lts/state/account-fungible-resource-balance #
+#########################################################
+    LtsStateAccountFungibleResourceBalanceRequest:
       type: object
       required:
         - network
         - account_address
-        - resource_address
+        - fungible_resource_address
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         account_address:
           type: string
           description: The Bech32m-encoded human readable version of the account's address
-        resource_address:
+        fungible_resource_address:
           $ref: "#/components/schemas/ResourceAddress"
-    LtsStateAccountResourceBalanceResponse:
+    LtsStateAccountFungibleResourceBalanceResponse:
       type: object
       required:
         - state_version
         - account_address
-        - resource_balance
+        - fungible_resource_balance
       properties:
         state_version:
           type: integer
@@ -3195,127 +3176,8 @@ components:
         account_address:
           type: string
           description: The Bech32m-encoded human readable version of the account's address
-        resource_balance:
-          $ref: "#/components/schemas/FungibleResourceAmount"
-##########################################################
-# REQUEST: /lts/stream/entity-transactions-basic-outcomes #
-##########################################################
-    LtsStreamEntityTransactionsBasicOutcomesRequest:
-      type: object
-      required:
-        - network
-        - account_address
-        - resource_address
-      properties:
-        network:
-          $ref: "#/components/schemas/NetworkIdentifier"
-        account_address:
-          type: string
-          description: The Bech32m-encoded human readable version of the account's address
-        resource_address:
-          $ref: "#/components/schemas/ResourceAddress"
-    LtsStreamEntityTransactionsBasicOutcomesResponse:
-      type: object
-      required:
-        - from_state_version
-        - count
-        - max_ledger_state_version
-        - committed_transaction_basic_outcomes
-      properties:
-        from_state_version:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 100000000000000
-          description: |
-            An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response (if any).
-            This matches the `from_state_version` in the request.
-        count:
-          type: integer
-          format: int32
-          minimum: 0
-          maximum: 10000
-          description: An integer between `0` and `10000`, giving the total count of transactions in the returned response
-        max_ledger_state_version:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 100000000000000
-          description: An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.
-        committed_transaction_basic_outcomes:
-          description: A committed transaction basic outcomes list starting from the `from_state_version` (inclusive).
-          type: array
-          items:
-            $ref: "#/components/schemas/LtsCommittedTransactionBasicOutcome"
-    LtsCommittedTransactionBasicOutcome:
-      type: object
-      required:
-        - state_version
-        - accumulator_hash
-        - basic_outcome
-      properties:
-        state_version:
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 100000000000000
-          description: An integer between `1` and `10^13`, giving the resultant state version after the transaction has been committed
-        accumulator_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: |
-            The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger.
-            This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator.
-        basic_outcome:
-          $ref: "#/components/schemas/LtsBasicOutcome"
-    LtsCommittedTransactionStatus:
-      type: string
-      enum:
-        - Succeeded
-        - Failed
-      description: The status of the transaction
-    LtsBasicOutcome:
-      type: object
-      description: The transaction execution receipt
-      required:
-        - status
-        - account_balance_updates
-      properties:
-        status:
-          $ref: "#/components/schemas/LtsCommittedTransactionStatus"
-        account_balance_updates:
-          description: A list containing all account balance updates
-          type: array
-          items:
-            $ref: "#/components/schemas/LtsAccountBalanceUpdates"
-    LtsAccountBalanceUpdates:
-      type: object
-      required:
-        - account_address
-        - resource_balance_updates
-      properties:
-        account_address:
-          type: string
-          description: The Bech32m-encoded human readable version of the account's address
-        resource_balance_updates:
-          type: array
-          items:
-            $ref: "#/components/schemas/LtsResourceBalanceUpdate"
-    LtsResourceBalanceUpdate:
-      type: object
-      required:
-        - resource_address
-        - balance_delta
-      properties:
-        resource_address:
-          type: string
-          description: The Bech32m-encoded human readable version of the resource's global address
-        balance_delta:
-          type: string
-          description: |
-            The string-encoded decimal representing the amount of fee in XRD paid by this vault.
-            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+        fungible_resource_balance:
+          $ref: "#/components/schemas/LtsFungibleResourceBalance"
 ###################################################
 # REQUEST: /lts/stream/transactions-basic-outcomes #
 ###################################################
@@ -3371,7 +3233,76 @@ components:
           description: A committed transaction basic outcomes list starting from the `from_state_version` (inclusive).
           type: array
           items:
-            $ref: "#/components/schemas/LtsCommittedTransactionBasicOutcome"
+            $ref: "#/components/schemas/LtsCommittedTransactionFungibleOutcome"
+    LtsCommittedTransactionFungibleOutcome:
+      type: object
+      required:
+        - state_version
+        - accumulator_hash
+        - fungible_outcome
+      properties:
+        state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: An integer between `1` and `10^13`, giving the resultant state version after the transaction has been committed
+        accumulator_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: |
+            The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger.
+            This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator.
+        fungible_outcome:
+          $ref: "#/components/schemas/LtsFungibleOutcome"
+    LtsCommittedTransactionStatus:
+      type: string
+      enum:
+        - Succeeded
+        - Failed
+      description: The status of the transaction
+    LtsFungibleOutcome:
+      type: object
+      description: The transaction execution receipt
+      required:
+        - status
+        - account_fungible_balance_changes
+      properties:
+        status:
+          $ref: "#/components/schemas/LtsCommittedTransactionStatus"
+        account_fungible_balance_changes:
+          description: A list containing all account balance updates
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsAccountFungibleBalanceChanges"
+    LtsAccountFungibleBalanceChanges:
+      type: object
+      required:
+        - account_address
+        - fungible_resource_balance_changes
+      properties:
+        account_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the account's address
+        fungible_resource_balance_changes:
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsFungibleResourceBalanceChange"
+    LtsFungibleResourceBalanceChange:
+      type: object
+      required:
+        - fungible_resource_address
+        - balance_change
+      properties:
+        fungible_resource_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the fungible resource's global address
+        balance_change:
+          type: string
+          description: |
+            The string-encoded decimal representing the amount of change for the fungible resource.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################

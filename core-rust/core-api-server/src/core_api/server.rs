@@ -109,20 +109,16 @@ pub async fn create_server<F>(
             post(lts::handle_rc_transaction_submit),
         )
         .route(
-            "/lts/stream/entity-transactions-basic-outcomes",
-            post(lts::handle_rc_stream_entity_transactions_basic_outcomes),
-        )
-        .route(
             "/lts/stream/transactions-basic-outcomes",
             post(lts::handle_rc_stream_transactions_basic_outcomes),
         )
         .route(
-            "/lts/state/account-all-resource-balances",
-            post(lts::handle_rc_state_account_all_resource_balances),
+            "/lts/state/account-all-fungible-resource-balances",
+            post(lts::handle_rc_state_account_all_fungible_resource_balances),
         )
         .route(
-            "/lts/state/account-resource-balances",
-            post(lts::handle_rc_state_account_resource_balance),
+            "/lts/state/account-fungible-resource-balances",
+            post(lts::handle_rc_state_account_fungible_resource_balance),
         )
         // Status Sub-API
         .route(

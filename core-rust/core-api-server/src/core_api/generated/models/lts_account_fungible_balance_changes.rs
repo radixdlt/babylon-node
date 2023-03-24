@@ -12,24 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LtsStreamEntityTransactionsBasicOutcomesRequest {
-    /// The logical name of the network
-    #[serde(rename = "network")]
-    pub network: String,
+pub struct LtsAccountFungibleBalanceChanges {
     /// The Bech32m-encoded human readable version of the account's address
     #[serde(rename = "account_address")]
     pub account_address: String,
-    /// The Bech32m-encoded human readable version of the resource address
-    #[serde(rename = "resource_address")]
-    pub resource_address: String,
+    #[serde(rename = "fungible_resource_balance_changes")]
+    pub fungible_resource_balance_changes: Vec<crate::core_api::generated::models::LtsFungibleResourceBalanceChange>,
 }
 
-impl LtsStreamEntityTransactionsBasicOutcomesRequest {
-    pub fn new(network: String, account_address: String, resource_address: String) -> LtsStreamEntityTransactionsBasicOutcomesRequest {
-        LtsStreamEntityTransactionsBasicOutcomesRequest {
-            network,
+impl LtsAccountFungibleBalanceChanges {
+    pub fn new(account_address: String, fungible_resource_balance_changes: Vec<crate::core_api::generated::models::LtsFungibleResourceBalanceChange>) -> LtsAccountFungibleBalanceChanges {
+        LtsAccountFungibleBalanceChanges {
             account_address,
-            resource_address,
+            fungible_resource_balance_changes,
         }
     }
 }

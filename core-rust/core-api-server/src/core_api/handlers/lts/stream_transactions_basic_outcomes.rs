@@ -60,7 +60,8 @@ fn handle_rc_stream_transactions_basic_outcomes_internal(
                 identifiers,
             )?)
         })
-        .collect::<Result<Vec<models::LtsCommittedTransactionBasicOutcome>, ResponseError<()>>>()?;
+        .collect::<Result<Vec<models::LtsCommittedTransactionFungibleOutcome>, ResponseError<()>>>(
+        )?;
 
     let start_state_version = if api_txns.is_empty() {
         0
@@ -91,38 +92,43 @@ pub fn to_api_lts_comitted_transaction_basic_outcome(
     context: &MappingContext,
     receipt: LedgerTransactionReceipt,
     identifiers: CommittedTransactionIdentifiers,
-) -> Result<models::LtsCommittedTransactionBasicOutcome, MappingError> {
-    Ok(models::LtsCommittedTransactionBasicOutcome {
+) -> Result<models::LtsCommittedTransactionFungibleOutcome, MappingError> {
+    Ok(models::LtsCommittedTransactionFungibleOutcome {
         state_version: to_api_state_version(identifiers.state_version)?,
         accumulator_hash: to_api_accumulator_hash(&identifiers.accumulator_hash),
-        basic_outcome: Box::new(to_api_lts_basic_outcome(context, receipt)?),
+        fungible_outcome: Box::new(to_api_lts_fungible_outcome(context, receipt)?),
     })
 }
 
 #[tracing::instrument(skip_all)]
-pub fn to_api_lts_basic_outcome(
+pub fn to_api_lts_fungible_outcome(
     context: &MappingContext,
     receipt: LedgerTransactionReceipt,
-) -> Result<models::LtsBasicOutcome, MappingError> {
+) -> Result<models::LtsFungibleOutcome, MappingError> {
     let status = match receipt.outcome {
         LedgerTransactionOutcome::Success(_) => models::LtsCommittedTransactionStatus::Succeeded,
         LedgerTransactionOutcome::Failure(_) => models::LtsCommittedTransactionStatus::Failed,
     };
 
-    let account_balance_updates = receipt
+    let account_fungible_balance_changes = receipt
         .state_update_summary
         .balance_changes
         .iter()
         .map(
-            |(address, resource_changes)| models::LtsAccountBalanceUpdates {
+            |(address, resource_changes)| models::LtsAccountFungibleBalanceChanges {
                 account_address: to_api_address(context, address),
-                resource_balance_updates: resource_changes
+                fungible_resource_balance_changes: resource_changes
                     .iter()
                     .filter_map(|(resource_address, balance_change)| match balance_change {
-                        BalanceChange::Fungible(delta) => Some(models::LtsResourceBalanceUpdate {
-                            resource_address: to_api_resource_address(context, resource_address),
-                            balance_delta: to_api_decimal(delta),
-                        }),
+                        BalanceChange::Fungible(balance_change) => {
+                            Some(models::LtsFungibleResourceBalanceChange {
+                                fungible_resource_address: to_api_resource_address(
+                                    context,
+                                    resource_address,
+                                ),
+                                balance_change: to_api_decimal(balance_change),
+                            })
+                        }
                         BalanceChange::NonFungible {
                             added: _added,
                             removed: _removed,
@@ -133,8 +139,8 @@ pub fn to_api_lts_basic_outcome(
         )
         .collect();
 
-    Ok(models::LtsBasicOutcome {
+    Ok(models::LtsFungibleOutcome {
         status,
-        account_balance_updates,
+        account_fungible_balance_changes,
     })
 }

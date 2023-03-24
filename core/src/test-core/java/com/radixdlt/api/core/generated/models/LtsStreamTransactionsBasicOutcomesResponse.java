@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LtsCommittedTransactionBasicOutcome;
+import com.radixdlt.api.core.generated.models.LtsCommittedTransactionFungibleOutcome;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -51,7 +51,7 @@ public class LtsStreamTransactionsBasicOutcomesResponse {
   private Long maxLedgerStateVersion;
 
   public static final String JSON_PROPERTY_COMMITTED_TRANSACTION_BASIC_OUTCOMES = "committed_transaction_basic_outcomes";
-  private List<LtsCommittedTransactionBasicOutcome> committedTransactionBasicOutcomes = new ArrayList<>();
+  private List<LtsCommittedTransactionFungibleOutcome> committedTransactionBasicOutcomes = new ArrayList<>();
 
   public LtsStreamTransactionsBasicOutcomesResponse() { 
   }
@@ -140,12 +140,12 @@ public class LtsStreamTransactionsBasicOutcomesResponse {
   }
 
 
-  public LtsStreamTransactionsBasicOutcomesResponse committedTransactionBasicOutcomes(List<LtsCommittedTransactionBasicOutcome> committedTransactionBasicOutcomes) {
+  public LtsStreamTransactionsBasicOutcomesResponse committedTransactionBasicOutcomes(List<LtsCommittedTransactionFungibleOutcome> committedTransactionBasicOutcomes) {
     this.committedTransactionBasicOutcomes = committedTransactionBasicOutcomes;
     return this;
   }
 
-  public LtsStreamTransactionsBasicOutcomesResponse addCommittedTransactionBasicOutcomesItem(LtsCommittedTransactionBasicOutcome committedTransactionBasicOutcomesItem) {
+  public LtsStreamTransactionsBasicOutcomesResponse addCommittedTransactionBasicOutcomesItem(LtsCommittedTransactionFungibleOutcome committedTransactionBasicOutcomesItem) {
     this.committedTransactionBasicOutcomes.add(committedTransactionBasicOutcomesItem);
     return this;
   }
@@ -159,14 +159,14 @@ public class LtsStreamTransactionsBasicOutcomesResponse {
   @JsonProperty(JSON_PROPERTY_COMMITTED_TRANSACTION_BASIC_OUTCOMES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<LtsCommittedTransactionBasicOutcome> getCommittedTransactionBasicOutcomes() {
+  public List<LtsCommittedTransactionFungibleOutcome> getCommittedTransactionBasicOutcomes() {
     return committedTransactionBasicOutcomes;
   }
 
 
   @JsonProperty(JSON_PROPERTY_COMMITTED_TRANSACTION_BASIC_OUTCOMES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCommittedTransactionBasicOutcomes(List<LtsCommittedTransactionBasicOutcome> committedTransactionBasicOutcomes) {
+  public void setCommittedTransactionBasicOutcomes(List<LtsCommittedTransactionFungibleOutcome> committedTransactionBasicOutcomes) {
     this.committedTransactionBasicOutcomes = committedTransactionBasicOutcomes;
   }
 

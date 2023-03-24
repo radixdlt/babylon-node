@@ -12,23 +12,24 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LtsStateAccountResourceBalanceResponse {
+pub struct LtsStateAccountAllFungibleResourceBalancesResponse {
     /// An integer between `1` and `10^13`, giving the state version at which the account was read. 
     #[serde(rename = "state_version")]
     pub state_version: i64,
     /// The Bech32m-encoded human readable version of the account's address
     #[serde(rename = "account_address")]
     pub account_address: String,
-    #[serde(rename = "resource_balance")]
-    pub resource_balance: Box<crate::core_api::generated::models::FungibleResourceAmount>,
+    /// A list containing all resource balances for the requested account.
+    #[serde(rename = "fungible_resource_balances")]
+    pub fungible_resource_balances: Vec<crate::core_api::generated::models::LtsFungibleResourceBalance>,
 }
 
-impl LtsStateAccountResourceBalanceResponse {
-    pub fn new(state_version: i64, account_address: String, resource_balance: crate::core_api::generated::models::FungibleResourceAmount) -> LtsStateAccountResourceBalanceResponse {
-        LtsStateAccountResourceBalanceResponse {
+impl LtsStateAccountAllFungibleResourceBalancesResponse {
+    pub fn new(state_version: i64, account_address: String, fungible_resource_balances: Vec<crate::core_api::generated::models::LtsFungibleResourceBalance>) -> LtsStateAccountAllFungibleResourceBalancesResponse {
+        LtsStateAccountAllFungibleResourceBalancesResponse {
             state_version,
             account_address,
-            resource_balance: Box::new(resource_balance),
+            fungible_resource_balances,
         }
     }
 }

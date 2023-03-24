@@ -24,11 +24,11 @@ pub struct LtsStreamTransactionsBasicOutcomesResponse {
     pub max_ledger_state_version: i64,
     /// A committed transaction basic outcomes list starting from the `from_state_version` (inclusive).
     #[serde(rename = "committed_transaction_basic_outcomes")]
-    pub committed_transaction_basic_outcomes: Vec<crate::core_api::generated::models::LtsCommittedTransactionBasicOutcome>,
+    pub committed_transaction_basic_outcomes: Vec<crate::core_api::generated::models::LtsCommittedTransactionFungibleOutcome>,
 }
 
 impl LtsStreamTransactionsBasicOutcomesResponse {
-    pub fn new(from_state_version: i64, count: i32, max_ledger_state_version: i64, committed_transaction_basic_outcomes: Vec<crate::core_api::generated::models::LtsCommittedTransactionBasicOutcome>) -> LtsStreamTransactionsBasicOutcomesResponse {
+    pub fn new(from_state_version: i64, count: i32, max_ledger_state_version: i64, committed_transaction_basic_outcomes: Vec<crate::core_api::generated::models::LtsCommittedTransactionFungibleOutcome>) -> LtsStreamTransactionsBasicOutcomesResponse {
         LtsStreamTransactionsBasicOutcomesResponse {
             from_state_version,
             count,

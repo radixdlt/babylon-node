@@ -18,12 +18,10 @@ import com.radixdlt.api.core.generated.client.ApiResponse;
 import com.radixdlt.api.core.generated.client.Pair;
 
 import com.radixdlt.api.core.generated.models.BasicErrorResponse;
-import com.radixdlt.api.core.generated.models.LtsStateAccountAllResourceBalancesRequest;
-import com.radixdlt.api.core.generated.models.LtsStateAccountAllResourceBalancesResponse;
-import com.radixdlt.api.core.generated.models.LtsStateAccountResourceBalanceRequest;
-import com.radixdlt.api.core.generated.models.LtsStateAccountResourceBalanceResponse;
-import com.radixdlt.api.core.generated.models.LtsStreamEntityTransactionsBasicOutcomesRequest;
-import com.radixdlt.api.core.generated.models.LtsStreamEntityTransactionsBasicOutcomesResponse;
+import com.radixdlt.api.core.generated.models.LtsStateAccountAllFungibleResourceBalancesRequest;
+import com.radixdlt.api.core.generated.models.LtsStateAccountAllFungibleResourceBalancesResponse;
+import com.radixdlt.api.core.generated.models.LtsStateAccountFungibleResourceBalanceRequest;
+import com.radixdlt.api.core.generated.models.LtsStateAccountFungibleResourceBalanceResponse;
 import com.radixdlt.api.core.generated.models.LtsStreamTransactionsBasicOutcomesRequest;
 import com.radixdlt.api.core.generated.models.LtsStreamTransactionsBasicOutcomesResponse;
 import com.radixdlt.api.core.generated.models.LtsTransactionConstructionRequest;
@@ -92,24 +90,24 @@ public class LtsApi {
   /**
    * Get All Resources Balances
    * Returns balances for all resources associated with an account
-   * @param ltsStateAccountAllResourceBalancesRequest  (required)
-   * @return LtsStateAccountAllResourceBalancesResponse
+   * @param ltsStateAccountAllFungibleResourceBalancesRequest  (required)
+   * @return LtsStateAccountAllFungibleResourceBalancesResponse
    * @throws ApiException if fails to make API call
    */
-  public LtsStateAccountAllResourceBalancesResponse ltsStateAccountAllResourceBalancesPost(LtsStateAccountAllResourceBalancesRequest ltsStateAccountAllResourceBalancesRequest) throws ApiException {
-    ApiResponse<LtsStateAccountAllResourceBalancesResponse> localVarResponse = ltsStateAccountAllResourceBalancesPostWithHttpInfo(ltsStateAccountAllResourceBalancesRequest);
+  public LtsStateAccountAllFungibleResourceBalancesResponse ltsStateAccountAllFungibleResourceBalancesPost(LtsStateAccountAllFungibleResourceBalancesRequest ltsStateAccountAllFungibleResourceBalancesRequest) throws ApiException {
+    ApiResponse<LtsStateAccountAllFungibleResourceBalancesResponse> localVarResponse = ltsStateAccountAllFungibleResourceBalancesPostWithHttpInfo(ltsStateAccountAllFungibleResourceBalancesRequest);
     return localVarResponse.getData();
   }
 
   /**
    * Get All Resources Balances
    * Returns balances for all resources associated with an account
-   * @param ltsStateAccountAllResourceBalancesRequest  (required)
-   * @return ApiResponse&lt;LtsStateAccountAllResourceBalancesResponse&gt;
+   * @param ltsStateAccountAllFungibleResourceBalancesRequest  (required)
+   * @return ApiResponse&lt;LtsStateAccountAllFungibleResourceBalancesResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<LtsStateAccountAllResourceBalancesResponse> ltsStateAccountAllResourceBalancesPostWithHttpInfo(LtsStateAccountAllResourceBalancesRequest ltsStateAccountAllResourceBalancesRequest) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = ltsStateAccountAllResourceBalancesPostRequestBuilder(ltsStateAccountAllResourceBalancesRequest);
+  public ApiResponse<LtsStateAccountAllFungibleResourceBalancesResponse> ltsStateAccountAllFungibleResourceBalancesPostWithHttpInfo(LtsStateAccountAllFungibleResourceBalancesRequest ltsStateAccountAllFungibleResourceBalancesRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = ltsStateAccountAllFungibleResourceBalancesPostRequestBuilder(ltsStateAccountAllFungibleResourceBalancesRequest);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -119,12 +117,12 @@ public class LtsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("ltsStateAccountAllResourceBalancesPost", localVarResponse);
+          throw getApiException("ltsStateAccountAllFungibleResourceBalancesPost", localVarResponse);
         }
-        return new ApiResponse<LtsStateAccountAllResourceBalancesResponse>(
+        return new ApiResponse<LtsStateAccountAllFungibleResourceBalancesResponse>(
           localVarResponse.statusCode(),
           localVarResponse.headers().map(),
-          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<LtsStateAccountAllResourceBalancesResponse>() {}) // closes the InputStream
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<LtsStateAccountAllFungibleResourceBalancesResponse>() {}) // closes the InputStream
           
         );
       } finally {
@@ -138,15 +136,15 @@ public class LtsApi {
     }
   }
 
-  private HttpRequest.Builder ltsStateAccountAllResourceBalancesPostRequestBuilder(LtsStateAccountAllResourceBalancesRequest ltsStateAccountAllResourceBalancesRequest) throws ApiException {
-    // verify the required parameter 'ltsStateAccountAllResourceBalancesRequest' is set
-    if (ltsStateAccountAllResourceBalancesRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'ltsStateAccountAllResourceBalancesRequest' when calling ltsStateAccountAllResourceBalancesPost");
+  private HttpRequest.Builder ltsStateAccountAllFungibleResourceBalancesPostRequestBuilder(LtsStateAccountAllFungibleResourceBalancesRequest ltsStateAccountAllFungibleResourceBalancesRequest) throws ApiException {
+    // verify the required parameter 'ltsStateAccountAllFungibleResourceBalancesRequest' is set
+    if (ltsStateAccountAllFungibleResourceBalancesRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'ltsStateAccountAllFungibleResourceBalancesRequest' when calling ltsStateAccountAllFungibleResourceBalancesPost");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
-    String localVarPath = "/lts/state/account-all-resource-balances";
+    String localVarPath = "/lts/state/account-all-fungible-resource-balances";
 
     localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
 
@@ -154,7 +152,7 @@ public class LtsApi {
     localVarRequestBuilder.header("Accept", "application/json");
 
     try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(ltsStateAccountAllResourceBalancesRequest);
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(ltsStateAccountAllFungibleResourceBalancesRequest);
       localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
     } catch (IOException e) {
       throw new ApiException(e);
@@ -170,24 +168,24 @@ public class LtsApi {
   /**
    * Get Resource Balance
    * Returns balance of the resource for an account
-   * @param ltsStateAccountResourceBalanceRequest  (required)
-   * @return LtsStateAccountResourceBalanceResponse
+   * @param ltsStateAccountFungibleResourceBalanceRequest  (required)
+   * @return LtsStateAccountFungibleResourceBalanceResponse
    * @throws ApiException if fails to make API call
    */
-  public LtsStateAccountResourceBalanceResponse ltsStateAccountResourceBalancePost(LtsStateAccountResourceBalanceRequest ltsStateAccountResourceBalanceRequest) throws ApiException {
-    ApiResponse<LtsStateAccountResourceBalanceResponse> localVarResponse = ltsStateAccountResourceBalancePostWithHttpInfo(ltsStateAccountResourceBalanceRequest);
+  public LtsStateAccountFungibleResourceBalanceResponse ltsStateAccountFungibleResourceBalancePost(LtsStateAccountFungibleResourceBalanceRequest ltsStateAccountFungibleResourceBalanceRequest) throws ApiException {
+    ApiResponse<LtsStateAccountFungibleResourceBalanceResponse> localVarResponse = ltsStateAccountFungibleResourceBalancePostWithHttpInfo(ltsStateAccountFungibleResourceBalanceRequest);
     return localVarResponse.getData();
   }
 
   /**
    * Get Resource Balance
    * Returns balance of the resource for an account
-   * @param ltsStateAccountResourceBalanceRequest  (required)
-   * @return ApiResponse&lt;LtsStateAccountResourceBalanceResponse&gt;
+   * @param ltsStateAccountFungibleResourceBalanceRequest  (required)
+   * @return ApiResponse&lt;LtsStateAccountFungibleResourceBalanceResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<LtsStateAccountResourceBalanceResponse> ltsStateAccountResourceBalancePostWithHttpInfo(LtsStateAccountResourceBalanceRequest ltsStateAccountResourceBalanceRequest) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = ltsStateAccountResourceBalancePostRequestBuilder(ltsStateAccountResourceBalanceRequest);
+  public ApiResponse<LtsStateAccountFungibleResourceBalanceResponse> ltsStateAccountFungibleResourceBalancePostWithHttpInfo(LtsStateAccountFungibleResourceBalanceRequest ltsStateAccountFungibleResourceBalanceRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = ltsStateAccountFungibleResourceBalancePostRequestBuilder(ltsStateAccountFungibleResourceBalanceRequest);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -197,12 +195,12 @@ public class LtsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("ltsStateAccountResourceBalancePost", localVarResponse);
+          throw getApiException("ltsStateAccountFungibleResourceBalancePost", localVarResponse);
         }
-        return new ApiResponse<LtsStateAccountResourceBalanceResponse>(
+        return new ApiResponse<LtsStateAccountFungibleResourceBalanceResponse>(
           localVarResponse.statusCode(),
           localVarResponse.headers().map(),
-          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<LtsStateAccountResourceBalanceResponse>() {}) // closes the InputStream
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<LtsStateAccountFungibleResourceBalanceResponse>() {}) // closes the InputStream
           
         );
       } finally {
@@ -216,15 +214,15 @@ public class LtsApi {
     }
   }
 
-  private HttpRequest.Builder ltsStateAccountResourceBalancePostRequestBuilder(LtsStateAccountResourceBalanceRequest ltsStateAccountResourceBalanceRequest) throws ApiException {
-    // verify the required parameter 'ltsStateAccountResourceBalanceRequest' is set
-    if (ltsStateAccountResourceBalanceRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'ltsStateAccountResourceBalanceRequest' when calling ltsStateAccountResourceBalancePost");
+  private HttpRequest.Builder ltsStateAccountFungibleResourceBalancePostRequestBuilder(LtsStateAccountFungibleResourceBalanceRequest ltsStateAccountFungibleResourceBalanceRequest) throws ApiException {
+    // verify the required parameter 'ltsStateAccountFungibleResourceBalanceRequest' is set
+    if (ltsStateAccountFungibleResourceBalanceRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'ltsStateAccountFungibleResourceBalanceRequest' when calling ltsStateAccountFungibleResourceBalancePost");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
-    String localVarPath = "/lts/state/account-resource-balance";
+    String localVarPath = "/lts/state/account-fungible-resource-balance";
 
     localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
 
@@ -232,85 +230,7 @@ public class LtsApi {
     localVarRequestBuilder.header("Accept", "application/json");
 
     try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(ltsStateAccountResourceBalanceRequest);
-      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-  /**
-   * Get Entity Transactions Basic Outcomes
-   * TODO 
-   * @param ltsStreamEntityTransactionsBasicOutcomesRequest  (required)
-   * @return LtsStreamEntityTransactionsBasicOutcomesResponse
-   * @throws ApiException if fails to make API call
-   */
-  public LtsStreamEntityTransactionsBasicOutcomesResponse ltsStreamEntityTransactionsBasicOutcomesPost(LtsStreamEntityTransactionsBasicOutcomesRequest ltsStreamEntityTransactionsBasicOutcomesRequest) throws ApiException {
-    ApiResponse<LtsStreamEntityTransactionsBasicOutcomesResponse> localVarResponse = ltsStreamEntityTransactionsBasicOutcomesPostWithHttpInfo(ltsStreamEntityTransactionsBasicOutcomesRequest);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Get Entity Transactions Basic Outcomes
-   * TODO 
-   * @param ltsStreamEntityTransactionsBasicOutcomesRequest  (required)
-   * @return ApiResponse&lt;LtsStreamEntityTransactionsBasicOutcomesResponse&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<LtsStreamEntityTransactionsBasicOutcomesResponse> ltsStreamEntityTransactionsBasicOutcomesPostWithHttpInfo(LtsStreamEntityTransactionsBasicOutcomesRequest ltsStreamEntityTransactionsBasicOutcomesRequest) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = ltsStreamEntityTransactionsBasicOutcomesPostRequestBuilder(ltsStreamEntityTransactionsBasicOutcomesRequest);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("ltsStreamEntityTransactionsBasicOutcomesPost", localVarResponse);
-        }
-        return new ApiResponse<LtsStreamEntityTransactionsBasicOutcomesResponse>(
-          localVarResponse.statusCode(),
-          localVarResponse.headers().map(),
-          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<LtsStreamEntityTransactionsBasicOutcomesResponse>() {}) // closes the InputStream
-          
-        );
-      } finally {
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder ltsStreamEntityTransactionsBasicOutcomesPostRequestBuilder(LtsStreamEntityTransactionsBasicOutcomesRequest ltsStreamEntityTransactionsBasicOutcomesRequest) throws ApiException {
-    // verify the required parameter 'ltsStreamEntityTransactionsBasicOutcomesRequest' is set
-    if (ltsStreamEntityTransactionsBasicOutcomesRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'ltsStreamEntityTransactionsBasicOutcomesRequest' when calling ltsStreamEntityTransactionsBasicOutcomesPost");
-    }
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/lts/stream/entity-transactions-basic-outcomes";
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Content-Type", "application/json");
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(ltsStreamEntityTransactionsBasicOutcomesRequest);
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(ltsStateAccountFungibleResourceBalanceRequest);
       localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
     } catch (IOException e) {
       throw new ApiException(e);

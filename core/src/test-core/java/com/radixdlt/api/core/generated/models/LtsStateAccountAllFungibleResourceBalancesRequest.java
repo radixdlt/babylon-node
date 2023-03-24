@@ -28,28 +28,24 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * LtsStateAccountResourceBalanceRequest
+ * LtsStateAccountAllFungibleResourceBalancesRequest
  */
 @JsonPropertyOrder({
-  LtsStateAccountResourceBalanceRequest.JSON_PROPERTY_NETWORK,
-  LtsStateAccountResourceBalanceRequest.JSON_PROPERTY_ACCOUNT_ADDRESS,
-  LtsStateAccountResourceBalanceRequest.JSON_PROPERTY_RESOURCE_ADDRESS
+  LtsStateAccountAllFungibleResourceBalancesRequest.JSON_PROPERTY_NETWORK,
+  LtsStateAccountAllFungibleResourceBalancesRequest.JSON_PROPERTY_ACCOUNT_ADDRESS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LtsStateAccountResourceBalanceRequest {
+public class LtsStateAccountAllFungibleResourceBalancesRequest {
   public static final String JSON_PROPERTY_NETWORK = "network";
   private String network;
 
   public static final String JSON_PROPERTY_ACCOUNT_ADDRESS = "account_address";
   private String accountAddress;
 
-  public static final String JSON_PROPERTY_RESOURCE_ADDRESS = "resource_address";
-  private String resourceAddress;
-
-  public LtsStateAccountResourceBalanceRequest() { 
+  public LtsStateAccountAllFungibleResourceBalancesRequest() { 
   }
 
-  public LtsStateAccountResourceBalanceRequest network(String network) {
+  public LtsStateAccountAllFungibleResourceBalancesRequest network(String network) {
     this.network = network;
     return this;
   }
@@ -75,7 +71,7 @@ public class LtsStateAccountResourceBalanceRequest {
   }
 
 
-  public LtsStateAccountResourceBalanceRequest accountAddress(String accountAddress) {
+  public LtsStateAccountAllFungibleResourceBalancesRequest accountAddress(String accountAddress) {
     this.accountAddress = accountAddress;
     return this;
   }
@@ -101,34 +97,8 @@ public class LtsStateAccountResourceBalanceRequest {
   }
 
 
-  public LtsStateAccountResourceBalanceRequest resourceAddress(String resourceAddress) {
-    this.resourceAddress = resourceAddress;
-    return this;
-  }
-
-   /**
-   * The Bech32m-encoded human readable version of the resource address
-   * @return resourceAddress
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
-  @JsonProperty(JSON_PROPERTY_RESOURCE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getResourceAddress() {
-    return resourceAddress;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_RESOURCE_ADDRESS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setResourceAddress(String resourceAddress) {
-    this.resourceAddress = resourceAddress;
-  }
-
-
   /**
-   * Return true if this LtsStateAccountResourceBalanceRequest object is equal to o.
+   * Return true if this LtsStateAccountAllFungibleResourceBalancesRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -138,24 +108,22 @@ public class LtsStateAccountResourceBalanceRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LtsStateAccountResourceBalanceRequest ltsStateAccountResourceBalanceRequest = (LtsStateAccountResourceBalanceRequest) o;
-    return Objects.equals(this.network, ltsStateAccountResourceBalanceRequest.network) &&
-        Objects.equals(this.accountAddress, ltsStateAccountResourceBalanceRequest.accountAddress) &&
-        Objects.equals(this.resourceAddress, ltsStateAccountResourceBalanceRequest.resourceAddress);
+    LtsStateAccountAllFungibleResourceBalancesRequest ltsStateAccountAllFungibleResourceBalancesRequest = (LtsStateAccountAllFungibleResourceBalancesRequest) o;
+    return Objects.equals(this.network, ltsStateAccountAllFungibleResourceBalancesRequest.network) &&
+        Objects.equals(this.accountAddress, ltsStateAccountAllFungibleResourceBalancesRequest.accountAddress);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, accountAddress, resourceAddress);
+    return Objects.hash(network, accountAddress);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LtsStateAccountResourceBalanceRequest {\n");
+    sb.append("class LtsStateAccountAllFungibleResourceBalancesRequest {\n");
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
     sb.append("    accountAddress: ").append(toIndentedString(accountAddress)).append("\n");
-    sb.append("    resourceAddress: ").append(toIndentedString(resourceAddress)).append("\n");
     sb.append("}");
     return sb.toString();
   }
