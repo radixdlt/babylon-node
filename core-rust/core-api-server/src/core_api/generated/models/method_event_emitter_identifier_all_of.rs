@@ -12,19 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct EntityReference {
-    #[serde(rename = "entity_type")]
-    pub entity_type: crate::core_api::generated::models::EntityType,
-    /// The hex-encoded bytes of the entity id.
-    #[serde(rename = "entity_id_hex")]
-    pub entity_id_hex: String,
+pub struct MethodEventEmitterIdentifierAllOf {
+    #[serde(rename = "entity")]
+    pub entity: Box<crate::core_api::generated::models::EntityReference>,
+    #[serde(rename = "module_type")]
+    pub module_type: crate::core_api::generated::models::ModuleType,
 }
 
-impl EntityReference {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, entity_id_hex: String) -> EntityReference {
-        EntityReference {
-            entity_type,
-            entity_id_hex,
+impl MethodEventEmitterIdentifierAllOf {
+    pub fn new(entity: crate::core_api::generated::models::EntityReference, module_type: crate::core_api::generated::models::ModuleType) -> MethodEventEmitterIdentifierAllOf {
+        MethodEventEmitterIdentifierAllOf {
+            entity: Box::new(entity),
+            module_type,
         }
     }
 }

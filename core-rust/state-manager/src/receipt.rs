@@ -12,6 +12,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::{hash, scrypto_encode, Decimal, Hash, Level, ObjectId, SubstateId};
 use radix_engine_common::crypto::blake2b_256_hash;
+use radix_engine_interface::api::types::EventTypeIdentifier;
 use radix_engine_interface::data::scrypto::model::ComponentAddress;
 use radix_engine_interface::*;
 use sbor::rust::collections::IndexMap;
@@ -119,6 +120,7 @@ pub struct LocalTransactionReceipt {
 pub struct LedgerTransactionReceipt {
     pub outcome: LedgerTransactionOutcome,
     pub substate_changes: SubstateChanges,
+    pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
 }
 
 /// A computable/non-critical/non-deterministic part of the `LocalTransactionReceipt` (e.g. logs,
@@ -159,6 +161,7 @@ impl From<(CommitResult, TransactionExecutionTrace)> for LocalTransactionReceipt
             on_ledger: LedgerTransactionReceipt {
                 outcome: LedgerTransactionOutcome::resolve(&commit_result.outcome),
                 substate_changes: fix_state_updates(commit_result.state_updates),
+                application_events: commit_result.application_events,
             },
             local_execution: LocalTransactionExecution {
                 outcome: commit_result.outcome.into(),
