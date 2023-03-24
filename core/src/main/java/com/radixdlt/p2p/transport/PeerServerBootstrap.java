@@ -149,9 +149,13 @@ public final class PeerServerBootstrap {
     serverBind = serverBootstrap.bind(config.listenAddress(), config.listenPort()).sync();
   }
 
-  public void stop() throws InterruptedException {
+  public void stop() {
     if (serverBind != null) {
-      serverBind.channel().close().sync();
+      try {
+        serverBind.channel().close().sync();
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 }

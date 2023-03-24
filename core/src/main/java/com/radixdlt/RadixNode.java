@@ -91,6 +91,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.statemanager.StateManager;
+import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
 import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawLedgerTransaction;
@@ -352,32 +353,61 @@ public final class RadixNode {
 
     this.maybeRadixNodeInjector.ifPresent(
         radixNodeInjector -> {
-          // using System.out.println as logger no longer works reliably in a shutdown hook
+          // using System.out.printf as logger no longer works reliably in a shutdown hook
           final var self = radixNodeInjector.getInstance(Key.get(BFTValidatorId.class, Self.class));
-          System.out.println("Node " + self + " is shutting down...");
+          System.out.printf("Node %s is shutting down...\n", self);
 
           radixNodeInjector
               .getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}))
-              .forEach((k, moduleRunner) -> moduleRunner.stop());
+              .forEach(
+                  (k, moduleRunner) -> {
+                    try {
+                      moduleRunner.stop();
+                    } catch (Exception e) {
+                      logShutdownError("ModuleRunner " + moduleRunner.threadName(), e.getMessage());
+                    }
+                  });
 
-          try {
-            radixNodeInjector.getInstance(AddressBookPersistence.class).close();
-          } catch (Exception e) {
-            // no-op
-          }
+          catchAllAndLogShutdownError(
+              "AddressBookPersistence",
+              () -> radixNodeInjector.getInstance(AddressBookPersistence.class).close());
 
-          try {
-            radixNodeInjector.getInstance(PersistentSafetyStateStore.class).close();
-          } catch (Exception e) {
-            // no-op
-          }
+          catchAllAndLogShutdownError(
+              "PersistentSafetyStateStore",
+              () -> radixNodeInjector.getInstance(PersistentSafetyStateStore.class).close());
 
-          try {
-            radixNodeInjector.getInstance(PeerServerBootstrap.class).stop();
-          } catch (InterruptedException e) {
-            // no-op
-          }
+          catchAllAndLogShutdownError(
+              "BerkeleyDatabaseEnvironment",
+              () -> radixNodeInjector.getInstance(BerkeleyDatabaseEnvironment.class).stop());
+
+          catchAllAndLogShutdownError(
+              "PeerServerBootstrap",
+              () -> radixNodeInjector.getInstance(PeerServerBootstrap.class).stop());
+
+          catchAllAndLogShutdownError(
+              "SystemApi", () -> radixNodeInjector.getInstance(SystemApi.class).stop());
+
+          catchAllAndLogShutdownError(
+              "PrometheusApi", () -> radixNodeInjector.getInstance(PrometheusApi.class).stop());
+
+          catchAllAndLogShutdownError(
+              "CoreApiServer", () -> radixNodeInjector.getInstance(CoreApiServer.class).stop());
+
+          catchAllAndLogShutdownError(
+              "StateManager", () -> radixNodeInjector.getInstance(StateManager.class).shutdown());
         });
+  }
+
+  private void catchAllAndLogShutdownError(String what, Runnable thunk) {
+    try {
+      thunk.run();
+    } catch (Exception e) {
+      logShutdownError(what, e.getMessage());
+    }
+  }
+
+  private void logShutdownError(String what, String why) {
+    System.out.printf("Could not stop %s because of %s, continuing...\n", what, why);
   }
 
   private Network readNetworkFromProperties() {
