@@ -22,8 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.TransactionIntentStatus;
-import com.radixdlt.api.core.generated.models.TransactionPayloadStatus;
+import com.radixdlt.api.core.generated.models.LtsTransactionIntentStatus;
+import com.radixdlt.api.core.generated.models.LtsTransactionPayloadStatus;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -43,7 +43,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class LtsTransactionStatusResponse {
   public static final String JSON_PROPERTY_INTENT_STATUS = "intent_status";
-  private TransactionIntentStatus intentStatus;
+  private LtsTransactionIntentStatus intentStatus;
 
   public static final String JSON_PROPERTY_STATUS_DESCRIPTION = "status_description";
   private String statusDescription;
@@ -52,12 +52,12 @@ public class LtsTransactionStatusResponse {
   private Long invalidFromEpoch;
 
   public static final String JSON_PROPERTY_KNOWN_PAYLOADS = "known_payloads";
-  private List<TransactionPayloadStatus> knownPayloads = new ArrayList<>();
+  private List<LtsTransactionPayloadStatus> knownPayloads = new ArrayList<>();
 
   public LtsTransactionStatusResponse() { 
   }
 
-  public LtsTransactionStatusResponse intentStatus(TransactionIntentStatus intentStatus) {
+  public LtsTransactionStatusResponse intentStatus(LtsTransactionIntentStatus intentStatus) {
     this.intentStatus = intentStatus;
     return this;
   }
@@ -71,14 +71,14 @@ public class LtsTransactionStatusResponse {
   @JsonProperty(JSON_PROPERTY_INTENT_STATUS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TransactionIntentStatus getIntentStatus() {
+  public LtsTransactionIntentStatus getIntentStatus() {
     return intentStatus;
   }
 
 
   @JsonProperty(JSON_PROPERTY_INTENT_STATUS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIntentStatus(TransactionIntentStatus intentStatus) {
+  public void setIntentStatus(LtsTransactionIntentStatus intentStatus) {
     this.intentStatus = intentStatus;
   }
 
@@ -137,12 +137,12 @@ public class LtsTransactionStatusResponse {
   }
 
 
-  public LtsTransactionStatusResponse knownPayloads(List<TransactionPayloadStatus> knownPayloads) {
+  public LtsTransactionStatusResponse knownPayloads(List<LtsTransactionPayloadStatus> knownPayloads) {
     this.knownPayloads = knownPayloads;
     return this;
   }
 
-  public LtsTransactionStatusResponse addKnownPayloadsItem(TransactionPayloadStatus knownPayloadsItem) {
+  public LtsTransactionStatusResponse addKnownPayloadsItem(LtsTransactionPayloadStatus knownPayloadsItem) {
     this.knownPayloads.add(knownPayloadsItem);
     return this;
   }
@@ -156,14 +156,14 @@ public class LtsTransactionStatusResponse {
   @JsonProperty(JSON_PROPERTY_KNOWN_PAYLOADS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<TransactionPayloadStatus> getKnownPayloads() {
+  public List<LtsTransactionPayloadStatus> getKnownPayloads() {
     return knownPayloads;
   }
 
 
   @JsonProperty(JSON_PROPERTY_KNOWN_PAYLOADS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setKnownPayloads(List<TransactionPayloadStatus> knownPayloads) {
+  public void setKnownPayloads(List<LtsTransactionPayloadStatus> knownPayloads) {
     this.knownPayloads = knownPayloads;
   }
 

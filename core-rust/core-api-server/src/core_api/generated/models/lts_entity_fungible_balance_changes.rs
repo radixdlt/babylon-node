@@ -12,18 +12,18 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LtsAccountFungibleBalanceChanges {
-    /// The Bech32m-encoded human readable version of the account's address
-    #[serde(rename = "account_address")]
-    pub account_address: String,
+pub struct LtsEntityFungibleBalanceChanges {
+    /// The Bech32m-encoded human readable version of the entity's address
+    #[serde(rename = "address")]
+    pub address: String,
     #[serde(rename = "fungible_resource_balance_changes")]
     pub fungible_resource_balance_changes: Vec<crate::core_api::generated::models::LtsFungibleResourceBalanceChange>,
 }
 
-impl LtsAccountFungibleBalanceChanges {
-    pub fn new(account_address: String, fungible_resource_balance_changes: Vec<crate::core_api::generated::models::LtsFungibleResourceBalanceChange>) -> LtsAccountFungibleBalanceChanges {
-        LtsAccountFungibleBalanceChanges {
-            account_address,
+impl LtsEntityFungibleBalanceChanges {
+    pub fn new(address: String, fungible_resource_balance_changes: Vec<crate::core_api::generated::models::LtsFungibleResourceBalanceChange>) -> LtsEntityFungibleBalanceChanges {
+        LtsEntityFungibleBalanceChanges {
+            address,
             fungible_resource_balance_changes,
         }
     }

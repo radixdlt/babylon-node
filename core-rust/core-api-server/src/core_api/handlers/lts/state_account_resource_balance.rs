@@ -7,18 +7,18 @@ use state_manager::{
 };
 
 #[tracing::instrument(skip(state), err(Debug))]
-pub(crate) async fn handle_rc_state_account_fungible_resource_balance(
+pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
     state: State<CoreApiState>,
     request: Json<models::LtsStateAccountFungibleResourceBalanceRequest>,
 ) -> Result<Json<models::LtsStateAccountFungibleResourceBalanceResponse>, ResponseError<()>> {
     core_api_read_handler(
         state,
         request,
-        handle_rc_state_account_fungible_resource_balance_internal,
+        handle_lts_state_account_fungible_resource_balance_internal,
     )
 }
 
-fn handle_rc_state_account_fungible_resource_balance_internal(
+fn handle_lts_state_account_fungible_resource_balance_internal(
     state_manager: &ActualStateManager,
     request: models::LtsStateAccountFungibleResourceBalanceRequest,
 ) -> Result<models::LtsStateAccountFungibleResourceBalanceResponse, ResponseError<()>> {
@@ -34,8 +34,8 @@ fn handle_rc_state_account_fungible_resource_balance_internal(
     let extraction_context = ExtractionContext::new(&state_manager.network);
 
     let fungible_resource_address =
-        extract_resource_address(&extraction_context, &request.fungible_resource_address)
-            .map_err(|err| err.into_response_error("fungible_resource_address"))?;
+        extract_resource_address(&extraction_context, &request.resource_address)
+            .map_err(|err| err.into_response_error("resource_address"))?;
 
     if let ResourceAddress::NonFungible(_) = fungible_resource_address {
         return Err(client_error(
@@ -54,10 +54,7 @@ fn handle_rc_state_account_fungible_resource_balance_internal(
         .vaults
         .into_iter()
         .filter_map(|vault| match vault {
-            VaultData::NonFungible {
-                resource_address: _,
-                ids: _,
-            } => None,
+            VaultData::NonFungible { .. } => None,
             VaultData::Fungible {
                 resource_address,
                 amount,

@@ -14,14 +14,14 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct LtsTransactionConstructionResponse {
     /// An integer between `0` and `10^10`, marking the current epoch
-    #[serde(rename = "epoch")]
-    pub epoch: i64,
+    #[serde(rename = "current_epoch")]
+    pub current_epoch: i64,
 }
 
 impl LtsTransactionConstructionResponse {
-    pub fn new(epoch: i64) -> LtsTransactionConstructionResponse {
+    pub fn new(current_epoch: i64) -> LtsTransactionConstructionResponse {
         LtsTransactionConstructionResponse {
-            epoch,
+            current_epoch,
         }
     }
 }

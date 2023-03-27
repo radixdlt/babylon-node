@@ -31,55 +31,55 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * LtsAccountFungibleBalanceChanges
+ * LtsEntityFungibleBalanceChanges
  */
 @JsonPropertyOrder({
-  LtsAccountFungibleBalanceChanges.JSON_PROPERTY_ACCOUNT_ADDRESS,
-  LtsAccountFungibleBalanceChanges.JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCE_CHANGES
+  LtsEntityFungibleBalanceChanges.JSON_PROPERTY_ADDRESS,
+  LtsEntityFungibleBalanceChanges.JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCE_CHANGES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LtsAccountFungibleBalanceChanges {
-  public static final String JSON_PROPERTY_ACCOUNT_ADDRESS = "account_address";
-  private String accountAddress;
+public class LtsEntityFungibleBalanceChanges {
+  public static final String JSON_PROPERTY_ADDRESS = "address";
+  private String address;
 
   public static final String JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCE_CHANGES = "fungible_resource_balance_changes";
   private List<LtsFungibleResourceBalanceChange> fungibleResourceBalanceChanges = new ArrayList<>();
 
-  public LtsAccountFungibleBalanceChanges() { 
+  public LtsEntityFungibleBalanceChanges() { 
   }
 
-  public LtsAccountFungibleBalanceChanges accountAddress(String accountAddress) {
-    this.accountAddress = accountAddress;
+  public LtsEntityFungibleBalanceChanges address(String address) {
+    this.address = address;
     return this;
   }
 
    /**
-   * The Bech32m-encoded human readable version of the account&#39;s address
-   * @return accountAddress
+   * The Bech32m-encoded human readable version of the entity&#39;s address
+   * @return address
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the account's address")
-  @JsonProperty(JSON_PROPERTY_ACCOUNT_ADDRESS)
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the entity's address")
+  @JsonProperty(JSON_PROPERTY_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getAccountAddress() {
-    return accountAddress;
+  public String getAddress() {
+    return address;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ACCOUNT_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccountAddress(String accountAddress) {
-    this.accountAddress = accountAddress;
+  public void setAddress(String address) {
+    this.address = address;
   }
 
 
-  public LtsAccountFungibleBalanceChanges fungibleResourceBalanceChanges(List<LtsFungibleResourceBalanceChange> fungibleResourceBalanceChanges) {
+  public LtsEntityFungibleBalanceChanges fungibleResourceBalanceChanges(List<LtsFungibleResourceBalanceChange> fungibleResourceBalanceChanges) {
     this.fungibleResourceBalanceChanges = fungibleResourceBalanceChanges;
     return this;
   }
 
-  public LtsAccountFungibleBalanceChanges addFungibleResourceBalanceChangesItem(LtsFungibleResourceBalanceChange fungibleResourceBalanceChangesItem) {
+  public LtsEntityFungibleBalanceChanges addFungibleResourceBalanceChangesItem(LtsFungibleResourceBalanceChange fungibleResourceBalanceChangesItem) {
     this.fungibleResourceBalanceChanges.add(fungibleResourceBalanceChangesItem);
     return this;
   }
@@ -106,7 +106,7 @@ public class LtsAccountFungibleBalanceChanges {
 
 
   /**
-   * Return true if this LtsAccountFungibleBalanceChanges object is equal to o.
+   * Return true if this LtsEntityFungibleBalanceChanges object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -116,21 +116,21 @@ public class LtsAccountFungibleBalanceChanges {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LtsAccountFungibleBalanceChanges ltsAccountFungibleBalanceChanges = (LtsAccountFungibleBalanceChanges) o;
-    return Objects.equals(this.accountAddress, ltsAccountFungibleBalanceChanges.accountAddress) &&
-        Objects.equals(this.fungibleResourceBalanceChanges, ltsAccountFungibleBalanceChanges.fungibleResourceBalanceChanges);
+    LtsEntityFungibleBalanceChanges ltsEntityFungibleBalanceChanges = (LtsEntityFungibleBalanceChanges) o;
+    return Objects.equals(this.address, ltsEntityFungibleBalanceChanges.address) &&
+        Objects.equals(this.fungibleResourceBalanceChanges, ltsEntityFungibleBalanceChanges.fungibleResourceBalanceChanges);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(accountAddress, fungibleResourceBalanceChanges);
+    return Objects.hash(address, fungibleResourceBalanceChanges);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LtsAccountFungibleBalanceChanges {\n");
-    sb.append("    accountAddress: ").append(toIndentedString(accountAddress)).append("\n");
+    sb.append("class LtsEntityFungibleBalanceChanges {\n");
+    sb.append("    address: ").append(toIndentedString(address)).append("\n");
     sb.append("    fungibleResourceBalanceChanges: ").append(toIndentedString(fungibleResourceBalanceChanges)).append("\n");
     sb.append("}");
     return sb.toString();

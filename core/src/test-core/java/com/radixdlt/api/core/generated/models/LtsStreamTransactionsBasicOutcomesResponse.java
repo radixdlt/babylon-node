@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.LtsCommittedTransactionFungibleOutcome;
+import com.radixdlt.api.core.generated.models.LtsCommittedTransactionOutcome;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -37,7 +37,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   LtsStreamTransactionsBasicOutcomesResponse.JSON_PROPERTY_FROM_STATE_VERSION,
   LtsStreamTransactionsBasicOutcomesResponse.JSON_PROPERTY_COUNT,
   LtsStreamTransactionsBasicOutcomesResponse.JSON_PROPERTY_MAX_LEDGER_STATE_VERSION,
-  LtsStreamTransactionsBasicOutcomesResponse.JSON_PROPERTY_COMMITTED_TRANSACTION_BASIC_OUTCOMES
+  LtsStreamTransactionsBasicOutcomesResponse.JSON_PROPERTY_COMMITTED_TRANSACTION_OUTCOMES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class LtsStreamTransactionsBasicOutcomesResponse {
@@ -50,8 +50,8 @@ public class LtsStreamTransactionsBasicOutcomesResponse {
   public static final String JSON_PROPERTY_MAX_LEDGER_STATE_VERSION = "max_ledger_state_version";
   private Long maxLedgerStateVersion;
 
-  public static final String JSON_PROPERTY_COMMITTED_TRANSACTION_BASIC_OUTCOMES = "committed_transaction_basic_outcomes";
-  private List<LtsCommittedTransactionFungibleOutcome> committedTransactionBasicOutcomes = new ArrayList<>();
+  public static final String JSON_PROPERTY_COMMITTED_TRANSACTION_OUTCOMES = "committed_transaction_outcomes";
+  private List<LtsCommittedTransactionOutcome> committedTransactionOutcomes = new ArrayList<>();
 
   public LtsStreamTransactionsBasicOutcomesResponse() { 
   }
@@ -140,34 +140,34 @@ public class LtsStreamTransactionsBasicOutcomesResponse {
   }
 
 
-  public LtsStreamTransactionsBasicOutcomesResponse committedTransactionBasicOutcomes(List<LtsCommittedTransactionFungibleOutcome> committedTransactionBasicOutcomes) {
-    this.committedTransactionBasicOutcomes = committedTransactionBasicOutcomes;
+  public LtsStreamTransactionsBasicOutcomesResponse committedTransactionOutcomes(List<LtsCommittedTransactionOutcome> committedTransactionOutcomes) {
+    this.committedTransactionOutcomes = committedTransactionOutcomes;
     return this;
   }
 
-  public LtsStreamTransactionsBasicOutcomesResponse addCommittedTransactionBasicOutcomesItem(LtsCommittedTransactionFungibleOutcome committedTransactionBasicOutcomesItem) {
-    this.committedTransactionBasicOutcomes.add(committedTransactionBasicOutcomesItem);
+  public LtsStreamTransactionsBasicOutcomesResponse addCommittedTransactionOutcomesItem(LtsCommittedTransactionOutcome committedTransactionOutcomesItem) {
+    this.committedTransactionOutcomes.add(committedTransactionOutcomesItem);
     return this;
   }
 
    /**
-   * A committed transaction basic outcomes list starting from the &#x60;from_state_version&#x60; (inclusive).
-   * @return committedTransactionBasicOutcomes
+   * A committed transaction outcomes list starting from the &#x60;from_state_version&#x60; (inclusive).
+   * @return committedTransactionOutcomes
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A committed transaction basic outcomes list starting from the `from_state_version` (inclusive).")
-  @JsonProperty(JSON_PROPERTY_COMMITTED_TRANSACTION_BASIC_OUTCOMES)
+  @ApiModelProperty(required = true, value = "A committed transaction outcomes list starting from the `from_state_version` (inclusive).")
+  @JsonProperty(JSON_PROPERTY_COMMITTED_TRANSACTION_OUTCOMES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public List<LtsCommittedTransactionFungibleOutcome> getCommittedTransactionBasicOutcomes() {
-    return committedTransactionBasicOutcomes;
+  public List<LtsCommittedTransactionOutcome> getCommittedTransactionOutcomes() {
+    return committedTransactionOutcomes;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_COMMITTED_TRANSACTION_BASIC_OUTCOMES)
+  @JsonProperty(JSON_PROPERTY_COMMITTED_TRANSACTION_OUTCOMES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setCommittedTransactionBasicOutcomes(List<LtsCommittedTransactionFungibleOutcome> committedTransactionBasicOutcomes) {
-    this.committedTransactionBasicOutcomes = committedTransactionBasicOutcomes;
+  public void setCommittedTransactionOutcomes(List<LtsCommittedTransactionOutcome> committedTransactionOutcomes) {
+    this.committedTransactionOutcomes = committedTransactionOutcomes;
   }
 
 
@@ -186,12 +186,12 @@ public class LtsStreamTransactionsBasicOutcomesResponse {
     return Objects.equals(this.fromStateVersion, ltsStreamTransactionsBasicOutcomesResponse.fromStateVersion) &&
         Objects.equals(this.count, ltsStreamTransactionsBasicOutcomesResponse.count) &&
         Objects.equals(this.maxLedgerStateVersion, ltsStreamTransactionsBasicOutcomesResponse.maxLedgerStateVersion) &&
-        Objects.equals(this.committedTransactionBasicOutcomes, ltsStreamTransactionsBasicOutcomesResponse.committedTransactionBasicOutcomes);
+        Objects.equals(this.committedTransactionOutcomes, ltsStreamTransactionsBasicOutcomesResponse.committedTransactionOutcomes);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(fromStateVersion, count, maxLedgerStateVersion, committedTransactionBasicOutcomes);
+    return Objects.hash(fromStateVersion, count, maxLedgerStateVersion, committedTransactionOutcomes);
   }
 
   @Override
@@ -201,7 +201,7 @@ public class LtsStreamTransactionsBasicOutcomesResponse {
     sb.append("    fromStateVersion: ").append(toIndentedString(fromStateVersion)).append("\n");
     sb.append("    count: ").append(toIndentedString(count)).append("\n");
     sb.append("    maxLedgerStateVersion: ").append(toIndentedString(maxLedgerStateVersion)).append("\n");
-    sb.append("    committedTransactionBasicOutcomes: ").append(toIndentedString(committedTransactionBasicOutcomes)).append("\n");
+    sb.append("    committedTransactionOutcomes: ").append(toIndentedString(committedTransactionOutcomes)).append("\n");
     sb.append("}");
     return sb.toString();
   }

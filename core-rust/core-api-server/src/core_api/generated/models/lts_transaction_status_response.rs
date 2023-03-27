@@ -14,7 +14,7 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct LtsTransactionStatusResponse {
     #[serde(rename = "intent_status")]
-    pub intent_status: crate::core_api::generated::models::TransactionIntentStatus,
+    pub intent_status: crate::core_api::generated::models::LtsTransactionIntentStatus,
     /// An explanation as to why the intent status is resolved as it is. 
     #[serde(rename = "status_description")]
     pub status_description: String,
@@ -22,11 +22,11 @@ pub struct LtsTransactionStatusResponse {
     #[serde(rename = "invalid_from_epoch", skip_serializing_if = "Option::is_none")]
     pub invalid_from_epoch: Option<i64>,
     #[serde(rename = "known_payloads")]
-    pub known_payloads: Vec<crate::core_api::generated::models::TransactionPayloadStatus>,
+    pub known_payloads: Vec<crate::core_api::generated::models::LtsTransactionPayloadStatus>,
 }
 
 impl LtsTransactionStatusResponse {
-    pub fn new(intent_status: crate::core_api::generated::models::TransactionIntentStatus, status_description: String, known_payloads: Vec<crate::core_api::generated::models::TransactionPayloadStatus>) -> LtsTransactionStatusResponse {
+    pub fn new(intent_status: crate::core_api::generated::models::LtsTransactionIntentStatus, status_description: String, known_payloads: Vec<crate::core_api::generated::models::LtsTransactionPayloadStatus>) -> LtsTransactionStatusResponse {
         LtsTransactionStatusResponse {
             intent_status,
             status_description,

@@ -12,7 +12,7 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct LtsCommittedTransactionFungibleOutcome {
+pub struct LtsCommittedTransactionOutcome {
     /// An integer between `1` and `10^13`, giving the resultant state version after the transaction has been committed
     #[serde(rename = "state_version")]
     pub state_version: i64,
@@ -22,17 +22,17 @@ pub struct LtsCommittedTransactionFungibleOutcome {
     #[serde(rename = "status")]
     pub status: crate::core_api::generated::models::LtsCommittedTransactionStatus,
     /// A list containing all account fungible balance updates
-    #[serde(rename = "fungible_outcome")]
-    pub fungible_outcome: Vec<crate::core_api::generated::models::LtsAccountFungibleBalanceChanges>,
+    #[serde(rename = "fungible_entity_balance_changes")]
+    pub fungible_entity_balance_changes: Vec<crate::core_api::generated::models::LtsEntityFungibleBalanceChanges>,
 }
 
-impl LtsCommittedTransactionFungibleOutcome {
-    pub fn new(state_version: i64, accumulator_hash: String, status: crate::core_api::generated::models::LtsCommittedTransactionStatus, fungible_outcome: Vec<crate::core_api::generated::models::LtsAccountFungibleBalanceChanges>) -> LtsCommittedTransactionFungibleOutcome {
-        LtsCommittedTransactionFungibleOutcome {
+impl LtsCommittedTransactionOutcome {
+    pub fn new(state_version: i64, accumulator_hash: String, status: crate::core_api::generated::models::LtsCommittedTransactionStatus, fungible_entity_balance_changes: Vec<crate::core_api::generated::models::LtsEntityFungibleBalanceChanges>) -> LtsCommittedTransactionOutcome {
+        LtsCommittedTransactionOutcome {
             state_version,
             accumulator_hash,
             status,
-            fungible_outcome,
+            fungible_entity_balance_changes,
         }
     }
 }

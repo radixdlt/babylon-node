@@ -72,12 +72,6 @@ fn handle_stream_transactions_internal(
         })
         .collect::<Result<Vec<models::CommittedTransaction>, ResponseError<()>>>()?;
 
-    let start_state_version = if api_txns.is_empty() {
-        0
-    } else {
-        from_state_version
-    };
-
     let count: i32 = {
         let transaction_count = api_txns.len();
         if transaction_count > MAX_STREAM_COUNT_PER_REQUEST.into() {
@@ -89,7 +83,7 @@ fn handle_stream_transactions_internal(
     };
 
     Ok(models::StreamTransactionsResponse {
-        from_state_version: to_api_state_version(start_state_version)?,
+        from_state_version: to_api_state_version(from_state_version)?,
         count,
         max_ledger_state_version: to_api_state_version(max_state_version)?,
         transactions: api_txns,

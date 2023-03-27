@@ -5,14 +5,14 @@ use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
 use state_manager::jni::state_manager::ActualStateManager;
 
 #[tracing::instrument(skip(state), err(Debug))]
-pub(crate) async fn handle_rc_transaction_construction(
+pub(crate) async fn handle_lts_transaction_construction(
     state: State<CoreApiState>,
     request: Json<models::LtsTransactionConstructionRequest>,
 ) -> Result<Json<models::LtsTransactionConstructionResponse>, ResponseError<()>> {
-    core_api_read_handler(state, request, handle_rc_transaction_construction_internal)
+    core_api_read_handler(state, request, handle_lts_transaction_construction_internal)
 }
 
-fn handle_rc_transaction_construction_internal(
+fn handle_lts_transaction_construction_internal(
     state_manager: &ActualStateManager,
     request: models::LtsTransactionConstructionRequest,
 ) -> Result<models::LtsTransactionConstructionResponse, ResponseError<()>> {
@@ -34,6 +34,6 @@ fn handle_rc_transaction_construction_internal(
     };
 
     Ok(models::LtsTransactionConstructionResponse {
-        epoch: to_api_epoch(&mapping_context, epoch_manager_substate.epoch)?,
+        current_epoch: to_api_epoch(&mapping_context, epoch_manager_substate.epoch)?,
     })
 }

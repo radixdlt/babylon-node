@@ -7,18 +7,18 @@ use state_manager::{
 };
 
 #[tracing::instrument(skip(state), err(Debug))]
-pub(crate) async fn handle_rc_state_account_all_fungible_resource_balances(
+pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
     state: State<CoreApiState>,
     request: Json<models::LtsStateAccountAllFungibleResourceBalancesRequest>,
 ) -> Result<Json<models::LtsStateAccountAllFungibleResourceBalancesResponse>, ResponseError<()>> {
     core_api_read_handler(
         state,
         request,
-        handle_rc_state_account_all_fungible_resource_balances_internal,
+        handle_lts_state_account_all_fungible_resource_balances_internal,
     )
 }
 
-fn handle_rc_state_account_all_fungible_resource_balances_internal(
+fn handle_lts_state_account_all_fungible_resource_balances_internal(
     state_manager: &ActualStateManager,
     request: models::LtsStateAccountAllFungibleResourceBalancesRequest,
 ) -> Result<models::LtsStateAccountAllFungibleResourceBalancesResponse, ResponseError<()>> {
@@ -44,10 +44,7 @@ fn handle_rc_state_account_all_fungible_resource_balances_internal(
         .vaults
         .into_iter()
         .filter_map(|vault| match vault {
-            VaultData::NonFungible {
-                resource_address: _,
-                ids: _,
-            } => None,
+            VaultData::NonFungible { .. } => None,
             VaultData::Fungible {
                 resource_address,
                 amount,

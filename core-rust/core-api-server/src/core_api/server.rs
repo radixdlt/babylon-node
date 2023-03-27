@@ -98,27 +98,27 @@ pub async fn create_server<F>(
         // Release Candidate backward compatible Sub-API
         .route(
             "/lts/transaction/construction",
-            post(lts::handle_rc_transaction_construction),
+            post(lts::handle_lts_transaction_construction),
         )
         .route(
             "/lts/transaction/status",
-            post(lts::handle_rc_transaction_status),
+            post(lts::handle_lts_transaction_status),
         )
         .route(
             "/lts/transaction/submit",
-            post(lts::handle_rc_transaction_submit),
+            post(lts::handle_lts_transaction_submit),
         )
         .route(
             "/lts/stream/transactions-basic-outcomes",
-            post(lts::handle_rc_stream_transactions_basic_outcomes),
+            post(lts::handle_lts_stream_transactions_basic_outcomes),
         )
         .route(
             "/lts/state/account-all-fungible-resource-balances",
-            post(lts::handle_rc_state_account_all_fungible_resource_balances),
+            post(lts::handle_lts_state_account_all_fungible_resource_balances),
         )
         .route(
             "/lts/state/account-fungible-resource-balance",
-            post(lts::handle_rc_state_account_fungible_resource_balance),
+            post(lts::handle_lts_state_account_fungible_resource_balance),
         )
         // Status Sub-API
         .route(

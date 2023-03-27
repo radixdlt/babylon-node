@@ -2933,9 +2933,9 @@ components:
     LtsTransactionConstructionResponse:
       type: object
       required:
-        - epoch
+        - current_epoch
       properties:
-        epoch:
+        current_epoch:
           type: integer
           format: int64
           minimum: 0
@@ -2962,7 +2962,7 @@ components:
         - known_payloads
       properties:
         intent_status:
-          $ref: "#/components/schemas/TransactionIntentStatus"
+          $ref: "#/components/schemas/LtsTransactionIntentStatus"
         status_description:
           type: string
           description: |
@@ -2978,7 +2978,43 @@ components:
         known_payloads:
           type: array
           items:
-            $ref: "#/components/schemas/TransactionPayloadStatus"
+            $ref: "#/components/schemas/LtsTransactionPayloadStatus"
+    LtsTransactionPayloadStatus:
+      type: object
+      required:
+        - payload_hash
+        - status
+      properties:
+        payload_hash:
+          $ref: "#/components/schemas/PayloadHash"
+        status:
+          type: string
+          description: |
+            The status of the transaction payload, as per this node.
+            A NotInMempool status means that it wasn't rejected at last execution attempt, but it's not currently in the mempool either.
+          enum:
+            - CommittedSuccess
+            - CommittedFailure
+            - PermanentlyRejected
+            - TransientlyRejected
+            - InMempool
+            - NotInMempool
+        error_message:
+          description: An explanation for the error, if failed or rejected
+          type: string
+    LtsTransactionIntentStatus:
+      type: string
+      description: |
+        The status of the transaction intent, as determined by the node.
+        FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction 
+      enum:
+        - CommittedSuccess
+        - CommittedFailure
+        - PermanentRejection
+        - InMempool
+        - NotSeen
+        - FateUncertain
+        - FateUncertainButLikelyRejection
 ####################################
 # REQUEST: /lts/transaction/submit #
 ####################################
@@ -3135,8 +3171,7 @@ components:
         - amount
       properties:
         fungible_resource_address:
-          type: string
-          description: The Bech32m-encoded human readable version of the fungible resource's global address
+          $ref: "#/components/schemas/ResourceAddress"
         amount:
           type: string
           description: |
@@ -3150,14 +3185,14 @@ components:
       required:
         - network
         - account_address
-        - fungible_resource_address
+        - resource_address
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         account_address:
           type: string
           description: The Bech32m-encoded human readable version of the account's address
-        fungible_resource_address:
+        resource_address:
           $ref: "#/components/schemas/ResourceAddress"
     LtsStateAccountFungibleResourceBalanceResponse:
       type: object
@@ -3178,9 +3213,9 @@ components:
           description: The Bech32m-encoded human readable version of the account's address
         fungible_resource_balance:
           $ref: "#/components/schemas/LtsFungibleResourceBalance"
-###################################################
+####################################################
 # REQUEST: /lts/stream/transactions-basic-outcomes #
-###################################################
+####################################################
     LtsStreamTransactionsBasicOutcomesRequest:
       description: |
         A request to retrieve a sublist of committed transactions from the ledger.
@@ -3207,7 +3242,7 @@ components:
         - from_state_version
         - count
         - max_ledger_state_version
-        - committed_transaction_basic_outcomes
+        - committed_transaction_outcomes
       properties:
         from_state_version:
           type: integer
@@ -3229,24 +3264,25 @@ components:
           minimum: 1
           maximum: 100000000000000
           description: An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.
-        committed_transaction_basic_outcomes:
-          description: A committed transaction basic outcomes list starting from the `from_state_version` (inclusive).
+        committed_transaction_outcomes:
+          description: A committed transaction outcomes list starting from the `from_state_version` (inclusive).
           type: array
           items:
-            $ref: "#/components/schemas/LtsCommittedTransactionFungibleOutcome"
+            $ref: "#/components/schemas/LtsCommittedTransactionOutcome"
     LtsCommittedTransactionStatus:
       type: string
       enum:
         - Succeeded
         - Failed
       description: The status of the transaction
-    LtsCommittedTransactionFungibleOutcome:
+    LtsCommittedTransactionOutcome:
+      description: 
       type: object
       required:
         - state_version
         - accumulator_hash
         - status
-        - fungible_outcome
+        - fungible_entity_balance_changes
       properties:
         state_version:
           type: integer
@@ -3263,20 +3299,20 @@ components:
             This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator.
         status:
           $ref: "#/components/schemas/LtsCommittedTransactionStatus"
-        fungible_outcome:
+        fungible_entity_balance_changes:
           description: A list containing all account fungible balance updates
           type: array
           items:
-            $ref: "#/components/schemas/LtsAccountFungibleBalanceChanges"
-    LtsAccountFungibleBalanceChanges:
+            $ref: "#/components/schemas/LtsEntityFungibleBalanceChanges"
+    LtsEntityFungibleBalanceChanges:
       type: object
       required:
-        - account_address
+        - address
         - fungible_resource_balance_changes
       properties:
-        account_address:
+        address:
           type: string
-          description: The Bech32m-encoded human readable version of the account's address
+          description: The Bech32m-encoded human readable version of the entity's address
         fungible_resource_balance_changes:
           type: array
           items:

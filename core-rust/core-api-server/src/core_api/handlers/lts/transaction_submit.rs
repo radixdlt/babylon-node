@@ -5,7 +5,7 @@ use models::lts_transaction_submit_error_details::LtsTransactionSubmitErrorDetai
 use state_manager::{MempoolAddError, MempoolAddSource};
 
 #[tracing::instrument(level = "debug", skip(state), err(Debug))]
-pub(crate) async fn handle_rc_transaction_submit(
+pub(crate) async fn handle_lts_transaction_submit(
     State(state): State<CoreApiState>,
     Json(request): Json<models::LtsTransactionSubmitRequest>,
 ) -> Result<

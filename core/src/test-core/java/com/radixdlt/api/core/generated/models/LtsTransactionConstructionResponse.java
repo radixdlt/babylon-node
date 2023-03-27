@@ -31,18 +31,18 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * LtsTransactionConstructionResponse
  */
 @JsonPropertyOrder({
-  LtsTransactionConstructionResponse.JSON_PROPERTY_EPOCH
+  LtsTransactionConstructionResponse.JSON_PROPERTY_CURRENT_EPOCH
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class LtsTransactionConstructionResponse {
-  public static final String JSON_PROPERTY_EPOCH = "epoch";
-  private Long epoch;
+  public static final String JSON_PROPERTY_CURRENT_EPOCH = "current_epoch";
+  private Long currentEpoch;
 
   public LtsTransactionConstructionResponse() { 
   }
 
-  public LtsTransactionConstructionResponse epoch(Long epoch) {
-    this.epoch = epoch;
+  public LtsTransactionConstructionResponse currentEpoch(Long currentEpoch) {
+    this.currentEpoch = currentEpoch;
     return this;
   }
 
@@ -50,22 +50,22 @@ public class LtsTransactionConstructionResponse {
    * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the current epoch
    * minimum: 0
    * maximum: 10000000000
-   * @return epoch
+   * @return currentEpoch
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "An integer between `0` and `10^10`, marking the current epoch")
-  @JsonProperty(JSON_PROPERTY_EPOCH)
+  @JsonProperty(JSON_PROPERTY_CURRENT_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getEpoch() {
-    return epoch;
+  public Long getCurrentEpoch() {
+    return currentEpoch;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EPOCH)
+  @JsonProperty(JSON_PROPERTY_CURRENT_EPOCH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEpoch(Long epoch) {
-    this.epoch = epoch;
+  public void setCurrentEpoch(Long currentEpoch) {
+    this.currentEpoch = currentEpoch;
   }
 
 
@@ -81,19 +81,19 @@ public class LtsTransactionConstructionResponse {
       return false;
     }
     LtsTransactionConstructionResponse ltsTransactionConstructionResponse = (LtsTransactionConstructionResponse) o;
-    return Objects.equals(this.epoch, ltsTransactionConstructionResponse.epoch);
+    return Objects.equals(this.currentEpoch, ltsTransactionConstructionResponse.currentEpoch);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(epoch);
+    return Objects.hash(currentEpoch);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class LtsTransactionConstructionResponse {\n");
-    sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
+    sb.append("    currentEpoch: ").append(toIndentedString(currentEpoch)).append("\n");
     sb.append("}");
     return sb.toString();
   }

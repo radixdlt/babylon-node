@@ -51,11 +51,11 @@ public class LtsFungibleResourceBalance {
   }
 
    /**
-   * The Bech32m-encoded human readable version of the fungible resource&#39;s global address
+   * The Bech32m-encoded human readable version of the resource address
    * @return fungibleResourceAddress
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the fungible resource's global address")
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
   @JsonProperty(JSON_PROPERTY_FUNGIBLE_RESOURCE_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

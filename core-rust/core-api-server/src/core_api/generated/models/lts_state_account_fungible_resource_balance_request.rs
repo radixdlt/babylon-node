@@ -20,16 +20,16 @@ pub struct LtsStateAccountFungibleResourceBalanceRequest {
     #[serde(rename = "account_address")]
     pub account_address: String,
     /// The Bech32m-encoded human readable version of the resource address
-    #[serde(rename = "fungible_resource_address")]
-    pub fungible_resource_address: String,
+    #[serde(rename = "resource_address")]
+    pub resource_address: String,
 }
 
 impl LtsStateAccountFungibleResourceBalanceRequest {
-    pub fn new(network: String, account_address: String, fungible_resource_address: String) -> LtsStateAccountFungibleResourceBalanceRequest {
+    pub fn new(network: String, account_address: String, resource_address: String) -> LtsStateAccountFungibleResourceBalanceRequest {
         LtsStateAccountFungibleResourceBalanceRequest {
             network,
             account_address,
-            fungible_resource_address,
+            resource_address,
         }
     }
 }
