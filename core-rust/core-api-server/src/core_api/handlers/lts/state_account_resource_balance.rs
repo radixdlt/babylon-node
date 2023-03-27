@@ -1,5 +1,5 @@
 use crate::core_api::*;
-use radix_engine::types::{Decimal, ResourceAddress};
+use radix_engine::types::{Decimal, ResourceAddress, ComponentAddress};
 use state_manager::{
     jni::state_manager::ActualStateManager,
     query::{dump_component_state, VaultData},
@@ -47,9 +47,28 @@ fn handle_lts_state_account_fungible_resource_balance_internal(
         extract_component_address(&extraction_context, &request.account_address)
             .map_err(|err| err.into_response_error("account_address"))?;
 
-    let component_dump = dump_component_state(state_manager.store(), component_address)
-        .map_err(|err| server_error(format!("Error traversing component state: {err:?}")))?;
-
+    // TODO: super-inefficient implementation - change before mainnet
+    let component_dump = match dump_component_state(state_manager.store(), component_address) {
+        Ok(component_dump) => component_dump,
+        Err(err) => match component_address {
+            ComponentAddress::Account(_) => return Err(not_found_error("Account not found")),
+            ComponentAddress::EcdsaSecp256k1VirtualAccount(_) |
+            ComponentAddress::EddsaEd25519VirtualAccount(_) => return Ok(
+                models::LtsStateAccountFungibleResourceBalanceResponse {
+                    state_version: to_api_state_version(state_manager.store().max_state_version())?,
+                    account_address: to_api_component_address(&mapping_context, &component_address),
+                    fungible_resource_balance: Box::new(models::LtsFungibleResourceBalance {
+                        fungible_resource_address: to_api_resource_address(
+                            &mapping_context,
+                            &fungible_resource_address,
+                        ),
+                        amount: to_api_decimal(&Decimal::zero()),
+                    }),
+                }),
+            _ => return Err(server_error(format!("Error traversing component state: {err:?}"))),
+        }
+    };
+    
     let fungible_resource_balance_amount = component_dump
         .vaults
         .into_iter()
