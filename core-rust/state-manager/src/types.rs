@@ -257,6 +257,60 @@ impl fmt::Debug for SubstateChangeHash {
     }
 }
 
+#[derive(
+    PartialEq,
+    Eq,
+    Hash,
+    Clone,
+    Copy,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
+pub struct EventHash([u8; Self::LENGTH]);
+
+impl EventHash {
+    pub const LENGTH: usize = 32;
+
+    pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
+        Self(hash_bytes)
+    }
+
+    pub fn into_bytes(self) -> [u8; Self::LENGTH] {
+        self.0
+    }
+}
+
+impl AsRef<[u8]> for EventHash {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl From<Hash> for EventHash {
+    fn from(hash: Hash) -> Self {
+        Self(hash.0)
+    }
+}
+
+impl IsHash for EventHash {}
+
+impl fmt::Display for EventHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(self.0))
+    }
+}
+
+impl fmt::Debug for EventHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("EventHash")
+            .field(&hex::encode(self.0))
+            .finish()
+    }
+}
+
 /// A hash of an SBOR-encoded `ConsensusReceipt`, capturing all the critical, on-ledger effects of
 /// executing a transaction.
 /// This is the hash that consensus agrees on.
@@ -278,12 +332,17 @@ pub struct LedgerReceiptHash([u8; Self::LENGTH]);
 /// It is of constant size, which means that some parts are included directly (simple fields, e.g.
 /// the boolean outcome) while the rest is included via merkle root hashes (collections, e.g.
 /// substate changes).
-/// This receipt is directly used for computing a `LedgerReceiptHash`.
+/// This receipt (i.e. its SBOR serialization) is directly used for computing a `LedgerReceiptHash`.
 #[derive(ScryptoCategorize, ScryptoEncode)]
 pub struct ConsensusReceipt {
+    /// The high-level outcome from the `LedgerTransactionReceipt`.
     pub outcome: LedgerTransactionOutcome,
+    /// The root hash of a merkle tree whose leaves are hashes of the `LedgerTransactionReceipt`'s
+    /// `substate_changes` (see `SubstateChange::get_hash()`).
     pub substate_change_root: SubstateChangeHash,
-    // TODO: Add `event_root` after events are propagated to our receipt
+    /// The root hash of a merkle tree whose leaves are hashes of the `LedgerTransactionReceipt`'s
+    /// `application_events` (see `ApplicationEvent::get_hash()`).
+    pub event_root: EventHash,
 }
 
 impl ConsensusReceipt {

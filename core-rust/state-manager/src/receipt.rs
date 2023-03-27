@@ -12,6 +12,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::{hash, scrypto_encode, Decimal, Hash, Level, ObjectId, SubstateId};
 use radix_engine_common::crypto::blake2b_256_hash;
+
 use radix_engine_interface::api::types::EventTypeIdentifier;
 use radix_engine_interface::data::scrypto::model::ComponentAddress;
 use radix_engine_interface::*;
@@ -19,7 +20,7 @@ use sbor::rust::collections::IndexMap;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
-use crate::{AccumulatorHash, ConsensusReceipt, SubstateChangeHash};
+use crate::{AccumulatorHash, ConsensusReceipt, EventHash, SubstateChangeHash};
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct CommittedTransactionIdentifiers {
@@ -33,6 +34,23 @@ impl CommittedTransactionIdentifiers {
             state_version: 0,
             accumulator_hash: AccumulatorHash::pre_genesis(),
         }
+    }
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ApplicationEvent {
+    pub type_id: EventTypeIdentifier,
+    pub data: Vec<u8>,
+}
+
+impl ApplicationEvent {
+    pub fn new(type_id: EventTypeIdentifier, data: Vec<u8>) -> Self {
+        Self { type_id, data }
+    }
+
+    /// Computes a hash of this event, to be used in the events' merkle tree.
+    pub fn get_hash(&self) -> EventHash {
+        EventHash::from(blake2b_256_hash(scrypto_encode(self).unwrap()))
     }
 }
 
@@ -148,7 +166,7 @@ pub struct LedgerTransactionReceipt {
     /// The substate changes resulting from the transaction, ordered by their `substate_id`.
     pub substate_changes: Vec<SubstateChange>,
     /// The events emitted during the transaction, in the order they occurred.
-    pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
+    pub application_events: Vec<ApplicationEvent>,
 }
 
 /// A computable/non-critical/non-deterministic part of the `LocalTransactionReceipt` (e.g. logs,
@@ -170,14 +188,25 @@ pub struct LocalTransactionExecution {
 
 impl LedgerTransactionReceipt {
     pub fn get_consensus_receipt(&self) -> ConsensusReceipt {
-        let substate_change_hashes = self
-            .substate_changes
-            .iter()
-            .map(|substate_change| substate_change.get_hash())
-            .collect::<Vec<_>>();
+        let LedgerTransactionReceipt {
+            outcome,
+            substate_changes,
+            application_events,
+        } = self;
         ConsensusReceipt {
-            outcome: self.outcome.clone(),
-            substate_change_root: compute_merkle_root(substate_change_hashes),
+            outcome: outcome.clone(),
+            substate_change_root: compute_merkle_root(
+                substate_changes
+                    .iter()
+                    .map(|substate_change| substate_change.get_hash())
+                    .collect(),
+            ),
+            event_root: compute_merkle_root(
+                application_events
+                    .iter()
+                    .map(|application_event| application_event.get_hash())
+                    .collect(),
+            ),
         }
     }
 }
@@ -189,7 +218,11 @@ impl From<(CommitResult, TransactionExecutionTrace)> for LocalTransactionReceipt
             on_ledger: LedgerTransactionReceipt {
                 outcome: LedgerTransactionOutcome::resolve(&commit_result.outcome),
                 substate_changes: fix_state_updates(commit_result.state_updates),
-                application_events: commit_result.application_events,
+                application_events: commit_result
+                    .application_events
+                    .into_iter()
+                    .map(|(type_id, data)| ApplicationEvent::new(type_id, data))
+                    .collect(),
             },
             local_execution: LocalTransactionExecution {
                 outcome: commit_result.outcome.into(),
