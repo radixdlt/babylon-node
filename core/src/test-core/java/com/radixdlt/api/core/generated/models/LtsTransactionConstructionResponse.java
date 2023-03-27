@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.Instant;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -31,12 +32,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * LtsTransactionConstructionResponse
  */
 @JsonPropertyOrder({
-  LtsTransactionConstructionResponse.JSON_PROPERTY_CURRENT_EPOCH
+  LtsTransactionConstructionResponse.JSON_PROPERTY_CURRENT_EPOCH,
+  LtsTransactionConstructionResponse.JSON_PROPERTY_LEDGER_CLOCK
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class LtsTransactionConstructionResponse {
   public static final String JSON_PROPERTY_CURRENT_EPOCH = "current_epoch";
   private Long currentEpoch;
+
+  public static final String JSON_PROPERTY_LEDGER_CLOCK = "ledger_clock";
+  private Instant ledgerClock;
 
   public LtsTransactionConstructionResponse() { 
   }
@@ -69,6 +74,32 @@ public class LtsTransactionConstructionResponse {
   }
 
 
+  public LtsTransactionConstructionResponse ledgerClock(Instant ledgerClock) {
+    this.ledgerClock = ledgerClock;
+    return this;
+  }
+
+   /**
+   * Get ledgerClock
+   * @return ledgerClock
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_LEDGER_CLOCK)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Instant getLedgerClock() {
+    return ledgerClock;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_LEDGER_CLOCK)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setLedgerClock(Instant ledgerClock) {
+    this.ledgerClock = ledgerClock;
+  }
+
+
   /**
    * Return true if this LtsTransactionConstructionResponse object is equal to o.
    */
@@ -81,12 +112,13 @@ public class LtsTransactionConstructionResponse {
       return false;
     }
     LtsTransactionConstructionResponse ltsTransactionConstructionResponse = (LtsTransactionConstructionResponse) o;
-    return Objects.equals(this.currentEpoch, ltsTransactionConstructionResponse.currentEpoch);
+    return Objects.equals(this.currentEpoch, ltsTransactionConstructionResponse.currentEpoch) &&
+        Objects.equals(this.ledgerClock, ltsTransactionConstructionResponse.ledgerClock);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(currentEpoch);
+    return Objects.hash(currentEpoch, ledgerClock);
   }
 
   @Override
@@ -94,6 +126,7 @@ public class LtsTransactionConstructionResponse {
     StringBuilder sb = new StringBuilder();
     sb.append("class LtsTransactionConstructionResponse {\n");
     sb.append("    currentEpoch: ").append(toIndentedString(currentEpoch)).append("\n");
+    sb.append("    ledgerClock: ").append(toIndentedString(ledgerClock)).append("\n");
     sb.append("}");
     return sb.toString();
   }

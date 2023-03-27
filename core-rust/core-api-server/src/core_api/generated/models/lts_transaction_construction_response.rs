@@ -16,12 +16,15 @@ pub struct LtsTransactionConstructionResponse {
     /// An integer between `0` and `10^10`, marking the current epoch
     #[serde(rename = "current_epoch")]
     pub current_epoch: i64,
+    #[serde(rename = "ledger_clock")]
+    pub ledger_clock: Box<crate::core_api::generated::models::Instant>,
 }
 
 impl LtsTransactionConstructionResponse {
-    pub fn new(current_epoch: i64) -> LtsTransactionConstructionResponse {
+    pub fn new(current_epoch: i64, ledger_clock: crate::core_api::generated::models::Instant) -> LtsTransactionConstructionResponse {
         LtsTransactionConstructionResponse {
             current_epoch,
+            ledger_clock: Box::new(ledger_clock),
         }
     }
 }

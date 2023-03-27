@@ -2276,9 +2276,9 @@ components:
       minimum: 0
       maximum: 4294967295
       description: An integer between `0` and `2^32 - 1`, representing the number of cost units required to access this method.
-#######################################
+########################################
 # GENERAL / SHARED MODELS - validators #
-#######################################
+########################################
     ActiveValidator:
       type: object
       required:
@@ -2920,9 +2920,9 @@ components:
             data_struct:
               $ref: '#/components/schemas/DataStruct'
 
-#########################################
+##########################################
 # REQUEST: /lts/transaction/construction #
-#########################################
+##########################################
     LtsTransactionConstructionRequest:
       type: object
       required:
@@ -2934,6 +2934,7 @@ components:
       type: object
       required:
         - current_epoch
+        - ledger_clock
       properties:
         current_epoch:
           type: integer
@@ -2941,9 +2942,12 @@ components:
           minimum: 0
           maximum: 10000000000
           description: An integer between `0` and `10^10`, marking the current epoch
-###################################
+        ledger_clock:
+          $ref: '#/components/schemas/Instant'
+          description: The latest round proposer's timestamp (rounded down to the current minute).
+####################################
 # REQUEST: /lts/transaction/status #
-###################################
+####################################
     LtsTransactionStatusRequest:
       type: object
       required:

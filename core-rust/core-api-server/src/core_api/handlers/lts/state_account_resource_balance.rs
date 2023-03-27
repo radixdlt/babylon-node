@@ -1,5 +1,5 @@
 use crate::core_api::*;
-use radix_engine::types::{Decimal, ResourceAddress, ComponentAddress};
+use radix_engine::types::{ComponentAddress, Decimal, ResourceAddress};
 use state_manager::{
     jni::state_manager::ActualStateManager,
     query::{dump_component_state, VaultData},
@@ -52,9 +52,9 @@ fn handle_lts_state_account_fungible_resource_balance_internal(
         Ok(component_dump) => component_dump,
         Err(err) => match component_address {
             ComponentAddress::Account(_) => return Err(not_found_error("Account not found")),
-            ComponentAddress::EcdsaSecp256k1VirtualAccount(_) |
-            ComponentAddress::EddsaEd25519VirtualAccount(_) => return Ok(
-                models::LtsStateAccountFungibleResourceBalanceResponse {
+            ComponentAddress::EcdsaSecp256k1VirtualAccount(_)
+            | ComponentAddress::EddsaEd25519VirtualAccount(_) => {
+                return Ok(models::LtsStateAccountFungibleResourceBalanceResponse {
                     state_version: to_api_state_version(state_manager.store().max_state_version())?,
                     account_address: to_api_component_address(&mapping_context, &component_address),
                     fungible_resource_balance: Box::new(models::LtsFungibleResourceBalance {
@@ -64,11 +64,16 @@ fn handle_lts_state_account_fungible_resource_balance_internal(
                         ),
                         amount: to_api_decimal(&Decimal::zero()),
                     }),
-                }),
-            _ => return Err(server_error(format!("Error traversing component state: {err:?}"))),
-        }
+                })
+            }
+            _ => {
+                return Err(server_error(format!(
+                    "Error traversing component state: {err:?}"
+                )))
+            }
+        },
     };
-    
+
     let fungible_resource_balance_amount = component_dump
         .vaults
         .into_iter()
