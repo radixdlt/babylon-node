@@ -17,6 +17,8 @@ use radix_engine_interface::data::scrypto::model::ComponentAddress;
 use radix_engine_interface::*;
 use sbor::rust::collections::IndexMap;
 
+use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
+use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::{AccumulatorHash, ConsensusReceipt, SubstateChangeHash};
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -35,19 +37,41 @@ impl CommittedTransactionIdentifiers {
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct SubstateChanges {
-    pub created: BTreeMap<SubstateId, OutputValue>,
-    pub updated: BTreeMap<SubstateId, OutputValue>,
-    pub deleted: BTreeMap<SubstateId, DeletedSubstateVersion>,
+pub struct SubstateChange {
+    pub substate_id: SubstateId,
+    pub action: ChangeAction,
 }
 
-impl SubstateChanges {
-    pub fn upserted(&self) -> impl Iterator<Item = (&SubstateId, &OutputValue)> {
-        self.created.iter().chain(self.updated.iter())
+impl SubstateChange {
+    pub fn new(substate_id: SubstateId, action: ChangeAction) -> Self {
+        Self {
+            substate_id,
+            action,
+        }
     }
 
-    pub fn deleted_ids(&self) -> impl Iterator<Item = &SubstateId> {
-        self.deleted.keys()
+    /// Computes a hash of this change, to be used in the substate changes' merkle tree.
+    pub fn get_hash(&self) -> SubstateChangeHash {
+        SubstateChangeHash::from(blake2b_256_hash(scrypto_encode(self).unwrap()))
+    }
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum ChangeAction {
+    Create(OutputValue),
+    Update(OutputValue),
+    Delete(DeletedSubstateVersion),
+}
+
+impl ChangeAction {
+    /// Computes a hash of the changed substate's new value, to be used in the state merkle tree.
+    pub fn get_new_value_hash(&self) -> Option<Hash> {
+        match &self {
+            ChangeAction::Create(value) | ChangeAction::Update(value) => {
+                Some(hash(scrypto_encode(&value.substate).unwrap()))
+            }
+            ChangeAction::Delete(_) => None,
+        }
     }
 }
 
@@ -118,8 +142,12 @@ pub struct LocalTransactionReceipt {
 /// a `Consensus Receipt`.
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LedgerTransactionReceipt {
+    /// A simple, high-level outcome of the transaction.
+    /// Its omitted details may be found in `LocalTransactionExecution::outcome`.
     pub outcome: LedgerTransactionOutcome,
-    pub substate_changes: SubstateChanges,
+    /// The substate changes resulting from the transaction, ordered by their `substate_id`.
+    pub substate_changes: Vec<SubstateChange>,
+    /// The events emitted during the transaction, in the order they occurred.
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
 }
 
@@ -142,15 +170,15 @@ pub struct LocalTransactionExecution {
 
 impl LedgerTransactionReceipt {
     pub fn get_consensus_receipt(&self) -> ConsensusReceipt {
+        let substate_change_hashes = self
+            .substate_changes
+            .iter()
+            .map(|substate_change| substate_change.get_hash())
+            .collect::<Vec<_>>();
         ConsensusReceipt {
             outcome: self.outcome.clone(),
-            substate_change_root: Self::compute_substate_change_root(&self.substate_changes),
+            substate_change_root: compute_merkle_root(substate_change_hashes),
         }
-    }
-
-    fn compute_substate_change_root(substate_changes: &SubstateChanges) -> SubstateChangeHash {
-        // TODO: implement using a merkle tree
-        SubstateChangeHash::from(blake2b_256_hash(scrypto_encode(substate_changes).unwrap()))
     }
 }
 
@@ -176,7 +204,7 @@ impl From<(CommitResult, TransactionExecutionTrace)> for LocalTransactionReceipt
     }
 }
 
-fn fix_state_updates(state_updates: StateDiff) -> SubstateChanges {
+fn fix_state_updates(state_updates: StateDiff) -> Vec<SubstateChange> {
     // As of end of August 2022, the engine's statediff erroneously includes substate reads
     // (even if the content didn't change) as ups and downs.
     // This needs fixing, but for now, we work around this here, by removing such up/down pairs.
@@ -216,9 +244,78 @@ fn fix_state_updates(state_updates: StateDiff) -> SubstateChanges {
     // The remaining up_substates which didn't match with a down_substate are all creates
     let created = possible_creations;
 
-    SubstateChanges {
-        created,
-        updated,
-        deleted,
+    into_change_list(created, updated, deleted)
+}
+
+/// Turns the sets of changes (of different kind) into a flat list of `SubstateChange`s, ordered by
+/// `SubstateId` (i.e. suitable for merklization).
+fn into_change_list(
+    created: BTreeMap<SubstateId, OutputValue>,
+    updated: BTreeMap<SubstateId, OutputValue>,
+    deleted: BTreeMap<SubstateId, DeletedSubstateVersion>,
+) -> Vec<SubstateChange> {
+    let mut changes = created
+        .into_iter()
+        .map(|(id, value)| SubstateChange::new(id, ChangeAction::Create(value)))
+        .chain(
+            updated
+                .into_iter()
+                .map(|(id, value)| SubstateChange::new(id, ChangeAction::Update(value))),
+        )
+        .chain(
+            deleted
+                .into_iter()
+                .map(|(id, version)| SubstateChange::new(id, ChangeAction::Delete(version))),
+        )
+        .collect::<Vec<_>>();
+    changes.sort_by(|left, right| left.substate_id.cmp(&right.substate_id));
+    changes
+}
+
+fn compute_merkle_root<M: Merklizable>(leaves: Vec<M>) -> M {
+    let mut store = RootCapturingAccuTreeStore::default();
+    let mut tree = AccuTree::new(&mut store, 0);
+    tree.append(leaves);
+    store.into_captured_root()
+}
+
+struct RootCapturingAccuTreeStore<M> {
+    captured: Option<M>,
+}
+
+impl<M> RootCapturingAccuTreeStore<M> {
+    pub fn into_captured_root(self) -> M {
+        self.captured.expect("not captured yet")
+    }
+}
+
+impl<M> Default for RootCapturingAccuTreeStore<M> {
+    fn default() -> Self {
+        Self { captured: None }
+    }
+}
+
+impl<M: Merklizable> ReadableAccuTreeStore<usize, M> for RootCapturingAccuTreeStore<M> {
+    fn get_tree_slice(&self, key: &usize) -> Option<TreeSlice<M>> {
+        panic!("unexpected get of slice {key}, since the build should be one-shot")
+    }
+}
+
+impl<M: Merklizable> WriteableAccuTreeStore<usize, M> for RootCapturingAccuTreeStore<M> {
+    fn put_tree_slice(&mut self, _key: usize, slice: TreeSlice<M>) {
+        if self.captured.is_some() {
+            panic!("unexpected repeated put, since the build should be one-shot")
+        }
+        self.captured = Some(
+            slice
+                .levels
+                .into_iter()
+                .next_back()
+                .unwrap()
+                .nodes
+                .into_iter()
+                .next()
+                .unwrap(),
+        )
     }
 }

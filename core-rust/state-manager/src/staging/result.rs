@@ -68,15 +68,15 @@ use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::{
     AccumulatorHash, CommittedTransactionIdentifiers, DetailedTransactionOutcome,
     EpochTransactionIdentifiers, LedgerHashes, LedgerPayloadHash, LocalTransactionReceipt,
-    NextEpoch, ReceiptTreeHash, StateHash, SubstateChanges, TransactionTreeHash,
+    NextEpoch, ReceiptTreeHash, StateHash, SubstateChange, TransactionTreeHash,
 };
 use radix_engine::transaction::{
     AbortResult, CommitResult, RejectResult, TransactionExecutionTrace, TransactionReceipt,
     TransactionResult,
 };
 use radix_engine_interface::api::types::SubstateOffset;
-use radix_engine_interface::crypto::{hash, Hash};
-use radix_engine_interface::data::scrypto::scrypto_encode;
+use radix_engine_interface::crypto::Hash;
+
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, Payload, ReNodeModulePayload, ReadableTreeStore, TreeNode, WriteableTreeStore,
 };
@@ -236,22 +236,17 @@ impl ProcessedCommitResult {
     fn compute_state_tree_update<S: ReadableStateTreeStore>(
         store: &S,
         parent_state_version: u64,
-        substate_changes: &SubstateChanges,
+        substate_changes: &[SubstateChange],
     ) -> StateHashTreeDiff {
         let hash_changes = substate_changes
-            .upserted()
-            .map(|(id, value)| {
+            .iter()
+            .map(|substate_change| {
                 SubstateHashChange::new(
-                    id.clone(),
-                    Some(hash(scrypto_encode(&value.substate).unwrap())),
+                    substate_change.substate_id.clone(),
+                    substate_change.action.get_new_value_hash(),
                 )
             })
-            .chain(
-                substate_changes
-                    .deleted_ids()
-                    .map(|id| SubstateHashChange::new(id.clone(), None)),
-            )
-            .collect::<Vec<SubstateHashChange>>();
+            .collect::<Vec<_>>();
         let mut collector = CollectingTreeStore::new(store);
         let root_hash = put_at_next_version(
             &mut collector,

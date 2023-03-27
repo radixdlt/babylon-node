@@ -17,7 +17,9 @@ use radix_engine_interface::blueprints::resource::ResourceType;
 
 use std::collections::{BTreeMap, HashMap};
 
-use state_manager::{DeletedSubstateVersion, DetailedTransactionOutcome, LocalTransactionReceipt};
+use state_manager::{
+    ChangeAction, DeletedSubstateVersion, DetailedTransactionOutcome, LocalTransactionReceipt,
+};
 
 pub fn to_api_receipt(
     context: &MappingContext,
@@ -60,8 +62,8 @@ pub fn to_api_receipt(
 
     // This was added as a temporary workaround to the Vault substate abstraction for the RCNet release
     fn filter_out_incorrect_vault_substates_for_gateway(
-        created_substates: BTreeMap<SubstateId, OutputValue>,
-    ) -> BTreeMap<SubstateId, OutputValue> {
+        created_substates: Vec<(SubstateId, OutputValue)>,
+    ) -> Vec<(SubstateId, OutputValue)> {
         // First pass -> create mapping of Vault => ResourceType
         let vault_resource_type_map: HashMap<ObjectId, ResourceType> = created_substates
             .iter()
@@ -111,29 +113,33 @@ pub fn to_api_receipt(
             .collect()
     }
 
-    let substate_changes = receipt.on_ledger.substate_changes;
+    let mut unfiltered_creations = Vec::new();
+    let mut updated_substates = Vec::new();
+    let mut deleted_substates = Vec::new();
+    for substate_change in receipt.on_ledger.substate_changes {
+        let id = substate_change.substate_id;
+        match substate_change.action {
+            ChangeAction::Create(value) => {
+                unfiltered_creations.push((id, value));
+            }
+            ChangeAction::Update(value) => {
+                updated_substates.push(to_api_new_substate_version(context, id, value)?);
+            }
+            ChangeAction::Delete(version) => {
+                deleted_substates.push(to_api_deleted_substate(id, version)?);
+            }
+        }
+    }
 
-    let created = filter_out_incorrect_vault_substates_for_gateway(substate_changes.created)
+    let created_substates = filter_out_incorrect_vault_substates_for_gateway(unfiltered_creations)
         .into_iter()
-        .map(|substate_kv| to_api_new_substate_version(context, substate_kv))
-        .collect::<Result<Vec<_>, _>>()?;
-
-    let updated = substate_changes
-        .updated
-        .into_iter()
-        .map(|substate_kv| to_api_new_substate_version(context, substate_kv))
-        .collect::<Result<Vec<_>, _>>()?;
-
-    let deleted = substate_changes
-        .deleted
-        .into_iter()
-        .map(to_api_deleted_substate)
+        .map(|(id, value)| to_api_new_substate_version(context, id, value))
         .collect::<Result<Vec<_>, _>>()?;
 
     let api_state_updates = models::StateUpdates {
-        created_substates: created,
-        updated_substates: updated,
-        deleted_substates: deleted,
+        created_substates,
+        updated_substates,
+        deleted_substates,
         new_global_entities,
     };
 
@@ -180,7 +186,8 @@ pub fn to_api_receipt(
 #[tracing::instrument(skip_all)]
 pub fn to_api_new_substate_version(
     context: &MappingContext,
-    (substate_id, output_value): (SubstateId, OutputValue),
+    substate_id: SubstateId,
+    output_value: OutputValue,
 ) -> Result<models::NewSubstateVersion, MappingError> {
     let substate_bytes =
         scrypto_encode(&output_value.substate).map_err(|err| MappingError::SborEncodeError {
@@ -206,7 +213,8 @@ pub fn to_api_new_substate_version(
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_deleted_substate(
-    (substate_id, deleted_substate): (SubstateId, DeletedSubstateVersion),
+    substate_id: SubstateId,
+    deleted_substate: DeletedSubstateVersion,
 ) -> Result<models::DeletedSubstateVersionRef, MappingError> {
     Ok(models::DeletedSubstateVersionRef {
         substate_id: Box::new(to_api_substate_id(substate_id)?),
