@@ -332,11 +332,16 @@ pub struct LedgerReceiptHash([u8; Self::LENGTH]);
 /// It is of constant size, which means that some parts are included directly (simple fields, e.g.
 /// the boolean outcome) while the rest is included via merkle root hashes (collections, e.g.
 /// substate changes).
-/// This receipt is directly used for computing a `LedgerReceiptHash`.
+/// This receipt (i.e. its SBOR serialization) is directly used for computing a `LedgerReceiptHash`.
 #[derive(ScryptoCategorize, ScryptoEncode)]
 pub struct ConsensusReceipt {
+    /// The high-level outcome from the `LedgerTransactionReceipt`.
     pub outcome: LedgerTransactionOutcome,
+    /// The root hash of a merkle tree whose leaves are hashes of the `LedgerTransactionReceipt`'s
+    /// `substate_changes` (see `SubstateChange::get_hash()`).
     pub substate_change_root: SubstateChangeHash,
+    /// The root hash of a merkle tree whose leaves are hashes of the `LedgerTransactionReceipt`'s
+    /// `application_events` (see `ApplicationEvent::get_hash()`).
     pub event_root: EventHash,
 }
 

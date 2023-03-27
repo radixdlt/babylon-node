@@ -252,7 +252,10 @@ pub fn to_api_event(
     context: &MappingContext,
     event: ApplicationEvent,
 ) -> Result<models::Event, MappingError> {
-    let EventTypeIdentifier(emitter, local_type_index) = event.type_id;
+    let ApplicationEvent {
+        type_id: EventTypeIdentifier(emitter, local_type_index),
+        data,
+    } = event;
     Ok(models::Event {
         _type: Box::new(models::EventTypeIdentifier {
             emitter: Some(match emitter {
@@ -272,7 +275,7 @@ pub fn to_api_event(
             }),
             local_type_index: Box::new(to_api_local_type_index(context, &local_type_index)?),
         }),
-        data: Box::new(to_api_sbor_data_from_bytes(context, &event.data)?),
+        data: Box::new(to_api_sbor_data_from_bytes(context, &data)?),
     })
 }
 

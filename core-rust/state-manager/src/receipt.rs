@@ -188,17 +188,24 @@ pub struct LocalTransactionExecution {
 
 impl LedgerTransactionReceipt {
     pub fn get_consensus_receipt(&self) -> ConsensusReceipt {
+        let LedgerTransactionReceipt {
+            outcome,
+            substate_changes,
+            application_events,
+        } = self;
         ConsensusReceipt {
-            outcome: self.outcome.clone(),
+            outcome: outcome.clone(),
             substate_change_root: compute_merkle_root(
-                self.substate_changes.iter()
+                substate_changes
+                    .iter()
                     .map(|substate_change| substate_change.get_hash())
-                    .collect()
+                    .collect(),
             ),
             event_root: compute_merkle_root(
-                self.application_events.iter()
+                application_events
+                    .iter()
                     .map(|application_event| application_event.get_hash())
-                    .collect()
+                    .collect(),
             ),
         }
     }
