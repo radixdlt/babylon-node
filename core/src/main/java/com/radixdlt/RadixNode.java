@@ -109,7 +109,7 @@ public final class RadixNode {
 
   private final RuntimeProperties properties;
 
-  private Optional<Injector> maybeGenesisFromOlympiaInjector = Optional.empty();
+  private Optional<OlympiaGenesisBootstrapper> maybeOlympiaBootstrapper = Optional.empty();
   private Optional<Injector> maybeRadixNodeInjector = Optional.empty();
 
   public RadixNode(RuntimeProperties properties) {
@@ -138,6 +138,7 @@ public final class RadixNode {
         This is only instantiated if both are true:
         a) there's no genesis transaction configured in properties or already executed in the database
         b) Olympia-based genesis has been configured in properties
+        The module is managed by an encapsulating utility class: OlympiaGenesisBootstrapper.
 
      - RadixNodeModule:
         A complete Radix node module that requires a known genesis transaction in order to start.
@@ -234,7 +235,9 @@ public final class RadixNode {
       startRadixNodeModule(fixedNetworkGenesis.get(), nodeBootStopwatch);
     } else if (useOlympiaFlagIsSet) {
       // No genesis transaction known beforehand was found, but we can get it from Olympia...
-      startOlympiaGenesisModule(network, nodeBootStopwatch);
+      final var olympiaBootstrapper = new OlympiaGenesisBootstrapper(network, nodeBootStopwatch);
+      olympiaBootstrapper.start();
+      this.maybeOlympiaBootstrapper = Optional.of(olympiaBootstrapper);
     } else {
       // TODO(post-babylon): remove Olympia ref from the message below
       throw new RuntimeException(
@@ -245,54 +248,6 @@ public final class RadixNode {
               node consider using it as your genesis source (`genesis.use_olympia`). Refer to \
               documentation for more details.""");
     }
-  }
-
-  private void startOlympiaGenesisModule(Network network, Stopwatch nodeBootStopwatch) {
-    final var genesisFromOlympiaInjector =
-        Guice.createInjector(new GenesisFromOlympiaNodeModule(properties, network));
-    this.maybeGenesisFromOlympiaInjector = Optional.of(genesisFromOlympiaInjector);
-
-    log.info(
-        "Olympia-based genesis was configured ({}). Using core API URL of {}",
-        network.getLogicalName(),
-        genesisFromOlympiaInjector.getInstance(OlympiaGenesisConfig.class).nodeCoreApiUrl());
-
-    final var systemApi = genesisFromOlympiaInjector.getInstance(SystemApi.class);
-    systemApi.start();
-
-    final var olympiaGenesisService =
-        genesisFromOlympiaInjector.getInstance(OlympiaGenesisService.class);
-
-    olympiaGenesisService.start(
-        genesisData ->
-            proceedWithGenesisFromOlympia(
-                nodeBootStopwatch, genesisFromOlympiaInjector, genesisData),
-        ex -> {
-          log.warn(
-              """
-                  Radix node couldn't be initialized. The Olympia-based genesis was configured but \
-                  an error occurred.""",
-              ex);
-          this.shutdown();
-        });
-  }
-
-  private void proceedWithGenesisFromOlympia(
-      Stopwatch nodeBootStopwatch, Injector genesisFromOlympiaInjector, GenesisData genesisData) {
-    log.info(
-        """
-            Genesis data has been successfully received from the Olympia node \
-            ({} accounts, {} validators). Initializing the Babylon node...""",
-        genesisData.accountXrdAllocations().size(),
-        genesisData.validatorSetAndStakeOwners().size());
-    cleanupOlympiaGenesisModule(genesisFromOlympiaInjector);
-    final var genesisTxn = genesisData.toGenesisTransaction(GenesisConfig.babylonDefault());
-    this.startRadixNodeModule(genesisTxn, nodeBootStopwatch);
-  }
-
-  private void cleanupOlympiaGenesisModule(Injector genesisFromOlympiaInjector) {
-    genesisFromOlympiaInjector.getInstance(SystemApi.class).stop();
-    genesisFromOlympiaInjector.getInstance(OlympiaGenesisService.class).shutdown();
   }
 
   private void startRadixNodeModule(RawLedgerTransaction genesisTxn, Stopwatch nodeBootStopwatch) {
@@ -349,7 +304,7 @@ public final class RadixNode {
   }
 
   public void shutdown() {
-    this.maybeGenesisFromOlympiaInjector.ifPresent(this::cleanupOlympiaGenesisModule);
+    this.maybeOlympiaBootstrapper.ifPresent(OlympiaGenesisBootstrapper::cleanup);
 
     this.maybeRadixNodeInjector.ifPresent(
         radixNodeInjector -> {
@@ -441,5 +396,61 @@ public final class RadixNode {
   /** @return true if `valueToCheck` is present and not equal to `baseValue` */
   private <T> boolean isPresentAndNotEqual(T baseValue, Optional<T> valueToCheck) {
     return valueToCheck.isPresent() && !valueToCheck.get().equals(baseValue);
+  }
+
+  /** A utility class encapsulating the Olympia-based genesis functionality */
+  private class OlympiaGenesisBootstrapper {
+    private final Network network;
+    private final Stopwatch nodeBootStopwatch;
+    private final Injector bootstrapperInjector;
+
+    OlympiaGenesisBootstrapper(Network network, Stopwatch nodeBootStopwatch) {
+      this.network = network;
+      this.nodeBootStopwatch = nodeBootStopwatch;
+      this.bootstrapperInjector =
+          Guice.createInjector(new GenesisFromOlympiaNodeModule(properties, network));
+    }
+
+    void start() {
+      log.info(
+          "Olympia-based genesis was configured ({}). Using core API URL of {}",
+          network.getLogicalName(),
+          bootstrapperInjector.getInstance(OlympiaGenesisConfig.class).nodeCoreApiUrl());
+
+      final var systemApi = bootstrapperInjector.getInstance(SystemApi.class);
+      systemApi.start();
+
+      final var olympiaGenesisService =
+          bootstrapperInjector.getInstance(OlympiaGenesisService.class);
+
+      olympiaGenesisService.start(
+          this::proceedWithGenesisFromOlympia,
+          ex -> {
+            log.warn(
+                """
+                Radix node couldn't be initialized. The Olympia-based genesis was configured but \
+                an error occurred.""",
+                ex);
+            this.cleanup();
+            throw new RuntimeException(ex);
+          });
+    }
+
+    private void proceedWithGenesisFromOlympia(GenesisData genesisData) {
+      log.info(
+          """
+           Genesis data has been successfully received from the Olympia node \
+           ({} accounts, {} validators). Initializing the Babylon node...""",
+          genesisData.accountXrdAllocations().size(),
+          genesisData.validatorSetAndStakeOwners().size());
+      this.cleanup();
+      final var genesisTxn = genesisData.toGenesisTransaction(GenesisConfig.babylonDefault());
+      RadixNode.this.startRadixNodeModule(genesisTxn, nodeBootStopwatch);
+    }
+
+    void cleanup() {
+      bootstrapperInjector.getInstance(SystemApi.class).stop();
+      bootstrapperInjector.getInstance(OlympiaGenesisService.class).shutdown();
+    }
   }
 }
