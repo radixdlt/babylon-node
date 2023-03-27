@@ -4,53 +4,57 @@ use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine::system::kernel_modules::costing::{FeeSummary, RoyaltyRecipient};
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::indexmap::IndexMap;
-use radix_engine::types::{Address, ObjectId, RENodeId, SubstateOffset, VaultOffset};
+use radix_engine::types::{
+    Address, ComponentAddress, ObjectId, RENodeId, SubstateOffset, VaultOffset,
+};
 use radix_engine::{
     ledger::OutputValue,
     types::{hash, scrypto_encode, Decimal, SubstateId},
 };
 
+use radix_engine_interface::api::types::{Emitter, EventTypeIdentifier};
 use radix_engine_interface::blueprints::resource::ResourceType;
-use radix_engine_interface::data::scrypto::model::ComponentAddress;
+
 use std::collections::{BTreeMap, HashMap};
 
-use state_manager::{DeletedSubstateVersion, LedgerTransactionOutcome, LedgerTransactionReceipt};
+use state_manager::{
+    ApplicationEvent, ChangeAction, DeletedSubstateVersion, DetailedTransactionOutcome,
+    LocalTransactionReceipt,
+};
 
 pub fn to_api_receipt(
     context: &MappingContext,
-    receipt: LedgerTransactionReceipt,
+    receipt: LocalTransactionReceipt,
 ) -> Result<models::TransactionReceipt, MappingError> {
-    let (status, output, error_message) = match receipt.outcome {
-        LedgerTransactionOutcome::Success(output) => {
+    let (status, output, error_message) = match receipt.local_execution.outcome {
+        DetailedTransactionOutcome::Success(output) => {
             (models::TransactionStatus::Succeeded, Some(output), None)
         }
-        LedgerTransactionOutcome::Failure(error) => (
+        DetailedTransactionOutcome::Failure(error) => (
             models::TransactionStatus::Failed,
             None,
             Some(format!("{error:?}")),
         ),
     };
 
-    let substate_changes = receipt.substate_changes;
-
+    let state_update_summary = receipt.local_execution.state_update_summary;
     let mut new_global_entities = Vec::new();
-    let mut created = Vec::new();
 
-    for package_address in receipt.state_update_summary.new_packages {
+    for package_address in state_update_summary.new_packages {
         new_global_entities.push(to_global_entity_reference(
             context,
             &package_address.into(),
         )?);
     }
 
-    for component_address in receipt.state_update_summary.new_components {
+    for component_address in state_update_summary.new_components {
         new_global_entities.push(to_global_entity_reference(
             context,
             &component_address.into(),
         )?);
     }
 
-    for resource_address in receipt.state_update_summary.new_resources {
+    for resource_address in state_update_summary.new_resources {
         new_global_entities.push(to_global_entity_reference(
             context,
             &resource_address.into(),
@@ -59,8 +63,8 @@ pub fn to_api_receipt(
 
     // This was added as a temporary workaround to the Vault substate abstraction for the RCNet release
     fn filter_out_incorrect_vault_substates_for_gateway(
-        created_substates: BTreeMap<SubstateId, OutputValue>,
-    ) -> BTreeMap<SubstateId, OutputValue> {
+        created_substates: Vec<(SubstateId, OutputValue)>,
+    ) -> Vec<(SubstateId, OutputValue)> {
         // First pass -> create mapping of Vault => ResourceType
         let vault_resource_type_map: HashMap<ObjectId, ResourceType> = created_substates
             .iter()
@@ -110,52 +114,70 @@ pub fn to_api_receipt(
             .collect()
     }
 
-    for (id, output) in filter_out_incorrect_vault_substates_for_gateway(substate_changes.created) {
-        let substate_version = to_api_new_substate_version(context, (id.clone(), output))?;
-        created.push(substate_version)
+    let mut unfiltered_creations = Vec::new();
+    let mut updated_substates = Vec::new();
+    let mut deleted_substates = Vec::new();
+    for substate_change in receipt.on_ledger.substate_changes {
+        let id = substate_change.substate_id;
+        match substate_change.action {
+            ChangeAction::Create(value) => {
+                unfiltered_creations.push((id, value));
+            }
+            ChangeAction::Update(value) => {
+                updated_substates.push(to_api_new_substate_version(context, id, value)?);
+            }
+            ChangeAction::Delete(version) => {
+                deleted_substates.push(to_api_deleted_substate(id, version)?);
+            }
+        }
     }
 
-    let updated = substate_changes
-        .updated
+    let created_substates = filter_out_incorrect_vault_substates_for_gateway(unfiltered_creations)
         .into_iter()
-        .map(|substate_kv| to_api_new_substate_version(context, substate_kv))
-        .collect::<Result<Vec<_>, _>>()?;
-
-    let deleted = substate_changes
-        .deleted
-        .into_iter()
-        .map(to_api_deleted_substate)
+        .map(|(id, value)| to_api_new_substate_version(context, id, value))
         .collect::<Result<Vec<_>, _>>()?;
 
     let api_state_updates = models::StateUpdates {
-        created_substates: created,
-        updated_substates: updated,
-        deleted_substates: deleted,
+        created_substates,
+        updated_substates,
+        deleted_substates,
         new_global_entities,
     };
 
-    let api_fee_summary = to_api_fee_summary(context, &receipt.fee_summary, &receipt.fee_payments)?;
+    let api_fee_summary = to_api_fee_summary(
+        context,
+        &receipt.local_execution.fee_summary,
+        &receipt.local_execution.fee_payments,
+    )?;
 
-    let api_output = match output {
-        Some(output) => Some(
+    let api_events = receipt
+        .on_ledger
+        .application_events
+        .into_iter()
+        .map(|event| to_api_event(context, event))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    let api_output = output
+        .map(|output| {
             output
                 .into_iter()
                 .map(|line_output| to_api_sbor_data_from_bytes(context, &line_output))
-                .collect::<Result<Vec<_>, _>>()?,
-        ),
-        None => None,
-    };
+                .collect::<Result<Vec<_>, _>>()
+        })
+        .transpose()?;
 
-    let next_epoch = if let Some(next_epoch) = receipt.next_epoch {
-        Some(Box::new(to_api_next_epoch(context, next_epoch)?))
-    } else {
-        None
-    };
+    let next_epoch = receipt
+        .local_execution
+        .next_epoch
+        .map(|next_epoch| to_api_next_epoch(context, next_epoch))
+        .transpose()?
+        .map(Box::new);
 
     Ok(models::TransactionReceipt {
         status,
         fee_summary: Some(Box::new(api_fee_summary)),
         state_updates: Box::new(api_state_updates),
+        events: Some(api_events),
         output: api_output,
         next_epoch,
         error_message,
@@ -165,7 +187,8 @@ pub fn to_api_receipt(
 #[tracing::instrument(skip_all)]
 pub fn to_api_new_substate_version(
     context: &MappingContext,
-    (substate_id, output_value): (SubstateId, OutputValue),
+    substate_id: SubstateId,
+    output_value: OutputValue,
 ) -> Result<models::NewSubstateVersion, MappingError> {
     let substate_bytes =
         scrypto_encode(&output_value.substate).map_err(|err| MappingError::SborEncodeError {
@@ -191,7 +214,8 @@ pub fn to_api_new_substate_version(
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_deleted_substate(
-    (substate_id, deleted_substate): (SubstateId, DeletedSubstateVersion),
+    substate_id: SubstateId,
+    deleted_substate: DeletedSubstateVersion,
 ) -> Result<models::DeletedSubstateVersionRef, MappingError> {
     Ok(models::DeletedSubstateVersionRef {
         substate_id: Box::new(to_api_substate_id(substate_id)?),
@@ -221,6 +245,38 @@ pub fn to_api_next_epoch(
     };
 
     Ok(next_epoch)
+}
+
+#[tracing::instrument(skip_all)]
+pub fn to_api_event(
+    context: &MappingContext,
+    event: ApplicationEvent,
+) -> Result<models::Event, MappingError> {
+    let ApplicationEvent {
+        type_id: EventTypeIdentifier(emitter, local_type_index),
+        data,
+    } = event;
+    Ok(models::Event {
+        _type: Box::new(models::EventTypeIdentifier {
+            emitter: Some(match emitter {
+                Emitter::Function(node_id, node_module_id, blueprint_name) => {
+                    models::EventEmitterIdentifier::FunctionEventEmitterIdentifier {
+                        entity: Box::new(to_api_entity_reference(node_id)?),
+                        module_type: node_module_id_to_module_type(&node_module_id),
+                        blueprint_name,
+                    }
+                }
+                Emitter::Method(node_id, node_module_id) => {
+                    models::EventEmitterIdentifier::MethodEventEmitterIdentifier {
+                        entity: Box::new(to_api_entity_reference(node_id)?),
+                        module_type: node_module_id_to_module_type(&node_module_id),
+                    }
+                }
+            }),
+            local_type_index: Box::new(to_api_local_type_index(context, &local_type_index)?),
+        }),
+        data: Box::new(to_api_sbor_data_from_bytes(context, &data)?),
+    })
 }
 
 #[tracing::instrument(skip_all)]

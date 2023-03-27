@@ -97,11 +97,11 @@ public class SubstateId {
   }
 
    /**
-   * The hex-encoded bytes of the entity id
+   * The hex-encoded bytes of the entity id.
    * @return entityIdHex
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded bytes of the entity id")
+  @ApiModelProperty(required = true, value = "The hex-encoded bytes of the entity id.")
   @JsonProperty(JSON_PROPERTY_ENTITY_ID_HEX)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

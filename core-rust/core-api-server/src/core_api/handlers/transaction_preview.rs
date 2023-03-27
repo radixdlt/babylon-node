@@ -6,7 +6,7 @@ use radix_engine::{
 use radix_engine_common::data::scrypto::scrypto_encode;
 use radix_engine_interface::network::NetworkDefinition;
 use state_manager::jni::state_manager::ActualStateManager;
-use state_manager::{LedgerTransactionReceipt, PreviewRequest};
+use state_manager::{LocalTransactionReceipt, PreviewRequest};
 use transaction::manifest;
 use transaction::model::PreviewFlags;
 
@@ -99,7 +99,7 @@ fn to_api_response(
 
     let encoded_receipt = to_hex(scrypto_encode(&receipt).unwrap());
 
-    let response = match &receipt.result {
+    let response = match receipt.result {
         TransactionResult::Commit(commit_result) => {
             let mut instruction_resource_changes = Vec::new();
 
@@ -138,13 +138,12 @@ fn to_api_response(
                 )
                 .collect();
 
-            let ledger_receipt: LedgerTransactionReceipt = receipt
-                .try_into()
-                .map_err(|_| server_error("Can't create a ledger receipt"))?;
+            let local_receipt =
+                LocalTransactionReceipt::from((commit_result, receipt.execution_trace));
 
             models::TransactionPreviewResponse {
                 encoded_receipt,
-                receipt: Box::new(to_api_receipt(context, ledger_receipt)?),
+                receipt: Box::new(to_api_receipt(context, local_receipt)?),
                 instruction_resource_changes,
                 logs,
             }
@@ -155,6 +154,7 @@ fn to_api_response(
                 status: models::TransactionStatus::Rejected,
                 fee_summary: None,
                 state_updates: Box::default(),
+                events: None,
                 output: None,
                 next_epoch: None,
                 error_message: Some(format!("{reject_result:?}")),

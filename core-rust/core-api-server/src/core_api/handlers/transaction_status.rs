@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use crate::core_api::*;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::{
-    HasUserPayloadHash, LedgerTransactionOutcome, RejectionReason, UserPayloadHash,
+    DetailedTransactionOutcome, HasUserPayloadHash, RejectionReason, UserPayloadHash,
 };
 
 use state_manager::mempool::pending_transaction_result_cache::PendingTransactionRecord;
@@ -60,10 +60,12 @@ fn handle_transaction_status_internal(
             .get_committed_transaction(txn_state_version)
             .expect("Txn is missing");
 
-        let receipt = state_manager
+        let local_detailed_outcome = state_manager
             .store()
             .get_committed_transaction_receipt(txn_state_version)
-            .expect("Txn receipt is missing");
+            .expect("Txn receipt is missing")
+            .local_execution
+            .outcome;
 
         let payload_hash = txn
             .user()
@@ -73,16 +75,15 @@ fn handle_transaction_status_internal(
         // Remove the committed payload from the rejection list if it's present
         known_pending_payloads.remove(&payload_hash);
 
-        let intent_status = match &receipt.outcome {
-            LedgerTransactionOutcome::Success(_) => IntentStatus::CommittedSuccess,
-            LedgerTransactionOutcome::Failure(_) => IntentStatus::CommittedFailure,
-        };
-
-        let (payload_status, outcome, error_message) = match &receipt.outcome {
-            LedgerTransactionOutcome::Success(_) => {
-                (PayloadStatus::CommittedSuccess, "SUCCESS", None)
-            }
-            LedgerTransactionOutcome::Failure(reason) => (
+        let (intent_status, payload_status, outcome, error_message) = match local_detailed_outcome {
+            DetailedTransactionOutcome::Success(_) => (
+                IntentStatus::CommittedSuccess,
+                PayloadStatus::CommittedSuccess,
+                "SUCCESS",
+                None,
+            ),
+            DetailedTransactionOutcome::Failure(reason) => (
+                IntentStatus::CommittedFailure,
                 PayloadStatus::CommittedFailure,
                 "FAILURE",
                 Some(format!("{reason:?}")),
@@ -155,7 +156,7 @@ fn handle_transaction_status_internal(
     } else {
         let (status, description) = if known_payloads.is_empty() {
             (
-                models::transaction_status_response::IntentStatus::NotSeen,
+                IntentStatus::NotSeen,
                 "No payloads for this intent have been seen recently by this node.",
             )
         } else {
@@ -163,9 +164,9 @@ fn handle_transaction_status_internal(
                 .iter()
                 .any(|p| p.status == PayloadStatus::NotInMempool);
             if any_payloads_not_rejected {
-                (models::transaction_status_response::IntentStatus::FateUncertain, "At least one payload for this intent was not rejected at its last execution, it's unknown whether it will be committed or not.")
+                (IntentStatus::FateUncertain, "At least one payload for this intent was not rejected at its last execution, it's unknown whether it will be committed or not.")
             } else {
-                (models::transaction_status_response::IntentStatus::FateUncertainButLikelyRejection, "All known payloads were rejected at their last execution. But none of these rejections implied that the intent itself is permanently rejected. It may still be possible for the intent to be committed.")
+                (IntentStatus::FateUncertainButLikelyRejection, "All known payloads were rejected at their last execution. But none of these rejections implied that the intent itself is permanently rejected. It may still be possible for the intent to be committed.")
             }
         };
         models::TransactionStatusResponse {

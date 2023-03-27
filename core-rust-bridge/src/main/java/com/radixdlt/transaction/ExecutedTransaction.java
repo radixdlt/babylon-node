@@ -76,7 +76,7 @@ import java.util.Objects;
 /** A wrapper for a transaction and its ledger receipt */
 public record ExecutedTransaction(
     CommittedTransactionStatus status,
-    byte[] ledgerReceiptBytes,
+    byte[] consensusReceiptBytes,
     byte[] transactionBytes,
     List<ComponentAddress> newComponentAddresses,
     List<ResourceAddress> newResourceAddresses) {
@@ -96,7 +96,7 @@ public record ExecutedTransaction(
     if (o == null || getClass() != o.getClass()) return false;
     ExecutedTransaction that = (ExecutedTransaction) o;
     return Objects.equals(status, that.status)
-        && Arrays.equals(ledgerReceiptBytes, that.ledgerReceiptBytes)
+        && Arrays.equals(consensusReceiptBytes, that.consensusReceiptBytes)
         && Arrays.equals(transactionBytes, that.transactionBytes)
         && Objects.equals(newComponentAddresses, that.newComponentAddresses)
         && Objects.equals(newResourceAddresses, that.newResourceAddresses);
@@ -105,7 +105,7 @@ public record ExecutedTransaction(
   @Override
   public int hashCode() {
     int result = Objects.hash(status, newComponentAddresses, newResourceAddresses);
-    result = 31 * result + Arrays.hashCode(ledgerReceiptBytes);
+    result = 31 * result + Arrays.hashCode(consensusReceiptBytes);
     result = 31 * result + Arrays.hashCode(transactionBytes);
     return result;
   }

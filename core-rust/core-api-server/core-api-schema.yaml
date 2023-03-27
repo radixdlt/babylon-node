@@ -821,6 +821,10 @@ components:
           $ref: "#/components/schemas/FeeSummary"
         state_updates:
           $ref: "#/components/schemas/StateUpdates"
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/Event"
         next_epoch:
           $ref: "#/components/schemas/NextEpoch"
         output:
@@ -1258,8 +1262,7 @@ components:
         entity_type:
           $ref: "#/components/schemas/EntityType"
         entity_id_hex:
-          type: string
-          description: The hex-encoded bytes of the entity id
+          $ref: "#/components/schemas/EntityId"
     SubstateId:
       type: object
       required:
@@ -1273,8 +1276,7 @@ components:
         entity_type:
           $ref: "#/components/schemas/EntityType"
         entity_id_hex:
-          type: string
-          description: The hex-encoded bytes of the entity id
+          $ref: "#/components/schemas/EntityId"
         module_type:
           $ref: "#/components/schemas/ModuleType"
         substate_type:
@@ -1341,6 +1343,76 @@ components:
           description: |
             The string-encoded decimal representing the XRD amount put or taken from the vault.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    Event:
+      description: Event emitted by a transaction.
+      type: object
+      required:
+        - type
+        - data
+      properties:
+        type:
+          $ref: "#/components/schemas/EventTypeIdentifier"
+        data:
+          $ref: "#/components/schemas/SborData"
+    EventTypeIdentifier:
+      description: Identifier of a specific event schema.
+      type: object
+      required:
+        - emitter
+        - local_type_index
+      properties:
+        emitter:
+          $ref: "#/components/schemas/EventEmitterIdentifier"
+        local_type_index:
+          $ref: '#/components/schemas/LocalTypeIndex'
+          description: The type index of the event's type in the context of the emitter's SBOR schema.
+    EventEmitterIdentifierType:
+      type: string
+      enum:
+        - Function
+        - Method
+    EventEmitterIdentifier:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/EventEmitterIdentifierType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match EventEmitterIdentifierType
+          Function: '#/components/schemas/FunctionEventEmitterIdentifier'
+          Method: '#/components/schemas/MethodEventEmitterIdentifier'
+    FunctionEventEmitterIdentifier:
+      allOf:
+        - $ref: "#/components/schemas/EventEmitterIdentifier"
+        - type: object
+          required:
+            - entity
+            - module_type
+            - blueprint_name
+          properties:
+            entity:
+              $ref: "#/components/schemas/EntityReference"
+            module_type:
+              $ref: "#/components/schemas/ModuleType"
+            blueprint_name:
+              type: string
+              description: Blueprint name.
+    MethodEventEmitterIdentifier:
+      allOf:
+        - $ref: "#/components/schemas/EventEmitterIdentifier"
+        - type: object
+          required:
+            - entity
+            - module_type
+          properties:
+            entity:
+              $ref: "#/components/schemas/EntityReference"
+            module_type:
+              $ref: "#/components/schemas/ModuleType"
+
 #################################################
 # GENERAL / SHARED MODELS - keys and signatures #
 #################################################
@@ -2123,6 +2195,9 @@ components:
         - AccessController
         - KeyValueStore
         - Vault
+    EntityId:
+      type: string
+      description: The hex-encoded bytes of the entity id.
     ModuleType:
       type: string
       enum:
