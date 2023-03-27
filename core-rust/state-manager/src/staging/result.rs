@@ -66,7 +66,7 @@ use super::{ReadableHashStructuresStore, ReadableStateTreeStore};
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
 use crate::{
-    AccumulatorHash, ChangeAction, CommittedTransactionIdentifiers, DetailedTransactionOutcome,
+    AccumulatorHash, CommittedTransactionIdentifiers, DetailedTransactionOutcome,
     EpochTransactionIdentifiers, LedgerHashes, LedgerPayloadHash, LocalTransactionReceipt,
     NextEpoch, ReceiptTreeHash, StateHash, SubstateChange, TransactionTreeHash,
 };
@@ -75,8 +75,8 @@ use radix_engine::transaction::{
     TransactionResult,
 };
 use radix_engine_interface::api::types::SubstateOffset;
-use radix_engine_interface::crypto::{hash, Hash};
-use radix_engine_interface::data::scrypto::scrypto_encode;
+use radix_engine_interface::crypto::Hash;
+
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, Payload, ReNodeModulePayload, ReadableTreeStore, TreeNode, WriteableTreeStore,
 };
@@ -240,7 +240,12 @@ impl ProcessedCommitResult {
     ) -> StateHashTreeDiff {
         let hash_changes = substate_changes
             .iter()
-            .map(Self::create_substate_hash_change)
+            .map(|substate_change| {
+                SubstateHashChange::new(
+                    substate_change.substate_id.clone(),
+                    substate_change.action.get_new_value_hash(),
+                )
+            })
             .collect::<Vec<_>>();
         let mut collector = CollectingTreeStore::new(store);
         let root_hash = put_at_next_version(
@@ -249,16 +254,6 @@ impl ProcessedCommitResult {
             hash_changes,
         );
         collector.into_diff_with(root_hash)
-    }
-
-    fn create_substate_hash_change(substate_change: &SubstateChange) -> SubstateHashChange {
-        let hash_change = match &substate_change.action {
-            ChangeAction::Create(value) | ChangeAction::Update(value) => {
-                Some(hash(scrypto_encode(&value.substate).unwrap()))
-            }
-            ChangeAction::Delete(_) => None,
-        };
-        SubstateHashChange::new(substate_change.substate_id.clone(), hash_change)
     }
 }
 

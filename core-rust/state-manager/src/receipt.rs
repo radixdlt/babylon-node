@@ -49,6 +49,11 @@ impl SubstateChange {
             action,
         }
     }
+
+    /// Computes a hash of this change, to be used in the substate changes' merkle tree.
+    pub fn get_hash(&self) -> SubstateChangeHash {
+        SubstateChangeHash::from(blake2b_256_hash(scrypto_encode(self).unwrap()))
+    }
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -56,6 +61,18 @@ pub enum ChangeAction {
     Create(OutputValue),
     Update(OutputValue),
     Delete(DeletedSubstateVersion),
+}
+
+impl ChangeAction {
+    /// Computes a hash of the changed substate's new value, to be used in the state merkle tree.
+    pub fn get_new_value_hash(&self) -> Option<Hash> {
+        match &self {
+            ChangeAction::Create(value) | ChangeAction::Update(value) => {
+                Some(hash(scrypto_encode(&value.substate).unwrap()))
+            }
+            ChangeAction::Delete(_) => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -125,8 +142,12 @@ pub struct LocalTransactionReceipt {
 /// a `Consensus Receipt`.
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LedgerTransactionReceipt {
+    /// A simple, high-level outcome of the transaction.
+    /// Its omitted details may be found in `LocalTransactionExecution::outcome`.
     pub outcome: LedgerTransactionOutcome,
+    /// The substate changes resulting from the transaction, ordered by their `substate_id`.
     pub substate_changes: Vec<SubstateChange>,
+    /// The events emitted during the transaction, in the order they occurred.
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
 }
 
@@ -152,8 +173,7 @@ impl LedgerTransactionReceipt {
         let substate_change_hashes = self
             .substate_changes
             .iter()
-            .map(|substate_change| scrypto_encode(substate_change).unwrap())
-            .map(|change_bytes| SubstateChangeHash::from(blake2b_256_hash(change_bytes)))
+            .map(|substate_change| substate_change.get_hash())
             .collect::<Vec<_>>();
         ConsensusReceipt {
             outcome: self.outcome.clone(),
