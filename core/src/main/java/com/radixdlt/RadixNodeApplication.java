@@ -64,6 +64,7 @@
 
 package com.radixdlt;
 
+import com.google.common.base.Stopwatch;
 import com.radixdlt.monitoring.ApplicationVersion;
 import com.radixdlt.utils.IOUtils;
 import com.radixdlt.utils.MemoryLeakDetector;
@@ -110,20 +111,45 @@ public final class RadixNodeApplication {
       dumpExecutionLocation();
       // Bouncy Castle is required for loading the node key, so set it up now.
       setupBouncyCastle();
-
       final var properties = loadProperties(args);
-      final var radixNode = new RadixNode(properties);
-      radixNode.start();
-      Runtime.getRuntime().addShutdownHook(new Thread(radixNode::shutdown));
+      bootstrapRadixNode(properties);
     } catch (Exception ex) {
       log.fatal("Unable to start", ex);
       LogManager.shutdown(); // Flush any async logs
-
-      // This (or more likely, the one in ModuleRunnerImpl.java) may cause integration test errors
-      // which look like:
-      // "Process 'Gradle Test Executor 1' finished with non-zero exit value 255"
-      java.lang.System.exit(-1);
+      exitWithError();
     }
+  }
+
+  private static void bootstrapRadixNode(RuntimeProperties properties) {
+    final var nodeBootStopwatch = Stopwatch.createStarted();
+    final var radixNodeBootstrapperHandle = RadixNodeBootstrapper.bootstrapRadixNode(properties);
+    // To clean up any resources if the application is shut down while the node is being
+    // bootstrapped
+    Runtime.getRuntime().addShutdownHook(new Thread(radixNodeBootstrapperHandle::shutdown));
+    radixNodeBootstrapperHandle
+        .radixNodeFuture()
+        .whenComplete(
+            (radixNode, ex) -> {
+              if (ex != null) {
+                log.warn("Radix node couldn't be started", ex);
+                exitWithError();
+              } else {
+                final var startupTime = nodeBootStopwatch.elapsed();
+                log.info(
+                    "Radix node {} started successfully in {} ms",
+                    radixNode.self(),
+                    startupTime.toMillis());
+                radixNode.reportSelfStartupTime(startupTime);
+                Runtime.getRuntime().addShutdownHook(new Thread(radixNode::shutdown));
+              }
+            });
+  }
+
+  private static void exitWithError() {
+    // This (or more likely, the one in ModuleRunnerImpl.java) may cause integration test errors
+    // which look like:
+    // "Process 'Gradle Test Executor 1' finished with non-zero exit value 255"
+    java.lang.System.exit(-1);
   }
 
   private static void logVersion() {

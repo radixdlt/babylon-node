@@ -280,7 +280,7 @@ public record Metrics(
 
   public record Misc(
       TypedInfo<Config> config,
-      Timer timeUntilRadixNodeModuleStarted,
+      Timer nodeStartupTime,
       Counter vertexStoreSaved,
       GetterGauge peerCount) {}
 

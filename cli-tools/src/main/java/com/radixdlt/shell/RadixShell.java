@@ -64,7 +64,6 @@
 
 package com.radixdlt.shell;
 
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -212,8 +211,7 @@ public final class RadixShell {
               .toGenesisTransaction(GenesisConfig.babylonDefault());
 
       final var injector =
-          Guice.createInjector(
-              new RadixNodeModule(properties, network, genesisTxn, Stopwatch.createStarted()));
+          Guice.createInjector(new RadixNodeModule(properties, network, genesisTxn));
       final var node = new Node(injector);
 
       moduleRunnersBuilder.build().forEach(node::startRunner);
@@ -267,12 +265,8 @@ public final class RadixShell {
 
     public void stopP2PServer() {
       final var peerServer = injector.getInstance(PeerServerBootstrap.class);
-      try {
-        peerServer.stop();
-        log.info("P2P server stop: " + self());
-      } catch (InterruptedException e) {
-        log.error("Cannot stop p2p server", e);
-      }
+      peerServer.stop();
+      log.info("P2P server stop: " + self());
     }
 
     public RadixNodeUri self() {

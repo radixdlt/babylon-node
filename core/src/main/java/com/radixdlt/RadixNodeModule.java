@@ -64,7 +64,6 @@
 
 package com.radixdlt;
 
-import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
@@ -125,17 +124,12 @@ public final class RadixNodeModule extends AbstractModule {
   private final RuntimeProperties properties;
   private final Network network;
   private final RawLedgerTransaction genesisTxn;
-  private final Stopwatch nodeBootStopwatch;
 
   public RadixNodeModule(
-      RuntimeProperties properties,
-      Network network,
-      RawLedgerTransaction genesisTxn,
-      Stopwatch nodeBootStopwatch) {
+      RuntimeProperties properties, Network network, RawLedgerTransaction genesisTxn) {
     this.properties = properties;
     this.network = network;
     this.genesisTxn = genesisTxn;
-    this.nodeBootStopwatch = nodeBootStopwatch;
   }
 
   @Override
@@ -145,8 +139,6 @@ public final class RadixNodeModule extends AbstractModule {
     final var addressing = Addressing.ofNetwork(network);
     bind(Network.class).toInstance(network);
     bind(Addressing.class).toInstance(addressing);
-
-    bind(Stopwatch.class).annotatedWith(NodeBootStopwatch.class).toInstance(nodeBootStopwatch);
 
     // Consensus configuration
     // These cannot be changed without introducing possibilities of
