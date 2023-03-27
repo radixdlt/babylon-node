@@ -12,7 +12,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::{hash, scrypto_encode, Decimal, Hash, Level, ObjectId, SubstateId};
 use radix_engine_common::crypto::blake2b_256_hash;
-use radix_engine_common::data::scrypto::ScryptoEncode;
+
 use radix_engine_interface::api::types::EventTypeIdentifier;
 use radix_engine_interface::data::scrypto::model::ComponentAddress;
 use radix_engine_interface::*;
@@ -20,7 +20,7 @@ use sbor::rust::collections::IndexMap;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
-use crate::{AccumulatorHash, ConsensusReceipt};
+use crate::{AccumulatorHash, ConsensusReceipt, EventHash, SubstateChangeHash};
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct CommittedTransactionIdentifiers {
@@ -47,6 +47,11 @@ impl ApplicationEvent {
     pub fn new(type_id: EventTypeIdentifier, data: Vec<u8>) -> Self {
         Self { type_id, data }
     }
+
+    /// Computes a hash of this event, to be used in the events' merkle tree.
+    pub fn get_hash(&self) -> EventHash {
+        EventHash::from(blake2b_256_hash(scrypto_encode(self).unwrap()))
+    }
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -62,6 +67,11 @@ impl SubstateChange {
             action,
         }
     }
+
+    /// Computes a hash of this change, to be used in the substate changes' merkle tree.
+    pub fn get_hash(&self) -> SubstateChangeHash {
+        SubstateChangeHash::from(blake2b_256_hash(scrypto_encode(self).unwrap()))
+    }
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -69,6 +79,18 @@ pub enum ChangeAction {
     Create(OutputValue),
     Update(OutputValue),
     Delete(DeletedSubstateVersion),
+}
+
+impl ChangeAction {
+    /// Computes a hash of the changed substate's new value, to be used in the state merkle tree.
+    pub fn get_new_value_hash(&self) -> Option<Hash> {
+        match &self {
+            ChangeAction::Create(value) | ChangeAction::Update(value) => {
+                Some(hash(scrypto_encode(&value.substate).unwrap()))
+            }
+            ChangeAction::Delete(_) => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -138,8 +160,12 @@ pub struct LocalTransactionReceipt {
 /// a `Consensus Receipt`.
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LedgerTransactionReceipt {
+    /// A simple, high-level outcome of the transaction.
+    /// Its omitted details may be found in `LocalTransactionExecution::outcome`.
     pub outcome: LedgerTransactionOutcome,
+    /// The substate changes resulting from the transaction, ordered by their `substate_id`.
     pub substate_changes: Vec<SubstateChange>,
+    /// The events emitted during the transaction, in the order they occurred.
     pub application_events: Vec<ApplicationEvent>,
 }
 
@@ -164,17 +190,17 @@ impl LedgerTransactionReceipt {
     pub fn get_consensus_receipt(&self) -> ConsensusReceipt {
         ConsensusReceipt {
             outcome: self.outcome.clone(),
-            substate_change_root: compute_merkle_root(Self::hashes(&self.substate_changes)),
-            event_root: compute_merkle_root(Self::hashes(&self.application_events)),
+            substate_change_root: compute_merkle_root(
+                self.substate_changes.iter()
+                    .map(|substate_change| substate_change.get_hash())
+                    .collect()
+            ),
+            event_root: compute_merkle_root(
+                self.application_events.iter()
+                    .map(|application_event| application_event.get_hash())
+                    .collect()
+            ),
         }
-    }
-
-    fn hashes<T: ScryptoEncode, H: From<Hash>>(elements: &[T]) -> Vec<H> {
-        elements
-            .iter()
-            .map(|element| scrypto_encode(element).unwrap())
-            .map(|bytes| H::from(blake2b_256_hash(bytes)))
-            .collect::<Vec<_>>()
     }
 }
 
