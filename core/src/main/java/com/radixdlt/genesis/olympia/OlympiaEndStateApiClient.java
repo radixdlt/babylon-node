@@ -65,10 +65,10 @@
 package com.radixdlt.genesis.olympia;
 
 import com.google.inject.Inject;
+import com.jcabi.http.request.JdkRequest;
 import com.radixdlt.networks.Network;
-import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -136,28 +136,20 @@ public final class OlympiaEndStateApiClient {
   }
 
   private static JSONObject postForJson(URL url, JSONObject request) throws IOException {
-    final var conn = (HttpURLConnection) url.openConnection();
-    conn.setRequestMethod("POST");
-    conn.setRequestProperty("Content-Type", "application/json");
-    conn.setDoOutput(true);
-    final var requestPayload = request.toString();
-    try (var os = conn.getOutputStream()) {
-      byte[] input = requestPayload.getBytes(StandardCharsets.UTF_8);
-      os.write(input, 0, input.length);
+    final var response =
+        new JdkRequest(url)
+            .header("Content-Type", "application/json")
+            .method(JdkRequest.POST)
+            .fetch(new ByteArrayInputStream(request.toString().getBytes(StandardCharsets.UTF_8)));
+
+    if (response.status() != HttpURLConnection.HTTP_OK) {
+      throw new RuntimeException(
+          String.format(
+              "The request didn't succeed. Expected status code %s but got %s",
+              HttpURLConnection.HTTP_OK, response.status()));
     }
-    final var responseCode = conn.getResponseCode();
-    if (responseCode != 200) {
-      throw new RuntimeException("Unexpected response code: " + responseCode);
-    }
-    try (var br =
-        new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-      final var response = new StringBuilder();
-      String responseLine;
-      while ((responseLine = br.readLine()) != null) {
-        response.append(responseLine.trim());
-      }
-      return new JSONObject(response.toString());
-    }
+
+    return new JSONObject(response.body());
   }
 
   private String toOlympiaNetworkIdentifier(Network network) {
