@@ -109,6 +109,10 @@ pub async fn create_server<F>(
             post(lts::handle_lts_transaction_submit),
         )
         .route(
+            "/lts/stream/account-transactions-basic-outcomes",
+            post(lts::handle_lts_stream_account_transactions_basic_outcomes),
+        )
+        .route(
             "/lts/stream/transactions-basic-outcomes",
             post(lts::handle_lts_stream_transactions_basic_outcomes),
         )

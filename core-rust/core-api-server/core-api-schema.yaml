@@ -3335,6 +3335,66 @@ components:
           description: |
             The string-encoded decimal representing the amount of change for the fungible resource.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+############################################################
+# REQUEST: /lts/stream/account-transactions-basic-outcomes #
+############################################################
+    LtsStreamAccountTransactionsBasicOutcomesRequest:
+      description: |
+        A request to retrieve a sublist of committed transactions from the ledger.
+      type: object
+      required:
+        - network
+        - account_address
+        - from_state_version
+        - limit
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        account_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the account's address
+        from_state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: An integer between `1` and `10^13`, giving the first (resultant) state version to be returned
+        limit:
+          description: The maximum number of transactions that will be returned.
+          type: integer
+    LtsStreamAccountTransactionsBasicOutcomesResponse:
+      type: object
+      required:
+        - from_state_version
+        - count
+        - max_ledger_state_version
+        - committed_transaction_outcomes
+      properties:
+        from_state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: |
+            An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response (if any).
+            This matches the `from_state_version` in the request.
+        count:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 10000
+          description: An integer between `0` and `10000`, giving the total count of transactions in the returned response
+        max_ledger_state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.
+        committed_transaction_outcomes:
+          description: A committed transaction outcomes list starting from the `from_state_version` (inclusive).
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsCommittedTransactionOutcome"
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################
