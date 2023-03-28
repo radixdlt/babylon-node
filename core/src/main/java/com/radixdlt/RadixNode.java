@@ -152,7 +152,7 @@ public final class RadixNode {
   }
 
   public void reportSelfStartupTime(Duration startupTimeMs) {
-    this.injector.getInstance(Metrics.class).misc().nodeStartupTime().observe(startupTimeMs);
+    this.injector.getInstance(Metrics.class).misc().nodeStartup().observe(startupTimeMs);
   }
 
   public void shutdown() {
