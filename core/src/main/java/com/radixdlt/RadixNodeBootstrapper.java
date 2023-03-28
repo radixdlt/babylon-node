@@ -68,7 +68,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.radixdlt.api.system.SystemApi;
 import com.radixdlt.genesis.GenesisConfig;
-import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.genesis.GenesisFromPropertiesLoader;
 import com.radixdlt.genesis.PreGenesisNodeModule;
 import com.radixdlt.genesis.olympia.GenesisFromOlympiaNodeModule;
@@ -353,29 +352,31 @@ public final class RadixNodeBootstrapper {
 
       final var olympiaGenesisService = injector.getInstance(OlympiaGenesisService.class);
 
-      olympiaGenesisService.start(
-          this::proceedWithGenesisFromOlympia,
-          ex -> {
-            log.warn(
-                """
-                Radix node couldn't be initialized. The Olympia-based genesis was configured but \
-                an error occurred.""",
-                ex);
-            this.cleanup();
-            radixNodeFuture.completeExceptionally(ex);
-          });
-    }
+      final var genesisDataFuture = olympiaGenesisService.start();
 
-    private void proceedWithGenesisFromOlympia(GenesisData genesisData) {
-      log.info(
-          """
-           Genesis data has been successfully received from the Olympia node \
-           ({} accounts, {} validators). Initializing the Babylon node...""",
-          genesisData.accountXrdAllocations().size(),
-          genesisData.validatorSetAndStakeOwners().size());
-      this.cleanup();
-      final var genesisTxn = genesisData.toGenesisTransaction(GenesisConfig.babylonDefault());
-      radixNodeFuture.complete(RadixNode.start(properties, network, genesisTxn));
+      genesisDataFuture.whenComplete(
+          (genesisData, ex) -> {
+            this.cleanup();
+
+            if (ex != null) {
+              log.warn(
+                  """
+              Radix node couldn't be initialized. The Olympia-based genesis was configured but \
+              an error occurred.""",
+                  ex);
+              radixNodeFuture.completeExceptionally(ex);
+            } else {
+              log.info(
+                  """
+             Genesis data has been successfully received from the Olympia node \
+             ({} accounts, {} validators). Initializing the Babylon node...""",
+                  genesisData.accountXrdAllocations().size(),
+                  genesisData.validatorSetAndStakeOwners().size());
+              final var genesisTxn =
+                  genesisData.toGenesisTransaction(GenesisConfig.babylonDefault());
+              radixNodeFuture.complete(RadixNode.start(properties, network, genesisTxn));
+            }
+          });
     }
 
     CompletableFuture<RadixNode> radixNodeFuture() {

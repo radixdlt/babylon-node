@@ -81,9 +81,9 @@ import com.radixdlt.utils.ThreadFactories;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.xerial.snappy.Snappy;
@@ -123,8 +123,7 @@ public final class OlympiaGenesisService {
     this.olympiaEndStateApiClient = olympiaEndStateApiClient;
   }
 
-  public void start(
-      Consumer<GenesisData> handleSuccess, Consumer<Exception> handleUnrecoverableError) {
+  public CompletableFuture<GenesisData> start() {
     if (this.executor.isPresent()) {
       throw new IllegalStateException("OlympiaGenesisService already running");
     }
@@ -133,11 +132,12 @@ public final class OlympiaGenesisService {
         Optional.of(
             newSingleThreadScheduledExecutor(ThreadFactories.threads("OlympiaGenesisService")));
 
-    this.executor.orElseThrow().execute(() -> poll(handleSuccess, handleUnrecoverableError));
+    final var completableFuture = new CompletableFuture<GenesisData>();
+    this.executor.orElseThrow().execute(() -> poll(completableFuture));
+    return completableFuture;
   }
 
-  private void poll(
-      Consumer<GenesisData> handleSuccess, Consumer<Exception> handleUnrecoverableError) {
+  private void poll(CompletableFuture<GenesisData> completableFuture) {
     final OlympiaEndStateResponse response;
     try {
       response = olympiaEndStateApiClient.getOlympiaEndState();
@@ -151,9 +151,7 @@ public final class OlympiaGenesisService {
       this.executor
           .orElseThrow()
           .schedule(
-              () -> poll(handleSuccess, handleUnrecoverableError),
-              POLL_INTERVAL_AFTER_ERROR_MS,
-              TimeUnit.MILLISECONDS);
+              () -> poll(completableFuture), POLL_INTERVAL_AFTER_ERROR_MS, TimeUnit.MILLISECONDS);
       return;
     }
 
@@ -164,13 +162,13 @@ public final class OlympiaGenesisService {
         final var receivedHashBytes = HashCode.fromBytes(Bytes.fromHexString(readyResponse.hash()));
 
         if (!contentHash.equals(receivedHashBytes)) {
-          handleUnrecoverableError.accept(hashMismatchErr("content"));
+          completableFuture.completeExceptionally(hashMismatchErr("content"));
           return;
         }
 
         final var signature = ECDSASecp256k1Signature.decodeFromHexDer(readyResponse.signature());
         if (!this.olympiaGenesisConfig.nodePublicKey().verify(contentHash, signature)) {
-          handleUnrecoverableError.accept(signatureErr());
+          completableFuture.completeExceptionally(signatureErr());
           return;
         }
 
@@ -178,7 +176,7 @@ public final class OlympiaGenesisService {
         try {
           uncompressedBytes = Snappy.uncompress(contentBytes);
         } catch (IOException e) {
-          handleUnrecoverableError.accept(
+          completableFuture.completeExceptionally(
               new RuntimeException(
                   """
                       Successfully connected to the Olympia node, but the received genesis data \
@@ -190,9 +188,9 @@ public final class OlympiaGenesisService {
         try (final var bais = new ByteArrayInputStream(uncompressedBytes)) {
           final var parsedEndState = new OlympiaStateIRDeserializer().deserialize(bais);
           final var genesisData = OlympiaStateToBabylonGenesisMapper.toGenesisData(parsedEndState);
-          handleSuccess.accept(genesisData);
+          completableFuture.complete(genesisData);
         } catch (OlympiaStateIRSerializationException | IOException ex) {
-          handleUnrecoverableError.accept(
+          completableFuture.completeExceptionally(
               new RuntimeException("Failed to deserialize the Olympia end state", ex));
         }
       }
@@ -201,7 +199,7 @@ public final class OlympiaGenesisService {
             HashCode.fromBytes(Bytes.fromHexString(notReadyResponse.placeholderHash()));
 
         if (!receivedPlaceholderHash.equals(PLACEHOLDER_HASH_FOR_NOT_READY_RESPONSE)) {
-          handleUnrecoverableError.accept(hashMismatchErr("placeholder"));
+          completableFuture.completeExceptionally(hashMismatchErr("placeholder"));
           return;
         }
 
@@ -210,7 +208,7 @@ public final class OlympiaGenesisService {
         if (!this.olympiaGenesisConfig
             .nodePublicKey()
             .verify(PLACEHOLDER_HASH_FOR_NOT_READY_RESPONSE, signature)) {
-          handleUnrecoverableError.accept(signatureErr());
+          completableFuture.completeExceptionally(signatureErr());
           return;
         }
 
@@ -227,7 +225,7 @@ public final class OlympiaGenesisService {
         this.executor
             .orElseThrow()
             .schedule(
-                () -> poll(handleSuccess, handleUnrecoverableError),
+                () -> poll(completableFuture),
                 POLL_INTERVAL_AFTER_NOT_READY_MS,
                 TimeUnit.MILLISECONDS);
       }
