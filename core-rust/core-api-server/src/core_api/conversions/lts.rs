@@ -42,10 +42,15 @@ pub fn to_api_lts_comitted_transaction_basic_outcome(
         )
         .collect();
 
+    // TODO: add total tip payed to validator when it is implemented
+    let fee =
+        receipt.fee_summary.total_royalty_cost_xrd + receipt.fee_summary.total_execution_cost_xrd;
+
     Ok(models::LtsCommittedTransactionOutcome {
         state_version: to_api_state_version(identifiers.state_version)?,
         accumulator_hash: to_api_accumulator_hash(&identifiers.accumulator_hash),
         status,
         fungible_entity_balance_changes,
+        fee: to_api_decimal(&fee),
     })
 }

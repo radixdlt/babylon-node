@@ -32,13 +32,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * LtsCommittedTransactionOutcome
+ * For the given transaction, contains the status, total fee summary and individual entity resource balance changes. The balance changes accounts for the fee payments as well. Current implementation does not take into account recalls, but this will change in a future update. For failed transactions, current implementation does not return any balance changes (not even the fee payments). This will also change in a future update. 
  */
+@ApiModel(description = "For the given transaction, contains the status, total fee summary and individual entity resource balance changes. The balance changes accounts for the fee payments as well. Current implementation does not take into account recalls, but this will change in a future update. For failed transactions, current implementation does not return any balance changes (not even the fee payments). This will also change in a future update. ")
 @JsonPropertyOrder({
   LtsCommittedTransactionOutcome.JSON_PROPERTY_STATE_VERSION,
   LtsCommittedTransactionOutcome.JSON_PROPERTY_ACCUMULATOR_HASH,
   LtsCommittedTransactionOutcome.JSON_PROPERTY_STATUS,
-  LtsCommittedTransactionOutcome.JSON_PROPERTY_FUNGIBLE_ENTITY_BALANCE_CHANGES
+  LtsCommittedTransactionOutcome.JSON_PROPERTY_FUNGIBLE_ENTITY_BALANCE_CHANGES,
+  LtsCommittedTransactionOutcome.JSON_PROPERTY_FEE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class LtsCommittedTransactionOutcome {
@@ -53,6 +55,9 @@ public class LtsCommittedTransactionOutcome {
 
   public static final String JSON_PROPERTY_FUNGIBLE_ENTITY_BALANCE_CHANGES = "fungible_entity_balance_changes";
   private List<LtsEntityFungibleBalanceChanges> fungibleEntityBalanceChanges = new ArrayList<>();
+
+  public static final String JSON_PROPERTY_FEE = "fee";
+  private String fee;
 
   public LtsCommittedTransactionOutcome() { 
   }
@@ -168,6 +173,32 @@ public class LtsCommittedTransactionOutcome {
   }
 
 
+  public LtsCommittedTransactionOutcome fee(String fee) {
+    this.fee = fee;
+    return this;
+  }
+
+   /**
+   * The string-encoded decimal representing the total amount of XRD payed as fee (execution, validator tip and royalties). A decimal is formed of some signed integer &#x60;m&#x60; of attos (&#x60;10^(-18)&#x60;) units, where &#x60;-2^(256 - 1) &lt;&#x3D; m &lt; 2^(256 - 1)&#x60;. 
+   * @return fee
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The string-encoded decimal representing the total amount of XRD payed as fee (execution, validator tip and royalties). A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. ")
+  @JsonProperty(JSON_PROPERTY_FEE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getFee() {
+    return fee;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_FEE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setFee(String fee) {
+    this.fee = fee;
+  }
+
+
   /**
    * Return true if this LtsCommittedTransactionOutcome object is equal to o.
    */
@@ -183,12 +214,13 @@ public class LtsCommittedTransactionOutcome {
     return Objects.equals(this.stateVersion, ltsCommittedTransactionOutcome.stateVersion) &&
         Objects.equals(this.accumulatorHash, ltsCommittedTransactionOutcome.accumulatorHash) &&
         Objects.equals(this.status, ltsCommittedTransactionOutcome.status) &&
-        Objects.equals(this.fungibleEntityBalanceChanges, ltsCommittedTransactionOutcome.fungibleEntityBalanceChanges);
+        Objects.equals(this.fungibleEntityBalanceChanges, ltsCommittedTransactionOutcome.fungibleEntityBalanceChanges) &&
+        Objects.equals(this.fee, ltsCommittedTransactionOutcome.fee);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(stateVersion, accumulatorHash, status, fungibleEntityBalanceChanges);
+    return Objects.hash(stateVersion, accumulatorHash, status, fungibleEntityBalanceChanges, fee);
   }
 
   @Override
@@ -199,6 +231,7 @@ public class LtsCommittedTransactionOutcome {
     sb.append("    accumulatorHash: ").append(toIndentedString(accumulatorHash)).append("\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    fungibleEntityBalanceChanges: ").append(toIndentedString(fungibleEntityBalanceChanges)).append("\n");
+    sb.append("    fee: ").append(toIndentedString(fee)).append("\n");
     sb.append("}");
     return sb.toString();
   }

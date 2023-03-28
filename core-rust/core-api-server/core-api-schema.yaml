@@ -3280,13 +3280,19 @@ components:
         - Failed
       description: The status of the transaction
     LtsCommittedTransactionOutcome:
-      description: 
+      description: |
+        For the given transaction, contains the status, total fee summary and individual entity resource balance changes.
+        The balance changes accounts for the fee payments as well.
+        Current implementation does not take into account recalls, but this will change in a future update.
+        For failed transactions, current implementation does not return any balance changes (not even the fee payments).
+        This will also change in a future update.
       type: object
       required:
         - state_version
         - accumulator_hash
         - status
         - fungible_entity_balance_changes
+        - fee
       properties:
         state_version:
           type: integer
@@ -3304,10 +3310,15 @@ components:
         status:
           $ref: "#/components/schemas/LtsCommittedTransactionStatus"
         fungible_entity_balance_changes:
-          description: A list containing all account fungible balance updates
+          description: A list containing all account fungible sbalance updates
           type: array
           items:
             $ref: "#/components/schemas/LtsEntityFungibleBalanceChanges"
+        fee:
+          type: string
+          description: |
+            The string-encoded decimal representing the total amount of XRD payed as fee (execution, validator tip and royalties).
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
     LtsEntityFungibleBalanceChanges:
       type: object
       required:

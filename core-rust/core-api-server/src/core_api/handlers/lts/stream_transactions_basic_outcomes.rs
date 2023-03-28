@@ -1,9 +1,7 @@
 use crate::core_api::*;
-use radix_engine::transaction::BalanceChange;
 use state_manager::{
     jni::state_manager::ActualStateManager,
     store::traits::{QueryableProofStore, QueryableTransactionStore},
-    CommittedTransactionIdentifiers, LedgerTransactionOutcome, LedgerTransactionReceipt,
 };
 
 #[tracing::instrument(skip(state), err(Debug))]
@@ -77,50 +75,5 @@ fn handle_lts_stream_transactions_basic_outcomes_internal(
         count,
         max_ledger_state_version: to_api_state_version(max_state_version)?,
         committed_transaction_outcomes,
-    })
-}
-
-#[tracing::instrument(skip_all)]
-pub fn to_api_lts_comitted_transaction_basic_outcome(
-    context: &MappingContext,
-    receipt: LedgerTransactionReceipt,
-    identifiers: CommittedTransactionIdentifiers,
-) -> Result<models::LtsCommittedTransactionOutcome, MappingError> {
-    let status = match receipt.outcome {
-        LedgerTransactionOutcome::Success(_) => models::LtsCommittedTransactionStatus::Succeeded,
-        LedgerTransactionOutcome::Failure(_) => models::LtsCommittedTransactionStatus::Failed,
-    };
-
-    let fungible_entity_balance_changes = receipt
-        .state_update_summary
-        .balance_changes
-        .iter()
-        .map(
-            |(address, resource_changes)| models::LtsEntityFungibleBalanceChanges {
-                address: to_api_address(context, address),
-                fungible_resource_balance_changes: resource_changes
-                    .iter()
-                    .filter_map(|(resource_address, balance_change)| match balance_change {
-                        BalanceChange::Fungible(balance_change) => {
-                            Some(models::LtsFungibleResourceBalanceChange {
-                                fungible_resource_address: to_api_resource_address(
-                                    context,
-                                    resource_address,
-                                ),
-                                balance_change: to_api_decimal(balance_change),
-                            })
-                        }
-                        BalanceChange::NonFungible { .. } => None,
-                    })
-                    .collect(),
-            },
-        )
-        .collect();
-
-    Ok(models::LtsCommittedTransactionOutcome {
-        state_version: to_api_state_version(identifiers.state_version)?,
-        accumulator_hash: to_api_accumulator_hash(&identifiers.accumulator_hash),
-        status,
-        fungible_entity_balance_changes,
     })
 }
