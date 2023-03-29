@@ -998,7 +998,9 @@ where
                 "computed ledger hashes at version {} differ from the ones in proof ({:?} != {:?})",
                 commit_accumulator_state.state_version, final_ledger_hashes, commit_ledger_hashes
             );
+            return Err(CommitError::LedgerHashesMismatch);
         }
+
         let final_transaction_identifiers = state_tracker.latest_transaction_identifiers().clone();
 
         self.execution_cache
