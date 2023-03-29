@@ -18,6 +18,8 @@ import com.radixdlt.api.core.generated.client.ApiResponse;
 import com.radixdlt.api.core.generated.client.Pair;
 
 import com.radixdlt.api.core.generated.models.BasicErrorResponse;
+import com.radixdlt.api.core.generated.models.LtsStreamTransactionsBasicOutcomesRequest;
+import com.radixdlt.api.core.generated.models.LtsStreamTransactionsBasicOutcomesResponse;
 import com.radixdlt.api.core.generated.models.StreamTransactionsRequest;
 import com.radixdlt.api.core.generated.models.StreamTransactionsResponse;
 
@@ -76,6 +78,84 @@ public class StreamApi {
     return operationId + " call failed with: " + statusCode + " - " + body;
   }
 
+  /**
+   * Get Transactions Basic Outcomes
+   * Returns a list of committed transaction&#39;s basic outcomes (this contains resource balance changes). 
+   * @param ltsStreamTransactionsBasicOutcomesRequest  (required)
+   * @return LtsStreamTransactionsBasicOutcomesResponse
+   * @throws ApiException if fails to make API call
+   */
+  public LtsStreamTransactionsBasicOutcomesResponse ltsStreamTransactionsBasicOutcomesPost(LtsStreamTransactionsBasicOutcomesRequest ltsStreamTransactionsBasicOutcomesRequest) throws ApiException {
+    ApiResponse<LtsStreamTransactionsBasicOutcomesResponse> localVarResponse = ltsStreamTransactionsBasicOutcomesPostWithHttpInfo(ltsStreamTransactionsBasicOutcomesRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Get Transactions Basic Outcomes
+   * Returns a list of committed transaction&#39;s basic outcomes (this contains resource balance changes). 
+   * @param ltsStreamTransactionsBasicOutcomesRequest  (required)
+   * @return ApiResponse&lt;LtsStreamTransactionsBasicOutcomesResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<LtsStreamTransactionsBasicOutcomesResponse> ltsStreamTransactionsBasicOutcomesPostWithHttpInfo(LtsStreamTransactionsBasicOutcomesRequest ltsStreamTransactionsBasicOutcomesRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = ltsStreamTransactionsBasicOutcomesPostRequestBuilder(ltsStreamTransactionsBasicOutcomesRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("ltsStreamTransactionsBasicOutcomesPost", localVarResponse);
+        }
+        return new ApiResponse<LtsStreamTransactionsBasicOutcomesResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<LtsStreamTransactionsBasicOutcomesResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder ltsStreamTransactionsBasicOutcomesPostRequestBuilder(LtsStreamTransactionsBasicOutcomesRequest ltsStreamTransactionsBasicOutcomesRequest) throws ApiException {
+    // verify the required parameter 'ltsStreamTransactionsBasicOutcomesRequest' is set
+    if (ltsStreamTransactionsBasicOutcomesRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'ltsStreamTransactionsBasicOutcomesRequest' when calling ltsStreamTransactionsBasicOutcomesPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/lts/stream/transactions-basic-outcomes";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(ltsStreamTransactionsBasicOutcomesRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
   /**
    * Get Committed Transactions
    * Returns the list of committed transactions. 

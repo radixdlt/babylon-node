@@ -101,8 +101,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
                       .network(networkLogicalName)
                       .intentHash(Bytes.toHexString(intentHash)));
 
-      assertThat(statusResponse1.getIntentStatus())
-          .isEqualTo(TransactionStatusResponse.IntentStatusEnum.INMEMPOOL);
+      assertThat(statusResponse1.getIntentStatus()).isEqualTo(TransactionIntentStatus.INMEMPOOL);
 
       // Now we run consensus
       test.runUntilState(allCommittedTransaction(rawTransaction), 1000);
@@ -116,7 +115,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
                       .intentHash(Bytes.toHexString(intentHash)));
 
       assertThat(statusResponse2.getIntentStatus())
-          .isEqualTo(TransactionStatusResponse.IntentStatusEnum.COMMITTEDSUCCESS);
+          .isEqualTo(TransactionIntentStatus.COMMITTEDSUCCESS);
     }
   }
 
@@ -217,7 +216,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
                       .intentHash(Bytes.toHexString(intentHash)));
 
       assertThat(statusResponse2.getIntentStatus())
-          .isEqualTo(TransactionStatusResponse.IntentStatusEnum.COMMITTEDSUCCESS);
+          .isEqualTo(TransactionIntentStatus.COMMITTEDSUCCESS);
     }
   }
 }

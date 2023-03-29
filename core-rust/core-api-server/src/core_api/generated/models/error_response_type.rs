@@ -16,6 +16,8 @@ pub enum ErrorResponseType {
     Basic,
     #[serde(rename = "TransactionSubmit")]
     TransactionSubmit,
+    #[serde(rename = "LtsTransactionSubmit")]
+    LtsTransactionSubmit,
 
 }
 
@@ -24,6 +26,7 @@ impl ToString for ErrorResponseType {
         match self {
             Self::Basic => String::from("Basic"),
             Self::TransactionSubmit => String::from("TransactionSubmit"),
+            Self::LtsTransactionSubmit => String::from("LtsTransactionSubmit"),
         }
     }
 }

@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.BasicErrorResponse;
 import com.radixdlt.api.core.generated.models.ErrorResponse;
 import com.radixdlt.api.core.generated.models.ErrorResponseType;
+import com.radixdlt.api.core.generated.models.LtsTransactionSubmitErrorResponse;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorResponse;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -48,6 +49,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "error_type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = BasicErrorResponse.class, name = "Basic"),
+  @JsonSubTypes.Type(value = LtsTransactionSubmitErrorResponse.class, name = "LtsTransactionSubmit"),
   @JsonSubTypes.Type(value = TransactionSubmitErrorResponse.class, name = "TransactionSubmit"),
 })
 
@@ -98,6 +100,7 @@ static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("Basic", BasicErrorResponse.class);
+  mappings.put("LtsTransactionSubmit", LtsTransactionSubmitErrorResponse.class);
   mappings.put("TransactionSubmit", TransactionSubmitErrorResponse.class);
   mappings.put("BasicErrorResponse", BasicErrorResponse.class);
   JSON.registerDiscriminator(BasicErrorResponse.class, "error_type", mappings);

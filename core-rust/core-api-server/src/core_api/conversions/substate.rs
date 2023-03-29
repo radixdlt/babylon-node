@@ -335,6 +335,7 @@ pub fn to_api_method_auth_mutability_entry(
 pub fn to_api_local_method_reference(key: &MethodKey) -> models::LocalMethodReference {
     models::LocalMethodReference {
         name: key.ident.to_string(),
+        module: to_api_module_type(&key.node_module_id),
     }
 }
 

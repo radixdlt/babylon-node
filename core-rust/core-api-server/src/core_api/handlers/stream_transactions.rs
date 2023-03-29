@@ -26,8 +26,6 @@ pub(crate) async fn handle_stream_transactions(
     core_api_read_handler(state, request, handle_stream_transactions_internal)
 }
 
-const MAX_TXN_COUNT_PER_REQUEST: u16 = 10000;
-
 #[tracing::instrument(err(Debug), skip(state_manager))]
 fn handle_stream_transactions_internal(
     state_manager: &ActualStateManager,
@@ -47,9 +45,9 @@ fn handle_stream_transactions_internal(
         return Err(client_error("limit must be positive"));
     }
 
-    if limit > MAX_TXN_COUNT_PER_REQUEST.into() {
+    if limit > MAX_STREAM_COUNT_PER_REQUEST.into() {
         return Err(client_error(format!(
-            "limit must <= {MAX_TXN_COUNT_PER_REQUEST}"
+            "limit must <= {MAX_STREAM_COUNT_PER_REQUEST}"
         )));
     }
 
@@ -74,15 +72,9 @@ fn handle_stream_transactions_internal(
         })
         .collect::<Result<Vec<models::CommittedTransaction>, ResponseError<()>>>()?;
 
-    let start_state_version = if api_txns.is_empty() {
-        0
-    } else {
-        from_state_version
-    };
-
     let count: i32 = {
         let transaction_count = api_txns.len();
-        if transaction_count > MAX_TXN_COUNT_PER_REQUEST.into() {
+        if transaction_count > MAX_STREAM_COUNT_PER_REQUEST.into() {
             return Err(server_error("Too many transactions were loaded somehow"));
         }
         transaction_count
@@ -91,7 +83,7 @@ fn handle_stream_transactions_internal(
     };
 
     Ok(models::StreamTransactionsResponse {
-        from_state_version: to_api_state_version(start_state_version)?,
+        from_state_version: to_api_state_version(from_state_version)?,
         count,
         max_ledger_state_version: to_api_state_version(max_state_version)?,
         transactions: api_txns,

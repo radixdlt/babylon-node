@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.ModuleType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -31,15 +32,45 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * LocalMethodReference
  */
 @JsonPropertyOrder({
+  LocalMethodReference.JSON_PROPERTY_MODULE,
   LocalMethodReference.JSON_PROPERTY_NAME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class LocalMethodReference {
+  public static final String JSON_PROPERTY_MODULE = "module";
+  private ModuleType module;
+
   public static final String JSON_PROPERTY_NAME = "name";
   private String name;
 
   public LocalMethodReference() { 
   }
+
+  public LocalMethodReference module(ModuleType module) {
+    this.module = module;
+    return this;
+  }
+
+   /**
+   * Get module
+   * @return module
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_MODULE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public ModuleType getModule() {
+    return module;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_MODULE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setModule(ModuleType module) {
+    this.module = module;
+  }
+
 
   public LocalMethodReference name(String name) {
     this.name = name;
@@ -47,11 +78,11 @@ public class LocalMethodReference {
   }
 
    /**
-   * Get name
+   * The name of the method
    * @return name
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @ApiModelProperty(required = true, value = "The name of the method")
   @JsonProperty(JSON_PROPERTY_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -79,18 +110,20 @@ public class LocalMethodReference {
       return false;
     }
     LocalMethodReference localMethodReference = (LocalMethodReference) o;
-    return Objects.equals(this.name, localMethodReference.name);
+    return Objects.equals(this.module, localMethodReference.module) &&
+        Objects.equals(this.name, localMethodReference.name);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name);
+    return Objects.hash(module, name);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class LocalMethodReference {\n");
+    sb.append("    module: ").append(toIndentedString(module)).append("\n");
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("}");
     return sb.toString();
