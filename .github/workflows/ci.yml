@@ -6,6 +6,7 @@ concurrency:
 
 on:
   pull_request:
+    # Runs on all PRs
   push:
     branches:
       - develop
