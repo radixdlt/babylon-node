@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use crate::core_api::*;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::{
-    HasUserPayloadHash, LedgerTransactionOutcome, RejectionReason, UserPayloadHash,
+    HasUserPayloadHash, RejectionReason, UserPayloadHash, DetailedTransactionOutcome,
 };
 
 use state_manager::mempool::pending_transaction_result_cache::PendingTransactionRecord;
@@ -18,6 +18,7 @@ pub(crate) async fn handle_lts_transaction_status(
 }
 
 use models::lts_transaction_payload_status::Status as LtsPayloadStatus;
+use models::LtsTransactionIntentStatus as LtsIntentStatus;
 
 fn handle_lts_transaction_status_internal(
     state_manager: &ActualStateManager,
@@ -72,20 +73,15 @@ fn handle_lts_transaction_status_internal(
         // Remove the committed payload from the rejection list if it's present
         known_pending_payloads.remove(&payload_hash);
 
-        let intent_status = match &receipt.outcome {
-            LedgerTransactionOutcome::Success(_) => {
-                models::LtsTransactionIntentStatus::CommittedSuccess
-            }
-            LedgerTransactionOutcome::Failure(_) => {
-                models::LtsTransactionIntentStatus::CommittedFailure
-            }
-        };
-
-        let (payload_status, outcome, error_message) = match &receipt.outcome {
-            LedgerTransactionOutcome::Success(_) => {
-                (LtsPayloadStatus::CommittedSuccess, "SUCCESS", None)
-            }
-            LedgerTransactionOutcome::Failure(reason) => (
+        let (intent_status, payload_status, outcome, error_message) = match receipt.local_execution.outcome {
+            DetailedTransactionOutcome::Success(_) => (
+                LtsIntentStatus::CommittedSuccess,
+                LtsPayloadStatus::CommittedSuccess,
+                "SUCCESS",
+                None,
+            ),
+            DetailedTransactionOutcome::Failure(reason) => (
+                LtsIntentStatus::CommittedFailure,
                 LtsPayloadStatus::CommittedFailure,
                 "FAILURE",
                 Some(format!("{reason:?}")),

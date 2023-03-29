@@ -68,8 +68,8 @@ use crate::transaction::LedgerTransaction;
 use crate::types::UserPayloadHash;
 use crate::{
     CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash, HasUserPayloadHash,
-    IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt, ReceiptTreeHash,
-    TransactionTreeHash,
+    IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt,
+    LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash, TransactionTreeHash,
 };
 
 use crate::query::TransactionIdentifierLoader;
@@ -85,8 +85,9 @@ use std::collections::{BTreeMap, HashMap};
 #[derive(Debug)]
 pub struct InMemoryStore {
     transactions: BTreeMap<u64, LedgerTransaction>,
-    transaction_receipts: BTreeMap<u64, LedgerTransactionReceipt>,
     transaction_identifiers: BTreeMap<u64, CommittedTransactionIdentifiers>,
+    ledger_receipts: BTreeMap<u64, LedgerTransactionReceipt>,
+    local_transaction_executions: BTreeMap<u64, LocalTransactionExecution>,
     transaction_intent_lookup: HashMap<IntentHash, u64>,
     user_payload_hash_lookup: HashMap<UserPayloadHash, u64>,
     ledger_payload_hash_lookup: HashMap<LedgerPayloadHash, u64>,
@@ -103,8 +104,9 @@ impl InMemoryStore {
     pub fn new() -> InMemoryStore {
         InMemoryStore {
             transactions: BTreeMap::new(),
-            transaction_receipts: BTreeMap::new(),
             transaction_identifiers: BTreeMap::new(),
+            ledger_receipts: BTreeMap::new(),
+            local_transaction_executions: BTreeMap::new(),
             transaction_intent_lookup: HashMap::new(),
             user_payload_hash_lookup: HashMap::new(),
             ledger_payload_hash_lookup: HashMap::new(),
@@ -121,7 +123,7 @@ impl InMemoryStore {
     fn insert_transaction(
         &mut self,
         transaction: LedgerTransaction,
-        receipt: LedgerTransactionReceipt,
+        receipt: LocalTransactionReceipt,
         identifiers: CommittedTransactionIdentifiers,
     ) {
         if let LedgerTransaction::User(notarized_transaction) = &transaction {
@@ -146,8 +148,10 @@ impl InMemoryStore {
 
         self.transactions
             .insert(identifiers.state_version, transaction);
-        self.transaction_receipts
-            .insert(identifiers.state_version, receipt);
+        self.ledger_receipts
+            .insert(identifiers.state_version, receipt.on_ledger);
+        self.local_transaction_executions
+            .insert(identifiers.state_version, receipt.local_execution);
         self.transaction_identifiers
             .insert(identifiers.state_version, identifiers);
     }
@@ -273,10 +277,18 @@ impl QueryableTransactionStore for InMemoryStore {
             let next_state_version = start_state_version_inclusive + res.len() as u64;
             res.push((
                 self.transactions.get(&next_state_version).unwrap().clone(),
-                self.transaction_receipts
-                    .get(&next_state_version)
-                    .unwrap()
-                    .clone(),
+                LocalTransactionReceipt {
+                    on_ledger: self
+                        .ledger_receipts
+                        .get(&next_state_version)
+                        .unwrap()
+                        .clone(),
+                    local_execution: self
+                        .local_transaction_executions
+                        .get(&next_state_version)
+                        .unwrap()
+                        .clone(),
+                },
                 self.transaction_identifiers
                     .get(&next_state_version)
                     .unwrap()
@@ -293,8 +305,14 @@ impl QueryableTransactionStore for InMemoryStore {
     fn get_committed_transaction_receipt(
         &self,
         state_version: u64,
-    ) -> Option<LedgerTransactionReceipt> {
-        Some(self.transaction_receipts.get(&state_version)?.clone())
+    ) -> Option<LocalTransactionReceipt> {
+        Some(LocalTransactionReceipt {
+            on_ledger: self.ledger_receipts.get(&state_version)?.clone(),
+            local_execution: self
+                .local_transaction_executions
+                .get(&state_version)?
+                .clone(),
+        })
     }
 
     fn get_committed_transaction_identifiers(

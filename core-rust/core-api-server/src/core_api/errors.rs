@@ -6,6 +6,7 @@ use hyper::StatusCode;
 use radix_engine_interface::network::NetworkDefinition;
 
 use super::models;
+use models::{transaction_submit_error_details::TransactionSubmitErrorDetails, lts_transaction_submit_error_details::LtsTransactionSubmitErrorDetails};
 
 /// A marker trait for custom error details
 pub trait ErrorDetails: serde::Serialize + std::fmt::Debug + Sized {
@@ -28,6 +29,38 @@ impl ErrorDetails for () {
             code,
             message,
             trace_id,
+        }
+    }
+}
+
+impl ErrorDetails for TransactionSubmitErrorDetails {
+    fn to_error_response(
+        details: Option<Self>,
+        code: i32,
+        message: String,
+        trace_id: Option<String>,
+    ) -> models::ErrorResponse {
+        models::ErrorResponse::TransactionSubmitErrorResponse {
+            code,
+            message,
+            trace_id,
+            details: details.map(Box::new),
+        }
+    }
+}
+
+impl ErrorDetails for LtsTransactionSubmitErrorDetails {
+    fn to_error_response(
+        details: Option<Self>,
+        code: i32,
+        message: String,
+        trace_id: Option<String>,
+    ) -> models::ErrorResponse {
+        models::ErrorResponse::LtsTransactionSubmitErrorResponse {
+            code,
+            message,
+            trace_id,
+            details: details.map(Box::new),
         }
     }
 }

@@ -9,15 +9,18 @@ use radix_engine::system::kernel_modules::costing::FeeSummary;
 use radix_engine::system::kernel_modules::execution_trace::ResourceChange;
 use radix_engine::transaction::{
     CommitResult, StateUpdateSummary, TransactionExecutionTrace, TransactionOutcome,
-    TransactionReceipt as EngineTransactionReceipt, TransactionResult,
 };
 use radix_engine::types::{hash, scrypto_encode, Decimal, Hash, Level, ObjectId, SubstateId};
+use radix_engine_common::crypto::blake2b_256_hash;
+
 use radix_engine_interface::api::types::EventTypeIdentifier;
 use radix_engine_interface::data::scrypto::model::ComponentAddress;
 use radix_engine_interface::*;
 use sbor::rust::collections::IndexMap;
 
-use crate::{AccumulatorHash, LedgerReceiptHash};
+use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
+use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
+use crate::{AccumulatorHash, ConsensusReceipt, EventHash, SubstateChangeHash};
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct CommittedTransactionIdentifiers {
@@ -34,26 +37,59 @@ impl CommittedTransactionIdentifiers {
     }
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum CommittedTransactionStatus {
-    Success(Vec<Vec<u8>>),
-    Failure(RuntimeError),
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ApplicationEvent {
+    pub type_id: EventTypeIdentifier,
+    pub data: Vec<u8>,
+}
+
+impl ApplicationEvent {
+    pub fn new(type_id: EventTypeIdentifier, data: Vec<u8>) -> Self {
+        Self { type_id, data }
+    }
+
+    /// Computes a hash of this event, to be used in the events' merkle tree.
+    pub fn get_hash(&self) -> EventHash {
+        EventHash::from(blake2b_256_hash(scrypto_encode(self).unwrap()))
+    }
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct SubstateChanges {
-    pub created: BTreeMap<SubstateId, OutputValue>,
-    pub updated: BTreeMap<SubstateId, OutputValue>,
-    pub deleted: BTreeMap<SubstateId, DeletedSubstateVersion>,
+pub struct SubstateChange {
+    pub substate_id: SubstateId,
+    pub action: ChangeAction,
 }
 
-impl SubstateChanges {
-    pub fn upserted(&self) -> impl Iterator<Item = (&SubstateId, &OutputValue)> {
-        self.created.iter().chain(self.updated.iter())
+impl SubstateChange {
+    pub fn new(substate_id: SubstateId, action: ChangeAction) -> Self {
+        Self {
+            substate_id,
+            action,
+        }
     }
 
-    pub fn deleted_ids(&self) -> impl Iterator<Item = &SubstateId> {
-        self.deleted.keys()
+    /// Computes a hash of this change, to be used in the substate changes' merkle tree.
+    pub fn get_hash(&self) -> SubstateChangeHash {
+        SubstateChangeHash::from(blake2b_256_hash(scrypto_encode(self).unwrap()))
+    }
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum ChangeAction {
+    Create(OutputValue),
+    Update(OutputValue),
+    Delete(DeletedSubstateVersion),
+}
+
+impl ChangeAction {
+    /// Computes a hash of the changed substate's new value, to be used in the state merkle tree.
+    pub fn get_new_value_hash(&self) -> Option<Hash> {
+        match &self {
+            ChangeAction::Create(value) | ChangeAction::Update(value) => {
+                Some(hash(scrypto_encode(&value.substate).unwrap()))
+            }
+            ChangeAction::Delete(_) => None,
+        }
     }
 }
 
@@ -65,15 +101,30 @@ pub struct DeletedSubstateVersion {
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum LedgerTransactionOutcome {
+    Success,
+    Failure,
+}
+
+impl LedgerTransactionOutcome {
+    fn resolve(outcome: &TransactionOutcome) -> Self {
+        match outcome {
+            TransactionOutcome::Success(_) => LedgerTransactionOutcome::Success,
+            TransactionOutcome::Failure(_) => LedgerTransactionOutcome::Failure,
+        }
+    }
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum DetailedTransactionOutcome {
     Success(Vec<Vec<u8>>),
     Failure(RuntimeError),
 }
 
-impl From<TransactionOutcome> for LedgerTransactionOutcome {
+impl From<TransactionOutcome> for DetailedTransactionOutcome {
     fn from(outcome: TransactionOutcome) -> Self {
         match outcome {
             TransactionOutcome::Success(output) => {
-                LedgerTransactionOutcome::Success(
+                Self::Success(
                     output
                         .into_iter()
                         .map(|o| {
@@ -86,21 +137,49 @@ impl From<TransactionOutcome> for LedgerTransactionOutcome {
                         .collect(),
                 )
             }
-            TransactionOutcome::Failure(error) => LedgerTransactionOutcome::Failure(error),
+            TransactionOutcome::Failure(error) => Self::Failure(error),
         }
     }
 }
 
+/// A committed transaction (success or failure), extracted from the Engine's `TransactionReceipt`
+/// of any locally-executed transaction (slightly post-processed).
+/// It contains all the critical, deterministic pieces of the Engine's receipt, but also some of its
+/// other parts - for this reason, it is very clearly split into 2 parts (on-ledger vs off-ledger).
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct LocalTransactionReceipt {
+    pub on_ledger: LedgerTransactionReceipt,
+    pub local_execution: LocalTransactionExecution,
+}
+
+/// A part of the `LocalTransactionReceipt` which is completely stored on ledger. It contains only
+/// the critical, deterministic pieces of the original Engine's `TransactionReceipt`.
+/// All these pieces can be verified against the Receipt Root hash (found in the Ledger Proof).
+/// Note: the Ledger Receipt is still a pretty large structure (i.e. containing entire collections,
+/// like substate changes) and is not supposed to be hashed directly - it should instead go through
+/// a `Consensus Receipt`.
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LedgerTransactionReceipt {
+    /// A simple, high-level outcome of the transaction.
+    /// Its omitted details may be found in `LocalTransactionExecution::outcome`.
     pub outcome: LedgerTransactionOutcome,
+    /// The substate changes resulting from the transaction, ordered by their `substate_id`.
+    pub substate_changes: Vec<SubstateChange>,
+    /// The events emitted during the transaction, in the order they occurred.
+    pub application_events: Vec<ApplicationEvent>,
+}
+
+/// A computable/non-critical/non-deterministic part of the `LocalTransactionReceipt` (e.g. logs,
+/// summaries).
+/// It is not verifiable against ledger, but may still be useful for debugging.
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct LocalTransactionExecution {
+    pub outcome: DetailedTransactionOutcome,
     // The breakdown of the fee
     pub fee_summary: FeeSummary,
     // Which vault/s paid the fee
     pub fee_payments: IndexMap<ObjectId, Decimal>,
     pub application_logs: Vec<(Level, String)>,
-    pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
-    pub substate_changes: SubstateChanges,
     pub state_update_summary: StateUpdateSummary,
     // These will be removed once we have the parent_map for the toolkit to use
     pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
@@ -108,48 +187,57 @@ pub struct LedgerTransactionReceipt {
 }
 
 impl LedgerTransactionReceipt {
-    pub fn get_hash(&self) -> LedgerReceiptHash {
-        LedgerReceiptHash::for_receipt(self)
+    pub fn get_consensus_receipt(&self) -> ConsensusReceipt {
+        let LedgerTransactionReceipt {
+            outcome,
+            substate_changes,
+            application_events,
+        } = self;
+        ConsensusReceipt {
+            outcome: outcome.clone(),
+            substate_change_root: compute_merkle_root(
+                substate_changes
+                    .iter()
+                    .map(|substate_change| substate_change.get_hash())
+                    .collect(),
+            ),
+            event_root: compute_merkle_root(
+                application_events
+                    .iter()
+                    .map(|application_event| application_event.get_hash())
+                    .collect(),
+            ),
+        }
     }
 }
 
-impl From<(CommitResult, TransactionExecutionTrace)> for LedgerTransactionReceipt {
+impl From<(CommitResult, TransactionExecutionTrace)> for LocalTransactionReceipt {
     fn from((commit_result, execution_trace): (CommitResult, TransactionExecutionTrace)) -> Self {
         let next_epoch = commit_result.next_epoch();
         Self {
-            outcome: commit_result.outcome.into(),
-            fee_summary: commit_result.fee_summary,
-            fee_payments: commit_result.fee_payments,
-            application_logs: commit_result.application_logs,
-            application_events: commit_result.application_events,
-            substate_changes: fix_state_updates(commit_result.state_updates),
-            state_update_summary: commit_result.state_update_summary,
-            resource_changes: execution_trace.resource_changes,
-            next_epoch,
+            on_ledger: LedgerTransactionReceipt {
+                outcome: LedgerTransactionOutcome::resolve(&commit_result.outcome),
+                substate_changes: fix_state_updates(commit_result.state_updates),
+                application_events: commit_result
+                    .application_events
+                    .into_iter()
+                    .map(|(type_id, data)| ApplicationEvent::new(type_id, data))
+                    .collect(),
+            },
+            local_execution: LocalTransactionExecution {
+                outcome: commit_result.outcome.into(),
+                fee_summary: commit_result.fee_summary,
+                fee_payments: commit_result.fee_payments,
+                application_logs: commit_result.application_logs,
+                state_update_summary: commit_result.state_update_summary,
+                resource_changes: execution_trace.resource_changes,
+                next_epoch,
+            },
         }
     }
 }
 
-impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
-    type Error = String;
-
-    fn try_from(engine_receipt: EngineTransactionReceipt) -> Result<Self, Self::Error> {
-        match engine_receipt.result {
-            TransactionResult::Commit(commit_result) => Ok(LedgerTransactionReceipt::from((
-                commit_result,
-                engine_receipt.execution_trace,
-            ))),
-            TransactionResult::Reject(error) => Err(format!(
-                "Can't create a ledger receipt for rejected txn: {error:?}"
-            )),
-            TransactionResult::Abort(result) => Err(format!(
-                "Can't create a ledger receipt for aborted txn: {result:?}"
-            )),
-        }
-    }
-}
-
-fn fix_state_updates(state_updates: StateDiff) -> SubstateChanges {
+fn fix_state_updates(state_updates: StateDiff) -> Vec<SubstateChange> {
     // As of end of August 2022, the engine's statediff erroneously includes substate reads
     // (even if the content didn't change) as ups and downs.
     // This needs fixing, but for now, we work around this here, by removing such up/down pairs.
@@ -189,9 +277,78 @@ fn fix_state_updates(state_updates: StateDiff) -> SubstateChanges {
     // The remaining up_substates which didn't match with a down_substate are all creates
     let created = possible_creations;
 
-    SubstateChanges {
-        created,
-        updated,
-        deleted,
+    into_change_list(created, updated, deleted)
+}
+
+/// Turns the sets of changes (of different kind) into a flat list of `SubstateChange`s, ordered by
+/// `SubstateId` (i.e. suitable for merklization).
+fn into_change_list(
+    created: BTreeMap<SubstateId, OutputValue>,
+    updated: BTreeMap<SubstateId, OutputValue>,
+    deleted: BTreeMap<SubstateId, DeletedSubstateVersion>,
+) -> Vec<SubstateChange> {
+    let mut changes = created
+        .into_iter()
+        .map(|(id, value)| SubstateChange::new(id, ChangeAction::Create(value)))
+        .chain(
+            updated
+                .into_iter()
+                .map(|(id, value)| SubstateChange::new(id, ChangeAction::Update(value))),
+        )
+        .chain(
+            deleted
+                .into_iter()
+                .map(|(id, version)| SubstateChange::new(id, ChangeAction::Delete(version))),
+        )
+        .collect::<Vec<_>>();
+    changes.sort_by(|left, right| left.substate_id.cmp(&right.substate_id));
+    changes
+}
+
+fn compute_merkle_root<M: Merklizable>(leaves: Vec<M>) -> M {
+    let mut store = RootCapturingAccuTreeStore::default();
+    let mut tree = AccuTree::new(&mut store, 0);
+    tree.append(leaves);
+    store.into_captured_root()
+}
+
+struct RootCapturingAccuTreeStore<M> {
+    captured: Option<M>,
+}
+
+impl<M> RootCapturingAccuTreeStore<M> {
+    pub fn into_captured_root(self) -> M {
+        self.captured.expect("not captured yet")
+    }
+}
+
+impl<M> Default for RootCapturingAccuTreeStore<M> {
+    fn default() -> Self {
+        Self { captured: None }
+    }
+}
+
+impl<M: Merklizable> ReadableAccuTreeStore<usize, M> for RootCapturingAccuTreeStore<M> {
+    fn get_tree_slice(&self, key: &usize) -> Option<TreeSlice<M>> {
+        panic!("unexpected get of slice {key}, since the build should be one-shot")
+    }
+}
+
+impl<M: Merklizable> WriteableAccuTreeStore<usize, M> for RootCapturingAccuTreeStore<M> {
+    fn put_tree_slice(&mut self, _key: usize, slice: TreeSlice<M>) {
+        if self.captured.is_some() {
+            panic!("unexpected repeated put, since the build should be one-shot")
+        }
+        self.captured = Some(
+            slice
+                .levels
+                .into_iter()
+                .next_back()
+                .unwrap()
+                .nodes
+                .into_iter()
+                .next()
+                .unwrap(),
+        )
     }
 }

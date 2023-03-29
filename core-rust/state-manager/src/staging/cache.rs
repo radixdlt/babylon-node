@@ -71,7 +71,7 @@ use crate::staging::{
     StateHashTreeDiff,
 };
 use crate::{
-    AccumulatorHash, CommittedTransactionIdentifiers, EpochTransactionIdentifiers,
+    AccumulatorHash, ChangeAction, CommittedTransactionIdentifiers, EpochTransactionIdentifiers,
     LedgerPayloadHash, ReceiptTreeHash, TransactionTreeHash,
 };
 use im::hashmap::HashMap as ImmutableHashMap;
@@ -252,10 +252,9 @@ impl Delta for ProcessedTransactionReceipt {
     fn weight(&self) -> usize {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => {
-                let substate_changes = &commit.ledger_receipt.substate_changes;
-                substate_changes.created.len()
-                    + substate_changes.updated.len()
-                    + substate_changes.deleted.len()
+                let ledger_receipt = &commit.local_receipt.on_ledger;
+                ledger_receipt.substate_changes.len()
+                    + ledger_receipt.application_events.len()
                     + commit.hash_structures_diff.weight()
             }
             ProcessedTransactionReceipt::Reject(_) | ProcessedTransactionReceipt::Abort(_) => 0,
@@ -311,12 +310,15 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
 
     fn accumulate(&mut self, processed: &ProcessedTransactionReceipt) {
         if let ProcessedTransactionReceipt::Commit(commit) = processed {
-            let substate_changes = &commit.ledger_receipt.substate_changes;
-            for (id, value) in substate_changes.upserted() {
-                self.substate_values.insert(id.clone(), value.clone());
-            }
-            for deleted_id in substate_changes.deleted_ids() {
-                self.substate_values.remove(deleted_id);
+            let substate_changes = &commit.local_receipt.on_ledger.substate_changes;
+            for substate_change in substate_changes {
+                let id = &substate_change.substate_id;
+                match &substate_change.action {
+                    ChangeAction::Create(value) | ChangeAction::Update(value) => {
+                        self.substate_values.insert(id.clone(), value.clone())
+                    }
+                    ChangeAction::Delete(_) => self.substate_values.remove(id),
+                };
             }
             let hash_structures_diff = &commit.hash_structures_diff;
             let state_tree_diff = &hash_structures_diff.state_hash_tree_diff;

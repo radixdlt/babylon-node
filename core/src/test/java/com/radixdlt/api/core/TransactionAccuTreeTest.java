@@ -72,7 +72,10 @@ import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.harness.predicates.NodePredicate;
 import com.radixdlt.lang.Option;
+import com.radixdlt.statecomputer.commit.LedgerHeader;
+import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import java.util.List;
 import java.util.stream.LongStream;
 import org.junit.Test;
 
@@ -82,18 +85,64 @@ public class TransactionAccuTreeTest extends DeterministicCoreApiTestBase {
 
   @Test
   public void stateManagerMaintainsCorrectTransactionMerkleTree() {
+    // Run and capture an example epoch
+    CapturedEpoch epoch = captureEpoch(2);
+
+    // Compute the transaction hashes
+    var transactionHashes =
+        epoch.transactions().stream()
+            .map(transaction -> HashUtils.blake2b256(transaction.transactionBytes()))
+            .toArray(HashCode[]::new);
+
+    // Assert that header's root hash is equal to manually computed one
+    assertThat(epoch.header().hashes().transactionRoot())
+        .isEqualTo(
+            merkle(
+                merkle(
+                    // previous epoch's root hash as first leaf
+                    merkle(epoch.previousHeader().hashes().transactionRoot(), transactionHashes[0]),
+                    merkle(transactionHashes[1], transactionHashes[2])),
+                merkle(
+                    merkle(transactionHashes[3], HashUtils.zero256()), // placeholder hash at leaf
+                    HashUtils.zero256()))); // placeholder hash at internal node
+  }
+
+  @Test
+  public void stateManagerMaintainsCorrectReceiptMerkleTree() {
+    // Run and capture an example epoch
+    CapturedEpoch epoch = captureEpoch(2);
+
+    // Compute the ledger receipt hashes
+    var receiptHashes =
+        epoch.transactions().stream()
+            .map(transaction -> HashUtils.blake2b256(transaction.consensusReceiptBytes()))
+            .toArray(HashCode[]::new);
+
+    // Assert that header's root hash is equal to manually computed one
+    assertThat(epoch.header().hashes().receiptRoot())
+        .isEqualTo(
+            merkle(
+                merkle(
+                    // previous epoch's root hash as first leaf
+                    merkle(epoch.previousHeader().hashes().receiptRoot(), receiptHashes[0]),
+                    merkle(receiptHashes[1], receiptHashes[2])),
+                merkle(
+                    merkle(receiptHashes[3], HashUtils.zero256()), // placeholder hash at leaf
+                    HashUtils.zero256()))); // placeholder hash at internal node
+  }
+
+  private CapturedEpoch captureEpoch(int epochNumber) {
     try (var test = buildRunningServerTest(EPOCH_TRANSACTION_LENGTH)) {
       // Run the setup until 2 epoch proofs are captured
       var reader = test.getInstance(0, REv2TransactionAndProofStore.class);
-      test.runUntilState(nodeAt(0, NodePredicate.atOrOverEpoch(1)), 1000);
-      var genesisHeader = reader.getEpochProof(1).get().ledgerHeader();
-      test.runUntilState(nodeAt(0, NodePredicate.atOrOverEpoch(2)), 1000);
-      var epochHeader = reader.getEpochProof(2).get().ledgerHeader();
+      test.runUntilState(nodeAt(0, NodePredicate.atOrOverEpoch(epochNumber)), 1000);
+      var previousHeader = reader.getEpochProof(epochNumber - 1).get().ledgerHeader();
+      var epochHeader = reader.getEpochProof(epochNumber).get().ledgerHeader();
 
       // Capture the transactions between these 2 proofs
       var epochTransactions =
           LongStream.range(
-                  genesisHeader.accumulatorState().stateVersion().toNonNegativeLong().unwrap() + 1,
+                  previousHeader.accumulatorState().stateVersion().toNonNegativeLong().unwrap() + 1,
                   epochHeader.accumulatorState().stateVersion().toNonNegativeLong().unwrap() + 1)
               .mapToObj(reader::getTransactionAtStateVersion)
               .map(Option::unwrap)
@@ -102,27 +151,7 @@ public class TransactionAccuTreeTest extends DeterministicCoreApiTestBase {
       // Assert a certain count (on which we rely during latter manual merkle computation)
       assertThat(epochTransactions.size()).isEqualTo(EPOCH_TRANSACTION_LENGTH);
 
-      // Capture the transaction hashes
-      var transactionHashes =
-          epochTransactions.stream()
-              .map(transaction -> HashUtils.blake2b256(transaction.transactionBytes()))
-              .toArray(HashCode[]::new);
-
-      // Assert that header's root hash is equal to manually computed one
-      assertThat(epochHeader.hashes().transactionRoot())
-          .isEqualTo(
-              merkle(
-                  merkle(
-                      // previous epoch's root hash as first leaf
-                      merkle(genesisHeader.hashes().transactionRoot(), transactionHashes[0]),
-                      merkle(transactionHashes[1], transactionHashes[2])),
-                  merkle(
-                      merkle(transactionHashes[3], HashUtils.zero256()), // placeholder hash at leaf
-                      HashUtils.zero256()))); // placeholder hash at internal node
-
-      // TODO: currently, we cannot test the same for receipt hashes, because the returned receipt
-      // bytes contain all ledger receipt fields, while the state manager only hashes the
-      // "merklizable" part.
+      return new CapturedEpoch(previousHeader, epochHeader, epochTransactions);
     }
   }
 
@@ -134,4 +163,7 @@ public class TransactionAccuTreeTest extends DeterministicCoreApiTestBase {
     System.arraycopy(rightBytes, 0, concat, leftBytes.length, rightBytes.length);
     return HashUtils.blake2b256(concat);
   }
+
+  record CapturedEpoch(
+      LedgerHeader previousHeader, LedgerHeader header, List<ExecutedTransaction> transactions) {}
 }
