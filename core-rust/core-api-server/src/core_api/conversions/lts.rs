@@ -44,8 +44,8 @@ pub fn to_api_lts_committed_transaction_outcome(
         .collect();
 
     // TODO: add total tip payed to validator when it is implemented
-    let fee =
-        receipt.local_execution.fee_summary.total_royalty_cost_xrd + receipt.local_execution.fee_summary.total_execution_cost_xrd;
+    let fee = receipt.local_execution.fee_summary.total_royalty_cost_xrd
+        + receipt.local_execution.fee_summary.total_execution_cost_xrd;
 
     Ok(models::LtsCommittedTransactionOutcome {
         state_version: to_api_state_version(identifiers.state_version)?,

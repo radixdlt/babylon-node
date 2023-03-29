@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use crate::core_api::*;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::{
-    HasUserPayloadHash, RejectionReason, UserPayloadHash, DetailedTransactionOutcome,
+    DetailedTransactionOutcome, HasUserPayloadHash, RejectionReason, UserPayloadHash,
 };
 
 use state_manager::mempool::pending_transaction_result_cache::PendingTransactionRecord;
@@ -73,20 +73,21 @@ fn handle_lts_transaction_status_internal(
         // Remove the committed payload from the rejection list if it's present
         known_pending_payloads.remove(&payload_hash);
 
-        let (intent_status, payload_status, outcome, error_message) = match receipt.local_execution.outcome {
-            DetailedTransactionOutcome::Success(_) => (
-                LtsIntentStatus::CommittedSuccess,
-                LtsPayloadStatus::CommittedSuccess,
-                "SUCCESS",
-                None,
-            ),
-            DetailedTransactionOutcome::Failure(reason) => (
-                LtsIntentStatus::CommittedFailure,
-                LtsPayloadStatus::CommittedFailure,
-                "FAILURE",
-                Some(format!("{reason:?}")),
-            ),
-        };
+        let (intent_status, payload_status, outcome, error_message) =
+            match receipt.local_execution.outcome {
+                DetailedTransactionOutcome::Success(_) => (
+                    LtsIntentStatus::CommittedSuccess,
+                    LtsPayloadStatus::CommittedSuccess,
+                    "SUCCESS",
+                    None,
+                ),
+                DetailedTransactionOutcome::Failure(reason) => (
+                    LtsIntentStatus::CommittedFailure,
+                    LtsPayloadStatus::CommittedFailure,
+                    "FAILURE",
+                    Some(format!("{reason:?}")),
+                ),
+            };
 
         let committed_payload = models::LtsTransactionPayloadStatus {
             payload_hash: to_api_payload_hash(&payload_hash),

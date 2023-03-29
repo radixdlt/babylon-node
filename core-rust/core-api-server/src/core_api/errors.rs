@@ -6,7 +6,10 @@ use hyper::StatusCode;
 use radix_engine_interface::network::NetworkDefinition;
 
 use super::models;
-use models::{transaction_submit_error_details::TransactionSubmitErrorDetails, lts_transaction_submit_error_details::LtsTransactionSubmitErrorDetails};
+use models::{
+    lts_transaction_submit_error_details::LtsTransactionSubmitErrorDetails,
+    transaction_submit_error_details::TransactionSubmitErrorDetails,
+};
 
 /// A marker trait for custom error details
 pub trait ErrorDetails: serde::Serialize + std::fmt::Debug + Sized {
