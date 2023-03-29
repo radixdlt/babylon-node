@@ -15,7 +15,7 @@
 pub struct SubstateId {
     #[serde(rename = "entity_type")]
     pub entity_type: crate::core_api::generated::models::EntityType,
-    /// The hex-encoded bytes of the entity id
+    /// The hex-encoded bytes of the entity id.
     #[serde(rename = "entity_id_hex")]
     pub entity_id_hex: String,
     #[serde(rename = "module_type")]

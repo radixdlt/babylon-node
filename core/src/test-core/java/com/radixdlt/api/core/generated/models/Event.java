@@ -22,84 +22,86 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.EntityType;
+import com.radixdlt.api.core.generated.models.EventTypeIdentifier;
+import com.radixdlt.api.core.generated.models.SborData;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * EntityReference
+ * Event emitted by a transaction.
  */
+@ApiModel(description = "Event emitted by a transaction.")
 @JsonPropertyOrder({
-  EntityReference.JSON_PROPERTY_ENTITY_TYPE,
-  EntityReference.JSON_PROPERTY_ENTITY_ID_HEX
+  Event.JSON_PROPERTY_TYPE,
+  Event.JSON_PROPERTY_DATA
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class EntityReference {
-  public static final String JSON_PROPERTY_ENTITY_TYPE = "entity_type";
-  private EntityType entityType;
+public class Event {
+  public static final String JSON_PROPERTY_TYPE = "type";
+  private EventTypeIdentifier type;
 
-  public static final String JSON_PROPERTY_ENTITY_ID_HEX = "entity_id_hex";
-  private String entityIdHex;
+  public static final String JSON_PROPERTY_DATA = "data";
+  private SborData data;
 
-  public EntityReference() { 
+  public Event() { 
   }
 
-  public EntityReference entityType(EntityType entityType) {
-    this.entityType = entityType;
+  public Event type(EventTypeIdentifier type) {
+    this.type = type;
     return this;
   }
 
    /**
-   * Get entityType
-   * @return entityType
+   * Get type
+   * @return type
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ENTITY_TYPE)
+  @JsonProperty(JSON_PROPERTY_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public EntityType getEntityType() {
-    return entityType;
+  public EventTypeIdentifier getType() {
+    return type;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ENTITY_TYPE)
+  @JsonProperty(JSON_PROPERTY_TYPE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEntityType(EntityType entityType) {
-    this.entityType = entityType;
+  public void setType(EventTypeIdentifier type) {
+    this.type = type;
   }
 
 
-  public EntityReference entityIdHex(String entityIdHex) {
-    this.entityIdHex = entityIdHex;
+  public Event data(SborData data) {
+    this.data = data;
     return this;
   }
 
    /**
-   * The hex-encoded bytes of the entity id.
-   * @return entityIdHex
+   * Get data
+   * @return data
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded bytes of the entity id.")
-  @JsonProperty(JSON_PROPERTY_ENTITY_ID_HEX)
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_DATA)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getEntityIdHex() {
-    return entityIdHex;
+  public SborData getData() {
+    return data;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ENTITY_ID_HEX)
+  @JsonProperty(JSON_PROPERTY_DATA)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEntityIdHex(String entityIdHex) {
-    this.entityIdHex = entityIdHex;
+  public void setData(SborData data) {
+    this.data = data;
   }
 
 
   /**
-   * Return true if this EntityReference object is equal to o.
+   * Return true if this Event object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -109,22 +111,22 @@ public class EntityReference {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EntityReference entityReference = (EntityReference) o;
-    return Objects.equals(this.entityType, entityReference.entityType) &&
-        Objects.equals(this.entityIdHex, entityReference.entityIdHex);
+    Event event = (Event) o;
+    return Objects.equals(this.type, event.type) &&
+        Objects.equals(this.data, event.data);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(entityType, entityIdHex);
+    return Objects.hash(type, data);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class EntityReference {\n");
-    sb.append("    entityType: ").append(toIndentedString(entityType)).append("\n");
-    sb.append("    entityIdHex: ").append(toIndentedString(entityIdHex)).append("\n");
+    sb.append("class Event {\n");
+    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("    data: ").append(toIndentedString(data)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -12,6 +12,7 @@ use radix_engine::transaction::{
     TransactionReceipt as EngineTransactionReceipt, TransactionResult,
 };
 use radix_engine::types::{hash, scrypto_encode, Decimal, Hash, Level, ObjectId, SubstateId};
+use radix_engine_interface::api::types::EventTypeIdentifier;
 use radix_engine_interface::data::scrypto::model::ComponentAddress;
 use radix_engine_interface::*;
 use sbor::rust::collections::IndexMap;
@@ -98,6 +99,7 @@ pub struct LedgerTransactionReceipt {
     // Which vault/s paid the fee
     pub fee_payments: IndexMap<ObjectId, Decimal>,
     pub application_logs: Vec<(Level, String)>,
+    pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     pub substate_changes: SubstateChanges,
     pub state_update_summary: StateUpdateSummary,
     // These will be removed once we have the parent_map for the toolkit to use
@@ -119,6 +121,7 @@ impl From<(CommitResult, TransactionExecutionTrace)> for LedgerTransactionReceip
             fee_summary: commit_result.fee_summary,
             fee_payments: commit_result.fee_payments,
             application_logs: commit_result.application_logs,
+            application_events: commit_result.application_events,
             substate_changes: fix_state_updates(commit_result.state_updates),
             state_update_summary: commit_result.state_update_summary,
             resource_changes: execution_trace.resource_changes,
