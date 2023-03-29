@@ -110,7 +110,7 @@ use radix_engine_interface::network::NetworkDefinition;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct LoggingConfig {
@@ -994,7 +994,7 @@ where
         let commit_ledger_hashes = &commit_ledger_header.hashes;
         let final_ledger_hashes = state_tracker.latest_ledger_hashes();
         if *final_ledger_hashes != *commit_ledger_hashes {
-            warn!(
+            error!(
                 "computed ledger hashes at version {} differ from the ones in proof ({:?} != {:?})",
                 commit_accumulator_state.state_version, final_ledger_hashes, commit_ledger_hashes
             );
