@@ -245,14 +245,14 @@ pub fn to_api_event(
                 Emitter::Function(node_id, node_module_id, blueprint_name) => {
                     models::EventEmitterIdentifier::FunctionEventEmitterIdentifier {
                         entity: Box::new(to_api_entity_reference(node_id)?),
-                        module_type: node_module_id_to_module_type(&node_module_id),
+                        module_type: to_api_module_type(&node_module_id),
                         blueprint_name,
                     }
                 }
                 Emitter::Method(node_id, node_module_id) => {
                     models::EventEmitterIdentifier::MethodEventEmitterIdentifier {
                         entity: Box::new(to_api_entity_reference(node_id)?),
-                        module_type: node_module_id_to_module_type(&node_module_id),
+                        module_type: to_api_module_type(&node_module_id),
                     }
                 }
             }),
