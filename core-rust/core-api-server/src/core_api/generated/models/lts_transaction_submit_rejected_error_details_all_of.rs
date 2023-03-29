@@ -12,7 +12,7 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct TransactionSubmitRejectedErrorDetailsAllOf {
+pub struct LtsTransactionSubmitRejectedErrorDetailsAllOf {
     /// An explanation of the error
     #[serde(rename = "error_message")]
     pub error_message: String,
@@ -38,9 +38,9 @@ pub struct TransactionSubmitRejectedErrorDetailsAllOf {
     pub invalid_from_epoch: Option<i64>,
 }
 
-impl TransactionSubmitRejectedErrorDetailsAllOf {
-    pub fn new(error_message: String, is_fresh: bool, is_payload_rejection_permanent: bool, is_intent_rejection_permanent: bool, is_rejected_because_intent_already_committed: bool) -> TransactionSubmitRejectedErrorDetailsAllOf {
-        TransactionSubmitRejectedErrorDetailsAllOf {
+impl LtsTransactionSubmitRejectedErrorDetailsAllOf {
+    pub fn new(error_message: String, is_fresh: bool, is_payload_rejection_permanent: bool, is_intent_rejection_permanent: bool, is_rejected_because_intent_already_committed: bool) -> LtsTransactionSubmitRejectedErrorDetailsAllOf {
+        LtsTransactionSubmitRejectedErrorDetailsAllOf {
             error_message,
             is_fresh,
             is_payload_rejection_permanent,

@@ -18,6 +18,12 @@ import com.radixdlt.api.core.generated.client.ApiResponse;
 import com.radixdlt.api.core.generated.client.Pair;
 
 import com.radixdlt.api.core.generated.models.BasicErrorResponse;
+import com.radixdlt.api.core.generated.models.LtsTransactionConstructionRequest;
+import com.radixdlt.api.core.generated.models.LtsTransactionConstructionResponse;
+import com.radixdlt.api.core.generated.models.LtsTransactionStatusRequest;
+import com.radixdlt.api.core.generated.models.LtsTransactionStatusResponse;
+import com.radixdlt.api.core.generated.models.LtsTransactionSubmitRequest;
+import com.radixdlt.api.core.generated.models.LtsTransactionSubmitResponse;
 import com.radixdlt.api.core.generated.models.TransactionCallPreviewRequest;
 import com.radixdlt.api.core.generated.models.TransactionCallPreviewResponse;
 import com.radixdlt.api.core.generated.models.TransactionParseRequest;
@@ -87,6 +93,240 @@ public class TransactionApi {
     return operationId + " call failed with: " + statusCode + " - " + body;
   }
 
+  /**
+   * Get Transaction Construction
+   * Returns information necessary to build a transaction
+   * @param ltsTransactionConstructionRequest  (required)
+   * @return LtsTransactionConstructionResponse
+   * @throws ApiException if fails to make API call
+   */
+  public LtsTransactionConstructionResponse ltsTransactionConstructionPost(LtsTransactionConstructionRequest ltsTransactionConstructionRequest) throws ApiException {
+    ApiResponse<LtsTransactionConstructionResponse> localVarResponse = ltsTransactionConstructionPostWithHttpInfo(ltsTransactionConstructionRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Get Transaction Construction
+   * Returns information necessary to build a transaction
+   * @param ltsTransactionConstructionRequest  (required)
+   * @return ApiResponse&lt;LtsTransactionConstructionResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<LtsTransactionConstructionResponse> ltsTransactionConstructionPostWithHttpInfo(LtsTransactionConstructionRequest ltsTransactionConstructionRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = ltsTransactionConstructionPostRequestBuilder(ltsTransactionConstructionRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("ltsTransactionConstructionPost", localVarResponse);
+        }
+        return new ApiResponse<LtsTransactionConstructionResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<LtsTransactionConstructionResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder ltsTransactionConstructionPostRequestBuilder(LtsTransactionConstructionRequest ltsTransactionConstructionRequest) throws ApiException {
+    // verify the required parameter 'ltsTransactionConstructionRequest' is set
+    if (ltsTransactionConstructionRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'ltsTransactionConstructionRequest' when calling ltsTransactionConstructionPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/lts/transaction/construction";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(ltsTransactionConstructionRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
+  /**
+   * Get Transaction Status
+   * Shares the node&#39;s knowledge of any payloads associated with the given intent hash. Generally there will be a single payload for a given intent, but it&#39;s theoretically possible there may be multiple. This knowledge is summarised into a status for the intent. This summarised status in the response is likely sufficient for most clients. 
+   * @param ltsTransactionStatusRequest  (required)
+   * @return LtsTransactionStatusResponse
+   * @throws ApiException if fails to make API call
+   */
+  public LtsTransactionStatusResponse ltsTransactionStatusPost(LtsTransactionStatusRequest ltsTransactionStatusRequest) throws ApiException {
+    ApiResponse<LtsTransactionStatusResponse> localVarResponse = ltsTransactionStatusPostWithHttpInfo(ltsTransactionStatusRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Get Transaction Status
+   * Shares the node&#39;s knowledge of any payloads associated with the given intent hash. Generally there will be a single payload for a given intent, but it&#39;s theoretically possible there may be multiple. This knowledge is summarised into a status for the intent. This summarised status in the response is likely sufficient for most clients. 
+   * @param ltsTransactionStatusRequest  (required)
+   * @return ApiResponse&lt;LtsTransactionStatusResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<LtsTransactionStatusResponse> ltsTransactionStatusPostWithHttpInfo(LtsTransactionStatusRequest ltsTransactionStatusRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = ltsTransactionStatusPostRequestBuilder(ltsTransactionStatusRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("ltsTransactionStatusPost", localVarResponse);
+        }
+        return new ApiResponse<LtsTransactionStatusResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<LtsTransactionStatusResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder ltsTransactionStatusPostRequestBuilder(LtsTransactionStatusRequest ltsTransactionStatusRequest) throws ApiException {
+    // verify the required parameter 'ltsTransactionStatusRequest' is set
+    if (ltsTransactionStatusRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'ltsTransactionStatusRequest' when calling ltsTransactionStatusPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/lts/transaction/status";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(ltsTransactionStatusRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
+  /**
+   * Transaction Submit
+   * Submits a notarized transaction to the network. Returns whether the transaction submission was already included in the node&#39;s mempool. 
+   * @param ltsTransactionSubmitRequest  (required)
+   * @return LtsTransactionSubmitResponse
+   * @throws ApiException if fails to make API call
+   */
+  public LtsTransactionSubmitResponse ltsTransactionSubmitPost(LtsTransactionSubmitRequest ltsTransactionSubmitRequest) throws ApiException {
+    ApiResponse<LtsTransactionSubmitResponse> localVarResponse = ltsTransactionSubmitPostWithHttpInfo(ltsTransactionSubmitRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Transaction Submit
+   * Submits a notarized transaction to the network. Returns whether the transaction submission was already included in the node&#39;s mempool. 
+   * @param ltsTransactionSubmitRequest  (required)
+   * @return ApiResponse&lt;LtsTransactionSubmitResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<LtsTransactionSubmitResponse> ltsTransactionSubmitPostWithHttpInfo(LtsTransactionSubmitRequest ltsTransactionSubmitRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = ltsTransactionSubmitPostRequestBuilder(ltsTransactionSubmitRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("ltsTransactionSubmitPost", localVarResponse);
+        }
+        return new ApiResponse<LtsTransactionSubmitResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<LtsTransactionSubmitResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder ltsTransactionSubmitPostRequestBuilder(LtsTransactionSubmitRequest ltsTransactionSubmitRequest) throws ApiException {
+    // verify the required parameter 'ltsTransactionSubmitRequest' is set
+    if (ltsTransactionSubmitRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'ltsTransactionSubmitRequest' when calling ltsTransactionSubmitPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/lts/transaction/submit";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(ltsTransactionSubmitRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
   /**
    * Scrypto Call Preview
    * Preview a scrypto function or method call against the latest network state. Returns the result of the scrypto function or method call. 

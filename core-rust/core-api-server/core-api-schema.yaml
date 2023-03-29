@@ -67,6 +67,7 @@ x-tagGroups:
       - Concepts
   - name: Endpoints
     tags:
+      - LTS
       - Status
       - Transaction
       - Mempool
@@ -77,7 +78,8 @@ tags:
     x-displayName: Sub-APIs
     x-traitTag: true # Don't display endpoints under this tag
     description: |
-      The API is split into 5 sub apis:
+      The API is split into 6 sub apis:
+      - **Long Term Support** (`/lts/*`) - For long term support/backward compatible endpoints aimed at integrators such as exchanges.
       - **Status** (`/status/*`) - For status and configuration details for the node / engine.
       - **Transaction** (`/transaction/*`) - For transaction construction, preview, submission, and monitoring the status of an individual transaction.
       - **Mempool** (`/mempool/*`) - For information on the contents of the node's mempool.
@@ -126,6 +128,10 @@ tags:
 
       As an example, entities include concepts like Components, Packages, Vaults, Resource Managers and Key-Value Stores.
       Substates under a component include the Component Struct, Component Data, and Access Rules substates.
+  - name: LTS
+    x-displayName: LTS Endpoints
+    description: |
+      For long term support/backward compatible endpoints aimed at integrators such as exchanges.
   - name: Status
     x-displayName: Status Endpoints
     description: |
@@ -146,6 +152,189 @@ tags:
     x-displayName: Stream Endpoints
     description: To query the transaction stream of the ledger.
 paths:
+##################################################
+# Long Term Support backwards compatible Sub-API #
+##################################################
+  "/lts/transaction/construction":
+    post:
+      summary: Get Transaction Construction
+      description: Returns information necessary to build a transaction
+      tags:
+        - LTS
+        - Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LtsTransactionConstructionRequest"
+      responses:
+        '200':
+          description: All info needed to build a transaction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LtsTransactionConstructionResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+  "/lts/transaction/submit":
+    post:
+      summary: Transaction Submit
+      description: |
+        Submits a notarized transaction to the network. Returns whether the transaction submission was already included in the node's mempool.
+      tags:
+        - LTS
+        - Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LtsTransactionSubmitRequest"
+      responses:
+        '200':
+          description: Transaction Submit Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LtsTransactionSubmitResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionSubmitErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionSubmitErrorResponse"
+  "/lts/transaction/status":
+    post:
+      summary: Get Transaction Status
+      description: |
+        Shares the node's knowledge of any payloads associated with the given intent hash.
+        Generally there will be a single payload for a given intent, but it's theoretically possible there may be multiple.
+        This knowledge is summarised into a status for the intent. This summarised status in the response is likely sufficient
+        for most clients.
+      tags:
+        - LTS
+        - Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LtsTransactionStatusRequest"
+      responses:
+        '200':
+          description: Transaction status response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LtsTransactionStatusResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+  "/lts/state/account-all-fungible-resource-balances":
+    post:
+      summary: Get All Resources Balances
+      description: Returns balances for all resources associated with an account
+      tags:
+        - LTS
+        - State
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LtsStateAccountAllFungibleResourceBalancesRequest"
+      responses:
+        '200':
+          description: Account all resource balances response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LtsStateAccountAllFungibleResourceBalancesResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+  "/lts/state/account-fungible-resource-balance":
+    post:
+      summary: Get Resource Balance
+      description: Returns balance of the resource for an account
+      tags:
+        - LTS
+        - State
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LtsStateAccountFungibleResourceBalanceRequest"
+      responses:
+        '200':
+          description: Account resource balance response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LtsStateAccountFungibleResourceBalanceResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+  "/lts/stream/transactions-basic-outcomes":
+    post:
+      summary: Get Transactions Basic Outcomes
+      description: |
+        Returns a list of committed transaction's basic outcomes (this contains resource balance changes).
+      tags:
+        - LTS
+        - Stream
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LtsStreamTransactionsBasicOutcomesRequest"
+      responses:
+        '200':
+          description: Transaction status response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LtsStreamTransactionsBasicOutcomesResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
 ##################
 # Status Sub-API #
 ##################
@@ -1020,6 +1209,7 @@ components:
       enum:
         - Basic
         - TransactionSubmit
+        - LtsTransactionSubmit
     ErrorResponse:
       type: object
       discriminator:
@@ -1029,6 +1219,7 @@ components:
           # NOTE: To ease 
           Basic: "#/components/schemas/BasicErrorResponse"
           TransactionSubmit: "#/components/schemas/TransactionSubmitErrorResponse"
+          LtsTransactionSubmit: "#/components/schemas/LtsTransactionSubmitErrorResponse"
       required:
         - error_type
         - code
@@ -2161,9 +2352,9 @@ components:
       minimum: 0
       maximum: 4294967295
       description: An integer between `0` and `2^32 - 1`, representing the number of cost units required to access this method.
-#######################################
+########################################
 # GENERAL / SHARED MODELS - validators #
-#######################################
+########################################
     ActiveValidator:
       type: object
       required:
@@ -2808,7 +2999,496 @@ components:
             data_struct:
               $ref: '#/components/schemas/DataStruct'
 
-
+##########################################
+# REQUEST: /lts/transaction/construction #
+##########################################
+    LtsTransactionConstructionRequest:
+      type: object
+      required:
+        - network
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+    LtsTransactionConstructionResponse:
+      type: object
+      required:
+        - current_epoch
+        - ledger_clock
+      properties:
+        current_epoch:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between `0` and `10^10`, marking the current epoch
+        ledger_clock:
+          $ref: '#/components/schemas/Instant'
+          description: |
+            The latest round proposer's timestamp (rounded down to the current minute).
+            This is provided so that the client can detect if the node is synced up or not.
+####################################
+# REQUEST: /lts/transaction/status #
+####################################
+    LtsTransactionStatusRequest:
+      type: object
+      required:
+        - network
+        - intent_hash
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        intent_hash:
+          $ref: "#/components/schemas/IntentHash"
+    LtsTransactionStatusResponse:
+      type: object
+      required:
+        - intent_status
+        - status_description
+        - known_payloads
+      properties:
+        intent_status:
+          $ref: "#/components/schemas/LtsTransactionIntentStatus"
+        status_description:
+          type: string
+          description: |
+            An explanation as to why the intent status is resolved as it is.
+        invalid_from_epoch:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: |
+            An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be permanently rejected.
+            Only present if the intent status is InMempool or Unknown and we know about a payload.
+        known_payloads:
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsTransactionPayloadStatus"
+    LtsTransactionPayloadStatus:
+      type: object
+      required:
+        - payload_hash
+        - status
+      properties:
+        payload_hash:
+          $ref: "#/components/schemas/PayloadHash"
+        status:
+          type: string
+          description: |
+            The status of the transaction payload, as per this node.
+            A NotInMempool status means that it wasn't rejected at last execution attempt, but it's not currently in the mempool either.
+          enum:
+            - CommittedSuccess
+            - CommittedFailure
+            - PermanentlyRejected
+            - TransientlyRejected
+            - InMempool
+            - NotInMempool
+        error_message:
+          description: An explanation for the error, if failed or rejected
+          type: string
+    LtsTransactionIntentStatus:
+      type: string
+      description: |
+        The status of the transaction intent, as determined by the node.
+        FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction 
+      enum:
+        - CommittedSuccess
+        - CommittedFailure
+        - PermanentRejection
+        - InMempool
+        - NotSeen
+        - FateUncertain
+        - FateUncertainButLikelyRejection
+####################################
+# REQUEST: /lts/transaction/submit #
+####################################
+    LtsTransactionSubmitRequest:
+      type: object
+      required:
+        - network
+        - notarized_transaction_hex
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        notarized_transaction_hex:
+          description: A hex-encoded, compiled notarized transaction.
+          type: string
+    LtsTransactionSubmitResponse:
+      type: object
+      required:
+        - duplicate
+      properties:
+        duplicate:
+          description: Is true if the transaction is a duplicate of an existing transaction in the mempool.
+          type: boolean
+    LtsTransactionSubmitErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+        - type: object
+          properties:
+            details:
+              $ref: "#/components/schemas/LtsTransactionSubmitErrorDetails"
+    LtsTransactionSubmitErrorDetailsType:
+      type: string
+      enum:
+        - MempoolFull
+        - Rejected
+    LtsTransactionSubmitErrorDetails:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/LtsTransactionSubmitErrorDetailsType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match LtsTransactionSubmitErrorDetailsType
+          MempoolFull: "#/components/schemas/LtsTransactionSubmitMempoolFullErrorDetails"
+          Rejected: "#/components/schemas/LtsTransactionSubmitRejectedErrorDetails"
+    LtsTransactionSubmitMempoolFullErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/LtsTransactionSubmitErrorDetails"
+        - type: object
+          required:
+            - mempool_capacity
+          properties:
+            mempool_capacity:
+              type: integer
+              format: int32
+              minimum: 0
+              maximum: 10000
+    LtsTransactionSubmitRejectedErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/LtsTransactionSubmitErrorDetails"
+        - type: object
+          required:
+            - error_message
+            - is_fresh
+            - is_payload_rejection_permanent
+            - is_intent_rejection_permanent
+            - is_rejected_because_intent_already_committed
+          properties:
+            error_message:
+              type: string
+              description: An explanation of the error
+            is_fresh:
+              type: boolean
+              description: |
+                Whether (true) this rejected status has just been calculated fresh, or (false) the status is from the pending
+                transaction result cache.
+            is_payload_rejection_permanent:
+              type: boolean
+              description: |
+                Whether the rejection of this payload is known to be permanent.
+            is_intent_rejection_permanent:
+              type: boolean
+              description: |
+                Whether the rejection of this intent is known to be permanent - this is a stronger statement than the payload rejection
+                being permanent, as it implies any payloads containing the intent will also be permanently rejected.
+            is_rejected_because_intent_already_committed:
+              type: boolean
+              description: |
+                Whether the cached rejection of this intent is due to the intent already having been committed.
+                If so, see the /transaction/receipt endpoint for further information.
+            retry_from_timestamp:
+              $ref: "#/components/schemas/Instant"
+              description: |
+                The time after which the node will consider recalculating the validity of the transaction.
+                Only present if the rejection is temporary, and not due to the header specifying a "from epoch" in the future.
+            retry_from_epoch:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description: |
+                An integer between `0` and `10^10`, marking the epoch after which the node will consider recalculating the validity of the transaction.
+                Only present if the rejection is temporary due to a header specifying a "from epoch" in the future.
+            invalid_from_epoch:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description: |
+                An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be permanently rejected.
+                Only present if the rejection isn't permanent.
+##############################################################
+# REQUEST: /lts/state/account-all-fungible-resource-balances #
+##############################################################
+    LtsStateAccountAllFungibleResourceBalancesRequest:
+      type: object
+      required:
+        - network
+        - account_address
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        account_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the account's address
+    LtsStateAccountAllFungibleResourceBalancesResponse:
+      type: object
+      required:
+        - state_version
+        - account_address
+        - fungible_resource_balances
+      properties:
+        state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: |
+            An integer between `1` and `10^13`, giving the state version at which the account was read.
+        account_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the account's address
+        fungible_resource_balances:
+          description: A list containing all resource balances for the requested account.
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsFungibleResourceBalance"
+    LtsFungibleResourceBalance:
+      type: object
+      required:
+        - fungible_resource_address
+        - amount
+      properties:
+        fungible_resource_address:
+          $ref: "#/components/schemas/ResourceAddress"
+        amount:
+          type: string
+          description: |
+            The string-encoded decimal representing the amount of the fungible resource.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+#########################################################
+# REQUEST: /lts/state/account-fungible-resource-balance #
+#########################################################
+    LtsStateAccountFungibleResourceBalanceRequest:
+      type: object
+      required:
+        - network
+        - account_address
+        - resource_address
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        account_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the account's address
+        resource_address:
+          $ref: "#/components/schemas/ResourceAddress"
+    LtsStateAccountFungibleResourceBalanceResponse:
+      type: object
+      required:
+        - state_version
+        - account_address
+        - fungible_resource_balance
+      properties:
+        state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: |
+            An integer between `1` and `10^13`, giving the state version at which the account was read.
+        account_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the account's address
+        fungible_resource_balance:
+          $ref: "#/components/schemas/LtsFungibleResourceBalance"
+####################################################
+# REQUEST: /lts/stream/transactions-basic-outcomes #
+####################################################
+    LtsStreamTransactionsBasicOutcomesRequest:
+      description: |
+        A request to retrieve a sublist of committed transactions from the ledger.
+      type: object
+      required:
+        - network
+        - from_state_version
+        - limit
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        from_state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: An integer between `1` and `10^13`, giving the first (resultant) state version to be returned
+        limit:
+          description: The maximum number of transactions that will be returned.
+          type: integer
+    LtsStreamTransactionsBasicOutcomesResponse:
+      type: object
+      required:
+        - from_state_version
+        - count
+        - max_ledger_state_version
+        - committed_transaction_outcomes
+      properties:
+        from_state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: |
+            An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response (if any).
+            This matches the `from_state_version` in the request.
+        count:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 10000
+          description: An integer between `0` and `10000`, giving the total count of transactions in the returned response
+        max_ledger_state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.
+        committed_transaction_outcomes:
+          description: A committed transaction outcomes list starting from the `from_state_version` (inclusive).
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsCommittedTransactionOutcome"
+    LtsCommittedTransactionStatus:
+      type: string
+      enum:
+        - Succeeded
+        - Failed
+      description: The status of the transaction
+    LtsCommittedTransactionOutcome:
+      description: |
+        For the given transaction, contains the status, total fee summary and individual entity resource balance changes.
+        The balance changes accounts for the fee payments as well.
+        Current implementation does not take into account recalls, but this will change in a future update.
+        For failed transactions, current implementation does not return any balance changes (not even the fee payments).
+        This will also change in a future update.
+      type: object
+      required:
+        - state_version
+        - accumulator_hash
+        - status
+        - fungible_entity_balance_changes
+        - fee
+      properties:
+        state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: An integer between `1` and `10^13`, giving the resultant state version after the transaction has been committed
+        accumulator_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: |
+            The hex-encoded transaction accumulator hash. This hash captures the order of all transactions on ledger.
+            This hash is `ACC_{N+1} = Blake2b-256(CONCAT(ACC_N, LEDGER_HASH_{N}))`, starting with `ACC_0 = 000..000` the pre-genesis accumulator.
+        status:
+          $ref: "#/components/schemas/LtsCommittedTransactionStatus"
+        fungible_entity_balance_changes:
+          description: |
+            A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account)
+            which owns the vaults which were updated.
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsEntityFungibleBalanceChanges"
+        fee:
+          type: string
+          description: |
+            The string-encoded decimal representing the total amount of XRD payed as fee (execution, validator tip and royalties).
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    LtsEntityFungibleBalanceChanges:
+      type: object
+      required:
+        - entity_address
+        - fungible_resource_balance_changes
+      properties:
+        entity_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the entity's address
+        fungible_resource_balance_changes:
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsFungibleResourceBalanceChange"
+    LtsFungibleResourceBalanceChange:
+      type: object
+      required:
+        - fungible_resource_address
+        - balance_change
+      properties:
+        fungible_resource_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the fungible resource's global address
+        balance_change:
+          type: string
+          description: |
+            The string-encoded decimal representing the amount of change for the fungible resource.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+############################################################
+# REQUEST: /lts/stream/account-transactions-basic-outcomes #
+############################################################
+    LtsStreamAccountTransactionsBasicOutcomesRequest:
+      description: |
+        A request to retrieve a sublist of committed transactions from the ledger.
+      type: object
+      required:
+        - network
+        - account_address
+        - from_state_version
+        - limit
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        account_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the account's address
+        from_state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: An integer between `1` and `10^13`, giving the first (resultant) state version to be returned
+        limit:
+          description: The maximum number of transactions that will be returned.
+          type: integer
+    LtsStreamAccountTransactionsBasicOutcomesResponse:
+      type: object
+      required:
+        - from_state_version
+        - count
+        - max_ledger_state_version
+        - committed_transaction_outcomes
+      properties:
+        from_state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: |
+            An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response (if any).
+            This matches the `from_state_version` in the request.
+        count:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 10000
+          description: An integer between `0` and `10000`, giving the total count of transactions in the returned response
+        max_ledger_state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: An integer between `1` and `10^13`, giving the maximum state version currently committed on this node's ledger.
+        committed_transaction_outcomes:
+          description: A committed transaction outcomes list starting from the `from_state_version` (inclusive).
+          type: array
+          items:
+            $ref: "#/components/schemas/LtsCommittedTransactionOutcome"
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################
@@ -3306,18 +3986,7 @@ components:
         - known_payloads
       properties:
         intent_status:
-          type: string
-          description: |
-            The status of the transaction intent, as determined by the node.
-            FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction 
-          enum:
-            - CommittedSuccess
-            - CommittedFailure
-            - PermanentRejection
-            - InMempool
-            - NotSeen
-            - FateUncertain
-            - FateUncertainButLikelyRejection
+          $ref: "#/components/schemas/TransactionIntentStatus"
         status_description:
           type: string
           description: |
@@ -3357,6 +4026,19 @@ components:
         error_message:
           description: An explanation for the error, if failed or rejected
           type: string
+    TransactionIntentStatus:
+      type: string
+      description: |
+        The status of the transaction intent, as determined by the node.
+        FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction 
+      enum:
+        - CommittedSuccess
+        - CommittedFailure
+        - PermanentRejection
+        - InMempool
+        - NotSeen
+        - FateUncertain
+        - FateUncertainButLikelyRejection
 ####################################
 # REQUEST: /transaction/receipt #
 ####################################

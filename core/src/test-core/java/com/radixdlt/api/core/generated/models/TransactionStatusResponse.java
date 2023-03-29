@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.TransactionIntentStatus;
 import com.radixdlt.api.core.generated.models.TransactionPayloadStatus;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -41,53 +42,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TransactionStatusResponse {
-  /**
-   * The status of the transaction intent, as determined by the node. FateUncertain or FateUncertainButLikelyRejection mean that it&#39;s still possible that a payload containing the transaction  
-   */
-  public enum IntentStatusEnum {
-    COMMITTEDSUCCESS("CommittedSuccess"),
-    
-    COMMITTEDFAILURE("CommittedFailure"),
-    
-    PERMANENTREJECTION("PermanentRejection"),
-    
-    INMEMPOOL("InMempool"),
-    
-    NOTSEEN("NotSeen"),
-    
-    FATEUNCERTAIN("FateUncertain"),
-    
-    FATEUNCERTAINBUTLIKELYREJECTION("FateUncertainButLikelyRejection");
-
-    private String value;
-
-    IntentStatusEnum(String value) {
-      this.value = value;
-    }
-
-    @JsonValue
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    @JsonCreator
-    public static IntentStatusEnum fromValue(String value) {
-      for (IntentStatusEnum b : IntentStatusEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
-  }
-
   public static final String JSON_PROPERTY_INTENT_STATUS = "intent_status";
-  private IntentStatusEnum intentStatus;
+  private TransactionIntentStatus intentStatus;
 
   public static final String JSON_PROPERTY_STATUS_DESCRIPTION = "status_description";
   private String statusDescription;
@@ -101,28 +57,28 @@ public class TransactionStatusResponse {
   public TransactionStatusResponse() { 
   }
 
-  public TransactionStatusResponse intentStatus(IntentStatusEnum intentStatus) {
+  public TransactionStatusResponse intentStatus(TransactionIntentStatus intentStatus) {
     this.intentStatus = intentStatus;
     return this;
   }
 
    /**
-   * The status of the transaction intent, as determined by the node. FateUncertain or FateUncertainButLikelyRejection mean that it&#39;s still possible that a payload containing the transaction  
+   * Get intentStatus
    * @return intentStatus
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The status of the transaction intent, as determined by the node. FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction  ")
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_INTENT_STATUS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public IntentStatusEnum getIntentStatus() {
+  public TransactionIntentStatus getIntentStatus() {
     return intentStatus;
   }
 
 
   @JsonProperty(JSON_PROPERTY_INTENT_STATUS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setIntentStatus(IntentStatusEnum intentStatus) {
+  public void setIntentStatus(TransactionIntentStatus intentStatus) {
     this.intentStatus = intentStatus;
   }
 
