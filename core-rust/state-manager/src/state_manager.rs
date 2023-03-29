@@ -992,13 +992,11 @@ where
         }
 
         let commit_ledger_hashes = &commit_ledger_header.hashes;
-        let final_state_hash = &state_tracker.latest_ledger_hashes().state_root;
-        if *final_state_hash != commit_ledger_hashes.state_root {
+        let final_ledger_hashes = state_tracker.latest_ledger_hashes();
+        if *final_ledger_hashes != *commit_ledger_hashes {
             warn!(
-                "computed state hash at version {} differs from the one in proof ({} != {})",
-                commit_accumulator_state.state_version,
-                final_state_hash,
-                commit_ledger_hashes.state_root
+                "computed ledger hashes at version {} differ from the ones in proof ({:?} != {:?})",
+                commit_accumulator_state.state_version, final_ledger_hashes, commit_ledger_hashes
             );
         }
         let final_transaction_identifiers = state_tracker.latest_transaction_identifiers().clone();
