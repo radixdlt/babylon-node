@@ -153,11 +153,11 @@ public class LtsCommittedTransactionOutcome {
   }
 
    /**
-   * A list containing all account fungible balance updates
+   * A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account) which owns the vaults which were updated. 
    * @return fungibleEntityBalanceChanges
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A list containing all account fungible balance updates")
+  @ApiModelProperty(required = true, value = "A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account) which owns the vaults which were updated. ")
   @JsonProperty(JSON_PROPERTY_FUNGIBLE_ENTITY_BALANCE_CHANGES)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

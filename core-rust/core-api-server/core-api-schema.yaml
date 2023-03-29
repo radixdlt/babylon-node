@@ -2944,7 +2944,9 @@ components:
           description: An integer between `0` and `10^10`, marking the current epoch
         ledger_clock:
           $ref: '#/components/schemas/Instant'
-          description: The latest round proposer's timestamp (rounded down to the current minute).
+          description: |
+            The latest round proposer's timestamp (rounded down to the current minute).
+            This is provided so that the client can detect if the node is synced up or not.
 ####################################
 # REQUEST: /lts/transaction/status #
 ####################################
@@ -3310,7 +3312,9 @@ components:
         status:
           $ref: "#/components/schemas/LtsCommittedTransactionStatus"
         fungible_entity_balance_changes:
-          description: A list containing all account fungible sbalance updates
+          description: |
+            A list of all fungible balance updates which occurred in this transaction, aggregated by the global entity (such as account)
+            which owns the vaults which were updated.
           type: array
           items:
             $ref: "#/components/schemas/LtsEntityFungibleBalanceChanges"
@@ -3322,10 +3326,10 @@ components:
     LtsEntityFungibleBalanceChanges:
       type: object
       required:
-        - address
+        - entity_address
         - fungible_resource_balance_changes
       properties:
-        address:
+        entity_address:
           type: string
           description: The Bech32m-encoded human readable version of the entity's address
         fungible_resource_balance_changes:

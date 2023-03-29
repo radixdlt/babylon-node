@@ -34,13 +34,13 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * LtsEntityFungibleBalanceChanges
  */
 @JsonPropertyOrder({
-  LtsEntityFungibleBalanceChanges.JSON_PROPERTY_ADDRESS,
+  LtsEntityFungibleBalanceChanges.JSON_PROPERTY_ENTITY_ADDRESS,
   LtsEntityFungibleBalanceChanges.JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCE_CHANGES
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class LtsEntityFungibleBalanceChanges {
-  public static final String JSON_PROPERTY_ADDRESS = "address";
-  private String address;
+  public static final String JSON_PROPERTY_ENTITY_ADDRESS = "entity_address";
+  private String entityAddress;
 
   public static final String JSON_PROPERTY_FUNGIBLE_RESOURCE_BALANCE_CHANGES = "fungible_resource_balance_changes";
   private List<LtsFungibleResourceBalanceChange> fungibleResourceBalanceChanges = new ArrayList<>();
@@ -48,29 +48,29 @@ public class LtsEntityFungibleBalanceChanges {
   public LtsEntityFungibleBalanceChanges() { 
   }
 
-  public LtsEntityFungibleBalanceChanges address(String address) {
-    this.address = address;
+  public LtsEntityFungibleBalanceChanges entityAddress(String entityAddress) {
+    this.entityAddress = entityAddress;
     return this;
   }
 
    /**
    * The Bech32m-encoded human readable version of the entity&#39;s address
-   * @return address
+   * @return entityAddress
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the entity's address")
-  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_ENTITY_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getAddress() {
-    return address;
+  public String getEntityAddress() {
+    return entityAddress;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_ADDRESS)
+  @JsonProperty(JSON_PROPERTY_ENTITY_ADDRESS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAddress(String address) {
-    this.address = address;
+  public void setEntityAddress(String entityAddress) {
+    this.entityAddress = entityAddress;
   }
 
 
@@ -117,20 +117,20 @@ public class LtsEntityFungibleBalanceChanges {
       return false;
     }
     LtsEntityFungibleBalanceChanges ltsEntityFungibleBalanceChanges = (LtsEntityFungibleBalanceChanges) o;
-    return Objects.equals(this.address, ltsEntityFungibleBalanceChanges.address) &&
+    return Objects.equals(this.entityAddress, ltsEntityFungibleBalanceChanges.entityAddress) &&
         Objects.equals(this.fungibleResourceBalanceChanges, ltsEntityFungibleBalanceChanges.fungibleResourceBalanceChanges);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(address, fungibleResourceBalanceChanges);
+    return Objects.hash(entityAddress, fungibleResourceBalanceChanges);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class LtsEntityFungibleBalanceChanges {\n");
-    sb.append("    address: ").append(toIndentedString(address)).append("\n");
+    sb.append("    entityAddress: ").append(toIndentedString(entityAddress)).append("\n");
     sb.append("    fungibleResourceBalanceChanges: ").append(toIndentedString(fungibleResourceBalanceChanges)).append("\n");
     sb.append("}");
     return sb.toString();

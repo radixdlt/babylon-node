@@ -6,7 +6,7 @@ use state_manager::{
 use crate::core_api::*;
 
 #[tracing::instrument(skip_all)]
-pub fn to_api_lts_comitted_transaction_basic_outcome(
+pub fn to_api_lts_comitted_transaction_outcome(
     context: &MappingContext,
     receipt: LedgerTransactionReceipt,
     identifiers: CommittedTransactionIdentifiers,
@@ -22,7 +22,7 @@ pub fn to_api_lts_comitted_transaction_basic_outcome(
         .iter()
         .map(
             |(address, resource_changes)| models::LtsEntityFungibleBalanceChanges {
-                address: to_api_address(context, address),
+                entity_address: to_api_address(context, address),
                 fungible_resource_balance_changes: resource_changes
                     .iter()
                     .filter_map(|(resource_address, balance_change)| match balance_change {
