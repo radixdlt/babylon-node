@@ -64,94 +64,60 @@
 
 package com.radixdlt.rev2;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.ConsensusByzantineEvent;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.Blake2b256Hasher;
+import com.radixdlt.consensus.LedgerHashes;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.lang.Option;
-import com.radixdlt.ledger.*;
-import com.radixdlt.ledger.RoundDetails;
-import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.modules.CryptoModule;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
+import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt64;
 import java.util.List;
-import org.junit.Test;
 
-public class REv2StateComputerTest {
-  private Injector createInjector() {
-    return Guice.createInjector(
-        new CryptoModule(),
-        REv2StateManagerModule.create(
-            Network.INTEGRATIONTESTNET.getId(),
-            10,
-            10 * 1024 * 1024,
-            50 * 1024 * 1024,
-            REv2DatabaseConfig.inMemory(),
-            Option.none()),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-            bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
-            bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() {}).toInstance(e -> {});
-            bind(new TypeLiteral<EventDispatcher<ConsensusByzantineEvent>>() {})
-                .toInstance(e -> {});
-            bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
-          }
-        });
+/** A source of a genesis transaction with known proof. */
+public abstract class KnownGenesis {
+
+  private KnownGenesis() {
+    // only prevent instantiation
   }
 
-  @Test
-  public void test_valid_rev2_transaction_passes() {
-    // Arrange
-    var injector = createInjector();
-    var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var genesis = KnownGenesis.create();
-    stateComputer.commit(genesis, null);
-    var validTransaction = REv2TestTransactions.constructValidRawTransaction(0, 0);
-
-    // Act
-    var roundDetails = new RoundDetails(1, 1, 0, BFTValidatorId.random(), 1000, 1000);
-    var result =
-        stateComputer.prepare(
-            genesis.getProof().getAccumulatorState().getAccumulatorHash(),
-            List.of(),
-            List.of(validTransaction),
-            roundDetails);
-
-    // Assert
-    assertThat(result.getFailedTransactions()).isEmpty();
-  }
-
-  @Test
-  public void test_invalid_rev2_transaction_fails() {
-    // Arrange
-    var injector = createInjector();
-    var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var genesis = KnownGenesis.create();
-    stateComputer.commit(genesis, null);
-    var invalidTransaction = RawNotarizedTransaction.create(new byte[1]);
-
-    // Act
-    var roundDetails = new RoundDetails(1, 1, 0, BFTValidatorId.random(), 1000, 1000);
-    var result =
-        stateComputer.prepare(
-            genesis.getProof().getAccumulatorState().getAccumulatorHash(),
-            List.of(),
-            List.of(invalidTransaction),
-            roundDetails);
-
-    // Assert
-    assertThat(result.getFailedTransactions()).hasSize(1);
+  /**
+   * Creates a dummy genesis transaction with a proof populated using precomputed ledger hashes
+   * (known to be valid for the particular genesis payload).
+   */
+  public static CommittedTransactionsWithProof create() {
+    var accumulator =
+        new SimpleLedgerAccumulatorAndVerifier(
+            new Blake2b256Hasher(DefaultSerialization.getInstance()));
+    var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
+    var stake = Decimal.of(1);
+    var genesis =
+        TransactionBuilder.createGenesisWithNumValidators(1, stake, UInt64.fromNonNegativeLong(10));
+    var accumulatorState =
+        accumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
+    // a hardcoded value known to match the genesis defined above
+    var ledgerHashes =
+        LedgerHashes.create(
+            HashCode.fromString("2f89b82f25d266c8f5d33b0edebb7350b5db5aa3834dd0140b5e4730d3e2d00f"),
+            HashCode.fromString("99fe2610e5e29650a5967ad4a78bd1e9e3c33819b7b0f6e0700638f39efa6218"),
+            HashCode.fromString(
+                "45ed5e164b89b048abb88593a1cdefe79ecdb202c9095d800f9a67dbe852db45"));
+    var validatorSet =
+        BFTValidatorSet.from(
+            PrivateKeys.numeric(1)
+                .map(ECKeyPair::getPublicKey)
+                .map(BFTValidatorId::create)
+                .map(id -> BFTValidator.from(id, stake.toUInt256()))
+                .limit(1));
+    var proof = LedgerProof.genesis(accumulatorState, ledgerHashes, validatorSet, 0, 0);
+    return CommittedTransactionsWithProof.create(List.of(genesis), proof);
   }
 }

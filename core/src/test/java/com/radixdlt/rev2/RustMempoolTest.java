@@ -68,61 +68,28 @@ import static com.radixdlt.rev2.REv2TestTransactions.constructValidRawTransactio
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.radixdlt.consensus.Blake2b256Hasher;
-import com.radixdlt.consensus.LedgerHashes;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.lang.Option;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
-import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statemanager.*;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.utils.UInt64;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 import org.junit.Assert;
 import org.junit.Test;
 
 public final class RustMempoolTest {
-  private static CommittedTransactionsWithProof buildGenesis(LedgerAccumulator accumulator) {
-    var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    var genesis =
-        TransactionBuilder.createGenesis(
-            Map.of(),
-            Map.of(),
-            UInt64.fromNonNegativeLong(1),
-            UInt64.fromNonNegativeLong(10),
-            UInt64.fromNonNegativeLong(1));
-    var accumulatorState =
-        accumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
-    var proof =
-        LedgerProof.genesis(
-            accumulatorState, LedgerHashes.zero(), BFTValidatorSet.from(Stream.of()), 0, 0);
-    return CommittedTransactionsWithProof.create(List.of(genesis), proof);
-  }
 
   private static void initStateComputer(StateManager stateManager) {
     final var metrics = new MetricsInitializer().initialize();
     var stateComputer = new RustStateComputer(metrics, stateManager);
-    var accumulator =
-        new SimpleLedgerAccumulatorAndVerifier(
-            new Blake2b256Hasher(DefaultSerialization.getInstance()));
-    var transactionsWithProof = buildGenesis(accumulator);
+    var transactionsWithProof = KnownGenesis.create();
     var transactions = transactionsWithProof.getTransactions();
     var proof = transactionsWithProof.getProof();
     stateComputer
