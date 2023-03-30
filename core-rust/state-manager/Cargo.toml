@@ -25,14 +25,14 @@ prometheus = { version = "0.13.2", default-features = false, features = [] }
 # 
 # Ensure this version is also identically updated in ../core-api-server/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v1-fac7a0c0f", features = ["serde"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v1-fac7a0c0f" }
-radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v1-fac7a0c0f", features = ["serde"]  }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v1-fac7a0c0f", features = ["serde"]  }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v1-fac7a0c0f" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v1-fac7a0c0f" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v1-fac7a0c0f" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v1-fac7a0c0f" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v1-71c24148", features = ["serde"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v1-71c24148" }
+radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v1-71c24148", features = ["serde"]  }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v1-71c24148", features = ["serde"]  }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v1-71c24148" }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v1-71c24148" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v1-71c24148" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "rcnet-v1-71c24148" }
 
 # Non-Radix Engine Dependencies:
 blake2 = { version = "0.10.6", default-features = false }

@@ -18,7 +18,7 @@ pub(crate) async fn handle_transaction_status(
 }
 
 use models::transaction_payload_status::Status as PayloadStatus;
-use models::transaction_status_response::IntentStatus;
+use models::TransactionIntentStatus as IntentStatus;
 
 fn handle_transaction_status_internal(
     state_manager: &ActualStateManager,
@@ -137,7 +137,7 @@ fn handle_transaction_status_internal(
         ));
 
         return Ok(models::TransactionStatusResponse {
-            intent_status: models::transaction_status_response::IntentStatus::InMempool,
+            intent_status: IntentStatus::InMempool,
             status_description: "At least one payload for the intent is in this node's mempool. This node believes it's possible the intent might be able to be committed. Whilst the transaction continues to live in the mempool, you can use the /mempool/transaction endpoint to read its payload.".to_owned(),
             invalid_from_epoch: invalid_from_epoch.map(|epoch| to_api_epoch(&mapping_context, epoch)).transpose()?,
             known_payloads,
@@ -148,7 +148,7 @@ fn handle_transaction_status_internal(
 
     let response = if intent_is_permanently_rejected {
         models::TransactionStatusResponse {
-            intent_status: models::transaction_status_response::IntentStatus::PermanentRejection,
+            intent_status: IntentStatus::PermanentRejection,
             status_description: "Based on the results from executing a payload for this intent, the node believes the intent is permanently rejected - this means that any transaction payload containing the intent should never be able to be committed.".to_owned(),
             invalid_from_epoch: None,
             known_payloads,

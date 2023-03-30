@@ -2,25 +2,7 @@ use crate::core_api::*;
 
 use hyper::StatusCode;
 use models::transaction_submit_error_details::TransactionSubmitErrorDetails;
-use state_manager::transaction::UserTransactionValidator;
 use state_manager::{MempoolAddError, MempoolAddSource};
-use transaction::model::NotarizedTransaction;
-
-impl ErrorDetails for TransactionSubmitErrorDetails {
-    fn to_error_response(
-        details: Option<Self>,
-        code: i32,
-        message: String,
-        trace_id: Option<String>,
-    ) -> models::ErrorResponse {
-        models::ErrorResponse::TransactionSubmitErrorResponse {
-            code,
-            message,
-            trace_id,
-            details: details.map(Box::new),
-        }
-    }
-}
 
 #[tracing::instrument(level = "debug", skip(state), err(Debug))]
 pub(crate) async fn handle_transaction_submit(
@@ -90,15 +72,4 @@ pub(crate) async fn handle_transaction_submit(
         )),
     }
     .map(Json)
-}
-
-pub fn extract_unvalidated_transaction(
-    payload: &str,
-) -> Result<NotarizedTransaction, ExtractionError> {
-    let transaction_bytes = from_hex(payload)?;
-    let notarized_transaction =
-        UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
-            &transaction_bytes,
-        )?;
-    Ok(notarized_transaction)
 }

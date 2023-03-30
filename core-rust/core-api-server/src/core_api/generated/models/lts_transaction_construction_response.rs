@@ -12,15 +12,19 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct TransactionSubmitMempoolFullErrorDetailsAllOf {
-    #[serde(rename = "mempool_capacity")]
-    pub mempool_capacity: i32,
+pub struct LtsTransactionConstructionResponse {
+    /// An integer between `0` and `10^10`, marking the current epoch
+    #[serde(rename = "current_epoch")]
+    pub current_epoch: i64,
+    #[serde(rename = "ledger_clock")]
+    pub ledger_clock: Box<crate::core_api::generated::models::Instant>,
 }
 
-impl TransactionSubmitMempoolFullErrorDetailsAllOf {
-    pub fn new(mempool_capacity: i32) -> TransactionSubmitMempoolFullErrorDetailsAllOf {
-        TransactionSubmitMempoolFullErrorDetailsAllOf {
-            mempool_capacity,
+impl LtsTransactionConstructionResponse {
+    pub fn new(current_epoch: i64, ledger_clock: crate::core_api::generated::models::Instant) -> LtsTransactionConstructionResponse {
+        LtsTransactionConstructionResponse {
+            current_epoch,
+            ledger_clock: Box::new(ledger_clock),
         }
     }
 }

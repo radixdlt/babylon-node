@@ -13,9 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TransactionStatusResponse {
-    /// The status of the transaction intent, as determined by the node. FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction  
     #[serde(rename = "intent_status")]
-    pub intent_status: IntentStatus,
+    pub intent_status: crate::core_api::generated::models::TransactionIntentStatus,
     /// An explanation as to why the intent status is resolved as it is. 
     #[serde(rename = "status_description")]
     pub status_description: String,
@@ -27,7 +26,7 @@ pub struct TransactionStatusResponse {
 }
 
 impl TransactionStatusResponse {
-    pub fn new(intent_status: IntentStatus, status_description: String, known_payloads: Vec<crate::core_api::generated::models::TransactionPayloadStatus>) -> TransactionStatusResponse {
+    pub fn new(intent_status: crate::core_api::generated::models::TransactionIntentStatus, status_description: String, known_payloads: Vec<crate::core_api::generated::models::TransactionPayloadStatus>) -> TransactionStatusResponse {
         TransactionStatusResponse {
             intent_status,
             status_description,
@@ -37,28 +36,4 @@ impl TransactionStatusResponse {
     }
 }
 
-/// The status of the transaction intent, as determined by the node. FateUncertain or FateUncertainButLikelyRejection mean that it's still possible that a payload containing the transaction  
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
-pub enum IntentStatus {
-    #[serde(rename = "CommittedSuccess")]
-    CommittedSuccess,
-    #[serde(rename = "CommittedFailure")]
-    CommittedFailure,
-    #[serde(rename = "PermanentRejection")]
-    PermanentRejection,
-    #[serde(rename = "InMempool")]
-    InMempool,
-    #[serde(rename = "NotSeen")]
-    NotSeen,
-    #[serde(rename = "FateUncertain")]
-    FateUncertain,
-    #[serde(rename = "FateUncertainButLikelyRejection")]
-    FateUncertainButLikelyRejection,
-}
-
-impl Default for IntentStatus {
-    fn default() -> IntentStatus {
-        Self::CommittedSuccess
-    }
-}
 
