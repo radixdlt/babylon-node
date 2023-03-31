@@ -305,7 +305,12 @@ fn into_change_list(
     changes
 }
 
+/// Constructs a transient merkle tree on top of the given leaves, and returns its root only.
+/// Returns a `Merklizable::zero()` if the tree is empty.
 fn compute_merkle_root<M: Merklizable>(leaves: Vec<M>) -> M {
+    if leaves.is_empty() {
+        return M::zero();
+    }
     let mut store = RootCapturingAccuTreeStore::default();
     let mut tree = AccuTree::new(&mut store, 0);
     tree.append(leaves);

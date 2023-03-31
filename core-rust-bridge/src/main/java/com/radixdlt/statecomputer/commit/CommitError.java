@@ -75,4 +75,6 @@ public sealed interface CommitError {
   }
 
   record MissingEpochProof() implements CommitError {}
+
+  record LedgerHashesMismatch() implements CommitError {}
 }

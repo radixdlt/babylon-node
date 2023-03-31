@@ -62,90 +62,62 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.rev2;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.Blake2b256Hasher;
+import com.radixdlt.consensus.LedgerHashes;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
-import java.util.Objects;
-import javax.annotation.concurrent.Immutable;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
+import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt64;
+import java.util.List;
 
-@Immutable
-@SerializerId2("consensus.ledger_hashes")
-public final class LedgerHashes {
-  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
-  @DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
-  SerializerDummy serializer = SerializerDummy.DUMMY;
+/** A source of a genesis transaction with known proof. */
+public abstract class KnownGenesis {
 
-  @JsonProperty("state_root")
-  @DsonOutput(DsonOutput.Output.ALL)
-  private final HashCode stateRoot;
-
-  @JsonProperty("transaction_root")
-  @DsonOutput(DsonOutput.Output.ALL)
-  private final HashCode transactionRoot;
-
-  @JsonProperty("receipt_root")
-  @DsonOutput(DsonOutput.Output.ALL)
-  private final HashCode receiptRoot;
-
-  @JsonCreator
-  @VisibleForTesting
-  LedgerHashes(
-      @JsonProperty(value = "state_root", required = true) HashCode stateRoot,
-      @JsonProperty(value = "transaction_root", required = true) HashCode transactionRoot,
-      @JsonProperty(value = "receipt_root", required = true) HashCode receiptRoot) {
-    this.stateRoot = stateRoot;
-    this.transactionRoot = transactionRoot;
-    this.receiptRoot = receiptRoot;
+  private KnownGenesis() {
+    // only prevent instantiation
   }
 
-  public static LedgerHashes create(
-      HashCode stateRoot, HashCode transactionRoot, HashCode receiptRoot) {
-    return new LedgerHashes(stateRoot, transactionRoot, receiptRoot);
-  }
-
-  public static LedgerHashes zero() {
-    return create(HashUtils.zero256(), HashUtils.zero256(), HashUtils.zero256());
-  }
-
-  public HashCode getStateRoot() {
-    return stateRoot;
-  }
-
-  public HashCode getTransactionRoot() {
-    return transactionRoot;
-  }
-
-  public HashCode getReceiptRoot() {
-    return receiptRoot;
-  }
-
-  @Override
-  public boolean equals(Object object) {
-    if (this == object) {
-      return true;
-    }
-    return object instanceof LedgerHashes other
-        && stateRoot.equals(other.stateRoot)
-        && transactionRoot.equals(other.transactionRoot)
-        && receiptRoot.equals(other.receiptRoot);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(stateRoot, transactionRoot, receiptRoot);
-  }
-
-  @Override
-  public String toString() {
-    return "%s{stateRoot=%s, transactionRoot=%s, receiptRoot=%s}"
-        .formatted(LedgerHashes.class.getSimpleName(), stateRoot, transactionRoot, receiptRoot);
+  /**
+   * Creates a dummy genesis transaction with a proof populated using precomputed ledger hashes
+   * (known to be valid for the particular genesis payload).
+   */
+  public static CommittedTransactionsWithProof create() {
+    var accumulator =
+        new SimpleLedgerAccumulatorAndVerifier(
+            new Blake2b256Hasher(DefaultSerialization.getInstance()));
+    var initialAccumulatorState = new AccumulatorState(0, HashUtils.zero256());
+    var stake = Decimal.of(1);
+    var genesis =
+        TransactionBuilder.createGenesisWithNumValidators(1, stake, UInt64.fromNonNegativeLong(10));
+    var accumulatorState =
+        accumulator.accumulate(initialAccumulatorState, genesis.getPayloadHash());
+    // a hardcoded value known to match the genesis defined above
+    var ledgerHashes =
+        LedgerHashes.create(
+            HashCode.fromString("2f89b82f25d266c8f5d33b0edebb7350b5db5aa3834dd0140b5e4730d3e2d00f"),
+            HashCode.fromString("99fe2610e5e29650a5967ad4a78bd1e9e3c33819b7b0f6e0700638f39efa6218"),
+            HashCode.fromString(
+                "45ed5e164b89b048abb88593a1cdefe79ecdb202c9095d800f9a67dbe852db45"));
+    var validatorSet =
+        BFTValidatorSet.from(
+            PrivateKeys.numeric(1)
+                .map(ECKeyPair::getPublicKey)
+                .map(BFTValidatorId::create)
+                .map(id -> BFTValidator.from(id, stake.toUInt256()))
+                .limit(1));
+    var proof = LedgerProof.genesis(accumulatorState, ledgerHashes, validatorSet, 0, 0);
+    return CommittedTransactionsWithProof.create(List.of(genesis), proof);
   }
 }
