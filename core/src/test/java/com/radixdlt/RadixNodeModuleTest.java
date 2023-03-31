@@ -69,7 +69,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.doReturn;
 
-import com.google.common.base.Stopwatch;
 import com.google.inject.Guice;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
@@ -95,8 +94,6 @@ public class RadixNodeModuleTest {
   private static final RawLedgerTransaction MOCK_GENESIS_TXN =
       GenesisData.empty().toGenesisTransaction(GenesisConfig.babylonDefault());
 
-  private Network network;
-
   @BeforeClass
   public static void beforeClass() {
     TestSetupUtils.installBouncyCastleProvider();
@@ -108,7 +105,7 @@ public class RadixNodeModuleTest {
     when(properties.get("network.id")).thenReturn("" + NETWORK.getId());
     when(properties.get("db.location")).thenReturn(folder.getRoot().getAbsolutePath());
     Guice.createInjector(
-            new RadixNodeModule(properties, NETWORK, MOCK_GENESIS_TXN, Stopwatch.createStarted()))
+            new RadixNodeModule(properties, NETWORK, MOCK_GENESIS_TXN))
         .injectMembers(this);
   }
 
@@ -125,7 +122,7 @@ public class RadixNodeModuleTest {
             () ->
                 Guice.createInjector(
                         new RadixNodeModule(
-                            properties, NETWORK, MOCK_GENESIS_TXN, Stopwatch.createStarted()))
+                            properties, NETWORK, MOCK_GENESIS_TXN))
                     .injectMembers(this));
 
     assertTrue(exception.getCause() instanceof IllegalArgumentException);
@@ -143,7 +140,7 @@ public class RadixNodeModuleTest {
     when(properties.get("capabilities.ledger_sync.enabled")).thenReturn("true");
 
     Guice.createInjector(
-            new RadixNodeModule(properties, NETWORK, MOCK_GENESIS_TXN, Stopwatch.createStarted()))
+            new RadixNodeModule(properties, NETWORK, MOCK_GENESIS_TXN))
         .injectMembers(this);
   }
 
