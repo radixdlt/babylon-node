@@ -104,8 +104,7 @@ public class RadixNodeModuleTest {
     final var properties = createDefaultProperties();
     when(properties.get("network.id")).thenReturn("" + NETWORK.getId());
     when(properties.get("db.location")).thenReturn(folder.getRoot().getAbsolutePath());
-    Guice.createInjector(
-            new RadixNodeModule(properties, NETWORK, MOCK_GENESIS_TXN))
+    Guice.createInjector(new RadixNodeModule(properties, NETWORK, MOCK_GENESIS_TXN))
         .injectMembers(this);
   }
 
@@ -120,9 +119,7 @@ public class RadixNodeModuleTest {
         assertThrows(
             com.google.inject.CreationException.class,
             () ->
-                Guice.createInjector(
-                        new RadixNodeModule(
-                            properties, NETWORK, MOCK_GENESIS_TXN))
+                Guice.createInjector(new RadixNodeModule(properties, NETWORK, MOCK_GENESIS_TXN))
                     .injectMembers(this));
 
     assertTrue(exception.getCause() instanceof IllegalArgumentException);
@@ -139,8 +136,7 @@ public class RadixNodeModuleTest {
     when(properties.get("db.location")).thenReturn(folder.getRoot().getAbsolutePath());
     when(properties.get("capabilities.ledger_sync.enabled")).thenReturn("true");
 
-    Guice.createInjector(
-            new RadixNodeModule(properties, NETWORK, MOCK_GENESIS_TXN))
+    Guice.createInjector(new RadixNodeModule(properties, NETWORK, MOCK_GENESIS_TXN))
         .injectMembers(this);
   }
 
