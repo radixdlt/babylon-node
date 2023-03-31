@@ -123,8 +123,16 @@ public final class RadixNodeApplication {
   private static void bootstrapRadixNode(RuntimeProperties properties) {
     final var nodeBootStopwatch = Stopwatch.createStarted();
     final var radixNodeBootstrapperHandle = RadixNodeBootstrapper.bootstrapRadixNode(properties);
-    // To clean up any resources if the application is shut down while the node is being
-    // bootstrapped
+    /* Note that because some modules obtain the resources at construction (ORAC paradigm), this
+     shutdown hook doesn't guarantee that these resources will be correctly freed up.
+     For example, when an error occurs while Guice is building its object graph,
+     we haven't yet received a reference (Injector) to the modules that have already been initialized,
+     and thus we can't clean them up.
+     TODO: consider refactoring the modules to follow a DNORAC (do NOT obtain resources at construction) paradigm
+           and then re-evaluate if the shutdown hook below (and/or the need for RadixNodeBootstrapperHandle which
+           provides the shutdown functionality) is still needed - for both happy (no errors during initialization)
+           and unhappy (errors during initialization) paths.
+    */
     Runtime.getRuntime().addShutdownHook(new Thread(radixNodeBootstrapperHandle::shutdown));
     radixNodeBootstrapperHandle
         .radixNodeFuture()
