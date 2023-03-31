@@ -1,7 +1,3 @@
-use models::{
-    lts_transaction_submit_error_details::LtsTransactionSubmitErrorDetails,
-    transaction_submit_error_details::TransactionSubmitErrorDetails,
-};
 use radix_engine::types::{scrypto_encode, ScryptoCustomTypeExtension, ScryptoEncode};
 use sbor::serde_serialization::{
     SborPayloadWithoutSchema, SchemalessSerializationContext, SerializationMode,
@@ -54,38 +50,6 @@ pub fn to_api_sbor_data_from_bytes(
         to_hex(scrypto_sbor_bytes),
         Some(json),
     ))
-}
-
-impl ErrorDetails for TransactionSubmitErrorDetails {
-    fn to_error_response(
-        details: Option<Self>,
-        code: i32,
-        message: String,
-        trace_id: Option<String>,
-    ) -> models::ErrorResponse {
-        models::ErrorResponse::TransactionSubmitErrorResponse {
-            code,
-            message,
-            trace_id,
-            details: details.map(Box::new),
-        }
-    }
-}
-
-impl ErrorDetails for LtsTransactionSubmitErrorDetails {
-    fn to_error_response(
-        details: Option<Self>,
-        code: i32,
-        message: String,
-        trace_id: Option<String>,
-    ) -> models::ErrorResponse {
-        models::ErrorResponse::LtsTransactionSubmitErrorResponse {
-            code,
-            message,
-            trace_id,
-            details: details.map(Box::new),
-        }
-    }
 }
 
 pub fn extract_unvalidated_transaction(

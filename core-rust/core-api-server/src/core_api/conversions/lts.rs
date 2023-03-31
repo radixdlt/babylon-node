@@ -1,22 +1,23 @@
 use radix_engine::transaction::BalanceChange;
 use state_manager::{
-    CommittedTransactionIdentifiers, LedgerTransactionOutcome, LedgerTransactionReceipt,
+    CommittedTransactionIdentifiers, LedgerTransactionOutcome, LocalTransactionReceipt,
 };
 
 use crate::core_api::*;
 
 #[tracing::instrument(skip_all)]
-pub fn to_api_lts_comitted_transaction_outcome(
+pub fn to_api_lts_committed_transaction_outcome(
     context: &MappingContext,
-    receipt: LedgerTransactionReceipt,
+    receipt: LocalTransactionReceipt,
     identifiers: CommittedTransactionIdentifiers,
 ) -> Result<models::LtsCommittedTransactionOutcome, MappingError> {
-    let status = match receipt.outcome {
-        LedgerTransactionOutcome::Success(_) => models::LtsCommittedTransactionStatus::Succeeded,
-        LedgerTransactionOutcome::Failure(_) => models::LtsCommittedTransactionStatus::Failed,
+    let status = match receipt.on_ledger.outcome {
+        LedgerTransactionOutcome::Success => models::LtsCommittedTransactionStatus::Succeeded,
+        LedgerTransactionOutcome::Failure => models::LtsCommittedTransactionStatus::Failed,
     };
 
     let fungible_entity_balance_changes = receipt
+        .local_execution
         .state_update_summary
         .balance_changes
         .iter()
@@ -43,8 +44,8 @@ pub fn to_api_lts_comitted_transaction_outcome(
         .collect();
 
     // TODO: add total tip payed to validator when it is implemented
-    let fee =
-        receipt.fee_summary.total_royalty_cost_xrd + receipt.fee_summary.total_execution_cost_xrd;
+    let fee = receipt.local_execution.fee_summary.total_royalty_cost_xrd
+        + receipt.local_execution.fee_summary.total_execution_cost_xrd;
 
     Ok(models::LtsCommittedTransactionOutcome {
         state_version: to_api_state_version(identifiers.state_version)?,

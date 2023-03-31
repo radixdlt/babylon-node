@@ -64,7 +64,7 @@
 
 use crate::staging::StateHashTreeDiff;
 use crate::transaction::LedgerTransaction;
-use crate::{CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt};
+use crate::{CommittedTransactionIdentifiers, LedgerProof, LocalTransactionReceipt};
 pub use commit::*;
 pub use proofs::*;
 pub use substate::*;
@@ -73,7 +73,7 @@ pub use vertex::*;
 
 pub type CommittedTransactionBundle = (
     LedgerTransaction,
-    LedgerTransactionReceipt,
+    LocalTransactionReceipt,
     CommittedTransactionIdentifiers,
 );
 
@@ -96,7 +96,7 @@ pub mod substate {
 pub mod transactions {
     use crate::store::traits::CommittedTransactionBundle;
     use crate::transaction::LedgerTransaction;
-    use crate::{CommittedTransactionIdentifiers, LedgerTransactionReceipt};
+    use crate::{CommittedTransactionIdentifiers, LocalTransactionReceipt};
 
     pub trait QueryableTransactionStore {
         fn get_committed_transaction_bundles(
@@ -110,7 +110,7 @@ pub mod transactions {
         fn get_committed_transaction_receipt(
             &self,
             state_version: u64,
-        ) -> Option<LedgerTransactionReceipt>;
+        ) -> Option<LocalTransactionReceipt>;
 
         fn get_committed_transaction_identifiers(
             &self,
@@ -143,7 +143,7 @@ pub mod proofs {
 pub mod commit {
     use super::*;
     use crate::accumulator_tree::storage::TreeSlice;
-    use crate::{ReceiptTreeHash, SubstateChanges, TransactionTreeHash};
+    use crate::{ChangeAction, ReceiptTreeHash, SubstateChange, TransactionTreeHash};
     use radix_engine::ledger::OutputValue;
     use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
     use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReNodeModulePayload, TreeNode};
@@ -172,20 +172,31 @@ pub mod commit {
             }
         }
 
-        pub fn apply(&mut self, changes: &SubstateChanges) {
-            for (id, value) in &changes.created {
-                self.deleted_ids.remove(id);
-                self.upserted.insert(id.clone(), value.clone());
-            }
-            for (id, value) in &changes.updated {
-                self.upserted.insert(id.clone(), value.clone());
-            }
-            for id in changes.deleted.keys() {
-                let previous_value = self.upserted.remove(id);
-                if previous_value.is_none() {
-                    self.deleted_ids.insert(id.clone());
+        pub fn apply(&mut self, changes: &Vec<SubstateChange>) {
+            for change in changes {
+                let id = &change.substate_id;
+                match &change.action {
+                    ChangeAction::Create(value) => {
+                        self.deleted_ids.remove(id);
+                        self.upserted.insert(id.clone(), value.clone());
+                    }
+                    ChangeAction::Update(value) => {
+                        self.upserted.insert(id.clone(), value.clone());
+                    }
+                    ChangeAction::Delete(_) => {
+                        let previous_value = self.upserted.remove(id);
+                        if previous_value.is_none() {
+                            self.deleted_ids.insert(id.clone());
+                        }
+                    }
                 }
             }
+        }
+    }
+
+    impl Default for SubstateStoreUpdate {
+        fn default() -> Self {
+            Self::new()
         }
     }
 

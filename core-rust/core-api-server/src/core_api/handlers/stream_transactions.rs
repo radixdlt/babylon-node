@@ -6,7 +6,7 @@ use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
 use state_manager::transaction::{LedgerTransaction, ValidatorTransaction};
 use state_manager::{
-    CommittedTransactionIdentifiers, IntentHash, LedgerTransactionReceipt, SignaturesHash,
+    CommittedTransactionIdentifiers, IntentHash, LocalTransactionReceipt, SignaturesHash,
     UserPayloadHash,
 };
 
@@ -94,7 +94,7 @@ fn handle_stream_transactions_internal(
 pub fn to_api_committed_transaction(
     context: &MappingContext,
     ledger_transaction: LedgerTransaction,
-    receipt: LedgerTransactionReceipt,
+    receipt: LocalTransactionReceipt,
     identifiers: CommittedTransactionIdentifiers,
 ) -> Result<models::CommittedTransaction, MappingError> {
     let receipt = to_api_receipt(context, receipt)?;
