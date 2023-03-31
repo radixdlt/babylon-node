@@ -64,97 +64,48 @@
 
 package com.radixdlt.rev2;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.ConsensusByzantineEvent;
-import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.environment.EventDispatcher;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.Blake2b256Hasher;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.lang.Option;
-import com.radixdlt.ledger.*;
-import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.modules.CryptoModule;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
+import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.statecomputer.commit.*;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
-import org.junit.Test;
 
-public class REv2StateComputerTest {
-  private Injector createInjector() {
-    return Guice.createInjector(
-        new CryptoModule(),
-        REv2StateManagerModule.create(
-            Network.INTEGRATIONTESTNET.getId(),
-            10,
-            10 * 1024 * 1024,
-            50 * 1024 * 1024,
-            REv2DatabaseConfig.inMemory(),
-            Option.none()),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-            bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
-            bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() {}).toInstance(e -> {});
-            bind(new TypeLiteral<EventDispatcher<ConsensusByzantineEvent>>() {})
-                .toInstance(e -> {});
-            bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
-          }
-        });
+public class LedgerInitializer {
+
+  private final RustStateComputer stateComputer;
+
+  public LedgerInitializer(RustStateComputer stateComputer) {
+    this.stateComputer = stateComputer;
   }
 
-  @Test
-  public void test_valid_rev2_transaction_passes() {
-    // Arrange
-    var injector = createInjector();
-    var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var genesis =
-        TransactionBuilder.createGenesisWithNumValidators(
-            1, Decimal.of(1), UInt64.fromNonNegativeLong(10));
-    var accumulatorHash =
-        new LedgerInitializer(injector.getInstance(RustStateComputer.class))
-            .prepareAndCommit(genesis);
-    var validTransaction = REv2TestTransactions.constructValidRawTransaction(0, 0);
-
-    // Act
-    var roundDetails = new RoundDetails(1, 1, 0, BFTValidatorId.random(), 1000, 1000);
-    var result =
-        stateComputer.prepare(accumulatorHash, List.of(), List.of(validTransaction), roundDetails);
-
-    // Assert
-    assertThat(result.getFailedTransactions()).isEmpty();
-  }
-
-  @Test
-  public void test_invalid_rev2_transaction_fails() {
-    // Arrange
-    var injector = createInjector();
-    var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var genesis =
-        TransactionBuilder.createGenesisWithNumValidators(
-            1, Decimal.of(1), UInt64.fromNonNegativeLong(10));
-    var accumulatorHash =
-        new LedgerInitializer(injector.getInstance(RustStateComputer.class))
-            .prepareAndCommit(genesis);
-    var invalidTransaction = RawNotarizedTransaction.create(new byte[1]);
-
-    // Act
-    var roundDetails = new RoundDetails(1, 1, 0, BFTValidatorId.random(), 1000, 1000);
-    var result =
-        stateComputer.prepare(
-            accumulatorHash, List.of(), List.of(invalidTransaction), roundDetails);
-
-    // Assert
-    assertThat(result.getFailedTransactions()).hasSize(1);
+  public HashCode prepareAndCommit(RawLedgerTransaction genesis) {
+    var prepareResult = this.stateComputer.prepareGenesis(new PrepareGenesisRequest(genesis));
+    var accumulatorState =
+        new SimpleLedgerAccumulatorAndVerifier(
+                new Blake2b256Hasher(DefaultSerialization.getInstance()))
+            .accumulate(new AccumulatorState(0, HashUtils.zero256()), genesis.getPayloadHash());
+    var proof =
+        new LedgerProof(
+            HashUtils.zero256(),
+            new LedgerHeader(
+                UInt64.fromNonNegativeLong(0),
+                UInt64.fromNonNegativeLong(0),
+                REv2ToConsensus.accumulatorState(accumulatorState),
+                prepareResult.ledgerHashes(),
+                0,
+                0,
+                prepareResult
+                    .validatorSet()
+                    .map(validators -> new NextEpoch(validators, UInt64.fromNonNegativeLong(1)))),
+            List.of());
+    this.stateComputer.commit(new CommitRequest(List.of(genesis), proof, Option.none()));
+    return accumulatorState.getAccumulatorHash();
   }
 }
