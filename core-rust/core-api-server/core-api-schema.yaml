@@ -43,8 +43,8 @@ openapi: 3.1.0
 # => Hex-encoded hashes should end _hash
 # => Hex-encoded bytes/payload should end _hex and not include _bytes
 info:
-  version: '0.3.0'
-  title: 'Babylon Core API - RCnet V1'
+  version: '0.4.0'
+  title: 'Babylon Core API - RCnet V2'
   license:
     name: The Radix License, Version 1.0
     url: https://www.radixfoundation.org/licenses/license-v1
