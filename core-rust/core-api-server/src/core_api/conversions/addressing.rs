@@ -208,7 +208,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
 
     // Start body of method
     let entity_id_bytes = re_node_id_to_entity_id_bytes(&substate_id.0);
-    let module_type = node_module_id_to_module_type(&substate_id.1);
+    let module_type = to_api_module_type(&substate_id.1);
     let substate_key_bytes = substate_offset_to_substate_key_bytes(&substate_id.2)?;
 
     // In the below, we nest match statements to ensure we get as much help from the compiler as possible to ensure
@@ -802,7 +802,7 @@ pub fn re_node_id_to_entity_id_bytes(re_node_id: &RENodeId) -> Vec<u8> {
     (*re_node_id).into()
 }
 
-pub fn node_module_id_to_module_type(node_module_id: &NodeModuleId) -> ModuleType {
+pub fn to_api_module_type(node_module_id: &NodeModuleId) -> ModuleType {
     match node_module_id {
         NodeModuleId::SELF => ModuleType::_Self,
         NodeModuleId::Metadata => ModuleType::Metadata,

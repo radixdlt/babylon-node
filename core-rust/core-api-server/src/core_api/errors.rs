@@ -6,6 +6,10 @@ use hyper::StatusCode;
 use radix_engine_interface::network::NetworkDefinition;
 
 use super::models;
+use models::{
+    lts_transaction_submit_error_details::LtsTransactionSubmitErrorDetails,
+    transaction_submit_error_details::TransactionSubmitErrorDetails,
+};
 
 /// A marker trait for custom error details
 pub trait ErrorDetails: serde::Serialize + std::fmt::Debug + Sized {
@@ -28,6 +32,38 @@ impl ErrorDetails for () {
             code,
             message,
             trace_id,
+        }
+    }
+}
+
+impl ErrorDetails for TransactionSubmitErrorDetails {
+    fn to_error_response(
+        details: Option<Self>,
+        code: i32,
+        message: String,
+        trace_id: Option<String>,
+    ) -> models::ErrorResponse {
+        models::ErrorResponse::TransactionSubmitErrorResponse {
+            code,
+            message,
+            trace_id,
+            details: details.map(Box::new),
+        }
+    }
+}
+
+impl ErrorDetails for LtsTransactionSubmitErrorDetails {
+    fn to_error_response(
+        details: Option<Self>,
+        code: i32,
+        message: String,
+        trace_id: Option<String>,
+    ) -> models::ErrorResponse {
+        models::ErrorResponse::LtsTransactionSubmitErrorResponse {
+            code,
+            message,
+            trace_id,
+            details: details.map(Box::new),
         }
     }
 }
@@ -82,6 +118,15 @@ pub(crate) fn client_error<E: ErrorDetails>(message: impl Into<String>) -> Respo
 pub(crate) fn not_found_error<E: ErrorDetails>(message: impl Into<String>) -> ResponseError<E> {
     ResponseError {
         status_code: StatusCode::NOT_FOUND,
+        public_error_message: message.into(),
+        trace: None,
+        details: None,
+    }
+}
+
+pub(crate) fn not_implemented<E: ErrorDetails>(message: impl Into<String>) -> ResponseError<E> {
+    ResponseError {
+        status_code: StatusCode::NOT_IMPLEMENTED,
         public_error_message: message.into(),
         trace: None,
         details: None,

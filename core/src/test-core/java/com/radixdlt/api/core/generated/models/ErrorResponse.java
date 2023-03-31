@@ -27,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.BasicErrorResponse;
 import com.radixdlt.api.core.generated.models.ErrorResponseType;
+import com.radixdlt.api.core.generated.models.LtsTransactionSubmitErrorResponse;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorResponse;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -52,6 +53,8 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonSubTypes({
   @JsonSubTypes.Type(value = BasicErrorResponse.class, name = "Basic"),
   @JsonSubTypes.Type(value = BasicErrorResponse.class, name = "BasicErrorResponse"),
+  @JsonSubTypes.Type(value = LtsTransactionSubmitErrorResponse.class, name = "LtsTransactionSubmit"),
+  @JsonSubTypes.Type(value = LtsTransactionSubmitErrorResponse.class, name = "LtsTransactionSubmitErrorResponse"),
   @JsonSubTypes.Type(value = TransactionSubmitErrorResponse.class, name = "TransactionSubmit"),
   @JsonSubTypes.Type(value = TransactionSubmitErrorResponse.class, name = "TransactionSubmitErrorResponse"),
 })
@@ -227,6 +230,8 @@ static {
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("Basic", BasicErrorResponse.class);
   mappings.put("BasicErrorResponse", BasicErrorResponse.class);
+  mappings.put("LtsTransactionSubmit", LtsTransactionSubmitErrorResponse.class);
+  mappings.put("LtsTransactionSubmitErrorResponse", LtsTransactionSubmitErrorResponse.class);
   mappings.put("TransactionSubmit", TransactionSubmitErrorResponse.class);
   mappings.put("TransactionSubmitErrorResponse", TransactionSubmitErrorResponse.class);
   mappings.put("ErrorResponse", ErrorResponse.class);
