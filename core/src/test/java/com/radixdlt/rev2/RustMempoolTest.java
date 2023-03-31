@@ -75,11 +75,16 @@ import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statecomputer.commit.CommitRequest;
-import com.radixdlt.statemanager.*;
+import com.radixdlt.statemanager.LoggingConfig;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.statemanager.StateManager;
+import com.radixdlt.statemanager.StateManagerConfig;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.UInt64;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.Assert;
 import org.junit.Test;
@@ -87,14 +92,15 @@ import org.junit.Test;
 public final class RustMempoolTest {
 
   private static void initStateComputer(StateManager stateManager) {
-    final var metrics = new MetricsInitializer().initialize();
-    var stateComputer = new RustStateComputer(metrics, stateManager);
-    var transactionsWithProof = KnownGenesis.create();
-    var transactions = transactionsWithProof.getTransactions();
-    var proof = transactionsWithProof.getProof();
-    stateComputer
-        .commit(new CommitRequest(transactions, REv2ToConsensus.ledgerProof(proof), Option.none()))
-        .unwrap();
+    new LedgerInitializer(
+            new RustStateComputer(new MetricsInitializer().initialize(), stateManager))
+        .prepareAndCommit(
+            TransactionBuilder.createGenesis(
+                Map.of(),
+                Map.of(),
+                UInt64.fromNonNegativeLong(1),
+                UInt64.fromNonNegativeLong(10),
+                UInt64.fromNonNegativeLong(1)));
   }
 
   @Test
