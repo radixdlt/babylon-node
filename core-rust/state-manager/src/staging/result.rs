@@ -77,6 +77,7 @@ use radix_engine::transaction::{
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::crypto::Hash;
 
+use crate::staging::epoch_handling::AccuTreeEpochHandler;
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, Payload, ReNodeModulePayload, ReadableTreeStore, TreeNode, WriteableTreeStore,
 };
@@ -217,19 +218,13 @@ impl ProcessedCommitResult {
         parent_state_version: u64,
         new_leaf_hash: M,
     ) -> AccuTreeDiff<u64, M> {
-        let epoch_transaction_count = parent_state_version - epoch_state_version;
-        let (epoch_tree_size, appended_hashes) = if epoch_transaction_count == 0 {
-            (0, vec![epoch_root, new_leaf_hash])
-        } else {
-            (
-                usize::try_from(epoch_transaction_count).unwrap() + 1,
-                vec![new_leaf_hash],
-            )
-        };
         let mut collector = CollectingAccuTreeStore::new(store);
         let mut epoch_scoped_store =
             EpochScopedAccuTreeStore::new(&mut collector, epoch_state_version);
-        AccuTree::new(&mut epoch_scoped_store, epoch_tree_size).append(appended_hashes);
+        let epoch_handler = AccuTreeEpochHandler::new(epoch_state_version, parent_state_version);
+        let epoch_tree_len = epoch_handler.current_accu_tree_len();
+        let appended_hashes = epoch_handler.adjust_next_batch(epoch_root, vec![new_leaf_hash]);
+        AccuTree::new(&mut epoch_scoped_store, epoch_tree_len).append(appended_hashes);
         collector.into_diff()
     }
 

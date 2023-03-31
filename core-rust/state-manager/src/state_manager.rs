@@ -103,6 +103,7 @@ use radix_engine_interface::api::types::{
 
 use std::collections::{BTreeMap, HashMap};
 
+use crate::staging::epoch_handling::AccuTreeEpochHandler;
 use radix_engine::blueprints::epoch_manager::{Validator, ValidatorSubstate};
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine_interface::data::manifest::manifest_encode;
@@ -110,7 +111,7 @@ use radix_engine_interface::network::NetworkDefinition;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct LoggingConfig {
@@ -909,15 +910,11 @@ where
             .get_last_epoch_proof()
             .map(|epoch_proof| EpochTransactionIdentifiers::from(epoch_proof.ledger_header))
             .unwrap_or_else(EpochTransactionIdentifiers::pre_genesis);
-        let epoch_transactions_count = usize::try_from(
-            base_transaction_identifiers.state_version - epoch_identifiers.state_version,
-        )
-        .unwrap();
-
-        if base_transaction_identifiers.state_version != commit_request_start_state_version {
+        let base_state_version = base_transaction_identifiers.state_version;
+        if base_state_version != commit_request_start_state_version {
             panic!(
                 "Mismatched state versions - the commit request claims {} but the database thinks we're at {}",
-                commit_request_start_state_version, base_transaction_identifiers.state_version
+                commit_request_start_state_version, base_state_version
             );
         }
 
@@ -925,7 +922,9 @@ where
         let mut committed_transaction_bundles = Vec::new();
         let mut substate_store_update = SubstateStoreUpdate::new();
         let mut state_tree_update = HashTreeUpdate::new();
-        let transaction_tree_len = epoch_transactions_count + 1; // starts with previous epoch root
+        let transaction_tree_len =
+            AccuTreeEpochHandler::new(epoch_identifiers.state_version, base_state_version)
+                .current_accu_tree_len();
         let mut transaction_tree_slice_merger = AccuTreeSliceMerger::new(transaction_tree_len);
         let mut receipt_tree_slice_merger = AccuTreeSliceMerger::new(transaction_tree_len);
         let mut intent_hashes = Vec::new();
@@ -992,15 +991,15 @@ where
         }
 
         let commit_ledger_hashes = &commit_ledger_header.hashes;
-        let final_state_hash = &state_tracker.latest_ledger_hashes().state_root;
-        if *final_state_hash != commit_ledger_hashes.state_root {
-            warn!(
-                "computed state hash at version {} differs from the one in proof ({} != {})",
-                commit_accumulator_state.state_version,
-                final_state_hash,
-                commit_ledger_hashes.state_root
+        let final_ledger_hashes = state_tracker.latest_ledger_hashes();
+        if *final_ledger_hashes != *commit_ledger_hashes {
+            error!(
+                "computed ledger hashes at version {} differ from the ones in proof ({:?} != {:?})",
+                commit_accumulator_state.state_version, final_ledger_hashes, commit_ledger_hashes
             );
+            return Err(CommitError::LedgerHashesMismatch);
         }
+
         let final_transaction_identifiers = state_tracker.latest_transaction_identifiers().clone();
 
         self.execution_cache

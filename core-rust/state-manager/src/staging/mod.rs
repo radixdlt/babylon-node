@@ -63,6 +63,7 @@
  */
 
 mod cache;
+pub mod epoch_handling;
 mod result;
 mod stage_tree;
 

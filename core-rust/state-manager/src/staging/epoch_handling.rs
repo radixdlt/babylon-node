@@ -62,90 +62,40 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+/// An extracted logic related to the "accu tree per epoch" approach (where the first leaf of the
+/// next epoch's tree is an auto-inserted root of the previous epoch's tree).
+pub struct AccuTreeEpochHandler {
+    epoch_version_count: usize,
+}
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
-import java.util.Objects;
-import javax.annotation.concurrent.Immutable;
-
-@Immutable
-@SerializerId2("consensus.ledger_hashes")
-public final class LedgerHashes {
-  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
-  @DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
-  SerializerDummy serializer = SerializerDummy.DUMMY;
-
-  @JsonProperty("state_root")
-  @DsonOutput(DsonOutput.Output.ALL)
-  private final HashCode stateRoot;
-
-  @JsonProperty("transaction_root")
-  @DsonOutput(DsonOutput.Output.ALL)
-  private final HashCode transactionRoot;
-
-  @JsonProperty("receipt_root")
-  @DsonOutput(DsonOutput.Output.ALL)
-  private final HashCode receiptRoot;
-
-  @JsonCreator
-  @VisibleForTesting
-  LedgerHashes(
-      @JsonProperty(value = "state_root", required = true) HashCode stateRoot,
-      @JsonProperty(value = "transaction_root", required = true) HashCode transactionRoot,
-      @JsonProperty(value = "receipt_root", required = true) HashCode receiptRoot) {
-    this.stateRoot = stateRoot;
-    this.transactionRoot = transactionRoot;
-    this.receiptRoot = receiptRoot;
-  }
-
-  public static LedgerHashes create(
-      HashCode stateRoot, HashCode transactionRoot, HashCode receiptRoot) {
-    return new LedgerHashes(stateRoot, transactionRoot, receiptRoot);
-  }
-
-  public static LedgerHashes zero() {
-    return create(HashUtils.zero256(), HashUtils.zero256(), HashUtils.zero256());
-  }
-
-  public HashCode getStateRoot() {
-    return stateRoot;
-  }
-
-  public HashCode getTransactionRoot() {
-    return transactionRoot;
-  }
-
-  public HashCode getReceiptRoot() {
-    return receiptRoot;
-  }
-
-  @Override
-  public boolean equals(Object object) {
-    if (this == object) {
-      return true;
+impl AccuTreeEpochHandler {
+    /// Creates an instance scoped at a particular epoch, based on 2 state versions: the state
+    /// version of the transaction which started that epoch, and the state version of the last
+    /// committed transaction.
+    pub fn new(epoch_state_version: u64, current_state_version: u64) -> Self {
+        Self {
+            epoch_version_count: usize::try_from(current_state_version - epoch_state_version)
+                .unwrap(),
+        }
     }
-    return object instanceof LedgerHashes other
-        && stateRoot.equals(other.stateRoot)
-        && transactionRoot.equals(other.transactionRoot)
-        && receiptRoot.equals(other.receiptRoot);
-  }
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(stateRoot, transactionRoot, receiptRoot);
-  }
+    /// Returns the actual number of leaves in the epoch's accu tree.
+    /// This takes into account the extra first leaf (i.e. previous epoch's tree root), and handles
+    /// the "fresh epoch" (i.e. empty accu tree) case.
+    pub fn current_accu_tree_len(&self) -> usize {
+        if self.epoch_version_count == 0 {
+            0
+        } else {
+            self.epoch_version_count + 1
+        }
+    }
 
-  @Override
-  public String toString() {
-    return "%s{stateRoot=%s, transactionRoot=%s, receiptRoot=%s}"
-        .formatted(LedgerHashes.class.getSimpleName(), stateRoot, transactionRoot, receiptRoot);
-  }
+    /// Adjusts the next planned batch of leaves to be appended to the epoch's accu tree.
+    /// The adjustment
+    pub fn adjust_next_batch<T>(&self, previous_epoch_root: T, mut next_batch: Vec<T>) -> Vec<T> {
+        if self.epoch_version_count == 0 {
+            next_batch.insert(0, previous_epoch_root);
+        }
+        next_batch
+    }
 }
