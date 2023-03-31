@@ -65,6 +65,7 @@
 use super::{ReadableHashStructuresStore, ReadableStateTreeStore};
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
+use crate::staging::epoch_handling::AccuTreeEpochHandler;
 use crate::{
     AccumulatorHash, CommittedTransactionIdentifiers, DetailedTransactionOutcome,
     EpochTransactionIdentifiers, LedgerHashes, LedgerPayloadHash, LocalTransactionReceipt,
@@ -77,7 +78,6 @@ use radix_engine::transaction::{
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::crypto::Hash;
 
-use crate::staging::epoch_handling::AccuTreeEpochHandler;
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, Payload, ReNodeModulePayload, ReadableTreeStore, TreeNode, WriteableTreeStore,
 };
