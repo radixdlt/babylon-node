@@ -1,6 +1,6 @@
 /*
- * Babylon Core API
- * This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node. It is intended for use by node-runners on a private network, and is not intended to be exposed publicly. Heavy load may impact the node's function.  If you require queries against historical ledger state, you may also wish to consider using the [Gateway API](https://betanet-gateway.redoc.ly/). 
+ * Babylon Core API - RCnet V1
+ * This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node.  It is intended for use by node-runners on a private network, and is not intended to be exposed publicly. Very heavy load may impact the node's function.  This API exposes queries against the node's current state (see `/lts/state/` or `/state/`), and streams of transaction history (under `/lts/stream/` or `/stream`).  If you require queries against snapshots of historical ledger state, you may also wish to consider using the [Gateway API](https://docs-babylon.radixdlt.com/).  ## Integration and forward compatibility guarantees  This version of the Core API belongs to the first release candidate of the Radix Babylon network (\"RCnet-V1\").  Integrators (such as exchanges) are recommended to use the `/lts/` endpoints - they have been designed to be clear and simple for integrators wishing to create and monitor transactions involving fungible transfers to/from accounts.  All endpoints under `/lts/` are guaranteed to be forward compatible to Babylon mainnet launch (and beyond). We may add new fields, but existing fields will not be changed. Assuming the integrating code uses a permissive JSON parser which ignores unknown fields, any additions will not affect existing code.  We give no guarantees that other endpoints will not change before Babylon mainnet launch, although changes are expected to be minimal. 
  *
  * The version of the OpenAPI document: 0.3.0
  * 
@@ -32,12 +32,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @ApiModel(description = "A request to retrieve a sublist of committed transactions from the ledger. ")
 @JsonPropertyOrder({
-  LtsStreamTransactionsBasicOutcomesRequest.JSON_PROPERTY_NETWORK,
-  LtsStreamTransactionsBasicOutcomesRequest.JSON_PROPERTY_FROM_STATE_VERSION,
-  LtsStreamTransactionsBasicOutcomesRequest.JSON_PROPERTY_LIMIT
+  LtsStreamTransactionOutcomesRequest.JSON_PROPERTY_NETWORK,
+  LtsStreamTransactionOutcomesRequest.JSON_PROPERTY_FROM_STATE_VERSION,
+  LtsStreamTransactionOutcomesRequest.JSON_PROPERTY_LIMIT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LtsStreamTransactionsBasicOutcomesRequest {
+public class LtsStreamTransactionOutcomesRequest {
   public static final String JSON_PROPERTY_NETWORK = "network";
   private String network;
 
@@ -47,10 +47,10 @@ public class LtsStreamTransactionsBasicOutcomesRequest {
   public static final String JSON_PROPERTY_LIMIT = "limit";
   private Integer limit;
 
-  public LtsStreamTransactionsBasicOutcomesRequest() { 
+  public LtsStreamTransactionOutcomesRequest() { 
   }
 
-  public LtsStreamTransactionsBasicOutcomesRequest network(String network) {
+  public LtsStreamTransactionOutcomesRequest network(String network) {
     this.network = network;
     return this;
   }
@@ -76,7 +76,7 @@ public class LtsStreamTransactionsBasicOutcomesRequest {
   }
 
 
-  public LtsStreamTransactionsBasicOutcomesRequest fromStateVersion(Long fromStateVersion) {
+  public LtsStreamTransactionOutcomesRequest fromStateVersion(Long fromStateVersion) {
     this.fromStateVersion = fromStateVersion;
     return this;
   }
@@ -104,7 +104,7 @@ public class LtsStreamTransactionsBasicOutcomesRequest {
   }
 
 
-  public LtsStreamTransactionsBasicOutcomesRequest limit(Integer limit) {
+  public LtsStreamTransactionOutcomesRequest limit(Integer limit) {
     this.limit = limit;
     return this;
   }
@@ -131,7 +131,7 @@ public class LtsStreamTransactionsBasicOutcomesRequest {
 
 
   /**
-   * Return true if this LtsStreamTransactionsBasicOutcomesRequest object is equal to o.
+   * Return true if this LtsStreamTransactionOutcomesRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -141,10 +141,10 @@ public class LtsStreamTransactionsBasicOutcomesRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LtsStreamTransactionsBasicOutcomesRequest ltsStreamTransactionsBasicOutcomesRequest = (LtsStreamTransactionsBasicOutcomesRequest) o;
-    return Objects.equals(this.network, ltsStreamTransactionsBasicOutcomesRequest.network) &&
-        Objects.equals(this.fromStateVersion, ltsStreamTransactionsBasicOutcomesRequest.fromStateVersion) &&
-        Objects.equals(this.limit, ltsStreamTransactionsBasicOutcomesRequest.limit);
+    LtsStreamTransactionOutcomesRequest ltsStreamTransactionOutcomesRequest = (LtsStreamTransactionOutcomesRequest) o;
+    return Objects.equals(this.network, ltsStreamTransactionOutcomesRequest.network) &&
+        Objects.equals(this.fromStateVersion, ltsStreamTransactionOutcomesRequest.fromStateVersion) &&
+        Objects.equals(this.limit, ltsStreamTransactionOutcomesRequest.limit);
   }
 
   @Override
@@ -155,7 +155,7 @@ public class LtsStreamTransactionsBasicOutcomesRequest {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LtsStreamTransactionsBasicOutcomesRequest {\n");
+    sb.append("class LtsStreamTransactionOutcomesRequest {\n");
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
     sb.append("    fromStateVersion: ").append(toIndentedString(fromStateVersion)).append("\n");
     sb.append("    limit: ").append(toIndentedString(limit)).append("\n");

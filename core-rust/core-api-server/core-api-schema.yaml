@@ -44,7 +44,7 @@ openapi: 3.1.0
 # => Hex-encoded bytes/payload should end _hex and not include _bytes
 info:
   version: '0.3.0'
-  title: 'Babylon Core API'
+  title: 'Babylon Core API - RCnet V1'
   license:
     name: The Radix License, Version 1.0
     url: https://www.radixfoundation.org/licenses/license-v1
@@ -53,10 +53,30 @@ info:
     href: https://docs.radixdlt.com
   description: |
     This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node.
-    It is intended for use by node-runners on a private network, and is not intended to be exposed publicly.
-    Heavy load may impact the node's function.
 
-    If you require queries against historical ledger state, you may also wish to consider using the [Gateway API](https://betanet-gateway.redoc.ly/).
+    It is intended for use by node-runners on a private network, and is not intended to be exposed publicly.
+    Very heavy load may impact the node's function.
+
+    This API exposes queries against the node's current state (see `/lts/state/` or `/state/`), and streams of transaction history
+    (under `/lts/stream/` or `/stream`).
+
+    If you require queries against snapshots of historical ledger state, you may also wish to consider using the
+    [Gateway API](https://docs-babylon.radixdlt.com/).
+
+    ## Integration and forward compatibility guarantees
+  
+    This version of the Core API belongs to the first release candidate of the Radix Babylon network ("RCnet-V1").
+
+    Integrators (such as exchanges) are recommended to use the `/lts/` endpoints - they have been designed to be clear
+    and simple for integrators wishing to create and monitor transactions involving fungible transfers to/from accounts.
+
+    All endpoints under `/lts/` are guaranteed to be forward compatible to Babylon mainnet launch (and beyond).
+    We may add new fields, but existing fields will not be changed. Assuming the integrating code uses a permissive
+    JSON parser which ignores unknown fields, any additions will not affect existing code.
+  
+    We give no guarantees that other endpoints will not change before Babylon mainnet launch, although changes are expected to
+    be minimal.
+
 servers:
   - url: 'localhost:3333/core'
 # See https://redocly.com/docs/api-reference-docs/specification-extensions/x-tag-groups/ for details
@@ -65,6 +85,7 @@ x-tagGroups:
     tags:
       - SubAPIs
       - Concepts
+      - Construction
   - name: Endpoints
     tags:
       - LTS
@@ -128,6 +149,18 @@ tags:
 
       As an example, entities include concepts like Components, Packages, Vaults, Resource Managers and Key-Value Stores.
       Substates under a component include the Component Struct, Component Data, and Access Rules substates.
+  - name: Construction
+    x-displayName: Transaction Construction
+    x-traitTag: true # Don't display endpoints under this tag
+    description: |      
+      To construct and submit a transaction using the LTS endpoints:
+
+      * Query `/lts/transaction/construction` to retrieve the current epoch (according to your node).
+        Check also that the `ledger_clock` is close to the current time - this ensures that the node is synced up.
+      * Make use of the Radix Engine Toolkit to construct the intent, sign/notarize, and compile the notarized transaction.
+      * You can use `/lts/transaction/submit` to submit the transaction
+      * Use `/lts/transaction/status` to check the status of the transaction
+      * Use `/lts/stream/transaction-outcomes` to look up the outcome of the transaction, from its state version
   - name: LTS
     x-displayName: LTS Endpoints
     description: |
@@ -157,11 +190,10 @@ paths:
 ##################################################
   "/lts/transaction/construction":
     post:
-      summary: Get Transaction Construction
+      summary: Get Construction Metadata
       description: Returns information necessary to build a transaction
       tags:
         - LTS
-        - Transaction
       requestBody:
         required: true
         content:
@@ -183,12 +215,11 @@ paths:
                 $ref: "#/components/schemas/BasicErrorResponse"
   "/lts/transaction/submit":
     post:
-      summary: Transaction Submit
+      summary: Submit Transaction
       description: |
         Submits a notarized transaction to the network. Returns whether the transaction submission was already included in the node's mempool.
       tags:
         - LTS
-        - Transaction
       requestBody:
         required: true
         content:
@@ -224,7 +255,6 @@ paths:
         for most clients.
       tags:
         - LTS
-        - Transaction
       requestBody:
         required: true
         content:
@@ -252,11 +282,10 @@ paths:
                 $ref: "#/components/schemas/BasicErrorResponse"
   "/lts/state/account-all-fungible-resource-balances":
     post:
-      summary: Get All Resources Balances
+      summary: Get All Account Balances
       description: Returns balances for all resources associated with an account
       tags:
         - LTS
-        - State
       requestBody:
         required: true
         content:
@@ -278,11 +307,10 @@ paths:
                 $ref: "#/components/schemas/BasicErrorResponse"
   "/lts/state/account-fungible-resource-balance":
     post:
-      summary: Get Resource Balance
-      description: Returns balance of the resource for an account
+      summary: Get Single Account Balance
+      description: Returns balance of a single fungible resource in an account
       tags:
         - LTS
-        - State
       requestBody:
         required: true
         content:
@@ -302,27 +330,58 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicErrorResponse"
-  "/lts/stream/transactions-basic-outcomes":
+  "/lts/stream/transaction-outcomes":
     post:
-      summary: Get Transactions Basic Outcomes
+      summary: Get Transaction Outcomes
       description: |
-        Returns a list of committed transaction's basic outcomes (this contains resource balance changes).
+        Returns a list of committed transaction outcomes (containing balance changes) from a given state version.
       tags:
         - LTS
-        - Stream
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/LtsStreamTransactionsBasicOutcomesRequest"
+              $ref: "#/components/schemas/LtsStreamTransactionOutcomesRequest"
       responses:
         '200':
-          description: Transaction status response
+          description: Paged response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LtsStreamTransactionsBasicOutcomesResponse"
+                $ref: "#/components/schemas/LtsStreamTransactionOutcomesResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicErrorResponse"
+  "/lts/stream/account-transaction-outcomes":
+    post:
+      summary: Get Account Transaction Outcomes
+      description: |
+        Returns a list of committed transaction outcomes (containing balance changes) from a given state version, filtered to only transactions which involved the given account.
+      tags:
+        - LTS
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LtsStreamAccountTransactionOutcomesRequest"
+      responses:
+        '200':
+          description: Paged response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LtsStreamAccountTransactionOutcomesResponse"
         '400':
           description: Client error
           content:
@@ -3052,6 +3111,16 @@ components:
           type: string
           description: |
             An explanation as to why the intent status is resolved as it is.
+        committed_state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: |
+            An integer between `1` and `10^13`, giving the resultant state version when the transaction was committed.
+            This is only present if the intent was committed (as a Success or Failure).
+            This can be considered to be the auto-incrementing primary key for a committed tranasction, and can be used in (eg) to look up
+            details on the transaction's outcome from the `/lts/stream/transaction-outcomes` endpoint.
         invalid_from_epoch:
           type: integer
           format: int64
@@ -3240,7 +3309,7 @@ components:
           minimum: 1
           maximum: 100000000000000
           description: |
-            An integer between `1` and `10^13`, giving the state version at which the account was read.
+            An integer between `1` and `10^13`, giving the state version at which the query was performed.
         account_address:
           type: string
           description: The Bech32m-encoded human readable version of the account's address
@@ -3292,16 +3361,16 @@ components:
           minimum: 1
           maximum: 100000000000000
           description: |
-            An integer between `1` and `10^13`, giving the state version at which the account was read.
+            An integer between `1` and `10^13`, giving the state version at which the query was performed.
         account_address:
           type: string
           description: The Bech32m-encoded human readable version of the account's address
         fungible_resource_balance:
           $ref: "#/components/schemas/LtsFungibleResourceBalance"
-####################################################
-# REQUEST: /lts/stream/transactions-basic-outcomes #
-####################################################
-    LtsStreamTransactionsBasicOutcomesRequest:
+#############################################
+# REQUEST: /lts/stream/transaction-outcomes #
+#############################################
+    LtsStreamTransactionOutcomesRequest:
       description: |
         A request to retrieve a sublist of committed transactions from the ledger.
       type: object
@@ -3321,7 +3390,7 @@ components:
         limit:
           description: The maximum number of transactions that will be returned.
           type: integer
-    LtsStreamTransactionsBasicOutcomesResponse:
+    LtsStreamTransactionOutcomesResponse:
       type: object
       required:
         - from_state_version
@@ -3429,10 +3498,10 @@ components:
           description: |
             The string-encoded decimal representing the amount of change for the fungible resource.
             A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
-############################################################
-# REQUEST: /lts/stream/account-transactions-basic-outcomes #
-############################################################
-    LtsStreamAccountTransactionsBasicOutcomesRequest:
+#####################################################
+# REQUEST: /lts/stream/account-transaction-outcomes #
+#####################################################
+    LtsStreamAccountTransactionOutcomesRequest:
       description: |
         A request to retrieve a sublist of committed transactions from the ledger.
       type: object
@@ -3456,7 +3525,7 @@ components:
         limit:
           description: The maximum number of transactions that will be returned.
           type: integer
-    LtsStreamAccountTransactionsBasicOutcomesResponse:
+    LtsStreamAccountTransactionOutcomesResponse:
       type: object
       required:
         - from_state_version

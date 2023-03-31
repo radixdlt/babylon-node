@@ -1,6 +1,6 @@
 /*
- * Babylon Core API
- * This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node. It is intended for use by node-runners on a private network, and is not intended to be exposed publicly. Heavy load may impact the node's function.  If you require queries against historical ledger state, you may also wish to consider using the [Gateway API](https://betanet-gateway.redoc.ly/). 
+ * Babylon Core API - RCnet V1
+ * This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node.  It is intended for use by node-runners on a private network, and is not intended to be exposed publicly. Very heavy load may impact the node's function.  This API exposes queries against the node's current state (see `/lts/state/` or `/state/`), and streams of transaction history (under `/lts/stream/` or `/stream`).  If you require queries against snapshots of historical ledger state, you may also wish to consider using the [Gateway API](https://docs-babylon.radixdlt.com/).  ## Integration and forward compatibility guarantees  This version of the Core API belongs to the first release candidate of the Radix Babylon network (\"RCnet-V1\").  Integrators (such as exchanges) are recommended to use the `/lts/` endpoints - they have been designed to be clear and simple for integrators wishing to create and monitor transactions involving fungible transfers to/from accounts.  All endpoints under `/lts/` are guaranteed to be forward compatible to Babylon mainnet launch (and beyond). We may add new fields, but existing fields will not be changed. Assuming the integrating code uses a permissive JSON parser which ignores unknown fields, any additions will not affect existing code.  We give no guarantees that other endpoints will not change before Babylon mainnet launch, although changes are expected to be minimal. 
  *
  * The version of the OpenAPI document: 0.3.0
  * 
@@ -18,8 +18,6 @@ import com.radixdlt.api.core.generated.client.ApiResponse;
 import com.radixdlt.api.core.generated.client.Pair;
 
 import com.radixdlt.api.core.generated.models.BasicErrorResponse;
-import com.radixdlt.api.core.generated.models.LtsStreamTransactionsBasicOutcomesRequest;
-import com.radixdlt.api.core.generated.models.LtsStreamTransactionsBasicOutcomesResponse;
 import com.radixdlt.api.core.generated.models.StreamTransactionsRequest;
 import com.radixdlt.api.core.generated.models.StreamTransactionsResponse;
 
@@ -78,84 +76,6 @@ public class StreamApi {
     return operationId + " call failed with: " + statusCode + " - " + body;
   }
 
-  /**
-   * Get Transactions Basic Outcomes
-   * Returns a list of committed transaction&#39;s basic outcomes (this contains resource balance changes). 
-   * @param ltsStreamTransactionsBasicOutcomesRequest  (required)
-   * @return LtsStreamTransactionsBasicOutcomesResponse
-   * @throws ApiException if fails to make API call
-   */
-  public LtsStreamTransactionsBasicOutcomesResponse ltsStreamTransactionsBasicOutcomesPost(LtsStreamTransactionsBasicOutcomesRequest ltsStreamTransactionsBasicOutcomesRequest) throws ApiException {
-    ApiResponse<LtsStreamTransactionsBasicOutcomesResponse> localVarResponse = ltsStreamTransactionsBasicOutcomesPostWithHttpInfo(ltsStreamTransactionsBasicOutcomesRequest);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Get Transactions Basic Outcomes
-   * Returns a list of committed transaction&#39;s basic outcomes (this contains resource balance changes). 
-   * @param ltsStreamTransactionsBasicOutcomesRequest  (required)
-   * @return ApiResponse&lt;LtsStreamTransactionsBasicOutcomesResponse&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<LtsStreamTransactionsBasicOutcomesResponse> ltsStreamTransactionsBasicOutcomesPostWithHttpInfo(LtsStreamTransactionsBasicOutcomesRequest ltsStreamTransactionsBasicOutcomesRequest) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = ltsStreamTransactionsBasicOutcomesPostRequestBuilder(ltsStreamTransactionsBasicOutcomesRequest);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("ltsStreamTransactionsBasicOutcomesPost", localVarResponse);
-        }
-        return new ApiResponse<LtsStreamTransactionsBasicOutcomesResponse>(
-          localVarResponse.statusCode(),
-          localVarResponse.headers().map(),
-          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<LtsStreamTransactionsBasicOutcomesResponse>() {}) // closes the InputStream
-          
-        );
-      } finally {
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder ltsStreamTransactionsBasicOutcomesPostRequestBuilder(LtsStreamTransactionsBasicOutcomesRequest ltsStreamTransactionsBasicOutcomesRequest) throws ApiException {
-    // verify the required parameter 'ltsStreamTransactionsBasicOutcomesRequest' is set
-    if (ltsStreamTransactionsBasicOutcomesRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'ltsStreamTransactionsBasicOutcomesRequest' when calling ltsStreamTransactionsBasicOutcomesPost");
-    }
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/lts/stream/transactions-basic-outcomes";
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Content-Type", "application/json");
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(ltsStreamTransactionsBasicOutcomesRequest);
-      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
   /**
    * Get Committed Transactions
    * Returns the list of committed transactions. 
