@@ -62,8 +62,9 @@
  * permissions under this License.
  */
 
+use crate::staging::StateHashTreeDiff;
 use crate::transaction::LedgerTransaction;
-use crate::{CommittedTransactionIdentifiers, LedgerTransactionReceipt};
+use crate::{CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt};
 pub use commit::*;
 pub use proofs::*;
 pub use substate::*;
@@ -123,6 +124,8 @@ pub mod transactions {
 }
 
 pub mod proofs {
+    use super::*;
+
     pub trait QueryableProofStore {
         fn max_state_version(&self) -> u64;
         fn get_txns_and_proof(
@@ -130,25 +133,91 @@ pub mod proofs {
             start_state_version_inclusive: u64,
             max_number_of_txns_if_more_than_one_proof: u32,
             max_payload_size_in_bytes: u32,
-        ) -> Option<(Vec<Vec<u8>>, Vec<u8>)>;
-        fn get_epoch_proof(&self, epoch: u64) -> Option<Vec<u8>>;
-        fn get_last_proof(&self) -> Option<Vec<u8>>;
+        ) -> Option<(Vec<Vec<u8>>, LedgerProof)>;
+        fn get_epoch_proof(&self, epoch: u64) -> Option<LedgerProof>;
+        fn get_last_proof(&self) -> Option<LedgerProof>;
+        fn get_last_epoch_proof(&self) -> Option<LedgerProof>;
     }
 }
 
 pub mod commit {
     use super::*;
+    use crate::accumulator_tree::storage::TreeSlice;
+    use crate::{ReceiptTreeHash, SubstateChanges, TransactionTreeHash};
     use radix_engine::ledger::OutputValue;
-    use radix_engine_interface::api::types::SubstateId;
-    use std::collections::BTreeMap;
+    use radix_engine_interface::api::types::{SubstateId, SubstateOffset};
+    use radix_engine_stores::hash_tree::tree_store::{NodeKey, ReNodeModulePayload, TreeNode};
+    use std::collections::{HashMap, HashSet};
 
     pub struct CommitBundle {
         pub transactions: Vec<CommittedTransactionBundle>,
-        pub proof_bytes: Vec<u8>,
-        pub proof_state_version: u64,
-        pub epoch_boundary: Option<u64>,
-        pub substates: BTreeMap<SubstateId, OutputValue>,
+        pub proof: LedgerProof,
+        pub substate_store_update: SubstateStoreUpdate,
         pub vertex_store: Option<Vec<u8>>,
+        pub state_tree_update: HashTreeUpdate,
+        pub transaction_tree_slice: TreeSlice<TransactionTreeHash>,
+        pub receipt_tree_slice: TreeSlice<ReceiptTreeHash>,
+    }
+
+    pub struct SubstateStoreUpdate {
+        pub upserted: HashMap<SubstateId, OutputValue>,
+        pub deleted_ids: HashSet<SubstateId>,
+    }
+
+    impl SubstateStoreUpdate {
+        pub fn new() -> Self {
+            Self {
+                upserted: HashMap::new(),
+                deleted_ids: HashSet::new(),
+            }
+        }
+
+        pub fn apply(&mut self, changes: &SubstateChanges) {
+            for (id, value) in &changes.created {
+                self.deleted_ids.remove(id);
+                self.upserted.insert(id.clone(), value.clone());
+            }
+            for (id, value) in &changes.updated {
+                self.upserted.insert(id.clone(), value.clone());
+            }
+            for id in changes.deleted.keys() {
+                let previous_value = self.upserted.remove(id);
+                if previous_value.is_none() {
+                    self.deleted_ids.insert(id.clone());
+                }
+            }
+        }
+    }
+
+    pub struct HashTreeUpdate {
+        pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<ReNodeModulePayload>)>,
+        pub new_substate_layer_nodes: Vec<(NodeKey, TreeNode<SubstateOffset>)>,
+        pub stale_node_keys_at_state_version: Vec<(u64, Vec<NodeKey>)>,
+    }
+
+    impl HashTreeUpdate {
+        pub fn new() -> Self {
+            Self {
+                new_re_node_layer_nodes: Vec::new(),
+                new_substate_layer_nodes: Vec::new(),
+                stale_node_keys_at_state_version: Vec::new(),
+            }
+        }
+
+        pub fn add(&mut self, at_state_version: u64, diff: &StateHashTreeDiff) {
+            self.new_re_node_layer_nodes
+                .extend(diff.new_re_node_layer_nodes.clone());
+            self.new_substate_layer_nodes
+                .extend(diff.new_substate_layer_nodes.clone());
+            self.stale_node_keys_at_state_version
+                .push((at_state_version, diff.stale_hash_tree_node_keys.clone()));
+        }
+    }
+
+    impl Default for HashTreeUpdate {
+        fn default() -> Self {
+            Self::new()
+        }
     }
 
     pub trait CommitStore {

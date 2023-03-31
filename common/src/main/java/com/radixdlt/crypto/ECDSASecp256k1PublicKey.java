@@ -69,11 +69,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.CustomTypeKnownLengthCodec;
-import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.sbor.codec.CustomByteArrayCodec;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
@@ -88,9 +86,7 @@ public final class ECDSASecp256k1PublicKey {
     codecMap.register(
         ECDSASecp256k1PublicKey.class,
         codecs ->
-            new CustomTypeKnownLengthCodec<>(
-                TypeId.TYPE_CUSTOM_ECDSA_SECP256K1_PUBLIC_KEY,
-                COMPRESSED_BYTES,
+            new CustomByteArrayCodec<>(
                 ECDSASecp256k1PublicKey::getCompressedBytes,
                 ECDSASecp256k1PublicKey::fromCompressedBytesUnchecked));
   }
@@ -100,7 +96,6 @@ public final class ECDSASecp256k1PublicKey {
 
   private final ECPoint ecPoint;
   private final Supplier<byte[]> uncompressedBytes;
-  private final Supplier<EUID> uid;
   private final int hashCode;
   private final byte[] compressed;
 
@@ -108,7 +103,6 @@ public final class ECDSASecp256k1PublicKey {
     this.ecPoint = Objects.requireNonNull(ecPoint);
     this.uncompressedBytes = Suppliers.memoize(() -> this.ecPoint.getEncoded(false));
     this.compressed = this.ecPoint.getEncoded(true);
-    this.uid = Suppliers.memoize(this::computeUID);
     this.hashCode = computeHashCode();
   }
 
@@ -143,10 +137,6 @@ public final class ECDSASecp256k1PublicKey {
       HashCode hash, ECDSASecp256k1Signature signature) {
     return ECKeyUtils.recoverFromSignature(signature, hash.asBytes())
         .map(ECDSASecp256k1PublicKey::new);
-  }
-
-  public EUID euid() {
-    return uid.get();
   }
 
   public ECPoint getEcPoint() {
@@ -203,9 +193,5 @@ public final class ECDSASecp256k1PublicKey {
   @Override
   public String toString() {
     return String.format("%s[%s]", getClass().getSimpleName(), toHex());
-  }
-
-  private EUID computeUID() {
-    return EUID.sha256(getCompressedBytes());
   }
 }

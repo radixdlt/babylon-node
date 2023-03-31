@@ -73,7 +73,6 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.VoteTimeout;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
@@ -82,6 +81,7 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.Invalidity;
 import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent.Type;
 import java.util.Objects;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -116,16 +116,6 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
     this.forwardTo = Objects.requireNonNull(forwardTo);
     this.safetyRules = Objects.requireNonNull(safetyRules);
     this.metrics = Objects.requireNonNull(metrics);
-  }
-
-  @Override
-  public void start() {
-    forwardTo.start();
-  }
-
-  @Override
-  public void processRoundUpdate(RoundUpdate roundUpdate) {
-    forwardTo.processRoundUpdate(roundUpdate);
   }
 
   @Override
@@ -200,6 +190,22 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
           proposal.getAuthor(),
           proposal.getRound(),
           expectedAuthor);
+
+      return;
+    }
+
+    if (!proposal.highQC().getHighestRound().next().equals(proposal.getRound())) {
+      metrics
+          .bft()
+          .rejectedConsensusEvents()
+          .label(new Metrics.RejectedConsensusEvent(Type.PROPOSAL, Invalidity.ATTACHED_QC))
+          .inc();
+      log.warn(
+          "Ignoring a proposal from {} for round {} because it doesn't contain a highQc for the"
+              + " previous round (it contains a highQc for round {})",
+          proposal.getAuthor(),
+          proposal.getRound(),
+          proposal.highQC().getHighestRound());
       return;
     }
 
@@ -232,23 +238,8 @@ public final class BFTEventStatelessVerifier implements BFTEventProcessor {
   }
 
   @Override
-  public void processLocalTimeout(ScheduledLocalTimeout localTimeout) {
-    forwardTo.processLocalTimeout(localTimeout);
-  }
-
-  @Override
-  public void processProposalRejected(ProposalRejected proposalRejected) {
-    forwardTo.processProposalRejected(proposalRejected);
-  }
-
-  @Override
-  public void processBFTUpdate(BFTInsertUpdate update) {
-    forwardTo.processBFTUpdate(update);
-  }
-
-  @Override
-  public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
-    forwardTo.processBFTRebuildUpdate(update);
+  public Optional<BFTEventProcessor> forwardTo() {
+    return Optional.of(forwardTo);
   }
 
   private boolean isAuthorInValidatorSet(ConsensusEvent event) {

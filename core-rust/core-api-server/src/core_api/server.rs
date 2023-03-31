@@ -68,14 +68,13 @@ use std::sync::Arc;
 use axum::{
     extract::DefaultBodyLimit,
     routing::{get, post},
-    Extension, Router,
+    Router,
 };
 use parking_lot::RwLock;
 use radix_engine::types::{Categorize, Decode, Encode};
 use state_manager::jni::state_manager::ActualStateManager;
-use tower_http::limit::RequestBodyLimitLayer;
 
-use super::{handlers::*, not_found_error, ResponseError};
+use super::{constants::LARGE_REQUEST_MAX_BYTES, handlers::*, not_found_error, ResponseError};
 
 use handle_status_network_configuration as handle_provide_info_at_root_path;
 
@@ -93,15 +92,38 @@ pub async fn create_server<F>(
 {
     let core_api_state = CoreApiState { state_manager };
 
-    // TODO - Change to remove the Tower RequestBodyLimitLayer middleware and use DefaultBodyLimit::max
-    // once it is released https://github.com/tokio-rs/axum/pull/1397
-    // TODO - Change this to be slightly larger than the double the max transaction payload size.
-    // (We double due to the hex encoding of the payload)
-    const LARGE_REQUEST_MAX_BYTES: usize = 50 * 1024 * 1024;
-
     let router = Router::new()
         // This only adds a route for /core, /core/ doesn't seem possible using /nest
         .route("/", get(handle_provide_info_at_root_path))
+        // Release Candidate backward compatible Sub-API
+        .route(
+            "/lts/transaction/construction",
+            post(lts::handle_lts_transaction_construction),
+        )
+        .route(
+            "/lts/transaction/status",
+            post(lts::handle_lts_transaction_status),
+        )
+        .route(
+            "/lts/transaction/submit",
+            post(lts::handle_lts_transaction_submit),
+        )
+        .route(
+            "/lts/stream/account-transactions-basic-outcomes",
+            post(lts::handle_lts_stream_account_transaction_outcomes),
+        )
+        .route(
+            "/lts/stream/transactions-basic-outcomes",
+            post(lts::handle_lts_stream_transaction_outcomes),
+        )
+        .route(
+            "/lts/state/account-all-fungible-resource-balances",
+            post(lts::handle_lts_state_account_all_fungible_resource_balances),
+        )
+        .route(
+            "/lts/state/account-fungible-resource-balance",
+            post(lts::handle_lts_state_account_fungible_resource_balance),
+        )
         // Status Sub-API
         .route(
             "/status/network-configuration",
@@ -114,23 +136,17 @@ pub async fn create_server<F>(
         // Transaction Sub-API
         .route(
             "/transaction/parse",
-            post(handle_transaction_parse)
-                .layer(DefaultBodyLimit::disable())
-                .layer(RequestBodyLimitLayer::new(LARGE_REQUEST_MAX_BYTES)),
+            post(handle_transaction_parse).layer(DefaultBodyLimit::max(LARGE_REQUEST_MAX_BYTES)),
         )
         .route(
             "/transaction/submit",
-            post(handle_transaction_submit)
-                .layer(DefaultBodyLimit::disable())
-                .layer(RequestBodyLimitLayer::new(LARGE_REQUEST_MAX_BYTES)),
+            post(handle_transaction_submit).layer(DefaultBodyLimit::max(LARGE_REQUEST_MAX_BYTES)),
         )
         .route("/transaction/status", post(handle_transaction_status))
         .route("/transaction/receipt", post(handle_transaction_receipt))
         .route(
             "/transaction/preview",
-            post(handle_transaction_preview)
-                .layer(DefaultBodyLimit::disable())
-                .layer(RequestBodyLimitLayer::new(LARGE_REQUEST_MAX_BYTES)),
+            post(handle_transaction_preview).layer(DefaultBodyLimit::max(LARGE_REQUEST_MAX_BYTES)),
         )
         .route(
             "/transaction/call-preview",
@@ -150,7 +166,7 @@ pub async fn create_server<F>(
         .route("/state/package", post(handle_state_package))
         .route("/state/resource", post(handle_state_resource))
         .route("/state/non-fungible", post(handle_state_non_fungible))
-        .layer(Extension(core_api_state));
+        .with_state(core_api_state);
 
     let prefixed_router = Router::new()
         .nest("/core", router)

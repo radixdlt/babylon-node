@@ -66,44 +66,24 @@ package com.radixdlt.statemanager;
 
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
-import com.radixdlt.sbor.codec.EnumEntry;
 
 /** REv2 Database configuration options */
 public sealed interface REv2DatabaseConfig {
   static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         REv2DatabaseConfig.class,
-        (codecs) ->
-            EnumCodec.fromEntries(
-                EnumEntry.noFields(
-                    REv2DatabaseConfig.InMemory.class, REv2DatabaseConfig.InMemory::new),
-                EnumEntry.with(
-                    REv2DatabaseConfig.RocksDB.class,
-                    REv2DatabaseConfig.RocksDB::new,
-                    codecs.of(String.class),
-                    (t, encoder) -> encoder.encode(t.databasePath)),
-                EnumEntry.noFields(REv2DatabaseConfig.None.class, REv2DatabaseConfig.None::new)));
+        codecs -> EnumCodec.fromPermittedRecordSubclasses(REv2DatabaseConfig.class, codecs));
   }
 
   static REv2DatabaseConfig inMemory() {
     return new InMemory();
   }
 
-  static REv2DatabaseConfig none() {
-    return new None();
-  }
-
   static REv2DatabaseConfig rocksDB(String databasePath) {
     return new RocksDB(databasePath);
-  }
-
-  static boolean isNone(REv2DatabaseConfig config) {
-    return (config instanceof None);
   }
 
   record InMemory() implements REv2DatabaseConfig {}
 
   record RocksDB(String databasePath) implements REv2DatabaseConfig {}
-
-  record None() implements REv2DatabaseConfig {}
 }

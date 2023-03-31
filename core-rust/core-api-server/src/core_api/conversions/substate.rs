@@ -1,26 +1,48 @@
+use radix_engine::blueprints::access_controller::AccessControllerSubstate;
+use radix_engine::blueprints::account::AccountSubstate;
+use radix_engine::blueprints::clock::ClockSubstate;
+use radix_engine::blueprints::epoch_manager::{
+    EpochManagerSubstate, Validator, ValidatorSetSubstate, ValidatorSubstate,
+};
+use radix_engine::blueprints::package::PackageCodeTypeSubstate;
+use radix_engine::blueprints::resource::{
+    FungibleResourceManagerSubstate, NonFungibleResourceManagerSubstate, VaultInfoSubstate,
+};
+use radix_engine::system::node_modules::access_rules::{
+    FunctionAccessRulesSubstate, MethodAccessRulesSubstate,
+};
+use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::system::node_substates::PersistedSubstate;
+use radix_engine_interface::blueprints::package::{
+    PackageCodeSubstate, PackageInfoSubstate, PackageRoyaltySubstate,
+};
+use radix_engine_interface::schema::{
+    BlueprintSchema, FunctionSchema, KeyValueStoreSchema, PackageSchema, Receiver,
+};
+use sbor::LocalTypeIndex;
 use std::collections::BTreeSet;
 
 use super::*;
 use crate::core_api::models;
-use radix_engine_interface::data::{IndexedScryptoValue, SchemaPath, SchemaSubPath};
 
-use radix_engine::model::{
-    AccessControllerSubstate, AccessRulesChainSubstate, ComponentInfoSubstate,
-    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
-    CurrentTimeRoundedToMinutesSubstate, EpochManagerSubstate, GlobalAddressSubstate,
-    KeyValueStoreEntrySubstate, MetadataSubstate, NonFungible, NonFungibleSubstate,
-    PackageInfoSubstate, PackageRoyaltyAccumulatorSubstate, PackageRoyaltyConfigSubstate,
-    PersistedSubstate, Resource, ResourceManagerSubstate, Validator, ValidatorSetSubstate,
-    ValidatorSubstate, VaultSubstate,
-};
 use radix_engine::types::{
-    scrypto_encode, AccessRule, AccessRuleEntry, AccessRuleKey, AccessRuleNode, AccessRules,
-    Decimal, GlobalOffset, KeyValueStoreOffset, NonFungibleStoreOffset, ProofRule, RENodeId,
-    ResourceAddress, ResourceType, RoyaltyConfig, SoftCount, SoftDecimal, SoftResource,
-    SoftResourceOrNonFungible, SoftResourceOrNonFungibleList, SubstateId, SubstateOffset,
+    scrypto_decode, scrypto_encode, Decimal, KeyValueStoreOffset, RENodeId, ResourceAddress,
+    RoyaltyConfig, ScryptoSchema, ScryptoValue, SubstateId, SubstateOffset,
+};
+use radix_engine_interface::api::component::{
+    ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
+};
+use radix_engine_interface::api::types::{IndexedScryptoValue, NodeModuleId};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, AccessRuleEntry, AccessRuleNode, AccessRulesConfig, LiquidFungibleResource,
+    LiquidNonFungibleResource, MethodKey, ProofRule, ResourceType, SoftCount, SoftDecimal,
+    SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use radix_engine_interface::model::{ComponentAddress, NonFungibleIdType, NonFungibleLocalId};
+use radix_engine_interface::data::scrypto::model::{
+    ComponentAddress, NonFungibleIdType, NonFungibleLocalId,
+};
+use radix_engine_interface::data::scrypto::{SchemaPath, SchemaSubPath};
 
 use super::MappingError;
 
@@ -31,17 +53,14 @@ pub fn to_api_substate(
 ) -> Result<models::Substate, MappingError> {
     Ok(match substate {
         // Shared
-        PersistedSubstate::AccessRulesChain(substate) => {
+        PersistedSubstate::TypeInfo(type_info) => to_api_type_info_substate(context, type_info)?,
+        PersistedSubstate::MethodAccessRules(substate) => {
             to_api_access_rules_chain_substate(context, substate)?
         }
-        PersistedSubstate::Metadata(substate) => to_api_metadata_substate(context, substate)?,
+        PersistedSubstate::FunctionAccessRules(substate) => {
+            to_api_function_access_rules_substate(context, substate)?
+        }
         // Specific
-        PersistedSubstate::Global(global) => {
-            to_api_global_address_substate(context, substate_id, global)?
-        }
-        PersistedSubstate::ComponentInfo(component_info) => {
-            to_api_component_info_substate(context, component_info)?
-        }
         PersistedSubstate::ComponentState(component_state) => {
             to_api_component_state_substate(context, component_state)?
         }
@@ -52,14 +71,20 @@ pub fn to_api_substate(
             to_api_component_royalty_accumulator_substate(substate)?
         }
         PersistedSubstate::ResourceManager(resource_manager) => {
-            to_api_resource_manager_substate(context, resource_manager)?
+            to_api_fungible_resource_manager_substate(context, resource_manager)?
+        }
+        PersistedSubstate::NonFungibleResourceManager(resource_manager) => {
+            to_api_non_fungible_resource_manager_substate(context, resource_manager)?
         }
         PersistedSubstate::PackageInfo(package) => to_api_package_info_substate(context, package)?,
-        PersistedSubstate::PackageRoyaltyConfig(substate) => {
-            to_api_package_royalty_config_substate(context, substate)?
+        PersistedSubstate::PackageCode(package_code) => {
+            to_api_package_code_substate(context, package_code)?
         }
-        PersistedSubstate::PackageRoyaltyAccumulator(substate) => {
-            to_api_package_royalty_accumulator_substate(substate)?
+        PersistedSubstate::PackageCodeType(code_type) => {
+            to_api_package_code_type_substate(context, code_type)?
+        }
+        PersistedSubstate::PackageRoyalty(substate) => {
+            to_api_package_royalty_substate(context, substate)?
         }
         PersistedSubstate::EpochManager(epoch_manager) => {
             to_api_epoch_manager_substate(context, epoch_manager)?
@@ -71,140 +96,173 @@ pub fn to_api_substate(
         PersistedSubstate::CurrentTimeRoundedToMinutes(substate) => {
             to_api_clock_current_time_rounded_down_to_minutes_substate(substate)?
         }
-        PersistedSubstate::Vault(vault) => to_api_vault_substate(context, vault)?,
-        PersistedSubstate::KeyValueStoreEntry(kv_store_entry_wrapper) => {
-            to_api_key_value_story_entry_substate(context, substate_id, kv_store_entry_wrapper)?
+        PersistedSubstate::VaultInfo(vault_info) => {
+            to_api_vault_info_substate(context, vault_info)?
         }
-        PersistedSubstate::NonFungible(non_fungible_wrapper) => {
-            to_api_non_fungible_substate(context, substate_id, non_fungible_wrapper)?
+        PersistedSubstate::VaultLiquidFungible(vault_fungible) => {
+            to_api_fungible_vault_substate(context, vault_fungible)?
+        }
+        PersistedSubstate::VaultLiquidNonFungible(vault_non_fungible) => {
+            to_api_non_fungible_vault_substate(context, vault_non_fungible)?
+        }
+        PersistedSubstate::VaultLockedFungible(locked_fungible) => {
+            return Err(MappingError::TransientSubstatePersisted { message: format!("VaultLockedFungible {locked_fungible:?} for {substate_id:?} should have been filtered out on create, and should never be updated") })
+        }
+        PersistedSubstate::VaultLockedNonFungible(locked_non_fungible) => {
+            return Err(MappingError::TransientSubstatePersisted { message: format!("VaultLockedNonFungible {locked_non_fungible:?} for {substate_id:?} should have been filtered out on create, and should never be updated") })
+        }
+        PersistedSubstate::KeyValueStoreEntry(kv_store_entry) => {
+            to_api_key_value_story_entry_substate(context, substate_id, kv_store_entry)?
         }
         PersistedSubstate::AccessController(access_controller) => {
             to_api_access_controller_substate(context, access_controller)?
         }
+        PersistedSubstate::Account(account) => to_api_account_substate(context, account)?,
     })
 }
 
 pub fn to_api_access_rules_chain_substate(
     context: &MappingContext,
-    substate: &AccessRulesChainSubstate,
+    substate: &MethodAccessRulesSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
-    let AccessRulesChainSubstate { access_rules_chain } = substate;
+    let MethodAccessRulesSubstate { access_rules } = substate;
 
-    Ok(models::Substate::AccessRulesChainSubstate {
-        chain: access_rules_chain
-            .iter()
-            .map(|access_rules| to_api_access_rules(context, access_rules))
-            .collect::<Result<_, _>>()?,
+    Ok(models::Substate::AccessRulesSubstate {
+        access_rules: Box::new(to_api_access_rules(context, access_rules)?),
     })
 }
 
-pub fn to_api_metadata_substate(
-    _context: &MappingContext,
-    substate: &MetadataSubstate,
-) -> Result<models::Substate, MappingError> {
-    // Use compiler to unpack to ensure we map all fields
-    let MetadataSubstate { metadata } = substate;
-
-    Ok(models::Substate::MetadataSubstate {
-        metadata: metadata
-            .iter()
-            .map(|(key, value)| models::MetadataSubstateAllOfMetadata {
-                key: key.to_owned(),
-                value: value.to_owned(),
-            })
-            .collect(),
-    })
-}
-
-fn to_api_global_address_substate(
+pub fn to_api_function_access_rules_substate(
     context: &MappingContext,
-    substate_id: &SubstateId,
-    substate: &GlobalAddressSubstate,
+    substate: &FunctionAccessRulesSubstate,
 ) -> Result<models::Substate, MappingError> {
-    let global_address = match substate_id {
-        SubstateId(
-            RENodeId::Global(global_address),
-            SubstateOffset::Global(GlobalOffset::Global),
-        ) => global_address,
-        _ => {
-            return Err(MappingError::MismatchedSubstateId {
-                message: "Global substate was matched with a different substate id".to_owned(),
-            })
-        }
-    };
+    // Use compiler to unpack to ensure we map all fields
+    let FunctionAccessRulesSubstate {
+        access_rules,
+        default_auth,
+    } = substate;
 
-    Ok(models::Substate::GlobalAddressSubstate {
-        target_entity: Box::new(to_api_global_entity_assignment(
-            context,
-            substate_id,
-            global_address,
-            substate,
-        )?),
+    Ok(models::Substate::PackageFunctionAccessRulesSubstate {
+        function_auth: access_rules
+            .iter()
+            .map(|(function_key, access_rule)| {
+                Ok(models::PackageFunctionAccessRule {
+                    blueprint: function_key.blueprint.to_string(),
+                    function_name: function_key.ident.to_string(),
+                    access_rule: Some(to_api_dynamic_access_rule(context, access_rule)?),
+                })
+            })
+            .collect::<Result<_, _>>()?,
+        default_auth: Box::new(to_api_dynamic_access_rule(context, default_auth)?),
     })
 }
 
-pub fn to_api_resource_manager_substate(
+pub fn to_api_fungible_resource_manager_substate(
     _context: &MappingContext,
-    resource_manager: &ResourceManagerSubstate,
+    substate: &FungibleResourceManagerSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
-    let ResourceManagerSubstate {
-        resource_type,
+    let FungibleResourceManagerSubstate {
+        resource_address: _,
+        divisibility,
+        total_supply,
+    } = substate;
+
+    Ok(models::Substate::FungibleResourceManagerSubstate {
+        divisibility: to_api_u8_as_i32(*divisibility),
+        total_supply: to_api_decimal(total_supply),
+    })
+}
+
+pub fn to_api_non_fungible_resource_manager_substate(
+    context: &MappingContext,
+    substate: &NonFungibleResourceManagerSubstate,
+) -> Result<models::Substate, MappingError> {
+    // Use compiler to unpack to ensure we map all fields
+    let NonFungibleResourceManagerSubstate {
         resource_address: _,
         total_supply,
-        nf_store_id,
-    } = resource_manager;
+        id_type,
+        non_fungible_type_index,
+        non_fungible_table,
+        mutable_fields,
+    } = substate;
 
-    let (resource_type, fungible_divisibility, non_fungible_id_type) = match resource_type {
-        ResourceType::Fungible { divisibility } => {
-            (models::ResourceType::Fungible, Some(*divisibility), None)
-        }
-        ResourceType::NonFungible { id_type } => {
-            (models::ResourceType::NonFungible, None, Some(id_type))
-        }
-    };
-    let owned_nf_store = nf_store_id
-        .map(|node_id| MappedEntityId::try_from(RENodeId::NonFungibleStore(node_id)))
-        .transpose()?;
+    let owned_nf_store = MappedEntityId::try_from(RENodeId::KeyValueStore(*non_fungible_table))?;
 
-    Ok(models::Substate::ResourceManagerSubstate {
-        resource_type,
-        fungible_divisibility: fungible_divisibility.map(to_api_u8_as_i32),
-        non_fungible_id_type: non_fungible_id_type.map(to_api_fungible_id_type),
+    Ok(models::Substate::NonFungibleResourceManagerSubstate {
         total_supply: to_api_decimal(total_supply),
-        owned_non_fungible_store: owned_nf_store.map(|entity_id| Box::new(entity_id.into())),
+        non_fungible_id_type: to_api_fungible_id_type(id_type),
+        non_fungible_data_table: Box::new(owned_nf_store.into()),
+        non_fungible_data_type_index: Box::new(to_api_local_type_index(
+            context,
+            non_fungible_type_index,
+        )?),
+        non_fungible_data_mutable_fields: mutable_fields
+            .iter()
+            .map(|field| field.to_string())
+            .collect(),
     })
 }
 
 pub fn to_api_fungible_id_type(id_type: &NonFungibleIdType) -> models::NonFungibleIdType {
     match id_type {
         NonFungibleIdType::String => models::NonFungibleIdType::String,
-        NonFungibleIdType::Integer => models::NonFungibleIdType::Number,
+        NonFungibleIdType::Integer => models::NonFungibleIdType::Integer,
         NonFungibleIdType::Bytes => models::NonFungibleIdType::Bytes,
         NonFungibleIdType::UUID => models::NonFungibleIdType::UUID,
     }
 }
 
-pub fn to_api_component_info_substate(
+pub fn to_api_type_info_substate(
     context: &MappingContext,
-    substate: &ComponentInfoSubstate,
+    substate: &TypeInfoSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
-    let ComponentInfoSubstate {
-        package_address,
-        blueprint_name,
-    } = substate;
+    let details = match substate {
+        TypeInfoSubstate::Object {
+            package_address,
+            blueprint_name,
+            global,
+        } => models::TypeInfoDetails::ObjectTypeInfoDetails {
+            package_address: to_api_package_address(context, package_address),
+            blueprint_name: blueprint_name.to_string(),
+            global: *global,
+        },
+        TypeInfoSubstate::KeyValueStore(schema) => {
+            models::TypeInfoDetails::KeyValueStoreTypeInfoDetails {
+                key_value_store_schema: Box::new(to_api_key_value_store_schema(context, schema)?),
+            }
+        }
+    };
 
-    Ok(models::Substate::ComponentInfoSubstate {
-        package_address: to_api_package_address(context, package_address),
-        blueprint_name: blueprint_name.to_string(),
+    Ok(models::Substate::TypeInfoSubstate {
+        details: Box::new(details),
+    })
+}
+
+pub fn to_api_key_value_store_schema(
+    context: &MappingContext,
+    key_value_store_schema: &KeyValueStoreSchema,
+) -> Result<models::KeyValueStoreSchema, MappingError> {
+    let KeyValueStoreSchema {
+        schema,
+        key,
+        value,
+        can_own,
+    } = key_value_store_schema;
+    Ok(models::KeyValueStoreSchema {
+        schema: Box::new(to_api_sbor_data_from_encodable(context, schema)?),
+        key_type: Box::new(to_api_local_type_index(context, key)?),
+        value_type: Box::new(to_api_local_type_index(context, value)?),
+        can_own: *can_own,
     })
 }
 
 pub fn to_api_access_rules(
     context: &MappingContext,
-    access_rules: &AccessRules,
+    access_rules: &AccessRulesConfig,
 ) -> Result<models::AccessRules, MappingError> {
     Ok(models::AccessRules {
         method_auth: access_rules
@@ -242,7 +300,7 @@ pub fn to_api_access_rules(
 
 pub fn to_api_method_auth_entry(
     context: &MappingContext,
-    key: &AccessRuleKey,
+    key: &MethodKey,
     entry: &AccessRuleEntry,
 ) -> Result<models::MethodAuthEntry, MappingError> {
     let access_rule_reference = match entry {
@@ -265,7 +323,7 @@ pub fn to_api_method_auth_entry(
 
 pub fn to_api_method_auth_mutability_entry(
     context: &MappingContext,
-    key: &AccessRuleKey,
+    key: &MethodKey,
     access_rule: &AccessRule,
 ) -> Result<models::MethodAuthMutabilityEntry, MappingError> {
     Ok(models::MethodAuthMutabilityEntry {
@@ -274,18 +332,10 @@ pub fn to_api_method_auth_mutability_entry(
     })
 }
 
-pub fn to_api_local_method_reference(key: &AccessRuleKey) -> models::LocalMethodReference {
-    match key {
-        AccessRuleKey::ScryptoMethod(method_name) => {
-            models::LocalMethodReference::LocalScryptoMethodReference {
-                name: method_name.to_string(),
-            }
-        }
-        AccessRuleKey::Native(native_fn) => {
-            models::LocalMethodReference::LocalNativeMethodReference {
-                name: format!("{:?}", native_fn),
-            }
-        }
+pub fn to_api_local_method_reference(key: &MethodKey) -> models::LocalMethodReference {
+    models::LocalMethodReference {
+        name: key.ident.to_string(),
+        module: to_api_module_type(&key.node_module_id),
     }
 }
 
@@ -384,7 +434,7 @@ pub fn to_api_dynamic_count_from_soft_count(
             count: (*count)
                 .try_into()
                 .map_err(|err| MappingError::IntegerError {
-                    message: format!("Could not translate count into i32: {:?}", err),
+                    message: format!("Could not translate count into i32: {err:?}"),
                 })?,
         },
         SoftCount::Dynamic(schema_path) => models::DynamicCount::SchemaPathDynamicCount {
@@ -506,7 +556,7 @@ pub fn to_api_schema_subpath(
         SchemaSubPath::Index(index) => models::SchemaSubpath::IndexSchemaSubpath {
             index: to_api_u64_as_string((*index).try_into().map_err(|err| {
                 MappingError::IntegerError {
-                    message: format!("Couldn't map usize to u64: {:?}", err),
+                    message: format!("Couldn't map usize to u64: {err:?}"),
                 }
             })?),
         },
@@ -515,23 +565,46 @@ pub fn to_api_schema_subpath(
 
 pub fn to_api_component_state_substate(
     context: &MappingContext,
-    component_state: &ComponentStateSubstate,
+    substate: &ComponentStateSubstate,
 ) -> Result<models::Substate, MappingError> {
+    let ComponentStateSubstate(scrypto_value) = substate;
     Ok(models::Substate::ComponentStateSubstate {
-        data_struct: Box::new(to_api_data_struct(context, &component_state.raw)?),
+        data_struct: Box::new(to_api_data_struct_from_scrypto_value(
+            context,
+            scrypto_value,
+        )?),
     })
 }
 
-fn scrypto_value_to_api_data_struct(
+pub fn to_api_data_struct_from_scrypto_value(
+    context: &MappingContext,
+    scrypto_value: &ScryptoValue,
+) -> Result<models::DataStruct, MappingError> {
+    let scrypto_value = IndexedScryptoValue::from_typed(scrypto_value);
+    to_api_data_struct_from_indexed_scrypto_value(context, scrypto_value)
+}
+
+pub fn to_api_data_struct_from_bytes(
+    context: &MappingContext,
+    data: &[u8],
+) -> Result<models::DataStruct, MappingError> {
+    let scrypto_value =
+        IndexedScryptoValue::from_slice(data).map_err(|err| MappingError::ScryptoValueDecode {
+            decode_error: err,
+            bytes: data.to_vec(),
+        })?;
+    to_api_data_struct_from_indexed_scrypto_value(context, scrypto_value)
+}
+
+pub fn to_api_data_struct_from_indexed_scrypto_value(
     context: &MappingContext,
     scrypto_value: IndexedScryptoValue,
 ) -> Result<models::DataStruct, MappingError> {
     let entities = extract_entities(context, &scrypto_value)?;
     Ok(models::DataStruct {
-        struct_data: Box::new(scrypto_value_to_api_sbor_data(
+        struct_data: Box::new(to_api_sbor_data_from_bytes(
             context,
             scrypto_value.as_slice(),
-            scrypto_value.as_value(),
         )?),
         owned_entities: entities.owned_entities,
         referenced_entities: entities.referenced_entities,
@@ -547,37 +620,26 @@ fn extract_entities(
     context: &MappingContext,
     struct_scrypto_value: &IndexedScryptoValue,
 ) -> Result<Entities, MappingError> {
-    if !struct_scrypto_value.buckets().is_empty() {
-        return Err(MappingError::InvalidComponentStateEntities {
-            message: "Bucket/s in state".to_owned(),
-        });
-    }
-    if !struct_scrypto_value.proofs().is_empty() {
-        return Err(MappingError::InvalidComponentStateEntities {
-            message: "Proof/s in state".to_owned(),
-        });
-    }
-
     let owned_entities = struct_scrypto_value
         .owned_node_ids()
-        .map_err(|_| MappingError::InvalidComponentStateEntities {
-            message: "Could not read owned nodes".to_owned(),
-        })?
-        .into_iter()
+        .iter()
         .map(|node_id| -> Result<models::EntityReference, MappingError> {
-            Ok(MappedEntityId::try_from(node_id)?.into())
+            Ok(MappedEntityId::try_from(*node_id)?.into())
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    let referenced_entities = struct_scrypto_value
-        .global_references()
-        .into_iter()
-        .map(|addr| to_global_entity_reference(context, &addr))
-        .collect::<Vec<_>>();
+    let referenced_entities: Result<Vec<_>, _> = struct_scrypto_value
+        .references()
+        .iter()
+        .filter_map(|renode_id| match renode_id {
+            RENodeId::GlobalObject(address) => Some(to_global_entity_reference(context, address)),
+            _ => None,
+        })
+        .collect();
 
     Ok(Entities {
         owned_entities,
-        referenced_entities,
+        referenced_entities: referenced_entities?,
     })
 }
 
@@ -615,12 +677,17 @@ pub fn to_api_component_royalty_accumulator_substate(
     substate: &ComponentRoyaltyAccumulatorSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
-    let ComponentRoyaltyAccumulatorSubstate { royalty } = substate;
+    let ComponentRoyaltyAccumulatorSubstate { royalty_vault } = substate;
+
+    let vault_id = match royalty_vault {
+        Some(own) => Some(Box::new(to_api_entity_reference(RENodeId::Object(
+            own.id(),
+        ))?)),
+        None => None,
+    };
 
     Ok(models::Substate::ComponentRoyaltyAccumulatorSubstate {
-        vault_entity: Box::new(to_api_entity_reference(RENodeId::Vault(
-            royalty.vault_id(),
-        ))?),
+        vault_entity: vault_id,
     })
 }
 
@@ -630,39 +697,172 @@ pub fn to_api_package_info_substate(
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
     let PackageInfoSubstate {
-        code,
-        blueprint_abis,
+        dependent_resources,
+        dependent_components,
+        schema,
     } = substate;
 
     Ok(models::Substate::PackageInfoSubstate {
-        code_hex: to_hex(code),
-        blueprints: blueprint_abis
+        dependent_resources: dependent_resources
             .iter()
-            .map(|(blueprint_name, abi)| {
-                let blueprint_data = models::BlueprintData {
-                    // TODO: Whilst an SBOR-encoded ABI is probably most useful for consumers using the ABI,
-                    //       we should probably at some point also map this to something more human-intelligible.
-                    //       But let's wait till SBOR schema changes have finalized first.
-                    abi: Box::new(scrypto_bytes_to_api_sbor_data(
-                        context,
-                        &scrypto_encode(abi).unwrap(),
-                    )?),
-                };
-                Ok((blueprint_name.to_owned(), blueprint_data))
+            .map(|address| to_api_resource_address(context, address))
+            .collect(),
+        dependent_components: dependent_components
+            .iter()
+            .map(|address| to_api_component_address(context, address))
+            .collect(),
+        package_schema: Box::new(to_api_package_schema(context, schema)?),
+    })
+}
+
+pub fn to_api_package_schema(
+    context: &MappingContext,
+    package_schema: &PackageSchema,
+) -> Result<models::PackageSchema, MappingError> {
+    let PackageSchema { blueprints } = package_schema;
+    Ok(models::PackageSchema {
+        blueprint_schemas: blueprints
+            .iter()
+            .map(|(blueprint_name, blueprint_schema)| {
+                Ok((
+                    blueprint_name.to_string(),
+                    to_api_blueprint_schema(context, blueprint_schema)?,
+                ))
             })
             .collect::<Result<_, _>>()?,
     })
 }
 
-pub fn to_api_package_royalty_config_substate(
+pub fn to_api_blueprint_schema(
+    context: &MappingContext,
+    blueprint_schema: &BlueprintSchema,
+) -> Result<models::BlueprintSchema, MappingError> {
+    let BlueprintSchema {
+        schema,
+        substates,
+        functions,
+        event_schema,
+    } = blueprint_schema;
+    Ok(models::BlueprintSchema {
+        schema: Box::new(to_api_schema(context, schema)?),
+        substates: substates
+            .iter()
+            .map(|index| to_api_local_type_index(context, index))
+            .collect::<Result<_, _>>()?,
+        function_definitions: functions
+            .iter()
+            .map(|(function_name, function_schema)| {
+                Ok((
+                    function_name.to_string(),
+                    to_api_function_definition(context, function_schema)?,
+                ))
+            })
+            .collect::<Result<_, _>>()?,
+        event_definitions: event_schema
+            .iter()
+            .map(|(event_name, type_index)| {
+                Ok((
+                    event_name.to_string(),
+                    to_api_local_type_index(context, type_index)?,
+                ))
+            })
+            .collect::<Result<_, _>>()?,
+    })
+}
+
+pub fn to_api_local_type_index(
     _context: &MappingContext,
-    substate: &PackageRoyaltyConfigSubstate,
+    local_type_index: &LocalTypeIndex,
+) -> Result<models::LocalTypeIndex, MappingError> {
+    Ok(match local_type_index {
+        LocalTypeIndex::WellKnown(index) => models::LocalTypeIndex {
+            kind: models::local_type_index::Kind::WellKnown,
+            index: to_api_u8_as_i32(*index),
+        },
+        LocalTypeIndex::SchemaLocalIndex(index) => models::LocalTypeIndex {
+            kind: models::local_type_index::Kind::SchemaLocal,
+            index: to_api_u16_as_i32((*index).try_into().map_err(|_| {
+                MappingError::IntegerError {
+                    message: "Type index too large".to_string(),
+                }
+            })?),
+        },
+    })
+}
+
+pub fn to_api_function_definition(
+    context: &MappingContext,
+    function_schema: &FunctionSchema,
+) -> Result<models::FunctionDefinition, MappingError> {
+    let FunctionSchema {
+        receiver,
+        input,
+        output,
+        export_name,
+    } = function_schema;
+    Ok(models::FunctionDefinition {
+        receiver: match receiver {
+            Some(Receiver::SelfRef) => models::function_definition::Receiver::ComponentReadOnly,
+            Some(Receiver::SelfRefMut) => models::function_definition::Receiver::ComponentMutable,
+            None => models::function_definition::Receiver::Function,
+        },
+        input: Box::new(to_api_local_type_index(context, input)?),
+        output: Box::new(to_api_local_type_index(context, output)?),
+        export_name: export_name.to_string(),
+    })
+}
+
+pub fn to_api_schema(
+    context: &MappingContext,
+    schema: &ScryptoSchema,
+) -> Result<models::SborData, MappingError> {
+    to_api_sbor_data_from_encodable(context, schema)
+}
+
+pub fn to_api_package_code_substate(
+    _context: &MappingContext,
+    substate: &PackageCodeSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
-    let PackageRoyaltyConfigSubstate { royalty_config } = substate;
+    let PackageCodeSubstate { code } = substate;
 
-    Ok(models::Substate::PackageRoyaltyConfigSubstate {
-        blueprint_royalties: royalty_config
+    Ok(models::Substate::PackageCodeSubstate {
+        code_hex: to_hex(code),
+    })
+}
+
+pub fn to_api_package_code_type_substate(
+    _context: &MappingContext,
+    substate: &PackageCodeTypeSubstate,
+) -> Result<models::Substate, MappingError> {
+    Ok(models::Substate::PackageCodeTypeSubstate {
+        code_type: match substate {
+            PackageCodeTypeSubstate::Native => "native".to_string(),
+            PackageCodeTypeSubstate::Wasm => "wasm".to_string(),
+        },
+    })
+}
+
+pub fn to_api_package_royalty_substate(
+    _context: &MappingContext,
+    substate: &PackageRoyaltySubstate,
+) -> Result<models::Substate, MappingError> {
+    // Use compiler to unpack to ensure we map all fields
+    let PackageRoyaltySubstate {
+        royalty_vault,
+        blueprint_royalty_configs,
+    } = substate;
+
+    let vault_entity = royalty_vault
+        .map(|royalty_vault| {
+            Ok(Box::new(to_api_entity_reference(RENodeId::Object(
+                royalty_vault.id(),
+            ))?))
+        })
+        .transpose()?;
+    Ok(models::Substate::PackageRoyaltySubstate {
+        vault_entity,
+        blueprint_royalties: blueprint_royalty_configs
             .iter()
             .map(
                 |(blueprint_name, royalty_config)| models::BlueprintRoyaltyConfig {
@@ -671,19 +871,6 @@ pub fn to_api_package_royalty_config_substate(
                 },
             )
             .collect(),
-    })
-}
-
-pub fn to_api_package_royalty_accumulator_substate(
-    substate: &PackageRoyaltyAccumulatorSubstate,
-) -> Result<models::Substate, MappingError> {
-    // Use compiler to unpack to ensure we map all fields
-    let PackageRoyaltyAccumulatorSubstate { royalty } = substate;
-
-    Ok(models::Substate::PackageRoyaltyAccumulatorSubstate {
-        vault_entity: Box::new(to_api_entity_reference(RENodeId::Vault(
-            royalty.vault_id(),
-        ))?),
     })
 }
 
@@ -722,9 +909,9 @@ pub fn to_api_validator_substate(
         pending_xrd_withdraw_vault_id,
     } = substate;
 
-    let owned_stake_vault_id = MappedEntityId::try_from(RENodeId::Vault(*stake_xrd_vault_id))?;
+    let owned_stake_vault_id = MappedEntityId::try_from(RENodeId::Object(*stake_xrd_vault_id))?;
     let owned_unstake_vault_id =
-        MappedEntityId::try_from(RENodeId::Vault(*pending_xrd_withdraw_vault_id))?;
+        MappedEntityId::try_from(RENodeId::Object(*pending_xrd_withdraw_vault_id))?;
 
     Ok(models::Substate::ValidatorSubstate {
         epoch_manager_address: to_api_component_address(context, manager),
@@ -760,48 +947,63 @@ pub fn to_api_epoch_manager_substate(
 }
 
 pub fn to_api_clock_current_time_rounded_down_to_minutes_substate(
-    substate: &CurrentTimeRoundedToMinutesSubstate,
+    substate: &ClockSubstate,
 ) -> Result<models::Substate, MappingError> {
     // Use compiler to unpack to ensure we map all fields
-    let CurrentTimeRoundedToMinutesSubstate {
+    let ClockSubstate {
         current_time_rounded_to_minutes_ms,
     } = substate;
 
-    Ok(models::Substate::ClockCurrentMinuteSubstate {
+    Ok(models::Substate::ClockSubstate {
         timestamp_rounded_down_to_minute: Box::new(to_api_instant_from_safe_timestamp(
             *current_time_rounded_to_minutes_ms,
         )?),
     })
 }
 
-pub fn to_api_vault_substate(
+pub fn to_api_vault_info_substate(
     context: &MappingContext,
-    vault: &VaultSubstate,
+    substate: &VaultInfoSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(models::Substate::VaultSubstate {
-        resource_amount: Box::new(to_api_resource_amount(context, &vault.0)?),
+    let VaultInfoSubstate {
+        resource_address,
+        resource_type,
+    } = substate;
+    Ok(models::Substate::VaultInfoSubstate {
+        resource_address: to_api_resource_address(context, resource_address),
+        resource_type: to_api_resource_type(context, resource_type),
     })
 }
 
-fn to_api_resource_amount(
-    context: &MappingContext,
-    resource: &Resource,
-) -> Result<models::ResourceAmount, MappingError> {
-    Ok(match resource {
-        Resource::Fungible {
-            ref resource_address,
-            divisibility: _,
-            amount,
-        } => to_api_fungible_resource_amount(context, resource_address, amount)?,
-        Resource::NonFungible {
-            ref resource_address,
-            id_type,
-            ids,
-        } => to_api_non_fungible_resource_amount(context, resource_address, id_type, ids)?,
+pub fn to_api_resource_type(
+    _context: &MappingContext,
+    resource_type: &ResourceType,
+) -> models::ResourceType {
+    match resource_type {
+        ResourceType::Fungible { .. } => models::ResourceType::Fungible,
+        ResourceType::NonFungible { .. } => models::ResourceType::NonFungible,
+    }
+}
+
+pub fn to_api_fungible_vault_substate(
+    _context: &MappingContext,
+    vault: &LiquidFungibleResource,
+) -> Result<models::Substate, MappingError> {
+    Ok(models::Substate::VaultFungibleSubstate {
+        amount: to_api_decimal(&vault.amount()),
     })
 }
 
-fn to_api_fungible_resource_amount(
+pub fn to_api_non_fungible_vault_substate(
+    _context: &MappingContext,
+    vault: &LiquidNonFungibleResource,
+) -> Result<models::Substate, MappingError> {
+    let non_fungible_ids = vault.ids().iter().map(to_api_non_fungible_id).collect();
+
+    Ok(models::Substate::VaultNonFungibleSubstate { non_fungible_ids })
+}
+
+pub fn to_api_fungible_resource_amount(
     context: &MappingContext,
     resource_address: &ResourceAddress,
     amount: &Decimal,
@@ -812,10 +1014,9 @@ fn to_api_fungible_resource_amount(
     })
 }
 
-fn to_api_non_fungible_resource_amount(
+pub fn to_api_non_fungible_resource_amount(
     context: &MappingContext,
     resource_address: &ResourceAddress,
-    _id_type: &NonFungibleIdType,
     ids: &BTreeSet<NonFungibleLocalId>,
 ) -> Result<models::ResourceAmount, MappingError> {
     let non_fungible_ids = ids.iter().map(to_api_non_fungible_id).collect();
@@ -825,83 +1026,80 @@ fn to_api_non_fungible_resource_amount(
     })
 }
 
-pub fn to_api_non_fungible_substate(
-    context: &MappingContext,
-    substate_id: &SubstateId,
-    substate: &NonFungibleSubstate,
-) -> Result<models::Substate, MappingError> {
-    // Use compiler to unpack to ensure we map all fields
-    let NonFungibleSubstate(non_fungible_option) = substate;
-
-    let nf_id = match substate_id {
-        SubstateId(
-            RENodeId::NonFungibleStore(..),
-            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(nf_id)),
-        ) => nf_id,
-        _ => {
-            return Err(MappingError::MismatchedSubstateId {
-                message: "NonFungibleStore substate was matched with a different substate id"
-                    .to_owned(),
-            })
-        }
-    };
-
-    Ok(match non_fungible_option {
-        Some(non_fungible) => models::Substate::NonFungibleStoreEntrySubstate {
-            non_fungible_id: Box::new(to_api_non_fungible_id(nf_id)),
-            non_fungible_data: Some(Box::new(to_api_non_fungible_data(context, non_fungible)?)),
-            is_deleted: false,
-        },
-        None => models::Substate::NonFungibleStoreEntrySubstate {
-            non_fungible_id: Box::new(to_api_non_fungible_id(nf_id)),
-            non_fungible_data: None,
-            is_deleted: true,
-        },
-    })
-}
-
-fn to_api_non_fungible_data(
-    context: &MappingContext,
-    non_fungible: &NonFungible,
-) -> Result<models::NonFungibleData, MappingError> {
-    // NOTE - There's currently no schema / validation of non-fungible id data at the moment
-    // It's not even guaranteed to be valid SBOR
-    // Therefore we attempt to decode it as valid SBOR (becuase it will be in the 99% case), but
-    // also provide the raw hex bytes for the cases where it's not
-    let immutable_data = non_fungible.immutable_data();
-    let mutable_data = non_fungible.mutable_data();
-    let immutable_data_sbor_option = to_api_data_struct(context, &immutable_data).ok();
-    let mutable_data_sbor_option = to_api_data_struct(context, &mutable_data).ok();
-    Ok(models::NonFungibleData {
-        immutable_data: immutable_data_sbor_option.map(Box::new),
-        immutable_data_raw_hex: to_hex(&immutable_data),
-        mutable_data: mutable_data_sbor_option.map(Box::new),
-        mutable_data_raw_hex: to_hex(&mutable_data),
-    })
-}
-
 pub fn to_api_access_controller_substate(
     context: &MappingContext,
     substate: &AccessControllerSubstate,
 ) -> Result<models::Substate, MappingError> {
     let data = scrypto_encode(substate).unwrap();
     let substate = models::Substate::AccessControllerSubstate {
-        data_struct: Box::new(to_api_data_struct(context, &data)?),
+        data_struct: Box::new(to_api_data_struct_from_bytes(context, &data)?),
     };
 
     Ok(substate)
 }
 
-fn to_api_key_value_story_entry_substate(
+pub fn to_api_account_substate(
+    context: &MappingContext,
+    substate: &AccountSubstate,
+) -> Result<models::Substate, MappingError> {
+    let data = scrypto_encode(substate).unwrap();
+    let substate = models::Substate::AccountSubstate {
+        data_struct: Box::new(to_api_data_struct_from_bytes(context, &data)?),
+    };
+    Ok(substate)
+}
+
+pub fn to_api_key_value_story_entry_substate(
     context: &MappingContext,
     substate_id: &SubstateId,
-    key_value_store_entry: &KeyValueStoreEntrySubstate,
+    key_value_store_entry: &Option<ScryptoValue>,
 ) -> Result<models::Substate, MappingError> {
-    let key = match substate_id {
+    let substate = match substate_id {
         SubstateId(
             RENodeId::KeyValueStore(..),
+            NodeModuleId::SELF,
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-        ) => key,
+        ) => {
+            let key_non_fungible_local_id = scrypto_decode::<NonFungibleLocalId>(key)
+                .ok()
+                .map(|id| Box::new(to_api_non_fungible_id(&id)));
+            match key_value_store_entry {
+                Some(value) => models::Substate::KeyValueStoreEntrySubstate {
+                    key_hex: to_hex(key),
+                    key_non_fungible_local_id,
+                    is_deleted: false,
+                    data_struct: Some(Box::new(to_api_data_struct_from_bytes(
+                        context,
+                        &scrypto_encode(&value).unwrap(),
+                    )?)),
+                },
+                None => models::Substate::KeyValueStoreEntrySubstate {
+                    key_hex: to_hex(key),
+                    key_non_fungible_local_id,
+                    is_deleted: true,
+                    data_struct: None,
+                },
+            }
+        }
+        SubstateId(
+            _,
+            NodeModuleId::Metadata,
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+        ) => match key_value_store_entry {
+            Some(value) => models::Substate::MetadataEntrySubstate {
+                key_hex: to_hex(key),
+                is_deleted: false,
+                data_struct: Some(Box::new(to_api_data_struct_from_bytes(
+                    context,
+                    &scrypto_encode(&value).unwrap(),
+                )?)),
+            },
+            None => models::Substate::MetadataEntrySubstate {
+                key_hex: to_hex(key),
+                is_deleted: true,
+                data_struct: None,
+            },
+        },
         _ => {
             return Err(MappingError::MismatchedSubstateId {
                 message: "KVStoreEntry substate was matched with a different substate id"
@@ -910,28 +1108,5 @@ fn to_api_key_value_story_entry_substate(
         }
     };
 
-    Ok(match &key_value_store_entry.0 {
-        Some(data) => models::Substate::KeyValueStoreEntrySubstate {
-            key_hex: to_hex(key),
-            is_deleted: false,
-            data_struct: Some(Box::new(to_api_data_struct(context, data)?)),
-        },
-        None => models::Substate::KeyValueStoreEntrySubstate {
-            key_hex: to_hex(key),
-            is_deleted: true,
-            data_struct: None,
-        },
-    })
-}
-
-fn to_api_data_struct(
-    context: &MappingContext,
-    data: &[u8],
-) -> Result<models::DataStruct, MappingError> {
-    let scrypto_value =
-        IndexedScryptoValue::from_slice(data).map_err(|err| MappingError::ScryptoValueDecode {
-            decode_error: err,
-            bytes: data.to_vec(),
-        })?;
-    scrypto_value_to_api_data_struct(context, scrypto_value)
+    Ok(substate)
 }

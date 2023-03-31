@@ -1,19 +1,23 @@
+use radix_engine::blueprints::epoch_manager::Validator;
+use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use std::collections::BTreeMap;
 
-use radix_engine::engine::RuntimeError;
-use radix_engine::fee::FeeSummary;
+use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::OutputValue;
-use radix_engine::model::{ResourceChange, Validator};
 use radix_engine::state_manager::StateDiff;
+use radix_engine::system::kernel_modules::costing::FeeSummary;
+use radix_engine::system::kernel_modules::execution_trace::ResourceChange;
 use radix_engine::transaction::{
-    CommitResult, EntityChanges, TransactionOutcome,
+    CommitResult, StateUpdateSummary, TransactionExecutionTrace, TransactionOutcome,
     TransactionReceipt as EngineTransactionReceipt, TransactionResult,
 };
-use radix_engine::types::{hash, scrypto_encode, Hash, Level, SubstateId};
-use radix_engine_interface::model::ComponentAddress;
+use radix_engine::types::{hash, scrypto_encode, Decimal, Hash, Level, ObjectId, SubstateId};
+use radix_engine_interface::api::types::EventTypeIdentifier;
+use radix_engine_interface::data::scrypto::model::ComponentAddress;
 use radix_engine_interface::*;
+use sbor::rust::collections::IndexMap;
 
-use crate::AccumulatorHash;
+use crate::{AccumulatorHash, LedgerReceiptHash};
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct CommittedTransactionIdentifiers {
@@ -43,6 +47,16 @@ pub struct SubstateChanges {
     pub deleted: BTreeMap<SubstateId, DeletedSubstateVersion>,
 }
 
+impl SubstateChanges {
+    pub fn upserted(&self) -> impl Iterator<Item = (&SubstateId, &OutputValue)> {
+        self.created.iter().chain(self.updated.iter())
+    }
+
+    pub fn deleted_ids(&self) -> impl Iterator<Item = &SubstateId> {
+        self.deleted.keys()
+    }
+}
+
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct DeletedSubstateVersion {
     pub substate_hash: Hash,
@@ -59,7 +73,18 @@ impl From<TransactionOutcome> for LedgerTransactionOutcome {
     fn from(outcome: TransactionOutcome) -> Self {
         match outcome {
             TransactionOutcome::Success(output) => {
-                LedgerTransactionOutcome::Success(output.into_iter().map(|o| o.as_vec()).collect())
+                LedgerTransactionOutcome::Success(
+                    output
+                        .into_iter()
+                        .map(|o| {
+                            // TODO: Clean this up
+                            match o {
+                                InstructionOutput::None => scrypto_encode(&()).unwrap(),
+                                InstructionOutput::CallReturn(v) => v,
+                            }
+                        })
+                        .collect(),
+                )
             }
             TransactionOutcome::Failure(error) => LedgerTransactionOutcome::Failure(error),
         }
@@ -69,12 +94,40 @@ impl From<TransactionOutcome> for LedgerTransactionOutcome {
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LedgerTransactionReceipt {
     pub outcome: LedgerTransactionOutcome,
+    // The breakdown of the fee
     pub fee_summary: FeeSummary,
+    // Which vault/s paid the fee
+    pub fee_payments: IndexMap<ObjectId, Decimal>,
     pub application_logs: Vec<(Level, String)>,
+    pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     pub substate_changes: SubstateChanges,
-    pub entity_changes: EntityChanges,
-    pub resource_changes: Vec<ResourceChange>,
+    pub state_update_summary: StateUpdateSummary,
+    // These will be removed once we have the parent_map for the toolkit to use
+    pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
     pub next_epoch: Option<(BTreeMap<ComponentAddress, Validator>, u64)>,
+}
+
+impl LedgerTransactionReceipt {
+    pub fn get_hash(&self) -> LedgerReceiptHash {
+        LedgerReceiptHash::for_receipt(self)
+    }
+}
+
+impl From<(CommitResult, TransactionExecutionTrace)> for LedgerTransactionReceipt {
+    fn from((commit_result, execution_trace): (CommitResult, TransactionExecutionTrace)) -> Self {
+        let next_epoch = commit_result.next_epoch();
+        Self {
+            outcome: commit_result.outcome.into(),
+            fee_summary: commit_result.fee_summary,
+            fee_payments: commit_result.fee_payments,
+            application_logs: commit_result.application_logs,
+            application_events: commit_result.application_events,
+            substate_changes: fix_state_updates(commit_result.state_updates),
+            state_update_summary: commit_result.state_update_summary,
+            resource_changes: execution_trace.resource_changes,
+            next_epoch,
+        }
+    }
 }
 
 impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
@@ -82,37 +135,21 @@ impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
 
     fn try_from(engine_receipt: EngineTransactionReceipt) -> Result<Self, Self::Error> {
         match engine_receipt.result {
-            TransactionResult::Commit(commit_result) => {
-                Ok((commit_result, engine_receipt.execution.fee_summary).into())
-            }
+            TransactionResult::Commit(commit_result) => Ok(LedgerTransactionReceipt::from((
+                commit_result,
+                engine_receipt.execution_trace,
+            ))),
             TransactionResult::Reject(error) => Err(format!(
-                "Can't create a ledger receipt for rejected txn: {:?}",
-                error
+                "Can't create a ledger receipt for rejected txn: {error:?}"
             )),
             TransactionResult::Abort(result) => Err(format!(
-                "Can't create a ledger receipt for aborted txn: {:?}",
-                result
+                "Can't create a ledger receipt for aborted txn: {result:?}"
             )),
         }
     }
 }
 
-/// For Genesis Transaction
-impl From<(CommitResult, FeeSummary)> for LedgerTransactionReceipt {
-    fn from((commit_result, fee_summary): (CommitResult, FeeSummary)) -> Self {
-        LedgerTransactionReceipt {
-            outcome: commit_result.outcome.into(),
-            fee_summary,
-            application_logs: commit_result.application_logs,
-            substate_changes: map_state_updates(commit_result.state_updates),
-            entity_changes: commit_result.entity_changes,
-            resource_changes: commit_result.resource_changes,
-            next_epoch: commit_result.next_epoch,
-        }
-    }
-}
-
-fn map_state_updates(state_updates: StateDiff) -> SubstateChanges {
+fn fix_state_updates(state_updates: StateDiff) -> SubstateChanges {
     // As of end of August 2022, the engine's statediff erroneously includes substate reads
     // (even if the content didn't change) as ups and downs.
     // This needs fixing, but for now, we work around this here, by removing such up/down pairs.

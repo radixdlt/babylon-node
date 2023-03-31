@@ -74,7 +74,7 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use parking_lot::RwLock;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
 
 const POINTER_JNI_FIELD_NAME: &str = "rustStateManagerPointer";

@@ -67,11 +67,9 @@ package com.radixdlt.messaging.core;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializeWithHid;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 
-@SerializeWithHid
 public abstract class BasicContainer {
   // Placeholder for the serializer ID
   @JsonProperty(SerializerConstants.SERIALIZER_NAME)

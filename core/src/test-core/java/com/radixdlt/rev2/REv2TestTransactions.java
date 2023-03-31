@@ -111,7 +111,7 @@ public final class REv2TestTransactions {
     var manifest =
         String.format(
             """
-        CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
+        CALL_METHOD Address("%s") "lock_fee" Decimal("100");
         CLEAR_AUTH_ZONE;
     """,
             faucetAddress);
@@ -119,25 +119,38 @@ public final class REv2TestTransactions {
     return TransactionBuilder.createIntent(network, header, manifest, List.of());
   }
 
+  public static String constructDepositFromFaucetManifest(NetworkDefinition networkDefinition) {
+    return constructDepositFromFaucetManifest(
+        networkDefinition, Address.virtualAccountAddress(ECKeyPair.generateNew().getPublicKey()));
+  }
+
   public static String constructNewAccountManifest(NetworkDefinition networkDefinition) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var faucetAddress =
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
-    final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
-    final var accountPackageAddress =
-        addressing.encodePackageAddress(ScryptoConstants.ACCOUNT_PACKAGE_ADDRESS);
-
     return String.format(
         """
-                    CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
-                    CALL_METHOD ComponentAddress("%s") "free";
-                    TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
-                    CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AccessRule::AllowAll") Bucket("xrd");
+                    CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+                    CREATE_ACCOUNT Enum("AccessRule::AllowAll");
                     """,
-        faucetAddress, faucetAddress, xrdAddress, accountPackageAddress);
+        faucetAddress);
   }
 
-  public static String constructNewAccountFromAccountManifest(
+  public static String constructDepositFromFaucetManifest(
+      NetworkDefinition networkDefinition, ComponentAddress to) {
+    final var addressing = Addressing.ofNetwork(networkDefinition);
+    final var faucetAddress =
+        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+    return String.format(
+        """
+                    CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+                    CALL_METHOD Address("%s") "free";
+                    CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
+                    """,
+        faucetAddress, faucetAddress, addressing.encodeAccountAddress(to));
+  }
+
+  public static String constructDepositFromAccountManifest(
       NetworkDefinition networkDefinition, ComponentAddress from) {
     // NOTE: A test relies on this only being able to be performed once per account
     // So we transfer 900 XRD (which is the majority of the account start amount
@@ -145,17 +158,16 @@ public final class REv2TestTransactions {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var fromAddress = addressing.encodeAccountAddress(from);
     final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
-    final var accountPackageAddress =
-        addressing.encodePackageAddress(ScryptoConstants.ACCOUNT_PACKAGE_ADDRESS);
-
+    final var accountAddress =
+        addressing.encodeAccountAddress(
+            Address.virtualAccountAddress(ECKeyPair.generateNew().getPublicKey()));
     return String.format(
         """
-                        CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
-                        CALL_METHOD ComponentAddress("%s") "withdraw_by_amount" Decimal("900") ResourceAddress("%s");
-                        TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
-                        CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AccessRule::AllowAll") Bucket("xrd");
+                        CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+                        CALL_METHOD Address("%s") "withdraw" Address("%s") Decimal("9900");
+                        CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
                         """,
-        fromAddress, fromAddress, xrdAddress, xrdAddress, accountPackageAddress);
+        fromAddress, fromAddress, xrdAddress, accountAddress);
   }
 
   public static String constructCreateValidatorManifest(
@@ -166,8 +178,8 @@ public final class REv2TestTransactions {
 
     return String.format(
         """
-                            CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
-                            CREATE_VALIDATOR EcdsaSecp256k1PublicKey("%s") Enum("AccessRule::AllowAll");
+                            CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+                            CREATE_VALIDATOR Bytes("%s") Enum("AccessRule::AllowAll");
                             """,
         faucetAddress, key.toHex());
   }
@@ -181,8 +193,8 @@ public final class REv2TestTransactions {
 
     return String.format(
         """
-                        CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
-                        CALL_METHOD ComponentAddress("%s") "register";
+                        CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+                        CALL_METHOD Address("%s") "register";
                         """,
         faucetAddress, componentAddress);
   }
@@ -196,8 +208,8 @@ public final class REv2TestTransactions {
 
     return String.format(
         """
-                            CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
-                            CALL_METHOD ComponentAddress("%s") "unregister";
+                            CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+                            CALL_METHOD Address("%s") "unregister";
                             """,
         faucetAddress, componentAddress);
   }
@@ -214,11 +226,11 @@ public final class REv2TestTransactions {
 
     return String.format(
         """
-                                CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
-                                CALL_METHOD ComponentAddress("%s") "free";
-                                TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
-                                CALL_METHOD ComponentAddress("%s") "stake" Bucket("xrd");
-                                CALL_METHOD ComponentAddress("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
+                                CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+                                CALL_METHOD Address("%s") "free";
+                                TAKE_FROM_WORKTOP Address("%s") Bucket("xrd");
+                                CALL_METHOD Address("%s") "stake" Bucket("xrd");
+                                CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
                                 """,
         faucetAddress, faucetAddress, xrdAddress, validatorHrpAddress, toAccountAddress);
   }
@@ -237,11 +249,11 @@ public final class REv2TestTransactions {
 
     return String.format(
         """
-                                CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
-                                CALL_METHOD ComponentAddress("%s") "withdraw_by_amount" ResourceAddress("%s") Decimal("1");
-                                TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("lp_token");
-                                CALL_METHOD ComponentAddress("%s") "unstake" Bucket("lp_token");
-                                CALL_METHOD ComponentAddress("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
+                                CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+                                CALL_METHOD Address("%s") "withdraw" Address("%s") Decimal("1");
+                                TAKE_FROM_WORKTOP Address("%s") Bucket("lp_token");
+                                CALL_METHOD Address("%s") "unstake" Bucket("lp_token");
+                                CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
                                 """,
         faucetAddress, accountAddress, lpAddress, lpAddress, validatorHrpAddress, accountAddress);
   }
@@ -261,12 +273,12 @@ public final class REv2TestTransactions {
 
     return String.format(
         """
-                                    CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
-                                    CALL_METHOD ComponentAddress("%s") "withdraw" ResourceAddress("%s");
-                                    TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("unstake");
-                                    CALL_METHOD ComponentAddress("%s") "claim_xrd" Bucket("unstake");
-                                    TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
-                                    CALL_METHOD ComponentAddress("%s") "deposit" Bucket("xrd");
+                                    CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+                                    CALL_METHOD Address("%s") "withdraw" Address("%s");
+                                    TAKE_FROM_WORKTOP Address("%s") Bucket("unstake");
+                                    CALL_METHOD Address("%s") "claim_xrd" Bucket("unstake");
+                                    TAKE_FROM_WORKTOP Address("%s") Bucket("xrd");
+                                    CALL_METHOD Address("%s") "deposit" Bucket("xrd");
                                     """,
         faucetAddress,
         accountAddress,
@@ -277,18 +289,9 @@ public final class REv2TestTransactions {
         accountAddress);
   }
 
-  public static RawNotarizedTransaction constructNewAccountFromAccountTransaction(
-      NetworkDefinition networkDefinition, ComponentAddress from, long fromEpoch, long nonce) {
-    var manifest = constructNewAccountFromAccountManifest(networkDefinition, from);
-    var signatories = List.<ECKeyPair>of();
-
-    return constructRawTransaction(
-        networkDefinition, fromEpoch, nonce, manifest, DEFAULT_NOTARY, false, signatories);
-  }
-
-  public static byte[] constructNewAccountIntent(
+  public static byte[] constructDepositFromFaucetIntent(
       NetworkDefinition networkDefinition, long fromEpoch, long nonce, PublicKey notary) {
-    final var manifest = constructNewAccountManifest(networkDefinition);
+    final var manifest = constructDepositFromFaucetManifest(networkDefinition);
     final var header =
         TransactionHeader.defaults(networkDefinition, fromEpoch, 100, nonce, notary, false);
     return TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
@@ -300,7 +303,7 @@ public final class REv2TestTransactions {
       long nonce,
       PublicKey notary,
       int blobsSize) {
-    final var manifest = constructNewAccountManifest(networkDefinition);
+    final var manifest = constructDepositFromFaucetManifest(networkDefinition);
     final var header =
         TransactionHeader.defaults(networkDefinition, fromEpoch, 100, nonce, notary, false);
     final var blobs = List.of(new byte[blobsSize]);
@@ -398,9 +401,9 @@ public final class REv2TestTransactions {
         networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
   }
 
-  public static RawNotarizedTransaction constructNewAccountTransaction(
+  public static RawNotarizedTransaction constructDepositFromFaucetTransaction(
       NetworkDefinition networkDefinition, long fromEpoch, long nonce) {
-    var manifest = constructNewAccountManifest(networkDefinition);
+    var manifest = constructDepositFromFaucetManifest(networkDefinition);
     var signatories = List.<ECKeyPair>of();
 
     return constructRawTransaction(
@@ -470,7 +473,7 @@ public final class REv2TestTransactions {
       byte[] intentBytes, ECKeyPair notary, List<ECKeyPair> signatories) {
 
     public HashCode hashedIntent() {
-      return HashUtils.sha256Twice(this.intentBytes);
+      return HashUtils.blake2b256(this.intentBytes);
     }
 
     public RawNotarizedTransaction constructRawTransaction() {
@@ -486,7 +489,7 @@ public final class REv2TestTransactions {
           TransactionBuilder.createSignedIntentBytes(this.intentBytes(), intentSignatures);
 
       // Notarize
-      var hashedSignedIntent = HashUtils.sha256Twice(signedIntentBytes).asBytes();
+      var hashedSignedIntent = HashUtils.blake2b256(signedIntentBytes).asBytes();
       var notarySignature = this.notary().sign(hashedSignedIntent).toSignature();
       var notarizedBytes =
           TransactionBuilder.createNotarizedBytes(signedIntentBytes, notarySignature);

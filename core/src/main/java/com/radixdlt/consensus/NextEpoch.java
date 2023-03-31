@@ -76,6 +76,7 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
+import java.util.Set;
 import javax.annotation.concurrent.Immutable;
 
 @Immutable
@@ -105,8 +106,8 @@ public final class NextEpoch {
     this.validators = requireNonNull(validators);
   }
 
-  public static NextEpoch create(long epoch, ImmutableSet<BFTValidator> validators) {
-    return new NextEpoch(epoch, validators);
+  public static NextEpoch create(long epoch, Set<BFTValidator> validators) {
+    return new NextEpoch(epoch, ImmutableSet.copyOf(validators));
   }
 
   public ImmutableSet<BFTValidator> getValidators() {

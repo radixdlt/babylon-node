@@ -100,6 +100,10 @@ public class Decimal implements Comparable<Decimal> {
     this.underlyingValue = Objects.requireNonNull(underlyingValue);
   }
 
+  public static Decimal from(UInt256 fixedPointRepresentation) {
+    return new Decimal(fixedPointRepresentation);
+  }
+
   public static Decimal of(long amount) {
     var underlying = UInt256.from(amount).multiply(UInt256.from(10).pow(SCALE));
     return new Decimal(underlying);

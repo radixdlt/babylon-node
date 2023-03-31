@@ -87,29 +87,7 @@ public record TransactionHeader(
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         TransactionHeader.class,
-        codecs ->
-            StructCodec.with(
-                TransactionHeader::new,
-                codecs.of(byte.class),
-                codecs.of(byte.class),
-                codecs.of(UInt64.class),
-                codecs.of(UInt64.class),
-                codecs.of(UInt64.class),
-                codecs.of(PublicKey.class),
-                codecs.of(boolean.class),
-                codecs.of(UInt32.class),
-                codecs.of(UInt16.class),
-                (t, encoder) ->
-                    encoder.encode(
-                        t.version,
-                        t.networkId,
-                        t.startEpochInclusive,
-                        t.endEpochExclusive,
-                        t.nonce,
-                        t.notaryPublicKey,
-                        t.notaryAsSignatory,
-                        t.costUnitLimit,
-                        t.tipPercentage)));
+        codecs -> StructCodec.fromRecordComponents(TransactionHeader.class, codecs));
   }
 
   public static TransactionHeader defaults(

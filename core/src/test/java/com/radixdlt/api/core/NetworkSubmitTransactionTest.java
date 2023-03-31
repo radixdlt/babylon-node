@@ -101,8 +101,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
                       .network(networkLogicalName)
                       .intentHash(Bytes.toHexString(intentHash)));
 
-      assertThat(statusResponse1.getIntentStatus())
-          .isEqualTo(TransactionStatusResponse.IntentStatusEnum.INMEMPOOL);
+      assertThat(statusResponse1.getIntentStatus()).isEqualTo(TransactionIntentStatus.INMEMPOOL);
 
       // Now we run consensus
       test.runUntilState(allCommittedTransaction(rawTransaction), 1000);
@@ -116,7 +115,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
                       .intentHash(Bytes.toHexString(intentHash)));
 
       assertThat(statusResponse2.getIntentStatus())
-          .isEqualTo(TransactionStatusResponse.IntentStatusEnum.COMMITTEDSUCCESS);
+          .isEqualTo(TransactionIntentStatus.COMMITTEDSUCCESS);
     }
   }
 
@@ -150,7 +149,9 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(rejectedDetails.getIsIntentRejectionPermanent()).isFalse();
       assertThat(rejectedDetails.getIsRejectedBecauseIntentAlreadyCommitted()).isFalse();
       assertThat(rejectedDetails.getIsFresh()).isTrue();
-      assertThat(rejectedDetails.getErrorMessage()).isEqualTo("SuccessButFeeLoanNotRepaid");
+      assertThat(rejectedDetails.getErrorMessage())
+          .isEqualTo(
+              "ErrorBeforeFeeLoanRepaid(ModuleError(CostingError(FeeReserveError(LoanRepaymentFailed))))");
     }
   }
 
@@ -186,8 +187,8 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
       assertThat(rejectedDetails.getIsIntentRejectionPermanent()).isFalse();
       assertThat(rejectedDetails.getIsRejectedBecauseIntentAlreadyCommitted()).isFalse();
       assertThat(rejectedDetails.getIsFresh()).isTrue();
-      assertThat(rejectedDetails.getRecalculationDue()).isNull();
-      assertThat(rejectedDetails.getRecalculationFromEpoch()).isEqualTo(2);
+      assertThat(rejectedDetails.getRetryFromTimestamp()).isNull();
+      assertThat(rejectedDetails.getRetryFromEpoch()).isEqualTo(2);
       assertThat(rejectedDetails.getErrorMessage())
           .isEqualTo("TransactionEpochNotYetValid { valid_from: 2, current_epoch: 1 }");
 
@@ -215,7 +216,7 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
                       .intentHash(Bytes.toHexString(intentHash)));
 
       assertThat(statusResponse2.getIntentStatus())
-          .isEqualTo(TransactionStatusResponse.IntentStatusEnum.COMMITTEDSUCCESS);
+          .isEqualTo(TransactionIntentStatus.COMMITTEDSUCCESS);
     }
   }
 }

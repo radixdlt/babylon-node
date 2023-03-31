@@ -9,24 +9,26 @@ use radix_engine::{
     types::{Decimal, FAUCET_COMPONENT},
 };
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
-use radix_engine_interface::args;
+use radix_engine_interface::manifest_args;
+use radix_engine_interface::{
+    blueprints::transaction_processor::InstructionOutput, data::scrypto::scrypto_encode,
+};
 use state_manager::PreviewRequest;
-use transaction::model::{BasicInstruction, PreviewFlags, TransactionManifest};
+use transaction::model::{Instruction, PreviewFlags, TransactionManifest};
 
 macro_rules! args_from_bytes_vec {
     ($args: expr) => {{
         let mut fields = Vec::new();
         for arg in $args {
-            fields.push(::radix_engine_interface::data::scrypto_decode(&arg).unwrap());
+            fields.push(::radix_engine::types::manifest_decode(&arg).unwrap());
         }
-        let input_struct = ::radix_engine_interface::data::ScryptoValue::Tuple { fields };
-        ::radix_engine_interface::data::scrypto_encode(&input_struct).unwrap()
+        ::radix_engine::types::ManifestValue::Tuple { fields }
     }};
 }
 
 #[tracing::instrument(level = "debug", skip_all, err(Debug))]
 pub(crate) async fn handle_transaction_callpreview(
-    Extension(state): Extension<CoreApiState>,
+    State(state): State<CoreApiState>,
     Json(request): Json<models::TransactionCallPreviewRequest>,
 ) -> Result<Json<models::TransactionCallPreviewResponse>, ResponseError<()>> {
     let state_manager = state.state_manager.read();
@@ -55,7 +57,7 @@ pub(crate) async fn handle_transaction_callpreview(
                 extract_package_address(&extraction_context, package_address.as_str())
                     .map_err(|err| err.into_response_error("target.package_address"))?;
 
-            BasicInstruction::CallFunction {
+            Instruction::CallFunction {
                 blueprint_name,
                 function_name,
                 package_address,
@@ -70,7 +72,7 @@ pub(crate) async fn handle_transaction_callpreview(
                 extract_component_address(&extraction_context, component_address.as_str())
                     .map_err(|err| err.into_response_error("target.component_address"))?;
 
-            BasicInstruction::CallMethod {
+            Instruction::CallMethod {
                 component_address,
                 method_name,
                 args: args_from_bytes_vec!(args),
@@ -84,10 +86,10 @@ pub(crate) async fn handle_transaction_callpreview(
         .preview(PreviewRequest {
             manifest: TransactionManifest {
                 instructions: vec![
-                    BasicInstruction::CallMethod {
+                    Instruction::CallMethod {
                         component_address: FAUCET_COMPONENT,
                         method_name: "lock_fee".to_string(),
-                        args: args!(Decimal::from(100u32)),
+                        args: manifest_args!(Decimal::from(100u32)),
                     },
                     requested_call,
                 ],
@@ -110,7 +112,7 @@ pub(crate) async fn handle_transaction_callpreview(
         })
         .map_err(|err| match err {
             PreviewError::TransactionValidationError(err) => {
-                server_error(format!("Transaction validation error: {:?}", err))
+                server_error(format!("Transaction validation error: {err:?}"))
             }
         })?;
 
@@ -122,14 +124,18 @@ pub(crate) async fn handle_transaction_callpreview(
                         .into_iter()
                         .skip(1) // Skip the result of `lock_fee`
                         .map(|line_output| {
-                            scrypto_bytes_to_api_sbor_data(&mapping_context, &line_output.as_vec())
+                            let bytes = match line_output {
+                                InstructionOutput::None => scrypto_encode(&()).unwrap(),
+                                InstructionOutput::CallReturn(r) => r,
+                            };
+                            to_api_sbor_data_from_bytes(&mapping_context, &bytes)
                         })
                         .next()
                     {
                         None => None,
                         Some(Ok(output)) => Some(output),
                         // Decoding engine response should succeed
-                        Some(Err(err)) => Err(server_error(format!("{:?}", err)))?,
+                        Some(Err(err)) => Err(server_error(format!("{err:?}")))?,
                     };
 
                     (TransactionStatus::Succeeded, output, None)

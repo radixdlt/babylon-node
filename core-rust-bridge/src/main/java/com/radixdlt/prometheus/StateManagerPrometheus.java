@@ -67,7 +67,7 @@ package com.radixdlt.prometheus;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.radixdlt.lang.Tuple;
-import com.radixdlt.sbor.NativeCalls;
+import com.radixdlt.sbor.Natives;
 import com.radixdlt.statemanager.StateManager;
 
 public class StateManagerPrometheus {
@@ -75,18 +75,15 @@ public class StateManagerPrometheus {
   @Inject
   public StateManagerPrometheus(StateManager stateManager) {
     this.prometheusMetricsFunc =
-        NativeCalls.Func1.with(
-            stateManager,
-            new TypeToken<>() {},
-            new TypeToken<>() {},
-            StateManagerPrometheus::prometheusMetrics);
+        Natives.builder(stateManager, StateManagerPrometheus::prometheusMetrics)
+            .build(new TypeToken<>() {});
   }
 
   public String prometheusMetrics() {
     return prometheusMetricsFunc.call(Tuple.tuple());
   }
 
-  private final NativeCalls.Func1<StateManager, Tuple.Tuple0, String> prometheusMetricsFunc;
+  private final Natives.Call1<Tuple.Tuple0, String> prometheusMetricsFunc;
 
   private static native byte[] prometheusMetrics(StateManager stateManager, byte[] args);
 }

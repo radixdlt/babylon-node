@@ -91,7 +91,7 @@ import org.mockito.ArgumentCaptor;
 
 public class PacemakerTest {
 
-  private static final Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
+  private static final Hasher hasher = new Blake2b256Hasher(DefaultSerialization.getInstance());
 
   private BFTValidatorId self = mock(BFTValidatorId.class);
   private BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);

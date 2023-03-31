@@ -64,6 +64,7 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.google.common.base.Stopwatch;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.processor.BFTEventProcessorAtCurrentRound;
@@ -112,6 +113,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
   private final Metrics metrics;
 
   private RoundUpdate latestRoundUpdate;
+  private final Stopwatch currentRoundStopwatch = Stopwatch.createUnstarted();
   private Optional<ExecutedVertex> insertedVertexCarriedOverFromPrevRound = Optional.empty();
   private RoundStatus roundStatus = RoundStatus.UNDISTURBED;
 
@@ -176,6 +178,12 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
   }
 
   private void startRound() {
+    if (currentRoundStopwatch.isRunning()) {
+      this.metrics.bft().pacemaker().roundDuration().observe(currentRoundStopwatch.elapsed());
+    }
+    currentRoundStopwatch.reset();
+    currentRoundStopwatch.start();
+
     this.metrics.bft().pacemaker().round().set(currentRound().number());
 
     this.roundStatus = RoundStatus.UNDISTURBED;
@@ -515,5 +523,10 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
   @Override
   public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
     // no-op, Pacemaker doesn't process BFT rebuilds
+  }
+
+  @Override
+  public Optional<BFTEventProcessorAtCurrentRound> forwardTo() {
+    return Optional.empty();
   }
 }

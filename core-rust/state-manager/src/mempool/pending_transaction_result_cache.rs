@@ -1,9 +1,9 @@
-use radix_engine::engine::RejectionError;
 use transaction::errors::TransactionValidationError;
 
 use crate::{IntentHash, MempoolAddRejection, UserPayloadHash};
 
 use lru::LruCache;
+use radix_engine::errors::RejectionError;
 use std::{
     collections::{hash_map::Entry, HashMap, HashSet},
     fmt,
@@ -47,17 +47,18 @@ impl RejectionReason {
         match self {
             RejectionReason::FromExecution(rejection_error) => match **rejection_error {
                 RejectionError::SuccessButFeeLoanNotRepaid => RejectionPermanence::Temporary {
-                    base_allow_retry_after: Duration::from_secs(2 * 60),
-                    retry_from_epoch: None,
+                    retry: RetrySettings::AfterDelay {
+                        base_delay: Duration::from_secs(2 * 60),
+                    },
                 },
                 RejectionError::ErrorBeforeFeeLoanRepaid(_) => RejectionPermanence::Temporary {
-                    base_allow_retry_after: Duration::from_secs(2 * 60),
-                    retry_from_epoch: None,
+                    retry: RetrySettings::AfterDelay {
+                        base_delay: Duration::from_secs(2 * 60),
+                    },
                 },
                 RejectionError::TransactionEpochNotYetValid { valid_from, .. } => {
                     RejectionPermanence::Temporary {
-                        base_allow_retry_after: Duration::from_secs(60),
-                        retry_from_epoch: Some(valid_from),
+                        retry: RetrySettings::FromEpoch { epoch: valid_from },
                     }
                 }
                 RejectionError::TransactionEpochNoLongerValid { .. } => {
@@ -109,10 +110,7 @@ impl RejectionReason {
 pub enum RejectionPermanence {
     PermanentForPayload,
     PermanentForAnyPayloadWithThisIntent,
-    Temporary {
-        base_allow_retry_after: Duration,
-        retry_from_epoch: Option<u64>,
-    },
+    Temporary { retry: RetrySettings },
 }
 
 impl RejectionPermanence {
@@ -133,12 +131,18 @@ impl RejectionPermanence {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RetrySettings {
+    AfterDelay { base_delay: Duration },
+    FromEpoch { epoch: u64 },
+}
+
 impl fmt::Display for RejectionReason {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RejectionReason::FromExecution(rejection_error) => write!(f, "{}", rejection_error),
+            RejectionReason::FromExecution(rejection_error) => write!(f, "{rejection_error}"),
             RejectionReason::ValidationError(validation_error) => {
-                write!(f, "Validation Error: {:?}", validation_error)
+                write!(f, "Validation Error: {validation_error:?}")
             }
             RejectionReason::IntentHashCommitted => write!(f, "Intent hash already committed"),
         }
@@ -164,7 +168,7 @@ pub struct PendingTransactionRecord {
     pub earliest_permanent_rejection: Option<TransactionAttempt>,
     pub latest_rejection_against_committed_state: Option<TransactionAttempt>,
     pub latest_rejection_against_prepared_state: Option<TransactionAttempt>,
-    pub recalculation_due: RecalculationDue,
+    pub retry_from: RetryFrom,
     pub non_rejection_count: u32,
     pub rejection_count: u32,
     pub first_tracked_timestamp: SystemTime,
@@ -211,9 +215,9 @@ pub enum AtState {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum RecalculationDue {
+pub enum RetryFrom {
     Never,
-    From(SystemTime),
+    FromTime(SystemTime),
     FromEpoch(u64),
     Whenever,
 }
@@ -233,7 +237,7 @@ impl PendingTransactionRecord {
             earliest_permanent_rejection: None,
             latest_rejection_against_committed_state: None,
             latest_rejection_against_prepared_state: None,
-            recalculation_due: RecalculationDue::Whenever,
+            retry_from: RetryFrom::Whenever,
             rejection_count: 0,
             non_rejection_count: 0,
         };
@@ -255,7 +259,7 @@ impl PendingTransactionRecord {
             self.earliest_permanent_rejection = Some(attempt.clone());
         }
 
-        self.update_recalculation_due();
+        self.update_retry_from();
 
         match &attempt.rejection {
             None => {
@@ -273,13 +277,13 @@ impl PendingTransactionRecord {
     }
 
     pub fn should_recalculate(&self, current_epoch: u64, current_timestamp: SystemTime) -> bool {
-        match self.recalculation_due {
-            RecalculationDue::Never => false,
-            RecalculationDue::Whenever => true,
-            RecalculationDue::FromEpoch(recalculate_after_epoch) => {
-                recalculate_after_epoch <= current_epoch
+        match self.retry_from {
+            RetryFrom::Never => false,
+            RetryFrom::Whenever => true,
+            RetryFrom::FromEpoch(retry_after_epoch) => retry_after_epoch <= current_epoch,
+            RetryFrom::FromTime(retry_after_timestamp) => {
+                retry_after_timestamp <= current_timestamp
             }
-            RecalculationDue::From(recalculate_after) => recalculate_after <= current_timestamp,
         }
     }
 
@@ -288,7 +292,7 @@ impl PendingTransactionRecord {
             return Err(MempoolAddRejection {
                 reason: permanent_rejection.rejection.unwrap(),
                 against_state: permanent_rejection.against_state,
-                recalculation_due: self.recalculation_due,
+                retry_from: self.retry_from,
                 was_cached,
                 invalid_from_epoch: self.intent_invalid_from_epoch,
             });
@@ -299,7 +303,7 @@ impl PendingTransactionRecord {
             return Err(MempoolAddRejection {
                 reason: rejection_reason,
                 against_state: self.latest_attempt.against_state,
-                recalculation_due: self.recalculation_due,
+                retry_from: self.retry_from,
                 was_cached,
                 invalid_from_epoch: self.intent_invalid_from_epoch,
             });
@@ -315,26 +319,24 @@ impl PendingTransactionRecord {
     }
 
     /// This should be called after permanent rejection is set but before the counts are updated
-    fn update_recalculation_due(&mut self) {
+    fn update_retry_from(&mut self) {
         let attempt = &self.latest_attempt;
         let previous_rejection_count = self.rejection_count;
         let previous_non_rejection_count = self.non_rejection_count;
 
         if self.earliest_permanent_rejection.is_some() {
-            self.recalculation_due = RecalculationDue::Never;
+            self.retry_from = RetryFrom::Never;
             return;
         }
 
-        let new_recalculation_due = match &attempt.rejection {
+        let new_retry_from = match &attempt.rejection {
             Some(rejection_reason) => {
                 match rejection_reason.permanence() {
                     RejectionPermanence::Temporary {
-                        retry_from_epoch: Some(retry_from_epoch),
-                        ..
-                    } => RecalculationDue::FromEpoch(retry_from_epoch),
+                        retry: RetrySettings::FromEpoch { epoch },
+                    } => RetryFrom::FromEpoch(epoch),
                     RejectionPermanence::Temporary {
-                        base_allow_retry_after,
-                        ..
+                        retry: RetrySettings::AfterDelay { base_delay },
                     } => {
                         // Use exponential back-off.
                         // Previous rejections increase the exponent, previous non-rejections decrease it by half as much
@@ -343,11 +345,9 @@ impl PendingTransactionRecord {
                             - ((previous_non_rejection_count as f32) / 2f32);
                         let multiplier: f32 = base.powf(exponent);
 
-                        let delay = base_allow_retry_after
-                            .mul_f32(multiplier)
-                            .min(MAX_RECALCULATION_DELAY);
+                        let delay = base_delay.mul_f32(multiplier).min(MAX_RECALCULATION_DELAY);
 
-                        RecalculationDue::From(attempt.timestamp.add(delay))
+                        RetryFrom::FromTime(attempt.timestamp.add(delay))
                     }
                     _ => {
                         // If RejectionPermanence was Permanent, this has already been handled
@@ -360,11 +360,11 @@ impl PendingTransactionRecord {
                 // Use a flat delay to check it's still not rejected again soon (eg to catch a fee-vault now being out of money)
                 let delay = NON_REJECTION_RECALCULATION_DELAY;
 
-                RecalculationDue::From(attempt.timestamp.add(delay))
+                RetryFrom::FromTime(attempt.timestamp.add(delay))
             }
         };
 
-        self.recalculation_due = new_recalculation_due;
+        self.retry_from = new_retry_from;
     }
 }
 
@@ -452,8 +452,8 @@ impl PendingTransactionResultCache {
         }
     }
 
-    pub fn get_pending_transaction_record<'a>(
-        &'a mut self,
+    pub fn get_pending_transaction_record(
+        &mut self,
         intent_hash: &IntentHash,
         payload_hash: &UserPayloadHash,
         invalid_from_epoch: u64,
@@ -540,16 +540,16 @@ impl PendingTransactionResultCache {
 
 #[cfg(test)]
 mod tests {
-    use radix_engine::types::sha256_twice;
+    use radix_engine_interface::crypto::blake2b_256_hash;
 
     use super::*;
 
     fn user_payload_hash(nonce: u8) -> UserPayloadHash {
-        UserPayloadHash::from_raw_bytes(sha256_twice([0, nonce]).0)
+        UserPayloadHash::from_raw_bytes(blake2b_256_hash([0, nonce]).0)
     }
 
     fn intent_hash(nonce: u8) -> IntentHash {
-        IntentHash::from_raw_bytes(sha256_twice([1, nonce]).0)
+        IntentHash::from_raw_bytes(blake2b_256_hash([1, nonce]).0)
     }
 
     #[test]

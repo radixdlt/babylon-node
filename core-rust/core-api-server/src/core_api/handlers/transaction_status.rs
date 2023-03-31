@@ -11,14 +11,13 @@ use state_manager::store::traits::*;
 
 #[tracing::instrument(err(Debug), skip(state))]
 pub(crate) async fn handle_transaction_status(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
     request: Json<models::TransactionStatusRequest>,
 ) -> Result<Json<models::TransactionStatusResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_transaction_status_internal)
 }
 
 use models::transaction_payload_status::Status as PayloadStatus;
-use models::transaction_status_response::IntentStatus;
 
 fn handle_transaction_status_internal(
     state_manager: &ActualStateManager,
@@ -74,8 +73,12 @@ fn handle_transaction_status_internal(
         known_pending_payloads.remove(&payload_hash);
 
         let intent_status = match &receipt.outcome {
-            LedgerTransactionOutcome::Success(_) => IntentStatus::CommittedSuccess,
-            LedgerTransactionOutcome::Failure(_) => IntentStatus::CommittedFailure,
+            LedgerTransactionOutcome::Success(_) => {
+                models::TransactionIntentStatus::CommittedSuccess
+            }
+            LedgerTransactionOutcome::Failure(_) => {
+                models::TransactionIntentStatus::CommittedFailure
+            }
         };
 
         let (payload_status, outcome, error_message) = match &receipt.outcome {
@@ -85,7 +88,7 @@ fn handle_transaction_status_internal(
             LedgerTransactionOutcome::Failure(reason) => (
                 PayloadStatus::CommittedFailure,
                 "FAILURE",
-                Some(format!("{:?}", reason)),
+                Some(format!("{reason:?}")),
             ),
         };
 
@@ -102,7 +105,7 @@ fn handle_transaction_status_internal(
 
         return Ok(models::TransactionStatusResponse {
             intent_status,
-            status_description: format!("The transaction has been committed to the ledger, with an outcome of {}. For more information, use the /transaction/receipt endpoint.", outcome),
+            status_description: format!("The transaction has been committed to the ledger, with an outcome of {outcome}. For more information, use the /transaction/receipt endpoint."),
             invalid_from_epoch: None,
             known_payloads,
         });
@@ -110,6 +113,7 @@ fn handle_transaction_status_internal(
 
     let mempool_payloads_hashes = state_manager
         .mempool
+        .read()
         .get_payload_hashes_for_intent(&intent_hash);
 
     if !mempool_payloads_hashes.is_empty() {
@@ -135,7 +139,7 @@ fn handle_transaction_status_internal(
         ));
 
         return Ok(models::TransactionStatusResponse {
-            intent_status: models::transaction_status_response::IntentStatus::InMempool,
+            intent_status: models::TransactionIntentStatus::InMempool,
             status_description: "At least one payload for the intent is in this node's mempool. This node believes it's possible the intent might be able to be committed. Whilst the transaction continues to live in the mempool, you can use the /mempool/transaction endpoint to read its payload.".to_owned(),
             invalid_from_epoch: invalid_from_epoch.map(|epoch| to_api_epoch(&mapping_context, epoch)).transpose()?,
             known_payloads,
@@ -146,7 +150,7 @@ fn handle_transaction_status_internal(
 
     let response = if intent_is_permanently_rejected {
         models::TransactionStatusResponse {
-            intent_status: models::transaction_status_response::IntentStatus::PermanentRejection,
+            intent_status: models::TransactionIntentStatus::PermanentRejection,
             status_description: "Based on the results from executing a payload for this intent, the node believes the intent is permanently rejected - this means that any transaction payload containing the intent should never be able to be committed.".to_owned(),
             invalid_from_epoch: None,
             known_payloads,
@@ -154,7 +158,7 @@ fn handle_transaction_status_internal(
     } else {
         let (status, description) = if known_payloads.is_empty() {
             (
-                models::transaction_status_response::IntentStatus::NotSeen,
+                models::TransactionIntentStatus::NotSeen,
                 "No payloads for this intent have been seen recently by this node.",
             )
         } else {
@@ -162,9 +166,9 @@ fn handle_transaction_status_internal(
                 .iter()
                 .any(|p| p.status == PayloadStatus::NotInMempool);
             if any_payloads_not_rejected {
-                (models::transaction_status_response::IntentStatus::FateUncertain, "At least one payload for this intent was not rejected at its last execution, it's unknown whether it will be committed or not.")
+                (models::TransactionIntentStatus::FateUncertain, "At least one payload for this intent was not rejected at its last execution, it's unknown whether it will be committed or not.")
             } else {
-                (models::transaction_status_response::IntentStatus::FateUncertainButLikelyRejection, "All known payloads were rejected at their last execution. But none of these rejections implied that the intent itself is permanently rejected. It may still be possible for the intent to be committed.")
+                (models::TransactionIntentStatus::FateUncertainButLikelyRejection, "All known payloads were rejected at their last execution. But none of these rejections implied that the intent itself is permanently rejected. It may still be possible for the intent to be committed.")
             }
         };
         models::TransactionStatusResponse {

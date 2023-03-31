@@ -64,30 +64,15 @@
 
 package com.radixdlt.rev2;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
-import com.radixdlt.sbor.codec.EnumEntry;
 import java.util.List;
 
 public sealed interface TransactionStatus {
   static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         TransactionStatus.class,
-        (codecs) ->
-            EnumCodec.fromEntries(
-                EnumEntry.noFields(
-                    TransactionStatus.Rejected.class, TransactionStatus.Rejected::new),
-                EnumEntry.with(
-                    TransactionStatus.Succeeded.class,
-                    TransactionStatus.Succeeded::new,
-                    codecs.of(new TypeToken<>() {}),
-                    (t, encoder) -> encoder.encode(t.output)),
-                EnumEntry.with(
-                    TransactionStatus.Failed.class,
-                    TransactionStatus.Failed::new,
-                    codecs.of(String.class),
-                    (t, encoder) -> encoder.encode(t.message))));
+        codecs -> EnumCodec.fromPermittedRecordSubclasses(TransactionStatus.class, codecs));
   }
 
   record Rejected() implements TransactionStatus {}

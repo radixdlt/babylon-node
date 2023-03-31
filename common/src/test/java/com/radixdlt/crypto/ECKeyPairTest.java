@@ -118,13 +118,12 @@ public class ECKeyPairTest {
 
       var keyPair = ECKeyPair.fromPrivateKey(priv);
       var signature =
-          keyPair.sign(
-              HashUtils.sha256Twice(helloWorld.getBytes(StandardCharsets.UTF_8)).asBytes());
+          keyPair.sign(HashUtils.blake2b256(helloWorld.getBytes(StandardCharsets.UTF_8)).asBytes());
 
       var pubKey = ECDSASecp256k1PublicKey.fromBytes(pub);
       assertTrue(
           pubKey.verify(
-              HashUtils.sha256Twice(helloWorld.getBytes(StandardCharsets.UTF_8)).asBytes(),
+              HashUtils.blake2b256(helloWorld.getBytes(StandardCharsets.UTF_8)).asBytes(),
               signature));
     }
   }

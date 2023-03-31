@@ -66,7 +66,6 @@ package com.radixdlt.mempool;
 
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
-import com.radixdlt.sbor.codec.EnumEntry;
 import com.radixdlt.utils.UInt64;
 
 public sealed interface MempoolError {
@@ -74,25 +73,7 @@ public sealed interface MempoolError {
   static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         MempoolError.class,
-        (codecs) ->
-            EnumCodec.fromEntries(
-                EnumEntry.with(
-                    Full.class,
-                    Full::new,
-                    codecs.of(UInt64.class),
-                    codecs.of(UInt64.class),
-                    (t, encoder) -> encoder.encode(t.currentSize, t.maxSize)),
-                EnumEntry.noFields(Duplicate.class, Duplicate::new),
-                EnumEntry.with(
-                    TransactionValidationError.class,
-                    TransactionValidationError::new,
-                    codecs.of(String.class),
-                    (t, encoder) -> encoder.encode(t.errorDescription)),
-                EnumEntry.with(
-                    Rejected.class,
-                    Rejected::new,
-                    codecs.of(String.class),
-                    (t, encode) -> encode.encode(t.reason))));
+        codecs -> EnumCodec.fromPermittedRecordSubclasses(MempoolError.class, codecs));
   }
 
   record Full(UInt64 currentSize, UInt64 maxSize) implements MempoolError {}

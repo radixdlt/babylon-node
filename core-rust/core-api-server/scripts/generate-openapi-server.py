@@ -126,6 +126,8 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location):
         fix_for_enum_not_implementing_default(file_path, "TransactionSubmitErrorDetails")
         fix_for_enum_not_implementing_default(file_path, "ErrorResponse")
         fix_for_enum_not_implementing_default(file_path, "TargetIdentifier")
+        fix_for_enum_not_implementing_default(file_path, "EventEmitterIdentifier")
+        fix_for_enum_not_implementing_default(file_path, "TypeInfoDetails")
 
     logging.info("Successfully fixed up rust models.")
 

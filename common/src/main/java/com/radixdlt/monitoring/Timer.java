@@ -64,30 +64,27 @@
 
 package com.radixdlt.monitoring;
 
-import com.radixdlt.lang.Functions;
-import io.prometheus.client.Collector;
-import io.prometheus.client.Gauge;
 import io.prometheus.client.Summary;
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
-/** A Prometheus {@link Summary} wrapper specializing its use-case for measuring time. */
-public class Timer extends Collector implements Collector.Describable {
+/** A Prometheus {@link Summary.Child} wrapper specializing its use-case for measuring time. */
+public class Timer {
 
   /** A conversion factor for high-precision duration representation in (fractional) seconds. */
   private static final double NANOS_IN_SECOND = TimeUnit.SECONDS.toNanos(1);
 
-  /** A wrapped {@link Gauge}. */
-  private final Summary wrapped;
+  /** A wrapped {@link Summary.Child}. */
+  private final Summary.Child wrapped;
 
   /**
    * A direct constructor.
    *
-   * @param name A unit-agnostic metric name; a conventional time unit will be suffixed to it.
+   * @param wrapped A wrapped summary.
    */
-  public Timer(String name) {
-    this.wrapped = Summary.build(name.concat("_seconds"), name).unit("seconds").create();
+  public Timer(Summary.Child wrapped) {
+    this.wrapped = wrapped;
   }
 
   /**
@@ -99,21 +96,23 @@ public class Timer extends Collector implements Collector.Describable {
     this.wrapped.observe(duration.toNanos() / Timer.NANOS_IN_SECOND);
   }
 
-  public <T> T measure(Functions.Func0<T> fn) {
-    return wrapped.time(fn::apply);
+  /**
+   * Executes the given supplier while {@link #observe(Duration) observing} its runtime.
+   *
+   * @param supplier Supplier.
+   * @return Supplier's result.
+   * @param <T> Supplier's return type.
+   */
+  public <T> T measure(Supplier<T> supplier) {
+    return wrapped.time(supplier::get);
   }
 
-  public void measure(Runnable fn) {
-    wrapped.time(fn);
-  }
-
-  @Override
-  public List<MetricFamilySamples> collect() {
-    return this.wrapped.collect();
-  }
-
-  @Override
-  public List<MetricFamilySamples> describe() {
-    return this.wrapped.describe();
+  /**
+   * Executes the given runnable while {@link #observe(Duration) observing} its runtime.
+   *
+   * @param block runnable.
+   */
+  public void measure(Runnable block) {
+    wrapped.time(block);
   }
 }

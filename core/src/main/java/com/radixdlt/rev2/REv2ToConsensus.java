@@ -65,36 +65,146 @@
 package com.radixdlt.rev2;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.NextEpoch;
+import com.google.common.collect.Maps;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.lang.Option;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
+import com.radixdlt.statecomputer.commit.TimestampedValidatorSignature;
+import com.radixdlt.utils.UInt64;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class REv2ToConsensus {
   private REv2ToConsensus() {
     throw new IllegalStateException("Cannot instantiate.");
   }
 
-  public static BFTValidator validator(ComponentAddress address, ActiveValidatorInfo validator) {
+  public static BFTValidator validator(ActiveValidatorInfo validator) {
     return BFTValidator.from(
-        BFTValidatorId.create(address, validator.key()), validator.stake().toUInt256());
+        BFTValidatorId.create(validator.address().or((ComponentAddress) null), validator.key()),
+        validator.stake().toUInt256());
   }
 
-  public static BFTValidatorSet validatorSet(
-      Map<ComponentAddress, ActiveValidatorInfo> validators) {
-    var bftValidators =
-        validators.entrySet().stream()
-            .map(e -> REv2ToConsensus.validator(e.getKey(), e.getValue()));
-    return BFTValidatorSet.from(bftValidators);
+  public static ActiveValidatorInfo validator(BFTValidator validator) {
+    BFTValidatorId id = validator.getValidatorId();
+    return new ActiveValidatorInfo(
+        Option.from(id.getValidatorAddress()), id.getKey(), Decimal.from(validator.getPower()));
+  }
+
+  public static BFTValidatorSet validatorSet(Set<ActiveValidatorInfo> validators) {
+    return BFTValidatorSet.from(validators.stream().map(REv2ToConsensus::validator));
   }
 
   public static NextEpoch nextEpoch(com.radixdlt.statecomputer.commit.NextEpoch nextEpoch) {
     var validators =
-        nextEpoch.validators().entrySet().stream()
-            .map(e -> REv2ToConsensus.validator(e.getKey(), e.getValue()))
+        nextEpoch.validators().stream()
+            .map(REv2ToConsensus::validator)
             .collect(ImmutableSet.toImmutableSet());
     return NextEpoch.create(nextEpoch.epoch().toNonNegativeLong().unwrap(), validators);
+  }
+
+  public static com.radixdlt.statecomputer.commit.NextEpoch nextEpoch(NextEpoch nextEpoch) {
+    ImmutableSet<ActiveValidatorInfo> validators =
+        nextEpoch.getValidators().stream()
+            .map(REv2ToConsensus::validator)
+            .collect(ImmutableSet.toImmutableSet());
+    return new com.radixdlt.statecomputer.commit.NextEpoch(
+        validators, UInt64.fromNonNegativeLong(nextEpoch.getEpoch()));
+  }
+
+  public static LedgerHashes ledgerHashes(
+      com.radixdlt.statecomputer.commit.LedgerHashes ledgerHashes) {
+    return LedgerHashes.create(
+        ledgerHashes.stateRoot(), ledgerHashes.transactionRoot(), ledgerHashes.receiptRoot());
+  }
+
+  public static com.radixdlt.statecomputer.commit.LedgerHashes ledgerHashes(
+      LedgerHashes ledgerHashes) {
+    return new com.radixdlt.statecomputer.commit.LedgerHashes(
+        ledgerHashes.getStateRoot(),
+        ledgerHashes.getTransactionRoot(),
+        ledgerHashes.getReceiptRoot());
+  }
+
+  public static LedgerProof ledgerProof(com.radixdlt.statecomputer.commit.LedgerProof ledgerProof) {
+    return new LedgerProof(
+        ledgerProof.opaque(),
+        REv2ToConsensus.ledgerHeader(ledgerProof.ledgerHeader()),
+        new TimestampedECDSASignatures(
+            ledgerProof.signatures().stream()
+                .map(REv2ToConsensus::timestampedValidatorSignature)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))));
+  }
+
+  public static com.radixdlt.statecomputer.commit.LedgerProof ledgerProof(LedgerProof ledgerProof) {
+    return new com.radixdlt.statecomputer.commit.LedgerProof(
+        ledgerProof.getOpaque(),
+        REv2ToConsensus.ledgerHeader(ledgerProof.getHeader()),
+        ledgerProof.getSignatures().getSignatures().entrySet().stream()
+            .map(e -> REv2ToConsensus.timestampedValidatorSignature(e.getKey(), e.getValue()))
+            .toList());
+  }
+
+  public static Map.Entry<BFTValidatorId, TimestampedECDSASignature> timestampedValidatorSignature(
+      TimestampedValidatorSignature timestampedSignature) {
+    return Maps.immutableEntry(
+        BFTValidatorId.create(
+            timestampedSignature.validatorAddress().or((ComponentAddress) null),
+            timestampedSignature.key()),
+        TimestampedECDSASignature.from(
+            timestampedSignature.timestampMs(), timestampedSignature.signature()));
+  }
+
+  public static TimestampedValidatorSignature timestampedValidatorSignature(
+      BFTValidatorId id, TimestampedECDSASignature timestampedSignature) {
+    return new TimestampedValidatorSignature(
+        id.getKey(),
+        Option.from(id.getValidatorAddress()),
+        timestampedSignature.timestamp(),
+        timestampedSignature.signature());
+  }
+
+  public static LedgerHeader ledgerHeader(
+      com.radixdlt.statecomputer.commit.LedgerHeader ledgerHeader) {
+    return LedgerHeader.create(
+        ledgerHeader.epoch().toNonNegativeLong().unwrap(),
+        Round.of(ledgerHeader.round().toNonNegativeLong().unwrap()),
+        REv2ToConsensus.accumulatorState(ledgerHeader.accumulatorState()),
+        REv2ToConsensus.ledgerHashes(ledgerHeader.hashes()),
+        ledgerHeader.consensusParentRoundTimestampMs(),
+        ledgerHeader.proposerTimestampMs(),
+        ledgerHeader.nextEpoch().map(REv2ToConsensus::nextEpoch).or((NextEpoch) null));
+  }
+
+  public static com.radixdlt.statecomputer.commit.LedgerHeader ledgerHeader(
+      LedgerHeader ledgerHeader) {
+    return new com.radixdlt.statecomputer.commit.LedgerHeader(
+        UInt64.fromNonNegativeLong(ledgerHeader.getEpoch()),
+        UInt64.fromNonNegativeLong(ledgerHeader.getRound().number()),
+        REv2ToConsensus.accumulatorState(ledgerHeader.getAccumulatorState()),
+        REv2ToConsensus.ledgerHashes(ledgerHeader.getHashes()),
+        ledgerHeader.consensusParentRoundTimestamp(),
+        ledgerHeader.proposerTimestamp(),
+        Option.from(ledgerHeader.getNextEpoch().map(REv2ToConsensus::nextEpoch)));
+  }
+
+  public static AccumulatorState accumulatorState(
+      com.radixdlt.statecomputer.commit.AccumulatorState accumulatorState) {
+    return new AccumulatorState(
+        accumulatorState.stateVersion().toNonNegativeLong().unwrap(),
+        accumulatorState.accumulatorHash());
+  }
+
+  public static com.radixdlt.statecomputer.commit.AccumulatorState accumulatorState(
+      AccumulatorState accumulatorState) {
+    return new com.radixdlt.statecomputer.commit.AccumulatorState(
+        UInt64.fromNonNegativeLong(accumulatorState.getStateVersion()),
+        accumulatorState.getAccumulatorHash());
   }
 }

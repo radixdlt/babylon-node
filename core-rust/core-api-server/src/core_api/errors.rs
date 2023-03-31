@@ -3,7 +3,7 @@ use axum::{
     Json,
 };
 use hyper::StatusCode;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::network::NetworkDefinition;
 
 use super::models;
 
@@ -88,6 +88,15 @@ pub(crate) fn not_found_error<E: ErrorDetails>(message: impl Into<String>) -> Re
     }
 }
 
+pub(crate) fn not_implemented<E: ErrorDetails>(message: impl Into<String>) -> ResponseError<E> {
+    ResponseError {
+        status_code: StatusCode::NOT_IMPLEMENTED,
+        public_error_message: message.into(),
+        trace: None,
+        details: None,
+    }
+}
+
 pub(crate) fn server_error<E: ErrorDetails>(public_message: impl Into<String>) -> ResponseError<E> {
     ResponseError {
         status_code: StatusCode::INTERNAL_SERVER_ERROR,
@@ -107,5 +116,14 @@ pub(crate) fn detailed_error<E: ErrorDetails>(
         public_error_message: public_message.into(),
         trace: None,
         details: Some(details.into()),
+    }
+}
+
+pub(crate) fn length_limit_error<E: ErrorDetails>() -> ResponseError<E> {
+    ResponseError {
+        status_code: StatusCode::PAYLOAD_TOO_LARGE,
+        public_error_message: "length limit exceeded".into(),
+        trace: None,
+        details: None,
     }
 }

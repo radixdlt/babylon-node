@@ -72,8 +72,10 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.liveness.*;
 import com.radixdlt.consensus.sync.*;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
@@ -130,6 +132,15 @@ public class EpochsConsensusModule extends AbstractModule {
         Runners.CONSENSUS,
         new TypeLiteral<Epoched<ScheduledLocalTimeout>>() {},
         epochManager::processLocalTimeout);
+  }
+
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> timeoutQuorumDelayedResolutionProcessor(
+      EpochManager epochManager) {
+    return new EventProcessorOnRunner<>(
+        Runners.CONSENSUS,
+        new TypeLiteral<Epoched<TimeoutQuorumDelayedResolution>>() {},
+        epochManager::processTimeoutQuorumDelayedResolution);
   }
 
   @ProvidesIntoSet
@@ -238,6 +249,22 @@ public class EpochsConsensusModule extends AbstractModule {
 
   @ProvidesIntoSet
   @ProcessOnDispatch
+  private EventProcessor<TimeoutQuorumDelayedResolution>
+      initialEpochtimeoutQuorumDelayedResolutionDispatcher(
+          ScheduledEventDispatcher<Epoched<TimeoutQuorumDelayedResolution>>
+              epochedtimeoutQuorumDelayedResolutionDispatcher,
+          EpochChange initialEpoch) {
+    return timeoutQuorumDelayedResolution -> {
+      final var epochedTimeoutQuorumDelayedResolution =
+          Epoched.from(initialEpoch.getNextEpoch(), timeoutQuorumDelayedResolution);
+      epochedtimeoutQuorumDelayedResolutionDispatcher.dispatch(
+          epochedTimeoutQuorumDelayedResolution,
+          timeoutQuorumDelayedResolution.millisecondsWaitTime());
+    };
+  }
+
+  @ProvidesIntoSet
+  @ProcessOnDispatch
   private EventProcessor<RoundUpdate> initialRoundUpdateToEpochRoundUpdateConverter(
       EventDispatcher<EpochRoundUpdate> epochRoundUpdateEventDispatcher, EpochChange initialEpoch) {
     return roundUpdate -> {
@@ -249,7 +276,9 @@ public class EpochsConsensusModule extends AbstractModule {
 
   @Provides
   private PacemakerStateFactory pacemakerStateFactory(
-      EventDispatcher<EpochRoundUpdate> epochRoundUpdateEventDispatcher) {
+      EventDispatcher<EpochRoundUpdate> epochRoundUpdateEventDispatcher,
+      Metrics metrics,
+      Addressing addressing) {
     return (initialRound, epoch, proposerElection) ->
         new PacemakerState(
             initialRound,
@@ -257,7 +286,9 @@ public class EpochsConsensusModule extends AbstractModule {
             roundUpdate -> {
               EpochRoundUpdate epochRoundUpdate = new EpochRoundUpdate(epoch, roundUpdate);
               epochRoundUpdateEventDispatcher.dispatch(epochRoundUpdate);
-            });
+            },
+            metrics,
+            addressing);
   }
 
   @ProvidesIntoSet
@@ -314,13 +345,16 @@ public class EpochsConsensusModule extends AbstractModule {
       HashVerifier verifier,
       TimeSupplier timeSupplier,
       Metrics metrics,
-      EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
+      EventDispatcher<RoundQuorumResolution> roundQuorumResolutionEventDispatcher,
+      ScheduledEventDispatcher<Epoched<TimeoutQuorumDelayedResolution>>
+          timeoutQuorumDelayedResolutionDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
-      EventDispatcher<EpochProposalRejected> proposalRejectedDispatcher) {
+      EventDispatcher<EpochProposalRejected> proposalRejectedDispatcher,
+      @TimeoutQuorumResolutionDelayMs long timeoutQuorumResolutionDelayMs) {
     return (self,
         pacemaker,
         bftSyncer,
-        roundQuorumReachedEventProcessor,
+        roundQuorumResolutionEventProcessor,
         validatorSet,
         roundUpdate,
         safetyRules,
@@ -336,13 +370,19 @@ public class EpochsConsensusModule extends AbstractModule {
                         new EpochProposalRejected(epoch, proposalRejected)))
             .safetyRules(safetyRules)
             .pacemaker(pacemaker)
-            .roundQuorumReachedEventDispatcher(
-                roundQuorumReached -> {
+            .roundQuorumResolutionDispatcher(
+                roundQuorumResolution -> {
                   // FIXME: a hack for now until replacement of epochmanager factories
-                  roundQuorumReachedEventProcessor.process(roundQuorumReached);
-                  roundQuorumReachedEventDispatcher.dispatch(roundQuorumReached);
+                  roundQuorumResolutionEventProcessor.process(roundQuorumResolution);
+                  roundQuorumResolutionEventDispatcher.dispatch(roundQuorumResolution);
                 })
-            .doubleVoteEventDispatcher(doubleVoteEventDispatcher)
+            .timeoutQuorumDelayedResolutionDispatcher(
+                (timeoutQuorumDelayedResolution, ms) -> {
+                  timeoutQuorumDelayedResolutionDispatcher.dispatch(
+                      Epoched.from(epoch, timeoutQuorumDelayedResolution), ms);
+                })
+            .timeoutQuorumResolutionDelayMs(timeoutQuorumResolutionDelayMs)
+            .doubleVoteDispatcher(doubleVoteEventDispatcher)
             .roundUpdate(roundUpdate)
             .bftSyncer(bftSyncer)
             .validatorSet(validatorSet)

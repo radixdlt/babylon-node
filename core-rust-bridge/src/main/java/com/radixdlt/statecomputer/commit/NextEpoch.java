@@ -64,23 +64,14 @@
 
 package com.radixdlt.statecomputer.commit;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt64;
+import java.util.Set;
 
-public record NextEpoch(
-    ImmutableMap<ComponentAddress, ActiveValidatorInfo> validators, UInt64 epoch) {
+public record NextEpoch(Set<ActiveValidatorInfo> validators, UInt64 epoch) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        NextEpoch.class,
-        codecs ->
-            StructCodec.with(
-                NextEpoch::new,
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                (t, encoder) -> encoder.encode(t.validators, t.epoch)));
+        NextEpoch.class, codecs -> StructCodec.fromRecordComponents(NextEpoch.class, codecs));
   }
 }

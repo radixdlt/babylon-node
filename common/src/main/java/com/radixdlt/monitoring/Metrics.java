@@ -65,7 +65,12 @@
 package com.radixdlt.monitoring;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicates;
+import com.google.common.collect.MoreCollectors;
 import io.prometheus.client.*;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.function.DoubleSupplier;
 import javax.annotation.Nullable;
 
@@ -96,6 +101,7 @@ import javax.annotation.Nullable;
  *       be used instead of Prometheus-native typo-prone {@link Counter#labels(String...)}.
  *   <li>{@link LabelledGauge}: our type-safe wrapper for a {@link Gauge} with labels (i.e. to be
  *       used instead of Prometheus-native typo-prone {@link Gauge#labels(String...)}.
+ *   <li>{@link LabelledTimer}: type-safe labels support for our {@link Timer}.
  *   <li>{@link TypedInfo}: our type-safe wrapper for a special information-only metric, to be
  *       always used instead of the raw Prometheus-native {@link Info}.
  * </ul>
@@ -151,6 +157,7 @@ public record Metrics(
     Networking networking,
     Crypto crypto,
     EpochManager epochManager,
+    StateManager stateManager,
     Misc misc) {
 
   public record Bft(
@@ -160,12 +167,13 @@ public record Metrics(
       Counter preconditionViolations,
       Counter duplicateProposalsReceived,
       Counter eventsReceived,
-      Counter committedVertices,
+      LabelledCounter<CommittedVertex> committedVertices,
       Counter noVotesSent,
-      Counter voteQuorums,
-      Counter timeoutQuorums,
       Counter prolongedRoundTimeouts,
       Counter obsoleteEventsIgnored,
+      LabelledCounter<QuorumResolution> quorumResolutions,
+      Counter timeoutQuorumDelayedResolutions,
+      LabelledCounter<RoundChange> roundChanges,
       Timer consensusEventsQueueWait,
       LabelledCounter<RejectedConsensusEvent> rejectedConsensusEvents,
       GetterGauge validatorCount,
@@ -176,12 +184,16 @@ public record Metrics(
       Summary leaderMaxProposalPayloadSize,
       Summary leaderNumTransactionsIncludedInProposal,
       Summary leaderTransactionBytesIncludedInProposal,
-      Summary leaderTransactionBytesIncludedInProposalAndPreviousVertices) {
+      Summary leaderTransactionBytesIncludedInProposalAndPreviousVertices,
+      Summary numSignaturesInCertificate) {
+
+    public record QuorumResolution(boolean isTimeout) {}
+
+    public record CommittedVertex(boolean isFallback) {}
 
     public record IgnoredVote(VoteIgnoreReason reason) {}
 
     public enum VoteIgnoreReason {
-      QUORUM_ALREADY_REACHED,
       UNEXPECTED_VOTE
     }
 
@@ -191,7 +203,8 @@ public record Metrics(
         Counter proposedTransactions,
         Counter proposalsSent,
         Counter timedOutRounds,
-        Counter proposalsWithSubstituteTimestamp) {}
+        Counter proposalsWithSubstituteTimestamp,
+        Timer roundDuration) {}
 
     public record Sync(Counter requestsSent, Counter requestsReceived, Counter requestTimeouts) {}
 
@@ -263,11 +276,49 @@ public record Metrics(
   public record EpochManager(
       GetterGauge currentEpoch, GetterGauge currentRound, Counter enqueuedConsensusEvents) {}
 
+  public record StateManager(LabelledTimer<MethodId> nativeCall) {}
+
   public record Misc(
       TypedInfo<Config> config,
       Timer applicationStart,
       Counter vertexStoreSaved,
       GetterGauge peerCount) {}
+
+  public record MethodId(String cls, String method) {
+
+    /**
+     * Creates a method ID while ensuring that only one such native method exists within the class.
+     */
+    public MethodId(Class<?> cls, String methodName) {
+      this(
+          cls.getSimpleName(),
+          Arrays.stream(cls.getDeclaredMethods())
+              .filter(m -> Modifier.isNative(m.getModifiers()))
+              .map(Method::getName)
+              .filter(Predicates.equalTo(methodName))
+              .collect(MoreCollectors.onlyElement()));
+    }
+  }
+
+  public record RoundChange(
+      String leaderKey,
+      String leaderComponentAddress,
+      HighQcSource highQcSource,
+      CertificateType certificateType) {
+    public enum HighQcSource {
+      CREATED_ON_RECEIVED_NON_TIMEOUT_VOTE,
+      CREATED_ON_RECEIVED_TIMEOUT_VOTE,
+      RECEIVED_ALONG_WITH_PROPOSAL,
+      RECEIVED_ALONG_WITH_VOTE,
+      RECEIVED_IN_BFT_SYNC_VERTICES_ERROR_RESPONSE
+    }
+
+    public enum CertificateType {
+      QC_ON_REGULAR_VERTEX,
+      QC_ON_FALLBACK_VERTEX,
+      TC
+    }
+  }
 
   public record RejectedConsensusEvent(
       Type type, Invalidity invalidity, @Nullable TimestampIssue timestampIssue) {

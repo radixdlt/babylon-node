@@ -80,8 +80,12 @@ public enum Network {
   /// Babylon Temporary Testnets (0x0a - 0x0f)
   // - adapanet = Babylon Alphanet, after Adapa
   // - nebunet = Babylon Betanet, after Nebuchadnezzar
+  // - kisharnet = Babylon RCNetV1, after Kishar (from the Babylonian Creation Story)
+  // - ansharnet = Babylon RCNetV2, after Anshar (from the Babylonian Creation Story)
   ADAPANET(10 /* 0x0a */, "adapanet", "tdx_a_", GenesisSource.fromConfiguration),
   NEBUNET(11 /* 0x0b */, "nebunet", "tdx_b_", GenesisSource.fromConfiguration),
+  KISHARNET(12 /* 0x0c */, "kisharnet", "tdx_c_", GenesisSource.fromConfiguration),
+  ANSHARNET(13 /* 0x0d */, "ansharnet", "tdx_d_", GenesisSource.fromConfiguration),
 
   /// RDX Development - Semi-permanent Testnets (start with 0x2)
   // - gilganet = Integration, after Gilgamesh

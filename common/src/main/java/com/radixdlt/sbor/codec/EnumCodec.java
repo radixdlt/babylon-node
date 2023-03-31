@@ -64,12 +64,14 @@
 
 package com.radixdlt.sbor.codec;
 
+import com.google.common.base.Preconditions;
 import com.radixdlt.lang.Functions;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
 import com.radixdlt.sbor.exceptions.SborCodecException;
 import com.radixdlt.sbor.exceptions.SborDecodeException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -157,5 +159,24 @@ public class EnumCodec<T> implements Codec<T> {
           }
           return key;
         });
+  }
+
+  /**
+   * Creates a codec using {@link #fromEntries(EnumEntry[])} with the entries inferred directly from
+   * the permitted record classes of the given sealed type.
+   */
+  public static <T> EnumCodec<T> fromPermittedRecordSubclasses(
+      Class<T> sealedClass, CodecMap.CodecResolver codecs) {
+    Preconditions.checkArgument(sealedClass.isSealed(), "%s is not sealed", sealedClass);
+    return fromEntries(
+        Arrays.stream(sealedClass.getPermittedSubclasses())
+            .map(subclass -> EnumEntry.fromRecordComponents(ensureIsRecord(subclass), codecs))
+            .toArray(EnumEntry[]::new));
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Class<? extends Record> ensureIsRecord(Class<?> cls) {
+    Preconditions.checkArgument(cls.isRecord(), "%s is not a record", cls);
+    return (Class<? extends Record>) cls;
   }
 }

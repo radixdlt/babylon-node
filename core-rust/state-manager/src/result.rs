@@ -90,13 +90,13 @@ impl StateManagerError {
 
 impl From<DecodeError> for StateManagerError {
     fn from(err: DecodeError) -> Self {
-        StateManagerError::create(ERRCODE_SBOR, format!("SBOR decode failed: {:?}", err))
+        StateManagerError::create(ERRCODE_SBOR, format!("SBOR decode failed: {err:?}"))
     }
 }
 
 impl From<EncodeError> for StateManagerError {
     fn from(err: EncodeError) -> Self {
-        StateManagerError::create(ERRCODE_SBOR, format!("SBOR encode failed: {:?}", err))
+        StateManagerError::create(ERRCODE_SBOR, format!("SBOR encode failed: {err:?}"))
     }
 }
 

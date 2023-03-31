@@ -69,13 +69,20 @@ use std::fmt;
 use crate::store::traits::*;
 use crate::{
     AccumulatorHash, CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash,
-    HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerTransactionReceipt,
+    HasUserPayloadHash, IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt,
+    ReceiptTreeHash, TransactionTreeHash,
 };
 use radix_engine::ledger::{OutputValue, QueryableSubstateStore, ReadableSubstateStore};
-use radix_engine::model::PersistedSubstate;
+use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{
     scrypto_decode, scrypto_encode, KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateId,
     SubstateOffset,
+};
+use radix_engine_interface::api::types::NodeModuleId;
+use radix_engine_interface::data::manifest::manifest_decode;
+use radix_engine_interface::data::scrypto::ScryptoDecode;
+use radix_engine_stores::hash_tree::tree_store::{
+    encode_key, NodeKey, Payload, ReadableTreeStore, TreeNode,
 };
 use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, Direction, IteratorMode, Options, WriteBatch, DB,
@@ -102,11 +109,19 @@ enum RocksDBColumnFamily {
     Substates,
     /// Vertex store
     VertexStore,
+    /// State hash tree: all nodes + keys of nodes that became stale by the given state version
+    StateHashTreeNodes,
+    StaleStateHashTreeNodeKeysByStateVersion,
+    /// Transaction/Receipt accumulator tree slices keyed by state version of their ledger header
+    TransactionAccuTreeSliceByStateVersion,
+    ReceiptAccuTreeSliceByStateVersion,
 }
 
+use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
+use crate::query::TransactionIdentifierLoader;
 use RocksDBColumnFamily::*;
 
-const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 10] = [
+const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 14] = [
     TxnByStateVersion,
     TxnReceiptByStateVersion,
     TxnAccumulatorHashByStateVersion,
@@ -117,6 +132,10 @@ const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 10] = [
     LedgerProofByEpoch,
     Substates,
     VertexStore,
+    StateHashTreeNodes,
+    StaleStateHashTreeNodeKeysByStateVersion,
+    TransactionAccuTreeSliceByStateVersion,
+    ReceiptAccuTreeSliceByStateVersion,
 ];
 
 impl fmt::Display for RocksDBColumnFamily {
@@ -132,8 +151,14 @@ impl fmt::Display for RocksDBColumnFamily {
             LedgerProofByEpoch => "ledger_proof_by_epoch",
             Substates => "substates",
             VertexStore => "vertex_store",
+            StateHashTreeNodes => "state_hash_tree_nodes",
+            StaleStateHashTreeNodeKeysByStateVersion => "stale_state_hash_tree_node_keys",
+            TransactionAccuTreeSliceByStateVersion => {
+                "transaction_accu_tree_slice_by_state_version"
+            }
+            ReceiptAccuTreeSliceByStateVersion => "receipt_accu_tree_slice_by_state_version",
         };
-        write!(f, "{}", str)
+        write!(f, "{str}")
     }
 }
 
@@ -244,6 +269,21 @@ impl RocksDBStore {
     fn cf_handle(&self, cf: &RocksDBColumnFamily) -> &ColumnFamily {
         self.db.cf_handle(&cf.to_string()).unwrap()
     }
+
+    fn get_last<T: ScryptoDecode>(&self, cf: &RocksDBColumnFamily) -> Option<T> {
+        self.db
+            .iterator_cf(self.cf_handle(cf), IteratorMode::End)
+            .map(|res| res.unwrap())
+            .next()
+            .map(|(_, value)| scrypto_decode(value.as_ref()).unwrap())
+    }
+
+    fn get_by_key<T: ScryptoDecode>(&self, cf: &RocksDBColumnFamily, key: &[u8]) -> Option<T> {
+        self.db
+            .get_pinned_cf(self.cf_handle(cf), key)
+            .unwrap()
+            .map(|pinnable_slice| scrypto_decode(pinnable_slice.as_ref()).unwrap())
+    }
 }
 
 impl CommitStore for RocksDBStore {
@@ -273,39 +313,78 @@ impl CommitStore for RocksDBStore {
             panic!("Commit request contains duplicate payload hashes");
         }
 
-        // Ledger proof (by state version) is a tuple of optional epoch boundary and an actual
-        // proof bytes to optimize preparation of ledger sync responses (see: get_txns_and_proof).
-        // Note that this doesn't apply to an epoch proof (stored separately in
-        // LedgerProofByEpoch column family) - it is just raw proof bytes.
-        let encoded_proof =
-            scrypto_encode(&(commit_bundle.epoch_boundary, &commit_bundle.proof_bytes))
-                .expect("Failed to encode commit proof");
-
+        let commit_state_version = commit_bundle
+            .proof
+            .ledger_header
+            .accumulator_state
+            .state_version;
+        let encoded_proof = scrypto_encode(&commit_bundle.proof).unwrap();
         batch.put_cf(
             self.cf_handle(&LedgerProofByStateVersion),
-            commit_bundle.proof_state_version.to_be_bytes(),
+            commit_state_version.to_be_bytes(),
             &encoded_proof,
         );
 
-        if let Some(epoch_boundary) = commit_bundle.epoch_boundary {
+        if let Some(next_epoch) = commit_bundle.proof.ledger_header.next_epoch {
             batch.put_cf(
                 self.cf_handle(&LedgerProofByEpoch),
-                epoch_boundary.to_be_bytes(),
-                &commit_bundle.proof_bytes,
+                next_epoch.epoch.to_be_bytes(),
+                &encoded_proof,
             );
         }
 
-        for (substate_id, substate) in commit_bundle.substates {
+        for (substate_id, substate) in commit_bundle.substate_store_update.upserted {
             batch.put_cf(
                 self.cf_handle(&Substates),
                 scrypto_encode(&substate_id).unwrap(),
                 scrypto_encode(&substate).unwrap(),
             );
         }
+        for substate_id in commit_bundle.substate_store_update.deleted_ids {
+            batch.delete_cf(
+                self.cf_handle(&Substates),
+                scrypto_encode(&substate_id).unwrap(),
+            );
+        }
 
         if let Some(vertex_store) = commit_bundle.vertex_store {
             batch.put_cf(self.cf_handle(&VertexStore), [], vertex_store);
         }
+
+        let state_hash_tree_update = commit_bundle.state_tree_update;
+        for (key, node) in state_hash_tree_update.new_re_node_layer_nodes {
+            batch.put_cf(
+                self.cf_handle(&StateHashTreeNodes),
+                encode_key(&key),
+                scrypto_encode(&node).unwrap(),
+            );
+        }
+        for (key, node) in state_hash_tree_update.new_substate_layer_nodes {
+            batch.put_cf(
+                self.cf_handle(&StateHashTreeNodes),
+                encode_key(&key),
+                scrypto_encode(&node).unwrap(),
+            );
+        }
+        for stale_node_keys in state_hash_tree_update.stale_node_keys_at_state_version {
+            let encoded_node_keys = stale_node_keys.1.iter().map(encode_key).collect::<Vec<_>>();
+            batch.put_cf(
+                self.cf_handle(&StaleStateHashTreeNodeKeysByStateVersion),
+                stale_node_keys.0.to_be_bytes(),
+                scrypto_encode(&encoded_node_keys).unwrap(),
+            )
+        }
+
+        batch.put_cf(
+            self.cf_handle(&TransactionAccuTreeSliceByStateVersion),
+            commit_state_version.to_be_bytes(),
+            scrypto_encode(&commit_bundle.transaction_tree_slice).unwrap(),
+        );
+        batch.put_cf(
+            self.cf_handle(&ReceiptAccuTreeSliceByStateVersion),
+            commit_state_version.to_be_bytes(),
+            scrypto_encode(&commit_bundle.receipt_tree_slice).unwrap(),
+        );
 
         self.db.write(batch).expect("Commit failed");
     }
@@ -346,8 +425,7 @@ impl QueryableTransactionStore for RocksDBStore {
                     let expected_state_version = start_state_version_inclusive + res.len() as u64;
                     if expected_state_version != next_txn_state_version {
                         panic!(
-                            "DB inconsistency! Missing txn at state version {}",
-                            expected_state_version
+                            "DB inconsistency! Missing txn at state version {expected_state_version}"
                         );
                     }
 
@@ -364,16 +442,14 @@ impl QueryableTransactionStore for RocksDBStore {
                         u64::from_be_bytes((*next_accumulator_hash_kv.0).try_into().unwrap());
 
                     if next_receipt_state_version != next_txn_state_version {
-                        panic!("DB inconsistency! Receipt state version ({}) doesn't match txn state version ({})",
-                            next_receipt_state_version, next_txn_state_version);
+                        panic!("DB inconsistency! Receipt state version ({next_receipt_state_version}) doesn't match txn state version ({next_txn_state_version})");
                     }
 
                     if next_accumulator_hash_state_version != next_txn_state_version {
-                        panic!("DB inconsistency! Accumulator hash state version ({}) doesn't match txn state version ({})",
-                           next_accumulator_hash_state_version, next_txn_state_version);
+                        panic!("DB inconsistency! Accumulator hash state version ({next_accumulator_hash_state_version}) doesn't match txn state version ({next_txn_state_version})");
                     }
 
-                    let next_txn = scrypto_decode(next_txn_kv.1.as_ref()).unwrap();
+                    let next_txn = manifest_decode(next_txn_kv.1.as_ref()).unwrap();
                     let next_receipt = scrypto_decode(next_receipt_kv.1.as_ref()).unwrap();
                     let next_accumulator_hash = AccumulatorHash::from_raw_bytes(
                         (*next_accumulator_hash_kv.1).try_into().unwrap(),
@@ -400,7 +476,7 @@ impl QueryableTransactionStore for RocksDBStore {
                 state_version.to_be_bytes(),
             )
             .expect("DB error loading transaction")
-            .map(|v| scrypto_decode(&v).expect("Failed to decode a committed transaction"))
+            .map(|v| manifest_decode(&v).expect("Failed to decode a committed transaction"))
     }
 
     fn get_committed_transaction_receipt(
@@ -469,6 +545,23 @@ impl TransactionIndex<&LedgerPayloadHash> for RocksDBStore {
     }
 }
 
+impl TransactionIdentifierLoader for RocksDBStore {
+    fn get_top_transaction_identifiers(&self) -> CommittedTransactionIdentifiers {
+        self.db
+            .iterator_cf(
+                self.cf_handle(&TxnAccumulatorHashByStateVersion),
+                IteratorMode::End,
+            )
+            .map(|res| res.unwrap())
+            .next()
+            .map(|(key, value)| CommittedTransactionIdentifiers {
+                state_version: u64::from_be_bytes((*key).try_into().unwrap()),
+                accumulator_hash: AccumulatorHash::from_raw_bytes((*value).try_into().unwrap()),
+            })
+            .unwrap_or_else(CommittedTransactionIdentifiers::pre_genesis)
+    }
+}
+
 impl QueryableProofStore for RocksDBStore {
     fn max_state_version(&self) -> u64 {
         self.db
@@ -484,9 +577,9 @@ impl QueryableProofStore for RocksDBStore {
         start_state_version_inclusive: u64,
         max_number_of_txns_if_more_than_one_proof: u32,
         max_payload_size_in_bytes: u32,
-    ) -> Option<(Vec<Vec<u8>>, Vec<u8>)> {
+    ) -> Option<(Vec<Vec<u8>>, LedgerProof)> {
         let mut payload_size_so_far = 0;
-        let mut latest_usable_proof: Option<Vec<u8>> = None;
+        let mut latest_usable_proof: Option<LedgerProof> = None;
         let mut txns = Vec::new();
 
         let mut proofs_iter = self.db.iterator_cf(
@@ -517,8 +610,7 @@ impl QueryableProofStore for RocksDBStore {
                     let next_proof_kv = next_proof_result.unwrap();
                     let next_proof_state_version =
                         u64::from_be_bytes((*next_proof_kv.0).try_into().unwrap());
-                    let (next_proof_epoch_opt, next_proof_bytes): (Option<u64>, Vec<u8>) =
-                        scrypto_decode(next_proof_kv.1.as_ref()).unwrap();
+                    let next_proof: LedgerProof = scrypto_decode(next_proof_kv.1.as_ref()).unwrap();
 
                     let mut payload_size_including_next_proof_txns = payload_size_so_far;
                     let mut next_proof_txns = Vec::new();
@@ -569,11 +661,12 @@ impl QueryableProofStore for RocksDBStore {
                                 <= (max_number_of_txns_if_more_than_one_proof as usize))
                     {
                         // Yup, all good, use next_proof as the result and add its txns
-                        latest_usable_proof = Some(next_proof_bytes);
+                        let next_proof_at_epoch = next_proof.ledger_header.next_epoch.is_some();
+                        latest_usable_proof = Some(next_proof);
                         txns.append(&mut next_proof_txns);
                         payload_size_so_far = payload_size_including_next_proof_txns;
 
-                        if next_proof_epoch_opt.is_some() {
+                        if next_proof_at_epoch {
                             // Stop if we've reached an epoch proof
                             break 'proof_loop;
                         }
@@ -592,37 +685,49 @@ impl QueryableProofStore for RocksDBStore {
         latest_usable_proof.map(|proof| (txns, proof))
     }
 
-    fn get_epoch_proof(&self, epoch: u64) -> Option<Vec<u8>> {
+    fn get_epoch_proof(&self, epoch: u64) -> Option<LedgerProof> {
         self.db
             .get_cf(self.cf_handle(&LedgerProofByEpoch), epoch.to_be_bytes())
             .unwrap()
+            .map(|bytes| scrypto_decode(bytes.as_ref()).unwrap())
     }
 
-    fn get_last_proof(&self) -> Option<Vec<u8>> {
-        self.db
-            .iterator_cf(
-                self.cf_handle(&LedgerProofByStateVersion),
-                IteratorMode::End,
-            )
-            .map(|res| res.unwrap())
-            .next()
-            .map(|(_, proof)| {
-                // A proof is a tuple of (epoch_change, proof_bytes), see: commit
-                let decoded_tuple: (Option<u64>, Vec<u8>) = scrypto_decode(proof.as_ref()).unwrap();
-                decoded_tuple.1
-            })
+    fn get_last_proof(&self) -> Option<LedgerProof> {
+        self.get_last(&LedgerProofByStateVersion)
+    }
+
+    fn get_last_epoch_proof(&self) -> Option<LedgerProof> {
+        self.get_last(&LedgerProofByEpoch)
     }
 }
 
 impl ReadableSubstateStore for RocksDBStore {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
-        self.db
-            .get_pinned_cf(
-                self.cf_handle(&Substates),
-                &scrypto_encode(substate_id).unwrap(),
-            )
-            .unwrap()
-            .map(|pinnable_slice| scrypto_decode(pinnable_slice.as_ref()).unwrap())
+        self.get_by_key(&Substates, &scrypto_encode(substate_id).unwrap())
+    }
+}
+
+impl<P: Payload> ReadableTreeStore<P> for RocksDBStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
+        self.get_by_key(&StateHashTreeNodes, &encode_key(key))
+    }
+}
+
+impl ReadableAccuTreeStore<u64, TransactionTreeHash> for RocksDBStore {
+    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<TransactionTreeHash>> {
+        self.get_by_key(
+            &TransactionAccuTreeSliceByStateVersion,
+            &state_version.to_be_bytes(),
+        )
+    }
+}
+
+impl ReadableAccuTreeStore<u64, ReceiptTreeHash> for RocksDBStore {
+    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<ReceiptTreeHash>> {
+        self.get_by_key(
+            &ReceiptAccuTreeSliceByStateVersion,
+            &state_version.to_be_bytes(),
+        )
     }
 }
 
@@ -633,6 +738,7 @@ impl QueryableSubstateStore for RocksDBStore {
     ) -> HashMap<Vec<u8>, PersistedSubstate> {
         let id = scrypto_encode(&SubstateId(
             RENodeId::KeyValueStore(*kv_store_id),
+            NodeModuleId::SELF,
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(vec![])),
         ))
         .unwrap();
@@ -648,6 +754,7 @@ impl QueryableSubstateStore for RocksDBStore {
             let substate_id: SubstateId = scrypto_decode(&key).unwrap();
             if let SubstateId(
                 RENodeId::KeyValueStore(id),
+                NodeModuleId::SELF,
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
             ) = substate_id
             {

@@ -104,6 +104,12 @@ public interface Fields<T> extends UntypedCodec<T> {
     return new FieldsImpl<>(List.of(), decoder -> creator.apply());
   }
 
+  static <T> Fields<T> arbitrary(Functions.Func1<List<?>, T> creator, List<Field<T, ?>> fields) {
+    return new FieldsImpl<>(
+        fields,
+        decoder -> creator.apply(fields.stream().map(field -> field.decode(decoder)).toList()));
+  }
+
   static <T, T1> Fields<T> of(Functions.Func1<T1, T> creator, Field<T, T1> field1) {
     return new FieldsImpl<>(List.of(field1), decoder -> creator.apply(field1.decode(decoder)));
   }

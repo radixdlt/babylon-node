@@ -6,7 +6,7 @@ use state_manager::CommittedTransactionIdentifiers;
 
 #[tracing::instrument(skip(state), err(Debug))]
 pub(crate) async fn handle_status_network_status(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
     request: Json<models::NetworkStatusRequest>,
 ) -> Result<Json<models::NetworkStatusResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_status_network_status_internal)
@@ -17,10 +17,6 @@ pub(crate) fn handle_status_network_status_internal(
     request: models::NetworkStatusRequest,
 ) -> Result<models::NetworkStatusResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
-
-    let pre_genesis =
-        to_api_committed_state_identifier(CommittedTransactionIdentifiers::pre_genesis())?;
-
     Ok(models::NetworkStatusResponse {
         post_genesis_state_identifier: state_manager
             .store()
@@ -29,17 +25,12 @@ pub(crate) fn handle_status_network_status_internal(
                 Ok(Box::new(to_api_committed_state_identifier(identifiers)?))
             })
             .transpose()?,
-        current_state_identifier: Box::new(
-            state_manager
-                .store()
-                .get_top_of_ledger_transaction_identifiers()
-                .map(|identifiers| -> Result<_, MappingError> {
-                    to_api_committed_state_identifier(identifiers)
-                })
-                .transpose()?
-                .unwrap_or_else(|| pre_genesis.clone()),
-        ),
-        pre_genesis_state_identifier: Box::new(pre_genesis),
+        current_state_identifier: Box::new(to_api_committed_state_identifier(
+            state_manager.store().get_top_transaction_identifiers(),
+        )?),
+        pre_genesis_state_identifier: Box::new(to_api_committed_state_identifier(
+            CommittedTransactionIdentifiers::pre_genesis(),
+        )?),
     })
 }
 

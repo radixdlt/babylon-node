@@ -64,7 +64,6 @@
 
 package com.radixdlt.statemanager;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
@@ -73,12 +72,7 @@ public record LoggingConfig(
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         LoggingConfig.class,
-        codecs ->
-            StructCodec.with(
-                LoggingConfig::new,
-                codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                (s, encoder) -> encoder.encode(s.engineTrace, s.stateManagerLoggingConfig)));
+        codecs -> StructCodec.fromRecordComponents(LoggingConfig.class, codecs));
   }
 
   public static LoggingConfig getDefault() {

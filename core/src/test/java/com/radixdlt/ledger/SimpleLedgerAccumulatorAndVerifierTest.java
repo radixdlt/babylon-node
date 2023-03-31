@@ -70,7 +70,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.consensus.Blake2b256Hasher;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.serialization.DefaultSerialization;
@@ -84,7 +84,7 @@ public class SimpleLedgerAccumulatorAndVerifierTest {
 
   @Before
   public void setup() {
-    hasher = new Sha256Hasher(DefaultSerialization.getInstance());
+    hasher = new Blake2b256Hasher(DefaultSerialization.getInstance());
     accumulatorAndVerifier = new SimpleLedgerAccumulatorAndVerifier(hasher);
   }
 

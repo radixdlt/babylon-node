@@ -63,23 +63,18 @@
  */
 
 use radix_engine::ledger::create_genesis;
-use radix_engine::types::{
-    AccessRule, PublicKey, Signature, SignatureWithPublicKey, FAUCET_COMPONENT, RADIX_TOKEN,
-};
-use radix_engine_interface::args;
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use radix_engine_interface::data::scrypto_encode;
+use radix_engine_interface::data::manifest::manifest_encode;
+use radix_engine_interface::data::scrypto::model::ComponentAddress;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::ComponentAddress;
-use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::network::NetworkDefinition;
 use std::collections::BTreeMap;
 
 use crate::transaction::LedgerTransaction;
-use transaction::builder::ManifestBuilder;
 use transaction::manifest::{compile, CompileError};
 use transaction::model::{
-    NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
-    TransactionManifest,
+    NotarizedTransaction, Signature, SignatureWithPublicKey, SignedTransactionIntent,
+    TransactionHeader, TransactionIntent, TransactionManifest,
 };
 
 pub fn create_genesis_ledger_transaction_bytes(
@@ -96,37 +91,7 @@ pub fn create_genesis_ledger_transaction_bytes(
         rounds_per_epoch,
         num_unstake_epochs,
     );
-    scrypto_encode(&LedgerTransaction::System(genesis)).unwrap()
-}
-
-pub fn create_new_account_intent_bytes(
-    network_definition: &NetworkDefinition,
-    public_key: PublicKey,
-) -> Vec<u8> {
-    let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET_COMPONENT, 100.into())
-        .call_method(FAUCET_COMPONENT, "free", args!())
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-            builder.new_account_with_resource(&AccessRule::AllowAll, bucket_id)
-        })
-        .build();
-
-    let intent = TransactionIntent {
-        header: TransactionHeader {
-            version: 1,
-            network_id: network_definition.id,
-            start_epoch_inclusive: 0,
-            end_epoch_exclusive: 100,
-            nonce: 5,
-            notary_public_key: public_key,
-            notary_as_signatory: false,
-            cost_unit_limit: 10_000_000,
-            tip_percentage: 5,
-        },
-        manifest,
-    };
-
-    intent.to_bytes().unwrap()
+    manifest_encode(&LedgerTransaction::System(genesis)).unwrap()
 }
 
 pub fn create_intent_bytes(

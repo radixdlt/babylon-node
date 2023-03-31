@@ -65,10 +65,14 @@
 package com.radixdlt.rev2;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.radixdlt.consensus.*;
-import com.radixdlt.consensus.bft.*;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.ConsensusByzantineEvent;
+import com.radixdlt.consensus.NextEpoch;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
@@ -85,6 +89,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.commit.PrepareRequest;
+import com.radixdlt.statecomputer.commit.PreviousVertex;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -215,16 +220,24 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
   @Override
   public StateComputerLedger.StateComputerResult prepare(
-      List<StateComputerLedger.ExecutedTransaction> previous,
+      HashCode parentAccumulatorHash,
+      List<ExecutedVertex> previousVertices,
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
-    var previousTransactions =
-        previous.stream()
-            .map(StateComputerLedger.ExecutedTransaction::transaction)
-            .collect(Collectors.toList());
+    var mappedPreviousVertices =
+        previousVertices.stream()
+            .map(
+                v ->
+                    new PreviousVertex(
+                        v.successfulTransactions()
+                            .map(StateComputerLedger.ExecutedTransaction::transaction)
+                            .toList(),
+                        v.getLedgerHeader().getAccumulatorState().getAccumulatorHash()))
+            .toList();
     var prepareRequest =
         new PrepareRequest(
-            previousTransactions,
+            parentAccumulatorHash,
+            mappedPreviousVertices,
             proposedTransactions,
             UInt64.fromNonNegativeLong(roundDetails.epoch()),
             UInt64.fromNonNegativeLong(roundDetails.roundNumber()),
@@ -251,14 +264,14 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                     roundDetails, rejected, exception)));
 
     var nextEpoch = result.nextEpoch().map(REv2ToConsensus::nextEpoch).or((NextEpoch) null);
-
+    var ledgerHashes = REv2ToConsensus.ledgerHashes(result.ledgerHashes());
     return new StateComputerLedger.StateComputerResult(
-        committableTransactions, rejectedTransactions, nextEpoch);
+        committableTransactions, rejectedTransactions, nextEpoch, ledgerHashes);
   }
 
   @Override
   public void commit(CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStore) {
-    var proofBytes = serialization.toDson(txnsAndProof.getProof(), DsonOutput.Output.ALL);
+    var proof = txnsAndProof.getProof();
     final Option<byte[]> vertexStoreBytes;
     if (vertexStore != null) {
       vertexStoreBytes =
@@ -267,10 +280,9 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
       vertexStoreBytes = Option.none();
     }
 
-    var stateVersion = UInt64.fromNonNegativeLong(txnsAndProof.getProof().getStateVersion());
     var commitRequest =
         new CommitRequest(
-            txnsAndProof.getTransactions(), stateVersion, proofBytes, vertexStoreBytes);
+            txnsAndProof.getTransactions(), REv2ToConsensus.ledgerProof(proof), vertexStoreBytes);
 
     var result = stateComputer.commit(commitRequest);
     if (result.isError()) {

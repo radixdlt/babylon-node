@@ -62,17 +62,23 @@
  * permissions under this License.
  */
 
+use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::store::traits::*;
 use crate::transaction::LedgerTransaction;
 use crate::types::UserPayloadHash;
 use crate::{
     CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash, HasUserPayloadHash,
-    IntentHash, LedgerPayloadHash, LedgerTransactionReceipt,
+    IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt, ReceiptTreeHash,
+    TransactionTreeHash,
 };
 
+use crate::query::TransactionIdentifierLoader;
 use radix_engine::ledger::OutputValue;
-use radix_engine::model::PersistedSubstate;
+use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine_interface::api::types::{KeyValueStoreId, SubstateId};
+use radix_engine_stores::hash_tree::tree_store::{
+    NodeKey, Payload, ReadableTreeStore, SerializedInMemoryTreeStore, TreeNode, WriteableTreeStore,
+};
 use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 use std::collections::{BTreeMap, HashMap};
 
@@ -84,10 +90,13 @@ pub struct InMemoryStore {
     transaction_intent_lookup: HashMap<IntentHash, u64>,
     user_payload_hash_lookup: HashMap<UserPayloadHash, u64>,
     ledger_payload_hash_lookup: HashMap<LedgerPayloadHash, u64>,
-    proofs: BTreeMap<u64, Vec<u8>>,
-    epoch_proofs: BTreeMap<u64, Vec<u8>>,
+    proofs: BTreeMap<u64, LedgerProof>,
+    epoch_proofs: BTreeMap<u64, LedgerProof>,
     vertex_store: Option<Vec<u8>>,
     substate_store: SerializedInMemorySubstateStore,
+    tree_node_store: SerializedInMemoryTreeStore,
+    transaction_tree_slices: BTreeMap<u64, TreeSlice<TransactionTreeHash>>,
+    receipt_tree_slices: BTreeMap<u64, TreeSlice<ReceiptTreeHash>>,
 }
 
 impl InMemoryStore {
@@ -103,6 +112,9 @@ impl InMemoryStore {
             epoch_proofs: BTreeMap::new(),
             vertex_store: None,
             substate_store: SerializedInMemorySubstateStore::new(),
+            tree_node_store: SerializedInMemoryTreeStore::new(),
+            transaction_tree_slices: BTreeMap::new(),
+            receipt_tree_slices: BTreeMap::new(),
         }
     }
 
@@ -117,8 +129,7 @@ impl InMemoryStore {
             let key_already_exists = self.transaction_intent_lookup.get(&intent_hash);
             if let Some(existing_payload_hash) = key_already_exists {
                 panic!(
-                    "Attempted to save intent hash which already exists: {:?}",
-                    existing_payload_hash
+                    "Attempted to save intent hash which already exists: {existing_payload_hash:?}"
                 );
             }
             self.transaction_intent_lookup
@@ -184,6 +195,24 @@ impl ReadableSubstateStore for InMemoryStore {
     }
 }
 
+impl<P: Payload> ReadableTreeStore<P> for InMemoryStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
+        self.tree_node_store.get_node(key)
+    }
+}
+
+impl ReadableAccuTreeStore<u64, TransactionTreeHash> for InMemoryStore {
+    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<TransactionTreeHash>> {
+        self.transaction_tree_slices.get(state_version).cloned()
+    }
+}
+
+impl ReadableAccuTreeStore<u64, ReceiptTreeHash> for InMemoryStore {
+    fn get_tree_slice(&self, state_version: &u64) -> Option<TreeSlice<ReceiptTreeHash>> {
+        self.receipt_tree_slices.get(state_version).cloned()
+    }
+}
+
 impl QueryableSubstateStore for InMemoryStore {
     fn get_kv_store_entries(
         &self,
@@ -199,20 +228,36 @@ impl CommitStore for InMemoryStore {
             self.insert_transaction(txn, receipt, identifiers);
         }
 
-        if let Some(epoch_boundary) = commit_bundle.epoch_boundary {
+        let commit_ledger_header = &commit_bundle.proof.ledger_header;
+        if let Some(next_epoch) = &commit_ledger_header.next_epoch {
             self.epoch_proofs
-                .insert(epoch_boundary, commit_bundle.proof_bytes.clone());
+                .insert(next_epoch.epoch, commit_bundle.proof.clone());
         }
+        let commit_state_version = commit_ledger_header.accumulator_state.state_version;
         self.proofs
-            .insert(commit_bundle.proof_state_version, commit_bundle.proof_bytes);
+            .insert(commit_state_version, commit_bundle.proof);
 
-        for (substate_id, substate) in commit_bundle.substates {
+        for (substate_id, substate) in commit_bundle.substate_store_update.upserted {
             self.substate_store.put_substate(substate_id, substate);
         }
+        // TODO: handle the `substate_store_update.deleted_ids` once the store is ready for it
 
         if let Some(vertex_store) = commit_bundle.vertex_store {
             self.save_vertex_store(vertex_store)
         }
+
+        let state_hash_tree_update = commit_bundle.state_tree_update;
+        for (key, node) in state_hash_tree_update.new_re_node_layer_nodes {
+            self.tree_node_store.insert_node(key, node);
+        }
+        for (key, node) in state_hash_tree_update.new_substate_layer_nodes {
+            self.tree_node_store.insert_node(key, node);
+        }
+
+        self.transaction_tree_slices
+            .insert(commit_state_version, commit_bundle.transaction_tree_slice);
+        self.receipt_tree_slices
+            .insert(commit_state_version, commit_bundle.receipt_tree_slice);
     }
 }
 
@@ -260,6 +305,16 @@ impl QueryableTransactionStore for InMemoryStore {
     }
 }
 
+impl TransactionIdentifierLoader for InMemoryStore {
+    fn get_top_transaction_identifiers(&self) -> CommittedTransactionIdentifiers {
+        self.transaction_identifiers
+            .iter()
+            .next_back()
+            .map(|(_, value)| value.clone())
+            .unwrap_or_else(CommittedTransactionIdentifiers::pre_genesis)
+    }
+}
+
 impl QueryableProofStore for InMemoryStore {
     fn max_state_version(&self) -> u64 {
         self.transactions
@@ -275,7 +330,7 @@ impl QueryableProofStore for InMemoryStore {
         start_state_version_inclusive: u64,
         _max_number_of_txns_if_more_than_one_proof: u32,
         _max_payload_size_in_bytes: u32,
-    ) -> Option<(Vec<Vec<u8>>, Vec<u8>)> {
+    ) -> Option<(Vec<Vec<u8>>, LedgerProof)> {
         self.proofs
             .range(start_state_version_inclusive..)
             .next()
@@ -288,14 +343,15 @@ impl QueryableProofStore for InMemoryStore {
             })
     }
 
-    fn get_epoch_proof(&self, epoch: u64) -> Option<Vec<u8>> {
+    fn get_epoch_proof(&self, epoch: u64) -> Option<LedgerProof> {
         self.epoch_proofs.get(&epoch).cloned()
     }
 
-    fn get_last_proof(&self) -> Option<Vec<u8>> {
-        self.proofs
-            .iter()
-            .next_back()
-            .map(|(_, bytes)| bytes.clone())
+    fn get_last_proof(&self) -> Option<LedgerProof> {
+        self.proofs.values().next_back().cloned()
+    }
+
+    fn get_last_epoch_proof(&self) -> Option<LedgerProof> {
+        self.epoch_proofs.values().next_back().cloned()
     }
 }

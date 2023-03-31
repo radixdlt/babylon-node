@@ -70,7 +70,9 @@ import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.ProposalRejected;
 import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import java.util.Optional;
 
 /**
  * Processor of BFT events.
@@ -82,45 +84,43 @@ public interface BFTEventProcessor {
    * The initialization call. Must be called first and only once at the beginning of the BFT's
    * lifetime.
    */
-  void start();
+  default void start() {
+    forwardTo().ifPresent(BFTEventProcessor::start);
+  }
 
-  /**
-   * Process a local round update message.
-   *
-   * @param roundUpdate the round update message
-   */
-  void processRoundUpdate(RoundUpdate roundUpdate);
+  default void processRoundUpdate(RoundUpdate roundUpdate) {
+    forwardTo().ifPresent(p -> p.processRoundUpdate(roundUpdate));
+  }
 
-  /**
-   * Process a consensus vote message.
-   *
-   * @param vote the vote message
-   */
-  void processVote(Vote vote);
+  default void processVote(Vote vote) {
+    forwardTo().ifPresent(p -> p.processVote(vote));
+  }
 
-  /**
-   * Process a consensus proposal message.
-   *
-   * @param proposal the proposal message
-   */
-  void processProposal(Proposal proposal);
+  default void processProposal(Proposal proposal) {
+    forwardTo().ifPresent(p -> p.processProposal(proposal));
+  }
 
-  /**
-   * Process a local consensus timeout message.
-   *
-   * @param scheduledLocalTimeout the round corresponding to the timeout
-   */
-  void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout);
+  default void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
+    forwardTo().ifPresent(p -> p.processLocalTimeout(scheduledLocalTimeout));
+  }
 
-  /** Process a local ProposalRejected event. */
-  void processProposalRejected(ProposalRejected proposalRejected);
+  default void processTimeoutQuorumDelayedResolution(
+      TimeoutQuorumDelayedResolution timeoutQuorumDelayedResolution) {
+    forwardTo()
+        .ifPresent(p -> p.processTimeoutQuorumDelayedResolution(timeoutQuorumDelayedResolution));
+  }
 
-  /**
-   * Process a BFT update.
-   *
-   * @param update the BFT update
-   */
-  void processBFTUpdate(BFTInsertUpdate update);
+  default void processProposalRejected(ProposalRejected proposalRejected) {
+    forwardTo().ifPresent(p -> p.processProposalRejected(proposalRejected));
+  }
 
-  void processBFTRebuildUpdate(BFTRebuildUpdate update);
+  default void processBFTUpdate(BFTInsertUpdate update) {
+    forwardTo().ifPresent(p -> p.processBFTUpdate(update));
+  }
+
+  default void processBFTRebuildUpdate(BFTRebuildUpdate update) {
+    forwardTo().ifPresent(p -> p.processBFTRebuildUpdate(update));
+  }
+
+  Optional<? extends BFTEventProcessor> forwardTo();
 }

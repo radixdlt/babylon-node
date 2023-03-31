@@ -79,7 +79,7 @@ public class ECDSASecp256k1PublicKeyTest {
     ECDSASecp256k1PublicKey pk = ECDSASecp256k1PublicKey.fromBytes(key);
     EqualsVerifier.forClass(ECDSASecp256k1PublicKey.class)
         .withNonnullFields("ecPoint", "compressed")
-        .withIgnoredFields("uid", "ecPoint", "uncompressedBytes") // cached value
+        .withIgnoredFields("ecPoint", "uncompressedBytes") // cached value
         .withPrefabValues(ECPoint.class, p1, p2)
         .withCachedHashCode("hashCode", "computeHashCode", pk)
         .verify();

@@ -64,55 +64,14 @@
 
 package com.radixdlt.consensus.bft.processor;
 
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.ProposalRejected;
-import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import java.util.Optional;
 
 /** An empty BFT event processor */
 public enum EmptyBFTEventProcessor implements BFTEventProcessor {
   INSTANCE;
 
   @Override
-  public void start() {
-    // No-op
-  }
-
-  @Override
-  public void processVote(Vote vote) {
-    // No-op
-  }
-
-  @Override
-  public void processProposal(Proposal proposal) {
-    // No-op
-  }
-
-  @Override
-  public void processLocalTimeout(ScheduledLocalTimeout timeout) {
-    // No-op
-  }
-
-  @Override
-  public void processProposalRejected(ProposalRejected proposalRejected) {
-    // No-op
-  }
-
-  @Override
-  public void processBFTUpdate(BFTInsertUpdate update) {
-    // No-op
-  }
-
-  @Override
-  public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
-    // No-op
-  }
-
-  @Override
-  public void processRoundUpdate(RoundUpdate roundUpdate) {
-    // No-op
+  public Optional<BFTEventProcessor> forwardTo() {
+    return Optional.empty();
   }
 }

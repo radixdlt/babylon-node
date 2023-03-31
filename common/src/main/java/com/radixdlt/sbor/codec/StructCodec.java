@@ -64,6 +64,7 @@
 
 package com.radixdlt.sbor.codec;
 
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Functions;
 import com.radixdlt.sbor.codec.FieldsEncoders.*;
 import com.radixdlt.sbor.codec.constants.TypeId;
@@ -416,5 +417,18 @@ public interface StructCodec<T> extends Codec<T> {
         Fields.of(
             creator, field1, field2, field3, field4, field5, field6, field7, field8, field9,
             field10, field11, field12));
+  }
+
+  // Convenience methods for using Variant 2 (Fields) with Records.
+
+  static <R extends Record> StructCodec<R> fromRecordComponents(
+      Class<R> recordClass, CodecMap.CodecResolver codecs) {
+    return fromRecordComponents(TypeToken.of(recordClass), codecs);
+  }
+
+  @SuppressWarnings("unchecked")
+  static <R extends Record> StructCodec<R> fromRecordComponents(
+      TypeToken<R> recordType, CodecMap.CodecResolver codecs) {
+    return of(RecordUntypedCodecs.create(recordType, codecs));
   }
 }

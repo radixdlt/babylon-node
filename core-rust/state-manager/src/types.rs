@@ -62,11 +62,14 @@
  * permissions under this License.
  */
 
-use crate::transaction::LedgerTransaction;
-use radix_engine::model::Validator;
+use crate::{
+    accumulator_tree::IsHash, jni::common_types::JavaHashCode, transaction::LedgerTransaction,
+    LedgerTransactionOutcome, LedgerTransactionReceipt, SubstateChanges,
+};
 use radix_engine::types::*;
-use std::collections::BTreeMap;
 use std::fmt;
+
+use transaction::ecdsa_secp256k1::EcdsaSecp256k1Signature;
 use transaction::model::{
     NotarizedTransaction, PreviewFlags, SignedTransactionIntent, TransactionIntent,
     TransactionManifest,
@@ -84,7 +87,7 @@ impl AccumulatorHash {
 
     pub fn accumulate(&self, ledger_payload_hash: &LedgerPayloadHash) -> Self {
         let concat_bytes = [self.0, ledger_payload_hash.0].concat();
-        Self(sha256_twice(concat_bytes).0)
+        Self(blake2b_256_hash(concat_bytes).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -99,6 +102,12 @@ impl AccumulatorHash {
 impl AsRef<[u8]> for AccumulatorHash {
     fn as_ref(&self) -> &[u8] {
         &self.0
+    }
+}
+
+impl From<JavaHashCode> for AccumulatorHash {
+    fn from(java_hash_code: JavaHashCode) -> Self {
+        AccumulatorHash::from_raw_bytes(java_hash_code.into_bytes())
     }
 }
 
@@ -134,11 +143,11 @@ impl LedgerPayloadHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_transaction(transaction: &LedgerTransaction) -> Self {
-        Self::for_ledger_payload_bytes(&scrypto_encode(transaction).unwrap())
+        Self::for_ledger_payload_bytes(&manifest_encode(transaction).unwrap())
     }
 
     pub fn for_ledger_payload_bytes(ledger_payload_bytes: &[u8]) -> Self {
-        Self(sha256_twice(ledger_payload_bytes).0)
+        Self(blake2b_256_hash(ledger_payload_bytes).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -206,13 +215,68 @@ impl HasLedgerPayloadHash for NotarizedTransaction {
     ScryptoEncode,
     ScryptoDecode,
 )]
+pub struct LedgerReceiptHash([u8; Self::LENGTH]);
+
+#[derive(ScryptoCategorize, ScryptoEncode)]
+struct HashableLedgerReceiptPart {
+    successful: bool,
+    substate_changes: SubstateChanges,
+}
+
+impl LedgerReceiptHash {
+    pub const LENGTH: usize = 32;
+
+    pub fn for_receipt(receipt: &LedgerTransactionReceipt) -> Self {
+        let hashable_part = HashableLedgerReceiptPart {
+            successful: matches!(receipt.outcome, LedgerTransactionOutcome::Success(_)),
+            substate_changes: receipt.substate_changes.clone(),
+        };
+        let hashable_part_bytes = scrypto_encode(&hashable_part).unwrap();
+        Self(blake2b_256_hash(hashable_part_bytes).0)
+    }
+
+    pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
+        Self(hash_bytes)
+    }
+
+    pub fn into_bytes(self) -> [u8; Self::LENGTH] {
+        self.0
+    }
+}
+
+impl fmt::Display for LedgerReceiptHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(self.0))
+    }
+}
+
+impl fmt::Debug for LedgerReceiptHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("LedgerReceiptHash")
+            .field(&hex::encode(self.0))
+            .finish()
+    }
+}
+
+#[derive(
+    PartialEq,
+    Eq,
+    Hash,
+    Clone,
+    Copy,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub struct UserPayloadHash([u8; Self::LENGTH]);
 
 impl UserPayloadHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_transaction(transaction: &NotarizedTransaction) -> Self {
-        Self(sha256_twice(scrypto_encode(transaction).unwrap()).0)
+        Self(blake2b_256_hash(manifest_encode(transaction).unwrap()).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -272,7 +336,7 @@ impl SignaturesHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_signed_intent(signed_intent: &SignedTransactionIntent) -> Self {
-        Self(sha256_twice(scrypto_encode(signed_intent).unwrap()).0)
+        Self(blake2b_256_hash(manifest_encode(signed_intent).unwrap()).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -327,7 +391,7 @@ impl IntentHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_intent(intent: &TransactionIntent) -> Self {
-        Self(sha256_twice(scrypto_encode(intent).unwrap()).0)
+        Self(blake2b_256_hash(manifest_encode(intent).unwrap()).0)
     }
 
     pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
@@ -381,19 +445,153 @@ impl HasIntentHash for NotarizedTransaction {
     }
 }
 
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Categorize, Encode, Decode)]
+pub struct StateHash([u8; Self::LENGTH]);
+
+impl StateHash {
+    pub const LENGTH: usize = 32;
+
+    pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
+        Self(hash_bytes)
+    }
+
+    pub fn into_bytes(self) -> [u8; Self::LENGTH] {
+        self.0
+    }
+}
+
+impl AsRef<[u8]> for StateHash {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl From<Hash> for StateHash {
+    fn from(hash: Hash) -> Self {
+        Self(hash.0)
+    }
+}
+
+impl fmt::Display for StateHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(self.0))
+    }
+}
+
+impl fmt::Debug for StateHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("StateHash")
+            .field(&hex::encode(self.0))
+            .finish()
+    }
+}
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Categorize, Encode, Decode)]
+pub struct TransactionTreeHash([u8; Self::LENGTH]);
+
+impl TransactionTreeHash {
+    pub const LENGTH: usize = 32;
+
+    pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
+        Self(hash_bytes)
+    }
+
+    pub fn into_bytes(self) -> [u8; Self::LENGTH] {
+        self.0
+    }
+}
+
+impl AsRef<[u8]> for TransactionTreeHash {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl From<Hash> for TransactionTreeHash {
+    fn from(hash: Hash) -> Self {
+        Self(hash.0)
+    }
+}
+
+impl IsHash for TransactionTreeHash {}
+
+impl fmt::Display for TransactionTreeHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(self.0))
+    }
+}
+
+impl fmt::Debug for TransactionTreeHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("TransactionTreeHash")
+            .field(&hex::encode(self.0))
+            .finish()
+    }
+}
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Categorize, Encode, Decode)]
+pub struct ReceiptTreeHash([u8; Self::LENGTH]);
+
+impl ReceiptTreeHash {
+    pub const LENGTH: usize = 32;
+
+    pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
+        Self(hash_bytes)
+    }
+
+    pub fn into_bytes(self) -> [u8; Self::LENGTH] {
+        self.0
+    }
+}
+
+impl AsRef<[u8]> for ReceiptTreeHash {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl From<Hash> for ReceiptTreeHash {
+    fn from(hash: Hash) -> Self {
+        Self(hash.0)
+    }
+}
+
+impl IsHash for ReceiptTreeHash {}
+
+impl fmt::Display for ReceiptTreeHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(self.0))
+    }
+}
+
+impl fmt::Debug for ReceiptTreeHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("ReceiptTreeHash")
+            .field(&hex::encode(self.0))
+            .finish()
+    }
+}
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Debug, Categorize, Encode, Decode)]
+pub struct LedgerHashes {
+    pub state_root: StateHash,
+    pub transaction_root: TransactionTreeHash,
+    pub receipt_root: ReceiptTreeHash,
+}
+
 /// An uncommitted user transaction, in eg the mempool
-#[derive(Debug, PartialEq, Eq, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct PendingTransaction {
     pub payload: NotarizedTransaction,
     pub payload_hash: UserPayloadHash,
     pub intent_hash: IntentHash,
-    pub payload_size: u64,
+    pub payload_size: usize,
 }
 
 impl From<NotarizedTransaction> for PendingTransaction {
     fn from(transaction: NotarizedTransaction) -> Self {
         let intent_hash = transaction.intent_hash();
-        let payload_size = transaction.to_bytes().unwrap().len() as u64;
+        let payload_size = transaction.to_bytes().unwrap().len();
         PendingTransaction {
             payload_hash: transaction.user_payload_hash(),
             intent_hash,
@@ -403,7 +601,7 @@ impl From<NotarizedTransaction> for PendingTransaction {
     }
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ManifestCategorize, ManifestEncode, ManifestDecode)]
 pub struct PreviewRequest {
     pub manifest: TransactionManifest,
     pub start_epoch_inclusive: u64,
@@ -422,17 +620,17 @@ pub enum CommitError {
     MissingEpochProof,
 }
 
-#[derive(Debug, Decode, Encode, Categorize)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct CommitRequest {
     pub transaction_payloads: Vec<Vec<u8>>,
-    pub proof_state_version: u64, // TODO: Use actual proof to get this info
-    pub proof: Vec<u8>,
+    pub proof: LedgerProof,
     pub vertex_store: Option<Vec<u8>>,
 }
 
-#[derive(Debug, Decode, Encode, Categorize)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareRequest {
-    pub already_prepared_payloads: Vec<Vec<u8>>,
+    pub parent_accumulator: AccumulatorHash,
+    pub prepared_vertices: Vec<PreviousVertex>,
     pub proposed_payloads: Vec<Vec<u8>>,
     pub consensus_epoch: u64,
     pub round_number: u64,
@@ -440,15 +638,29 @@ pub struct PrepareRequest {
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct PreviousVertex {
+    pub transaction_payloads: Vec<Vec<u8>>,
+    pub resultant_accumulator: AccumulatorHash,
+}
+
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareResult {
     pub committed: Vec<Vec<u8>>,
     pub rejected: Vec<(Vec<u8>, String)>,
     pub next_epoch: Option<NextEpoch>,
+    pub ledger_hashes: LedgerHashes,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ActiveValidatorInfo {
+    pub address: Option<ComponentAddress>,
+    pub key: EcdsaSecp256k1PublicKey,
+    pub stake: Decimal,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct NextEpoch {
-    pub validator_set: BTreeMap<ComponentAddress, Validator>,
+    pub validator_set: Vec<ActiveValidatorInfo>,
     pub epoch: u64,
 }
 
@@ -459,5 +671,62 @@ pub struct PrepareGenesisRequest {
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PrepareGenesisResult {
-    pub validator_set: Option<BTreeMap<ComponentAddress, Validator>>,
+    pub validator_set: Option<Vec<ActiveValidatorInfo>>,
+    pub ledger_hashes: LedgerHashes,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct TimestampedValidatorSignature {
+    pub key: EcdsaSecp256k1PublicKey,
+    pub validator_address: Option<ComponentAddress>,
+    pub timestamp_ms: i64,
+    pub signature: EcdsaSecp256k1Signature,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct LedgerProof {
+    pub opaque: Hash,
+    pub ledger_header: LedgerHeader,
+    pub timestamped_signatures: Vec<TimestampedValidatorSignature>,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct LedgerHeader {
+    pub epoch: u64,
+    pub round: u64,
+    pub accumulator_state: AccumulatorState,
+    pub hashes: LedgerHashes,
+    pub consensus_parent_round_timestamp_ms: i64,
+    pub proposer_timestamp_ms: i64,
+    pub next_epoch: Option<NextEpoch>,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct AccumulatorState {
+    pub state_version: u64,
+    pub accumulator_hash: AccumulatorHash,
+}
+
+pub struct EpochTransactionIdentifiers {
+    pub state_version: u64,
+    pub transaction_hash: TransactionTreeHash,
+    pub receipt_hash: ReceiptTreeHash,
+}
+
+impl EpochTransactionIdentifiers {
+    pub fn pre_genesis() -> Self {
+        Self {
+            state_version: 0,
+            transaction_hash: TransactionTreeHash([0; TransactionTreeHash::LENGTH]),
+            receipt_hash: ReceiptTreeHash([0; TransactionTreeHash::LENGTH]),
+        }
+    }
+
+    pub fn from(epoch_header: LedgerHeader) -> Self {
+        Self {
+            state_version: epoch_header.accumulator_state.state_version,
+            transaction_hash: epoch_header.hashes.transaction_root,
+            receipt_hash: epoch_header.hashes.receipt_root,
+        }
+    }
 }

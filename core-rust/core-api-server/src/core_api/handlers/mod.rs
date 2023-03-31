@@ -1,3 +1,5 @@
+pub(crate) mod lts;
+
 mod mempool_list;
 mod mempool_transaction;
 mod state_access_controller;

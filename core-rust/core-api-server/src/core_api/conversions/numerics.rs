@@ -95,7 +95,7 @@ pub fn to_unix_timestamp_ms(time: std::time::SystemTime) -> Result<i64, MappingE
         .as_millis();
 
     millis.try_into().map_err(|_| MappingError::IntegerError {
-        message: format!("Timestamp ms must be <= {}", MAX_API_TIMESTAMP_MS),
+        message: format!("Timestamp ms must be <= {MAX_API_TIMESTAMP_MS}"),
     })
 }
 
@@ -104,7 +104,7 @@ pub fn to_api_instant_from_safe_timestamp(
 ) -> Result<models::Instant, MappingError> {
     if !(MIN_API_TIMESTAMP_MS..=MAX_API_TIMESTAMP_MS).contains(&timestamp_millis) {
         return Err(MappingError::IntegerError {
-            message: format!("Timestamp ms must be >= 0 and <= {}", MAX_API_TIMESTAMP_MS),
+            message: format!("Timestamp ms must be >= 0 and <= {MAX_API_TIMESTAMP_MS}"),
         });
     }
     use chrono::prelude::*;
@@ -134,8 +134,7 @@ pub fn extract_api_state_version(state_version: i64) -> Result<u64, ExtractionEr
     if state_version > MAX_API_STATE_VERSION {
         return Err(ExtractionError::InvalidInteger {
             message: format!(
-                "State version is larger than the max allowed: {}",
-                MAX_API_STATE_VERSION
+                "State version is larger than the max allowed: {MAX_API_STATE_VERSION}"
             ),
         });
     }

@@ -65,7 +65,10 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.hash.HashCode;
 import com.google.inject.*;
+import com.radixdlt.consensus.LedgerHashes;
+import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
@@ -143,7 +146,8 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 
       @Override
       public StateComputerLedger.StateComputerResult prepare(
-          List<StateComputerLedger.ExecutedTransaction> previous,
+          HashCode parentAccumulator,
+          List<ExecutedVertex> previousVertices,
           List<RawNotarizedTransaction> proposedTransactions,
           RoundDetails roundDetails) {
         return new StateComputerLedger.StateComputerResult(
@@ -151,7 +155,8 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
                 // This is a workaround for the mocking to keep things lightweight
                 .map(tx -> new MockExecuted(tx.INCORRECTInterpretDirectlyAsRawLedgerTransaction()))
                 .collect(Collectors.toList()),
-            Map.of());
+            Map.of(),
+            LedgerHashes.zero());
       }
 
       @Override

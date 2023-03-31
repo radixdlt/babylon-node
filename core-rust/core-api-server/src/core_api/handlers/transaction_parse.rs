@@ -1,5 +1,6 @@
 use crate::core_api::*;
 use models::parsed_notarized_transaction_all_of_identifiers::ParsedNotarizedTransactionAllOfIdentifiers;
+use radix_engine_interface::data::manifest::manifest_decode;
 
 use models::parsed_signed_transaction_intent_all_of_identifiers::ParsedSignedTransactionIntentAllOfIdentifiers;
 use models::transaction_parse_request::{ParseMode, ResponseMode, ValidationMode};
@@ -9,7 +10,6 @@ use state_manager::mempool::pending_transaction_result_cache::RejectionReason;
 use state_manager::transaction::{LedgerTransaction, UserTransactionValidator};
 use state_manager::{HasIntentHash, HasLedgerPayloadHash, HasSignaturesHash, HasUserPayloadHash};
 
-use radix_engine::types::scrypto_decode;
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionIntent, TransactionManifest,
 };
@@ -20,7 +20,7 @@ use super::{
 };
 
 pub(crate) async fn handle_transaction_parse(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
     request: Json<models::TransactionParseRequest>,
 ) -> Result<Json<models::TransactionParseResponse>, ResponseError<()>> {
     core_api_read_handler(state, request, handle_transaction_parse_internal)
@@ -193,7 +193,7 @@ fn to_api_parsed_notarized_transaction(
         .and_then(|result| result.err())
         .map(|error| {
             Box::new(models::ParsedNotarizedTransactionAllOfValidationError {
-                reason: format!("{:?}", error),
+                reason: format!("{error:?}"),
                 is_permanent: error.is_permanent_for_payload(),
             })
         });
@@ -211,7 +211,7 @@ fn to_api_parsed_notarized_transaction(
 }
 
 fn attempt_parsing_as_signed_intent(bytes: &[u8]) -> Option<SignedTransactionIntent> {
-    scrypto_decode::<SignedTransactionIntent>(bytes).ok()
+    manifest_decode::<SignedTransactionIntent>(bytes).ok()
 }
 
 fn to_api_parsed_signed_intent(
@@ -235,7 +235,7 @@ fn to_api_parsed_signed_intent(
 }
 
 fn attempt_parsing_as_intent(bytes: &[u8]) -> Option<TransactionIntent> {
-    scrypto_decode::<TransactionIntent>(bytes).ok()
+    manifest_decode::<TransactionIntent>(bytes).ok()
 }
 
 fn to_api_parsed_intent(
@@ -255,7 +255,7 @@ fn to_api_parsed_intent(
 }
 
 fn attempt_parsing_as_manifest(bytes: &[u8]) -> Option<TransactionManifest> {
-    scrypto_decode::<TransactionManifest>(bytes).ok()
+    manifest_decode::<TransactionManifest>(bytes).ok()
 }
 
 fn to_api_parsed_manifest(

@@ -68,20 +68,12 @@ import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
-import com.radixdlt.sbor.codec.EnumEntry;
 
 @SecurityCritical(SecurityKind.NUMERIC)
 public sealed interface LogLevel {
   static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        LogLevel.class,
-        (codecs) ->
-            EnumCodec.fromEntries(
-                EnumEntry.noFields(LogLevel.Error.class, LogLevel.Error::new),
-                EnumEntry.noFields(LogLevel.Warn.class, LogLevel.Warn::new),
-                EnumEntry.noFields(LogLevel.Info.class, LogLevel.Info::new),
-                EnumEntry.noFields(LogLevel.Debug.class, LogLevel.Debug::new),
-                EnumEntry.noFields(LogLevel.Trace.class, LogLevel.Trace::new)));
+        LogLevel.class, codecs -> EnumCodec.fromPermittedRecordSubclasses(LogLevel.class, codecs));
   }
 
   record Error() implements LogLevel {}

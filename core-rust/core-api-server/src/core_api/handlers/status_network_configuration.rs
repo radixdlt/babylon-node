@@ -5,7 +5,7 @@ use state_manager::jni::state_manager::ActualStateManager;
 
 #[tracing::instrument(err(Debug), skip(state))]
 pub(crate) async fn handle_status_network_configuration(
-    state: Extension<CoreApiState>,
+    state: State<CoreApiState>,
 ) -> Result<Json<models::NetworkConfigurationResponse>, ResponseError<()>> {
     core_api_handler_empty_request(state, handle_status_network_configuration_internal)
 }
@@ -33,7 +33,6 @@ pub(crate) fn handle_status_network_configuration_internal(
         network_hrp_suffix: network.hrp_suffix,
         address_types,
         well_known_addresses: Box::new(models::NetworkConfigurationResponseWellKnownAddresses {
-            account_package: bech32_encoder.encode_package_address_to_string(&ACCOUNT_PACKAGE),
             faucet: bech32_encoder.encode_component_address_to_string(&FAUCET_COMPONENT),
             epoch_manager: bech32_encoder.encode_component_address_to_string(&EPOCH_MANAGER),
             clock: bech32_encoder.encode_component_address_to_string(&CLOCK),
@@ -45,9 +44,10 @@ pub(crate) fn handle_status_network_configuration_internal(
     })
 }
 
-const ALL_ENTITY_TYPES: [EntityType; 13] = [
-    EntityType::Resource,
+const ALL_ENTITY_TYPES: [EntityType; 14] = [
     EntityType::Package,
+    EntityType::FungibleResource,
+    EntityType::NonFungibleResource,
     EntityType::NormalComponent,
     EntityType::AccountComponent,
     EntityType::EcdsaSecp256k1VirtualAccountComponent,
@@ -64,84 +64,69 @@ const ALL_ENTITY_TYPES: [EntityType; 13] = [
 fn to_api_address_type(hrp_set: &HrpSet, entity_type: EntityType) -> models::AddressType {
     // If you add another entity type here, add it to the ALL_ENTITY_TYPES list above.
     // We do it like this in a match statement so that we catch a compile error if a new entity type is added :)
-    let (subtype, api_entity_type, address_length) = match entity_type {
-        EntityType::Resource => (
-            models::address_type::Subtype::Resource,
-            models::EntityType::ResourceManager,
-            extract_length(ResourceAddress::Normal),
+    let (subtype, api_entity_type) = match entity_type {
+        EntityType::FungibleResource => (
+            models::address_type::Subtype::FungibleResource,
+            models::EntityType::FungibleResource,
+        ),
+        EntityType::NonFungibleResource => (
+            models::address_type::Subtype::NonFungibleResource,
+            models::EntityType::NonFungibleResource,
         ),
         EntityType::Package => (
             models::address_type::Subtype::Package,
             models::EntityType::Package,
-            extract_length(PackageAddress::Normal),
         ),
         EntityType::NormalComponent => (
             models::address_type::Subtype::NormalComponent,
-            models::EntityType::Component,
-            extract_length(ComponentAddress::Normal),
+            models::EntityType::NormalComponent,
         ),
         EntityType::AccountComponent => (
             models::address_type::Subtype::AccountComponent,
-            models::EntityType::Component,
-            extract_length(ComponentAddress::Account),
+            models::EntityType::Account,
         ),
         EntityType::EcdsaSecp256k1VirtualAccountComponent => (
             models::address_type::Subtype::EcdsaSecp256k1VirtualAccountComponent,
-            models::EntityType::Component,
-            extract_length(ComponentAddress::EcdsaSecp256k1VirtualAccount),
+            models::EntityType::Account,
         ),
         EntityType::EddsaEd25519VirtualAccountComponent => (
             models::address_type::Subtype::EddsaEd25519VirtualAccountComponent,
-            models::EntityType::Component,
-            extract_length(ComponentAddress::EddsaEd25519VirtualAccount),
+            models::EntityType::Account,
         ),
         EntityType::IdentityComponent => (
             models::address_type::Subtype::IdentityComponent,
             models::EntityType::Identity,
-            extract_length(ComponentAddress::Identity),
         ),
         EntityType::EcdsaSecp256k1VirtualIdentityComponent => (
             models::address_type::Subtype::EcdsaSecp256k1VirtualIdentityComponent,
             models::EntityType::Identity,
-            extract_length(ComponentAddress::EcdsaSecp256k1VirtualIdentity),
         ),
         EntityType::EddsaEd25519VirtualIdentityComponent => (
             models::address_type::Subtype::EddsaEd25519VirtualIdentityComponent,
             models::EntityType::Identity,
-            extract_length(ComponentAddress::EddsaEd25519VirtualIdentity),
         ),
         EntityType::EpochManager => (
             models::address_type::Subtype::EpochManager,
             models::EntityType::EpochManager,
-            extract_length(ComponentAddress::EpochManager),
         ),
         EntityType::Validator => (
             models::address_type::Subtype::Validator,
             models::EntityType::Validator,
-            extract_length(ComponentAddress::Validator),
         ),
         EntityType::Clock => (
             models::address_type::Subtype::Clock,
             models::EntityType::Clock,
-            extract_length(ComponentAddress::Clock),
         ),
         EntityType::AccessControllerComponent => (
             models::address_type::Subtype::AccessController,
             models::EntityType::AccessController,
-            extract_length(ComponentAddress::AccessController),
         ),
     };
     models::AddressType {
         hrp_prefix: hrp_set.get_entity_hrp(&entity_type).to_string(),
-        subtype,
         entity_type: api_entity_type,
+        subtype,
         address_byte_prefix: entity_type.id().into(),
-        address_byte_length: address_length
-            .try_into()
-            .expect("address was longer than expected"),
+        address_byte_length: ADDRESS_LENGTH.try_into().unwrap(),
     }
-}
-
-fn extract_length<T: FnOnce([u8; N]) -> X, const N: usize, X>(_: T) -> usize {
-    N
 }
