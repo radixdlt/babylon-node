@@ -62,41 +62,50 @@
  * permissions under this License.
  */
 
-mod cache;
-pub mod epoch_handling;
-mod result;
-mod stage_tree;
+package com.radixdlt.rev2;
 
-use crate::accumulator_tree::storage::ReadableAccuTreeStore;
-use crate::{ReceiptTreeHash, TransactionTreeHash};
-use radix_engine::ledger::ReadableSubstateStore;
-use radix_engine_interface::api::types::SubstateOffset;
-use radix_engine_stores::hash_tree::tree_store::{ReNodeModulePayload, ReadableTreeStore};
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.Blake2b256Hasher;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.lang.Option;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
+import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.statecomputer.commit.*;
+import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.utils.UInt64;
+import java.util.List;
 
-pub use cache::*;
-pub use result::*;
+public class LedgerInitializer {
 
-pub trait ReadableStateTreeStore:
-    ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>
-{
+  private final RustStateComputer stateComputer;
+
+  public LedgerInitializer(RustStateComputer stateComputer) {
+    this.stateComputer = stateComputer;
+  }
+
+  public HashCode prepareAndCommit(RawLedgerTransaction genesis) {
+    var prepareResult = this.stateComputer.prepareGenesis(new PrepareGenesisRequest(genesis));
+    var accumulatorState =
+        new SimpleLedgerAccumulatorAndVerifier(
+                new Blake2b256Hasher(DefaultSerialization.getInstance()))
+            .accumulate(new AccumulatorState(0, HashUtils.zero256()), genesis.getPayloadHash());
+    var proof =
+        new LedgerProof(
+            HashUtils.zero256(),
+            new LedgerHeader(
+                UInt64.fromNonNegativeLong(0),
+                UInt64.fromNonNegativeLong(0),
+                REv2ToConsensus.accumulatorState(accumulatorState),
+                prepareResult.ledgerHashes(),
+                0,
+                0,
+                prepareResult
+                    .validatorSet()
+                    .map(validators -> new NextEpoch(validators, UInt64.fromNonNegativeLong(1)))),
+            List.of());
+    this.stateComputer.commit(new CommitRequest(List.of(genesis), proof, Option.none()));
+    return accumulatorState.getAccumulatorHash();
+  }
 }
-impl<T> ReadableStateTreeStore for T where
-    T: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>
-{
-}
-
-pub trait ReadableHashStructuresStore:
-    ReadableStateTreeStore
-    + ReadableAccuTreeStore<u64, TransactionTreeHash>
-    + ReadableAccuTreeStore<u64, ReceiptTreeHash>
-{
-}
-impl<T> ReadableHashStructuresStore for T where
-    T: ReadableStateTreeStore
-        + ReadableAccuTreeStore<u64, TransactionTreeHash>
-        + ReadableAccuTreeStore<u64, ReceiptTreeHash>
-{
-}
-
-pub trait ReadableStore: ReadableSubstateStore + ReadableHashStructuresStore {}
-impl<T> ReadableStore for T where T: ReadableSubstateStore + ReadableHashStructuresStore {}

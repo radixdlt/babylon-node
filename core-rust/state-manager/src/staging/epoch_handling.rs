@@ -62,41 +62,41 @@
  * permissions under this License.
  */
 
-mod cache;
-pub mod epoch_handling;
-mod result;
-mod stage_tree;
-
-use crate::accumulator_tree::storage::ReadableAccuTreeStore;
-use crate::{ReceiptTreeHash, TransactionTreeHash};
-use radix_engine::ledger::ReadableSubstateStore;
-use radix_engine_interface::api::types::SubstateOffset;
-use radix_engine_stores::hash_tree::tree_store::{ReNodeModulePayload, ReadableTreeStore};
-
-pub use cache::*;
-pub use result::*;
-
-pub trait ReadableStateTreeStore:
-    ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>
-{
-}
-impl<T> ReadableStateTreeStore for T where
-    T: ReadableTreeStore<ReNodeModulePayload> + ReadableTreeStore<SubstateOffset>
-{
+/// An extracted logic related to the "accu tree per epoch" approach (where the first leaf of the
+/// next epoch's tree is an auto-inserted root of the previous epoch's tree).
+pub struct AccuTreeEpochHandler {
+    epoch_version_count: usize,
 }
 
-pub trait ReadableHashStructuresStore:
-    ReadableStateTreeStore
-    + ReadableAccuTreeStore<u64, TransactionTreeHash>
-    + ReadableAccuTreeStore<u64, ReceiptTreeHash>
-{
-}
-impl<T> ReadableHashStructuresStore for T where
-    T: ReadableStateTreeStore
-        + ReadableAccuTreeStore<u64, TransactionTreeHash>
-        + ReadableAccuTreeStore<u64, ReceiptTreeHash>
-{
-}
+impl AccuTreeEpochHandler {
+    /// Creates an instance scoped at a particular epoch, based on 2 state versions: the state
+    /// version of the transaction which started that epoch, and the state version of the last
+    /// committed transaction.
+    pub fn new(epoch_state_version: u64, current_state_version: u64) -> Self {
+        Self {
+            epoch_version_count: usize::try_from(current_state_version - epoch_state_version)
+                .unwrap(),
+        }
+    }
 
-pub trait ReadableStore: ReadableSubstateStore + ReadableHashStructuresStore {}
-impl<T> ReadableStore for T where T: ReadableSubstateStore + ReadableHashStructuresStore {}
+    /// Returns the actual number of leaves in the epoch's accu tree.
+    /// This takes into account the extra first leaf (i.e. previous epoch's tree root), and handles
+    /// the "fresh epoch" (i.e. empty accu tree) case.
+    pub fn current_accu_tree_len(&self) -> usize {
+        if self.epoch_version_count == 0 {
+            0
+        } else {
+            self.epoch_version_count + 1
+        }
+    }
+
+    /// Adjusts the next planned batch of leaves to be appended to the epoch's accu tree.
+    /// The adjustment consists of prepending the previous epoch's root in case the current epoch
+    /// has just been started.
+    pub fn adjust_next_batch<T>(&self, previous_epoch_root: T, mut next_batch: Vec<T>) -> Vec<T> {
+        if self.epoch_version_count == 0 {
+            next_batch.insert(0, previous_epoch_root);
+        }
+        next_batch
+    }
+}
