@@ -84,12 +84,7 @@ public final class LedgerHashes {
   SerializerDummy serializer = SerializerDummy.DUMMY;
 
   @JsonProperty("state_root")
-  // TODO: restore `Output.ALL` after fixing non-determinism bugs
-  // We need to come up with a few tests that expose potential non-determinism bugs, and then fix
-  // them. Before that happens, it could be risky to include the state hash in the DSON-based
-  // hashing (used e.g. in `QuorumCertificate` to get a hash of `VoteData`, leading to nodes not
-  // being able to agree on the same hash).
-  @DsonOutput(value = DsonOutput.Output.HASH, include = false)
+  @DsonOutput(DsonOutput.Output.ALL)
   private final HashCode stateRoot;
 
   @JsonProperty("transaction_root")
@@ -97,9 +92,7 @@ public final class LedgerHashes {
   private final HashCode transactionRoot;
 
   @JsonProperty("receipt_root")
-  // TODO: restore `Output.ALL` after fixing non-determinism bugs
-  // The receipt root is as likely to contain such bugs as the state root (please see its comment).
-  @DsonOutput(value = DsonOutput.Output.HASH, include = false)
+  @DsonOutput(DsonOutput.Output.ALL)
   private final HashCode receiptRoot;
 
   @JsonCreator

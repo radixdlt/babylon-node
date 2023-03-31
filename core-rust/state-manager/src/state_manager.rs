@@ -111,7 +111,7 @@ use radix_engine_interface::network::NetworkDefinition;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct LoggingConfig {
@@ -976,11 +976,11 @@ where
 
             committed_transaction_bundles.push((
                 transaction,
-                commit.ledger_receipt.clone(),
+                commit.local_receipt.clone(),
                 state_tracker.latest_transaction_identifiers().clone(),
             ));
 
-            substate_store_update.apply(&commit.ledger_receipt.substate_changes);
+            substate_store_update.apply(&commit.local_receipt.on_ledger.substate_changes);
             state_tree_update.add(
                 state_tracker.latest_transaction_identifiers().state_version,
                 &hash_structures_diff.state_hash_tree_diff,
@@ -991,15 +991,15 @@ where
         }
 
         let commit_ledger_hashes = &commit_ledger_header.hashes;
-        let final_state_hash = &state_tracker.latest_ledger_hashes().state_root;
-        if *final_state_hash != commit_ledger_hashes.state_root {
-            warn!(
-                "computed state hash at version {} differs from the one in proof ({} != {})",
-                commit_accumulator_state.state_version,
-                final_state_hash,
-                commit_ledger_hashes.state_root
+        let final_ledger_hashes = state_tracker.latest_ledger_hashes();
+        if *final_ledger_hashes != *commit_ledger_hashes {
+            error!(
+                "computed ledger hashes at version {} differ from the ones in proof ({:?} != {:?})",
+                commit_accumulator_state.state_version, final_ledger_hashes, commit_ledger_hashes
             );
+            return Err(CommitError::LedgerHashesMismatch);
         }
+
         let final_transaction_identifiers = state_tracker.latest_transaction_identifiers().clone();
 
         self.execution_cache
