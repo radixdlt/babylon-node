@@ -1,6 +1,6 @@
 /*
- * Babylon Core API
- * This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node. It is intended for use by node-runners on a private network, and is not intended to be exposed publicly. Heavy load may impact the node's function.  If you require queries against historical ledger state, you may also wish to consider using the [Gateway API](https://betanet-gateway.redoc.ly/). 
+ * Babylon Core API - RCnet V1
+ * This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node.  It is intended for use by node-runners on a private network, and is not intended to be exposed publicly. Very heavy load may impact the node's function.  This API exposes queries against the node's current state (see `/lts/state/` or `/state/`), and streams of transaction history (under `/lts/stream/` or `/stream`).  If you require queries against snapshots of historical ledger state, you may also wish to consider using the [Gateway API](https://docs-babylon.radixdlt.com/).  ## Integration and forward compatibility guarantees  This version of the Core API belongs to the first release candidate of the Radix Babylon network (\"RCnet-V1\").  Integrators (such as exchanges) are recommended to use the `/lts/` endpoints - they have been designed to be clear and simple for integrators wishing to create and monitor transactions involving fungible transfers to/from accounts.  All endpoints under `/lts/` are guaranteed to be forward compatible to Babylon mainnet launch (and beyond). We may add new fields, but existing fields will not be changed. Assuming the integrating code uses a permissive JSON parser which ignores unknown fields, any additions will not affect existing code.  We give no guarantees that other endpoints will not change before Babylon mainnet launch, although changes are expected to be minimal. 
  *
  * The version of the OpenAPI document: 0.3.0
  * 
@@ -22,8 +22,10 @@ import com.radixdlt.api.core.generated.models.LtsStateAccountAllFungibleResource
 import com.radixdlt.api.core.generated.models.LtsStateAccountAllFungibleResourceBalancesResponse;
 import com.radixdlt.api.core.generated.models.LtsStateAccountFungibleResourceBalanceRequest;
 import com.radixdlt.api.core.generated.models.LtsStateAccountFungibleResourceBalanceResponse;
-import com.radixdlt.api.core.generated.models.LtsStreamTransactionsBasicOutcomesRequest;
-import com.radixdlt.api.core.generated.models.LtsStreamTransactionsBasicOutcomesResponse;
+import com.radixdlt.api.core.generated.models.LtsStreamAccountTransactionOutcomesRequest;
+import com.radixdlt.api.core.generated.models.LtsStreamAccountTransactionOutcomesResponse;
+import com.radixdlt.api.core.generated.models.LtsStreamTransactionOutcomesRequest;
+import com.radixdlt.api.core.generated.models.LtsStreamTransactionOutcomesResponse;
 import com.radixdlt.api.core.generated.models.LtsTransactionConstructionRequest;
 import com.radixdlt.api.core.generated.models.LtsTransactionConstructionResponse;
 import com.radixdlt.api.core.generated.models.LtsTransactionStatusRequest;
@@ -88,7 +90,7 @@ public class LtsApi {
   }
 
   /**
-   * Get All Resources Balances
+   * Get All Account Balances
    * Returns balances for all resources associated with an account
    * @param ltsStateAccountAllFungibleResourceBalancesRequest  (required)
    * @return LtsStateAccountAllFungibleResourceBalancesResponse
@@ -100,7 +102,7 @@ public class LtsApi {
   }
 
   /**
-   * Get All Resources Balances
+   * Get All Account Balances
    * Returns balances for all resources associated with an account
    * @param ltsStateAccountAllFungibleResourceBalancesRequest  (required)
    * @return ApiResponse&lt;LtsStateAccountAllFungibleResourceBalancesResponse&gt;
@@ -166,8 +168,8 @@ public class LtsApi {
     return localVarRequestBuilder;
   }
   /**
-   * Get Resource Balance
-   * Returns balance of the resource for an account
+   * Get Single Account Balance
+   * Returns balance of a single fungible resource in an account
    * @param ltsStateAccountFungibleResourceBalanceRequest  (required)
    * @return LtsStateAccountFungibleResourceBalanceResponse
    * @throws ApiException if fails to make API call
@@ -178,8 +180,8 @@ public class LtsApi {
   }
 
   /**
-   * Get Resource Balance
-   * Returns balance of the resource for an account
+   * Get Single Account Balance
+   * Returns balance of a single fungible resource in an account
    * @param ltsStateAccountFungibleResourceBalanceRequest  (required)
    * @return ApiResponse&lt;LtsStateAccountFungibleResourceBalanceResponse&gt;
    * @throws ApiException if fails to make API call
@@ -244,26 +246,26 @@ public class LtsApi {
     return localVarRequestBuilder;
   }
   /**
-   * Get Transactions Basic Outcomes
-   * Returns a list of committed transaction&#39;s basic outcomes (this contains resource balance changes). 
-   * @param ltsStreamTransactionsBasicOutcomesRequest  (required)
-   * @return LtsStreamTransactionsBasicOutcomesResponse
+   * Get Account Transaction Outcomes
+   * Returns a list of committed transaction outcomes (containing balance changes) from a given state version, filtered to only transactions which involved the given account. 
+   * @param ltsStreamAccountTransactionOutcomesRequest  (required)
+   * @return LtsStreamAccountTransactionOutcomesResponse
    * @throws ApiException if fails to make API call
    */
-  public LtsStreamTransactionsBasicOutcomesResponse ltsStreamTransactionsBasicOutcomesPost(LtsStreamTransactionsBasicOutcomesRequest ltsStreamTransactionsBasicOutcomesRequest) throws ApiException {
-    ApiResponse<LtsStreamTransactionsBasicOutcomesResponse> localVarResponse = ltsStreamTransactionsBasicOutcomesPostWithHttpInfo(ltsStreamTransactionsBasicOutcomesRequest);
+  public LtsStreamAccountTransactionOutcomesResponse ltsStreamAccountTransactionOutcomesPost(LtsStreamAccountTransactionOutcomesRequest ltsStreamAccountTransactionOutcomesRequest) throws ApiException {
+    ApiResponse<LtsStreamAccountTransactionOutcomesResponse> localVarResponse = ltsStreamAccountTransactionOutcomesPostWithHttpInfo(ltsStreamAccountTransactionOutcomesRequest);
     return localVarResponse.getData();
   }
 
   /**
-   * Get Transactions Basic Outcomes
-   * Returns a list of committed transaction&#39;s basic outcomes (this contains resource balance changes). 
-   * @param ltsStreamTransactionsBasicOutcomesRequest  (required)
-   * @return ApiResponse&lt;LtsStreamTransactionsBasicOutcomesResponse&gt;
+   * Get Account Transaction Outcomes
+   * Returns a list of committed transaction outcomes (containing balance changes) from a given state version, filtered to only transactions which involved the given account. 
+   * @param ltsStreamAccountTransactionOutcomesRequest  (required)
+   * @return ApiResponse&lt;LtsStreamAccountTransactionOutcomesResponse&gt;
    * @throws ApiException if fails to make API call
    */
-  public ApiResponse<LtsStreamTransactionsBasicOutcomesResponse> ltsStreamTransactionsBasicOutcomesPostWithHttpInfo(LtsStreamTransactionsBasicOutcomesRequest ltsStreamTransactionsBasicOutcomesRequest) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = ltsStreamTransactionsBasicOutcomesPostRequestBuilder(ltsStreamTransactionsBasicOutcomesRequest);
+  public ApiResponse<LtsStreamAccountTransactionOutcomesResponse> ltsStreamAccountTransactionOutcomesPostWithHttpInfo(LtsStreamAccountTransactionOutcomesRequest ltsStreamAccountTransactionOutcomesRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = ltsStreamAccountTransactionOutcomesPostRequestBuilder(ltsStreamAccountTransactionOutcomesRequest);
     try {
       HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
           localVarRequestBuilder.build(),
@@ -273,12 +275,12 @@ public class LtsApi {
       }
       try {
         if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("ltsStreamTransactionsBasicOutcomesPost", localVarResponse);
+          throw getApiException("ltsStreamAccountTransactionOutcomesPost", localVarResponse);
         }
-        return new ApiResponse<LtsStreamTransactionsBasicOutcomesResponse>(
+        return new ApiResponse<LtsStreamAccountTransactionOutcomesResponse>(
           localVarResponse.statusCode(),
           localVarResponse.headers().map(),
-          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<LtsStreamTransactionsBasicOutcomesResponse>() {}) // closes the InputStream
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<LtsStreamAccountTransactionOutcomesResponse>() {}) // closes the InputStream
           
         );
       } finally {
@@ -292,15 +294,15 @@ public class LtsApi {
     }
   }
 
-  private HttpRequest.Builder ltsStreamTransactionsBasicOutcomesPostRequestBuilder(LtsStreamTransactionsBasicOutcomesRequest ltsStreamTransactionsBasicOutcomesRequest) throws ApiException {
-    // verify the required parameter 'ltsStreamTransactionsBasicOutcomesRequest' is set
-    if (ltsStreamTransactionsBasicOutcomesRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'ltsStreamTransactionsBasicOutcomesRequest' when calling ltsStreamTransactionsBasicOutcomesPost");
+  private HttpRequest.Builder ltsStreamAccountTransactionOutcomesPostRequestBuilder(LtsStreamAccountTransactionOutcomesRequest ltsStreamAccountTransactionOutcomesRequest) throws ApiException {
+    // verify the required parameter 'ltsStreamAccountTransactionOutcomesRequest' is set
+    if (ltsStreamAccountTransactionOutcomesRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'ltsStreamAccountTransactionOutcomesRequest' when calling ltsStreamAccountTransactionOutcomesPost");
     }
 
     HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
 
-    String localVarPath = "/lts/stream/transactions-basic-outcomes";
+    String localVarPath = "/lts/stream/account-transaction-outcomes";
 
     localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
 
@@ -308,7 +310,7 @@ public class LtsApi {
     localVarRequestBuilder.header("Accept", "application/json");
 
     try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(ltsStreamTransactionsBasicOutcomesRequest);
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(ltsStreamAccountTransactionOutcomesRequest);
       localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
     } catch (IOException e) {
       throw new ApiException(e);
@@ -322,7 +324,85 @@ public class LtsApi {
     return localVarRequestBuilder;
   }
   /**
-   * Get Transaction Construction
+   * Get Transaction Outcomes
+   * Returns a list of committed transaction outcomes (containing balance changes) from a given state version. 
+   * @param ltsStreamTransactionOutcomesRequest  (required)
+   * @return LtsStreamTransactionOutcomesResponse
+   * @throws ApiException if fails to make API call
+   */
+  public LtsStreamTransactionOutcomesResponse ltsStreamTransactionOutcomesPost(LtsStreamTransactionOutcomesRequest ltsStreamTransactionOutcomesRequest) throws ApiException {
+    ApiResponse<LtsStreamTransactionOutcomesResponse> localVarResponse = ltsStreamTransactionOutcomesPostWithHttpInfo(ltsStreamTransactionOutcomesRequest);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Get Transaction Outcomes
+   * Returns a list of committed transaction outcomes (containing balance changes) from a given state version. 
+   * @param ltsStreamTransactionOutcomesRequest  (required)
+   * @return ApiResponse&lt;LtsStreamTransactionOutcomesResponse&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<LtsStreamTransactionOutcomesResponse> ltsStreamTransactionOutcomesPostWithHttpInfo(LtsStreamTransactionOutcomesRequest ltsStreamTransactionOutcomesRequest) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = ltsStreamTransactionOutcomesPostRequestBuilder(ltsStreamTransactionOutcomesRequest);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("ltsStreamTransactionOutcomesPost", localVarResponse);
+        }
+        return new ApiResponse<LtsStreamTransactionOutcomesResponse>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<LtsStreamTransactionOutcomesResponse>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder ltsStreamTransactionOutcomesPostRequestBuilder(LtsStreamTransactionOutcomesRequest ltsStreamTransactionOutcomesRequest) throws ApiException {
+    // verify the required parameter 'ltsStreamTransactionOutcomesRequest' is set
+    if (ltsStreamTransactionOutcomesRequest == null) {
+      throw new ApiException(400, "Missing the required parameter 'ltsStreamTransactionOutcomesRequest' when calling ltsStreamTransactionOutcomesPost");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/lts/stream/transaction-outcomes";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(ltsStreamTransactionOutcomesRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
+  /**
+   * Get Construction Metadata
    * Returns information necessary to build a transaction
    * @param ltsTransactionConstructionRequest  (required)
    * @return LtsTransactionConstructionResponse
@@ -334,7 +414,7 @@ public class LtsApi {
   }
 
   /**
-   * Get Transaction Construction
+   * Get Construction Metadata
    * Returns information necessary to build a transaction
    * @param ltsTransactionConstructionRequest  (required)
    * @return ApiResponse&lt;LtsTransactionConstructionResponse&gt;
@@ -478,7 +558,7 @@ public class LtsApi {
     return localVarRequestBuilder;
   }
   /**
-   * Transaction Submit
+   * Submit Transaction
    * Submits a notarized transaction to the network. Returns whether the transaction submission was already included in the node&#39;s mempool. 
    * @param ltsTransactionSubmitRequest  (required)
    * @return LtsTransactionSubmitResponse
@@ -490,7 +570,7 @@ public class LtsApi {
   }
 
   /**
-   * Transaction Submit
+   * Submit Transaction
    * Submits a notarized transaction to the network. Returns whether the transaction submission was already included in the node&#39;s mempool. 
    * @param ltsTransactionSubmitRequest  (required)
    * @return ApiResponse&lt;LtsTransactionSubmitResponse&gt;

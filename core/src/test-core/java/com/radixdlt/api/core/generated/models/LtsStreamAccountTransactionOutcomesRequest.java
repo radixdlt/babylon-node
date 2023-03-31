@@ -1,6 +1,6 @@
 /*
- * Babylon Core API
- * This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node. It is intended for use by node-runners on a private network, and is not intended to be exposed publicly. Heavy load may impact the node's function.  If you require queries against historical ledger state, you may also wish to consider using the [Gateway API](https://betanet-gateway.redoc.ly/). 
+ * Babylon Core API - RCnet V1
+ * This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node.  It is intended for use by node-runners on a private network, and is not intended to be exposed publicly. Very heavy load may impact the node's function.  This API exposes queries against the node's current state (see `/lts/state/` or `/state/`), and streams of transaction history (under `/lts/stream/` or `/stream`).  If you require queries against snapshots of historical ledger state, you may also wish to consider using the [Gateway API](https://docs-babylon.radixdlt.com/).  ## Integration and forward compatibility guarantees  This version of the Core API belongs to the first release candidate of the Radix Babylon network (\"RCnet-V1\").  Integrators (such as exchanges) are recommended to use the `/lts/` endpoints - they have been designed to be clear and simple for integrators wishing to create and monitor transactions involving fungible transfers to/from accounts.  All endpoints under `/lts/` are guaranteed to be forward compatible to Babylon mainnet launch (and beyond). We may add new fields, but existing fields will not be changed. Assuming the integrating code uses a permissive JSON parser which ignores unknown fields, any additions will not affect existing code.  We give no guarantees that other endpoints will not change before Babylon mainnet launch, although changes are expected to be minimal. 
  *
  * The version of the OpenAPI document: 0.3.0
  * 
@@ -32,13 +32,13 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @ApiModel(description = "A request to retrieve a sublist of committed transactions from the ledger. ")
 @JsonPropertyOrder({
-  LtsStreamAccountTransactionsBasicOutcomesRequest.JSON_PROPERTY_NETWORK,
-  LtsStreamAccountTransactionsBasicOutcomesRequest.JSON_PROPERTY_ACCOUNT_ADDRESS,
-  LtsStreamAccountTransactionsBasicOutcomesRequest.JSON_PROPERTY_FROM_STATE_VERSION,
-  LtsStreamAccountTransactionsBasicOutcomesRequest.JSON_PROPERTY_LIMIT
+  LtsStreamAccountTransactionOutcomesRequest.JSON_PROPERTY_NETWORK,
+  LtsStreamAccountTransactionOutcomesRequest.JSON_PROPERTY_ACCOUNT_ADDRESS,
+  LtsStreamAccountTransactionOutcomesRequest.JSON_PROPERTY_FROM_STATE_VERSION,
+  LtsStreamAccountTransactionOutcomesRequest.JSON_PROPERTY_LIMIT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class LtsStreamAccountTransactionsBasicOutcomesRequest {
+public class LtsStreamAccountTransactionOutcomesRequest {
   public static final String JSON_PROPERTY_NETWORK = "network";
   private String network;
 
@@ -51,10 +51,10 @@ public class LtsStreamAccountTransactionsBasicOutcomesRequest {
   public static final String JSON_PROPERTY_LIMIT = "limit";
   private Integer limit;
 
-  public LtsStreamAccountTransactionsBasicOutcomesRequest() { 
+  public LtsStreamAccountTransactionOutcomesRequest() { 
   }
 
-  public LtsStreamAccountTransactionsBasicOutcomesRequest network(String network) {
+  public LtsStreamAccountTransactionOutcomesRequest network(String network) {
     this.network = network;
     return this;
   }
@@ -80,7 +80,7 @@ public class LtsStreamAccountTransactionsBasicOutcomesRequest {
   }
 
 
-  public LtsStreamAccountTransactionsBasicOutcomesRequest accountAddress(String accountAddress) {
+  public LtsStreamAccountTransactionOutcomesRequest accountAddress(String accountAddress) {
     this.accountAddress = accountAddress;
     return this;
   }
@@ -106,7 +106,7 @@ public class LtsStreamAccountTransactionsBasicOutcomesRequest {
   }
 
 
-  public LtsStreamAccountTransactionsBasicOutcomesRequest fromStateVersion(Long fromStateVersion) {
+  public LtsStreamAccountTransactionOutcomesRequest fromStateVersion(Long fromStateVersion) {
     this.fromStateVersion = fromStateVersion;
     return this;
   }
@@ -134,7 +134,7 @@ public class LtsStreamAccountTransactionsBasicOutcomesRequest {
   }
 
 
-  public LtsStreamAccountTransactionsBasicOutcomesRequest limit(Integer limit) {
+  public LtsStreamAccountTransactionOutcomesRequest limit(Integer limit) {
     this.limit = limit;
     return this;
   }
@@ -161,7 +161,7 @@ public class LtsStreamAccountTransactionsBasicOutcomesRequest {
 
 
   /**
-   * Return true if this LtsStreamAccountTransactionsBasicOutcomesRequest object is equal to o.
+   * Return true if this LtsStreamAccountTransactionOutcomesRequest object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -171,11 +171,11 @@ public class LtsStreamAccountTransactionsBasicOutcomesRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    LtsStreamAccountTransactionsBasicOutcomesRequest ltsStreamAccountTransactionsBasicOutcomesRequest = (LtsStreamAccountTransactionsBasicOutcomesRequest) o;
-    return Objects.equals(this.network, ltsStreamAccountTransactionsBasicOutcomesRequest.network) &&
-        Objects.equals(this.accountAddress, ltsStreamAccountTransactionsBasicOutcomesRequest.accountAddress) &&
-        Objects.equals(this.fromStateVersion, ltsStreamAccountTransactionsBasicOutcomesRequest.fromStateVersion) &&
-        Objects.equals(this.limit, ltsStreamAccountTransactionsBasicOutcomesRequest.limit);
+    LtsStreamAccountTransactionOutcomesRequest ltsStreamAccountTransactionOutcomesRequest = (LtsStreamAccountTransactionOutcomesRequest) o;
+    return Objects.equals(this.network, ltsStreamAccountTransactionOutcomesRequest.network) &&
+        Objects.equals(this.accountAddress, ltsStreamAccountTransactionOutcomesRequest.accountAddress) &&
+        Objects.equals(this.fromStateVersion, ltsStreamAccountTransactionOutcomesRequest.fromStateVersion) &&
+        Objects.equals(this.limit, ltsStreamAccountTransactionOutcomesRequest.limit);
   }
 
   @Override
@@ -186,7 +186,7 @@ public class LtsStreamAccountTransactionsBasicOutcomesRequest {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class LtsStreamAccountTransactionsBasicOutcomesRequest {\n");
+    sb.append("class LtsStreamAccountTransactionOutcomesRequest {\n");
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
     sb.append("    accountAddress: ").append(toIndentedString(accountAddress)).append("\n");
     sb.append("    fromStateVersion: ").append(toIndentedString(fromStateVersion)).append("\n");

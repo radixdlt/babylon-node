@@ -1,6 +1,6 @@
 /*
- * Babylon Core API
- * This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node. It is intended for use by node-runners on a private network, and is not intended to be exposed publicly. Heavy load may impact the node's function.  If you require queries against historical ledger state, you may also wish to consider using the [Gateway API](https://betanet-gateway.redoc.ly/). 
+ * Babylon Core API - RCnet V1
+ * This API is exposed by the Babylon Radix node to give clients access to the Radix Engine, Mempool and State in the node.  It is intended for use by node-runners on a private network, and is not intended to be exposed publicly. Very heavy load may impact the node's function.  This API exposes queries against the node's current state (see `/lts/state/` or `/state/`), and streams of transaction history (under `/lts/stream/` or `/stream`).  If you require queries against snapshots of historical ledger state, you may also wish to consider using the [Gateway API](https://docs-babylon.radixdlt.com/).  ## Integration and forward compatibility guarantees  This version of the Core API belongs to the first release candidate of the Radix Babylon network (\"RCnet-V1\").  Integrators (such as exchanges) are recommended to use the `/lts/` endpoints - they have been designed to be clear and simple for integrators wishing to create and monitor transactions involving fungible transfers to/from accounts.  All endpoints under `/lts/` are guaranteed to be forward compatible to Babylon mainnet launch (and beyond). We may add new fields, but existing fields will not be changed. Assuming the integrating code uses a permissive JSON parser which ignores unknown fields, any additions will not affect existing code.  We give no guarantees that other endpoints will not change before Babylon mainnet launch, although changes are expected to be minimal. 
  *
  * The version of the OpenAPI document: 0.3.0
  * 
@@ -18,10 +18,6 @@ import com.radixdlt.api.core.generated.client.ApiResponse;
 import com.radixdlt.api.core.generated.client.Pair;
 
 import com.radixdlt.api.core.generated.models.BasicErrorResponse;
-import com.radixdlt.api.core.generated.models.LtsStateAccountAllFungibleResourceBalancesRequest;
-import com.radixdlt.api.core.generated.models.LtsStateAccountAllFungibleResourceBalancesResponse;
-import com.radixdlt.api.core.generated.models.LtsStateAccountFungibleResourceBalanceRequest;
-import com.radixdlt.api.core.generated.models.LtsStateAccountFungibleResourceBalanceResponse;
 import com.radixdlt.api.core.generated.models.StateAccessControllerRequest;
 import com.radixdlt.api.core.generated.models.StateAccessControllerResponse;
 import com.radixdlt.api.core.generated.models.StateClockRequest;
@@ -94,162 +90,6 @@ public class StateApi {
     return operationId + " call failed with: " + statusCode + " - " + body;
   }
 
-  /**
-   * Get All Resources Balances
-   * Returns balances for all resources associated with an account
-   * @param ltsStateAccountAllFungibleResourceBalancesRequest  (required)
-   * @return LtsStateAccountAllFungibleResourceBalancesResponse
-   * @throws ApiException if fails to make API call
-   */
-  public LtsStateAccountAllFungibleResourceBalancesResponse ltsStateAccountAllFungibleResourceBalancesPost(LtsStateAccountAllFungibleResourceBalancesRequest ltsStateAccountAllFungibleResourceBalancesRequest) throws ApiException {
-    ApiResponse<LtsStateAccountAllFungibleResourceBalancesResponse> localVarResponse = ltsStateAccountAllFungibleResourceBalancesPostWithHttpInfo(ltsStateAccountAllFungibleResourceBalancesRequest);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Get All Resources Balances
-   * Returns balances for all resources associated with an account
-   * @param ltsStateAccountAllFungibleResourceBalancesRequest  (required)
-   * @return ApiResponse&lt;LtsStateAccountAllFungibleResourceBalancesResponse&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<LtsStateAccountAllFungibleResourceBalancesResponse> ltsStateAccountAllFungibleResourceBalancesPostWithHttpInfo(LtsStateAccountAllFungibleResourceBalancesRequest ltsStateAccountAllFungibleResourceBalancesRequest) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = ltsStateAccountAllFungibleResourceBalancesPostRequestBuilder(ltsStateAccountAllFungibleResourceBalancesRequest);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("ltsStateAccountAllFungibleResourceBalancesPost", localVarResponse);
-        }
-        return new ApiResponse<LtsStateAccountAllFungibleResourceBalancesResponse>(
-          localVarResponse.statusCode(),
-          localVarResponse.headers().map(),
-          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<LtsStateAccountAllFungibleResourceBalancesResponse>() {}) // closes the InputStream
-          
-        );
-      } finally {
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder ltsStateAccountAllFungibleResourceBalancesPostRequestBuilder(LtsStateAccountAllFungibleResourceBalancesRequest ltsStateAccountAllFungibleResourceBalancesRequest) throws ApiException {
-    // verify the required parameter 'ltsStateAccountAllFungibleResourceBalancesRequest' is set
-    if (ltsStateAccountAllFungibleResourceBalancesRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'ltsStateAccountAllFungibleResourceBalancesRequest' when calling ltsStateAccountAllFungibleResourceBalancesPost");
-    }
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/lts/state/account-all-fungible-resource-balances";
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Content-Type", "application/json");
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(ltsStateAccountAllFungibleResourceBalancesRequest);
-      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-  /**
-   * Get Resource Balance
-   * Returns balance of the resource for an account
-   * @param ltsStateAccountFungibleResourceBalanceRequest  (required)
-   * @return LtsStateAccountFungibleResourceBalanceResponse
-   * @throws ApiException if fails to make API call
-   */
-  public LtsStateAccountFungibleResourceBalanceResponse ltsStateAccountFungibleResourceBalancePost(LtsStateAccountFungibleResourceBalanceRequest ltsStateAccountFungibleResourceBalanceRequest) throws ApiException {
-    ApiResponse<LtsStateAccountFungibleResourceBalanceResponse> localVarResponse = ltsStateAccountFungibleResourceBalancePostWithHttpInfo(ltsStateAccountFungibleResourceBalanceRequest);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Get Resource Balance
-   * Returns balance of the resource for an account
-   * @param ltsStateAccountFungibleResourceBalanceRequest  (required)
-   * @return ApiResponse&lt;LtsStateAccountFungibleResourceBalanceResponse&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<LtsStateAccountFungibleResourceBalanceResponse> ltsStateAccountFungibleResourceBalancePostWithHttpInfo(LtsStateAccountFungibleResourceBalanceRequest ltsStateAccountFungibleResourceBalanceRequest) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = ltsStateAccountFungibleResourceBalancePostRequestBuilder(ltsStateAccountFungibleResourceBalanceRequest);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("ltsStateAccountFungibleResourceBalancePost", localVarResponse);
-        }
-        return new ApiResponse<LtsStateAccountFungibleResourceBalanceResponse>(
-          localVarResponse.statusCode(),
-          localVarResponse.headers().map(),
-          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<LtsStateAccountFungibleResourceBalanceResponse>() {}) // closes the InputStream
-          
-        );
-      } finally {
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder ltsStateAccountFungibleResourceBalancePostRequestBuilder(LtsStateAccountFungibleResourceBalanceRequest ltsStateAccountFungibleResourceBalanceRequest) throws ApiException {
-    // verify the required parameter 'ltsStateAccountFungibleResourceBalanceRequest' is set
-    if (ltsStateAccountFungibleResourceBalanceRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'ltsStateAccountFungibleResourceBalanceRequest' when calling ltsStateAccountFungibleResourceBalancePost");
-    }
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/lts/state/account-fungible-resource-balance";
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Content-Type", "application/json");
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(ltsStateAccountFungibleResourceBalanceRequest);
-      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
   /**
    * Get Access Controller Details
    * Reads the access controller&#39;s substate/s from the top of the current ledger. 

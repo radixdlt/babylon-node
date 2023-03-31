@@ -2,21 +2,21 @@ use crate::core_api::*;
 use state_manager::{jni::state_manager::ActualStateManager, store::traits::QueryableProofStore};
 
 #[tracing::instrument(skip(state), err(Debug))]
-pub(crate) async fn handle_lts_stream_account_transactions_basic_outcomes(
+pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
     state: State<CoreApiState>,
-    request: Json<models::LtsStreamAccountTransactionsBasicOutcomesRequest>,
-) -> Result<Json<models::LtsStreamAccountTransactionsBasicOutcomesResponse>, ResponseError<()>> {
+    request: Json<models::LtsStreamAccountTransactionOutcomesRequest>,
+) -> Result<Json<models::LtsStreamAccountTransactionOutcomesResponse>, ResponseError<()>> {
     core_api_read_handler(
         state,
         request,
-        handle_lts_stream_account_transactions_basic_outcomes_internal,
+        handle_lts_stream_account_transaction_outcomes_internal,
     )
 }
 
-fn handle_lts_stream_account_transactions_basic_outcomes_internal(
+fn handle_lts_stream_account_transaction_outcomes_internal(
     state_manager: &ActualStateManager,
-    request: models::LtsStreamAccountTransactionsBasicOutcomesRequest,
-) -> Result<models::LtsStreamAccountTransactionsBasicOutcomesResponse, ResponseError<()>> {
+    request: models::LtsStreamAccountTransactionOutcomesRequest,
+) -> Result<models::LtsStreamAccountTransactionOutcomesResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
     let _from_state_version: u64 = extract_api_state_version(request.from_state_version)
