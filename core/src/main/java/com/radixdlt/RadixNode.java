@@ -130,6 +130,7 @@ public final class RadixNode {
       peerServer.start();
     } catch (InterruptedException e) {
       log.error("Cannot start p2p server", e);
+      Thread.currentThread().interrupt();
     }
 
     // Start the system API server

@@ -154,7 +154,7 @@ public final class PeerServerBootstrap {
       try {
         serverBind.channel().close().sync();
       } catch (InterruptedException e) {
-        throw new RuntimeException(e);
+        Thread.currentThread().interrupt();
       }
     }
   }
