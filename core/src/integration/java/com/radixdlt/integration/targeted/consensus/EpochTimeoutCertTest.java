@@ -74,6 +74,7 @@ import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.function.Predicate;
@@ -105,8 +106,9 @@ public final class EpochTimeoutCertTest {
         .addMonitors(byzantineBehaviorNotDetected())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
+                NodeStorageConfig.none(),
                 true,
-                FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.MOCKED,
                 FunctionalRadixNodeModule.ConsensusConfig.of(),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.mockedWithEpochs(

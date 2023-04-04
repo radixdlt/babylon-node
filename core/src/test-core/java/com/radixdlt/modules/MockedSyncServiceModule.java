@@ -83,7 +83,7 @@ import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.p2p.NodeId;
-import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.rev2.LastEpochProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;

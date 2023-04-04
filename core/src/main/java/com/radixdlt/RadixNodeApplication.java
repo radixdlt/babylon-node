@@ -65,23 +65,7 @@
 package com.radixdlt;
 
 import com.google.common.base.Stopwatch;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.api.CoreApiServer;
-import com.radixdlt.api.prometheus.PrometheusApi;
-import com.radixdlt.api.system.SystemApi;
-import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.monitoring.ApplicationVersion;
-import com.radixdlt.monitoring.MetricInstaller;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.p2p.transport.PeerServerBootstrap;
-import com.radixdlt.store.BerkeleyAddressBookStore;
 import com.radixdlt.utils.IOUtils;
 import com.radixdlt.utils.MemoryLeakDetector;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -89,8 +73,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.security.Security;
-import java.time.Duration;
-import java.util.Map;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -129,18 +111,53 @@ public final class RadixNodeApplication {
       dumpExecutionLocation();
       // Bouncy Castle is required for loading the node key, so set it up now.
       setupBouncyCastle();
-
-      RuntimeProperties properties = loadProperties(args);
-      start(properties);
+      final var properties = loadProperties(args);
+      bootstrapRadixNode(properties);
     } catch (Exception ex) {
       log.fatal("Unable to start", ex);
       LogManager.shutdown(); // Flush any async logs
-
-      // This (or more likely, the one in ModuleRunnerImpl.java) may cause integration test errors
-      // which look like:
-      // "Process 'Gradle Test Executor 1' finished with non-zero exit value 255"
-      java.lang.System.exit(-1);
+      exitWithError();
     }
+  }
+
+  private static void bootstrapRadixNode(RuntimeProperties properties) {
+    final var nodeBootStopwatch = Stopwatch.createStarted();
+    final var radixNodeBootstrapperHandle = RadixNodeBootstrapper.bootstrapRadixNode(properties);
+    /* Note that because some modules obtain the resources at construction (ORAC paradigm), this
+     shutdown hook doesn't guarantee that these resources will be correctly freed up.
+     For example, when an error occurs while Guice is building its object graph,
+     we haven't yet received a reference (Injector) to the modules that have already been initialized,
+     and thus we can't clean them up.
+     TODO: consider refactoring the modules to follow a DNORAC (do NOT obtain resources at construction) paradigm
+           and then re-evaluate if the shutdown hook below (and/or the need for RadixNodeBootstrapperHandle which
+           provides the shutdown functionality) is still needed - for both happy (no errors during initialization)
+           and unhappy (errors during initialization) paths.
+    */
+    Runtime.getRuntime().addShutdownHook(new Thread(radixNodeBootstrapperHandle::shutdown));
+    radixNodeBootstrapperHandle
+        .radixNodeFuture()
+        .whenComplete(
+            (radixNode, ex) -> {
+              if (ex != null) {
+                log.warn("Radix node couldn't be started", ex);
+                exitWithError();
+              } else {
+                final var startupTime = nodeBootStopwatch.elapsed();
+                log.info(
+                    "Radix node {} started successfully in {} ms",
+                    radixNode.self(),
+                    startupTime.toMillis());
+                radixNode.reportSelfStartupTime(startupTime);
+                Runtime.getRuntime().addShutdownHook(new Thread(radixNode::shutdown));
+              }
+            });
+  }
+
+  private static void exitWithError() {
+    // This (or more likely, the one in ModuleRunnerImpl.java) may cause integration test errors
+    // which look like:
+    // "Process 'Gradle Test Executor 1' finished with non-zero exit value 255"
+    java.lang.System.exit(-1);
   }
 
   private static void logVersion() {
@@ -150,88 +167,6 @@ public final class RadixNodeApplication {
             ApplicationVersion.INSTANCE.display(),
             ApplicationVersion.INSTANCE.branch(),
             ApplicationVersion.INSTANCE.commit());
-  }
-
-  public static void start(RuntimeProperties properties) {
-    Stopwatch startTimer = Stopwatch.createStarted();
-    var injector = Guice.createInjector(new RadixNodeModule(properties));
-
-    final Map<String, ModuleRunner> moduleRunners =
-        injector.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}));
-
-    final var p2pNetworkRunner = moduleRunners.get(Runners.P2P_NETWORK);
-    p2pNetworkRunner.start();
-
-    final var systemInfoRunner = moduleRunners.get(Runners.SYSTEM_INFO);
-    systemInfoRunner.start();
-
-    final var syncRunner = moduleRunners.get(Runners.SYNC);
-    syncRunner.start();
-
-    final var mempoolReceiverRunner = moduleRunners.get(Runners.MEMPOOL);
-    mempoolReceiverRunner.start();
-
-    final var peerServer = injector.getInstance(PeerServerBootstrap.class);
-    try {
-      peerServer.start();
-    } catch (InterruptedException e) {
-      log.error("Cannot start p2p server", e);
-    }
-
-    // Start the system API server
-    final var systemApi = injector.getInstance(SystemApi.class);
-    systemApi.start();
-
-    // Start the prometheus API server
-    final var prometheusApi = injector.getInstance(PrometheusApi.class);
-    prometheusApi.start();
-
-    // Start the core API server
-    final var coreApiServer = injector.getInstance(CoreApiServer.class);
-    coreApiServer.start();
-
-    final var consensusRunner = moduleRunners.get(Runners.CONSENSUS);
-    consensusRunner.start();
-
-    final BFTValidatorId self = injector.getInstance(Key.get(BFTValidatorId.class, Self.class));
-
-    Duration startTime = startTimer.elapsed();
-    var metrics = injector.getInstance(Metrics.class);
-    metrics.misc().applicationStart().observe(startTime);
-    injector.getInstance(MetricInstaller.class).installAt(metrics);
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown(injector)));
-
-    log.info("Node '{}' started successfully in {} seconds", self, startTime.toSeconds());
-  }
-
-  private static void shutdown(Injector injector) {
-    // using System.out.println as logger no longer works reliably in a shutdown hook
-    final var self = injector.getInstance(Key.get(BFTValidatorId.class, Self.class));
-    System.out.println("Node " + self + " is shutting down...");
-
-    injector
-        .getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}))
-        .forEach((k, moduleRunner) -> moduleRunner.stop());
-
-    try {
-      injector.getInstance(BerkeleyAddressBookStore.class).close();
-    } catch (Exception e) {
-      // no-op
-    }
-
-    try {
-      injector.getInstance(BerkeleySafetyStateStore.class).close();
-    } catch (Exception e) {
-      // no-op
-    }
-
-    try {
-      injector.getInstance(PeerServerBootstrap.class).stop();
-    } catch (InterruptedException e) {
-      // no-op
-    }
-
-    System.out.println("Node shutdown completed");
   }
 
   private static void dumpExecutionLocation() {

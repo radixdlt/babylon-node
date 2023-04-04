@@ -83,9 +83,10 @@ public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
   public HealthResponse handleRequest() {
     final var status =
         switch (healthInfoService.nodeStatus()) {
-          case UP -> HealthResponse.StatusEnum.UP;
-          case BOOTING -> HealthResponse.StatusEnum.BOOTING;
+          case BOOTING_PRE_GENESIS -> HealthResponse.StatusEnum.BOOTING_PRE_GENESIS;
+          case BOOTING_AT_GENESIS -> HealthResponse.StatusEnum.BOOTING_AT_GENESIS;
           case SYNCING -> HealthResponse.StatusEnum.SYNCING;
+          case UP -> HealthResponse.StatusEnum.UP;
           case STALLED -> HealthResponse.StatusEnum.STALLED;
           case OUT_OF_SYNC -> HealthResponse.StatusEnum.OUT_OF_SYNC;
         };

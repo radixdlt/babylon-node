@@ -89,28 +89,37 @@ import com.radixdlt.statecomputer.MockedStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
 import com.radixdlt.statecomputer.RandomTransactionGenerator;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
+import com.radixdlt.store.berkeley.BerkeleyDatabaseModule;
 import com.radixdlt.sync.SyncRelayConfig;
+import org.junit.rules.TemporaryFolder;
 
 /** Manages the functional components of a node */
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class FunctionalRadixNodeModule extends AbstractModule {
-  public static final class SafetyRecoveryConfig {
-    private final Option<String> root;
+  public sealed interface NodeStorageConfig {
+    /**
+     * No storage configured. Can only be used if no other modules depend on @NodeStorageLocation.
+     */
+    record None() implements NodeStorageConfig {}
 
-    private SafetyRecoveryConfig(Option<String> root) {
-      this.root = root;
+    /**
+     * For tests that use a real storage. Either BerkeleyDB (on the Java side; I think it's just
+     * BerkeleySafetyStore) or RocksRb (on the Rust side).
+     */
+    record TempFolder(TemporaryFolder tempFolder) implements NodeStorageConfig {}
+
+    static NodeStorageConfig none() {
+      return new None();
     }
 
-    public static SafetyRecoveryConfig mocked() {
-      return new SafetyRecoveryConfig(Option.none());
+    static NodeStorageConfig tempFolder(TemporaryFolder tempFolder) {
+      return new TempFolder(tempFolder);
     }
+  }
 
-    public static SafetyRecoveryConfig berkeleyStore(String root) {
-      return new SafetyRecoveryConfig(Option.some(root));
-    }
-
-    public Module asModule() {
-      return root.fold(BerkeleySafetyStoreModule::new, MockedSafetyStoreModule::new);
-    }
+  public enum SafetyRecoveryConfig {
+    MOCKED,
+    BERKELEY_DB,
   }
 
   public static final class ConsensusConfig {
@@ -170,7 +179,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           pacemakerBaseTimeoutMs,
           2.0,
           pacemakerBaseTimeoutMs /* double the timeout if proposal was received */,
-          2000L);
+          2000);
     }
 
     private AbstractModule asModule() {
@@ -211,13 +220,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           stateComputerConfig, new SyncConfig.Relayed(syncRelayConfig));
     }
 
-    default boolean hasSyncRelay() {
-      if (this instanceof StateComputerLedgerConfig c) {
-        return c.syncConfig instanceof SyncConfig.Relayed;
-      }
-      return false;
-    }
-
     default boolean isREV2() {
       if (this instanceof StateComputerLedgerConfig c) {
         return c.config instanceof REv2StateComputerConfig;
@@ -239,6 +241,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     record None() implements SyncConfig {}
   }
 
+  private final NodeStorageConfig nodeStorageConfig;
   private final boolean epochs;
   private final SafetyRecoveryConfig safetyRecoveryConfig;
   private final ConsensusConfig consensusConfig;
@@ -248,10 +251,12 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   private final Module mockedSyncServiceModule = new MockedSyncServiceModule();
 
   public FunctionalRadixNodeModule(
+      NodeStorageConfig nodeStorageConfig,
       boolean epochs,
       SafetyRecoveryConfig safetyRecoveryConfig,
       ConsensusConfig consensusConfig,
       LedgerConfig ledgerConfig) {
+    this.nodeStorageConfig = nodeStorageConfig;
     this.epochs = epochs;
     this.safetyRecoveryConfig = safetyRecoveryConfig;
     this.consensusConfig = consensusConfig;
@@ -259,20 +264,23 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   }
 
   public FunctionalRadixNodeModule(
+      NodeStorageConfig nodeStorageConfig,
       ConsensusConfig consensusConfig,
       StateComputerConfig stateComputerConfig,
       SyncRelayConfig syncRelayConfig) {
     this(
+        nodeStorageConfig,
         true,
-        SafetyRecoveryConfig.mocked(),
+        SafetyRecoveryConfig.MOCKED,
         consensusConfig,
         LedgerConfig.stateComputerWithSyncRelay(stateComputerConfig, syncRelayConfig));
   }
 
   public static FunctionalRadixNodeModule justLedgerWithNumValidators(int numValidators) {
     return new FunctionalRadixNodeModule(
+        NodeStorageConfig.none(),
         false,
-        SafetyRecoveryConfig.mocked(),
+        SafetyRecoveryConfig.MOCKED,
         ConsensusConfig.of(),
         LedgerConfig.stateComputerNoSync(
             StateComputerConfig.mockedNoEpochs(
@@ -287,18 +295,31 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     return this.ledgerConfig.isREV2();
   }
 
-  public boolean supportsSync() {
-    return this.ledgerConfig.hasSyncRelay();
-  }
-
   @Override
   public void configure() {
     install(new DispatcherModule());
 
+    switch (this.nodeStorageConfig) {
+      case NodeStorageConfig.None none -> {}
+      case NodeStorageConfig.TempFolder tempFolder -> {
+        final var tempFolderPath = tempFolder.tempFolder().getRoot().getAbsolutePath();
+        install(new PrefixedNodeStorageLocationModule(tempFolderPath));
+
+        final var needsBerkeleyDb = this.safetyRecoveryConfig == SafetyRecoveryConfig.BERKELEY_DB;
+        if (needsBerkeleyDb) {
+          install(new BerkeleyDatabaseModule(BerkeleyDatabaseModule.DEFAULT_CACHE_SIZE));
+        }
+      }
+    }
+
+    switch (this.safetyRecoveryConfig) {
+      case MOCKED -> install(new MockedSafetyStoreModule());
+      case BERKELEY_DB -> install(new BerkeleySafetyStoreModule());
+    }
+
     // Consensus
     install(consensusConfig.asModule());
     install(new ConsensusModule());
-    install(safetyRecoveryConfig.asModule());
     if (this.epochs) {
       install(new EpochsConsensusModule());
       install(new EpochsSafetyRecoveryModule());
@@ -386,12 +407,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 bind(ProposalGenerator.class).toInstance(generated.generator());
                 install(
                     REv2StateManagerModule.createForTesting(
-                        rev2Config.networkId(),
-                        0,
-                        0,
-                        rev2Config.databaseConfig(),
-                        Option.none(),
-                        rev2Config.debugLogging()));
+                        0, 0, rev2Config.databaseType(), Option.none(), rev2Config.debugLogging()));
               }
               case REV2ProposerConfig.Mempool mempool -> {
                 install(new MempoolRelayerModule(10000));
@@ -399,10 +415,9 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 install(mempool.relayConfig().asModule());
                 install(
                     REv2StateManagerModule.createForTesting(
-                        rev2Config.networkId(),
                         mempool.maxNumTransactionsPerProposal(),
                         mempool.maxProposalTotalTxnsPayloadSize(),
-                        rev2Config.databaseConfig(),
+                        rev2Config.databaseType(),
                         Option.some(mempool.mempoolConfig()),
                         rev2Config.debugLogging()));
               }

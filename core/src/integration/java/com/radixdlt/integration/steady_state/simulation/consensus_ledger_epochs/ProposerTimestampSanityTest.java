@@ -79,6 +79,7 @@ import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.concurrent.TimeUnit;
@@ -103,8 +104,9 @@ public final class ProposerTimestampSanityTest {
                 LedgerMonitors.ordered())
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
+                    NodeStorageConfig.none(),
                     true,
-                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                    FunctionalRadixNodeModule.SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(1000),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mockedWithEpochs(
@@ -135,8 +137,9 @@ public final class ProposerTimestampSanityTest {
                 LedgerMonitors.ordered())
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
+                    NodeStorageConfig.none(),
                     true,
-                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                    FunctionalRadixNodeModule.SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(1000),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mockedWithEpochs(
@@ -167,8 +170,9 @@ public final class ProposerTimestampSanityTest {
                 LedgerMonitors.ordered())
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
+                    NodeStorageConfig.none(),
                     true,
-                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                    FunctionalRadixNodeModule.SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(1000),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mockedWithEpochs(

@@ -74,13 +74,14 @@ import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REv2SimpleFuzzerTransactionGenerator;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -103,15 +104,16 @@ public final class SimpleFuzzerTransactionsTest {
         .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
+                NodeStorageConfig.tempFolder(folder),
                 false,
-                SafetyRecoveryConfig.mocked(),
+                SafetyRecoveryConfig.MOCKED,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.LOCALSIMULATOR.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
                             10, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
-                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.transactionGenerator(transactionGenerator, 10)),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }

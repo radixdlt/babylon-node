@@ -64,18 +64,17 @@
 
 package com.radixdlt.store;
 
-import com.radixdlt.identifiers.TID;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/** A ledger cursor, bound to a specific ledger instance. */
-public interface SearchCursor {
-  long getStateVersion();
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  /**
-   * Gets the current AID at this cursor
-   *
-   * @return The current AID
-   */
-  TID get();
-
-  SearchCursor next();
-}
+/** Specifies a folder where the node can store its files */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface NodeStorageLocation {}

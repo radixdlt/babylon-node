@@ -62,16 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store;
+package com.radixdlt.p2p.addressbook;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
-import com.radixdlt.p2p.addressbook.AddressBookEntry;
-import com.radixdlt.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
 import com.sleepycat.je.*;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -85,13 +84,13 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
   private static final Logger log = LogManager.getLogger();
 
   private final Serialization serialization;
-  private final DatabaseEnvironment dbEnv;
+  private final BerkeleyDatabaseEnvironment dbEnv;
   private final Metrics metrics;
   private Database entriesDb;
 
   @Inject
   public BerkeleyAddressBookStore(
-      Serialization serialization, DatabaseEnvironment dbEnv, Metrics metrics) {
+      Serialization serialization, BerkeleyDatabaseEnvironment dbEnv, Metrics metrics) {
     this.serialization = Objects.requireNonNull(serialization);
     this.dbEnv = Objects.requireNonNull(dbEnv);
     this.metrics = Objects.requireNonNull(metrics);

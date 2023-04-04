@@ -83,6 +83,7 @@ import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
@@ -154,8 +155,9 @@ public class PacemakerRoundUpdateRaceConditionTest {
                 })
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
+                    NodeStorageConfig.none(),
                     false,
-                    SafetyRecoveryConfig.mocked(),
+                    SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(pacemakerTimeout, 0L),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                         StateComputerConfig.mockedNoEpochs(

@@ -75,6 +75,7 @@ import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.*;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.stream.IntStream;
@@ -95,8 +96,9 @@ public class FullNodeSyncTest {
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
+                NodeStorageConfig.none(),
                 true,
-                SafetyRecoveryConfig.mocked(),
+                SafetyRecoveryConfig.MOCKED,
                 ConsensusConfig.of(),
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.mockedWithEpochs(

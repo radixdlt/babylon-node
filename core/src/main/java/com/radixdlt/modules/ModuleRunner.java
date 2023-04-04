@@ -71,4 +71,7 @@ public interface ModuleRunner {
 
   /** Stop running the module */
   void stop();
+
+  /** A little leaky abstraction, but it's used just for logging */
+  String threadName();
 }

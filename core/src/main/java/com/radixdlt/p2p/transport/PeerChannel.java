@@ -78,6 +78,7 @@ import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.messaging.core.InboundMessage;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeerEvent;
@@ -153,7 +154,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   public PeerChannel(
       P2PConfig config,
       Addressing addressing,
-      int networkId,
+      Network network,
       String newestForkName,
       Metrics metrics,
       Serialization serialization,
@@ -173,7 +174,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 
     this.authHandshaker =
         new AuthHandshaker(
-            serialization, secureRandom, ecKeyOps, networkId, newestForkName, capabilities);
+            serialization, secureRandom, ecKeyOps, network, newestForkName, capabilities);
     this.nettyChannel = requireNonNull(nettyChannel);
     this.remoteAddress = requireNonNull(remoteAddress);
 

@@ -47,7 +47,9 @@ public class HealthResponse {
    * Gets or Sets status
    */
   public enum StatusEnum {
-    BOOTING("BOOTING"),
+    BOOTING_PRE_GENESIS("BOOTING_PRE_GENESIS"),
+    
+    BOOTING_AT_GENESIS("BOOTING_AT_GENESIS"),
     
     SYNCING("SYNCING"),
     

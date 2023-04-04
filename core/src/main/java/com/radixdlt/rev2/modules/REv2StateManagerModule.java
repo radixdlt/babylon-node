@@ -72,7 +72,6 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
@@ -90,118 +89,109 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statemanager.*;
+import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import java.io.File;
 
 public final class REv2StateManagerModule extends AbstractModule {
-  private final int networkId;
+  public enum DatabaseType {
+    IN_MEMORY,
+    ROCKS_DB,
+  }
+
   private final int maxNumTransactionsPerProposal;
   private final int maxProposalTotalTxnsPayloadSize;
   private final int maxUncommittedUserTransactionsTotalPayloadSize;
-  private final REv2DatabaseConfig databaseConfig;
+  private final DatabaseType databaseType;
   private final Option<RustMempoolConfig> mempoolConfig;
-  private final boolean testing;
   private final boolean debugLogging;
 
   private REv2StateManagerModule(
-      int networkId,
       int maxNumTransactionsPerProposal,
       int maxProposalTotalTxnsPayloadSize,
       int maxUncommittedUserTransactionsTotalPayloadSize,
-      boolean prefixDatabase,
-      REv2DatabaseConfig databaseConfig,
+      DatabaseType databaseType,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging) {
-    this.networkId = networkId;
     this.maxNumTransactionsPerProposal = maxNumTransactionsPerProposal;
     this.maxProposalTotalTxnsPayloadSize = maxProposalTotalTxnsPayloadSize;
     this.maxUncommittedUserTransactionsTotalPayloadSize =
         maxUncommittedUserTransactionsTotalPayloadSize;
-    this.testing = prefixDatabase;
-    this.databaseConfig = databaseConfig;
+    this.databaseType = databaseType;
     this.mempoolConfig = mempoolConfig;
     this.debugLogging = debugLogging;
   }
 
   public static REv2StateManagerModule create(
-      int networkId,
       int maxNumTransactionsPerProposal,
       int maxProposalTotalTxnsPayloadSize,
       int maxUncommittedUserTransactionsTotalPayloadSize,
-      REv2DatabaseConfig databaseConfig,
+      DatabaseType databaseType,
       Option<RustMempoolConfig> mempoolConfig) {
     return new REv2StateManagerModule(
-        networkId,
         maxNumTransactionsPerProposal,
         maxProposalTotalTxnsPayloadSize,
         maxUncommittedUserTransactionsTotalPayloadSize,
-        false,
-        databaseConfig,
+        databaseType,
         mempoolConfig,
         false);
   }
 
   public static REv2StateManagerModule createForTesting(
-      int networkId,
       int maxNumTransactionsPerProposal,
       int maxProposalTotalTxnsPayloadSize,
-      REv2DatabaseConfig databaseConfig,
+      DatabaseType databaseType,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging) {
     return new REv2StateManagerModule(
-        networkId,
         maxNumTransactionsPerProposal,
         maxProposalTotalTxnsPayloadSize,
         maxProposalTotalTxnsPayloadSize * 5,
-        true,
-        databaseConfig,
+        databaseType,
         mempoolConfig,
         debugLogging);
   }
 
   @Override
   public void configure() {
-    if (testing && databaseConfig instanceof REv2DatabaseConfig.RocksDB rocksDB) {
-      install(
+    bind(StateComputerLedger.StateComputer.class).to(REv2StateComputer.class);
+    bind(REv2TransactionsAndProofReader.class).in(Scopes.SINGLETON);
+    bind(TransactionsAndProofReader.class).to(REv2TransactionsAndProofReader.class);
+
+    switch (databaseType) {
+      case ROCKS_DB -> install(
           new AbstractModule() {
             @Provides
             @Singleton
-            private StateManager stateManager(@Self ECDSASecp256k1PublicKey key) {
-              var network = Network.ofId(networkId).orElseThrow();
-              final REv2DatabaseConfig databaseConfigToUse;
-              var databasePath = rocksDB.databasePath() + key.toString();
-              databaseConfigToUse = REv2DatabaseConfig.rocksDB(databasePath);
-              return StateManager.createAndInitialize(
-                  new StateManagerConfig(
-                      NetworkDefinition.from(network),
-                      mempoolConfig,
-                      databaseConfigToUse,
-                      getLoggingConfig()));
+            REv2DatabaseConfig databaseConfig(@NodeStorageLocation String nodeStorageLocation) {
+              return REv2DatabaseConfig.rocksDB(
+                  new File(nodeStorageLocation, "rocks_db").getPath());
             }
           });
-    } else {
-      install(
+      case IN_MEMORY -> install(
           new AbstractModule() {
-            @Provides
-            @Singleton
-            private StateManager stateManager() {
-              var network = Network.ofId(networkId).orElseThrow();
-              return StateManager.createAndInitialize(
-                  new StateManagerConfig(
-                      NetworkDefinition.from(network),
-                      mempoolConfig,
-                      databaseConfig,
-                      getLoggingConfig()));
+            @Override
+            protected void configure() {
+              bind(REv2DatabaseConfig.class).toInstance(REv2DatabaseConfig.inMemory());
             }
           });
     }
 
-    bind(StateComputerLedger.StateComputer.class).to(REv2StateComputer.class);
-    bind(REv2TransactionsAndProofReader.class).in(Scopes.SINGLETON);
-    bind(TransactionsAndProofReader.class).to(REv2TransactionsAndProofReader.class);
     install(
         new AbstractModule() {
+          @Provides
+          @Singleton
+          private StateManager stateManager(Network network, REv2DatabaseConfig databaseConfig) {
+            return StateManager.createAndInitialize(
+                new StateManagerConfig(
+                    NetworkDefinition.from(network),
+                    mempoolConfig,
+                    databaseConfig,
+                    getLoggingConfig()));
+          }
+
           @Provides
           @Singleton
           REv2StateComputer rEv2StateComputer(

@@ -73,7 +73,7 @@ import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.rev2.LastEpochProof;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 

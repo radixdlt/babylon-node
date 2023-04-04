@@ -73,7 +73,7 @@ import com.radixdlt.api.system.generated.models.Address;
 import com.radixdlt.api.system.generated.models.AddressBookEntry;
 import com.radixdlt.api.system.generated.models.SystemAddressBookResponse;
 import com.radixdlt.api.system.routes.AddressBookHandler;
-import com.radixdlt.networks.NetworkId;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.utils.PrivateKeys;
@@ -81,7 +81,7 @@ import java.util.Set;
 import org.junit.Test;
 
 public class AddressBookHandlerTest extends SystemApiTestBase {
-  @Inject @NetworkId private int networkId;
+  @Inject private Network network;
   @Inject private AddressBookHandler sut;
   @Inject private AddressBook addressBook;
   @Inject private Addressing addressing;
@@ -90,7 +90,7 @@ public class AddressBookHandlerTest extends SystemApiTestBase {
   public void can_retrieve_address_book() throws Exception {
     // Arrange
     var peerKey = PrivateKeys.ofNumeric(2).getPublicKey();
-    var peerUri = RadixNodeUri.fromPubKeyAndAddress(networkId, peerKey, "localhost", 12345);
+    var peerUri = RadixNodeUri.fromPubKeyAndAddress(network.getId(), peerKey, "localhost", 12345);
     addressBook.addUncheckedPeers(Set.of(peerUri));
     start();
 

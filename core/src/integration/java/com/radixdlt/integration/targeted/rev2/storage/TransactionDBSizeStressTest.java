@@ -73,6 +73,7 @@ import com.radixdlt.integration.Slow;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
@@ -80,7 +81,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2LargeTransactionGenerator;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
 import org.junit.Rule;
@@ -105,15 +106,16 @@ public final class TransactionDBSizeStressTest {
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
+                NodeStorageConfig.tempFolder(folder),
                 false,
-                SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
+                SafetyRecoveryConfig.BERKELEY_DB,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
-                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         REV2ProposerConfig.transactionGenerator(
                             new REv2LargeTransactionGenerator(NetworkDefinition.INT_TEST_NET),
                             1)))));

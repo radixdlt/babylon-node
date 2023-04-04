@@ -77,6 +77,10 @@ import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.Metrics;
 import org.junit.Test;
@@ -120,10 +124,11 @@ public final class DelayAfterFormingTcAndFormAQcTest {
         .messageMutators(messageMutator)
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
+                NodeStorageConfig.none(),
                 true,
-                FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
-                FunctionalRadixNodeModule.ConsensusConfig.of(),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
+                SafetyRecoveryConfig.MOCKED,
+                ConsensusConfig.of(),
+                LedgerConfig.stateComputerMockedSync(
                     StateComputerConfig.mockedWithEpochs(
                         Round.of(10000),
                         EpochNodeWeightMapping.constant(4),

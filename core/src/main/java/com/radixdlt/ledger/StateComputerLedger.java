@@ -78,7 +78,7 @@ import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
-import com.radixdlt.store.LastProof;
+import com.radixdlt.rev2.LastProof;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.TimeSupplier;
