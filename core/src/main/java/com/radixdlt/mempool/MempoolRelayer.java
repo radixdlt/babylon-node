@@ -156,7 +156,7 @@ public final class MempoolRelayer {
         .limit(maxPeersToRelayTo)
         .forEach(
             peer -> {
-              metrics.v1Mempool().relaysSent().inc(transactions.size());
+              metrics.mempool().relaysSent().inc(transactions.size());
               this.remoteEventDispatcher.dispatch(peer, mempoolAddMsg);
             });
   }

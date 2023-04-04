@@ -66,7 +66,6 @@ package com.radixdlt.mempool;
 
 import static com.radixdlt.lang.Tuple.tuple;
 
-import com.google.common.base.Stopwatch;
 import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
@@ -82,10 +81,7 @@ import java.util.List;
 
 public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
 
-  private final Metrics metrics;
-
   public RustMempool(Metrics metrics, StateManager stateManager) {
-    this.metrics = metrics;
     LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
     addFunc =
         Natives.builder(stateManager, RustMempool::add)
@@ -107,9 +103,7 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
 
   public RawNotarizedTransaction addTransaction(RawNotarizedTransaction transaction)
       throws MempoolRejectedException {
-    final var stopwatch = Stopwatch.createStarted();
     final var result = addFunc.call(transaction);
-    metrics.mempool().addTransaction().observe(stopwatch.elapsed());
 
     // Handle Errors.
     if (result.isError()) {

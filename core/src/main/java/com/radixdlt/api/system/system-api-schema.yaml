@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
-  version: '0.3.0'
-  title: 'Babylon System API'
+  version: '0.4.0'
+  title: 'Babylon System API - RCnet V2'
   license:
     name: The Radix License, Version 1.0
     url: https://www.radixfoundation.org/licenses/license-v1
@@ -17,6 +17,11 @@ info:
 
     If you require queries against ledger state, you may also wish to consider using the
     [Core API or Gateway API instead](https://docs-babylon.radixdlt.com/main/apis/api-specification.html).
+
+    ## Integration and forward compatibility guarantees
+
+    We give no guarantees that endpoints will not change before Babylon mainnet launch,
+    although changes are expected to be minimal.
 servers:
   - url: 'localhost:3334/system'
 paths:

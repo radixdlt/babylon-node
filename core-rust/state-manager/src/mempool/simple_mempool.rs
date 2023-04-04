@@ -66,15 +66,29 @@ use crate::mempool::*;
 use crate::types::*;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
+use std::time::Instant;
 
 #[derive(Clone)]
 pub struct MempoolData {
+    /// The original pending transaction.
     pub transaction: PendingTransaction,
+    /// The instant at which the transaction was added to the mempool.
+    pub added_at: Instant,
+    /// The source of the transaction.
+    pub source: MempoolAddSource,
 }
 
 impl MempoolData {
-    fn create(transaction: PendingTransaction) -> MempoolData {
-        MempoolData { transaction }
+    fn create(
+        transaction: PendingTransaction,
+        added_at: Instant,
+        source: MempoolAddSource,
+    ) -> MempoolData {
+        MempoolData {
+            transaction,
+            added_at,
+            source,
+        }
     }
 }
 
@@ -98,6 +112,7 @@ impl SimpleMempool {
     pub fn add_transaction(
         &mut self,
         transaction: PendingTransaction,
+        source: MempoolAddSource,
     ) -> Result<(), MempoolAddError> {
         self.check_if_mempool_full()?;
 
@@ -106,9 +121,8 @@ impl SimpleMempool {
 
         match self.data.entry(payload_hash) {
             Entry::Occupied(_) => return Err(MempoolAddError::Duplicate),
-            Entry::Vacant(e) => {
-                // Insert Transaction into vacant entry in the mempool.
-                e.insert(MempoolData::create(transaction));
+            Entry::Vacant(entry) => {
+                entry.insert(MempoolData::create(transaction, Instant::now(), source));
             }
         };
 
@@ -150,7 +164,7 @@ impl SimpleMempool {
     pub fn handle_committed_transactions(
         &mut self,
         intent_hashes: &[IntentHash],
-    ) -> Vec<PendingTransaction> {
+    ) -> Vec<MempoolData> {
         intent_hashes
             .iter()
             .filter_map(|intent_hash| self.intent_lookup.remove(intent_hash))
@@ -159,7 +173,6 @@ impl SimpleMempool {
                 self.data
                     .remove(&payload_hash)
                     .expect("Mempool intent hash lookup out of sync on handle committed")
-                    .transaction
             })
             .collect()
     }
@@ -331,7 +344,7 @@ mod tests {
         let get = rc;
         assert!(get.is_empty());
 
-        let rc = mp.add_transaction(tv1.clone());
+        let rc = mp.add_transaction(tv1.clone(), MempoolAddSource::CoreApi);
         assert!(rc.is_ok());
         assert_eq!(mp.max_size, 2);
         assert_eq!(mp.get_count(), 1);
@@ -358,11 +371,11 @@ mod tests {
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv1));
 
-        let rc = mp.add_transaction(tv1.clone());
+        let rc = mp.add_transaction(tv1.clone(), MempoolAddSource::CoreApi);
         assert!(rc.is_err());
         assert!(matches!(rc, Err(MempoolAddError::Duplicate)));
 
-        let rc = mp.add_transaction(tv2.clone());
+        let rc = mp.add_transaction(tv2.clone(), MempoolAddSource::MempoolSync);
         assert!(rc.is_ok());
         assert_eq!(mp.max_size, 2);
         assert_eq!(mp.get_count(), 2);
@@ -402,14 +415,14 @@ mod tests {
         assert!(get.contains(&tv2));
 
         let rem = mp.handle_committed_transactions(&Vec::from([tv1.intent_hash]));
-        assert!(rem.contains(&tv1));
+        assert!(rem.iter().any(|d| d.transaction == tv1));
         assert_eq!(rem.len(), 1);
         assert_eq!(mp.get_count(), 1);
         assert!(mp.data.contains_key(&tv2.payload_hash));
         assert!(!mp.data.contains_key(&tv1.payload_hash));
 
         let rem = mp.handle_committed_transactions(&Vec::from([tv2.intent_hash]));
-        assert!(rem.contains(&tv2));
+        assert!(rem.iter().any(|d| d.transaction == tv2));
         assert_eq!(rem.len(), 1);
         assert_eq!(mp.get_count(), 0);
         assert!(!mp.data.contains_key(&tv2.payload_hash));
@@ -433,10 +446,14 @@ mod tests {
         let intent_2_payload_2 = create_fake_pending_transaction(2, 2);
 
         let mut mp = SimpleMempool::new(MempoolConfig { max_size: 10 });
-        mp.add_transaction(intent_1_payload_1.clone()).unwrap();
-        mp.add_transaction(intent_1_payload_2.clone()).unwrap();
-        mp.add_transaction(intent_1_payload_3).unwrap();
-        mp.add_transaction(intent_2_payload_1.clone()).unwrap();
+        mp.add_transaction(intent_1_payload_1.clone(), MempoolAddSource::CoreApi)
+            .unwrap();
+        mp.add_transaction(intent_1_payload_2.clone(), MempoolAddSource::CoreApi)
+            .unwrap();
+        mp.add_transaction(intent_1_payload_3, MempoolAddSource::MempoolSync)
+            .unwrap();
+        mp.add_transaction(intent_2_payload_1.clone(), MempoolAddSource::CoreApi)
+            .unwrap();
 
         assert_eq!(mp.get_count(), 4);
         assert_eq!(
@@ -478,7 +495,8 @@ mod tests {
                 .len(),
             0
         );
-        mp.add_transaction(intent_2_payload_1).unwrap();
+        mp.add_transaction(intent_2_payload_1, MempoolAddSource::MempoolSync)
+            .unwrap();
 
         mp.handle_committed_transactions(&[intent_1_payload_2.intent_hash]);
         assert_eq!(
@@ -487,7 +505,8 @@ mod tests {
             0
         );
 
-        mp.add_transaction(intent_2_payload_2.clone()).unwrap();
+        mp.add_transaction(intent_2_payload_2.clone(), MempoolAddSource::CoreApi)
+            .unwrap();
         assert_eq!(
             mp.get_payload_hashes_for_intent(&intent_2_payload_2.intent_hash)
                 .len(),

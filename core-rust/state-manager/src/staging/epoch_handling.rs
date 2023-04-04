@@ -91,7 +91,8 @@ impl AccuTreeEpochHandler {
     }
 
     /// Adjusts the next planned batch of leaves to be appended to the epoch's accu tree.
-    /// The adjustment
+    /// The adjustment consists of prepending the previous epoch's root in case the current epoch
+    /// has just been started.
     pub fn adjust_next_batch<T>(&self, previous_epoch_root: T, mut next_batch: Vec<T>) -> Vec<T> {
         if self.epoch_version_count == 0 {
             next_batch.insert(0, previous_epoch_root);

@@ -5,21 +5,21 @@ use state_manager::{
 };
 
 #[tracing::instrument(skip(state), err(Debug))]
-pub(crate) async fn handle_lts_stream_transactions_basic_outcomes(
+pub(crate) async fn handle_lts_stream_transaction_outcomes(
     state: State<CoreApiState>,
-    request: Json<models::LtsStreamTransactionsBasicOutcomesRequest>,
-) -> Result<Json<models::LtsStreamTransactionsBasicOutcomesResponse>, ResponseError<()>> {
+    request: Json<models::LtsStreamTransactionOutcomesRequest>,
+) -> Result<Json<models::LtsStreamTransactionOutcomesResponse>, ResponseError<()>> {
     core_api_read_handler(
         state,
         request,
-        handle_lts_stream_transactions_basic_outcomes_internal,
+        handle_lts_stream_transaction_outcomes_internal,
     )
 }
 
-fn handle_lts_stream_transactions_basic_outcomes_internal(
+fn handle_lts_stream_transaction_outcomes_internal(
     state_manager: &ActualStateManager,
-    request: models::LtsStreamTransactionsBasicOutcomesRequest,
-) -> Result<models::LtsStreamTransactionsBasicOutcomesResponse, ResponseError<()>> {
+    request: models::LtsStreamTransactionOutcomesRequest,
+) -> Result<models::LtsStreamTransactionOutcomesResponse, ResponseError<()>> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
     let from_state_version: u64 = extract_api_state_version(request.from_state_version)
@@ -70,7 +70,7 @@ fn handle_lts_stream_transactions_basic_outcomes_internal(
             .map_err(|_| server_error("Unexpected error mapping small usize to i32"))?
     };
 
-    Ok(models::LtsStreamTransactionsBasicOutcomesResponse {
+    Ok(models::LtsStreamTransactionOutcomesResponse {
         from_state_version: to_api_state_version(from_state_version)?,
         count,
         max_ledger_state_version: to_api_state_version(max_state_version)?,
