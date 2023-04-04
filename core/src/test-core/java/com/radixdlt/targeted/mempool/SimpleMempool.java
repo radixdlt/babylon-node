@@ -68,7 +68,6 @@ import com.google.common.collect.Lists;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.*;
 
@@ -76,15 +75,13 @@ import java.util.*;
 public final class SimpleMempool
     implements Mempool<RawNotarizedTransaction, RawNotarizedTransaction> {
   private final Set<RawNotarizedTransaction> data = new HashSet<>();
-  private final Metrics metrics;
   private final Random random;
   private final int maxSize;
 
-  public SimpleMempool(Metrics metrics, int maxSize, Random random) {
+  public SimpleMempool(int maxSize, Random random) {
     if (maxSize <= 0) {
       throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
     }
-    this.metrics = Objects.requireNonNull(metrics);
     this.maxSize = maxSize;
     this.random = Objects.requireNonNull(random);
   }
@@ -99,16 +96,12 @@ public final class SimpleMempool
       throw new MempoolDuplicateException(
           String.format("Mempool already has transaction %s", transaction));
     }
-
-    updateCounts();
-
     return transaction;
   }
 
   @Override
   public void handleTransactionsCommitted(List<RawNotarizedTransaction> transactions) {
     transactions.forEach(this.data::remove);
-    updateCounts();
   }
 
   @Override
@@ -142,10 +135,6 @@ public final class SimpleMempool
   public List<RawNotarizedTransaction> getTransactionsToRelay(
       int maxNumTxns, int maxTotalTxnsPayloadSize) {
     return List.of();
-  }
-
-  private void updateCounts() {
-    this.metrics.v1Mempool().size().set(this.data.size());
   }
 
   @Override
