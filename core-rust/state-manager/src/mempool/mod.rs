@@ -70,7 +70,7 @@ use crate::MetricLabel;
 
 pub use crate::pending_transaction_result_cache::*;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MempoolAddSource {
     CoreApi,
     MempoolSync,

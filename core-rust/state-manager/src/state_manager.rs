@@ -348,23 +348,23 @@ where
     /// We look for cached rejections first, to avoid this heavy lifting where we can
     pub fn check_for_rejection_and_add_to_mempool(
         &mut self,
-        mempool_add_source: MempoolAddSource,
+        source: MempoolAddSource,
         unvalidated_transaction: NotarizedTransaction,
     ) -> Result<(), MempoolAddError> {
-        self.check_for_rejection_and_add_to_mempool_internal(unvalidated_transaction)
+        self.check_for_rejection_and_add_to_mempool_internal(unvalidated_transaction, source)
             .map(|_| {
                 self.metrics
                     .mempool_current_transactions
                     .set(self.mempool.read().get_count() as i64);
                 self.metrics
                     .mempool_submission_added
-                    .with_label(mempool_add_source)
+                    .with_label(source)
                     .inc();
             })
             .map_err(|err| {
                 self.metrics
                     .mempool_submission_rejected
-                    .with_two_labels(mempool_add_source, &err)
+                    .with_two_labels(source, &err)
                     .inc();
 
                 err
@@ -379,6 +379,7 @@ where
     fn check_for_rejection_and_add_to_mempool_internal(
         &mut self,
         unvalidated_transaction: NotarizedTransaction,
+        source: MempoolAddSource,
     ) -> Result<(), MempoolAddError> {
         // Quick check to avoid transaction validation if it couldn't be added to the mempool anyway
         self.mempool
@@ -395,7 +396,7 @@ where
             // * Once epoch validation is moved to the executor, we can persist validated transactions in the mempool
             self.mempool
                 .write()
-                .add_transaction(unvalidated_transaction.into())?;
+                .add_transaction(unvalidated_transaction.into(), source)?;
         }
 
         accept_into_mempool.map_err(MempoolAddError::Rejected)
@@ -1029,7 +1030,16 @@ where
         );
         {
             let mut mempool = self.mempool.write();
-            mempool.handle_committed_transactions(&intent_hashes);
+            mempool
+                .handle_committed_transactions(&intent_hashes)
+                .iter()
+                .filter(|data| data.source == MempoolAddSource::CoreApi)
+                .map(|data| data.added_at.elapsed().as_secs_f64())
+                .for_each(|wait| {
+                    self.metrics
+                        .mempool_from_local_api_to_commit_wait
+                        .observe(wait)
+                });
             self.metrics
                 .mempool_current_transactions
                 .set(mempool.get_count() as i64);
