@@ -72,10 +72,8 @@ public sealed interface FixedNetworkGenesis {
   record Constant(byte[] genesisData) implements FixedNetworkGenesis {
     @Override
     public boolean equals(Object other) {
-      if (other instanceof Constant otherConstant) {
-        return Arrays.equals(genesisData, otherConstant.genesisData);
-      }
-      return false;
+      return other instanceof Constant otherConstant
+          && Arrays.equals(genesisData, otherConstant.genesisData);
     }
 
     @Override

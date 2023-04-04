@@ -255,12 +255,8 @@ public final class RadixShell {
 
     public void startP2PServer() {
       final var peerServer = injector.getInstance(PeerServerBootstrap.class);
-      try {
-        peerServer.start();
-        log.info("P2P server started: " + self());
-      } catch (InterruptedException e) {
-        log.error("Cannot start p2p server", e);
-      }
+      peerServer.start();
+      log.info("P2P server started: " + self());
     }
 
     public void stopP2PServer() {

@@ -122,7 +122,7 @@ public final class PeerServerBootstrap {
     this.serverBind = null;
   }
 
-  public void start() throws InterruptedException {
+  public void start() {
     final var serverGroup = new NioEventLoopGroup(1);
     final var workerGroup = new NioEventLoopGroup();
 
@@ -146,16 +146,13 @@ public final class PeerServerBootstrap {
                 Optional.empty(),
                 capabilities));
 
-    serverBind = serverBootstrap.bind(config.listenAddress(), config.listenPort()).sync();
+    serverBind =
+        serverBootstrap.bind(config.listenAddress(), config.listenPort()).syncUninterruptibly();
   }
 
   public void stop() {
     if (serverBind != null) {
-      try {
-        serverBind.channel().close().sync();
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
+      serverBind.channel().close().syncUninterruptibly();
     }
   }
 }

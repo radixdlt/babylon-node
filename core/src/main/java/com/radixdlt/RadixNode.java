@@ -126,12 +126,7 @@ public final class RadixNode {
     }
 
     final var peerServer = injector.getInstance(PeerServerBootstrap.class);
-    try {
-      peerServer.start();
-    } catch (InterruptedException e) {
-      log.error("Cannot start p2p server", e);
-      Thread.currentThread().interrupt();
-    }
+    peerServer.start();
 
     // Start the system API server
     final var systemApi = injector.getInstance(SystemApi.class);
