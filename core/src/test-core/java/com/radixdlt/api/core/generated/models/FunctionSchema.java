@@ -29,16 +29,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * FunctionDefinition
+ * FunctionSchema
  */
 @JsonPropertyOrder({
-  FunctionDefinition.JSON_PROPERTY_RECEIVER,
-  FunctionDefinition.JSON_PROPERTY_INPUT,
-  FunctionDefinition.JSON_PROPERTY_OUTPUT,
-  FunctionDefinition.JSON_PROPERTY_EXPORT_NAME
+  FunctionSchema.JSON_PROPERTY_RECEIVER,
+  FunctionSchema.JSON_PROPERTY_INPUT,
+  FunctionSchema.JSON_PROPERTY_OUTPUT,
+  FunctionSchema.JSON_PROPERTY_EXPORT_NAME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class FunctionDefinition {
+public class FunctionSchema {
   /**
    * Gets or Sets receiver
    */
@@ -88,10 +88,10 @@ public class FunctionDefinition {
   public static final String JSON_PROPERTY_EXPORT_NAME = "export_name";
   private String exportName;
 
-  public FunctionDefinition() { 
+  public FunctionSchema() { 
   }
 
-  public FunctionDefinition receiver(ReceiverEnum receiver) {
+  public FunctionSchema receiver(ReceiverEnum receiver) {
     this.receiver = receiver;
     return this;
   }
@@ -117,7 +117,7 @@ public class FunctionDefinition {
   }
 
 
-  public FunctionDefinition input(LocalTypeIndex input) {
+  public FunctionSchema input(LocalTypeIndex input) {
     this.input = input;
     return this;
   }
@@ -143,7 +143,7 @@ public class FunctionDefinition {
   }
 
 
-  public FunctionDefinition output(LocalTypeIndex output) {
+  public FunctionSchema output(LocalTypeIndex output) {
     this.output = output;
     return this;
   }
@@ -169,7 +169,7 @@ public class FunctionDefinition {
   }
 
 
-  public FunctionDefinition exportName(String exportName) {
+  public FunctionSchema exportName(String exportName) {
     this.exportName = exportName;
     return this;
   }
@@ -196,7 +196,7 @@ public class FunctionDefinition {
 
 
   /**
-   * Return true if this FunctionDefinition object is equal to o.
+   * Return true if this FunctionSchema object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -206,11 +206,11 @@ public class FunctionDefinition {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    FunctionDefinition functionDefinition = (FunctionDefinition) o;
-    return Objects.equals(this.receiver, functionDefinition.receiver) &&
-        Objects.equals(this.input, functionDefinition.input) &&
-        Objects.equals(this.output, functionDefinition.output) &&
-        Objects.equals(this.exportName, functionDefinition.exportName);
+    FunctionSchema functionSchema = (FunctionSchema) o;
+    return Objects.equals(this.receiver, functionSchema.receiver) &&
+        Objects.equals(this.input, functionSchema.input) &&
+        Objects.equals(this.output, functionSchema.output) &&
+        Objects.equals(this.exportName, functionSchema.exportName);
   }
 
   @Override
@@ -221,7 +221,7 @@ public class FunctionDefinition {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class FunctionDefinition {\n");
+    sb.append("class FunctionSchema {\n");
     sb.append("    receiver: ").append(toIndentedString(receiver)).append("\n");
     sb.append("    input: ").append(toIndentedString(input)).append("\n");
     sb.append("    output: ").append(toIndentedString(output)).append("\n");

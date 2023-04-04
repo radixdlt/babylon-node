@@ -77,15 +77,9 @@ impl From<MappedEntityId> for models::EntityReference {
 }
 
 impl TryFrom<RENodeId> for MappedEntityId {
-    fn try_from(re_node_id: RENodeId) -> Result<MappedEntityId, MappingError> {
-        // Helper function
-        fn transient_renode_error(name: &'static str) -> MappingError {
-            MappingError::TransientRENodePersisted {
-                message: format!("{name} persisted"),
-            }
-        }
+    type Error = MappingError;
 
-        // Start body of method
+    fn try_from(re_node_id: RENodeId) -> Result<MappedEntityId, MappingError> {
         let entity_id_bytes = re_node_id_to_entity_id_bytes(&re_node_id);
         let entity_type = match re_node_id {
             // Gateway understands "Component" to be "Component with Scrypto Package" for now. This will change when we have Native Packages
@@ -134,15 +128,12 @@ impl TryFrom<RENodeId> for MappedEntityId {
                     message: format!("Unknown object RENode address type persisted: {:?}", addr),
                 })
             }
-            RENodeId::AuthZoneStack => return Err(transient_renode_error("AuthZoneStack")),
         };
         Ok(MappedEntityId {
             entity_type,
             entity_id_bytes,
         })
     }
-
-    type Error = MappingError;
 }
 
 #[derive(Debug)]
@@ -732,11 +723,6 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             }
             _ => return Err(unknown_substate_error("Unmapped Object Type", &substate_id)),
         },
-
-        // TRANSIENT SUBSTATES
-        SubstateId(RENodeId::AuthZoneStack, ..) => {
-            return Err(transient_substate_error("AuthZoneStack", &substate_id))
-        }
     };
 
     Ok(MappedSubstateId(
