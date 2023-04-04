@@ -342,8 +342,7 @@ public class NodeCapabilityTests {
   private Result waitForMessagesReceived(
       HashMap<String, Boolean> expectedResultMap,
       HashSet<String> messagesReceived,
-      int maxWaitTimeSecs)
-      throws InterruptedException {
+      int maxWaitTimeSecs) {
     var result = new Result();
     result.testOk = true;
 

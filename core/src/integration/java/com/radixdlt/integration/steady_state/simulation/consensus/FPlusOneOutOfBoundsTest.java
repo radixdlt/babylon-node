@@ -75,6 +75,7 @@ import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
@@ -87,8 +88,9 @@ public class FPlusOneOutOfBoundsTest {
       SimulationTest.builder()
           .functionalNodeModule(
               new FunctionalRadixNodeModule(
+                  NodeStorageConfig.none(),
                   false,
-                  SafetyRecoveryConfig.mocked(),
+                  SafetyRecoveryConfig.MOCKED,
                   ConsensusConfig.of(TIMEOUT_MS),
                   LedgerConfig.mocked(3)))
           .addTestModules(

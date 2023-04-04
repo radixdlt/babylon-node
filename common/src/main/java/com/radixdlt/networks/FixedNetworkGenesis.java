@@ -62,19 +62,31 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store;
+package com.radixdlt.networks;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import java.util.Arrays;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+public sealed interface FixedNetworkGenesis {
+  record Resource(String resourcePath) implements FixedNetworkGenesis {}
 
-/** Marks the proof as the last one stored */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface LastStoredProof {}
+  record Constant(byte[] genesisData) implements FixedNetworkGenesis {
+    @Override
+    public boolean equals(Object other) {
+      return other instanceof Constant otherConstant
+          && Arrays.equals(genesisData, otherConstant.genesisData);
+    }
+
+    @Override
+    public int hashCode() {
+      return Arrays.hashCode(genesisData);
+    }
+  }
+
+  static FixedNetworkGenesis resource(String resourcePath) {
+    return new Resource(resourcePath);
+  }
+
+  static FixedNetworkGenesis constant(byte[] genesisData) {
+    return new Constant(genesisData);
+  }
+}

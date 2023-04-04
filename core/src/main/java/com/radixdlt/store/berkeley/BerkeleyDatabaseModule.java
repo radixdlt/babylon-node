@@ -62,31 +62,39 @@
  * permissions under this License.
  */
 
-package com.radixdlt.environment.deterministic;
+package com.radixdlt.store.berkeley;
 
-import com.google.common.collect.ClassToInstanceMap;
-import com.google.common.collect.MutableClassToInstanceMap;
 import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.environment.EventProcessorOnDispatch;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.store.NodeStorageLocation;
+import com.radixdlt.utils.properties.RuntimeProperties;
+import java.io.File;
 
-public final class LastEventsModule extends AbstractModule {
-  private final Class<?>[] messageClasses;
+public final class BerkeleyDatabaseModule extends AbstractModule {
+  public static final long MAX_MEMORY = Runtime.getRuntime().maxMemory();
+  public static final long MIN_CACHE_SIZE = Math.max(50_000_000L, (long) (MAX_MEMORY * 0.1));
+  public static final long MAX_CACHE_SIZE = (long) (MAX_MEMORY * 0.25);
+  public static final long DEFAULT_CACHE_SIZE = (long) (MAX_MEMORY * 0.125);
 
-  public LastEventsModule(Class<?>... messageClasses) {
-    this.messageClasses = messageClasses;
+  public static long getCacheSizeFromProperties(RuntimeProperties properties) {
+    var minCacheSize = properties.get("db.cache_size.min", MIN_CACHE_SIZE);
+    var maxCacheSize = properties.get("db.cache_size.max", MAX_CACHE_SIZE);
+    var cacheSize = properties.get("db.cache_size", DEFAULT_CACHE_SIZE);
+    return Math.min(Math.max(cacheSize, minCacheSize), maxCacheSize);
   }
 
-  @Override
-  protected void configure() {
-    var map = MutableClassToInstanceMap.create();
-    bind(new TypeLiteral<ClassToInstanceMap<Object>>() {}).toInstance(map);
+  private final long cacheSize;
 
-    for (var c : messageClasses) {
-      Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() {})
-          .addBinding()
-          .toInstance(new EventProcessorOnDispatch<>(c, e -> map.put(c, e)));
-    }
+  public BerkeleyDatabaseModule(long cacheSize) {
+    this.cacheSize = cacheSize;
+  }
+
+  @Provides
+  @Singleton
+  BerkeleyDatabaseEnvironment berkeleyDatabaseEnvironment(
+      @NodeStorageLocation String nodeStorageLocation) {
+    final var location = new File(nodeStorageLocation, "berkeley_db").getPath();
+    return new BerkeleyDatabaseEnvironment(location, this.cacheSize);
   }
 }

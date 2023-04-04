@@ -69,7 +69,7 @@ import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.networks.NetworkId;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeerEvent;
 import com.radixdlt.p2p.RadixNodeUri;
@@ -86,7 +86,7 @@ import java.util.Optional;
 public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
   private final P2PConfig config;
   private final Addressing addressing;
-  private final int networkId;
+  private final Network network;
   private final String newestForkName;
   private final Metrics metrics;
   private final Serialization serialization;
@@ -101,7 +101,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
   public PeerOutboundBootstrapImpl(
       P2PConfig config,
       Addressing addressing,
-      @NetworkId int networkId,
+      Network network,
       Metrics metrics,
       Serialization serialization,
       SecureRandom secureRandom,
@@ -110,7 +110,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
       Capabilities capabilities) {
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
-    this.networkId = networkId;
+    this.network = network;
     this.newestForkName = "SomeForkName";
     this.metrics = Objects.requireNonNull(metrics);
     this.serialization = Objects.requireNonNull(serialization);
@@ -134,7 +134,7 @@ public final class PeerOutboundBootstrapImpl implements PeerOutboundBootstrap {
             new PeerChannelInitializer(
                 config,
                 addressing,
-                networkId,
+                network,
                 newestForkName,
                 metrics,
                 serialization,

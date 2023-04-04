@@ -276,7 +276,7 @@ public record Metrics(
 
   public record Misc(
       TypedInfo<Config> config,
-      Timer applicationStart,
+      Timer nodeStartup,
       Counter vertexStoreSaved,
       GetterGauge peerCount) {}
 

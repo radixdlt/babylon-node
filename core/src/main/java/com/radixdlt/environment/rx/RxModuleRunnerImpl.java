@@ -190,6 +190,11 @@ public final class RxModuleRunnerImpl implements ModuleRunner {
   }
 
   @Override
+  public String threadName() {
+    return this.threadName;
+  }
+
+  @Override
   public void start() {
     synchronized (this.startLock) {
       if (this.compositeDisposable != null) {

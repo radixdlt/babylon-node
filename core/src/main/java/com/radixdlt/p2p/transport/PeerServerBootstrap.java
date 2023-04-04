@@ -69,7 +69,7 @@ import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.networks.NetworkId;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeerEvent;
 import com.radixdlt.p2p.capability.Capabilities;
@@ -88,7 +88,7 @@ public final class PeerServerBootstrap {
 
   private final P2PConfig config;
   private final Addressing addressing;
-  private final int networkId;
+  private final Network network;
   private final String newestForkName;
   private final Metrics metrics;
   private final Serialization serialization;
@@ -102,7 +102,7 @@ public final class PeerServerBootstrap {
   public PeerServerBootstrap(
       P2PConfig config,
       Addressing addressing,
-      @NetworkId int networkId,
+      Network network,
       Metrics metrics,
       Serialization serialization,
       SecureRandom secureRandom,
@@ -111,7 +111,7 @@ public final class PeerServerBootstrap {
       Capabilities capabilities) {
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
-    this.networkId = networkId;
+    this.network = network;
     this.newestForkName = "SomeForkName";
     this.metrics = Objects.requireNonNull(metrics);
     this.serialization = Objects.requireNonNull(serialization);
@@ -122,7 +122,7 @@ public final class PeerServerBootstrap {
     this.serverBind = null;
   }
 
-  public void start() throws InterruptedException {
+  public void start() {
     final var serverGroup = new NioEventLoopGroup(1);
     final var workerGroup = new NioEventLoopGroup();
 
@@ -136,7 +136,7 @@ public final class PeerServerBootstrap {
             new PeerChannelInitializer(
                 config,
                 addressing,
-                networkId,
+                network,
                 newestForkName,
                 metrics,
                 serialization,
@@ -146,12 +146,13 @@ public final class PeerServerBootstrap {
                 Optional.empty(),
                 capabilities));
 
-    serverBind = serverBootstrap.bind(config.listenAddress(), config.listenPort()).sync();
+    serverBind =
+        serverBootstrap.bind(config.listenAddress(), config.listenPort()).syncUninterruptibly();
   }
 
-  public void stop() throws InterruptedException {
+  public void stop() {
     if (serverBind != null) {
-      serverBind.channel().close().sync();
+      serverBind.channel().close().syncUninterruptibly();
     }
   }
 }

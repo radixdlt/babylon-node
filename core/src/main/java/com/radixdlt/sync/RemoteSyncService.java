@@ -74,7 +74,7 @@ import com.radixdlt.ledger.*;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeersView;
-import com.radixdlt.store.LastProof;
+import com.radixdlt.rev2.LastProof;
 import com.radixdlt.sync.messages.remote.*;
 import java.util.Collections;
 import java.util.Comparator;

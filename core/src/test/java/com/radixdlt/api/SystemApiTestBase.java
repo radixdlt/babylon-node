@@ -72,6 +72,8 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import com.radixdlt.api.common.JSON;
+import com.radixdlt.api.system.health.HealthInfoService;
+import com.radixdlt.api.system.health.HealthInfoServiceImpl;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
@@ -79,17 +81,17 @@ import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.*;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.rev2.Decimal;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.PrivateKeys;
@@ -119,8 +121,9 @@ public abstract class SystemApiTestBase {
             new SingleNodeAndPeersDeterministicNetworkModule(
                 TEST_KEY,
                 new FunctionalRadixNodeModule(
+                    NodeStorageConfig.none(),
                     false,
-                    SafetyRecoveryConfig.mocked(),
+                    SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerWithSyncRelay(
                         StateComputerConfig.rev2(
@@ -131,7 +134,7 @@ public abstract class SystemApiTestBase {
                                 Decimal.of(1),
                                 UInt64.fromNonNegativeLong(10),
                                 UInt64.fromNonNegativeLong(1)),
-                            REv2DatabaseConfig.inMemory(),
+                            REv2StateManagerModule.DatabaseType.IN_MEMORY,
                             StateComputerConfig.REV2ProposerConfig.mempool(
                                 10, 10 * 1024 * 1024, 10, MempoolRelayConfig.of())),
                         new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE)))),
@@ -140,9 +143,7 @@ public abstract class SystemApiTestBase {
             new AbstractModule() {
               @Override
               protected void configure() {
-                bindConstant()
-                    .annotatedWith(NetworkId.class)
-                    .to(Network.INTEGRATIONTESTNET.getId());
+                bind(Network.class).toInstance(Network.INTEGRATIONTESTNET);
                 bind(P2PConfig.class).toInstance(mock(P2PConfig.class));
                 bind(AddressBook.class).in(Scopes.SINGLETON);
                 var selfUri =
@@ -157,6 +158,8 @@ public abstract class SystemApiTestBase {
                     .toInstance(NodeId.fromPublicKey(TEST_KEY.getPublicKey()));
                 var runtimeProperties = mock(RuntimeProperties.class);
                 bind(RuntimeProperties.class).toInstance(runtimeProperties);
+                bind(HealthInfoService.class).to(HealthInfoServiceImpl.class);
+                bind(HealthInfoServiceImpl.class).in(Scopes.SINGLETON);
               }
             });
     injector.injectMembers(this);

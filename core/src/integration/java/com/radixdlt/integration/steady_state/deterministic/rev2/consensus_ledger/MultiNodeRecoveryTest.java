@@ -75,12 +75,13 @@ import com.radixdlt.harness.predicates.NodesPredicate;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
 import java.util.Collection;
@@ -126,22 +127,23 @@ public final class MultiNodeRecoveryTest {
     this.roundsPerEpoch = roundsPerEpoch;
   }
 
-  private DeterministicTest createTest(REv2DatabaseConfig databaseConfig) {
+  private DeterministicTest createTest() {
     return DeterministicTest.builder()
         .addPhysicalNodes(PhysicalNodeConfig.createBatch(NUM_VALIDATORS, true))
         .messageSelector(randomSelector(random))
         .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
+                NodeStorageConfig.tempFolder(folder),
                 this.epochs,
-                SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
+                SafetyRecoveryConfig.BERKELEY_DB,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
                             NUM_VALIDATORS, Decimal.of(1), this.roundsPerEpoch),
-                        databaseConfig,
+                        REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                             new REV2TransactionGenerator(), 1)))));
   }
@@ -170,6 +172,6 @@ public final class MultiNodeRecoveryTest {
 
   @Test
   public void rebooting_nodes_with_persistent_store_should_not_cause_safety_or_liveness_issues() {
-    runTest(createTest(REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath())));
+    runTest(createTest());
   }
 }

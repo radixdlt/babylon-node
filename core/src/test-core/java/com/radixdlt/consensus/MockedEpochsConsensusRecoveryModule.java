@@ -77,8 +77,8 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.rev2.LastEpochProof;
 import com.radixdlt.statecomputer.EpochMaxRound;
-import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.function.Function;
 

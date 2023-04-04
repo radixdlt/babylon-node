@@ -68,6 +68,7 @@ import static org.junit.Assert.assertArrayEquals;
 
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
@@ -124,7 +125,7 @@ public final class FrameCodecTest {
             serialization,
             secureRandom,
             ECKeyOps.fromKeyPair(nodeKey1),
-            (byte) 0x01,
+            Network.INTEGRATIONTESTNET,
             "fork1",
             capabilities);
     final var handshaker2 =
@@ -132,7 +133,7 @@ public final class FrameCodecTest {
             serialization,
             secureRandom,
             ECKeyOps.fromKeyPair(nodeKey2),
-            (byte) 0x01,
+            Network.INTEGRATIONTESTNET,
             "fork1",
             capabilities);
 

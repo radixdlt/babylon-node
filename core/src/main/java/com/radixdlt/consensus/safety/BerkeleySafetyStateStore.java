@@ -71,8 +71,8 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.BerkeleyStoreException;
-import com.radixdlt.store.DatabaseEnvironment;
+import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
+import com.radixdlt.store.berkeley.BerkeleyStoreException;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.*;
 import java.time.Duration;
@@ -91,7 +91,7 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
   private static final long UPPER_THRESHOLD = 1000;
   private static final long LOWER_THRESHOLD = 10;
 
-  private final DatabaseEnvironment dbEnv;
+  private final BerkeleyDatabaseEnvironment dbEnv;
   private final Database safetyStore;
   private final Metrics metrics;
   private final AtomicLong cleanupCounter = new AtomicLong();
@@ -99,7 +99,7 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 
   @Inject
   public BerkeleySafetyStateStore(
-      DatabaseEnvironment dbEnv, Serialization serialization, Metrics metrics) {
+      BerkeleyDatabaseEnvironment dbEnv, Serialization serialization, Metrics metrics) {
     this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
     this.serialization = Objects.requireNonNull(serialization);
 

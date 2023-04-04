@@ -75,15 +75,15 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.recovery.VertexStoreRecovery;
+import com.radixdlt.rev2.LastEpochProof;
+import com.radixdlt.rev2.LastProof;
+import com.radixdlt.rev2.LastStoredProof;
 import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.commit.PrepareGenesisRequest;
-import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.store.LastProof;
-import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.List;
@@ -107,7 +107,6 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
   @LastStoredProof
   private LedgerProof lastProof(
       RustStateComputer stateComputer,
-      Serialization serialization,
       TransactionsAndProofReader transactionsAndProofReader,
       LedgerAccumulator ledgerAccumulator) {
     final var timestamp = 0L; /* TODO: use Olympia end-state timestamp */

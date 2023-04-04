@@ -83,19 +83,19 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.modules.CapabilitiesModule;
 import com.radixdlt.modules.DispatcherModule;
+import com.radixdlt.modules.PrefixedNodeStorageLocationModule;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.*;
 import com.radixdlt.p2p.addressbook.AddressBook;
+import com.radixdlt.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.DatabaseCacheSize;
-import com.radixdlt.store.DatabaseEnvironment;
-import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.store.berkeley.BerkeleyDatabaseEnvironment;
+import com.radixdlt.store.berkeley.BerkeleyDatabaseModule;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
 import java.util.Objects;
@@ -120,6 +120,14 @@ public final class P2PTestNetworkRunner {
   }
 
   public static P2PTestNetworkRunner create(int numNodes, P2PConfig p2pConfig) throws Exception {
+    final var sharedDbDir = new TemporaryFolder();
+
+    try {
+      sharedDbDir.create();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
     final var nodesKeys =
         IntStream.range(0, numNodes)
             .mapToObj(unused -> ECKeyPair.generateNew())
@@ -142,6 +150,7 @@ public final class P2PTestNetworkRunner {
               1, nodeKey.getPublicKey(), "127.0.0.1", p2pConfig.listenPort() + i);
       final var injector =
           createInjector(
+              sharedDbDir,
               bftAddressBook::indexOf,
               p2pAddressBook::indexOf,
               p2pNetwork,
@@ -161,6 +170,7 @@ public final class P2PTestNetworkRunner {
   }
 
   private static Injector createInjector(
+      TemporaryFolder sharedDbDir,
       Function<BFTValidatorId, Integer> bftAddressBook,
       Function<NodeId, Integer> p2pAddressBook,
       MockP2PNetwork p2pNetwork,
@@ -192,21 +202,13 @@ public final class P2PTestNetworkRunner {
                   }
                 }),
         new DispatcherModule(),
+        new PrefixedNodeStorageLocationModule(sharedDbDir.getRoot().getAbsolutePath()),
+        new BerkeleyDatabaseModule(BerkeleyDatabaseModule.DEFAULT_CACHE_SIZE),
         new AbstractModule() {
           @Override
           protected void configure() {
-            final var dbDir = new TemporaryFolder();
-            try {
-              dbDir.create();
-            } catch (IOException e) {
-              throw new RuntimeException(e);
-            }
-            bindConstant().annotatedWith(NetworkId.class).to(Network.INTEGRATIONTESTNET.getId());
+            bind(Network.class).toInstance(Network.INTEGRATIONTESTNET);
             bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
-            bindConstant()
-                .annotatedWith(DatabaseLocation.class)
-                .to(dbDir.getRoot().getAbsolutePath());
-            bindConstant().annotatedWith(DatabaseCacheSize.class).to(100_000L);
             bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(nodeKey);
             bind(ECDSASecp256k1PublicKey.class)
                 .annotatedWith(Self.class)
@@ -243,7 +245,8 @@ public final class P2PTestNetworkRunner {
   public void cleanup() {
     this.nodes.forEach(
         node -> {
-          node.injector.getInstance(DatabaseEnvironment.class).stop();
+          node.injector.getInstance(AddressBookPersistence.class).close();
+          node.injector.getInstance(BerkeleyDatabaseEnvironment.class).stop();
         });
   }
 

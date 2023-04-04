@@ -62,14 +62,31 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store;
+package com.radixdlt.modules;
 
-public class BerkeleyStoreException extends RuntimeException {
-  public BerkeleyStoreException(String message) {
-    super(message);
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.store.NodeStorageLocation;
+import java.io.File;
+
+/**
+ * Sets the node storage location so that it uses a dedicated directory inside the provided
+ * `baseLocation`. Used for tests to share a single temporary folder across many nodes.
+ */
+public final class PrefixedNodeStorageLocationModule extends AbstractModule {
+  private final String baseLocation;
+
+  public PrefixedNodeStorageLocationModule(String baseLocation) {
+    this.baseLocation = baseLocation;
   }
 
-  public BerkeleyStoreException(String message, Throwable cause) {
-    super(message, cause);
+  @Provides
+  @Singleton
+  @NodeStorageLocation
+  private String nodeStorageLocation(@Self ECDSASecp256k1PublicKey publicKey) {
+    return new File(baseLocation, publicKey.toHex()).getPath();
   }
 }

@@ -82,7 +82,6 @@ import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
@@ -94,15 +93,15 @@ public class REv2StateComputerTest {
     return Guice.createInjector(
         new CryptoModule(),
         REv2StateManagerModule.create(
-            Network.INTEGRATIONTESTNET.getId(),
             10,
             10 * 1024 * 1024,
             50 * 1024 * 1024,
-            REv2DatabaseConfig.inMemory(),
+            REv2StateManagerModule.DatabaseType.IN_MEMORY,
             Option.none()),
         new AbstractModule() {
           @Override
           protected void configure() {
+            bind(Network.class).toInstance(Network.INTEGRATIONTESTNET);
             bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
             bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
             bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() {}).toInstance(e -> {});

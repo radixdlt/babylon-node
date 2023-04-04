@@ -93,6 +93,7 @@ import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
@@ -254,8 +255,9 @@ public final class SimulationTest {
         ConsensusConfig consensusConfig, SyncRelayConfig syncRelayConfig, int numValidators) {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
+              NodeStorageConfig.none(),
               false,
-              SafetyRecoveryConfig.mocked(),
+              SafetyRecoveryConfig.MOCKED,
               consensusConfig,
               LedgerConfig.stateComputerWithSyncRelay(
                   StateComputerConfig.mockedNoEpochs(
@@ -271,8 +273,9 @@ public final class SimulationTest {
         SyncRelayConfig syncRelayConfig) {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
+              NodeStorageConfig.none(),
               true,
-              SafetyRecoveryConfig.mocked(),
+              SafetyRecoveryConfig.MOCKED,
               consensusConfig,
               LedgerConfig.stateComputerWithSyncRelay(
                   StateComputerConfig.mockedWithEpochs(
@@ -286,8 +289,9 @@ public final class SimulationTest {
     public Builder ledgerAndMempool(ConsensusConfig consensusConfig, int numValidators) {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
+              NodeStorageConfig.none(),
               false,
-              SafetyRecoveryConfig.mocked(),
+              SafetyRecoveryConfig.MOCKED,
               consensusConfig,
               LedgerConfig.stateComputerNoSync(
                   StateComputerConfig.mockedNoEpochs(
@@ -348,6 +352,7 @@ public final class SimulationTest {
             @Override
             public void configure() {
               bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
+              bind(Network.class).toInstance(Network.INTEGRATIONTESTNET);
               bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
               bind(NodeEvents.class).toInstance(nodeEvents);
             }
