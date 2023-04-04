@@ -233,20 +233,22 @@ pub mod extensions {
 
         fn is_enabled(&self) -> bool;
 
-        fn disable(&self);
+        fn disable(&mut self);
 
-        fn enable(&self);
+        fn enable(&mut self);
     }
 
     pub trait AccountChangeIndexExtension {
-        fn get_state_versions(&self, account: Address,
+        fn get_state_versions(
+            &self,
+            account: Address,
             start_state_version_inclusive: u64,
-            limit: usize
+            limit: usize,
         ) -> Vec<u64>;
     }
 
     pub trait AccountChangeIndexStoreCapability<'a> {
         type AccountChangeIndex: 'a + AccountChangeIndexExtension + StoreIndexExtension;
-        fn account_change_index(&'a self) -> Self::AccountChangeIndex;
+        fn account_change_index(&'a mut self) -> Self::AccountChangeIndex;
     }
 }

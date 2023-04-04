@@ -64,6 +64,7 @@
 
 use crate::jni::java_structure::*;
 
+use crate::store::traits::extensions::*;
 use crate::store::traits::CommitBundle;
 use crate::store::traits::*;
 use crate::store::{InMemoryStore, RocksDBStore};
@@ -84,8 +85,11 @@ use crate::{
     CommittedTransactionIdentifiers, IntentHash, LedgerPayloadHash, LedgerProof,
     LedgerTransactionReceipt, ReceiptTreeHash, TransactionTreeHash,
 };
-use radix_engine::types::{KeyValueStoreId, SubstateId};
+use radix_engine::types::{Address, KeyValueStoreId, SubstateId};
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeStore, TreeNode};
+
+use super::in_memory::InMemoryAccountChangeIndexView;
+use super::rocks_db::RocksDBAccountChangeIndexView;
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub enum DatabaseConfig {
@@ -335,6 +339,83 @@ impl RecoverableVertexStore for StateManagerDatabase {
         match self {
             StateManagerDatabase::InMemory(store) => store.get_vertex_store(),
             StateManagerDatabase::RocksDB(store) => store.get_vertex_store(),
+        }
+    }
+}
+
+pub enum StateManagerDatabaseAccountChangeIndexView<'a> {
+    InMemory(InMemoryAccountChangeIndexView<'a>),
+    RocksDB(RocksDBAccountChangeIndexView<'a>),
+}
+
+impl StoreIndexExtension for StateManagerDatabaseAccountChangeIndexView<'_> {
+    fn last_processed_state_version(&self) -> u64 {
+        match self {
+            StateManagerDatabaseAccountChangeIndexView::InMemory(index_view) => {
+                index_view.last_processed_state_version()
+            }
+            StateManagerDatabaseAccountChangeIndexView::RocksDB(index_view) => {
+                index_view.last_processed_state_version()
+            }
+        }
+    }
+
+    fn is_enabled(&self) -> bool {
+        match self {
+            StateManagerDatabaseAccountChangeIndexView::InMemory(index_view) => {
+                index_view.is_enabled()
+            }
+            StateManagerDatabaseAccountChangeIndexView::RocksDB(index_view) => {
+                index_view.is_enabled()
+            }
+        }
+    }
+
+    fn disable(&mut self) {
+        match self {
+            StateManagerDatabaseAccountChangeIndexView::InMemory(index_view) => {
+                index_view.disable()
+            }
+            StateManagerDatabaseAccountChangeIndexView::RocksDB(index_view) => index_view.disable(),
+        }
+    }
+
+    fn enable(&mut self) {
+        match self {
+            StateManagerDatabaseAccountChangeIndexView::InMemory(index_view) => index_view.enable(),
+            StateManagerDatabaseAccountChangeIndexView::RocksDB(index_view) => index_view.enable(),
+        }
+    }
+}
+
+impl AccountChangeIndexExtension for StateManagerDatabaseAccountChangeIndexView<'_> {
+    fn get_state_versions(
+        &self,
+        account: Address,
+        start_state_version_inclusive: u64,
+        limit: usize,
+    ) -> Vec<u64> {
+        match self {
+            StateManagerDatabaseAccountChangeIndexView::InMemory(index_view) => {
+                index_view.get_state_versions(account, start_state_version_inclusive, limit)
+            }
+            StateManagerDatabaseAccountChangeIndexView::RocksDB(index_view) => {
+                index_view.get_state_versions(account, start_state_version_inclusive, limit)
+            }
+        }
+    }
+}
+
+impl<'a> AccountChangeIndexStoreCapability<'a> for StateManagerDatabase {
+    type AccountChangeIndex = StateManagerDatabaseAccountChangeIndexView<'a>;
+    fn account_change_index(&'a mut self) -> Self::AccountChangeIndex {
+        match self {
+            StateManagerDatabase::InMemory(store) => {
+                StateManagerDatabaseAccountChangeIndexView::InMemory(store.account_change_index())
+            }
+            StateManagerDatabase::RocksDB(store) => {
+                StateManagerDatabaseAccountChangeIndexView::RocksDB(store.account_change_index())
+            }
         }
     }
 }

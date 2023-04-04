@@ -63,6 +63,7 @@
  */
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
+use crate::store::traits::extensions::*;
 use crate::store::traits::*;
 use crate::transaction::LedgerTransaction;
 use crate::types::UserPayloadHash;
@@ -75,12 +76,14 @@ use crate::{
 use crate::query::TransactionIdentifierLoader;
 use radix_engine::ledger::OutputValue;
 use radix_engine::system::node_substates::PersistedSubstate;
+use radix_engine::types::rust::ops::Bound::{Included, Unbounded};
+use radix_engine::types::Address;
 use radix_engine_interface::api::types::{KeyValueStoreId, SubstateId};
 use radix_engine_stores::hash_tree::tree_store::{
     NodeKey, Payload, ReadableTreeStore, SerializedInMemoryTreeStore, TreeNode, WriteableTreeStore,
 };
 use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 #[derive(Debug)]
 pub struct InMemoryStore {
@@ -97,6 +100,9 @@ pub struct InMemoryStore {
     tree_node_store: SerializedInMemoryTreeStore,
     transaction_tree_slices: BTreeMap<u64, TreeSlice<TransactionTreeHash>>,
     receipt_tree_slices: BTreeMap<u64, TreeSlice<ReceiptTreeHash>>,
+    ext_account_change_index_enable: Option<bool>,
+    ext_account_change_index_last_state_version: Option<u64>,
+    ext_account_change_index_set: HashMap<Address, BTreeSet<u64>>,
 }
 
 impl InMemoryStore {
@@ -115,6 +121,9 @@ impl InMemoryStore {
             tree_node_store: SerializedInMemoryTreeStore::new(),
             transaction_tree_slices: BTreeMap::new(),
             receipt_tree_slices: BTreeMap::new(),
+            ext_account_change_index_enable: None,
+            ext_account_change_index_last_state_version: None,
+            ext_account_change_index_set: HashMap::new(),
         }
     }
 
@@ -124,6 +133,11 @@ impl InMemoryStore {
         receipt: LedgerTransactionReceipt,
         identifiers: CommittedTransactionIdentifiers,
     ) {
+        let mut account_change_index = self.account_change_index();
+        if account_change_index.is_enabled() {
+            account_change_index.update_from_receipt(identifiers.state_version, &receipt);
+        }
+
         if let LedgerTransaction::User(notarized_transaction) = &transaction {
             let intent_hash = notarized_transaction.intent_hash();
             let key_already_exists = self.transaction_intent_lookup.get(&intent_hash);
@@ -353,5 +367,82 @@ impl QueryableProofStore for InMemoryStore {
 
     fn get_last_epoch_proof(&self) -> Option<LedgerProof> {
         self.epoch_proofs.values().next_back().cloned()
+    }
+}
+
+pub struct InMemoryAccountChangeIndexView<'a> {
+    store: &'a mut InMemoryStore,
+}
+
+impl<'a> InMemoryAccountChangeIndexView<'a> {
+    fn update_from_receipt(&mut self, state_version: u64, receipt: &LedgerTransactionReceipt) {
+        for (address, _) in receipt.state_update_summary.balance_changes.iter() {
+            self.store
+                .ext_account_change_index_set
+                .entry(*address)
+                .or_insert(BTreeSet::new())
+                .insert(state_version);
+        }
+        self.store.ext_account_change_index_last_state_version = Some(state_version);
+    }
+}
+
+impl StoreIndexExtension for InMemoryAccountChangeIndexView<'_> {
+    fn last_processed_state_version(&self) -> u64 {
+        self.store
+            .ext_account_change_index_last_state_version
+            .unwrap_or(0)
+    }
+
+    fn is_enabled(&self) -> bool {
+        self.store.ext_account_change_index_enable.unwrap_or(false)
+    }
+
+    fn disable(&mut self) {
+        self.store.ext_account_change_index_enable = Some(false);
+    }
+
+    fn enable(&mut self) {
+        let last_state_version = self.store.max_state_version();
+        let last_processed_state_version = self.last_processed_state_version();
+
+        for state_version in last_processed_state_version + 1..last_state_version + 1 {
+            self.update_from_receipt(
+                state_version,
+                &self
+                    .store
+                    .transaction_receipts
+                    .get(&state_version)
+                    .unwrap()
+                    .clone(),
+            );
+        }
+
+        self.store.ext_account_change_index_enable = Some(true);
+    }
+}
+
+impl AccountChangeIndexExtension for InMemoryAccountChangeIndexView<'_> {
+    fn get_state_versions(
+        &self,
+        account: Address,
+        start_state_version_inclusive: u64,
+        limit: usize,
+    ) -> Vec<u64> {
+        match self.store.ext_account_change_index_set.get(&account) {
+            None => Vec::new(),
+            Some(state_versions) => state_versions
+                .range((Included(start_state_version_inclusive), Unbounded))
+                .take(limit)
+                .cloned()
+                .collect(),
+        }
+    }
+}
+
+impl<'a> AccountChangeIndexStoreCapability<'a> for InMemoryStore {
+    type AccountChangeIndex = InMemoryAccountChangeIndexView<'a>;
+    fn account_change_index(&'a mut self) -> Self::AccountChangeIndex {
+        InMemoryAccountChangeIndexView::<'a> { store: self }
     }
 }

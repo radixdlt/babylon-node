@@ -75,8 +75,8 @@ use crate::{
 use radix_engine::ledger::{OutputValue, QueryableSubstateStore, ReadableSubstateStore};
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{
-    scrypto_decode, scrypto_encode, KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateId,
-    SubstateOffset, ScryptoEncode, Address,
+    scrypto_decode, scrypto_encode, Address, KeyValueStoreId, KeyValueStoreOffset, RENodeId,
+    ScryptoEncode, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::api::types::NodeModuleId;
 use radix_engine_interface::data::manifest::manifest_decode;
@@ -90,9 +90,9 @@ use rocksdb::{
 use std::path::PathBuf;
 use tracing::{error, warn};
 
-use crate::transaction::LedgerTransaction;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
+use crate::transaction::LedgerTransaction;
 
 use super::traits::extensions::*;
 
@@ -177,13 +177,13 @@ impl fmt::Display for RocksDBColumnFamily {
 
 #[derive(Eq, PartialEq, PartialOrd, Ord, Clone, Debug)]
 enum PersistedConfigKeys {
-    AccountChangeIndexExtensionEnable
+    AccountChangeIndexExtensionEnable,
 }
 
 impl fmt::Display for PersistedConfigKeys {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let str = match self {
-            Self::AccountChangeIndexExtensionEnable => "account_change_index_ext_enable"
+            Self::AccountChangeIndexExtensionEnable => "account_change_index_ext_enable",
         };
         write!(f, "{str}")
     }
@@ -210,13 +210,14 @@ impl RocksDBStore {
     }
 
     fn add_transaction_to_write_batch(
-        &self,
+        &mut self,
         batch: &mut WriteBatch,
         transaction_bundle: CommittedTransactionBundle,
     ) {
         let account_change_index = self.account_change_index();
         if account_change_index.is_enabled() {
-            account_change_index.batch_update_from_committed_transaction(batch, &transaction_bundle);
+            account_change_index
+                .batch_update_from_committed_transaction(batch, &transaction_bundle);
         }
 
         let (transaction, receipt, identifiers) = transaction_bundle;
@@ -318,7 +319,9 @@ impl RocksDBStore {
     }
 
     fn put<T: ScryptoEncode>(&self, cf: &RocksDBColumnFamily, key: &[u8], value: &T) {
-        self.db.put_cf(self.cf_handle(cf), key, scrypto_encode(value).unwrap()).expect("Failed writing to RocksDB.");
+        self.db
+            .put_cf(self.cf_handle(cf), key, scrypto_encode(value).unwrap())
+            .expect("Failed writing to RocksDB.");
     }
 }
 
@@ -822,31 +825,40 @@ impl RecoverableVertexStore for RocksDBStore {
 }
 
 pub struct RocksDBAccountChangeIndexView<'a> {
-    store: &'a RocksDBStore
+    store: &'a mut RocksDBStore,
 }
 
 impl<'a> RocksDBAccountChangeIndexView<'a> {
-    fn batch_update_from_receipt(&self, batch: &mut WriteBatch, state_version: u64, receipt: &LedgerTransactionReceipt) {
+    fn batch_update_from_receipt(
+        &self,
+        batch: &mut WriteBatch,
+        state_version: u64,
+        receipt: &LedgerTransactionReceipt,
+    ) {
         for (address, _) in receipt.state_update_summary.balance_changes.iter() {
             let mut key = address.to_vec();
             key.extend(state_version.to_be_bytes());
             batch.put_cf(
                 self.store.cf_handle(&AccountChangeAtStateVersionSet),
                 key,
-                []
+                [],
             );
         }
     }
 
-    fn batch_update_from_committed_transaction(&self, batch: &mut WriteBatch, transaction_bundle: &CommittedTransactionBundle) {
+    fn batch_update_from_committed_transaction(
+        &self,
+        batch: &mut WriteBatch,
+        transaction_bundle: &CommittedTransactionBundle,
+    ) {
         let state_version = transaction_bundle.2.state_version;
 
         self.batch_update_from_receipt(batch, state_version, &transaction_bundle.1);
-        
+
         batch.put_cf(
             self.store.cf_handle(&AccountChangeIndexExt),
             "current_state_version".as_bytes(),
-            state_version.to_be_bytes()
+            state_version.to_be_bytes(),
         );
     }
 
@@ -877,20 +889,28 @@ impl<'a> RocksDBAccountChangeIndexView<'a> {
                     }
                     last_state_version = expected_state_version;
 
-                    let next_receipt: LedgerTransactionReceipt = scrypto_decode(next_receipt_kv.1.as_ref()).unwrap();
+                    let next_receipt: LedgerTransactionReceipt =
+                        scrypto_decode(next_receipt_kv.1.as_ref()).unwrap();
                     self.batch_update_from_receipt(&mut batch, last_state_version, &next_receipt);
 
                     index += 1;
-                },
+                }
                 None => {
                     break;
                 }
             }
         }
 
-        batch.put_cf(self.store.cf_handle(&AccountChangeIndexExt), "current_state_version".as_bytes(), last_state_version.to_be_bytes());
+        batch.put_cf(
+            self.store.cf_handle(&AccountChangeIndexExt),
+            "current_state_version".as_bytes(),
+            last_state_version.to_be_bytes(),
+        );
 
-        self.store.db.write(batch).expect("Account change index build failed");
+        self.store
+            .db
+            .write(batch)
+            .expect("Account change index build failed");
 
         last_state_version
     }
@@ -898,36 +918,60 @@ impl<'a> RocksDBAccountChangeIndexView<'a> {
 
 impl StoreIndexExtension for RocksDBAccountChangeIndexView<'_> {
     fn last_processed_state_version(&self) -> u64 {
-        self.store.get_by_key::<u64>(&AccountChangeIndexExt, "current_state_version".as_bytes()).unwrap_or(0)
+        self.store
+            .get_by_key::<u64>(&AccountChangeIndexExt, "current_state_version".as_bytes())
+            .unwrap_or(0)
     }
 
     fn is_enabled(&self) -> bool {
-        self.store.get_by_key::<bool>(&PersistentConfig, PersistedConfigKeys::AccountChangeIndexExtensionEnable.to_string().as_bytes()).unwrap_or(false)
+        self.store
+            .get_by_key::<bool>(
+                &PersistentConfig,
+                PersistedConfigKeys::AccountChangeIndexExtensionEnable
+                    .to_string()
+                    .as_bytes(),
+            )
+            .unwrap_or(false)
     }
 
-    fn disable(&self) {
-        self.store.put(&PersistentConfig, PersistedConfigKeys::AccountChangeIndexExtensionEnable.to_string().as_bytes(), &false);
+    fn disable(&mut self) {
+        self.store.put(
+            &PersistentConfig,
+            PersistedConfigKeys::AccountChangeIndexExtensionEnable
+                .to_string()
+                .as_bytes(),
+            &false,
+        );
     }
 
-    fn enable(&self) {
+    fn enable(&mut self) {
         const MAX_TRANSACTION_BATCH: u64 = 1024;
 
         let last_state_version = self.store.max_state_version();
         let mut last_processed_state_version = self.last_processed_state_version();
-        
+
         while last_processed_state_version < last_state_version {
-            last_processed_state_version = self.update_from_store(last_processed_state_version + 1, MAX_TRANSACTION_BATCH);
+            last_processed_state_version =
+                self.update_from_store(last_processed_state_version + 1, MAX_TRANSACTION_BATCH);
         }
-        
-        self.store.put(&PersistentConfig, PersistedConfigKeys::AccountChangeIndexExtensionEnable.to_string().as_bytes(), &false);
+
+        self.store.put(
+            &PersistentConfig,
+            PersistedConfigKeys::AccountChangeIndexExtensionEnable
+                .to_string()
+                .as_bytes(),
+            &true,
+        );
     }
 }
 
 impl AccountChangeIndexExtension for RocksDBAccountChangeIndexView<'_> {
-    fn get_state_versions(&self, account: Address,
-            start_state_version_inclusive: u64,
-            limit: usize
-        ) -> Vec<u64> {
+    fn get_state_versions(
+        &self,
+        account: Address,
+        start_state_version_inclusive: u64,
+        limit: usize,
+    ) -> Vec<u64> {
         let mut key = account.to_vec();
         key.extend(start_state_version_inclusive.to_be_bytes());
 
@@ -949,7 +993,7 @@ impl AccountChangeIndexExtension for RocksDBAccountChangeIndexView<'_> {
                         break;
                     }
                     res.push(state_version);
-                },
+                }
                 None => {
                     break;
                 }
@@ -962,9 +1006,7 @@ impl AccountChangeIndexExtension for RocksDBAccountChangeIndexView<'_> {
 
 impl<'a> AccountChangeIndexStoreCapability<'a> for RocksDBStore {
     type AccountChangeIndex = RocksDBAccountChangeIndexView<'a>;
-    fn account_change_index(&'a self) -> Self::AccountChangeIndex {
-        RocksDBAccountChangeIndexView::<'a> {
-            store: &self
-        }
+    fn account_change_index(&'a mut self) -> Self::AccountChangeIndex {
+        RocksDBAccountChangeIndexView::<'a> { store: self }
     }
 }
