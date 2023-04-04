@@ -88,6 +88,7 @@ pub(crate) fn not_found_error<E: ErrorDetails>(message: impl Into<String>) -> Re
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn not_implemented<E: ErrorDetails>(message: impl Into<String>) -> ResponseError<E> {
     ResponseError {
         status_code: StatusCode::NOT_IMPLEMENTED,

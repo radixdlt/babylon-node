@@ -228,13 +228,16 @@ pub mod commit {
 pub mod extensions {
     use radix_engine::types::Address;
 
-    pub trait StoreIndexExtension {
+    pub trait QueryableStoreIndexExtension {
         fn last_processed_state_version(&self) -> u64;
 
         fn is_enabled(&self) -> bool;
+    }
 
+    pub trait WriteableStoreIndexExtension {
         fn disable(&mut self);
 
+        /// This is also responsible for building the missing parts of the index up to the latest state version
         fn enable(&mut self);
     }
 
@@ -248,7 +251,11 @@ pub mod extensions {
     }
 
     pub trait AccountChangeIndexStoreCapability<'a> {
-        type AccountChangeIndex: 'a + AccountChangeIndexExtension + StoreIndexExtension;
-        fn account_change_index(&'a mut self) -> Self::AccountChangeIndex;
+        type QueryableAccountChangeIndex: 'a
+            + AccountChangeIndexExtension
+            + QueryableStoreIndexExtension;
+        type WriteableAccountChangeIndex: 'a + WriteableStoreIndexExtension;
+        fn query_account_change_index(&'a self) -> Self::QueryableAccountChangeIndex;
+        fn write_account_change_index(&'a mut self) -> Self::WriteableAccountChangeIndex;
     }
 }

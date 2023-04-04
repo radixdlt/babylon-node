@@ -214,9 +214,8 @@ impl RocksDBStore {
         batch: &mut WriteBatch,
         transaction_bundle: CommittedTransactionBundle,
     ) {
-        let account_change_index = self.account_change_index();
-        if account_change_index.is_enabled() {
-            account_change_index
+        if self.query_account_change_index().is_enabled() {
+            self.write_account_change_index()
                 .batch_update_from_committed_transaction(batch, &transaction_bundle);
         }
 
@@ -824,11 +823,11 @@ impl RecoverableVertexStore for RocksDBStore {
     }
 }
 
-pub struct RocksDBAccountChangeIndexView<'a> {
+pub struct WriteableRocksDBAccountChangeIndex<'a> {
     store: &'a mut RocksDBStore,
 }
 
-impl<'a> RocksDBAccountChangeIndexView<'a> {
+impl<'a> WriteableRocksDBAccountChangeIndex<'a> {
     fn batch_update_from_receipt(
         &self,
         batch: &mut WriteBatch,
@@ -862,7 +861,7 @@ impl<'a> RocksDBAccountChangeIndexView<'a> {
         );
     }
 
-    fn update_from_store(&self, start_state_version_inclusive: u64, limit: u64) -> u64 {
+    fn update_from_store(&mut self, start_state_version_inclusive: u64, limit: u64) -> u64 {
         let start_state_version_bytes = start_state_version_inclusive.to_be_bytes();
         let mut receipts_iter = self.store.db.iterator_cf(
             self.store.cf_handle(&TxnReceiptByStateVersion),
@@ -916,24 +915,7 @@ impl<'a> RocksDBAccountChangeIndexView<'a> {
     }
 }
 
-impl StoreIndexExtension for RocksDBAccountChangeIndexView<'_> {
-    fn last_processed_state_version(&self) -> u64 {
-        self.store
-            .get_by_key::<u64>(&AccountChangeIndexExt, "current_state_version".as_bytes())
-            .unwrap_or(0)
-    }
-
-    fn is_enabled(&self) -> bool {
-        self.store
-            .get_by_key::<bool>(
-                &PersistentConfig,
-                PersistedConfigKeys::AccountChangeIndexExtensionEnable
-                    .to_string()
-                    .as_bytes(),
-            )
-            .unwrap_or(false)
-    }
-
+impl WriteableStoreIndexExtension for WriteableRocksDBAccountChangeIndex<'_> {
     fn disable(&mut self) {
         self.store.put(
             &PersistentConfig,
@@ -948,7 +930,10 @@ impl StoreIndexExtension for RocksDBAccountChangeIndexView<'_> {
         const MAX_TRANSACTION_BATCH: u64 = 1024;
 
         let last_state_version = self.store.max_state_version();
-        let mut last_processed_state_version = self.last_processed_state_version();
+        let mut last_processed_state_version = self
+            .store
+            .query_account_change_index()
+            .last_processed_state_version();
 
         while last_processed_state_version < last_state_version {
             last_processed_state_version =
@@ -965,7 +950,30 @@ impl StoreIndexExtension for RocksDBAccountChangeIndexView<'_> {
     }
 }
 
-impl AccountChangeIndexExtension for RocksDBAccountChangeIndexView<'_> {
+pub struct QueryableRocksDBAccountChangeIndex<'a> {
+    store: &'a RocksDBStore,
+}
+
+impl QueryableStoreIndexExtension for QueryableRocksDBAccountChangeIndex<'_> {
+    fn last_processed_state_version(&self) -> u64 {
+        self.store
+            .get_by_key::<u64>(&AccountChangeIndexExt, "current_state_version".as_bytes())
+            .unwrap_or(0)
+    }
+
+    fn is_enabled(&self) -> bool {
+        self.store
+            .get_by_key::<bool>(
+                &PersistentConfig,
+                PersistedConfigKeys::AccountChangeIndexExtensionEnable
+                    .to_string()
+                    .as_bytes(),
+            )
+            .unwrap_or(false)
+    }
+}
+
+impl AccountChangeIndexExtension for QueryableRocksDBAccountChangeIndex<'_> {
     fn get_state_versions(
         &self,
         account: Address,
@@ -1005,8 +1013,14 @@ impl AccountChangeIndexExtension for RocksDBAccountChangeIndexView<'_> {
 }
 
 impl<'a> AccountChangeIndexStoreCapability<'a> for RocksDBStore {
-    type AccountChangeIndex = RocksDBAccountChangeIndexView<'a>;
-    fn account_change_index(&'a mut self) -> Self::AccountChangeIndex {
-        RocksDBAccountChangeIndexView::<'a> { store: self }
+    type QueryableAccountChangeIndex = QueryableRocksDBAccountChangeIndex<'a>;
+    type WriteableAccountChangeIndex = WriteableRocksDBAccountChangeIndex<'a>;
+
+    fn query_account_change_index(&'a self) -> Self::QueryableAccountChangeIndex {
+        QueryableRocksDBAccountChangeIndex::<'a> { store: self }
+    }
+
+    fn write_account_change_index(&'a mut self) -> Self::WriteableAccountChangeIndex {
+        WriteableRocksDBAccountChangeIndex::<'a> { store: self }
     }
 }

@@ -88,8 +88,10 @@ use crate::{
 use radix_engine::types::{Address, KeyValueStoreId, SubstateId};
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeStore, TreeNode};
 
-use super::in_memory::InMemoryAccountChangeIndexView;
-use super::rocks_db::RocksDBAccountChangeIndexView;
+use super::in_memory::QueryableInMemoryAccountChangeIndex;
+use super::in_memory::WriteableInMemoryAccountChangeIndex;
+use super::rocks_db::QueryableRocksDBAccountChangeIndex;
+use super::rocks_db::WriteableRocksDBAccountChangeIndex;
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub enum DatabaseConfig {
@@ -343,18 +345,47 @@ impl RecoverableVertexStore for StateManagerDatabase {
     }
 }
 
-pub enum StateManagerDatabaseAccountChangeIndexView<'a> {
-    InMemory(InMemoryAccountChangeIndexView<'a>),
-    RocksDB(RocksDBAccountChangeIndexView<'a>),
+pub enum WriteableStateManagerDatabaseAccountChangeIndex<'a> {
+    InMemory(WriteableInMemoryAccountChangeIndex<'a>),
+    RocksDB(WriteableRocksDBAccountChangeIndex<'a>),
 }
 
-impl StoreIndexExtension for StateManagerDatabaseAccountChangeIndexView<'_> {
+impl WriteableStoreIndexExtension for WriteableStateManagerDatabaseAccountChangeIndex<'_> {
+    fn disable(&mut self) {
+        match self {
+            WriteableStateManagerDatabaseAccountChangeIndex::InMemory(index_view) => {
+                index_view.disable()
+            }
+            WriteableStateManagerDatabaseAccountChangeIndex::RocksDB(index_view) => {
+                index_view.disable()
+            }
+        }
+    }
+
+    fn enable(&mut self) {
+        match self {
+            WriteableStateManagerDatabaseAccountChangeIndex::InMemory(index_view) => {
+                index_view.enable()
+            }
+            WriteableStateManagerDatabaseAccountChangeIndex::RocksDB(index_view) => {
+                index_view.enable()
+            }
+        }
+    }
+}
+
+pub enum QueryableStateManagerDatabaseAccountChangeIndex<'a> {
+    InMemory(QueryableInMemoryAccountChangeIndex<'a>),
+    RocksDB(QueryableRocksDBAccountChangeIndex<'a>),
+}
+
+impl QueryableStoreIndexExtension for QueryableStateManagerDatabaseAccountChangeIndex<'_> {
     fn last_processed_state_version(&self) -> u64 {
         match self {
-            StateManagerDatabaseAccountChangeIndexView::InMemory(index_view) => {
+            QueryableStateManagerDatabaseAccountChangeIndex::InMemory(index_view) => {
                 index_view.last_processed_state_version()
             }
-            StateManagerDatabaseAccountChangeIndexView::RocksDB(index_view) => {
+            QueryableStateManagerDatabaseAccountChangeIndex::RocksDB(index_view) => {
                 index_view.last_processed_state_version()
             }
         }
@@ -362,33 +393,17 @@ impl StoreIndexExtension for StateManagerDatabaseAccountChangeIndexView<'_> {
 
     fn is_enabled(&self) -> bool {
         match self {
-            StateManagerDatabaseAccountChangeIndexView::InMemory(index_view) => {
+            QueryableStateManagerDatabaseAccountChangeIndex::InMemory(index_view) => {
                 index_view.is_enabled()
             }
-            StateManagerDatabaseAccountChangeIndexView::RocksDB(index_view) => {
+            QueryableStateManagerDatabaseAccountChangeIndex::RocksDB(index_view) => {
                 index_view.is_enabled()
             }
-        }
-    }
-
-    fn disable(&mut self) {
-        match self {
-            StateManagerDatabaseAccountChangeIndexView::InMemory(index_view) => {
-                index_view.disable()
-            }
-            StateManagerDatabaseAccountChangeIndexView::RocksDB(index_view) => index_view.disable(),
-        }
-    }
-
-    fn enable(&mut self) {
-        match self {
-            StateManagerDatabaseAccountChangeIndexView::InMemory(index_view) => index_view.enable(),
-            StateManagerDatabaseAccountChangeIndexView::RocksDB(index_view) => index_view.enable(),
         }
     }
 }
 
-impl AccountChangeIndexExtension for StateManagerDatabaseAccountChangeIndexView<'_> {
+impl AccountChangeIndexExtension for QueryableStateManagerDatabaseAccountChangeIndex<'_> {
     fn get_state_versions(
         &self,
         account: Address,
@@ -396,10 +411,10 @@ impl AccountChangeIndexExtension for StateManagerDatabaseAccountChangeIndexView<
         limit: usize,
     ) -> Vec<u64> {
         match self {
-            StateManagerDatabaseAccountChangeIndexView::InMemory(index_view) => {
+            QueryableStateManagerDatabaseAccountChangeIndex::InMemory(index_view) => {
                 index_view.get_state_versions(account, start_state_version_inclusive, limit)
             }
-            StateManagerDatabaseAccountChangeIndexView::RocksDB(index_view) => {
+            QueryableStateManagerDatabaseAccountChangeIndex::RocksDB(index_view) => {
                 index_view.get_state_versions(account, start_state_version_inclusive, limit)
             }
         }
@@ -407,14 +422,35 @@ impl AccountChangeIndexExtension for StateManagerDatabaseAccountChangeIndexView<
 }
 
 impl<'a> AccountChangeIndexStoreCapability<'a> for StateManagerDatabase {
-    type AccountChangeIndex = StateManagerDatabaseAccountChangeIndexView<'a>;
-    fn account_change_index(&'a mut self) -> Self::AccountChangeIndex {
+    type QueryableAccountChangeIndex = QueryableStateManagerDatabaseAccountChangeIndex<'a>;
+    type WriteableAccountChangeIndex = WriteableStateManagerDatabaseAccountChangeIndex<'a>;
+
+    fn query_account_change_index(&'a self) -> Self::QueryableAccountChangeIndex {
         match self {
             StateManagerDatabase::InMemory(store) => {
-                StateManagerDatabaseAccountChangeIndexView::InMemory(store.account_change_index())
+                QueryableStateManagerDatabaseAccountChangeIndex::InMemory(
+                    store.query_account_change_index(),
+                )
             }
             StateManagerDatabase::RocksDB(store) => {
-                StateManagerDatabaseAccountChangeIndexView::RocksDB(store.account_change_index())
+                QueryableStateManagerDatabaseAccountChangeIndex::RocksDB(
+                    store.query_account_change_index(),
+                )
+            }
+        }
+    }
+
+    fn write_account_change_index(&'a mut self) -> Self::WriteableAccountChangeIndex {
+        match self {
+            StateManagerDatabase::InMemory(store) => {
+                WriteableStateManagerDatabaseAccountChangeIndex::InMemory(
+                    store.write_account_change_index(),
+                )
+            }
+            StateManagerDatabase::RocksDB(store) => {
+                WriteableStateManagerDatabaseAccountChangeIndex::RocksDB(
+                    store.write_account_change_index(),
+                )
             }
         }
     }
