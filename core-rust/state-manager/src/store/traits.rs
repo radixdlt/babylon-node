@@ -224,3 +224,29 @@ pub mod commit {
         fn commit(&mut self, commit_bundle: CommitBundle);
     }
 }
+
+pub mod extensions {
+    use radix_engine::types::Address;
+
+    pub trait StoreIndexExtension {
+        fn last_processed_state_version(&self) -> u64;
+
+        fn is_enabled(&self) -> bool;
+
+        fn disable(&self);
+
+        fn enable(&self);
+    }
+
+    pub trait AccountChangeIndexExtension {
+        fn get_state_versions(&self, account: Address,
+            start_state_version_inclusive: u64,
+            limit: usize
+        ) -> Vec<u64>;
+    }
+
+    pub trait AccountChangeIndexStoreCapability<'a> {
+        type AccountChangeIndex: 'a + AccountChangeIndexExtension + StoreIndexExtension;
+        fn account_change_index(&'a self) -> Self::AccountChangeIndex;
+    }
+}

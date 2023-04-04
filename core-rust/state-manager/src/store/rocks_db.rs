@@ -76,7 +76,7 @@ use radix_engine::ledger::{OutputValue, QueryableSubstateStore, ReadableSubstate
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{
     scrypto_decode, scrypto_encode, KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateId,
-    SubstateOffset,
+    SubstateOffset, ScryptoEncode, Address,
 };
 use radix_engine_interface::api::types::NodeModuleId;
 use radix_engine_interface::data::manifest::manifest_decode;
@@ -91,6 +91,10 @@ use std::path::PathBuf;
 use tracing::{error, warn};
 
 use crate::transaction::LedgerTransaction;
+use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
+use crate::query::TransactionIdentifierLoader;
+
+use super::traits::extensions::*;
 
 #[derive(Eq, PartialEq, PartialOrd, Ord, Clone, Debug)]
 enum RocksDBColumnFamily {
@@ -115,13 +119,16 @@ enum RocksDBColumnFamily {
     /// Transaction/Receipt accumulator tree slices keyed by state version of their ledger header
     TransactionAccuTreeSliceByStateVersion,
     ReceiptAccuTreeSliceByStateVersion,
+    /// Core-API, DB, indexes config state
+    PersistentConfig,
+    /// Account to state versions
+    AccountChangeIndexExt,
+    AccountChangeAtStateVersionSet, // null value, account_address#state_version key
 }
 
-use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
-use crate::query::TransactionIdentifierLoader;
 use RocksDBColumnFamily::*;
 
-const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 14] = [
+const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 17] = [
     TxnByStateVersion,
     TxnReceiptByStateVersion,
     TxnAccumulatorHashByStateVersion,
@@ -136,6 +143,9 @@ const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 14] = [
     StaleStateHashTreeNodeKeysByStateVersion,
     TransactionAccuTreeSliceByStateVersion,
     ReceiptAccuTreeSliceByStateVersion,
+    PersistentConfig,
+    AccountChangeIndexExt,
+    AccountChangeAtStateVersionSet,
 ];
 
 impl fmt::Display for RocksDBColumnFamily {
@@ -157,6 +167,23 @@ impl fmt::Display for RocksDBColumnFamily {
                 "transaction_accu_tree_slice_by_state_version"
             }
             ReceiptAccuTreeSliceByStateVersion => "receipt_accu_tree_slice_by_state_version",
+            PersistentConfig => "persistent_config",
+            AccountChangeIndexExt => "account_change_index_extension",
+            AccountChangeAtStateVersionSet => "account_change_at_state_version_set",
+        };
+        write!(f, "{str}")
+    }
+}
+
+#[derive(Eq, PartialEq, PartialOrd, Ord, Clone, Debug)]
+enum PersistedConfigKeys {
+    AccountChangeIndexExtensionEnable
+}
+
+impl fmt::Display for PersistedConfigKeys {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let str = match self {
+            Self::AccountChangeIndexExtensionEnable => "account_change_index_ext_enable"
         };
         write!(f, "{str}")
     }
@@ -187,6 +214,11 @@ impl RocksDBStore {
         batch: &mut WriteBatch,
         transaction_bundle: CommittedTransactionBundle,
     ) {
+        let account_change_index = self.account_change_index();
+        if account_change_index.is_enabled() {
+            account_change_index.batch_update_from_committed_transaction(batch, &transaction_bundle);
+        }
+
         let (transaction, receipt, identifiers) = transaction_bundle;
         let state_version = identifiers.state_version;
         let ledger_payload_hash = transaction.ledger_payload_hash();
@@ -283,6 +315,10 @@ impl RocksDBStore {
             .get_pinned_cf(self.cf_handle(cf), key)
             .unwrap()
             .map(|pinnable_slice| scrypto_decode(pinnable_slice.as_ref()).unwrap())
+    }
+
+    fn put<T: ScryptoEncode>(&self, cf: &RocksDBColumnFamily, key: &[u8], value: &T) {
+        self.db.put_cf(self.cf_handle(cf), key, scrypto_encode(value).unwrap()).expect("Failed writing to RocksDB.");
     }
 }
 
@@ -782,5 +818,153 @@ impl WriteableVertexStore for RocksDBStore {
 impl RecoverableVertexStore for RocksDBStore {
     fn get_vertex_store(&self) -> Option<Vec<u8>> {
         self.db.get_cf(self.cf_handle(&VertexStore), []).unwrap()
+    }
+}
+
+pub struct RocksDBAccountChangeIndexView<'a> {
+    store: &'a RocksDBStore
+}
+
+impl<'a> RocksDBAccountChangeIndexView<'a> {
+    fn batch_update_from_receipt(&self, batch: &mut WriteBatch, state_version: u64, receipt: &LedgerTransactionReceipt) {
+        for (address, _) in receipt.state_update_summary.balance_changes.iter() {
+            let mut key = address.to_vec();
+            key.extend(state_version.to_be_bytes());
+            batch.put_cf(
+                self.store.cf_handle(&AccountChangeAtStateVersionSet),
+                key,
+                []
+            );
+        }
+    }
+
+    fn batch_update_from_committed_transaction(&self, batch: &mut WriteBatch, transaction_bundle: &CommittedTransactionBundle) {
+        let state_version = transaction_bundle.2.state_version;
+
+        self.batch_update_from_receipt(batch, state_version, &transaction_bundle.1);
+        
+        batch.put_cf(
+            self.store.cf_handle(&AccountChangeIndexExt),
+            "current_state_version".as_bytes(),
+            state_version.to_be_bytes()
+        );
+    }
+
+    fn update_from_store(&self, start_state_version_inclusive: u64, limit: u64) -> u64 {
+        let start_state_version_bytes = start_state_version_inclusive.to_be_bytes();
+        let mut receipts_iter = self.store.db.iterator_cf(
+            self.store.cf_handle(&TxnReceiptByStateVersion),
+            IteratorMode::From(&start_state_version_bytes, Direction::Forward),
+        );
+
+        let mut batch = WriteBatch::default();
+
+        let mut last_state_version = start_state_version_inclusive;
+        let mut index = 0;
+        while index < limit {
+            match receipts_iter.next() {
+                Some(next_receipt_result) => {
+                    let next_receipt_kv = next_receipt_result.unwrap();
+
+                    let next_receipt_state_version =
+                        u64::from_be_bytes((*next_receipt_kv.0).try_into().unwrap());
+
+                    let expected_state_version = start_state_version_inclusive + index;
+                    if expected_state_version != next_receipt_state_version {
+                        panic!(
+                            "DB inconsistency! Missing receipt at state version {expected_state_version}"
+                        );
+                    }
+                    last_state_version = expected_state_version;
+
+                    let next_receipt: LedgerTransactionReceipt = scrypto_decode(next_receipt_kv.1.as_ref()).unwrap();
+                    self.batch_update_from_receipt(&mut batch, last_state_version, &next_receipt);
+
+                    index += 1;
+                },
+                None => {
+                    break;
+                }
+            }
+        }
+
+        batch.put_cf(self.store.cf_handle(&AccountChangeIndexExt), "current_state_version".as_bytes(), last_state_version.to_be_bytes());
+
+        self.store.db.write(batch).expect("Account change index build failed");
+
+        last_state_version
+    }
+}
+
+impl StoreIndexExtension for RocksDBAccountChangeIndexView<'_> {
+    fn last_processed_state_version(&self) -> u64 {
+        self.store.get_by_key::<u64>(&AccountChangeIndexExt, "current_state_version".as_bytes()).unwrap_or(0)
+    }
+
+    fn is_enabled(&self) -> bool {
+        self.store.get_by_key::<bool>(&PersistentConfig, PersistedConfigKeys::AccountChangeIndexExtensionEnable.to_string().as_bytes()).unwrap_or(false)
+    }
+
+    fn disable(&self) {
+        self.store.put(&PersistentConfig, PersistedConfigKeys::AccountChangeIndexExtensionEnable.to_string().as_bytes(), &false);
+    }
+
+    fn enable(&self) {
+        const MAX_TRANSACTION_BATCH: u64 = 1024;
+
+        let last_state_version = self.store.max_state_version();
+        let mut last_processed_state_version = self.last_processed_state_version();
+        
+        while last_processed_state_version < last_state_version {
+            last_processed_state_version = self.update_from_store(last_processed_state_version + 1, MAX_TRANSACTION_BATCH);
+        }
+        
+        self.store.put(&PersistentConfig, PersistedConfigKeys::AccountChangeIndexExtensionEnable.to_string().as_bytes(), &false);
+    }
+}
+
+impl AccountChangeIndexExtension for RocksDBAccountChangeIndexView<'_> {
+    fn get_state_versions(&self, account: Address,
+            start_state_version_inclusive: u64,
+            limit: usize
+        ) -> Vec<u64> {
+        let mut key = account.to_vec();
+        key.extend(start_state_version_inclusive.to_be_bytes());
+
+        let account_bytes = account.to_vec();
+
+        let mut account_change_iter = self.store.db.iterator_cf(
+            self.store.cf_handle(&TxnReceiptByStateVersion),
+            IteratorMode::From(&key, Direction::Forward),
+        );
+
+        let mut res = Vec::new();
+        while res.len() < limit {
+            match account_change_iter.next() {
+                Some(entry) => {
+                    let (key, _value) = entry.unwrap();
+                    let (address_bytes, state_version_bytes) = key.split_at(key.len() - 4);
+                    let state_version = u64::from_be_bytes(state_version_bytes.try_into().unwrap());
+                    if address_bytes != account_bytes {
+                        break;
+                    }
+                    res.push(state_version);
+                },
+                None => {
+                    break;
+                }
+            }
+        }
+
+        res
+    }
+}
+
+impl<'a> AccountChangeIndexStoreCapability<'a> for RocksDBStore {
+    type AccountChangeIndex = RocksDBAccountChangeIndexView<'a>;
+    fn account_change_index(&'a self) -> Self::AccountChangeIndex {
+        RocksDBAccountChangeIndexView::<'a> {
+            store: &self
+        }
     }
 }
