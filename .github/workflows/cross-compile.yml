@@ -91,19 +91,59 @@ jobs:
           if-no-files-found: error
       - if: github.event_name == 'release'
         name: Package libcorerust
-        run: | 
-          zip -j babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip ${{ github.workspace }}/core-rust/target/${{ matrix.target }}/release/${{ matrix.artifact }}
-          ls
+        uses: montudor/action-zip@v1
+        with:
+          args: zip -j babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip ${{ github.workspace }}/core-rust/target/${{ matrix.target }}/release/${{ matrix.artifact }}
       - if: github.event_name == 'release'
         uses: actions/upload-artifact@master
         with:
-          name: libcorerust-${{ matrix.target }}.zip
+          name: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
           path: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
           if-no-files-found: error
+      
+  release:
+    if: github.event_name == 'release'
+    needs: 
+      - build
+    runs-on: 'ubuntu-latest'
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact: 'libcorerust.dylib'
+            zipname: 'arch-darwin-x86_64'
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact: 'libcorerust.dylib'
+            zipname: 'arch-darwin-aarch64'
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact: 'libcorerust.so'
+            zipname: 'arch-linux-x86_64'
+          # - os: ubuntu-latest
+          #   target: aarch64-unknown-linux-gnu
+          #   suffix: 'so'
+            # dependency: "sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu"
+          # - os: ubuntu-latest
+          #   target: i686-unknown-linux-gnu
+          #   suffix: 'so'
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: 'corerust.dll'
+            zipname: 'arch-windows-x86_64-msvc'
+          - os: windows-latest
+            target: x86_64-pc-windows-gnu
+            artifact: 'corerust.dll'
+            zipname: 'arch-windows-x86_64-gnu'
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
       - if: github.event_name == 'release'
         name: Get release
         id: get_release
-        uses: bruceadams/get-release@f589ce0779c7bef1faf175f7488c972eb47dc046
+        uses: bruceadams/get-release@74c3d60f5a28f358ccf241a00c9021ea16f0569f
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - if: github.event_name == 'release'
