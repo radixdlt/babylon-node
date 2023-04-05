@@ -96,6 +96,7 @@ jobs:
     needs: 
       - build
     runs-on: 'ubuntu-latest'
+    continue-on-error: true
     strategy:
       matrix:
         include:
@@ -127,6 +128,9 @@ jobs:
             artifact: 'corerust.dll'
             zipname: 'arch-windows-x86_64-gnu'
     steps:
+      - uses: actions/checkout@master
+        with:
+          lfs: true
       - uses: actions/download-artifact@v3
         with:
           name: libcorerust-${{ matrix.target }}
@@ -135,11 +139,12 @@ jobs:
         run: |
           ls -lah
           ls -lah libcorerust-${{ matrix.target }}
-      - if: github.event_name == 'release'
-        name: Package libcorerust
-        uses: montudor/action-zip@v1
-        with:
-          args: zip --symlinks -j babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip libcorerust-${{ matrix.target }}/${{ matrix.artifact }}
+          zip -j babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip libcorerust-${{ matrix.target }}/${{ matrix.artifact }}
+      # - if: github.event_name == 'release'
+      #   name: Package libcorerust
+      #   uses: montudor/action-zip@v1
+      #   with:
+      #     args: zip --symlinks -j babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip libcorerust-${{ matrix.target }}/${{ matrix.artifact }}
       # - if: github.event_name == 'release'
       #   uses: actions/upload-artifact@master
       #   with:
