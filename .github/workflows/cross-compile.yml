@@ -76,7 +76,7 @@ jobs:
       - name: Build core-rust
         run: |
           cd core-rust
-          cargo build --release --target ${{ matrix.target }} --profile=release
+          cargo build --release --profile=release --target ${{ matrix.target }}
           pwd
           echo "ls  ./target/"
           ls  ./target/
@@ -89,17 +89,7 @@ jobs:
           name: libcorerust-${{ matrix.target }}
           path: ./core-rust/target/${{ matrix.target }}/release/${{ matrix.artifact }}
           if-no-files-found: error
-      - if: github.event_name == 'release'
-        name: Package libcorerust
-        uses: montudor/action-zip@v1
-        with:
-          args: zip --symlinks -j babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip ${{ github.workspace }}/core-rust/target/${{ matrix.target }}/release/${{ matrix.artifact }}
-      - if: github.event_name == 'release'
-        uses: actions/upload-artifact@master
-        with:
-          name: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
-          path: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
-          if-no-files-found: error
+      
       
   release:
     if: github.event_name == 'release'
@@ -139,7 +129,23 @@ jobs:
     steps:
       - uses: actions/download-artifact@v3
         with:
-          name: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
+          name: libcorerust-${{ matrix.target }}
+          path: libcorerust-${{ matrix.target }}
+      - name: Build core-rust
+        run: |
+          ls -lah
+          ls -lah libcorerust-${{ matrix.target }}
+      - if: github.event_name == 'release'
+        name: Package libcorerust
+        uses: montudor/action-zip@v1
+        with:
+          args: zip --symlinks -j babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip libcorerust-${{ matrix.target }}/${{ matrix.artifact }}
+      # - if: github.event_name == 'release'
+      #   uses: actions/upload-artifact@master
+      #   with:
+      #     name: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
+      #     path: libcorerust-${{ matrix.target }}
+      #     if-no-files-found: error
       - if: github.event_name == 'release'
         name: Get release
         id: get_release
@@ -159,6 +165,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
+          asset_path: libcorerust-${{ matrix.target }}/${{ matrix.artifact }}
           asset_name: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
           asset_content_type: application/zip
