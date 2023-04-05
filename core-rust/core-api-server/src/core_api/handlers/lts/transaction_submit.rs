@@ -2,7 +2,7 @@ use crate::core_api::*;
 
 use hyper::StatusCode;
 use models::lts_transaction_submit_error_details::LtsTransactionSubmitErrorDetails;
-use state_manager::{MempoolAddError, MempoolAddSource};
+use state_manager::MempoolAddError;
 
 #[tracing::instrument(level = "debug", skip(state), err(Debug))]
 pub(crate) async fn handle_lts_transaction_submit(
@@ -21,8 +21,7 @@ pub(crate) async fn handle_lts_transaction_submit(
     let notarized_transaction = extract_unvalidated_transaction(&request.notarized_transaction_hex)
         .map_err(|err| err.into_response_error("notarized_transaction"))?;
 
-    let result = state_manager
-        .check_for_rejection_and_add_to_mempool(MempoolAddSource::CoreApi, notarized_transaction);
+    let result = state_manager.add_to_mempool_and_trigger_relay(notarized_transaction);
 
     match result {
         Ok(_) => Ok(models::LtsTransactionSubmitResponse::new(false)),

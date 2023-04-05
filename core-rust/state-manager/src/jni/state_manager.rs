@@ -77,6 +77,8 @@ use parking_lot::RwLock;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
 
+use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
+
 const POINTER_JNI_FIELD_NAME: &str = "rustStateManagerPointer";
 
 #[no_mangle]
@@ -151,11 +153,13 @@ impl JNIStateManager {
 
         let store = StateManagerDatabase::from_config(config.db_config);
         let mempool = SimpleMempool::new(mempool_config);
+        let mempool_relay_dispatcher = MempoolRelayDispatcher::new(env, j_state_manager).unwrap();
 
         // Build the state manager.
         let state_manager = Arc::new(parking_lot::const_rwlock(StateManager::new(
             config.network_definition,
             mempool,
+            mempool_relay_dispatcher,
             store,
             config.logging_config,
         )));

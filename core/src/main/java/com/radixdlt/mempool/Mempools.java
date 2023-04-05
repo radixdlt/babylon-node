@@ -75,9 +75,8 @@ public class Mempools {
   public static <RawTx, ProcessedTx> Mempool<RawTx, ProcessedTx> empty() {
     return new Mempool<>() {
       @Override
-      public ProcessedTx addTransaction(RawTx transaction) {
+      public void addTransaction(RawTx transaction) {
         // No-op
-        return null;
       }
 
       @Override

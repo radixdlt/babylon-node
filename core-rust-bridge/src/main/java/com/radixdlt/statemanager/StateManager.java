@@ -65,7 +65,9 @@
 package com.radixdlt.statemanager;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.mempool.MempoolRelayDispatcher;
 import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 
 public final class StateManager implements AutoCloseable {
 
@@ -82,11 +84,12 @@ public final class StateManager implements AutoCloseable {
   @SuppressWarnings("unused")
   private final long rustStateManagerPointer = 0;
 
-  public static StateManager createAndInitialize(StateManagerConfig config) {
-    return new StateManager(config);
-  }
+  private final MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher;
 
-  private StateManager(StateManagerConfig config) {
+  public StateManager(
+      MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher,
+      StateManagerConfig config) {
+    this.mempoolRelayDispatcher = mempoolRelayDispatcher;
     final var encodedConfig =
         StateManagerSbor.encode(config, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
     init(this, encodedConfig);
@@ -99,6 +102,15 @@ public final class StateManager implements AutoCloseable {
 
   public void shutdown() {
     cleanup(this);
+  }
+
+  /**
+   * Delegates the dispatch of an "immediately relay new transaction from Core API" event. This
+   * method is called from Rust via JNI.
+   */
+  @SuppressWarnings("unused")
+  public void triggerMempoolRelay(RawNotarizedTransaction transaction) {
+    this.mempoolRelayDispatcher.dispatchRelay(transaction);
   }
 
   private static native void init(StateManager stateManager, byte[] config);

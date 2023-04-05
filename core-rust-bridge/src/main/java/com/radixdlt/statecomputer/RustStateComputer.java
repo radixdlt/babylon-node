@@ -145,7 +145,7 @@ public class RustStateComputer {
     return this.mempool;
   }
 
-  public MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction> getMempoolInserter() {
+  public MempoolInserter<RawNotarizedTransaction> getMempoolInserter() {
     return this.mempool::addTransaction;
   }
 

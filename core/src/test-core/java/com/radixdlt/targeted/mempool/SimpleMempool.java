@@ -87,7 +87,7 @@ public final class SimpleMempool
   }
 
   @Override
-  public RawNotarizedTransaction addTransaction(RawNotarizedTransaction transaction)
+  public void addTransaction(RawNotarizedTransaction transaction)
       throws MempoolFullException, MempoolDuplicateException {
     if (this.data.size() >= maxSize) {
       throw new MempoolFullException(this.data.size(), maxSize);
@@ -96,7 +96,6 @@ public final class SimpleMempool
       throw new MempoolDuplicateException(
           String.format("Mempool already has transaction %s", transaction));
     }
-    return transaction;
   }
 
   @Override

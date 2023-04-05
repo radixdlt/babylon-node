@@ -72,12 +72,13 @@ use jni::JNIEnv;
 use radix_engine::types::manifest_encode;
 use sbor::{Categorize, Decode, Encode};
 use transaction::errors::TransactionValidationError;
+use transaction::model::NotarizedTransaction;
 
 use crate::jni::common_types::JavaHashCode;
 use crate::jni::utils::*;
 use crate::transaction::UserTransactionValidator;
 use crate::types::PendingTransaction;
-use crate::{mempool::*, UserPayloadHash};
+use crate::{mempool::*, HasUserPayloadHash, UserPayloadHash};
 
 //
 // JNI Interface
@@ -97,7 +98,7 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
 fn do_add(
     state_manager: &mut ActualStateManager,
     transaction: JavaRawTransaction,
-) -> Result<JavaHashCode, MempoolAddErrorJava> {
+) -> Result<(), MempoolAddErrorJava> {
     let notarized_transaction =
         UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
             &transaction.payload,
@@ -108,7 +109,6 @@ fn do_add(
             MempoolAddSource::MempoolSync,
             notarized_transaction,
         )
-        .map(|_| transaction.payload_hash)
         .map_err(Into::into)
 }
 
@@ -214,6 +214,15 @@ impl From<PendingTransaction> for JavaRawTransaction {
         JavaRawTransaction {
             payload: manifest_encode(&transaction.payload).unwrap(),
             payload_hash: JavaHashCode::from_bytes(transaction.payload_hash.into_bytes()),
+        }
+    }
+}
+
+impl From<NotarizedTransaction> for JavaRawTransaction {
+    fn from(transaction: NotarizedTransaction) -> Self {
+        JavaRawTransaction {
+            payload: manifest_encode(&transaction).unwrap(),
+            payload_hash: JavaHashCode::from_bytes(transaction.user_payload_hash().into_bytes()),
         }
     }
 }
