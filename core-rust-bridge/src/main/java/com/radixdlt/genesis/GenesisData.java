@@ -65,11 +65,14 @@
 package com.radixdlt.genesis;
 
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawLedgerTransaction;
+
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -77,12 +80,28 @@ import java.util.Map;
  * transaction.
  */
 public record GenesisData(
-    Map<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>>
-        validatorSetAndStakeOwners,
-    Map<ECDSASecp256k1PublicKey, Decimal> accountXrdAllocations) {
+  List<GenesisValidator> validators,
+  List<GenesisResource> resources,
+  List<ComponentAddress> accounts,
+  Map<Integer, List<Tuple.Tuple2<Integer, Decimal>>> resourceBalances,
+  Map<Integer, Decimal> xrdBalances,
+  Map<Integer, List<Tuple.Tuple2<Integer, Decimal>>> stakes) {
+
+  public record GenesisValidator(
+    ECDSASecp256k1PublicKey key,
+    ComponentAddress componentAddress) {}
+
+  public record GenesisResource(
+    String symbol,
+    String name,
+    String description,
+    String url,
+    String iconUrl,
+    byte[] addressBytes,
+    Option<Integer> ownerWithMintAndBurnRights) {}
 
   public static GenesisData empty() {
-    return new GenesisData(Map.of(), Map.of());
+    return new GenesisData(List.of(), List.of(), List.of(), Map.of(), Map.of(), Map.of());
   }
 
   public RawLedgerTransaction toGenesisTransaction(GenesisConfig config) {

@@ -69,6 +69,7 @@ import static com.radixdlt.lang.Tuple.tuple;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.*;
 import com.radixdlt.exceptions.ManifestCompilationException;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
@@ -92,34 +93,28 @@ public final class TransactionBuilder {
   }
 
   public static RawLedgerTransaction createGenesis(
-      Map<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>>
-          validatorSetAndStakeOwners,
-      Map<ECDSASecp256k1PublicKey, Decimal> accountXrdAllocations,
+      GenesisData genesisData,
       UInt64 initialEpoch,
       UInt64 roundsPerEpoch,
       UInt64 numUnstakeEpochs) {
     return RawLedgerTransaction.create(
         createGenesisFunc.call(
             tuple(
-                validatorSetAndStakeOwners,
-                accountXrdAllocations,
+                genesisData,
                 initialEpoch,
                 roundsPerEpoch,
                 numUnstakeEpochs)));
   }
 
   public static RawLedgerTransaction createGenesis(
-      ECDSASecp256k1PublicKey validator,
-      Map<ECDSASecp256k1PublicKey, Decimal> accountXrdAllocations,
+      GenesisData genesisData,
       Decimal initialStake,
       UInt64 roundsPerEpoch,
       UInt64 numUnstakeEpochs) {
-    final var stakingAccount = Address.virtualAccountAddress(validator);
     return RawLedgerTransaction.create(
         createGenesisFunc.call(
             tuple(
-                Map.of(validator, Tuple.tuple(initialStake, stakingAccount)),
-                accountXrdAllocations,
+                genesisData,
                 UInt64.fromNonNegativeLong(1),
                 roundsPerEpoch,
                 numUnstakeEpochs)));
@@ -186,9 +181,8 @@ public final class TransactionBuilder {
   private static native byte[] compileManifest(byte[] payload);
 
   private static final Natives.Call1<
-          Tuple.Tuple5<
-              Map<ECDSASecp256k1PublicKey, Tuple.Tuple2<Decimal, ComponentAddress>>,
-              Map<ECDSASecp256k1PublicKey, Decimal>,
+          Tuple.Tuple4<
+              GenesisData,
               UInt64,
               UInt64,
               UInt64>,

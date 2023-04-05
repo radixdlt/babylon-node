@@ -70,13 +70,11 @@ use crate::transaction::{
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use radix_engine::types::{ComponentAddress, PublicKey};
-use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine::ledger::GenesisData;
+use radix_engine::types::PublicKey;
 use radix_engine_interface::data::manifest::{manifest_decode, manifest_encode};
-use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
-use std::collections::BTreeMap;
 use transaction::model::{
     NotarizedTransaction, Signature, SignatureWithPublicKey, TransactionHeader,
 };
@@ -112,22 +110,19 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createGenesi
 #[allow(clippy::type_complexity)]
 fn do_create_genesis_ledger_transaction(
     (
-        validator_set_and_stake_owners,
-        account_xrd_allocations,
+        genesis_data,
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,
     ): (
-        BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
-        BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
+        GenesisData,
         u64,
         u64,
         u64,
     ),
 ) -> Vec<u8> {
     create_genesis_ledger_transaction_bytes(
-        validator_set_and_stake_owners,
-        account_xrd_allocations,
+        genesis_data,
         initial_epoch,
         rounds_per_epoch,
         num_unstake_epochs,

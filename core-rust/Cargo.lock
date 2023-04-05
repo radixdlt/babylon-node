@@ -1199,7 +1199,7 @@ dependencies = [
 [[package]]
 name = "native-sdk"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-51c6a43af#51c6a43af6d46081106301ed76c39acc0c573d23"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=genesis-resources-722092ac5#722092ac5591907facb620162abb6db0dee1ac10"
 dependencies = [
  "radix-engine-derive",
  "radix-engine-interface",
@@ -1505,7 +1505,7 @@ dependencies = [
 [[package]]
 name = "radix-engine"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-51c6a43af#51c6a43af6d46081106301ed76c39acc0c573d23"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=genesis-resources-722092ac5#722092ac5591907facb620162abb6db0dee1ac10"
 dependencies = [
  "bitflags",
  "colored",
@@ -1530,7 +1530,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-common"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-51c6a43af#51c6a43af6d46081106301ed76c39acc0c573d23"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=genesis-resources-722092ac5#722092ac5591907facb620162abb6db0dee1ac10"
 dependencies = [
  "bech32",
  "blake2",
@@ -1551,12 +1551,12 @@ dependencies = [
 [[package]]
 name = "radix-engine-constants"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-51c6a43af#51c6a43af6d46081106301ed76c39acc0c573d23"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=genesis-resources-722092ac5#722092ac5591907facb620162abb6db0dee1ac10"
 
 [[package]]
 name = "radix-engine-derive"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-51c6a43af#51c6a43af6d46081106301ed76c39acc0c573d23"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=genesis-resources-722092ac5#722092ac5591907facb620162abb6db0dee1ac10"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1567,7 +1567,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-interface"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-51c6a43af#51c6a43af6d46081106301ed76c39acc0c573d23"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=genesis-resources-722092ac5#722092ac5591907facb620162abb6db0dee1ac10"
 dependencies = [
  "bitflags",
  "hex",
@@ -1582,7 +1582,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-stores"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-51c6a43af#51c6a43af6d46081106301ed76c39acc0c573d23"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=genesis-resources-722092ac5#722092ac5591907facb620162abb6db0dee1ac10"
 dependencies = [
  "itertools",
  "radix-engine",
@@ -1593,7 +1593,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-utils"
 version = "0.9.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-51c6a43af#51c6a43af6d46081106301ed76c39acc0c573d23"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=genesis-resources-722092ac5#722092ac5591907facb620162abb6db0dee1ac10"
 dependencies = [
  "fixedstr",
 ]
@@ -1714,7 +1714,7 @@ checksum = "f162c6dd7b008981e4d40210aca20b4bd0f9b60ca9271061b07f78537722f2e1"
 [[package]]
 name = "resources-tracker-macro"
 version = "0.1.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-51c6a43af#51c6a43af6d46081106301ed76c39acc0c573d23"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=genesis-resources-722092ac5#722092ac5591907facb620162abb6db0dee1ac10"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1785,7 +1785,7 @@ dependencies = [
 [[package]]
 name = "sbor"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-51c6a43af#51c6a43af6d46081106301ed76c39acc0c573d23"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=genesis-resources-722092ac5#722092ac5591907facb620162abb6db0dee1ac10"
 dependencies = [
  "const-sha1",
  "hex",
@@ -1798,7 +1798,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-51c6a43af#51c6a43af6d46081106301ed76c39acc0c573d23"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=genesis-resources-722092ac5#722092ac5591907facb620162abb6db0dee1ac10"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -1807,7 +1807,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive-common"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-51c6a43af#51c6a43af6d46081106301ed76c39acc0c573d23"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=genesis-resources-722092ac5#722092ac5591907facb620162abb6db0dee1ac10"
 dependencies = [
  "const-sha1",
  "itertools",
@@ -1840,7 +1840,7 @@ checksum = "1792db035ce95be60c3f8853017b3999209281c24e2ba5bc8e59bf97a0c590c1"
 [[package]]
 name = "scrypto-schema"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-51c6a43af#51c6a43af6d46081106301ed76c39acc0c573d23"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=genesis-resources-722092ac5#722092ac5591907facb620162abb6db0dee1ac10"
 dependencies = [
  "radix-engine-common",
  "sbor",
@@ -2379,7 +2379,7 @@ dependencies = [
 [[package]]
 name = "transaction"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-51c6a43af#51c6a43af6d46081106301ed76c39acc0c573d23"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=genesis-resources-722092ac5#722092ac5591907facb620162abb6db0dee1ac10"
 dependencies = [
  "ed25519-dalek",
  "hex",
@@ -2434,7 +2434,7 @@ checksum = "c0edd1e5b14653f783770bce4a4dabb4a5108a5370a5f5d8cfe8710c361f6c8b"
 [[package]]
 name = "utils"
 version = "0.10.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-51c6a43af#51c6a43af6d46081106301ed76c39acc0c573d23"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=genesis-resources-722092ac5#722092ac5591907facb620162abb6db0dee1ac10"
 dependencies = [
  "indexmap 2.0.0-pre",
  "serde",
