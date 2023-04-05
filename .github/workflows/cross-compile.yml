@@ -5,7 +5,7 @@ on:
   release:
     types:
       - published
-      
+
 jobs:
   build:
     continue-on-error: true
@@ -100,6 +100,18 @@ jobs:
           name: libcorerust-${{ matrix.target }}.zip
           path: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
           if-no-files-found: error
+      - if: github.event_name == 'release'
+        name: Get release
+        id: get_release
+        uses: bruceadams/get-release@f589ce0779c7bef1faf175f7488c972eb47dc046
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - if: github.event_name == 'release'
+        id: get_version
+        name: Get radixdlt version
+        uses: ./.github/actions/get-version
+        with:
+          is_release: true
       - if: github.event_name == 'release'
         name: Upload distribution zip
         uses: actions/upload-release-asset@e8f9f06c4b078e705bd2ea027f0926603fc9b4d5
