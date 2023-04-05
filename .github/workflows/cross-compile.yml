@@ -93,7 +93,7 @@ jobs:
         name: Package libcorerust
         uses: montudor/action-zip@v1
         with:
-          args: zip -j babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip ${{ github.workspace }}/core-rust/target/${{ matrix.target }}/release/${{ matrix.artifact }}
+          args: zip --symlinks -j babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip ${{ github.workspace }}/core-rust/target/${{ matrix.target }}/release/${{ matrix.artifact }}
       - if: github.event_name == 'release'
         uses: actions/upload-artifact@master
         with:
