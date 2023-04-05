@@ -1,17 +1,11 @@
 name: Crosscompile
 
-on:
-  push:
-    branches:
-      - release/rcnet-v1
-      - develop
-      - main
-  pull_request:
-    branches:
-      - release/rcnet-v1
-      - develop
-      - main
-
+on: 
+  workflow_dispatch:
+  release:
+    types:
+      - published
+      
 jobs:
   build:
     continue-on-error: true
@@ -90,26 +84,29 @@ jobs:
           ls  ./target/release/
           echo "ls  ./target/<target>/release"
           ls  ./target/${{ matrix.target }}/release/
-      - name: Package libcorerust
-        run: | 
-          zip -j babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip ${{ github.workspace }}/core-rust/target/${{ matrix.target }}/release/${{ matrix.artifact }}
-          ls
       - uses: actions/upload-artifact@master
         with:
           name: libcorerust-${{ matrix.target }}
           path: ./core-rust/target/${{ matrix.target }}/release/${{ matrix.artifact }}
           if-no-files-found: error
-      # - uses: actions/upload-artifact@master
-      #   with:
-      #     name: libcorerust-${{ matrix.target }}.zip
-      #     path: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
-      #     if-no-files-found: error
-      # - name: Upload distribution zip
-      #   uses: actions/upload-release-asset@e8f9f06c4b078e705bd2ea027f0926603fc9b4d5
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.get_release.outputs.upload_url }}
-      #     asset_path: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
-      #     asset_name: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
-      #     asset_content_type: application/zip
+      - if: github.event_name == 'release'
+        name: Package libcorerust
+        run: | 
+          zip -j babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip ${{ github.workspace }}/core-rust/target/${{ matrix.target }}/release/${{ matrix.artifact }}
+          ls
+      - if: github.event_name == 'release'
+        uses: actions/upload-artifact@master
+        with:
+          name: libcorerust-${{ matrix.target }}.zip
+          path: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
+          if-no-files-found: error
+      - if: github.event_name == 'release'
+        name: Upload distribution zip
+        uses: actions/upload-release-asset@e8f9f06c4b078e705bd2ea027f0926603fc9b4d5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
+          asset_name: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
+          asset_content_type: application/zip
