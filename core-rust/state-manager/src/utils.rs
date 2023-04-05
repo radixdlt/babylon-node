@@ -62,25 +62,24 @@
  * permissions under this License.
  */
 
-extern crate core;
+use radix_engine::types::{Address, ComponentAddress};
 
-mod accumulator_tree;
-pub mod jni;
-pub mod mempool;
-mod metrics;
-pub mod query;
-mod receipt;
-mod result;
-mod staging;
-mod state_manager;
-pub mod store;
-pub mod transaction;
-mod types;
-mod utils;
+pub trait IsAccountExt {
+    fn is_account(&self) -> bool;
+}
 
-pub use crate::mempool::*;
-pub use crate::metrics::*;
-pub use crate::pending_transaction_result_cache::*;
-pub use crate::receipt::*;
-pub use crate::state_manager::*;
-pub use crate::types::*;
+impl IsAccountExt for Address {
+    fn is_account(&self) -> bool {
+        match self {
+            Address::Component(component_address) => {
+                match component_address {
+                    ComponentAddress::EcdsaSecp256k1VirtualAccount(_) |
+                    ComponentAddress::EddsaEd25519VirtualAccount(_) |
+                    ComponentAddress::Account(_) => true,
+                    _ => false
+                }
+            },
+            _ => false
+        }
+    }
+}

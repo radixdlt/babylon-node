@@ -67,6 +67,7 @@ use crate::store::traits::extensions::*;
 use crate::store::traits::*;
 use crate::transaction::LedgerTransaction;
 use crate::types::UserPayloadHash;
+use crate::utils::IsAccountExt;
 use crate::{
     CommittedTransactionIdentifiers, HasIntentHash, HasLedgerPayloadHash, HasUserPayloadHash,
     IntentHash, LedgerPayloadHash, LedgerProof, LedgerTransactionReceipt, ReceiptTreeHash,
@@ -377,6 +378,9 @@ pub struct WriteableInMemoryAccountChangeIndex<'a> {
 impl<'a> WriteableInMemoryAccountChangeIndex<'a> {
     fn update_from_receipt(&mut self, state_version: u64, receipt: &LedgerTransactionReceipt) {
         for (address, _) in receipt.state_update_summary.balance_changes.iter() {
+            if !address.is_account() {
+                continue;
+            }
             self.store
                 .ext_account_change_index_set
                 .entry(*address)

@@ -63,6 +63,7 @@
  */
 
 use crate::types::UserPayloadHash;
+use crate::utils::IsAccountExt;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 
@@ -835,6 +836,9 @@ impl<'a> WriteableRocksDBAccountChangeIndex<'a> {
         receipt: &LedgerTransactionReceipt,
     ) {
         for (address, _) in receipt.state_update_summary.balance_changes.iter() {
+            if !address.is_account() {
+                continue;
+            }
             let mut key = address.to_vec();
             key.extend(state_version.to_be_bytes());
             batch.put_cf(
