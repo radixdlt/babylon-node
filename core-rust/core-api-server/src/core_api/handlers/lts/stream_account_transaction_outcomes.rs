@@ -92,7 +92,7 @@ fn handle_lts_stream_account_transaction_outcomes_internal(
         })
         .collect::<Result<Vec<models::LtsCommittedTransactionOutcome>, ResponseError<()>>>()?;
 
-    Ok(models::LtsStreamAccountTransactionsBasicOutcomesResponse {
+    Ok(models::LtsStreamAccountTransactionOutcomesResponse {
         from_state_version: to_api_state_version(from_state_version)?,
         count: state_versions
             .len()
@@ -101,5 +101,4 @@ fn handle_lts_stream_account_transaction_outcomes_internal(
         max_ledger_state_version: to_api_state_version(max_state_version)?,
         committed_transaction_outcomes,
     })
-    // Err(not_implemented("Endpoint not implemented yet"))
 }
