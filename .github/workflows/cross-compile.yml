@@ -10,6 +10,7 @@ jobs:
   build:
     continue-on-error: true
     runs-on: '${{ matrix.os }}'
+    timeout-minutes: 45
     strategy:
       matrix:
         include:
@@ -17,29 +18,37 @@ jobs:
             target: x86_64-apple-darwin
             artifact: 'libcorerust.dylib'
             zipname: 'arch-darwin-x86_64'
+            custom-linker: ""
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact: 'libcorerust.dylib'
             zipname: 'arch-darwin-aarch64'
+            custom-linker: ""
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact: 'libcorerust.so'
             zipname: 'arch-linux-x86_64'
-          # - os: ubuntu-latest
-          #   target: aarch64-unknown-linux-gnu
-          #   suffix: 'so'
-            # dependency: "sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu"
+            custom-linker: ""
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            zipname: 'arch-linux-aarch64'
+            artifact: 'libcorerust.so'
+            custom-linker: "aarch64-linux-gnu-gcc"
           # - os: ubuntu-latest
           #   target: i686-unknown-linux-gnu
-          #   suffix: 'so'
+          #   zipname: 'arch-linux-i686'
+          #   artifact: 'libcorerust.so'
+          #   custom-linker: "i686-linux-gnu-gcc"
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact: 'corerust.dll'
             zipname: 'arch-windows-x86_64-msvc'
+            custom-linker: ""
           - os: windows-latest
             target: x86_64-pc-windows-gnu
             artifact: 'corerust.dll'
             zipname: 'arch-windows-x86_64-gnu'
+            custom-linker: ""
     steps:
       - uses: actions/checkout@master
         with:
@@ -73,8 +82,15 @@ jobs:
         name: Build dependencies ubuntu
         run: |
           sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          # sudo apt install -y gcc-i686-linux-gnu g++-i686-linux-gnu
       - name: Build core-rust
         run: |
+          export LINKER_ENVIRONMENT_VARIABLE="CARGO_TARGET_"$(echo ${{ matrix.target }} | tr '[:lower:]' '[:upper:]' | sed 's/-/_/g')"_LINKER"
+          if [ ! -z "${{ matrix.custom-linker }}" ]
+          then
+            export $LINKER_ENVIRONMENT_VARIABLE=${{ matrix.custom-linker }}
+          fi
+
           cd core-rust
           cargo build --release --profile=release --target ${{ matrix.target }}
           pwd
@@ -82,7 +98,7 @@ jobs:
           ls  ./target/
           echo "ls  ./target/release"
           ls  ./target/release/
-          echo "ls  ./target/<target>/release"
+          echo "ls  ./target/${{ matrix.target }}/release"
           ls  ./target/${{ matrix.target }}/release/
       - uses: actions/upload-artifact@master
         with:
@@ -100,31 +116,25 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-latest
-            target: x86_64-apple-darwin
+          - target: x86_64-apple-darwin
             artifact: 'libcorerust.dylib'
             zipname: 'arch-darwin-x86_64'
-          - os: macos-latest
-            target: aarch64-apple-darwin
+          - target: aarch64-apple-darwin
             artifact: 'libcorerust.dylib'
             zipname: 'arch-darwin-aarch64'
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
+          - target: x86_64-unknown-linux-gnu
             artifact: 'libcorerust.so'
             zipname: 'arch-linux-x86_64'
-          # - os: ubuntu-latest
-          #   target: aarch64-unknown-linux-gnu
-          #   suffix: 'so'
-            # dependency: "sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu"
-          # - os: ubuntu-latest
-          #   target: i686-unknown-linux-gnu
-          #   suffix: 'so'
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
+          - target: aarch64-unknown-linux-gnu
+            artifact: 'libcorerust.so'
+            zipname: 'arch-linux-aarch64'
+          # - target: i686-unknown-linux-gnu
+          #   artifact: 'libcorerust.so'
+          #   zipname: 'arch-linux-i686'
+          - target: x86_64-pc-windows-msvc
             artifact: 'corerust.dll'
             zipname: 'arch-windows-x86_64-msvc'
-          - os: windows-latest
-            target: x86_64-pc-windows-gnu
+          - target: x86_64-pc-windows-gnu
             artifact: 'corerust.dll'
             zipname: 'arch-windows-x86_64-gnu'
     steps:
@@ -141,17 +151,6 @@ jobs:
           ls -lah libcorerust-${{ matrix.target }}
           zip -j babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip libcorerust-${{ matrix.target }}/${{ matrix.artifact }}
           ls -lah
-      # - if: github.event_name == 'release'
-      #   name: Package libcorerust
-      #   uses: montudor/action-zip@v1
-      #   with:
-      #     args: zip --symlinks -j babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip libcorerust-${{ matrix.target }}/${{ matrix.artifact }}
-      # - if: github.event_name == 'release'
-      #   uses: actions/upload-artifact@master
-      #   with:
-      #     name: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
-      #     path: libcorerust-${{ matrix.target }}
-      #     if-no-files-found: error
       - if: github.event_name == 'release'
         name: Get release
         id: get_release
@@ -172,6 +171,5 @@ jobs:
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
-          # asset_path: libcorerust-${{ matrix.target }}/${{ matrix.artifact }}
           asset_name: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
           asset_content_type: application/zip
