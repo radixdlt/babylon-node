@@ -72,6 +72,7 @@ import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.*;
@@ -80,10 +81,12 @@ import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.networks.Network;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 import org.junit.Test;
@@ -108,6 +111,9 @@ public class REv2StateComputerTest {
             bind(new TypeLiteral<EventDispatcher<ConsensusByzantineEvent>>() {})
                 .toInstance(e -> {});
             bind(Metrics.class).toInstance(new MetricsInitializer().initialize());
+            bind(NodeId.class)
+                .annotatedWith(Self.class)
+                .toInstance(NodeId.fromPublicKey(PrivateKeys.ofNumeric(1).getPublicKey()));
           }
         });
   }
