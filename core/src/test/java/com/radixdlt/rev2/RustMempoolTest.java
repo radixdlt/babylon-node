@@ -68,6 +68,8 @@ import static com.radixdlt.rev2.REv2TestTransactions.constructValidRawTransactio
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.radixdlt.database.Database;
+import com.radixdlt.database.DatabaseConfig;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
@@ -76,7 +78,6 @@ import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statemanager.LoggingConfig;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.transaction.TransactionBuilder;
@@ -110,11 +111,11 @@ public final class RustMempoolTest {
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
             Option.some(new RustMempoolConfig(mempoolSize)),
-            REv2DatabaseConfig.inMemory(),
             LoggingConfig.getDefault());
     final var metrics = new MetricsInitializer().initialize();
 
-    try (var stateManager = StateManager.createAndInitialize(config)) {
+    try (var database = new Database(DatabaseConfig.inMemory());
+        var stateManager = new StateManager(database, config)) {
       initStateComputer(stateManager);
       var rustMempool = new RustMempool(metrics, stateManager);
       var transaction1 = constructValidRawTransaction(0, 0);
@@ -172,11 +173,11 @@ public final class RustMempoolTest {
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
             Option.some(new RustMempoolConfig(mempoolSize)),
-            REv2DatabaseConfig.inMemory(),
             LoggingConfig.getDefault());
     final var metrics = new MetricsInitializer().initialize();
 
-    try (var stateManager = StateManager.createAndInitialize(config)) {
+    try (var database = new Database(DatabaseConfig.inMemory());
+        var stateManager = new StateManager(database, config)) {
       initStateComputer(stateManager);
       var rustMempool = new RustMempool(metrics, stateManager);
       var transaction1 = constructValidRawTransaction(0, 0);
@@ -296,11 +297,11 @@ public final class RustMempoolTest {
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
             Option.some(new RustMempoolConfig(mempoolSize)),
-            REv2DatabaseConfig.inMemory(),
             LoggingConfig.getDefault());
     final var metrics = new MetricsInitializer().initialize();
 
-    try (var stateManager = StateManager.createAndInitialize(config)) {
+    try (var database = new Database(DatabaseConfig.inMemory());
+        var stateManager = new StateManager(database, config)) {
       initStateComputer(stateManager);
 
       var rustMempool = new RustMempool(metrics, stateManager);

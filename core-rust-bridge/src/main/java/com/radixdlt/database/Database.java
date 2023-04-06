@@ -62,15 +62,42 @@
  * permissions under this License.
  */
 
-pub mod addressing;
-pub mod common_types;
-pub mod database;
-pub mod java_structure;
-pub mod mempool;
-pub mod scrypto_constants;
-pub mod state_computer;
-pub mod state_manager;
-pub mod transaction_builder;
-pub mod transaction_store;
-pub mod utils;
-pub mod vertex_store_recovery;
+package com.radixdlt.database;
+
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.sbor.StateManagerSbor;
+
+public final class Database implements AutoCloseable {
+
+  static {
+    System.loadLibrary("corerust");
+  }
+
+  /**
+   * A pointer to the Rust's `JNIDatabase` (inside {@link #init(Database, byte[])}, its ownership is
+   * transferred to this Java field).
+   */
+  @SuppressWarnings("unused")
+  private final long rustDatabasePointer = 0;
+
+  /** Creates an instance and initializes the native resources. */
+  public Database(DatabaseConfig config) {
+    final var encodedConfig =
+        StateManagerSbor.encode(config, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
+    init(this, encodedConfig);
+  }
+
+  @Override
+  public void close() {
+    shutdown();
+  }
+
+  /** Releases the native resources. */
+  public void shutdown() {
+    cleanup(this);
+  }
+
+  private static native void init(Database database, byte[] config);
+
+  private static native void cleanup(Database database);
+}

@@ -62,15 +62,67 @@
  * permissions under this License.
  */
 
-pub mod addressing;
-pub mod common_types;
-pub mod database;
-pub mod java_structure;
-pub mod mempool;
-pub mod scrypto_constants;
-pub mod state_computer;
-pub mod state_manager;
-pub mod transaction_builder;
-pub mod transaction_store;
-pub mod utils;
-pub mod vertex_store_recovery;
+use std::sync::Arc;
+
+use crate::jni::java_structure::JavaStructure;
+use crate::jni::utils::*;
+
+use crate::store::{DatabaseConfig, StateManagerDatabase};
+use jni::objects::{JClass, JObject};
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
+use parking_lot::RwLock;
+
+use radix_engine_interface::*;
+
+const POINTER_JNI_FIELD_NAME: &str = "rustDatabasePointer";
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_database_Database_init(
+    env: JNIEnv,
+    _class: JClass,
+    j_database: JObject,
+    j_config: jbyteArray,
+) {
+    JNIDatabase::init(&env, j_database, j_config);
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_database_Database_cleanup(
+    env: JNIEnv,
+    _class: JClass,
+    j_database: JObject,
+) {
+    JNIDatabase::cleanup(&env, j_database);
+}
+
+pub struct JNIDatabase {
+    pub database: Arc<RwLock<StateManagerDatabase>>,
+}
+
+impl JNIDatabase {
+    pub fn init(env: &JNIEnv, j_database: JObject, j_config: jbyteArray) {
+        let config_bytes: Vec<u8> = jni_jbytearray_to_vector(env, j_config).unwrap();
+        let config = DatabaseConfig::from_java(&config_bytes).unwrap();
+        let database = Arc::new(parking_lot::const_rwlock(
+            StateManagerDatabase::from_config(config),
+        ));
+        let jni_database = JNIDatabase { database };
+        env.set_rust_field(j_database, POINTER_JNI_FIELD_NAME, jni_database)
+            .unwrap();
+    }
+
+    pub fn cleanup(env: &JNIEnv, j_database: JObject) {
+        env.take_rust_field::<_, _, JNIDatabase>(j_database, POINTER_JNI_FIELD_NAME)
+            .unwrap();
+    }
+
+    pub fn get_database(env: &JNIEnv, j_database: JObject) -> Arc<RwLock<StateManagerDatabase>> {
+        env.get_rust_field::<_, _, JNIDatabase>(j_database, POINTER_JNI_FIELD_NAME)
+            .unwrap()
+            .database
+            .clone()
+    }
+}
+
+pub fn export_extern_functions() {}

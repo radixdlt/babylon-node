@@ -64,12 +64,13 @@
 
 use std::sync::{Arc, MutexGuard};
 
+use crate::jni::database::JNIDatabase;
 use crate::jni::java_structure::JavaStructure;
 use crate::jni::utils::*;
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::mempool::MempoolConfig;
 use crate::state_manager::{LoggingConfig, StateManager};
-use crate::store::{DatabaseConfig, StateManagerDatabase};
+use crate::store::StateManagerDatabase;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -84,9 +85,10 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_init(
     env: JNIEnv,
     _class: JClass,
     j_state_manager: JObject,
+    j_database: JObject,
     j_config: jbyteArray,
 ) {
-    JNIStateManager::init(&env, j_state_manager, j_config);
+    JNIStateManager::init(&env, j_state_manager, j_database, j_config);
 }
 
 #[no_mangle]
@@ -123,7 +125,6 @@ extern "system" fn Java_com_radixdlt_prometheus_StateManagerPrometheus_prometheu
 pub struct StateManagerConfig {
     pub network_definition: NetworkDefinition,
     pub mempool_config: Option<MempoolConfig>,
-    pub db_config: DatabaseConfig,
     pub logging_config: LoggingConfig,
 }
 
@@ -134,7 +135,7 @@ pub struct JNIStateManager {
 }
 
 impl JNIStateManager {
-    pub fn init(env: &JNIEnv, j_state_manager: JObject, j_config: jbyteArray) {
+    pub fn init(env: &JNIEnv, j_state_manager: JObject, j_database: JObject, j_config: jbyteArray) {
         let config_bytes: Vec<u8> = jni_jbytearray_to_vector(env, j_config).unwrap();
         let config = StateManagerConfig::from_java(&config_bytes).unwrap();
 
@@ -149,7 +150,7 @@ impl JNIStateManager {
             }
         };
 
-        let store = StateManagerDatabase::from_config(config.db_config);
+        let store = JNIDatabase::get_database(env, j_database);
         let mempool = SimpleMempool::new(mempool_config);
 
         // Build the state manager.

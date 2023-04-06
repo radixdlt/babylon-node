@@ -67,6 +67,7 @@ package com.radixdlt;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.radixdlt.api.system.SystemApi;
+import com.radixdlt.database.Database;
 import com.radixdlt.genesis.GenesisConfig;
 import com.radixdlt.genesis.GenesisFromPropertiesLoader;
 import com.radixdlt.genesis.PreGenesisNodeModule;
@@ -76,7 +77,6 @@ import com.radixdlt.genesis.olympia.OlympiaGenesisService;
 import com.radixdlt.lang.Either;
 import com.radixdlt.networks.FixedNetworkGenesis;
 import com.radixdlt.networks.Network;
-import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawLedgerTransaction;
@@ -178,7 +178,7 @@ public final class RadixNodeBootstrapper {
             .getTransactionAtStateVersion(1)
             .map(ExecutedTransaction::rawTransaction)
             .toOptional();
-    preGenesisInjector.getInstance(StateManager.class).shutdown();
+    preGenesisInjector.getInstance(Database.class).shutdown();
 
     final var genesisFromPropertiesLoader =
         preGenesisInjector.getInstance(GenesisFromPropertiesLoader.class);

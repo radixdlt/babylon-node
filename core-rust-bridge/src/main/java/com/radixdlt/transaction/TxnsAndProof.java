@@ -62,15 +62,17 @@
  * permissions under this License.
  */
 
-pub mod addressing;
-pub mod common_types;
-pub mod database;
-pub mod java_structure;
-pub mod mempool;
-pub mod scrypto_constants;
-pub mod state_computer;
-pub mod state_manager;
-pub mod transaction_builder;
-pub mod transaction_store;
-pub mod utils;
-pub mod vertex_store_recovery;
+package com.radixdlt.transaction;
+
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.statecomputer.commit.LedgerProof;
+import java.util.List;
+
+/** A wrapper for a batch of transactions and their proof. */
+public record TxnsAndProof(List<byte[]> transactions, LedgerProof proof) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        TxnsAndProof.class, codecs -> StructCodec.fromRecordComponents(TxnsAndProof.class, codecs));
+  }
+}

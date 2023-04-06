@@ -65,6 +65,7 @@
 package com.radixdlt.statemanager;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.database.Database;
 import com.radixdlt.sbor.StateManagerSbor;
 
 public final class StateManager implements AutoCloseable {
@@ -82,14 +83,10 @@ public final class StateManager implements AutoCloseable {
   @SuppressWarnings("unused")
   private final long rustStateManagerPointer = 0;
 
-  public static StateManager createAndInitialize(StateManagerConfig config) {
-    return new StateManager(config);
-  }
-
-  private StateManager(StateManagerConfig config) {
+  public StateManager(Database database, StateManagerConfig config) {
     final var encodedConfig =
         StateManagerSbor.encode(config, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
-    init(this, encodedConfig);
+    init(this, database, encodedConfig);
   }
 
   @Override
@@ -101,7 +98,7 @@ public final class StateManager implements AutoCloseable {
     cleanup(this);
   }
 
-  private static native void init(StateManager stateManager, byte[] config);
+  private static native void init(StateManager stateManager, Database database, byte[] config);
 
   private static native void cleanup(StateManager stateManager);
 }

@@ -74,6 +74,7 @@ import com.radixdlt.api.system.SystemApi;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.database.Database;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.monitoring.MetricInstaller;
@@ -191,6 +192,8 @@ public final class RadixNode {
 
     catchAllAndLogShutdownError(
         "StateManager", () -> injector.getInstance(StateManager.class).shutdown());
+
+    catchAllAndLogShutdownError("Database", () -> injector.getInstance(Database.class).shutdown());
   }
 
   private void catchAllAndLogShutdownError(String what, Runnable thunk) {

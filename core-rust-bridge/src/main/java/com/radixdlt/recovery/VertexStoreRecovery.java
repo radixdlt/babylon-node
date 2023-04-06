@@ -71,14 +71,12 @@ import com.radixdlt.monitoring.LabelledTimer;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.statemanager.StateManager;
-import java.util.Objects;
 import java.util.Optional;
 
 public final class VertexStoreRecovery {
   public VertexStoreRecovery(Metrics metrics, StateManager stateManager) {
-    Objects.requireNonNull(stateManager);
     LabelledTimer<Metrics.MethodId> timer = metrics.stateManager().nativeCall();
-    this.getVertexStore =
+    this.getVertexStore = // WIP?
         Natives.builder(stateManager, VertexStoreRecovery::getVertexStore)
             .measure(timer.label(new Metrics.MethodId(VertexStoreRecovery.class, "getVertexStore")))
             .build(new TypeToken<>() {});

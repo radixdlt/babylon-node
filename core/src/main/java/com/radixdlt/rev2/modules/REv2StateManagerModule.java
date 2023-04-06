@@ -73,6 +73,8 @@ import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.database.Database;
+import com.radixdlt.database.DatabaseConfig;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.NodeAutoCloseable;
@@ -165,16 +167,15 @@ public final class REv2StateManagerModule extends AbstractModule {
           new AbstractModule() {
             @Provides
             @Singleton
-            REv2DatabaseConfig databaseConfig(@NodeStorageLocation String nodeStorageLocation) {
-              return REv2DatabaseConfig.rocksDB(
-                  new File(nodeStorageLocation, "rocks_db").getPath());
+            DatabaseConfig databaseConfig(@NodeStorageLocation String nodeStorageLocation) {
+              return DatabaseConfig.rocksDB(new File(nodeStorageLocation, "rocks_db").getPath());
             }
           });
       case IN_MEMORY -> install(
           new AbstractModule() {
             @Override
             protected void configure() {
-              bind(REv2DatabaseConfig.class).toInstance(REv2DatabaseConfig.inMemory());
+              bind(DatabaseConfig.class).toInstance(DatabaseConfig.inMemory());
             }
           });
     }
@@ -183,13 +184,17 @@ public final class REv2StateManagerModule extends AbstractModule {
         new AbstractModule() {
           @Provides
           @Singleton
-          private StateManager stateManager(Network network, REv2DatabaseConfig databaseConfig) {
-            return StateManager.createAndInitialize(
+          private StateManager stateManager(Database database, Network network) {
+            return new StateManager(
+                database,
                 new StateManagerConfig(
-                    NetworkDefinition.from(network),
-                    mempoolConfig,
-                    databaseConfig,
-                    getLoggingConfig()));
+                    NetworkDefinition.from(network), mempoolConfig, getLoggingConfig()));
+          }
+
+          @Provides
+          @Singleton
+          private Database database(DatabaseConfig databaseConfig) {
+            return new Database(databaseConfig);
           }
 
           @Provides
@@ -216,8 +221,9 @@ public final class REv2StateManagerModule extends AbstractModule {
           }
 
           @Provides
-          REv2TransactionAndProofStore transactionAndProofStore(RustStateComputer stateComputer) {
-            return stateComputer.getTransactionAndProofStore();
+          REv2TransactionAndProofStore transactionAndProofStore(
+              Metrics metrics, Database database) {
+            return new REv2TransactionAndProofStore(metrics, database);
           }
 
           @Provides
@@ -292,8 +298,13 @@ public final class REv2StateManagerModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  NodeAutoCloseable closeable(StateManager stateManager) {
+  NodeAutoCloseable stateManagerCloseable(StateManager stateManager) {
     return stateManager::shutdown;
+  }
+
+  @ProvidesIntoSet
+  NodeAutoCloseable databaseCloseable(Database database) {
+    return database::shutdown;
   }
 
   public LoggingConfig getLoggingConfig() {

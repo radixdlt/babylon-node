@@ -62,28 +62,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.transaction;
 
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 
-/** REv2 Database configuration options */
-public sealed interface REv2DatabaseConfig {
-  static void registerCodec(CodecMap codecMap) {
+/** A request for listing a batch of transactions together with their proof. */
+public record TxnsAndProofRequest(
+    UInt64 startStateVersionInclusive,
+    UInt32 maxNumberOfTxnsIfMoreThanOneProof,
+    UInt32 maxPayloadSizeInBytes) {
+  public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        REv2DatabaseConfig.class,
-        codecs -> EnumCodec.fromPermittedRecordSubclasses(REv2DatabaseConfig.class, codecs));
+        TxnsAndProofRequest.class,
+        codecs -> StructCodec.fromRecordComponents(TxnsAndProofRequest.class, codecs));
   }
-
-  static REv2DatabaseConfig inMemory() {
-    return new InMemory();
-  }
-
-  static REv2DatabaseConfig rocksDB(String databasePath) {
-    return new RocksDB(databasePath);
-  }
-
-  record InMemory() implements REv2DatabaseConfig {}
-
-  record RocksDB(String databasePath) implements REv2DatabaseConfig {}
 }

@@ -73,7 +73,6 @@ import com.radixdlt.sbor.codec.StructCodec;
 public record StateManagerConfig(
     NetworkDefinition networkDefinition,
     Option<RustMempoolConfig> mempoolConfigOpt,
-    REv2DatabaseConfig databaseConfig,
     LoggingConfig loggingConfig) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(

@@ -62,15 +62,28 @@
  * permissions under this License.
  */
 
-pub mod addressing;
-pub mod common_types;
-pub mod database;
-pub mod java_structure;
-pub mod mempool;
-pub mod scrypto_constants;
-pub mod state_computer;
-pub mod state_manager;
-pub mod transaction_builder;
-pub mod transaction_store;
-pub mod utils;
-pub mod vertex_store_recovery;
+package com.radixdlt.database;
+
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.EnumCodec;
+
+/** REv2 Database configuration options */
+public sealed interface DatabaseConfig {
+  static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        DatabaseConfig.class,
+        codecs -> EnumCodec.fromPermittedRecordSubclasses(DatabaseConfig.class, codecs));
+  }
+
+  static DatabaseConfig inMemory() {
+    return new InMemory();
+  }
+
+  static DatabaseConfig rocksDB(String databasePath) {
+    return new RocksDB(databasePath);
+  }
+
+  record InMemory() implements DatabaseConfig {}
+
+  record RocksDB(String databasePath) implements DatabaseConfig {}
+}
