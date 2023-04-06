@@ -80,7 +80,6 @@ import com.radixdlt.serialization.Serialization;
 public final class CryptoModule extends AbstractModule {
   @Override
   protected void configure() {
-    // Configuration
     bind(Serialization.class).toProvider(DefaultSerialization::getInstance);
   }
 

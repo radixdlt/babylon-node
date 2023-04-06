@@ -72,7 +72,7 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.store.LastProof;
+import com.radixdlt.rev2.LastProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
 
 public final class BFTValidatorIdFromGenesisModule extends AbstractModule {

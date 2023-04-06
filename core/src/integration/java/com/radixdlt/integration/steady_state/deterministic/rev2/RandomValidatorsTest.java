@@ -78,10 +78,11 @@ import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.*;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawLedgerTransaction;
@@ -110,15 +111,15 @@ public final class RandomValidatorsTest {
             byzantineBehaviorNotDetected(), consensusLiveness(3000), ledgerTransactionSafety())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
+                NodeStorageConfig.tempFolder(folder),
                 true,
-                FunctionalRadixNodeModule.SafetyRecoveryConfig.berkeleyStore(
-                    folder.getRoot().getAbsolutePath()),
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.BERKELEY_DB,
                 FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         GENESIS,
-                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             10, 10 * 1024 * 1024, 100, MempoolRelayConfig.of(5, 5))),
                     SyncRelayConfig.of(5000, 10, 3000L))));

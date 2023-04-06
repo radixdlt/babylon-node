@@ -72,7 +72,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
-import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.rev2.LastEpochProof;
 
 public final class REv2ConsensusRecoveryModule extends AbstractModule {
   @Provides

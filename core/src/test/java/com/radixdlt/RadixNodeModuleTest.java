@@ -72,9 +72,11 @@ import static org.mockito.Mockito.doReturn;
 import com.google.inject.Guice;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
+import com.radixdlt.genesis.GenesisConfig;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.serialization.TestSetupUtils;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.File;
 import org.apache.commons.cli.ParseException;
@@ -88,10 +90,9 @@ import org.junit.rules.TemporaryFolder;
 public class RadixNodeModuleTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private final String MOCK_GENESIS_TXN =
-      ECKeyPair.fromSeed(new byte[] {0x01}).getPublicKey().toHex();
-
-  @NetworkId private int networkId;
+  private static final Network NETWORK = Network.INTEGRATIONTESTNET;
+  private static final RawLedgerTransaction MOCK_GENESIS_TXN =
+      GenesisData.empty().toGenesisTransaction(GenesisConfig.babylonDefault());
 
   @BeforeClass
   public static void beforeClass() {
@@ -101,24 +102,25 @@ public class RadixNodeModuleTest {
   @Test
   public void testInjectorNotNullToken() {
     final var properties = createDefaultProperties();
-    when(properties.get("network.id")).thenReturn("" + Network.INTEGRATIONTESTNET.getId());
-    when(properties.get("network.genesis_txn")).thenReturn(MOCK_GENESIS_TXN);
+    when(properties.get("network.id")).thenReturn("" + NETWORK.getId());
     when(properties.get("db.location")).thenReturn(folder.getRoot().getAbsolutePath());
-    Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);
+    Guice.createInjector(new RadixNodeModule(properties, NETWORK, MOCK_GENESIS_TXN))
+        .injectMembers(this);
   }
 
   @Test
   public void when_capabilities_ledger_sync_enabled_value_is_invalid_exception_is_thrown() {
     final var properties = createDefaultProperties();
-    when(properties.get("network.id")).thenReturn("" + Network.INTEGRATIONTESTNET.getId());
-    when(properties.get("network.genesis_txn")).thenReturn(MOCK_GENESIS_TXN);
+    when(properties.get("network.id")).thenReturn("" + NETWORK.getId());
     when(properties.get("db.location")).thenReturn(folder.getRoot().getAbsolutePath());
     when(properties.get("capabilities.ledger_sync.enabled")).thenReturn("yes");
 
     Exception exception =
         assertThrows(
             com.google.inject.CreationException.class,
-            () -> Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this));
+            () ->
+                Guice.createInjector(new RadixNodeModule(properties, NETWORK, MOCK_GENESIS_TXN))
+                    .injectMembers(this));
 
     assertTrue(exception.getCause() instanceof IllegalArgumentException);
     assertEquals(
@@ -130,12 +132,12 @@ public class RadixNodeModuleTest {
   @Test
   public void when_capabilities_ledger_sync_enabled_value_is_valid_no_exception_is_thrown() {
     final var properties = createDefaultProperties();
-    when(properties.get("network.id")).thenReturn("" + Network.INTEGRATIONTESTNET.getId());
-    when(properties.get("network.genesis_txn")).thenReturn(MOCK_GENESIS_TXN);
+    when(properties.get("network.id")).thenReturn("" + NETWORK.getId());
     when(properties.get("db.location")).thenReturn(folder.getRoot().getAbsolutePath());
     when(properties.get("capabilities.ledger_sync.enabled")).thenReturn("true");
 
-    Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);
+    Guice.createInjector(new RadixNodeModule(properties, NETWORK, MOCK_GENESIS_TXN))
+        .injectMembers(this);
   }
 
   private RuntimeProperties createDefaultProperties() {

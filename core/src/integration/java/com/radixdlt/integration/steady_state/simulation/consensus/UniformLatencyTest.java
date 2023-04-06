@@ -72,6 +72,7 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.*;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
@@ -98,8 +99,9 @@ public class UniformLatencyTest {
             .numPhysicalNodes(4)
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
+                    NodeStorageConfig.none(),
                     false,
-                    SafetyRecoveryConfig.mocked(),
+                    SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(),
                     LedgerConfig.mocked(4)))
             .addTestModules(

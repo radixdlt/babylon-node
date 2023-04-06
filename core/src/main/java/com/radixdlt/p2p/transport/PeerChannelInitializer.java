@@ -70,6 +70,7 @@ import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.mempool.MempoolRelayer;
 import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeerEvent;
 import com.radixdlt.p2p.RadixNodeUri;
@@ -141,7 +142,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
 
   private final P2PConfig config;
   private final Addressing addressing;
-  private final int networkId;
+  private final Network network;
   private final String newestForkName;
   private final Metrics metrics;
   private final Serialization serialization;
@@ -154,7 +155,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
   public PeerChannelInitializer(
       P2PConfig config,
       Addressing addressing,
-      int networkId,
+      Network network,
       String newestForkName,
       Metrics metrics,
       Serialization serialization,
@@ -165,7 +166,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
       Capabilities capabilities) {
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
-    this.networkId = networkId;
+    this.network = network;
     this.newestForkName = newestForkName;
     this.metrics = Objects.requireNonNull(metrics);
     this.serialization = Objects.requireNonNull(serialization);
@@ -255,7 +256,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
         new PeerChannel(
             config,
             addressing,
-            networkId,
+            network,
             newestForkName,
             metrics,
             serialization,

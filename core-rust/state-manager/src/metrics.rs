@@ -73,6 +73,7 @@ pub struct StateManagerMetrics {
     pub mempool_current_transactions: IntGauge,
     pub mempool_submission_added: IntCounterVec,
     pub mempool_submission_rejected: IntCounterVec,
+    pub mempool_from_local_api_to_commit_wait: Histogram,
 }
 
 impl StateManagerMetrics {
@@ -114,6 +115,14 @@ impl StateManagerMetrics {
                 &["source", "rejection_reason"],
             )
             .unwrap(),
+            mempool_from_local_api_to_commit_wait: new_timer(
+                opts(
+                    "mempool_from_local_api_to_commit_wait",
+                    "Time spent in the mempool, by a transaction coming from local API, until successful commit."
+                ),
+                vec![0.01, 0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 25.0, 50.0]
+            )
+            .unwrap(),
         }
     }
 
@@ -125,6 +134,7 @@ impl StateManagerMetrics {
             Box::new(self.mempool_current_transactions.clone()),
             Box::new(self.mempool_submission_added.clone()),
             Box::new(self.mempool_submission_rejected.clone()),
+            Box::new(self.mempool_from_local_api_to_commit_wait.clone()),
         ];
 
         for metric in metrics.into_iter() {
@@ -142,6 +152,21 @@ impl Default for StateManagerMetrics {
 
 fn opts(name: &str, help: &str) -> Opts {
     Opts::new(format!("rn_{name}"), help)
+}
+
+/// Creates a new `Histogram` tailored to measuring time durations.
+/// The name (found in `Opts`) is expected to be a verb (describing the measured action) and will be
+/// auto-suffixed with a conventional `_seconds` string. The measurements are thus expected to be
+/// reported in seconds (possibly fractional).
+/// The buckets should represent expected interesting ranges of the measurements (i.e. their upper
+/// bounds). The last `+inf` bucket will be auto-added - this means that an empty bucket list may be
+/// passed here, and the timer will work in a `Summary` mode (i.e. tracking just sum and count).
+fn new_timer(opts: Opts, buckets: Vec<f64>) -> Result<Histogram> {
+    let mut adjusted_opts = opts;
+    adjusted_opts.name = format!("{}_seconds", adjusted_opts.name);
+    let mut adjusted_buckets = buckets;
+    adjusted_buckets.push(f64::INFINITY);
+    Histogram::with_opts(HistogramOpts::from(adjusted_opts).buckets(adjusted_buckets))
 }
 
 // TODO - capture the metric types on a generic wrapper around the GenericCounter, and ensure the provided labels match the types, like in Java.

@@ -69,6 +69,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
 import com.radixdlt.api.system.health.HealthInfoService;
+import com.radixdlt.api.system.health.HealthInfoServiceImpl;
 import com.radixdlt.api.system.health.ScheduledStatsCollecting;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.monitoring.Metrics;
@@ -83,13 +84,14 @@ public class HealthInfoServiceTest {
       mock(ScheduledEventDispatcher.class);
 
   private final Metrics metrics = new MetricsInitializer().initialize();
-  private final HealthInfoService healthInfoService = new HealthInfoService(metrics, dispatcher);
+  private final HealthInfoService healthInfoService =
+      new HealthInfoServiceImpl(metrics, dispatcher);
 
   @Test
   public void testNodeStatus() {
     Gauge ledgerGauge = metrics.ledger().stateVersion();
     Gauge targetGauge = metrics.sync().targetStateVersion();
-    assertEquals(BOOTING, healthInfoService.nodeStatus());
+    assertEquals(BOOTING_AT_GENESIS, healthInfoService.nodeStatus());
 
     updateStatsSync(10, targetGauge, 5, ledgerGauge);
 

@@ -65,39 +65,19 @@
 package com.radixdlt.rev2.modules;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.environment.NodeAutoCloseable;
-import com.radixdlt.store.DatabaseCacheSize;
-import com.radixdlt.store.DatabaseEnvironment;
-import com.radixdlt.store.DatabaseLocation;
 
 public class BerkeleySafetyStoreModule extends AbstractModule {
-  private final String rootPath;
-
-  public BerkeleySafetyStoreModule(String rootPath) {
-    this.rootPath = rootPath;
-  }
-
   @Override
   protected void configure() {
     bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
     bind(BerkeleySafetyStateStore.class).in(Scopes.SINGLETON);
-    bind(DatabaseEnvironment.class).in(Scopes.SINGLETON);
-    bindConstant().annotatedWith(DatabaseCacheSize.class).to(1024L * 1024L);
     Multibinder.newSetBinder(binder(), NodeAutoCloseable.class)
         .addBinding()
         .to(BerkeleySafetyStateStore.class);
-  }
-
-  @Provides
-  @DatabaseLocation
-  private String databaseLocation(@Self BFTValidatorId node) {
-    return rootPath + "/" + node.toString().replaceAll("\\W+", "_");
   }
 }

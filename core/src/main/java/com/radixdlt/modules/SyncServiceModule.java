@@ -79,7 +79,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerControl;
-import com.radixdlt.store.LastProof;
+import com.radixdlt.rev2.LastProof;
 import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseHandler;
 import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseHandler;

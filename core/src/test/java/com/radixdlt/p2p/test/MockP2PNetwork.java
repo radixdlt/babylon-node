@@ -116,7 +116,7 @@ final class MockP2PNetwork {
         new PeerChannel(
             clientPeer.injector.getInstance(P2PConfig.class),
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
-            1,
+            Network.INTEGRATIONTESTNET,
             "fork1",
             clientPeer.injector.getInstance(Metrics.class),
             clientPeer.injector.getInstance(Serialization.class),
@@ -142,7 +142,7 @@ final class MockP2PNetwork {
         new PeerChannel(
             serverPeer.injector.getInstance(P2PConfig.class),
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
-            1,
+            Network.INTEGRATIONTESTNET,
             "fork1",
             serverPeer.injector.getInstance(Metrics.class),
             serverPeer.injector.getInstance(Serialization.class),

@@ -78,13 +78,14 @@ import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -102,15 +103,16 @@ public final class REv2MempoolRelayerTest {
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
+                NodeStorageConfig.none(),
                 false,
-                SafetyRecoveryConfig.mocked(),
+                SafetyRecoveryConfig.MOCKED,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(100000)),
-                        REv2DatabaseConfig.inMemory(),
+                        REv2StateManagerModule.DatabaseType.IN_MEMORY,
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             0, 0, MEMPOOL_SIZE, new MempoolRelayConfig(0, 100))),
                     SyncRelayConfig.of(5000, 10, 3000L))));

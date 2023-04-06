@@ -72,9 +72,10 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
 import org.junit.Rule;
@@ -91,15 +92,16 @@ public class REv2IncreasingEpochTest {
         .messageMutator(MessageMutator.dropTimeouts())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
+                NodeStorageConfig.tempFolder(folder),
                 true,
-                SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
+                SafetyRecoveryConfig.BERKELEY_DB,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
-                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.noUserTransactions()))));
   }
 

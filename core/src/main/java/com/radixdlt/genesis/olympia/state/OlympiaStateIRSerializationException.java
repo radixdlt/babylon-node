@@ -62,23 +62,10 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store;
+package com.radixdlt.genesis.olympia.state;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
-
-/**
- * Identifies that the target is the last proof. This includes the mocked genesis
- * VerifiedLedgerHeaderAndProof. That is, the header associated with this annotation should never
- * have isEndOfEpoch() == true.
- */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface LastProof {}
+public final class OlympiaStateIRSerializationException extends RuntimeException {
+  public OlympiaStateIRSerializationException(String message, Throwable cause) {
+    super(message, cause);
+  }
+}

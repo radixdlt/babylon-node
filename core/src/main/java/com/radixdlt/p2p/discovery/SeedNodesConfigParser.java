@@ -67,7 +67,7 @@ package com.radixdlt.p2p.discovery;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.networks.NetworkId;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.serialization.DeserializeException;
@@ -86,11 +86,11 @@ public final class SeedNodesConfigParser {
   private final Set<String> unresolvedUris = new HashSet<>();
   private final Set<RadixNodeUri> resolvedSeedNodes = new HashSet<>();
   private final Addressing addressing;
-  private final int networkId;
+  private final Network network;
 
   @Inject
-  public SeedNodesConfigParser(P2PConfig config, @NetworkId int networkId, Addressing addressing) {
-    this.networkId = networkId;
+  public SeedNodesConfigParser(P2PConfig config, Network network, Addressing addressing) {
+    this.network = network;
     this.addressing = addressing;
     this.defaultPort = config.defaultPort();
     this.unresolvedUris.addAll(config.seedNodes());
@@ -129,7 +129,7 @@ public final class SeedNodesConfigParser {
       // FIXME: This is a bit messy, should have clearer logic on the checks
       return Optional.of(
           RadixNodeUri.fromPubKeyAndAddress(
-              networkId,
+              network.getId(),
               addressing.decodeNodeAddress(parsedUri.getUserInfo()),
               resolved.getHostAddress(),
               parsedUri.getPort() > 0 ? parsedUri.getPort() : defaultPort));

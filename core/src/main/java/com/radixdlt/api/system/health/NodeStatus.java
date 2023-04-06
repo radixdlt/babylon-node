@@ -65,7 +65,8 @@
 package com.radixdlt.api.system.health;
 
 public enum NodeStatus {
-  BOOTING,
+  BOOTING_PRE_GENESIS,
+  BOOTING_AT_GENESIS,
   SYNCING,
   UP,
   STALLED,

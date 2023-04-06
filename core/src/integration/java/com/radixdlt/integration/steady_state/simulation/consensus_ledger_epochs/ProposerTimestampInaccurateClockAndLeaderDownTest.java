@@ -84,6 +84,7 @@ import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.RejectedConsensusEvent;
@@ -124,8 +125,9 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
                 LedgerMonitors.ordered())
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
+                    NodeStorageConfig.none(),
                     true,
-                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                    FunctionalRadixNodeModule.SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(1000, 0L),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mockedWithEpochs(

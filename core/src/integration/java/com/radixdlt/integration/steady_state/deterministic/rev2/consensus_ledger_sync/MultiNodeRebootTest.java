@@ -76,13 +76,14 @@ import com.radixdlt.harness.predicates.NodesPredicate;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.MockedVertexStoreModule;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt64;
@@ -191,7 +192,6 @@ public final class MultiNodeRebootTest {
 
   private DeterministicTest createTest(
       SafetyRecoveryConfig safetyRecoveryConfig, Module overrideModule) {
-    var databaseConfig = REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath());
     var builder =
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBatch(numValidators, true))
@@ -204,6 +204,7 @@ public final class MultiNodeRebootTest {
 
     return builder.functionalNodeModule(
         new FunctionalRadixNodeModule(
+            NodeStorageConfig.tempFolder(folder),
             this.epochs,
             safetyRecoveryConfig,
             ConsensusConfig.of(1000, 0L),
@@ -212,7 +213,7 @@ public final class MultiNodeRebootTest {
                     Network.INTEGRATIONTESTNET.getId(),
                     TransactionBuilder.createGenesisWithNumValidators(
                         numValidators, Decimal.of(1), this.roundsPerEpoch),
-                    databaseConfig,
+                    REv2StateManagerModule.DatabaseType.ROCKS_DB,
                     StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                         new REV2TransactionGenerator(), 1)),
                 SyncRelayConfig.of(5000, 10, 5000L))));
@@ -254,15 +255,13 @@ public final class MultiNodeRebootTest {
 
   @Test
   public void restart_all_nodes_intermittently() {
-    runTest(
-        new MixedLivenessEachRound(random, 0),
-        SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()));
+    runTest(new MixedLivenessEachRound(random, 0), SafetyRecoveryConfig.BERKELEY_DB);
   }
 
   @Test
   public void restart_all_nodes_intermittently_with_bad_safety_recovery_should_fail() {
     assertThatThrownBy(
-            () -> runTest(new MixedLivenessEachRound(random, 0), SafetyRecoveryConfig.mocked()))
+            () -> runTest(new MixedLivenessEachRound(random, 0), SafetyRecoveryConfig.MOCKED))
         .hasRootCauseExactlyInstanceOf(ByzantineBehaviorDetected.class);
   }
 
@@ -272,7 +271,7 @@ public final class MultiNodeRebootTest {
             () ->
                 runTest(
                     new MixedLivenessEachRound(random, 0),
-                    SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
+                    SafetyRecoveryConfig.BERKELEY_DB,
                     new MockedVertexStoreModule()))
         .isInstanceOf(DeterministicTest.NeverReachedStateException.class);
   }
@@ -281,6 +280,6 @@ public final class MultiNodeRebootTest {
   public void restart_all_nodes_intermittently_while_f_nodes_down() {
     runTest(
         new MixedLivenessEachRound(random, (numValidators - 1) / 3),
-        SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()));
+        SafetyRecoveryConfig.BERKELEY_DB);
   }
 }

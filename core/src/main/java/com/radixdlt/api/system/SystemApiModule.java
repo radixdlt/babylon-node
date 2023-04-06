@@ -70,6 +70,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.api.common.HandlerRoute;
 import com.radixdlt.api.system.health.HealthInfoService;
+import com.radixdlt.api.system.health.HealthInfoServiceImpl;
 import com.radixdlt.api.system.health.ScheduledStatsCollecting;
 import com.radixdlt.api.system.routes.*;
 import com.radixdlt.environment.EventProcessorOnRunner;
@@ -96,7 +97,7 @@ public class SystemApiModule extends AbstractModule {
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
             .permitDuplicates();
     eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
-    bind(HealthInfoService.class).in(Scopes.SINGLETON);
+    bind(HealthInfoService.class).to(HealthInfoServiceImpl.class).in(Scopes.SINGLETON);
 
     var binder =
         MapBinder.newMapBinder(

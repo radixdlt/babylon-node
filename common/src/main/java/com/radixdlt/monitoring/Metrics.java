@@ -151,7 +151,6 @@ public record Metrics(
     Ledger ledger,
     LedgerSync sync,
     Mempool mempool,
-    V1Mempool v1Mempool,
     V1RadixEngine v1RadixEngine,
     Messages messages,
     Networking networking,
@@ -249,10 +248,7 @@ public record Metrics(
       Gauge currentStateVersion,
       Gauge targetStateVersion) {}
 
-  public record Mempool(Timer addTransaction) {}
-
-  public record V1Mempool(
-      Gauge size, Counter relaysSent, Counter addSuccesses, Counter addFailures) {}
+  public record Mempool(Counter relaysSent) {}
 
   public record V1RadixEngine(
       Counter invalidProposedTransactions, Counter userTransactions, Counter systemTransactions) {}
@@ -280,7 +276,7 @@ public record Metrics(
 
   public record Misc(
       TypedInfo<Config> config,
-      Timer applicationStart,
+      Timer nodeStartup,
       Counter vertexStoreSaved,
       GetterGauge peerCount) {}
 

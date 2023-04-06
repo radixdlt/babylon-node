@@ -69,6 +69,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.p2p.capability.RemotePeerCapability;
@@ -103,7 +104,7 @@ public final class AuthHandshakerTest {
             serialization,
             secureRandom,
             ECKeyOps.fromKeyPair(nodeKey1),
-            (byte) 0x01,
+            Network.INTEGRATIONTESTNET,
             "fork1",
             peer1Capabilities);
     final var handshaker2 =
@@ -111,7 +112,7 @@ public final class AuthHandshakerTest {
             serialization,
             secureRandom,
             ECKeyOps.fromKeyPair(nodeKey2),
-            (byte) 0x01,
+            Network.INTEGRATIONTESTNET,
             "fork1",
             capabilities);
 
@@ -146,7 +147,7 @@ public final class AuthHandshakerTest {
             serialization,
             secureRandom,
             ECKeyOps.fromKeyPair(nodeKey1),
-            (byte) 0x01,
+            Network.INTEGRATIONTESTNET,
             "fork1",
             peer1Capabilities);
     final var handshaker2 =
@@ -154,7 +155,7 @@ public final class AuthHandshakerTest {
             serialization,
             secureRandom,
             ECKeyOps.fromKeyPair(nodeKey2),
-            (byte) 0x01,
+            Network.INTEGRATIONTESTNET,
             "fork1",
             capabilities);
 
@@ -184,7 +185,7 @@ public final class AuthHandshakerTest {
             serialization,
             secureRandom,
             ECKeyOps.fromKeyPair(nodeKey1),
-            (byte) 0x01,
+            Network.INTEGRATIONTESTNET,
             "fork1",
             capabilities);
     final var handshaker2 =
@@ -192,7 +193,7 @@ public final class AuthHandshakerTest {
             serialization,
             secureRandom,
             ECKeyOps.fromKeyPair(nodeKey2),
-            (byte) 0x02,
+            Network.LOCALNET,
             "fork1",
             capabilities);
 

@@ -74,6 +74,7 @@ import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
@@ -103,8 +104,9 @@ public class FProposalDropperResponsiveTest {
                     .andThen(dropNodes(numValidatorNodes, nodesToDropFunction)))
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
+                    NodeStorageConfig.none(),
                     false,
-                    SafetyRecoveryConfig.mocked(),
+                    SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mockedNoEpochs(

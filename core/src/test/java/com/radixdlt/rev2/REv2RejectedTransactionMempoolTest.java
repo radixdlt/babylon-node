@@ -81,9 +81,10 @@ import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.mempool.*;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.*;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -122,15 +123,16 @@ public class REv2RejectedTransactionMempoolTest {
         .messageMutator(MessageMutator.dropTimeouts())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
+                NodeStorageConfig.tempFolder(folder),
                 this.epochs,
-                SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
+                SafetyRecoveryConfig.BERKELEY_DB,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), this.roundsPerEpoch),
-                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        REv2StateManagerModule.DatabaseType.ROCKS_DB,
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             1, 1024 * 1024, mempoolSize, MempoolRelayConfig.of())))));
   }

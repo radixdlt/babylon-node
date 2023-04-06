@@ -74,18 +74,19 @@ public enum Network {
   /// Public Facing Permanent Networks (0x00 - 0x09)
   // - mainnet
   // - stokenet
-  MAINNET(1 /* 0x01 */, "mainnet", "rdx", GenesisSource.providedAsync),
-  STOKENET(2 /* 0x02 */, "stokenet", "tdx_2_", GenesisSource.providedAsync),
+  // TODO(post-babylon): add a fixed genesis from resources for mainnet
+  MAINNET(1 /* 0x01 */, "mainnet", "rdx"),
+  STOKENET(2 /* 0x02 */, "stokenet", "tdx_2_"),
 
   /// Babylon Temporary Testnets (0x0a - 0x0f)
   // - adapanet = Babylon Alphanet, after Adapa
   // - nebunet = Babylon Betanet, after Nebuchadnezzar
   // - kisharnet = Babylon RCNetV1, after Kishar (from the Babylonian Creation Story)
   // - ansharnet = Babylon RCNetV2, after Anshar (from the Babylonian Creation Story)
-  ADAPANET(10 /* 0x0a */, "adapanet", "tdx_a_", GenesisSource.fromConfiguration),
-  NEBUNET(11 /* 0x0b */, "nebunet", "tdx_b_", GenesisSource.fromConfiguration),
-  KISHARNET(12 /* 0x0c */, "kisharnet", "tdx_c_", GenesisSource.fromConfiguration),
-  ANSHARNET(13 /* 0x0d */, "ansharnet", "tdx_d_", GenesisSource.fromConfiguration),
+  ADAPANET(10 /* 0x0a */, "adapanet", "tdx_a_"),
+  NEBUNET(11 /* 0x0b */, "nebunet", "tdx_b_"),
+  KISHARNET(12 /* 0x0c */, "kisharnet", "tdx_c_"),
+  ANSHARNET(13 /* 0x0d */, "ansharnet", "tdx_d_"),
 
   /// RDX Development - Semi-permanent Testnets (start with 0x2)
   // - gilganet = Integration, after Gilgamesh
@@ -94,18 +95,18 @@ public enum Network {
   // - nergalnet = A Network for DevOps testing, after the Mesopotamian god Nergal
   // - mardunet = A staging Network for testing new releases to the primary public environment,
   //              after the Babylonian god Marduk
-  GILGANET(32 /* 0x20 */, "gilganet", "tdx_20_", GenesisSource.fromConfiguration),
-  ENKINET(33 /* 0x21 */, "enkinet", "tdx_21_", GenesisSource.fromConfiguration),
-  HAMMUNET(34 /* 0x22 */, "hammunet", "tdx_22_", GenesisSource.fromConfiguration),
-  NERGALNET(35 /* 0x23 */, "nergalnet", "tdx_23_", GenesisSource.fromConfiguration),
-  MARDUNET(36 /* 0x24 */, "mardunet", "tdx_24_", GenesisSource.fromConfiguration),
+  GILGANET(32 /* 0x20 */, "gilganet", "tdx_20_"),
+  ENKINET(33 /* 0x21 */, "enkinet", "tdx_21_"),
+  HAMMUNET(34 /* 0x22 */, "hammunet", "tdx_22_"),
+  NERGALNET(35 /* 0x23 */, "nergalnet", "tdx_23_"),
+  MARDUNET(36 /* 0x24 */, "mardunet", "tdx_24_"),
 
   /// Ephemeral Networks (start with 0xF)
   // - localnet = The network used when running locally in development
   // - inttestnet = The network used when running integration tests
-  LOCALNET(240 /* 0xF0 */, "localnet", "loc", GenesisSource.fromConfiguration),
-  INTEGRATIONTESTNET(241 /* 0xF1 */, "inttestnet", "test", GenesisSource.fromConfiguration),
-  LOCALSIMULATOR(242 /* 0xF1 */, "simulator", "sim", GenesisSource.fromConfiguration);
+  LOCALNET(240 /* 0xF0 */, "localnet", "loc"),
+  INTEGRATIONTESTNET(241 /* 0xF1 */, "inttestnet", "test"),
+  LOCALSIMULATOR(242 /* 0xF1 */, "simulator", "sim");
 
   // For the Radix Shell to provide a default
   public static final String DefaultHexGenesisTransaction =
@@ -121,9 +122,13 @@ public enum Network {
   private final String validatorHrp;
   private final String resourceHrp;
   private final String nodeHrp;
-  private final GenesisSource genesisSource;
+  private final Optional<FixedNetworkGenesis> maybeFixedGenesis;
 
-  Network(int id, String logicalName, String hrpSuffix, GenesisSource genesisSource) {
+  Network(
+      int id,
+      String logicalName,
+      String hrpSuffix,
+      Optional<FixedNetworkGenesis> maybeFixedGenesis) {
     if (id <= 0 || id > 255) {
       throw new IllegalArgumentException(
           "Id should be between 1 and 255 so it isn't default(int) = 0 and will fit into a byte if"
@@ -139,7 +144,15 @@ public enum Network {
     this.validatorHrp = "validator_" + hrpSuffix;
     this.resourceHrp = "resource_" + hrpSuffix;
     this.nodeHrp = "node_" + hrpSuffix;
-    this.genesisSource = genesisSource;
+    this.maybeFixedGenesis = maybeFixedGenesis;
+  }
+
+  Network(int id, String logicalName, String hrpSuffix, FixedNetworkGenesis fixedGenesis) {
+    this(id, logicalName, hrpSuffix, Optional.of(fixedGenesis));
+  }
+
+  Network(int id, String logicalName, String hrpSuffix) {
+    this(id, logicalName, hrpSuffix, Optional.empty());
   }
 
   public String getPackageHrp() {
@@ -182,8 +195,8 @@ public enum Network {
     return hrpSuffix;
   }
 
-  public GenesisSource genesisSource() {
-    return genesisSource;
+  public Optional<FixedNetworkGenesis> fixedGenesis() {
+    return this.maybeFixedGenesis;
   }
 
   public static Optional<Network> ofId(int id) {

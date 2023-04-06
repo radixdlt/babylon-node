@@ -75,17 +75,17 @@ import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
-import com.radixdlt.networks.NetworkId;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.p2p.addressbook.AddressBookPeerControl;
 import com.radixdlt.p2p.addressbook.AddressBookPersistence;
+import com.radixdlt.p2p.addressbook.BerkeleyAddressBookStore;
 import com.radixdlt.p2p.hostip.HostIp;
 import com.radixdlt.p2p.hostip.HostIpModule;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrapImpl;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
-import com.radixdlt.store.BerkeleyAddressBookStore;
 import com.radixdlt.utils.properties.RuntimeProperties;
 
 public final class P2PModule extends AbstractModule {
@@ -108,7 +108,8 @@ public final class P2PModule extends AbstractModule {
     bind(PeersView.class).to(PeerManagerPeersView.class).in(Scopes.SINGLETON);
     bind(PeerControl.class).to(AddressBookPeerControl.class).in(Scopes.SINGLETON);
     bind(PeerOutboundBootstrap.class).to(PeerOutboundBootstrapImpl.class).in(Scopes.SINGLETON);
-    bind(AddressBookPersistence.class).to(BerkeleyAddressBookStore.class).in(Scopes.SINGLETON);
+    bind(AddressBookPersistence.class).to(BerkeleyAddressBookStore.class);
+    bind(BerkeleyAddressBookStore.class).in(Scopes.SINGLETON);
     bind(PeerServerBootstrap.class).in(Scopes.SINGLETON);
     bind(PendingOutboundChannelsManager.class).in(Scopes.SINGLETON);
     bind(PeerManager.class).in(Scopes.SINGLETON);
@@ -148,13 +149,10 @@ public final class P2PModule extends AbstractModule {
   @Provides
   @Self
   public RadixNodeUri selfUri(
-      @NetworkId int networkId,
-      @Self ECDSASecp256k1PublicKey selfKey,
-      HostIp hostIp,
-      P2PConfig p2pConfig) {
+      Network network, @Self ECDSASecp256k1PublicKey selfKey, HostIp hostIp, P2PConfig p2pConfig) {
     final var host =
         hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
     final var port = p2pConfig.broadcastPort();
-    return RadixNodeUri.fromPubKeyAndAddress(networkId, selfKey, host, port);
+    return RadixNodeUri.fromPubKeyAndAddress(network.getId(), selfKey, host, port);
   }
 }

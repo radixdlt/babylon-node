@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store;
+package com.radixdlt.rev2;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
@@ -73,8 +73,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
-/** Specifies the size of the database cache */
+/**
+ * Identifies that the target is the last proof. This includes the mocked genesis
+ * VerifiedLedgerHeaderAndProof. That is, the header associated with this annotation should never
+ * have isEndOfEpoch() == true.
+ */
 @Qualifier
 @Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-public @interface DatabaseCacheSize {}
+public @interface LastProof {}

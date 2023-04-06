@@ -62,19 +62,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.networks;
+package com.radixdlt.genesis;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.radixdlt.utils.UInt64;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+/** A configuration used for creating a genesis transaction (together with GenesisData). */
+public record GenesisConfig(UInt64 initialEpoch, UInt64 roundsPerEpoch, UInt64 numUnstakeEpochs) {
 
-/** Marker for network ID. */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface NetworkId {}
+  public static GenesisConfig babylonDefault() {
+    return GenesisConfig.of(1, 1800, 1);
+  }
+
+  public static GenesisConfig of(long initialEpoch, long roundsPerEpoch, long numUnstakeEpochs) {
+    return new GenesisConfig(
+        UInt64.fromNonNegativeLong(initialEpoch),
+        UInt64.fromNonNegativeLong(roundsPerEpoch),
+        UInt64.fromNonNegativeLong(numUnstakeEpochs));
+  }
+}

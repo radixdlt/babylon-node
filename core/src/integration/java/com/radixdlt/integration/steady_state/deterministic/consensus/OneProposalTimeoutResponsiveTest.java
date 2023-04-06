@@ -75,6 +75,7 @@ import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
@@ -93,8 +94,9 @@ public class OneProposalTimeoutResponsiveTest {
             .messageMutator(dropSomeProposals(dropPeriod))
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
+                    NodeStorageConfig.none(),
                     false,
-                    SafetyRecoveryConfig.mocked(),
+                    SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(200L, 0L),
                     LedgerConfig.stateComputerNoSync(
                         StateComputerConfig.mockedNoEpochs(
