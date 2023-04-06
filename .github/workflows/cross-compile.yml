@@ -18,22 +18,18 @@ jobs:
             target: x86_64-apple-darwin
             artifact: 'libcorerust.dylib'
             zipname: 'arch-darwin-x86_64'
-            custom-linker: ""
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact: 'libcorerust.dylib'
             zipname: 'arch-darwin-aarch64'
-            custom-linker: ""
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact: 'libcorerust.so'
             zipname: 'arch-linux-x86_64'
-            custom-linker: ""
           - os: ubuntu-latest
             target: aarch64-unknown-linux-gnu
             zipname: 'arch-linux-aarch64'
             artifact: 'libcorerust.so'
-            custom-linker: "aarch64-linux-gnu-gcc"
           # - os: ubuntu-latest
           #   target: i686-unknown-linux-gnu
           #   zipname: 'arch-linux-i686'
@@ -43,12 +39,10 @@ jobs:
             target: x86_64-pc-windows-msvc
             artifact: 'corerust.dll'
             zipname: 'arch-windows-x86_64-msvc'
-            custom-linker: ""
           - os: windows-latest
             target: x86_64-pc-windows-gnu
             artifact: 'corerust.dll'
             zipname: 'arch-windows-x86_64-gnu'
-            custom-linker: ""
     steps:
       - uses: actions/checkout@master
         with:
@@ -85,12 +79,6 @@ jobs:
           # sudo apt install -y gcc-i686-linux-gnu g++-i686-linux-gnu
       - name: Build core-rust
         run: |
-          export LINKER_ENVIRONMENT_VARIABLE="CARGO_TARGET_"$(echo ${{ matrix.target }} | tr '[:lower:]' '[:upper:]' | sed 's/-/_/g')"_LINKER"
-          if [ ! -z "${{ matrix.custom-linker }}" ]
-          then
-            export $LINKER_ENVIRONMENT_VARIABLE=${{ matrix.custom-linker }}
-          fi
-
           cd core-rust
           cargo build --release --profile=release --target ${{ matrix.target }}
           pwd
@@ -100,6 +88,8 @@ jobs:
           ls  ./target/release/
           echo "ls  ./target/${{ matrix.target }}/release"
           ls  ./target/${{ matrix.target }}/release/
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: "${{ matrix.target == 'aarch64-unknown-linux-gnu' && '' || 'aarch64-linux-gnu-gcc' }}"
       - uses: actions/upload-artifact@master
         with:
           name: libcorerust-${{ matrix.target }}
