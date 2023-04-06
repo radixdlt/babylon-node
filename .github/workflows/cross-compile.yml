@@ -140,6 +140,7 @@ jobs:
           ls -lah
           ls -lah libcorerust-${{ matrix.target }}
           zip -j babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip libcorerust-${{ matrix.target }}/${{ matrix.artifact }}
+          ls -lah
       # - if: github.event_name == 'release'
       #   name: Package libcorerust
       #   uses: montudor/action-zip@v1
@@ -170,6 +171,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: libcorerust-${{ matrix.target }}/${{ matrix.artifact }}
+          asset_path: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
+          # asset_path: libcorerust-${{ matrix.target }}/${{ matrix.artifact }}
           asset_name: babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
           asset_content_type: application/zip
