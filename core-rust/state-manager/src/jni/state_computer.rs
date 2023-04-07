@@ -175,57 +175,6 @@ fn do_commit(
     state_manager.commit(commit_request.into())
 }
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_componentXrdAmount(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, get_component_xrd)
-}
-
-fn get_component_xrd(state_manager: &ActualStateManager, args: ComponentAddress) -> Decimal {
-    let component_address = args;
-    let resources = state_manager.get_component_resources(component_address);
-
-    resources
-        .map(|r| r.get(&RADIX_TOKEN).cloned().unwrap_or_else(Decimal::zero))
-        .unwrap_or_else(Decimal::zero)
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_validatorInfo(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, get_validator_info)
-}
-
-fn get_validator_info(
-    state_manager: &ActualStateManager,
-    args: ComponentAddress,
-) -> JavaValidatorInfo {
-    let validator_address = args;
-    state_manager.get_validator_info(validator_address)
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_epoch(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_get_epoch)
-}
-
-fn do_get_epoch(state_manager: &ActualStateManager, _args: ()) -> u64 {
-    state_manager.get_epoch()
-}
-
 pub fn export_extern_functions() {}
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -373,12 +322,6 @@ impl From<PrepareGenesisResult> for JavaPrepareGenesisResult {
             ledger_hashes: prepare_result.ledger_hashes.into(),
         }
     }
-}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct JavaValidatorInfo {
-    pub lp_token_address: ResourceAddress,
-    pub unstake_resource: ResourceAddress,
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

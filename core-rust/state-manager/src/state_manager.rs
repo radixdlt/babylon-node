@@ -63,7 +63,6 @@
  */
 
 use crate::accumulator_tree::slice_merger::AccuTreeSliceMerger;
-use crate::jni::state_computer::JavaValidatorInfo;
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::query::*;
 use crate::staging::{ExecutionCache, HashStructuresDiff, ReadableStore, TransactionLogic};
@@ -89,14 +88,8 @@ use radix_engine::transaction::{
     execute_preview, execute_transaction, AbortReason, ExecutionConfig, FeeReserveConfig,
     PreviewError, PreviewResult, TransactionReceipt, TransactionResult,
 };
-use radix_engine::types::{
-    Categorize, ComponentAddress, Decimal, Decode, Encode, PublicKey, RENodeId, ResourceAddress,
-};
+use radix_engine::types::{Categorize, ComponentAddress, Decode, Encode, PublicKey};
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
-
-use radix_engine_interface::api::types::{
-    NodeModuleId, SubstateId, SubstateOffset, ValidatorOffset,
-};
 
 use std::collections::{BTreeMap, HashMap};
 use std::ops::Deref;
@@ -104,13 +97,14 @@ use std::sync::Arc;
 
 use crate::staging::epoch_handling::AccuTreeEpochHandler;
 use parking_lot::lock_api::RwLockReadGuard;
-use radix_engine::blueprints::epoch_manager::{Validator, ValidatorSubstate};
+use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine_interface::data::manifest::manifest_encode;
 use radix_engine_interface::network::NetworkDefinition;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+
 use tracing::{error, info, warn};
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
@@ -1067,37 +1061,6 @@ where
             );
 
         Ok(())
-    }
-}
-
-impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
-    pub fn get_component_resources(
-        &self,
-        component_address: ComponentAddress,
-    ) -> Option<HashMap<ResourceAddress, Decimal>> {
-        let read_store = self.store.read();
-        let mut resource_accounter = ResourceAccounter::new(read_store.deref());
-        resource_accounter
-            .add_resources(RENodeId::GlobalObject(component_address.into()))
-            .map_or(None, |()| Some(resource_accounter.into_map()))
-    }
-
-    pub fn get_validator_info(&self, validator_address: ComponentAddress) -> JavaValidatorInfo {
-        let substate_id = SubstateId(
-            RENodeId::GlobalObject(validator_address.into()),
-            NodeModuleId::SELF,
-            SubstateOffset::Validator(ValidatorOffset::Validator),
-        );
-        let output = self.store.read().get_substate(&substate_id).unwrap();
-        let validator_substate: ValidatorSubstate = output.substate.to_runtime().into();
-        JavaValidatorInfo {
-            lp_token_address: validator_substate.liquidity_token,
-            unstake_resource: validator_substate.unstake_nft,
-        }
-    }
-
-    pub fn get_epoch(&self) -> u64 {
-        self.store.read().get_epoch()
     }
 }
 

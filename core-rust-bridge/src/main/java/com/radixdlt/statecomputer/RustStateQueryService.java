@@ -62,16 +62,59 @@
  * permissions under this License.
  */
 
-pub mod addressing;
-pub mod common_types;
-pub mod database;
-pub mod java_structure;
-pub mod mempool;
-pub mod scrypto_constants;
-pub mod state_computer;
-pub mod state_manager;
-pub mod state_query_service;
-pub mod transaction_builder;
-pub mod transaction_store;
-pub mod utils;
-pub mod vertex_store_recovery;
+package com.radixdlt.statecomputer;
+
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.database.Database;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.monitoring.LabelledTimer;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.Metrics.MethodId;
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.rev2.Decimal;
+import com.radixdlt.rev2.ValidatorInfo;
+import com.radixdlt.sbor.Natives;
+import com.radixdlt.utils.UInt64;
+
+public class RustStateQueryService {
+
+  public RustStateQueryService(Metrics metrics, Database database) {
+    LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
+    this.componentXrdAmountFunc =
+        Natives.builder(database, RustStateQueryService::componentXrdAmount)
+            .measure(timer.label(new MethodId(RustStateQueryService.class, "componentXrdAmount")))
+            .build(new TypeToken<>() {});
+    this.validatorInfoFunc =
+        Natives.builder(database, RustStateQueryService::validatorInfo)
+            .measure(timer.label(new MethodId(RustStateQueryService.class, "validatorInfo")))
+            .build(new TypeToken<>() {});
+    this.epochFunc =
+        Natives.builder(database, RustStateQueryService::epoch)
+            .measure(timer.label(new MethodId(RustStateQueryService.class, "epoch")))
+            .build(new TypeToken<>() {});
+  }
+
+  private final Natives.Call1<ComponentAddress, Decimal> componentXrdAmountFunc;
+
+  public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
+    return componentXrdAmountFunc.call(componentAddress);
+  }
+
+  private static native byte[] componentXrdAmount(Database database, byte[] payload);
+
+  private final Natives.Call1<Tuple.Tuple0, UInt64> epochFunc;
+
+  public UInt64 getEpoch() {
+    return epochFunc.call(Tuple.tuple());
+  }
+
+  private static native byte[] epoch(Database database, byte[] payload);
+
+  private final Natives.Call1<ComponentAddress, ValidatorInfo> validatorInfoFunc;
+
+  public ValidatorInfo getValidatorInfo(ComponentAddress validatorAddress) {
+    return validatorInfoFunc.call(validatorAddress);
+  }
+
+  private static native byte[] validatorInfo(Database database, byte[] payload);
+}

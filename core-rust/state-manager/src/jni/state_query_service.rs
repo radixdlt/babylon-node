@@ -62,16 +62,95 @@
  * permissions under this License.
  */
 
-pub mod addressing;
-pub mod common_types;
-pub mod database;
-pub mod java_structure;
-pub mod mempool;
-pub mod scrypto_constants;
-pub mod state_computer;
-pub mod state_manager;
-pub mod state_query_service;
-pub mod transaction_builder;
-pub mod transaction_store;
-pub mod utils;
-pub mod vertex_store_recovery;
+use std::ops::Deref;
+
+use jni::objects::{JClass, JObject};
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
+use radix_engine::blueprints::epoch_manager::ValidatorSubstate;
+use radix_engine::ledger::ReadableSubstateStore;
+use radix_engine::types::*;
+
+use crate::jni::utils::*;
+
+use crate::jni::database::JNIDatabase;
+use crate::query::{ResourceAccounter, StateManagerSubstateQueries};
+
+//
+// JNI Interface
+//
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateQueryService_componentXrdAmount(
+    env: JNIEnv,
+    _class: JClass,
+    j_database: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |component_address: ComponentAddress| -> Decimal {
+            let database = JNIDatabase::get_database(&env, j_database);
+            let read_store = database.read();
+            let mut resource_accounter = ResourceAccounter::new(read_store.deref());
+            let resources = resource_accounter
+                .add_resources(RENodeId::GlobalObject(component_address.into()))
+                .map_or(None, |()| Some(resource_accounter.into_map()));
+            resources
+                .map(|r| r.get(&RADIX_TOKEN).cloned().unwrap_or_else(Decimal::zero))
+                .unwrap_or_else(Decimal::zero)
+        },
+    )
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateQueryService_validatorInfo(
+    env: JNIEnv,
+    _class: JClass,
+    j_database: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |validator_address: ComponentAddress| -> JavaValidatorInfo {
+            let database = JNIDatabase::get_database(&env, j_database);
+            let read_store = database.read();
+            let substate_id = SubstateId(
+                RENodeId::GlobalObject(validator_address.into()),
+                NodeModuleId::SELF,
+                SubstateOffset::Validator(ValidatorOffset::Validator),
+            );
+            let output = read_store.get_substate(&substate_id).unwrap();
+            let validator_substate: ValidatorSubstate = output.substate.to_runtime().into();
+            JavaValidatorInfo {
+                lp_token_address: validator_substate.liquidity_token,
+                unstake_resource: validator_substate.unstake_nft,
+            }
+        },
+    )
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateQueryService_epoch(
+    env: JNIEnv,
+    _class: JClass,
+    j_database: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| -> u64 {
+        let database = JNIDatabase::get_database(&env, j_database);
+        let read_store = database.read();
+
+        read_store.get_epoch()
+    })
+}
+
+pub fn export_extern_functions() {}
+
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct JavaValidatorInfo {
+    pub lp_token_address: ResourceAddress,
+    pub unstake_resource: ResourceAddress,
+}

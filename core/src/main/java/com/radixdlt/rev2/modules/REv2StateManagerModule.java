@@ -90,6 +90,7 @@ import com.radixdlt.rev2.*;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.statecomputer.RustStateQueryService;
 import com.radixdlt.statemanager.*;
 import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.sync.TransactionsAndProofReader;
@@ -234,21 +235,27 @@ public final class REv2StateManagerModule extends AbstractModule {
           }
 
           @Provides
-          REv2StateReader stateReader(RustStateComputer stateComputer) {
+          @Singleton
+          RustStateQueryService stateQueryService(Metrics metrics, Database database) {
+            return new RustStateQueryService(metrics, database);
+          }
+
+          @Provides
+          REv2StateReader stateReader(RustStateQueryService stateQueryService) {
             return new REv2StateReader() {
               @Override
               public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
-                return stateComputer.getComponentXrdAmount(componentAddress);
+                return stateQueryService.getComponentXrdAmount(componentAddress);
               }
 
               @Override
               public ValidatorInfo getValidatorInfo(ComponentAddress systemAddress) {
-                return stateComputer.getValidatorInfo(systemAddress);
+                return stateQueryService.getValidatorInfo(systemAddress);
               }
 
               @Override
               public long getEpoch() {
-                return stateComputer
+                return stateQueryService
                     .getEpoch()
                     .toNonNegativeLong()
                     .unwrap(() -> new IllegalStateException("Epoch is not non-negative"));
