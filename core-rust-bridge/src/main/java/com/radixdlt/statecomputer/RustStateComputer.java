@@ -73,7 +73,6 @@ import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.monitoring.LabelledTimer;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.MethodId;
-import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.ValidatorInfo;
@@ -87,22 +86,16 @@ import java.util.Objects;
 
 public class RustStateComputer {
   private final RustMempool mempool;
-  private final VertexStoreRecovery vertexStoreRecovery;
 
   public RustStateComputer(Metrics metrics, StateManager stateManager) {
     Objects.requireNonNull(stateManager);
 
     this.mempool = new RustMempool(metrics, stateManager);
-    this.vertexStoreRecovery = new VertexStoreRecovery(metrics, stateManager);
 
     LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
     this.verifyFunc =
         Natives.builder(stateManager, RustStateComputer::verify)
             .measure(timer.label(new MethodId(RustStateComputer.class, "verify")))
-            .build(new TypeToken<>() {});
-    this.saveVertexStoreFunc =
-        Natives.builder(stateManager, RustStateComputer::saveVertexStore)
-            .measure(timer.label(new MethodId(RustStateComputer.class, "saveVertexStore")))
             .build(new TypeToken<>() {});
     this.prepareGenesisFunc =
         Natives.builder(stateManager, RustStateComputer::prepareGenesis)
@@ -130,10 +123,6 @@ public class RustStateComputer {
             .build(new TypeToken<>() {});
   }
 
-  public VertexStoreRecovery getVertexStoreRecovery() {
-    return vertexStoreRecovery;
-  }
-
   public MempoolReader<RawNotarizedTransaction> getMempoolReader() {
     return this.mempool;
   }
@@ -155,14 +144,6 @@ public class RustStateComputer {
   private final Natives.Call1<RawNotarizedTransaction, Result<Tuple.Tuple0, String>> verifyFunc;
 
   private static native byte[] verify(StateManager stateManager, byte[] payload);
-
-  public void saveVertexStore(byte[] vertexStoreBytes) {
-    saveVertexStoreFunc.call(vertexStoreBytes);
-  }
-
-  private final Natives.Call1<byte[], Tuple.Tuple0> saveVertexStoreFunc;
-
-  private static native byte[] saveVertexStore(StateManager stateManager, byte[] payload);
 
   public PrepareGenesisResult prepareGenesis(PrepareGenesisRequest prepareGenesisRequest) {
     return prepareGenesisFunc.call(prepareGenesisRequest);

@@ -221,14 +221,16 @@ public final class REv2StateManagerModule extends AbstractModule {
           }
 
           @Provides
+          @Singleton
           REv2TransactionAndProofStore transactionAndProofStore(
               Metrics metrics, Database database) {
             return new REv2TransactionAndProofStore(metrics, database);
           }
 
           @Provides
-          VertexStoreRecovery rEv2VertexStoreRecovery(RustStateComputer stateComputer) {
-            return stateComputer.getVertexStoreRecovery();
+          @Singleton
+          VertexStoreRecovery rEv2VertexStoreRecovery(Metrics metrics, Database database) {
+            return new VertexStoreRecovery(metrics, database);
           }
 
           @Provides
@@ -256,11 +258,11 @@ public final class REv2StateManagerModule extends AbstractModule {
 
           @Provides
           PersistentVertexStore vertexStore(
-              RustStateComputer stateComputer, Metrics metrics, Serialization serialization) {
+              VertexStoreRecovery recovery, Metrics metrics, Serialization serialization) {
             return s -> {
               metrics.misc().vertexStoreSaved().inc();
               var vertexStoreBytes = serialization.toDson(s.toSerialized(), DsonOutput.Output.ALL);
-              stateComputer.saveVertexStore(vertexStoreBytes);
+              recovery.saveVertexStore(vertexStoreBytes);
             };
           }
 
