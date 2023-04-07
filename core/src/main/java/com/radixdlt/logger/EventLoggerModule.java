@@ -84,7 +84,6 @@ import com.radixdlt.constraintmachine.REEvent.ValidatorMissedProposalsEvent;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.p2p.NodeId;
 import com.radixdlt.utils.Bytes;
 import java.util.function.Function;
 import org.apache.logging.log4j.Level;
@@ -176,7 +175,7 @@ public final class EventLoggerModule extends AbstractModule {
   @Singleton
   @SuppressWarnings("UnstableApiUsage")
   EventProcessorOnDispatch<?> ledgerUpdate(
-      @Self NodeId self, Function<ECDSASecp256k1PublicKey, String> nodeString) {
+      @Self BFTValidatorId self, Function<ECDSASecp256k1PublicKey, String> nodeString) {
     final var logLimiter = RateLimiter.create(1.0);
     return new EventProcessorOnDispatch<>(
         LedgerUpdate.class,
@@ -185,7 +184,7 @@ public final class EventLoggerModule extends AbstractModule {
 
   @SuppressWarnings("UnstableApiUsage")
   private static void processLedgerUpdate(
-      NodeId self,
+      BFTValidatorId self,
       Function<ECDSASecp256k1PublicKey, String> nodeString,
       RateLimiter logLimiter,
       LedgerUpdate ledgerUpdate) {
@@ -218,13 +217,12 @@ public final class EventLoggerModule extends AbstractModule {
     */
   }
 
-  private static void logEpochChange(NodeId self, EpochChange epochChange) {
+  private static void logEpochChange(BFTValidatorId self, EpochChange epochChange) {
     var validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
     logger.info(
         "lgr_nepoch{epoch={} included={} num_validators={} total_stake={}}",
         epochChange.getNextEpoch(),
-        validatorSet.getValidators().stream()
-            .anyMatch(validator -> validator.getValidatorId().getKey().equals(self.getPublicKey())),
+        validatorSet.containsNode(self),
         validatorSet.getValidators().size(),
         Amount.ofSubunits(validatorSet.getTotalPower()));
   }
