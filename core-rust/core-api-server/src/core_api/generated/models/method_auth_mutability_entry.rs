@@ -15,15 +15,15 @@
 pub struct MethodAuthMutabilityEntry {
     #[serde(rename = "method")]
     pub method: Option<crate::core_api::generated::models::LocalMethodReference>, // Using Option permits Default trait; Will always be Some in normal use
-    #[serde(rename = "access_rule")]
-    pub access_rule: Option<crate::core_api::generated::models::AccessRule>, // Using Option permits Default trait; Will always be Some in normal use
+    #[serde(rename = "access_rule_reference")]
+    pub access_rule_reference: Option<crate::core_api::generated::models::AccessRuleReference>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl MethodAuthMutabilityEntry {
-    pub fn new(method: crate::core_api::generated::models::LocalMethodReference, access_rule: crate::core_api::generated::models::AccessRule) -> MethodAuthMutabilityEntry {
+    pub fn new(method: crate::core_api::generated::models::LocalMethodReference, access_rule_reference: crate::core_api::generated::models::AccessRuleReference) -> MethodAuthMutabilityEntry {
         MethodAuthMutabilityEntry {
             method: Option::Some(method),
-            access_rule: Option::Some(access_rule),
+            access_rule_reference: Option::Some(access_rule_reference),
         }
     }
 }
