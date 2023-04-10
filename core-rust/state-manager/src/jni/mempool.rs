@@ -78,7 +78,7 @@ use crate::jni::common_types::JavaHashCode;
 use crate::jni::utils::*;
 use crate::transaction::UserTransactionValidator;
 use crate::types::PendingTransaction;
-use crate::{mempool::*, HasUserPayloadHash, UserPayloadHash};
+use crate::{mempool::*, UserPayloadHash};
 
 //
 // JNI Interface
@@ -220,9 +220,11 @@ impl From<PendingTransaction> for JavaRawTransaction {
 
 impl From<NotarizedTransaction> for JavaRawTransaction {
     fn from(transaction: NotarizedTransaction) -> Self {
+        let payload = manifest_encode(&transaction).unwrap();
+        let hash = UserPayloadHash::for_manifest_encoded_transaction(&payload);
         JavaRawTransaction {
-            payload: manifest_encode(&transaction).unwrap(),
-            payload_hash: JavaHashCode::from_bytes(transaction.user_payload_hash().into_bytes()),
+            payload,
+            payload_hash: JavaHashCode::from_bytes(hash.into_bytes()),
         }
     }
 }

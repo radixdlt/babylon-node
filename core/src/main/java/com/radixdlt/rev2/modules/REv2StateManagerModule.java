@@ -219,15 +219,12 @@ public final class REv2StateManagerModule extends AbstractModule {
 
           @Provides
           MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher(
-              // The Provider is needed here to break a weird cyclic dependency chain.
-              Provider<EventDispatcher<MempoolAddSuccess>> mempoolAddSuccessEventDispatcher,
+              EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
               @Self NodeId selfNodeId) {
             return transaction ->
-                mempoolAddSuccessEventDispatcher
-                    .get()
-                    .dispatch(
-                        MempoolAddSuccess.create(
-                            RawNotarizedTransaction.create(transaction.getPayload()), selfNodeId));
+                mempoolAddSuccessEventDispatcher.dispatch(
+                    MempoolAddSuccess.create(
+                        RawNotarizedTransaction.create(transaction.getPayload()), selfNodeId));
           }
 
           @Provides
