@@ -12,7 +12,7 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct FunctionDefinition {
+pub struct FunctionSchema {
     #[serde(rename = "receiver")]
     pub receiver: Receiver,
     #[serde(rename = "input")]
@@ -23,9 +23,9 @@ pub struct FunctionDefinition {
     pub export_name: String,
 }
 
-impl FunctionDefinition {
-    pub fn new(receiver: Receiver, input: crate::core_api::generated::models::LocalTypeIndex, output: crate::core_api::generated::models::LocalTypeIndex, export_name: String) -> FunctionDefinition {
-        FunctionDefinition {
+impl FunctionSchema {
+    pub fn new(receiver: Receiver, input: crate::core_api::generated::models::LocalTypeIndex, output: crate::core_api::generated::models::LocalTypeIndex, export_name: String) -> FunctionSchema {
+        FunctionSchema {
             receiver,
             input: Box::new(input),
             output: Box::new(output),

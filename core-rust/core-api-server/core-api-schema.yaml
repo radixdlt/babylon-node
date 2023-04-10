@@ -1828,12 +1828,12 @@ components:
       type: object
       required:
         - method
-        - access_rule
+        - access_rule_reference
       properties:
         method:
           $ref: '#/components/schemas/LocalMethodReference'
-        access_rule:
-          $ref: '#/components/schemas/AccessRule'
+        access_rule_reference:
+          $ref: '#/components/schemas/AccessRuleReference'
     LocalMethodReference:
       type: object
       required:
@@ -2716,8 +2716,9 @@ components:
       required:
         - schema
         - substates
-        - function_definitions
-        - event_definitions
+        - function_schemas
+        - virtual_lazy_load_function_schemas
+        - event_schemas
       properties:
         schema:
           $ref: '#/components/schemas/SborData'
@@ -2728,12 +2729,17 @@ components:
             The type index of the substates under the SELF module - in the context of the blueprint's SBOR schema.
           items:
             $ref: '#/components/schemas/LocalTypeIndex'
-        function_definitions:
+        function_schemas:
           type: object
-          description: A map from the function name to the FunctionDefinition
+          description: A map from the function name to the FunctionSchema
           additionalProperties:
-            $ref: '#/components/schemas/FunctionDefinition'
-        event_definitions:
+            $ref: '#/components/schemas/FunctionSchema'
+        virtual_lazy_load_function_schemas:
+          type: object
+          description: A map from the system function ID to the VirtualLazyLoadSchema
+          additionalProperties:
+            $ref: '#/components/schemas/VirtualLazyLoadSchema'
+        event_schemas:
           type: object
           description: A map from the event name to the local type index for the event payload under the blueprint schema.
           additionalProperties:
@@ -2758,7 +2764,14 @@ components:
             Either the well known identifier, of the schema-local index, depending on the kind.
           type: integer
           format: int32
-    FunctionDefinition:
+    VirtualLazyLoadSchema:
+      type: object
+      required:
+        - export_name
+      properties:
+        export_name:
+          type: string
+    FunctionSchema:
       type: object
       required:
         - receiver
@@ -2896,6 +2909,7 @@ components:
         - type: object
           required:
             - address
+            - validator_owner_resource
             - epoch
             - round
             - rounds_per_epoch
@@ -2903,6 +2917,8 @@ components:
           properties:
             address:
               $ref: '#/components/schemas/ComponentAddress'
+            validator_owner_resource:
+              $ref: '#/components/schemas/ResourceAddress'
             epoch:
               type: integer
               format: int64

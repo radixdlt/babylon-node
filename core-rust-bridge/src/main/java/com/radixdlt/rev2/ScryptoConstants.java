@@ -89,9 +89,16 @@ public final class ScryptoConstants {
           .build(new TypeToken<Natives.Call1<Tuple.Tuple0, ComponentAddress>>() {})
           .call(Tuple.Tuple0.of());
 
+  public static final ResourceAddress VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS =
+      Natives.builder(ScryptoConstants::getValidatorOwnerTokenResourceAddress)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, ResourceAddress>>() {})
+          .call(Tuple.Tuple0.of());
+
   private static native byte[] getFaucetComponentAddress(byte[] unused);
 
   private static native byte[] getXrdResourceAddress(byte[] unused);
 
   private static native byte[] getEpochManagerComponentAddress(byte[] unused);
+
+  private static native byte[] getValidatorOwnerTokenResourceAddress(byte[] unused);
 }

@@ -18,6 +18,7 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::schema::{
     BlueprintSchema, FunctionSchema, KeyValueStoreSchema, PackageSchema, Receiver,
+    VirtualLazyLoadSchema,
 };
 use sbor::LocalTypeIndex;
 use std::collections::BTreeSet;
@@ -32,7 +33,7 @@ use radix_engine::types::{
 use radix_engine_interface::api::component::{
     ComponentRoyaltyAccumulatorSubstate, ComponentRoyaltyConfigSubstate, ComponentStateSubstate,
 };
-use radix_engine_interface::api::types::{IndexedScryptoValue, NodeModuleId};
+use radix_engine_interface::api::types::{Blueprint, IndexedScryptoValue, NodeModuleId};
 use radix_engine_interface::blueprints::resource::{
     AccessRule, AccessRuleEntry, AccessRuleNode, AccessRulesConfig, LiquidFungibleResource,
     LiquidNonFungibleResource, MethodKey, ProofRule, ResourceType, SoftCount, SoftDecimal,
@@ -222,8 +223,11 @@ pub fn to_api_type_info_substate(
     // Use compiler to unpack to ensure we map all fields
     let details = match substate {
         TypeInfoSubstate::Object {
-            package_address,
-            blueprint_name,
+            blueprint:
+                Blueprint {
+                    package_address,
+                    blueprint_name,
+                },
             global,
         } => models::TypeInfoDetails::ObjectTypeInfoDetails {
             package_address: to_api_package_address(context, package_address),
@@ -277,10 +281,10 @@ pub fn to_api_access_rules(
             .collect::<Result<_, _>>()?,
         default_auth: Some(to_api_dynamic_access_rule(
             context,
-            access_rules.get_default_auth(),
+            &access_rules.get_default(),
         )?),
         method_auth_mutability: access_rules
-            .get_all_method_auth_mutability()
+            .get_all_method_mutability()
             .iter()
             .map(|(key, access_rule)| {
                 to_api_method_auth_mutability_entry(context, key, access_rule)
@@ -293,7 +297,7 @@ pub fn to_api_access_rules(
             .collect::<Result<_, _>>()?,
         default_auth_mutability: Some(to_api_dynamic_access_rule(
             context,
-            access_rules.get_default_auth_mutability(),
+            &access_rules.get_default_mutability(),
         )?),
     })
 }
@@ -303,7 +307,18 @@ pub fn to_api_method_auth_entry(
     key: &MethodKey,
     entry: &AccessRuleEntry,
 ) -> Result<models::MethodAuthEntry, MappingError> {
-    let access_rule_reference = match entry {
+    let access_rule_reference = to_api_access_rule_reference(context, entry)?;
+    Ok(models::MethodAuthEntry {
+        method: Some(to_api_local_method_reference(key)),
+        access_rule_reference: Some(access_rule_reference),
+    })
+}
+
+pub fn to_api_access_rule_reference(
+    context: &MappingContext,
+    entry: &AccessRuleEntry,
+) -> Result<models::AccessRuleReference, MappingError> {
+    Ok(match entry {
         AccessRuleEntry::AccessRule(access_rule) => {
             models::AccessRuleReference::RuleAccessRuleReference {
                 access_rule: Box::new(to_api_dynamic_access_rule(context, access_rule)?),
@@ -314,21 +329,17 @@ pub fn to_api_method_auth_entry(
                 group_name: group_name.to_string(),
             }
         }
-    };
-    Ok(models::MethodAuthEntry {
-        method: Some(to_api_local_method_reference(key)),
-        access_rule_reference: Some(access_rule_reference),
     })
 }
 
 pub fn to_api_method_auth_mutability_entry(
     context: &MappingContext,
     key: &MethodKey,
-    access_rule: &AccessRule,
+    access_rule: &AccessRuleEntry,
 ) -> Result<models::MethodAuthMutabilityEntry, MappingError> {
     Ok(models::MethodAuthMutabilityEntry {
         method: Some(to_api_local_method_reference(key)),
-        access_rule: Some(to_api_dynamic_access_rule(context, access_rule)?),
+        access_rule_reference: Some(to_api_access_rule_reference(context, access_rule)?),
     })
 }
 
@@ -741,6 +752,7 @@ pub fn to_api_blueprint_schema(
         schema,
         substates,
         functions,
+        virtual_lazy_load_functions,
         event_schema,
     } = blueprint_schema;
     Ok(models::BlueprintSchema {
@@ -749,16 +761,25 @@ pub fn to_api_blueprint_schema(
             .iter()
             .map(|index| to_api_local_type_index(context, index))
             .collect::<Result<_, _>>()?,
-        function_definitions: functions
+        function_schemas: functions
             .iter()
             .map(|(function_name, function_schema)| {
                 Ok((
                     function_name.to_string(),
-                    to_api_function_definition(context, function_schema)?,
+                    to_api_function_schema(context, function_schema)?,
                 ))
             })
             .collect::<Result<_, _>>()?,
-        event_definitions: event_schema
+        virtual_lazy_load_function_schemas: virtual_lazy_load_functions
+            .iter()
+            .map(|(system_func_id, virtual_lazy_load_schema)| {
+                Ok((
+                    system_func_id.to_string(),
+                    to_api_virtual_lazy_load_schema(virtual_lazy_load_schema)?,
+                ))
+            })
+            .collect::<Result<_, _>>()?,
+        event_schemas: event_schema
             .iter()
             .map(|(event_name, type_index)| {
                 Ok((
@@ -790,25 +811,33 @@ pub fn to_api_local_type_index(
     })
 }
 
-pub fn to_api_function_definition(
+pub fn to_api_function_schema(
     context: &MappingContext,
     function_schema: &FunctionSchema,
-) -> Result<models::FunctionDefinition, MappingError> {
+) -> Result<models::FunctionSchema, MappingError> {
     let FunctionSchema {
         receiver,
         input,
         output,
         export_name,
     } = function_schema;
-    Ok(models::FunctionDefinition {
+    Ok(models::FunctionSchema {
         receiver: match receiver {
-            Some(Receiver::SelfRef) => models::function_definition::Receiver::ComponentReadOnly,
-            Some(Receiver::SelfRefMut) => models::function_definition::Receiver::ComponentMutable,
-            None => models::function_definition::Receiver::Function,
+            Some(Receiver::SelfRef) => models::function_schema::Receiver::ComponentReadOnly,
+            Some(Receiver::SelfRefMut) => models::function_schema::Receiver::ComponentMutable,
+            None => models::function_schema::Receiver::Function,
         },
         input: Box::new(to_api_local_type_index(context, input)?),
         output: Box::new(to_api_local_type_index(context, output)?),
         export_name: export_name.to_string(),
+    })
+}
+
+pub fn to_api_virtual_lazy_load_schema(
+    virtual_lazy_load_schema: &VirtualLazyLoadSchema,
+) -> Result<models::VirtualLazyLoadSchema, MappingError> {
+    Ok(models::VirtualLazyLoadSchema {
+        export_name: virtual_lazy_load_schema.export_name.to_string(),
     })
 }
 
@@ -909,9 +938,9 @@ pub fn to_api_validator_substate(
         pending_xrd_withdraw_vault_id,
     } = substate;
 
-    let owned_stake_vault_id = MappedEntityId::try_from(RENodeId::Object(*stake_xrd_vault_id))?;
+    let owned_stake_vault_id = MappedEntityId::try_from(RENodeId::Object(stake_xrd_vault_id.id()))?;
     let owned_unstake_vault_id =
-        MappedEntityId::try_from(RENodeId::Object(*pending_xrd_withdraw_vault_id))?;
+        MappedEntityId::try_from(RENodeId::Object(pending_xrd_withdraw_vault_id.id()))?;
 
     Ok(models::Substate::ValidatorSubstate {
         epoch_manager_address: to_api_component_address(context, manager),
@@ -931,14 +960,15 @@ pub fn to_api_epoch_manager_substate(
 ) -> Result<models::Substate, MappingError> {
     let EpochManagerSubstate {
         address,
+        validator_owner_resource,
         epoch,
         round,
         rounds_per_epoch,
         num_unstake_epochs,
     } = substate;
-
     Ok(models::Substate::EpochManagerSubstate {
         address: to_api_component_address(context, address),
+        validator_owner_resource: to_api_resource_address(context, validator_owner_resource),
         epoch: to_api_epoch(context, *epoch)?,
         round: to_api_round(*round)?,
         rounds_per_epoch: to_api_round(*rounds_per_epoch)?,
