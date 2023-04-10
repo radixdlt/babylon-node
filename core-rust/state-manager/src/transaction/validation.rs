@@ -7,6 +7,7 @@ use transaction::validation::ValidationConfig;
 use transaction::validation::{
     NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator,
 };
+use utils::btreeset;
 
 pub struct UserTransactionValidator {
     pub validation_config: ValidationConfig,
@@ -85,7 +86,7 @@ impl LedgerTransactionValidator {
                 Ok(prepared.to_executable())
             }
             LedgerTransaction::System(system_transaction) => {
-                Ok(system_transaction.get_executable(vec![AuthAddresses::system_role()]))
+                Ok(system_transaction.get_executable(btreeset!(AuthAddresses::system_role())))
             }
         }
     }

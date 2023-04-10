@@ -22,85 +22,53 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.AccessRuleReference;
-import com.radixdlt.api.core.generated.models.LocalMethodReference;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * MethodAuthMutabilityEntry
+ * VirtualLazyLoadSchema
  */
 @JsonPropertyOrder({
-  MethodAuthMutabilityEntry.JSON_PROPERTY_METHOD,
-  MethodAuthMutabilityEntry.JSON_PROPERTY_ACCESS_RULE_REFERENCE
+  VirtualLazyLoadSchema.JSON_PROPERTY_EXPORT_NAME
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class MethodAuthMutabilityEntry {
-  public static final String JSON_PROPERTY_METHOD = "method";
-  private LocalMethodReference method;
+public class VirtualLazyLoadSchema {
+  public static final String JSON_PROPERTY_EXPORT_NAME = "export_name";
+  private String exportName;
 
-  public static final String JSON_PROPERTY_ACCESS_RULE_REFERENCE = "access_rule_reference";
-  private AccessRuleReference accessRuleReference;
-
-  public MethodAuthMutabilityEntry() { 
+  public VirtualLazyLoadSchema() { 
   }
 
-  public MethodAuthMutabilityEntry method(LocalMethodReference method) {
-    this.method = method;
+  public VirtualLazyLoadSchema exportName(String exportName) {
+    this.exportName = exportName;
     return this;
   }
 
    /**
-   * Get method
-   * @return method
+   * Get exportName
+   * @return exportName
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_METHOD)
+  @JsonProperty(JSON_PROPERTY_EXPORT_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public LocalMethodReference getMethod() {
-    return method;
+  public String getExportName() {
+    return exportName;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_METHOD)
+  @JsonProperty(JSON_PROPERTY_EXPORT_NAME)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMethod(LocalMethodReference method) {
-    this.method = method;
-  }
-
-
-  public MethodAuthMutabilityEntry accessRuleReference(AccessRuleReference accessRuleReference) {
-    this.accessRuleReference = accessRuleReference;
-    return this;
-  }
-
-   /**
-   * Get accessRuleReference
-   * @return accessRuleReference
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULE_REFERENCE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public AccessRuleReference getAccessRuleReference() {
-    return accessRuleReference;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_ACCESS_RULE_REFERENCE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccessRuleReference(AccessRuleReference accessRuleReference) {
-    this.accessRuleReference = accessRuleReference;
+  public void setExportName(String exportName) {
+    this.exportName = exportName;
   }
 
 
   /**
-   * Return true if this MethodAuthMutabilityEntry object is equal to o.
+   * Return true if this VirtualLazyLoadSchema object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -110,22 +78,20 @@ public class MethodAuthMutabilityEntry {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    MethodAuthMutabilityEntry methodAuthMutabilityEntry = (MethodAuthMutabilityEntry) o;
-    return Objects.equals(this.method, methodAuthMutabilityEntry.method) &&
-        Objects.equals(this.accessRuleReference, methodAuthMutabilityEntry.accessRuleReference);
+    VirtualLazyLoadSchema virtualLazyLoadSchema = (VirtualLazyLoadSchema) o;
+    return Objects.equals(this.exportName, virtualLazyLoadSchema.exportName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(method, accessRuleReference);
+    return Objects.hash(exportName);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class MethodAuthMutabilityEntry {\n");
-    sb.append("    method: ").append(toIndentedString(method)).append("\n");
-    sb.append("    accessRuleReference: ").append(toIndentedString(accessRuleReference)).append("\n");
+    sb.append("class VirtualLazyLoadSchema {\n");
+    sb.append("    exportName: ").append(toIndentedString(exportName)).append("\n");
     sb.append("}");
     return sb.toString();
   }

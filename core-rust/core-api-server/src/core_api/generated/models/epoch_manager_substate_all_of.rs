@@ -16,6 +16,9 @@ pub struct EpochManagerSubstateAllOf {
     /// The Bech32m-encoded human readable version of the component address
     #[serde(rename = "address")]
     pub address: String,
+    /// The Bech32m-encoded human readable version of the resource address
+    #[serde(rename = "validator_owner_resource")]
+    pub validator_owner_resource: String,
     /// An integer between `0` and `10^10`, marking the current epoch
     #[serde(rename = "epoch")]
     pub epoch: i64,
@@ -30,9 +33,10 @@ pub struct EpochManagerSubstateAllOf {
 }
 
 impl EpochManagerSubstateAllOf {
-    pub fn new(address: String, epoch: i64, round: i64, rounds_per_epoch: i64, num_unstake_epochs: i64) -> EpochManagerSubstateAllOf {
+    pub fn new(address: String, validator_owner_resource: String, epoch: i64, round: i64, rounds_per_epoch: i64, num_unstake_epochs: i64) -> EpochManagerSubstateAllOf {
         EpochManagerSubstateAllOf {
             address,
+            validator_owner_resource,
             epoch,
             round,
             rounds_per_epoch,

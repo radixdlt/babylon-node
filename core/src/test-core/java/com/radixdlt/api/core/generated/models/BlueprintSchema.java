@@ -22,9 +22,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.FunctionDefinition;
+import com.radixdlt.api.core.generated.models.FunctionSchema;
 import com.radixdlt.api.core.generated.models.LocalTypeIndex;
 import com.radixdlt.api.core.generated.models.SborData;
+import com.radixdlt.api.core.generated.models.VirtualLazyLoadSchema;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -40,8 +41,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   BlueprintSchema.JSON_PROPERTY_SCHEMA,
   BlueprintSchema.JSON_PROPERTY_SUBSTATES,
-  BlueprintSchema.JSON_PROPERTY_FUNCTION_DEFINITIONS,
-  BlueprintSchema.JSON_PROPERTY_EVENT_DEFINITIONS
+  BlueprintSchema.JSON_PROPERTY_FUNCTION_SCHEMAS,
+  BlueprintSchema.JSON_PROPERTY_VIRTUAL_LAZY_LOAD_FUNCTION_SCHEMAS,
+  BlueprintSchema.JSON_PROPERTY_EVENT_SCHEMAS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BlueprintSchema {
@@ -51,11 +53,14 @@ public class BlueprintSchema {
   public static final String JSON_PROPERTY_SUBSTATES = "substates";
   private List<LocalTypeIndex> substates = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_FUNCTION_DEFINITIONS = "function_definitions";
-  private Map<String, FunctionDefinition> functionDefinitions = new HashMap<>();
+  public static final String JSON_PROPERTY_FUNCTION_SCHEMAS = "function_schemas";
+  private Map<String, FunctionSchema> functionSchemas = new HashMap<>();
 
-  public static final String JSON_PROPERTY_EVENT_DEFINITIONS = "event_definitions";
-  private Map<String, LocalTypeIndex> eventDefinitions = new HashMap<>();
+  public static final String JSON_PROPERTY_VIRTUAL_LAZY_LOAD_FUNCTION_SCHEMAS = "virtual_lazy_load_function_schemas";
+  private Map<String, VirtualLazyLoadSchema> virtualLazyLoadFunctionSchemas = new HashMap<>();
+
+  public static final String JSON_PROPERTY_EVENT_SCHEMAS = "event_schemas";
+  private Map<String, LocalTypeIndex> eventSchemas = new HashMap<>();
 
   public BlueprintSchema() { 
   }
@@ -117,65 +122,96 @@ public class BlueprintSchema {
   }
 
 
-  public BlueprintSchema functionDefinitions(Map<String, FunctionDefinition> functionDefinitions) {
-    this.functionDefinitions = functionDefinitions;
+  public BlueprintSchema functionSchemas(Map<String, FunctionSchema> functionSchemas) {
+    this.functionSchemas = functionSchemas;
     return this;
   }
 
-  public BlueprintSchema putFunctionDefinitionsItem(String key, FunctionDefinition functionDefinitionsItem) {
-    this.functionDefinitions.put(key, functionDefinitionsItem);
+  public BlueprintSchema putFunctionSchemasItem(String key, FunctionSchema functionSchemasItem) {
+    this.functionSchemas.put(key, functionSchemasItem);
     return this;
   }
 
    /**
-   * A map from the function name to the FunctionDefinition
-   * @return functionDefinitions
+   * A map from the function name to the FunctionSchema
+   * @return functionSchemas
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A map from the function name to the FunctionDefinition")
-  @JsonProperty(JSON_PROPERTY_FUNCTION_DEFINITIONS)
+  @ApiModelProperty(required = true, value = "A map from the function name to the FunctionSchema")
+  @JsonProperty(JSON_PROPERTY_FUNCTION_SCHEMAS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Map<String, FunctionDefinition> getFunctionDefinitions() {
-    return functionDefinitions;
+  public Map<String, FunctionSchema> getFunctionSchemas() {
+    return functionSchemas;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_FUNCTION_DEFINITIONS)
+  @JsonProperty(JSON_PROPERTY_FUNCTION_SCHEMAS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFunctionDefinitions(Map<String, FunctionDefinition> functionDefinitions) {
-    this.functionDefinitions = functionDefinitions;
+  public void setFunctionSchemas(Map<String, FunctionSchema> functionSchemas) {
+    this.functionSchemas = functionSchemas;
   }
 
 
-  public BlueprintSchema eventDefinitions(Map<String, LocalTypeIndex> eventDefinitions) {
-    this.eventDefinitions = eventDefinitions;
+  public BlueprintSchema virtualLazyLoadFunctionSchemas(Map<String, VirtualLazyLoadSchema> virtualLazyLoadFunctionSchemas) {
+    this.virtualLazyLoadFunctionSchemas = virtualLazyLoadFunctionSchemas;
     return this;
   }
 
-  public BlueprintSchema putEventDefinitionsItem(String key, LocalTypeIndex eventDefinitionsItem) {
-    this.eventDefinitions.put(key, eventDefinitionsItem);
+  public BlueprintSchema putVirtualLazyLoadFunctionSchemasItem(String key, VirtualLazyLoadSchema virtualLazyLoadFunctionSchemasItem) {
+    this.virtualLazyLoadFunctionSchemas.put(key, virtualLazyLoadFunctionSchemasItem);
+    return this;
+  }
+
+   /**
+   * A map from the system function ID to the VirtualLazyLoadSchema
+   * @return virtualLazyLoadFunctionSchemas
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "A map from the system function ID to the VirtualLazyLoadSchema")
+  @JsonProperty(JSON_PROPERTY_VIRTUAL_LAZY_LOAD_FUNCTION_SCHEMAS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Map<String, VirtualLazyLoadSchema> getVirtualLazyLoadFunctionSchemas() {
+    return virtualLazyLoadFunctionSchemas;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_VIRTUAL_LAZY_LOAD_FUNCTION_SCHEMAS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setVirtualLazyLoadFunctionSchemas(Map<String, VirtualLazyLoadSchema> virtualLazyLoadFunctionSchemas) {
+    this.virtualLazyLoadFunctionSchemas = virtualLazyLoadFunctionSchemas;
+  }
+
+
+  public BlueprintSchema eventSchemas(Map<String, LocalTypeIndex> eventSchemas) {
+    this.eventSchemas = eventSchemas;
+    return this;
+  }
+
+  public BlueprintSchema putEventSchemasItem(String key, LocalTypeIndex eventSchemasItem) {
+    this.eventSchemas.put(key, eventSchemasItem);
     return this;
   }
 
    /**
    * A map from the event name to the local type index for the event payload under the blueprint schema.
-   * @return eventDefinitions
+   * @return eventSchemas
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "A map from the event name to the local type index for the event payload under the blueprint schema.")
-  @JsonProperty(JSON_PROPERTY_EVENT_DEFINITIONS)
+  @JsonProperty(JSON_PROPERTY_EVENT_SCHEMAS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Map<String, LocalTypeIndex> getEventDefinitions() {
-    return eventDefinitions;
+  public Map<String, LocalTypeIndex> getEventSchemas() {
+    return eventSchemas;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EVENT_DEFINITIONS)
+  @JsonProperty(JSON_PROPERTY_EVENT_SCHEMAS)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setEventDefinitions(Map<String, LocalTypeIndex> eventDefinitions) {
-    this.eventDefinitions = eventDefinitions;
+  public void setEventSchemas(Map<String, LocalTypeIndex> eventSchemas) {
+    this.eventSchemas = eventSchemas;
   }
 
 
@@ -193,13 +229,14 @@ public class BlueprintSchema {
     BlueprintSchema blueprintSchema = (BlueprintSchema) o;
     return Objects.equals(this.schema, blueprintSchema.schema) &&
         Objects.equals(this.substates, blueprintSchema.substates) &&
-        Objects.equals(this.functionDefinitions, blueprintSchema.functionDefinitions) &&
-        Objects.equals(this.eventDefinitions, blueprintSchema.eventDefinitions);
+        Objects.equals(this.functionSchemas, blueprintSchema.functionSchemas) &&
+        Objects.equals(this.virtualLazyLoadFunctionSchemas, blueprintSchema.virtualLazyLoadFunctionSchemas) &&
+        Objects.equals(this.eventSchemas, blueprintSchema.eventSchemas);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(schema, substates, functionDefinitions, eventDefinitions);
+    return Objects.hash(schema, substates, functionSchemas, virtualLazyLoadFunctionSchemas, eventSchemas);
   }
 
   @Override
@@ -208,8 +245,9 @@ public class BlueprintSchema {
     sb.append("class BlueprintSchema {\n");
     sb.append("    schema: ").append(toIndentedString(schema)).append("\n");
     sb.append("    substates: ").append(toIndentedString(substates)).append("\n");
-    sb.append("    functionDefinitions: ").append(toIndentedString(functionDefinitions)).append("\n");
-    sb.append("    eventDefinitions: ").append(toIndentedString(eventDefinitions)).append("\n");
+    sb.append("    functionSchemas: ").append(toIndentedString(functionSchemas)).append("\n");
+    sb.append("    virtualLazyLoadFunctionSchemas: ").append(toIndentedString(virtualLazyLoadFunctionSchemas)).append("\n");
+    sb.append("    eventSchemas: ").append(toIndentedString(eventSchemas)).append("\n");
     sb.append("}");
     return sb.toString();
   }

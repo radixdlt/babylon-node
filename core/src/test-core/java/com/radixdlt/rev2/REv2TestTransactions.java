@@ -131,7 +131,21 @@ public final class REv2TestTransactions {
     return String.format(
         """
                     CALL_METHOD Address("%s") "lock_fee" Decimal("100");
-                    CREATE_ACCOUNT Enum("AccessRule::AllowAll");
+                    CREATE_ACCOUNT_ADVANCED
+                      Tuple(                                    # Access Rules Config Struct
+                          Map<Tuple, Enum>(),                   # Method auth Field
+                          Map<String, Enum>(),                  # Grouped Auth Field
+                          Enum(                                 # Default Auth Field
+                              "AccessRuleEntry::AccessRule",
+                              Enum("AccessRule::AllowAll")
+                          ),
+                          Map<Tuple, Enum>(),                   # Method Auth Mutability Field
+                          Map<String, Enum>(),                  # Group Auth Mutability Field
+                          Enum(                                 # Default Auth Mutability Field
+                              "AccessRuleEntry::AccessRule",
+                              Enum("AccessRule::DenyAll")
+                          )
+                      );
                     """,
         faucetAddress);
   }
@@ -176,46 +190,64 @@ public final class REv2TestTransactions {
     final var faucetAddress =
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
 
+    // Re-using the validator key for holding its own token
+    final var ownerTokenHolder =
+        addressing.encodeAccountAddress(Address.virtualAccountAddress(key));
+
     return String.format(
         """
                             CALL_METHOD Address("%s") "lock_fee" Decimal("100");
-                            CREATE_VALIDATOR Bytes("%s") Enum("AccessRule::AllowAll");
+                            CREATE_VALIDATOR Bytes("%s");
+                            CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
                             """,
-        faucetAddress, key.toHex());
+        faucetAddress, key.toHex(), ownerTokenHolder);
   }
 
   public static String constructRegisterValidatorManifest(
-      NetworkDefinition networkDefinition, ComponentAddress validatorAddress) {
+      NetworkDefinition networkDefinition,
+      ComponentAddress validatorAddress,
+      ComponentAddress ownerTokenHolder) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var faucetAddress =
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
     final var componentAddress = addressing.encodeValidatorAddress(validatorAddress);
-
+    final var validatorOwnerTokenAddress =
+        addressing.encodeResourceAddress(ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS);
+    final var ownerTokenHolderAddress = addressing.encodeAccountAddress(ownerTokenHolder);
     return String.format(
         """
                         CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+                        CALL_METHOD Address("%s") "create_proof" Address("%s");
                         CALL_METHOD Address("%s") "register";
                         """,
-        faucetAddress, componentAddress);
+        faucetAddress, ownerTokenHolderAddress, validatorOwnerTokenAddress, componentAddress);
   }
 
   public static String constructUnregisterValidatorManifest(
-      NetworkDefinition networkDefinition, ComponentAddress validatorAddress) {
+      NetworkDefinition networkDefinition,
+      ComponentAddress validatorAddress,
+      ComponentAddress ownerTokenHolder) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var faucetAddress =
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
     final var componentAddress = addressing.encodeValidatorAddress(validatorAddress);
+    final var validatorOwnerTokenAddress =
+        addressing.encodeResourceAddress(ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS);
+    final var ownerTokenHolderAddress = addressing.encodeAccountAddress(ownerTokenHolder);
 
     return String.format(
         """
                             CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+                            CALL_METHOD Address("%s") "create_proof" Address("%s");
                             CALL_METHOD Address("%s") "unregister";
                             """,
-        faucetAddress, componentAddress);
+        faucetAddress, ownerTokenHolderAddress, validatorOwnerTokenAddress, componentAddress);
   }
 
   public static String constructStakeValidatorManifest(
-      NetworkDefinition networkDefinition, ComponentAddress validatorAddress) {
+      NetworkDefinition networkDefinition,
+      ComponentAddress validatorAddress,
+      ComponentAddress ownerTokenHolder) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var faucetAddress =
         addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
@@ -223,16 +255,26 @@ public final class REv2TestTransactions {
     final var validatorHrpAddress = addressing.encodeValidatorAddress(validatorAddress);
     final var toAccount = Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
     final var toAccountAddress = addressing.encodeAccountAddress(toAccount);
+    final var validatorOwnerTokenAddress =
+        addressing.encodeResourceAddress(ScryptoConstants.VALIDATOR_OWNER_TOKEN_RESOURCE_ADDRESS);
+    final var ownerTokenHolderAddress = addressing.encodeAccountAddress(ownerTokenHolder);
 
     return String.format(
         """
                                 CALL_METHOD Address("%s") "lock_fee" Decimal("100");
+                                CALL_METHOD Address("%s") "create_proof" Address("%s");
                                 CALL_METHOD Address("%s") "free";
                                 TAKE_FROM_WORKTOP Address("%s") Bucket("xrd");
                                 CALL_METHOD Address("%s") "stake" Bucket("xrd");
                                 CALL_METHOD Address("%s") "deposit_batch" Expression("ENTIRE_WORKTOP");
                                 """,
-        faucetAddress, faucetAddress, xrdAddress, validatorHrpAddress, toAccountAddress);
+        faucetAddress,
+        ownerTokenHolderAddress,
+        validatorOwnerTokenAddress,
+        faucetAddress,
+        xrdAddress,
+        validatorHrpAddress,
+        toAccountAddress);
   }
 
   public static String constructUnstakeValidatorManifest(
@@ -332,8 +374,9 @@ public final class REv2TestTransactions {
 
   public static RawNotarizedTransaction constructCreateValidatorTransaction(
       NetworkDefinition networkDefinition, long fromEpoch, long nonce, ECKeyPair keyPair) {
-    var manifest = constructCreateValidatorManifest(networkDefinition, keyPair.getPublicKey());
-    var signatories = List.of(keyPair);
+    final var manifest =
+        constructCreateValidatorManifest(networkDefinition, keyPair.getPublicKey());
+    final var signatories = List.of(keyPair);
     return constructRawTransaction(
         networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
   }
@@ -344,7 +387,10 @@ public final class REv2TestTransactions {
       long nonce,
       ComponentAddress validatorAddress,
       ECKeyPair keyPair) {
-    var manifest = constructRegisterValidatorManifest(networkDefinition, validatorAddress);
+    // Assuming that the validator key was re-used to hold its own token
+    final var ownerTokenHolder = Address.virtualAccountAddress(keyPair.getPublicKey());
+    var manifest =
+        constructRegisterValidatorManifest(networkDefinition, validatorAddress, ownerTokenHolder);
     var signatories = List.of(keyPair);
     return constructRawTransaction(
         networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
@@ -356,7 +402,10 @@ public final class REv2TestTransactions {
       long nonce,
       ComponentAddress validatorAddress,
       ECKeyPair keyPair) {
-    var manifest = constructUnregisterValidatorManifest(networkDefinition, validatorAddress);
+    // Assuming that the validator key was re-used to hold its own token
+    final var ownerTokenHolder = Address.virtualAccountAddress(keyPair.getPublicKey());
+    var manifest =
+        constructUnregisterValidatorManifest(networkDefinition, validatorAddress, ownerTokenHolder);
     var signatories = List.of(keyPair);
     return constructRawTransaction(
         networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
@@ -368,7 +417,10 @@ public final class REv2TestTransactions {
       long nonce,
       ComponentAddress validatorAddress,
       ECKeyPair keyPair) {
-    var manifest = constructStakeValidatorManifest(networkDefinition, validatorAddress);
+    // Assuming that the validator key was re-used to hold its own token
+    final var ownerTokenHolder = Address.virtualAccountAddress(keyPair.getPublicKey());
+    var manifest =
+        constructStakeValidatorManifest(networkDefinition, validatorAddress, ownerTokenHolder);
     var signatories = List.of(keyPair);
     return constructRawTransaction(
         networkDefinition, fromEpoch, nonce, manifest, keyPair, false, signatories);
