@@ -53,6 +53,9 @@ pub enum Substate {
         /// The Bech32m-encoded human readable version of the component address
         #[serde(rename = "address")]
         address: String,
+        /// The Bech32m-encoded human readable version of the resource address
+        #[serde(rename = "validator_owner_resource")]
+        validator_owner_resource: String,
         /// An integer between `0` and `10^10`, marking the current epoch
         #[serde(rename = "epoch")]
         epoch: i64,

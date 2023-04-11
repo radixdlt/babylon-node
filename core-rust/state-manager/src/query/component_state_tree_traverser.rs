@@ -71,7 +71,7 @@ use radix_engine::types::{
     AccessControllerOffset, Address, ComponentOffset, EpochManagerOffset, KeyValueStoreOffset,
     RENodeId, SubstateId, SubstateOffset, ValidatorOffset, VaultOffset,
 };
-use radix_engine_interface::api::types::{AccountOffset, NodeModuleId, TypeInfoOffset};
+use radix_engine_interface::api::types::{AccountOffset, Blueprint, NodeModuleId, TypeInfoOffset};
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_BLUEPRINT;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::epoch_manager::VALIDATOR_BLUEPRINT;
@@ -159,8 +159,11 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
 
                 match type_info {
                     TypeInfoSubstate::Object {
-                        package_address,
-                        blueprint_name,
+                        blueprint:
+                            Blueprint {
+                                package_address,
+                                blueprint_name,
+                            },
                         ..
                     } => match (package_address, blueprint_name.as_str()) {
                         (RESOURCE_MANAGER_PACKAGE, VAULT_BLUEPRINT) => {
@@ -293,10 +296,6 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
             )) => {} // Contains no children
             RENodeId::GlobalObject(Address::Resource(..)) => {} // Contains no children
             RENodeId::GlobalObject(Address::Package(..)) => {}  // Contains no children
-            // TRANSIENT
-            RENodeId::AuthZoneStack => {
-                return Err(StateTreeTraverserError::UnexpectedPersistedNode(node_id))
-            } // END - NB - we list all types so that we get a compile error if a new type is added
         };
 
         Ok(())

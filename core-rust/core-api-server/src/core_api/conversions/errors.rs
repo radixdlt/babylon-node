@@ -18,9 +18,6 @@ pub enum MappingError {
     TransientSubstatePersisted {
         message: String,
     },
-    TransientRENodePersisted {
-        message: String,
-    },
     ScryptoValueDecode {
         decode_error: DecodeError,
         bytes: Vec<u8>,

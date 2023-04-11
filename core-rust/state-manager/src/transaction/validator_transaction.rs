@@ -76,7 +76,7 @@ pub struct PreparedValidatorTransaction {
 impl PreparedValidatorTransaction {
     pub fn to_executable(self) -> Executable<'static> {
         let auth_zone_params = AuthZoneParams {
-            initial_proofs: vec![AuthAddresses::validator_role()],
+            initial_proofs: btreeset!(AuthAddresses::validator_role()),
             virtual_resources: BTreeSet::new(),
         };
 

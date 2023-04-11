@@ -18,21 +18,25 @@ pub struct BlueprintSchema {
     /// The type index of the substates under the SELF module - in the context of the blueprint's SBOR schema. 
     #[serde(rename = "substates")]
     pub substates: Vec<crate::core_api::generated::models::LocalTypeIndex>,
-    /// A map from the function name to the FunctionDefinition
-    #[serde(rename = "function_definitions")]
-    pub function_definitions: ::std::collections::HashMap<String, crate::core_api::generated::models::FunctionDefinition>,
+    /// A map from the function name to the FunctionSchema
+    #[serde(rename = "function_schemas")]
+    pub function_schemas: ::std::collections::HashMap<String, crate::core_api::generated::models::FunctionSchema>,
+    /// A map from the system function ID to the VirtualLazyLoadSchema
+    #[serde(rename = "virtual_lazy_load_function_schemas")]
+    pub virtual_lazy_load_function_schemas: ::std::collections::HashMap<String, crate::core_api::generated::models::VirtualLazyLoadSchema>,
     /// A map from the event name to the local type index for the event payload under the blueprint schema.
-    #[serde(rename = "event_definitions")]
-    pub event_definitions: ::std::collections::HashMap<String, crate::core_api::generated::models::LocalTypeIndex>,
+    #[serde(rename = "event_schemas")]
+    pub event_schemas: ::std::collections::HashMap<String, crate::core_api::generated::models::LocalTypeIndex>,
 }
 
 impl BlueprintSchema {
-    pub fn new(schema: crate::core_api::generated::models::SborData, substates: Vec<crate::core_api::generated::models::LocalTypeIndex>, function_definitions: ::std::collections::HashMap<String, crate::core_api::generated::models::FunctionDefinition>, event_definitions: ::std::collections::HashMap<String, crate::core_api::generated::models::LocalTypeIndex>) -> BlueprintSchema {
+    pub fn new(schema: crate::core_api::generated::models::SborData, substates: Vec<crate::core_api::generated::models::LocalTypeIndex>, function_schemas: ::std::collections::HashMap<String, crate::core_api::generated::models::FunctionSchema>, virtual_lazy_load_function_schemas: ::std::collections::HashMap<String, crate::core_api::generated::models::VirtualLazyLoadSchema>, event_schemas: ::std::collections::HashMap<String, crate::core_api::generated::models::LocalTypeIndex>) -> BlueprintSchema {
         BlueprintSchema {
             schema: Box::new(schema),
             substates,
-            function_definitions,
-            event_definitions,
+            function_schemas,
+            virtual_lazy_load_function_schemas,
+            event_schemas,
         }
     }
 }

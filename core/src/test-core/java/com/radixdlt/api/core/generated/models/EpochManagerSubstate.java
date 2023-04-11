@@ -62,6 +62,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   EpochManagerSubstate.JSON_PROPERTY_ADDRESS,
+  EpochManagerSubstate.JSON_PROPERTY_VALIDATOR_OWNER_RESOURCE,
   EpochManagerSubstate.JSON_PROPERTY_EPOCH,
   EpochManagerSubstate.JSON_PROPERTY_ROUND,
   EpochManagerSubstate.JSON_PROPERTY_ROUNDS_PER_EPOCH,
@@ -103,6 +104,9 @@ public class EpochManagerSubstate extends Substate {
   public static final String JSON_PROPERTY_ADDRESS = "address";
   private String address;
 
+  public static final String JSON_PROPERTY_VALIDATOR_OWNER_RESOURCE = "validator_owner_resource";
+  private String validatorOwnerResource;
+
   public static final String JSON_PROPERTY_EPOCH = "epoch";
   private Long epoch;
 
@@ -141,6 +145,32 @@ public class EpochManagerSubstate extends Substate {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setAddress(String address) {
     this.address = address;
+  }
+
+
+  public EpochManagerSubstate validatorOwnerResource(String validatorOwnerResource) {
+    this.validatorOwnerResource = validatorOwnerResource;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable version of the resource address
+   * @return validatorOwnerResource
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable version of the resource address")
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_OWNER_RESOURCE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getValidatorOwnerResource() {
+    return validatorOwnerResource;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_VALIDATOR_OWNER_RESOURCE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setValidatorOwnerResource(String validatorOwnerResource) {
+    this.validatorOwnerResource = validatorOwnerResource;
   }
 
 
@@ -269,6 +299,7 @@ public class EpochManagerSubstate extends Substate {
     }
     EpochManagerSubstate epochManagerSubstate = (EpochManagerSubstate) o;
     return Objects.equals(this.address, epochManagerSubstate.address) &&
+        Objects.equals(this.validatorOwnerResource, epochManagerSubstate.validatorOwnerResource) &&
         Objects.equals(this.epoch, epochManagerSubstate.epoch) &&
         Objects.equals(this.round, epochManagerSubstate.round) &&
         Objects.equals(this.roundsPerEpoch, epochManagerSubstate.roundsPerEpoch) &&
@@ -278,7 +309,7 @@ public class EpochManagerSubstate extends Substate {
 
   @Override
   public int hashCode() {
-    return Objects.hash(address, epoch, round, roundsPerEpoch, numUnstakeEpochs, super.hashCode());
+    return Objects.hash(address, validatorOwnerResource, epoch, round, roundsPerEpoch, numUnstakeEpochs, super.hashCode());
   }
 
   @Override
@@ -287,6 +318,7 @@ public class EpochManagerSubstate extends Substate {
     sb.append("class EpochManagerSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    address: ").append(toIndentedString(address)).append("\n");
+    sb.append("    validatorOwnerResource: ").append(toIndentedString(validatorOwnerResource)).append("\n");
     sb.append("    epoch: ").append(toIndentedString(epoch)).append("\n");
     sb.append("    round: ").append(toIndentedString(round)).append("\n");
     sb.append("    roundsPerEpoch: ").append(toIndentedString(roundsPerEpoch)).append("\n");
