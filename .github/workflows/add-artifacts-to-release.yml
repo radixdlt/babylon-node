@@ -29,11 +29,6 @@ jobs:
             target: aarch64-unknown-linux-gnu
             zipname: 'arch-linux-aarch64'
             artifact: 'libcorerust.so'
-          # - os: ubuntu-latest
-          #   target: i686-unknown-linux-gnu
-          #   zipname: 'arch-linux-i686'
-          #   artifact: 'libcorerust.so'
-          #   custom-linker: "i686-linux-gnu-gcc"
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact: 'corerust.dll'
@@ -80,11 +75,6 @@ jobs:
         run: |
           cd core-rust
           cargo build --release --profile=release --target ${{ matrix.target }}
-          pwd
-          echo "ls  ./target/"
-          ls  ./target/
-          echo "ls  ./target/release"
-          ls  ./target/release/
           echo "ls  ./target/${{ matrix.target }}/release"
           ls  ./target/${{ matrix.target }}/release/
         env:
@@ -116,9 +106,6 @@ jobs:
           - target: aarch64-unknown-linux-gnu
             artifact: 'libcorerust.so'
             zipname: 'arch-linux-aarch64'
-          # - target: i686-unknown-linux-gnu
-          #   artifact: 'libcorerust.so'
-          #   zipname: 'arch-linux-i686'
           - target: x86_64-pc-windows-msvc
             artifact: 'corerust.dll'
             zipname: 'arch-windows-x86_64-msvc'
@@ -135,10 +122,8 @@ jobs:
           path: libcorerust-${{ matrix.target }}
       - name: Build core-rust
         run: |
-          ls -lah
           ls -lah libcorerust-${{ matrix.target }}
           zip -j babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip libcorerust-${{ matrix.target }}/${{ matrix.artifact }}
-          ls -lah
       - if: github.event_name == 'release'
         name: Get release
         id: get_release
