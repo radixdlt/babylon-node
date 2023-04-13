@@ -1,0 +1,63 @@
+FROM ubuntu:22.04
+MAINTAINER radixdlt <devops@radixdlt.com>
+
+RUN apt-get -y update > /dev/null && \
+    apt-get -y --no-install-recommends install \
+    apt-utils \
+    attr \
+    curl \
+    daemontools \
+    gettext-base \
+    iproute2 \
+    iptables \
+    libssl-dev \
+    net-tools \
+    pkg-config \
+    software-properties-common \
+    strace \
+    tcpdump \
+    > /dev/null && \
+    apt-get clean > /dev/null && \
+    rm -rf /var/lib/apt/lists/* /var/tmp/* /tmp/*
+
+COPY scripts/fix-vulnerabilities.sh /tmp
+
+RUN apt update -y
+RUN apt-get -y --no-install-recommends install openjdk-17-jre-headless
+RUN /tmp/fix-vulnerabilities.sh
+RUN apt autoremove -y
+
+# set entrypoint and default command
+ENTRYPOINT ["/opt/radixdlt/config_radixdlt.sh"]
+CMD ["/opt/radixdlt/bin/core"]
+
+# set default environment variables
+ENV RADIXDLT_HOME=/home/radixdlt \
+    RADIXDLT_NETWORK_SEEDS_REMOTE=127.0.0.1 \
+    RADIXDLT_DB_LOCATION=./RADIXDB \
+    RADIXDLT_VALIDATOR_KEY_LOCATION=/home/radixdlt/node.ks \
+    RADIXDLT_NETWORK_USE_PROXY_PROTOCOL=false \
+    RADIXDLT_CORE_API_PORT=3333 \
+    RADIXDLT_CORE_API_BIND_ADDRESS=0.0.0.0 \
+    RADIXDLT_SYSTEM_API_PORT=3334 \
+    RADIXDLT_SYSTEM_API_BIND_ADDRESS=0.0.0.0 \
+    RADIXDLT_PROMETHEUS_API_PORT=3335 \
+    RADIXDLT_PROMETHEUS_API_BIND_ADDRESS=0.0.0.0 \
+    RADIXDLT_NETWORK_ID=240 \
+    RADIXDLT_NODE_KEY_CREATE_IF_MISSING=false
+
+# install the radixdlt package
+COPY *.deb /tmp/
+RUN dpkg -i /tmp/*.deb
+
+# create configuration automatically when starting
+COPY scripts/config_radixdlt.sh /opt/radixdlt/config_radixdlt.sh
+
+# copy configuration templates
+WORKDIR /home/radixdlt
+COPY config/ /home/radixdlt/
+
+# Add healthcheck
+COPY scripts/docker-healthcheck.sh /home/radixdlt/
+HEALTHCHECK CMD sh /home/radixdlt/docker-healthcheck.sh
+RUN chmod +x /home/radixdlt/docker-healthcheck.sh

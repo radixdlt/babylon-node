@@ -77,8 +77,18 @@ import java.util.Optional;
 public final class PersistedBFTKeyManager {
   private final ECKeyPair ecKeyPair;
 
-  public PersistedBFTKeyManager(String nodeKeyPath) {
-    this.ecKeyPair = loadNodeKey(nodeKeyPath);
+  public PersistedBFTKeyManager(String nodeKeyPath, boolean createNodeKeyIfMissing) {
+    ECKeyPair nodeEcKeyPair;
+    try {
+       nodeEcKeyPair = loadNodeKey(nodeKeyPath);
+    } catch (IllegalStateException ex) {
+      if (createNodeKeyIfMissing) {
+        nodeEcKeyPair = ECKeyPair.generateNew();
+      } else {
+        throw ex;
+      }
+    }
+    this.ecKeyPair = nodeEcKeyPair;
   }
 
   private static ECKeyPair loadNodeKey(String nodeKeyPath) {
