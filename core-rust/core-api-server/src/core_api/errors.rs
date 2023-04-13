@@ -88,16 +88,6 @@ pub(crate) fn not_found_error<E: ErrorDetails>(message: impl Into<String>) -> Re
     }
 }
 
-#[allow(dead_code)]
-pub(crate) fn not_implemented<E: ErrorDetails>(message: impl Into<String>) -> ResponseError<E> {
-    ResponseError {
-        status_code: StatusCode::NOT_IMPLEMENTED,
-        public_error_message: message.into(),
-        trace: None,
-        details: None,
-    }
-}
-
 pub(crate) fn server_error<E: ErrorDetails>(public_message: impl Into<String>) -> ResponseError<E> {
     ResponseError {
         status_code: StatusCode::INTERNAL_SERVER_ERROR,
