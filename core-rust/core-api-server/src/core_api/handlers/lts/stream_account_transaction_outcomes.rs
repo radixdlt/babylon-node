@@ -31,7 +31,7 @@ fn handle_lts_stream_account_transaction_outcomes_internal(
 
     if !request.account_address.starts_with("account_") {
         return Err(client_error(
-            "Only component addresses starting with account_ currently work with this endpoint.",
+            "Only component addresses starting with account_ work with this endpoint.",
         ));
     }
 
@@ -63,7 +63,9 @@ fn handle_lts_stream_account_transaction_outcomes_internal(
     let query_account_change_index = state_manager.store().query_account_change_index();
     if !query_account_change_index.is_enabled() {
         return Err(server_error(
-            "This endpoint require AccountChangeIndex enabled.",
+            "This endpoint requires that the AccountChangeIndex is enabled on the node. \
+            To use this endpoint, you will need to enable the index in the config and restart the node. \
+            Please note the index catchup build will take some time.",
         ));
     }
 
@@ -78,7 +80,7 @@ fn handle_lts_stream_account_transaction_outcomes_internal(
     let committed_transaction_outcomes = state_versions
         .iter()
         .map(|state_version| {
-            Ok(to_api_lts_comitted_transaction_outcome(
+            Ok(to_api_lts_committed_transaction_outcome(
                 &mapping_context,
                 state_manager
                     .store()
