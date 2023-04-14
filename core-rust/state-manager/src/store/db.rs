@@ -88,11 +88,6 @@ use crate::{
 use radix_engine::types::{Address, KeyValueStoreId, SubstateId};
 use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeStore, TreeNode};
 
-use super::in_memory::QueryableInMemoryAccountChangeIndex;
-use super::in_memory::WriteableInMemoryAccountChangeIndex;
-use super::rocks_db::QueryableRocksDBAccountChangeIndex;
-use super::rocks_db::WriteableRocksDBAccountChangeIndex;
-
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub enum DatabaseConfig {
     InMemory,
@@ -345,112 +340,52 @@ impl RecoverableVertexStore for StateManagerDatabase {
     }
 }
 
-pub enum WriteableStateManagerDatabaseAccountChangeIndex<'a> {
-    InMemory(WriteableInMemoryAccountChangeIndex<'a>),
-    RocksDB(WriteableRocksDBAccountChangeIndex<'a>),
-}
-
-impl WriteableStoreIndexExtension for WriteableStateManagerDatabaseAccountChangeIndex<'_> {
-    fn disable(&mut self) {
+impl AccountChangeIndexExtension for StateManagerDatabase {
+    fn account_change_index_last_processed_state_version(&self) -> u64 {
         match self {
-            WriteableStateManagerDatabaseAccountChangeIndex::InMemory(index_view) => {
-                index_view.disable()
+            StateManagerDatabase::InMemory(store) => {
+                store.account_change_index_last_processed_state_version()
             }
-            WriteableStateManagerDatabaseAccountChangeIndex::RocksDB(index_view) => {
-                index_view.disable()
+            StateManagerDatabase::RocksDB(store) => {
+                store.account_change_index_last_processed_state_version()
             }
         }
     }
 
-    fn enable(&mut self) {
+    fn is_account_change_index_enabled(&self) -> bool {
         match self {
-            WriteableStateManagerDatabaseAccountChangeIndex::InMemory(index_view) => {
-                index_view.enable()
-            }
-            WriteableStateManagerDatabaseAccountChangeIndex::RocksDB(index_view) => {
-                index_view.enable()
-            }
-        }
-    }
-}
-
-pub enum QueryableStateManagerDatabaseAccountChangeIndex<'a> {
-    InMemory(QueryableInMemoryAccountChangeIndex<'a>),
-    RocksDB(QueryableRocksDBAccountChangeIndex<'a>),
-}
-
-impl QueryableStoreIndexExtension for QueryableStateManagerDatabaseAccountChangeIndex<'_> {
-    fn last_processed_state_version(&self) -> u64 {
-        match self {
-            QueryableStateManagerDatabaseAccountChangeIndex::InMemory(index_view) => {
-                index_view.last_processed_state_version()
-            }
-            QueryableStateManagerDatabaseAccountChangeIndex::RocksDB(index_view) => {
-                index_view.last_processed_state_version()
-            }
+            StateManagerDatabase::InMemory(store) => store.is_account_change_index_enabled(),
+            StateManagerDatabase::RocksDB(store) => store.is_account_change_index_enabled(),
         }
     }
 
-    fn is_enabled(&self) -> bool {
+    fn disable_account_change_index(&mut self) {
         match self {
-            QueryableStateManagerDatabaseAccountChangeIndex::InMemory(index_view) => {
-                index_view.is_enabled()
-            }
-            QueryableStateManagerDatabaseAccountChangeIndex::RocksDB(index_view) => {
-                index_view.is_enabled()
-            }
+            StateManagerDatabase::InMemory(store) => store.disable_account_change_index(),
+            StateManagerDatabase::RocksDB(store) => store.disable_account_change_index(),
         }
     }
-}
 
-impl AccountChangeIndexExtension for QueryableStateManagerDatabaseAccountChangeIndex<'_> {
-    fn get_state_versions(
+    /// This is also responsible for building the missing parts of the index up to the latest state version
+    fn enable_account_change_index(&mut self) {
+        match self {
+            StateManagerDatabase::InMemory(store) => store.enable_account_change_index(),
+            StateManagerDatabase::RocksDB(store) => store.enable_account_change_index(),
+        }
+    }
+
+    fn get_state_versions_for_account(
         &self,
         account: Address,
         start_state_version_inclusive: u64,
         limit: usize,
     ) -> Vec<u64> {
         match self {
-            QueryableStateManagerDatabaseAccountChangeIndex::InMemory(index_view) => {
-                index_view.get_state_versions(account, start_state_version_inclusive, limit)
-            }
-            QueryableStateManagerDatabaseAccountChangeIndex::RocksDB(index_view) => {
-                index_view.get_state_versions(account, start_state_version_inclusive, limit)
-            }
-        }
-    }
-}
-
-impl<'a> AccountChangeIndexStoreCapability<'a> for StateManagerDatabase {
-    type QueryableAccountChangeIndex = QueryableStateManagerDatabaseAccountChangeIndex<'a>;
-    type WriteableAccountChangeIndex = WriteableStateManagerDatabaseAccountChangeIndex<'a>;
-
-    fn query_account_change_index(&'a self) -> Self::QueryableAccountChangeIndex {
-        match self {
             StateManagerDatabase::InMemory(store) => {
-                QueryableStateManagerDatabaseAccountChangeIndex::InMemory(
-                    store.query_account_change_index(),
-                )
+                store.get_state_versions_for_account(account, start_state_version_inclusive, limit)
             }
             StateManagerDatabase::RocksDB(store) => {
-                QueryableStateManagerDatabaseAccountChangeIndex::RocksDB(
-                    store.query_account_change_index(),
-                )
-            }
-        }
-    }
-
-    fn write_account_change_index(&'a mut self) -> Self::WriteableAccountChangeIndex {
-        match self {
-            StateManagerDatabase::InMemory(store) => {
-                WriteableStateManagerDatabaseAccountChangeIndex::InMemory(
-                    store.write_account_change_index(),
-                )
-            }
-            StateManagerDatabase::RocksDB(store) => {
-                WriteableStateManagerDatabaseAccountChangeIndex::RocksDB(
-                    store.write_account_change_index(),
-                )
+                store.get_state_versions_for_account(account, start_state_version_inclusive, limit)
             }
         }
     }

@@ -134,9 +134,8 @@ impl InMemoryStore {
         receipt: LedgerTransactionReceipt,
         identifiers: CommittedTransactionIdentifiers,
     ) {
-        if self.query_account_change_index().is_enabled() {
-            self.write_account_change_index()
-                .update_from_receipt(identifiers.state_version, &receipt);
+        if self.is_account_change_index_enabled() {
+            self.update_account_change_index_from_receipt(identifiers.state_version, &receipt);
         }
 
         if let LedgerTransaction::User(notarized_transaction) = &transaction {
@@ -371,43 +370,48 @@ impl QueryableProofStore for InMemoryStore {
     }
 }
 
-pub struct WriteableInMemoryAccountChangeIndex<'a> {
-    store: &'a mut InMemoryStore,
-}
-
-impl<'a> WriteableInMemoryAccountChangeIndex<'a> {
-    fn update_from_receipt(&mut self, state_version: u64, receipt: &LedgerTransactionReceipt) {
+impl InMemoryStore {
+    fn update_account_change_index_from_receipt(
+        &mut self,
+        state_version: u64,
+        receipt: &LedgerTransactionReceipt,
+    ) {
         for (address, _) in receipt.state_update_summary.balance_changes.iter() {
             if !address.is_account() {
                 continue;
             }
-            self.store
-                .ext_account_change_index_set
+            self.ext_account_change_index_set
                 .entry(*address)
                 .or_insert(BTreeSet::new())
                 .insert(state_version);
         }
-        self.store.ext_account_change_index_last_state_version = Some(state_version);
+        self.ext_account_change_index_last_state_version = Some(state_version);
     }
 }
 
-impl WriteableStoreIndexExtension for WriteableInMemoryAccountChangeIndex<'_> {
-    fn disable(&mut self) {
-        self.store.ext_account_change_index_enable = Some(false);
+impl AccountChangeIndexExtension for InMemoryStore {
+    fn account_change_index_last_processed_state_version(&self) -> u64 {
+        self.ext_account_change_index_last_state_version
+            .unwrap_or(0)
     }
 
-    fn enable(&mut self) {
-        let last_state_version = self.store.max_state_version();
-        let last_processed_state_version = self
-            .store
-            .query_account_change_index()
-            .last_processed_state_version();
+    fn is_account_change_index_enabled(&self) -> bool {
+        self.ext_account_change_index_enable.unwrap_or(false)
+    }
+
+    fn disable_account_change_index(&mut self) {
+        self.ext_account_change_index_enable = Some(false);
+    }
+
+    /// This is also responsible for building the missing parts of the index up to the latest state version
+    fn enable_account_change_index(&mut self) {
+        let last_state_version = self.max_state_version();
+        let last_processed_state_version = self.account_change_index_last_processed_state_version();
 
         for state_version in last_processed_state_version + 1..last_state_version + 1 {
-            self.update_from_receipt(
+            self.update_account_change_index_from_receipt(
                 state_version,
                 &self
-                    .store
                     .transaction_receipts
                     .get(&state_version)
                     .unwrap()
@@ -415,34 +419,16 @@ impl WriteableStoreIndexExtension for WriteableInMemoryAccountChangeIndex<'_> {
             );
         }
 
-        self.store.ext_account_change_index_enable = Some(true);
-    }
-}
-
-pub struct QueryableInMemoryAccountChangeIndex<'a> {
-    store: &'a InMemoryStore,
-}
-
-impl QueryableStoreIndexExtension for QueryableInMemoryAccountChangeIndex<'_> {
-    fn last_processed_state_version(&self) -> u64 {
-        self.store
-            .ext_account_change_index_last_state_version
-            .unwrap_or(0)
+        self.ext_account_change_index_enable = Some(true);
     }
 
-    fn is_enabled(&self) -> bool {
-        self.store.ext_account_change_index_enable.unwrap_or(false)
-    }
-}
-
-impl AccountChangeIndexExtension for QueryableInMemoryAccountChangeIndex<'_> {
-    fn get_state_versions(
+    fn get_state_versions_for_account(
         &self,
         account: Address,
         start_state_version_inclusive: u64,
         limit: usize,
     ) -> Vec<u64> {
-        match self.store.ext_account_change_index_set.get(&account) {
+        match self.ext_account_change_index_set.get(&account) {
             None => Vec::new(),
             Some(state_versions) => state_versions
                 .range((Included(start_state_version_inclusive), Unbounded))
@@ -450,18 +436,5 @@ impl AccountChangeIndexExtension for QueryableInMemoryAccountChangeIndex<'_> {
                 .cloned()
                 .collect(),
         }
-    }
-}
-
-impl<'a> AccountChangeIndexStoreCapability<'a> for InMemoryStore {
-    type QueryableAccountChangeIndex = QueryableInMemoryAccountChangeIndex<'a>;
-    type WriteableAccountChangeIndex = WriteableInMemoryAccountChangeIndex<'a>;
-
-    fn query_account_change_index(&'a self) -> Self::QueryableAccountChangeIndex {
-        QueryableInMemoryAccountChangeIndex::<'a> { store: self }
-    }
-
-    fn write_account_change_index(&'a mut self) -> Self::WriteableAccountChangeIndex {
-        WriteableInMemoryAccountChangeIndex::<'a> { store: self }
     }
 }

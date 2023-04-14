@@ -3,11 +3,7 @@ use radix_engine::types::Address;
 use state_manager::{
     jni::state_manager::ActualStateManager,
     store::traits::{
-        extensions::{
-            AccountChangeIndexExtension, AccountChangeIndexStoreCapability,
-            QueryableStoreIndexExtension,
-        },
-        QueryableProofStore, QueryableTransactionStore,
+        extensions::AccountChangeIndexExtension, QueryableProofStore, QueryableTransactionStore,
     },
 };
 
@@ -60,8 +56,7 @@ fn handle_lts_stream_account_transaction_outcomes_internal(
         )));
     }
 
-    let query_account_change_index = state_manager.store().query_account_change_index();
-    if !query_account_change_index.is_enabled() {
+    if !state_manager.store().is_account_change_index_enabled() {
         return Err(server_error(
             "This endpoint requires that the AccountChangeIndex is enabled on the node. \
             To use this endpoint, you will need to enable the index in the config and restart the node. \
@@ -71,7 +66,7 @@ fn handle_lts_stream_account_transaction_outcomes_internal(
 
     let max_state_version = state_manager.store().max_state_version();
 
-    let state_versions = query_account_change_index.get_state_versions(
+    let state_versions = state_manager.store().get_state_versions_for_account(
         Address::Component(component_address),
         from_state_version,
         limit,
