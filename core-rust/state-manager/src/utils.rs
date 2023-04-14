@@ -71,12 +71,12 @@ pub trait IsAccountExt {
 impl IsAccountExt for Address {
     fn is_account(&self) -> bool {
         match self {
-            Address::Component(component_address) => match component_address {
+            Address::Component(component_address) => matches!(
+                component_address,
                 ComponentAddress::EcdsaSecp256k1VirtualAccount(_)
-                | ComponentAddress::EddsaEd25519VirtualAccount(_)
-                | ComponentAddress::Account(_) => true,
-                _ => false,
-            },
+                    | ComponentAddress::EddsaEd25519VirtualAccount(_)
+                    | ComponentAddress::Account(_)
+            ),
             _ => false,
         }
     }
