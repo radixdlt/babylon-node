@@ -108,8 +108,10 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
         .map(
             rawTxnsAndProof ->
                 CommittedTransactionsWithProof.create(
-                    rawTxnsAndProof.first().stream().map(RawLedgerTransaction::create).toList(),
-                    REv2ToConsensus.ledgerProof(rawTxnsAndProof.last())))
+                    rawTxnsAndProof.transactions().stream()
+                        .map(RawLedgerTransaction::create)
+                        .toList(),
+                    REv2ToConsensus.ledgerProof(rawTxnsAndProof.proof())))
         .or(() -> null);
   }
 

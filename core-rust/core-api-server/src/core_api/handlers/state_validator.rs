@@ -4,6 +4,7 @@ use radix_engine::types::{NodeModuleId, SubstateOffset, ValidatorOffset};
 use radix_engine_interface::api::types::{AccessRulesOffset, RENodeId};
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::query::{dump_component_state, VaultData};
+use std::ops::Deref;
 
 use super::map_to_descendent_id;
 
@@ -60,7 +61,8 @@ fn handle_state_validator_internal(
         substate
     };
 
-    let component_dump = dump_component_state(state_manager.store(), validator_address)
+    let read_store = state_manager.store();
+    let component_dump = dump_component_state(read_store.deref(), validator_address)
         .map_err(|err| server_error(format!("Error traversing component state: {err:?}")))?;
 
     let state_owned_vaults = component_dump

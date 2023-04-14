@@ -63,13 +63,10 @@
  */
 
 use crate::accumulator_tree::slice_merger::AccuTreeSliceMerger;
-use crate::jni::state_computer::JavaValidatorInfo;
+
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::query::*;
-use crate::staging::{
-    ExecutionCache, HashStructuresDiff, ProcessedTransactionReceipt, ReadableStore,
-    TransactionLogic,
-};
+use crate::staging::{ExecutionCache, HashStructuresDiff, ReadableStore, TransactionLogic};
 use crate::store::traits::*;
 use crate::transaction::{
     LedgerTransaction, LedgerTransactionValidator, UserTransactionValidator, ValidatorTransaction,
@@ -86,25 +83,22 @@ use ::transaction::model::{
     TransactionIntent,
 };
 use ::transaction::validation::{TestIntentHashManager, ValidationConfig};
-use parking_lot::RwLock;
+use parking_lot::{RawRwLock, RwLock};
 use prometheus::Registry;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, AbortReason, ExecutionConfig, FeeReserveConfig,
     PreviewError, PreviewResult, TransactionReceipt, TransactionResult,
 };
-use radix_engine::types::{
-    Categorize, ComponentAddress, Decimal, Decode, Encode, PublicKey, RENodeId, ResourceAddress,
-};
+use radix_engine::types::{Categorize, ComponentAddress, Decode, Encode, PublicKey};
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 
-use radix_engine_interface::api::types::{
-    NodeModuleId, SubstateId, SubstateOffset, ValidatorOffset,
-};
-
 use std::collections::{BTreeMap, HashMap};
+use std::ops::Deref;
+use std::sync::Arc;
 
 use crate::staging::epoch_handling::AccuTreeEpochHandler;
-use radix_engine::blueprints::epoch_manager::{Validator, ValidatorSubstate};
+use parking_lot::lock_api::RwLockReadGuard;
+use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine_interface::data::manifest::manifest_encode;
 use radix_engine_interface::network::NetworkDefinition;
@@ -131,7 +125,7 @@ const FULL_TRANSACTION_WARN_TIME_LIMIT: Duration = Duration::from_millis(500);
 pub struct StateManager<S> {
     pub mempool: RwLock<SimpleMempool>,
     pub network: NetworkDefinition,
-    store: S,
+    store: Arc<RwLock<S>>,
     execution_cache: ExecutionCache,
     pub user_transaction_validator: UserTransactionValidator,
     pub ledger_transaction_validator: LedgerTransactionValidator,
@@ -154,7 +148,7 @@ where
     pub fn new(
         network: NetworkDefinition,
         mempool: SimpleMempool,
-        store: S,
+        store: Arc<RwLock<S>>,
         logging_config: LoggingConfig,
     ) -> StateManager<S> {
         let user_transaction_validator = UserTransactionValidator {
@@ -171,7 +165,10 @@ where
         let prometheus_registry = Registry::new();
         metrics.register_with(&prometheus_registry);
 
-        let accumulator_hash = store.get_top_transaction_identifiers().accumulator_hash;
+        let accumulator_hash = store
+            .read()
+            .get_top_transaction_identifiers()
+            .accumulator_hash;
 
         StateManager {
             network,
@@ -204,8 +201,8 @@ impl<S> StateManager<S>
 where
     S: ReadableSubstateStore,
 {
-    pub fn store(&self) -> &S {
-        &self.store
+    pub fn store(&self) -> RwLockReadGuard<'_, RawRwLock, S> {
+        self.store.read()
     }
 
     pub fn preview(&self, preview_request: PreviewRequest) -> Result<PreviewResult, PreviewError> {
@@ -237,10 +234,10 @@ where
             },
         };
 
-        let start = std::time::Instant::now();
+        let start = Instant::now();
 
         let result = execute_preview(
-            &self.store,
+            self.store.read().deref(),
             &self.scrypto_interpreter,
             &self.intent_hash_manager,
             &self.network,
@@ -258,41 +255,6 @@ where
         }
 
         result
-    }
-}
-
-impl<S: ReadableStore> StateManager<S> {
-    fn execute_for_staging_with_cache(
-        &mut self,
-        epoch_transaction_identifiers: &EpochTransactionIdentifiers,
-        parent_transaction_identifiers: &CommittedTransactionIdentifiers,
-        executable: &Executable,
-        transaction_hash: &LedgerPayloadHash,
-    ) -> &ProcessedTransactionReceipt {
-        let processed = self.execution_cache.execute_transaction(
-            &self.store,
-            epoch_transaction_identifiers,
-            parent_transaction_identifiers,
-            transaction_hash,
-            &TimeWarningTransactionLogic::wrap(
-                &ConfiguredExecutable::new(
-                    executable,
-                    &self.scrypto_interpreter,
-                    &self.fee_reserve_config,
-                    if parent_transaction_identifiers.state_version == 0 {
-                        &self.execution_config_for_genesis
-                    } else {
-                        &self.execution_config
-                    },
-                ),
-                FULL_TRANSACTION_WARN_TIME_LIMIT,
-                format!(
-                    "transaction hash {}, at accumulator hash {}; for staging",
-                    transaction_hash, parent_transaction_identifiers.accumulator_hash
-                ),
-            ),
-        );
-        processed
     }
 }
 
@@ -317,6 +279,7 @@ where
     /// By checking the TransactionReceipt, you can see if the transaction is presently commitable.
     fn validate_and_test_execute_transaction_up_to_fee_loan(
         &self,
+        root_store: &S,
         transaction: &NotarizedTransaction,
         payload_size: usize,
     ) -> Result<TransactionReceipt, StateManagerRejectReason> {
@@ -324,21 +287,20 @@ where
             .user_transaction_validator
             .validate_and_create_executable(transaction, payload_size)
             .map_err(StateManagerRejectReason::TransactionValidationError)?;
-        let transaction_logic = ConfiguredExecutable::new(
-            &executable,
-            &self.scrypto_interpreter,
-            &self.fee_reserve_config,
-            &self.execution_config_for_pending_transactions,
-        );
-        Ok(TimeWarningTransactionLogic::wrap(
-            &transaction_logic,
+        let transaction_logic = TimeWarningTransactionLogic::wrap(
+            ConfiguredExecutable::new(
+                &executable,
+                &self.scrypto_interpreter,
+                &self.fee_reserve_config,
+                &self.execution_config_for_pending_transactions,
+            ),
             UP_TO_FEE_LOAN_TRANSACTION_WARN_TIME_LIMIT,
             format!(
                 "pending intent hash {}, up to fee loan",
                 transaction.intent_hash()
             ),
-        )
-        .execute_on(&self.store))
+        );
+        Ok(transaction_logic.execute_on(root_store))
     }
 
     /// Checking if the transaction should be rejected requires full validation, ie:
@@ -414,8 +376,11 @@ where
         &mut self,
         transaction: &NotarizedTransaction,
     ) -> (PendingTransactionRecord, bool) {
+        let read_store = self.store.read();
+        let current_epoch = read_store.get_epoch();
+        let max_state_version = read_store.max_state_version();
+
         let current_time = SystemTime::now();
-        let current_epoch = self.store.get_epoch();
         let intent_hash = transaction.intent_hash();
         let payload_hash = transaction.user_payload_hash();
         let invalid_from_epoch = transaction.signed_intent.intent.header.end_epoch_exclusive;
@@ -439,7 +404,7 @@ where
         let attempt = TransactionAttempt {
             rejection,
             against_state: AtState::Committed {
-                state_version: self.store.max_state_version(),
+                state_version: max_state_version,
             },
             timestamp: current_time,
         };
@@ -461,16 +426,18 @@ where
         transaction: &NotarizedTransaction,
         payload_size: usize,
     ) -> Result<(), RejectionReason> {
-        if self
-            .store
-            .get_txn_state_version_by_identifier(&transaction.intent_hash())
-            .is_some()
-        {
+        let read_store = self.store.read();
+        let existing = read_store.get_txn_state_version_by_identifier(&transaction.intent_hash());
+        if existing.is_some() {
             return Err(RejectionReason::IntentHashCommitted);
         }
 
         let receipt = self
-            .validate_and_test_execute_transaction_up_to_fee_loan(transaction, payload_size)
+            .validate_and_test_execute_transaction_up_to_fee_loan(
+                read_store.deref(),
+                transaction,
+                payload_size,
+            )
             .map_err(|reason| match reason {
                 StateManagerRejectReason::TransactionValidationError(validation_error) => {
                     RejectionReason::ValidationError(validation_error)
@@ -563,12 +530,20 @@ where
             .validate_and_create_executable(&parsed_transaction)
             .expect("Failed to validate genesis");
 
-        let processed = self.execute_for_staging_with_cache(
+        let processed = self.execution_cache.execute_transaction(
+            self.store.read().deref(),
             &EpochTransactionIdentifiers::pre_genesis(),
             &CommittedTransactionIdentifiers::pre_genesis(),
-            &executable,
             &parsed_transaction.get_hash(),
+            &wrap_transaction_logic(
+                &executable,
+                "genesis".to_string(),
+                &self.scrypto_interpreter,
+                &self.fee_reserve_config,
+                &self.execution_config_for_genesis,
+            ),
         );
+
         let commit = processed.expect_commit("genesis");
         commit.check_success("genesis");
         PrepareGenesisResult {
@@ -580,9 +555,9 @@ where
     }
 
     pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
-        let base_transaction_identifiers = self.store.get_top_transaction_identifiers();
-        let epoch_identifiers = self
-            .store
+        let read_store = self.store.read();
+        let base_transaction_identifiers = read_store.get_top_transaction_identifiers();
+        let epoch_identifiers = read_store
             .get_last_epoch_proof()
             .map(|epoch_proof| EpochTransactionIdentifiers::from(epoch_proof.ledger_header))
             .unwrap_or_else(EpochTransactionIdentifiers::pre_genesis);
@@ -609,7 +584,7 @@ where
                 .ok()
                 .map(|validated_transaction| validated_transaction.intent_hash())
                 .and_then(|intent_hash| {
-                    self.store
+                    read_store
                         .get_txn_state_version_by_identifier(&intent_hash)
                         .map(|_| (intent_hash, AlreadyPreparedTransaction::Committed))
                 })
@@ -653,12 +628,21 @@ where
             }
             .expect("Already prepared transactions should be valid");
 
-            let processed = self.execute_for_staging_with_cache(
+            let transaction_hash = parsed_transaction.get_hash();
+            let processed = self.execution_cache.execute_transaction(
+                read_store.deref(),
                 &epoch_identifiers,
                 state_tracker.latest_transaction_identifiers(),
-                &executable,
-                &parsed_transaction.get_hash(),
+                &transaction_hash,
+                &wrap_transaction_logic(
+                    &executable,
+                    format!("already prepared {}", transaction_hash),
+                    &self.scrypto_interpreter,
+                    &self.fee_reserve_config,
+                    &self.execution_config,
+                ),
             );
+
             let commit = processed.expect_commit("already prepared");
             // TODO: Do we need to check that next epoch request has been prepared?
             state_tracker.update(&commit.hash_structures_diff);
@@ -674,12 +658,21 @@ where
             round_in_epoch: prepare_request.round_number,
         };
         let ledger_round_update = LedgerTransaction::Validator(round_update);
-        let processed_round_update = self.execute_for_staging_with_cache(
+
+        let processed_round_update = self.execution_cache.execute_transaction(
+            read_store.deref(),
             &epoch_identifiers,
             state_tracker.latest_transaction_identifiers(),
-            &round_update.prepare().to_executable(),
             &ledger_round_update.get_hash(),
+            &wrap_transaction_logic(
+                &round_update.prepare().to_executable(),
+                format!("round update {}", prepare_request.round_number),
+                &self.scrypto_interpreter,
+                &self.fee_reserve_config,
+                &self.execution_config,
+            ),
         );
+
         let round_update_commit = processed_round_update.expect_commit("round update");
         round_update_commit.check_success("round update");
         state_tracker.update(&round_update_commit.hash_structures_diff);
@@ -746,11 +739,19 @@ where
                 let (payload, hash) = LedgerTransaction::User(parsed.clone())
                     .create_payload_and_hash()
                     .unwrap();
-                let processed = self.execute_for_staging_with_cache(
+
+                let processed = self.execution_cache.execute_transaction(
+                    read_store.deref(),
                     &epoch_identifiers,
                     state_tracker.latest_transaction_identifiers(),
-                    &executable,
                     &hash,
+                    &wrap_transaction_logic(
+                        &executable,
+                        format!("newly proposed {}", hash),
+                        &self.scrypto_interpreter,
+                        &self.fee_reserve_config,
+                        &self.execution_config,
+                    ),
                 );
 
                 match processed.expect_commit_or_reject("prepared") {
@@ -867,7 +868,7 @@ where
     S: WriteableVertexStore,
 {
     pub fn save_vertex_store(&'db mut self, vertex_store: Vec<u8>) {
-        self.store.save_vertex_store(vertex_store);
+        self.store.write().save_vertex_store(vertex_store);
     }
 }
 
@@ -905,9 +906,9 @@ where
                 })
                 .collect::<Vec<_>>();
 
-        let base_transaction_identifiers = self.store.get_top_transaction_identifiers();
-        let epoch_identifiers = self
-            .store
+        let mut write_store = self.store.write();
+        let base_transaction_identifiers = write_store.get_top_transaction_identifiers();
+        let epoch_identifiers = write_store
             .get_last_epoch_proof()
             .map(|epoch_proof| EpochTransactionIdentifiers::from(epoch_proof.ledger_header))
             .unwrap_or_else(EpochTransactionIdentifiers::pre_genesis);
@@ -947,12 +948,19 @@ where
                     );
                 });
 
-            let payload_hash = transaction.get_hash();
-            let processed = self.execute_for_staging_with_cache(
+            let transaction_hash = transaction.get_hash();
+            let processed = self.execution_cache.execute_transaction(
+                write_store.deref(),
                 &epoch_identifiers,
                 state_tracker.latest_transaction_identifiers(),
-                &executable,
-                &payload_hash,
+                &transaction_hash,
+                &wrap_transaction_logic(
+                    &executable,
+                    format!("committing {}", transaction_hash),
+                    &self.scrypto_interpreter,
+                    &self.fee_reserve_config,
+                    &self.execution_config,
+                ),
             );
 
             let commit =
@@ -1006,7 +1014,7 @@ where
         self.execution_cache
             .progress_root(&final_transaction_identifiers.accumulator_hash);
 
-        self.store.commit(CommitBundle {
+        write_store.commit(CommitBundle {
             transactions: committed_transaction_bundles,
             proof: commit_request.proof,
             substate_store_update,
@@ -1056,36 +1064,6 @@ where
     }
 }
 
-impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
-    pub fn get_component_resources(
-        &self,
-        component_address: ComponentAddress,
-    ) -> Option<HashMap<ResourceAddress, Decimal>> {
-        let mut resource_accounter = ResourceAccounter::new(&self.store);
-        resource_accounter
-            .add_resources(RENodeId::GlobalObject(component_address.into()))
-            .map_or(None, |()| Some(resource_accounter.into_map()))
-    }
-
-    pub fn get_validator_info(&self, validator_address: ComponentAddress) -> JavaValidatorInfo {
-        let substate_id = SubstateId(
-            RENodeId::GlobalObject(validator_address.into()),
-            NodeModuleId::SELF,
-            SubstateOffset::Validator(ValidatorOffset::Validator),
-        );
-        let output = self.store.get_substate(&substate_id).unwrap();
-        let validator_substate: ValidatorSubstate = output.substate.to_runtime().into();
-        JavaValidatorInfo {
-            lp_token_address: validator_substate.liquidity_token,
-            unstake_resource: validator_substate.unstake_nft,
-        }
-    }
-
-    pub fn get_epoch(&self) -> u64 {
-        self.store.get_epoch()
-    }
-}
-
 impl From<(BTreeMap<ComponentAddress, Validator>, u64)> for NextEpoch {
     fn from(next_epoch_result: (BTreeMap<ComponentAddress, Validator>, u64)) -> Self {
         NextEpoch {
@@ -1101,6 +1079,25 @@ impl From<(BTreeMap<ComponentAddress, Validator>, u64)> for NextEpoch {
             epoch: next_epoch_result.1,
         }
     }
+}
+
+fn wrap_transaction_logic<'a>(
+    executable: &'a Executable<'a>,
+    logged_description: String,
+    scrypto_interpreter: &'a ScryptoInterpreter<DefaultWasmEngine>,
+    fee_reserve_config: &'a FeeReserveConfig,
+    execution_config: &'a ExecutionConfig,
+) -> TimeWarningTransactionLogic<ConfiguredExecutable<'a>> {
+    TimeWarningTransactionLogic::wrap(
+        ConfiguredExecutable::new(
+            executable,
+            scrypto_interpreter,
+            fee_reserve_config,
+            execution_config,
+        ),
+        FULL_TRANSACTION_WARN_TIME_LIMIT,
+        logged_description,
+    )
 }
 
 struct ConfiguredExecutable<'a> {
@@ -1138,14 +1135,14 @@ impl<'a, S: ReadableSubstateStore> TransactionLogic<S> for ConfiguredExecutable<
     }
 }
 
-struct TimeWarningTransactionLogic<'u, U> {
-    underlying: &'u U,
+struct TimeWarningTransactionLogic<U> {
+    underlying: U,
     time_limit: Duration,
     description: String, // for error-surfacing only
 }
 
-impl<'u, U> TimeWarningTransactionLogic<'u, U> {
-    pub fn wrap(underlying: &'u U, time_limit: Duration, description: String) -> Self {
+impl<U> TimeWarningTransactionLogic<U> {
+    pub fn wrap(underlying: U, time_limit: Duration, description: String) -> Self {
         Self {
             underlying,
             time_limit,
@@ -1154,7 +1151,7 @@ impl<'u, U> TimeWarningTransactionLogic<'u, U> {
     }
 }
 
-impl<'u, U, S> TransactionLogic<S> for TimeWarningTransactionLogic<'u, U>
+impl<U, S> TransactionLogic<S> for TimeWarningTransactionLogic<U>
 where
     S: ReadableSubstateStore,
     U: TransactionLogic<S>,

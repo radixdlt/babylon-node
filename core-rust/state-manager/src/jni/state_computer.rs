@@ -72,10 +72,15 @@ use crate::{
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use radix_engine::blueprints::epoch_manager::ValidatorSubstate;
+use radix_engine::ledger::ReadableSubstateStore;
 use radix_engine::types::*;
+use std::ops::Deref;
 
 use crate::jni::common_types::JavaHashCode;
+use crate::jni::state_manager::JNIStateManager;
 use crate::jni::utils::*;
+use crate::query::{ResourceAccounter, StateManagerSubstateQueries};
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
 use crate::{CommitError, NextEpoch, PrepareGenesisRequest, PrepareGenesisResult};
 
@@ -109,22 +114,6 @@ fn do_verify(state_manager: &ActualStateManager, args: JavaRawTransaction) -> Re
         .map_err(|err| format!("{err:?}"))?;
 
     Ok(())
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_saveVertexStore(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_save_vertex_store)
-}
-
-#[tracing::instrument(skip_all)]
-fn do_save_vertex_store(state_manager: &mut ActualStateManager, args: Vec<u8>) {
-    let vertex_store_bytes: Vec<u8> = args;
-    state_manager.save_vertex_store(vertex_store_bytes);
 }
 
 #[no_mangle]
@@ -198,16 +187,21 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_componentXr
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, get_component_xrd)
-}
-
-fn get_component_xrd(state_manager: &ActualStateManager, args: ComponentAddress) -> Decimal {
-    let component_address = args;
-    let resources = state_manager.get_component_resources(component_address);
-
-    resources
-        .map(|r| r.get(&RADIX_TOKEN).cloned().unwrap_or_else(Decimal::zero))
-        .unwrap_or_else(Decimal::zero)
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |component_address: ComponentAddress| -> Decimal {
+            let database = JNIStateManager::get_database(&env, j_state_manager);
+            let read_store = database.read();
+            let mut resource_accounter = ResourceAccounter::new(read_store.deref());
+            let resources = resource_accounter
+                .add_resources(RENodeId::GlobalObject(component_address.into()))
+                .map_or(None, |()| Some(resource_accounter.into_map()));
+            resources
+                .map(|r| r.get(&RADIX_TOKEN).cloned().unwrap_or_else(Decimal::zero))
+                .unwrap_or_else(Decimal::zero)
+        },
+    )
 }
 
 #[no_mangle]
@@ -217,15 +211,25 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_validatorIn
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, get_validator_info)
-}
-
-fn get_validator_info(
-    state_manager: &ActualStateManager,
-    args: ComponentAddress,
-) -> JavaValidatorInfo {
-    let validator_address = args;
-    state_manager.get_validator_info(validator_address)
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |validator_address: ComponentAddress| -> JavaValidatorInfo {
+            let database = JNIStateManager::get_database(&env, j_state_manager);
+            let read_store = database.read();
+            let substate_id = SubstateId(
+                RENodeId::GlobalObject(validator_address.into()),
+                NodeModuleId::SELF,
+                SubstateOffset::Validator(ValidatorOffset::Validator),
+            );
+            let output = read_store.get_substate(&substate_id).unwrap();
+            let validator_substate: ValidatorSubstate = output.substate.to_runtime().into();
+            JavaValidatorInfo {
+                lp_token_address: validator_substate.liquidity_token,
+                unstake_resource: validator_substate.unstake_nft,
+            }
+        },
+    )
 }
 
 #[no_mangle]
@@ -235,11 +239,11 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_epoch(
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_get_epoch)
-}
-
-fn do_get_epoch(state_manager: &ActualStateManager, _args: ()) -> u64 {
-    state_manager.get_epoch()
+    jni_sbor_coded_call(&env, request_payload, |_: ()| -> u64 {
+        let database = JNIStateManager::get_database(&env, j_state_manager);
+        let read_store = database.read();
+        read_store.get_epoch()
+    })
 }
 
 pub fn export_extern_functions() {}

@@ -62,44 +62,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.recovery;
+package com.radixdlt.transaction;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Option;
-import com.radixdlt.lang.Tuple;
-import com.radixdlt.monitoring.LabelledTimer;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.sbor.Natives;
-import com.radixdlt.statemanager.StateManager;
-import java.util.Optional;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 
-public final class VertexStoreRecovery {
-  public VertexStoreRecovery(Metrics metrics, StateManager stateManager) {
-    LabelledTimer<Metrics.MethodId> timer = metrics.stateManager().nativeCall();
-    this.getVertexStore =
-        Natives.builder(stateManager, VertexStoreRecovery::getVertexStore)
-            .measure(timer.label(new Metrics.MethodId(VertexStoreRecovery.class, "getVertexStore")))
-            .build(new TypeToken<>() {});
-    this.saveVertexStoreFunc =
-        Natives.builder(stateManager, VertexStoreRecovery::saveVertexStore)
-            .measure(
-                timer.label(new Metrics.MethodId(VertexStoreRecovery.class, "saveVertexStore")))
-            .build(new TypeToken<>() {});
+/** A request for listing a batch of transactions together with their proof. */
+public record TxnsAndProofRequest(
+    UInt64 startStateVersionInclusive,
+    UInt32 maxNumberOfTxnsIfMoreThanOneProof,
+    UInt32 maxPayloadSizeInBytes) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        TxnsAndProofRequest.class,
+        codecs -> StructCodec.fromRecordComponents(TxnsAndProofRequest.class, codecs));
   }
-
-  public Optional<byte[]> recoverVertexStore() {
-    return this.getVertexStore.call(Tuple.tuple()).toOptional();
-  }
-
-  private static native byte[] getVertexStore(StateManager stateManager, byte[] payload);
-
-  private final Natives.Call1<Tuple.Tuple0, Option<byte[]>> getVertexStore;
-
-  public void saveVertexStore(byte[] vertexStoreBytes) {
-    this.saveVertexStoreFunc.call(vertexStoreBytes);
-  }
-
-  private static native byte[] saveVertexStore(StateManager stateManager, byte[] payload);
-
-  private final Natives.Call1<byte[], Tuple.Tuple0> saveVertexStoreFunc;
 }

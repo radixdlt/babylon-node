@@ -131,6 +131,7 @@ pub type ActualStateManager = StateManager<StateManagerDatabase>;
 
 pub struct JNIStateManager {
     pub state_manager: Arc<RwLock<ActualStateManager>>,
+    pub database: Arc<RwLock<StateManagerDatabase>>,
 }
 
 impl JNIStateManager {
@@ -149,18 +150,22 @@ impl JNIStateManager {
             }
         };
 
-        let store = StateManagerDatabase::from_config(config.db_config);
-        let mempool = SimpleMempool::new(mempool_config);
+        let database = Arc::new(parking_lot::const_rwlock(
+            StateManagerDatabase::from_config(config.db_config),
+        ));
 
         // Build the state manager.
         let state_manager = Arc::new(parking_lot::const_rwlock(StateManager::new(
             config.network_definition,
-            mempool,
-            store,
+            SimpleMempool::new(mempool_config),
+            database.clone(),
             config.logging_config,
         )));
 
-        let jni_state_manager = JNIStateManager { state_manager };
+        let jni_state_manager = JNIStateManager {
+            state_manager,
+            database,
+        };
 
         env.set_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME, jni_state_manager)
             .unwrap();
@@ -182,6 +187,16 @@ impl JNIStateManager {
             .get_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME)
             .unwrap();
         jni_state_manager.state_manager.clone()
+    }
+
+    pub fn get_database(
+        env: &JNIEnv,
+        j_state_manager: JObject,
+    ) -> Arc<RwLock<StateManagerDatabase>> {
+        let jni_state_manager: MutexGuard<JNIStateManager> = env
+            .get_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME)
+            .unwrap();
+        jni_state_manager.database.clone()
     }
 }
 

@@ -62,13 +62,12 @@
  * permissions under this License.
  */
 
-use crate::jni::state_manager::ActualStateManager;
-use crate::store::traits::RecoverableVertexStore;
+use crate::jni::state_manager::JNIStateManager;
+use crate::jni::utils::jni_sbor_coded_call;
+use crate::store::traits::{RecoverableVertexStore, WriteableVertexStore};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-
-use super::utils::jni_state_manager_sbor_read_call;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_recovery_VertexStoreRecovery_getVertexStore(
@@ -77,12 +76,24 @@ extern "system" fn Java_com_radixdlt_recovery_VertexStoreRecovery_getVertexStore
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_get_vertex_store)
+    jni_sbor_coded_call(&env, request_payload, |_: ()| -> Option<Vec<u8>> {
+        let database = JNIStateManager::get_database(&env, j_state_manager);
+        let txns_and_proof = database.read().get_vertex_store();
+        txns_and_proof
+    })
 }
 
-#[tracing::instrument(skip_all)]
-fn do_get_vertex_store(state_manager: &ActualStateManager, _args: ()) -> Option<Vec<u8>> {
-    state_manager.store().get_vertex_store()
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_recovery_VertexStoreRecovery_saveVertexStore(
+    env: JNIEnv,
+    _class: JClass,
+    j_state_manager: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |vertex_store_bytes: Vec<u8>| {
+        let database = JNIStateManager::get_database(&env, j_state_manager);
+        database.write().save_vertex_store(vertex_store_bytes);
+    })
 }
 
 pub fn export_extern_functions() {}
