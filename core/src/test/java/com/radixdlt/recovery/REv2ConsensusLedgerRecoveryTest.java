@@ -108,7 +108,7 @@ public final class REv2ConsensusLedgerRecoveryTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
                             2, Decimal.of(1), UInt64.fromNonNegativeLong(Long.MAX_VALUE)),
-                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath(), false),
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                             new REV2TransactionGenerator(), 1)),
                     SyncRelayConfig.of(5000, 10, 3000L))));

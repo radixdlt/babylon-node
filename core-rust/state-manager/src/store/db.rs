@@ -90,8 +90,8 @@ use radix_engine_stores::hash_tree::tree_store::{NodeKey, Payload, ReadableTreeS
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub enum DatabaseConfig {
-    InMemory,
-    RocksDB(String),
+    InMemory(bool),
+    RocksDB(String, bool),
 }
 
 pub enum StateManagerDatabase {
@@ -102,9 +102,18 @@ pub enum StateManagerDatabase {
 impl StateManagerDatabase {
     pub fn from_config(config: DatabaseConfig) -> Self {
         match config {
-            DatabaseConfig::InMemory => StateManagerDatabase::InMemory(InMemoryStore::new()),
-            DatabaseConfig::RocksDB(path) => {
-                let db = RocksDBStore::new(PathBuf::from(path));
+            DatabaseConfig::InMemory(enable_account_change_index) => {
+                let mut store = InMemoryStore::new(enable_account_change_index);
+                if enable_account_change_index {
+                    store.catchup_account_change_index();
+                }
+                StateManagerDatabase::InMemory(store)
+            }
+            DatabaseConfig::RocksDB(path, enable_account_change_index) => {
+                let mut db = RocksDBStore::new(PathBuf::from(path), enable_account_change_index);
+                if enable_account_change_index {
+                    db.catchup_account_change_index();
+                }
                 StateManagerDatabase::RocksDB(db)
             }
         }
@@ -359,18 +368,10 @@ impl AccountChangeIndexExtension for StateManagerDatabase {
         }
     }
 
-    fn disable_account_change_index(&mut self) {
+    fn catchup_account_change_index(&mut self) {
         match self {
-            StateManagerDatabase::InMemory(store) => store.disable_account_change_index(),
-            StateManagerDatabase::RocksDB(store) => store.disable_account_change_index(),
-        }
-    }
-
-    /// This is also responsible for building the missing parts of the index up to the latest state version
-    fn enable_account_change_index(&mut self) {
-        match self {
-            StateManagerDatabase::InMemory(store) => store.enable_account_change_index(),
-            StateManagerDatabase::RocksDB(store) => store.enable_account_change_index(),
+            StateManagerDatabase::InMemory(store) => store.catchup_account_change_index(),
+            StateManagerDatabase::RocksDB(store) => store.catchup_account_change_index(),
         }
     }
 

@@ -98,7 +98,7 @@ public class REv2StateComputerTest {
             10,
             10 * 1024 * 1024,
             50 * 1024 * 1024,
-            REv2DatabaseConfig.inMemory(),
+            REv2DatabaseConfig.inMemory(false),
             Option.none()),
         new AbstractModule() {
           @Override

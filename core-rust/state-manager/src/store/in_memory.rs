@@ -101,13 +101,13 @@ pub struct InMemoryStore {
     tree_node_store: SerializedInMemoryTreeStore,
     transaction_tree_slices: BTreeMap<u64, TreeSlice<TransactionTreeHash>>,
     receipt_tree_slices: BTreeMap<u64, TreeSlice<ReceiptTreeHash>>,
-    ext_account_change_index_enable: Option<bool>,
-    ext_account_change_index_last_state_version: Option<u64>,
-    ext_account_change_index_set: HashMap<Address, BTreeSet<u64>>,
+    account_change_index_enable: bool,
+    account_change_index_last_state_version: u64,
+    account_change_index_set: HashMap<Address, BTreeSet<u64>>,
 }
 
 impl InMemoryStore {
-    pub fn new() -> InMemoryStore {
+    pub fn new(enable_account_change_index: bool) -> InMemoryStore {
         InMemoryStore {
             transactions: BTreeMap::new(),
             transaction_receipts: BTreeMap::new(),
@@ -122,9 +122,9 @@ impl InMemoryStore {
             tree_node_store: SerializedInMemoryTreeStore::new(),
             transaction_tree_slices: BTreeMap::new(),
             receipt_tree_slices: BTreeMap::new(),
-            ext_account_change_index_enable: None,
-            ext_account_change_index_last_state_version: None,
-            ext_account_change_index_set: HashMap::new(),
+            account_change_index_enable: enable_account_change_index,
+            account_change_index_last_state_version: 0,
+            account_change_index_set: HashMap::new(),
         }
     }
 
@@ -169,7 +169,7 @@ impl InMemoryStore {
 
 impl Default for InMemoryStore {
     fn default() -> Self {
-        Self::new()
+        Self::new(false)
     }
 }
 
@@ -380,31 +380,25 @@ impl InMemoryStore {
             if !address.is_account() {
                 continue;
             }
-            self.ext_account_change_index_set
+            self.account_change_index_set
                 .entry(*address)
                 .or_insert(BTreeSet::new())
                 .insert(state_version);
         }
-        self.ext_account_change_index_last_state_version = Some(state_version);
+        self.account_change_index_last_state_version = state_version;
     }
 }
 
 impl AccountChangeIndexExtension for InMemoryStore {
     fn account_change_index_last_processed_state_version(&self) -> u64 {
-        self.ext_account_change_index_last_state_version
-            .unwrap_or(0)
+        self.account_change_index_last_state_version
     }
 
     fn is_account_change_index_enabled(&self) -> bool {
-        self.ext_account_change_index_enable.unwrap_or(false)
+        self.account_change_index_enable
     }
 
-    fn disable_account_change_index(&mut self) {
-        self.ext_account_change_index_enable = Some(false);
-    }
-
-    /// This is also responsible for building the missing parts of the index up to the latest state version
-    fn enable_account_change_index(&mut self) {
+    fn catchup_account_change_index(&mut self) {
         let last_state_version = self.max_state_version();
         let last_processed_state_version = self.account_change_index_last_processed_state_version();
 
@@ -418,8 +412,6 @@ impl AccountChangeIndexExtension for InMemoryStore {
                     .clone(),
             );
         }
-
-        self.ext_account_change_index_enable = Some(true);
     }
 
     fn get_state_versions_for_account(
@@ -428,7 +420,7 @@ impl AccountChangeIndexExtension for InMemoryStore {
         start_state_version_inclusive: u64,
         limit: usize,
     ) -> Vec<u64> {
-        match self.ext_account_change_index_set.get(&account) {
+        match self.account_change_index_set.get(&account) {
             None => Vec::new(),
             Some(state_versions) => state_versions
                 .range((Included(start_state_version_inclusive), Unbounded))

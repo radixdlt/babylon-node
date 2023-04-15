@@ -233,10 +233,7 @@ pub mod extensions {
 
         fn is_account_change_index_enabled(&self) -> bool;
 
-        fn disable_account_change_index(&mut self);
-
-        /// This is also responsible for building the missing parts of the index up to the latest state version
-        fn enable_account_change_index(&mut self);
+        fn catchup_account_change_index(&mut self);
 
         fn get_state_versions_for_account(
             &self,

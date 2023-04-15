@@ -77,7 +77,7 @@ use radix_engine::ledger::{OutputValue, QueryableSubstateStore, ReadableSubstate
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{
     scrypto_decode, scrypto_encode, Address, KeyValueStoreId, KeyValueStoreOffset, RENodeId,
-    ScryptoEncode, SubstateId, SubstateOffset,
+    SubstateId, SubstateOffset,
 };
 use radix_engine_interface::api::types::NodeModuleId;
 use radix_engine_interface::data::manifest::manifest_decode;
@@ -120,16 +120,17 @@ enum RocksDBColumnFamily {
     /// Transaction/Receipt accumulator tree slices keyed by state version of their ledger header
     TransactionAccuTreeSliceByStateVersion,
     ReceiptAccuTreeSliceByStateVersion,
-    /// Core-API, DB, indexes config state
-    PersistentConfig,
-    /// Account to state versions
-    AccountChangeIndexExt,
-    AccountChangeAtStateVersionSet, // null value, account_address#state_version key
+    /// Various data needed by extensions
+    ExtensionsData,
+    /// Account to state versions (which changed the account)
+    /// Key: concat(account_address, state_version), value: null
+    /// Given fast prefix iterator from RocksDB this emulates a Map<Account, Set<StateVersion>>
+    AccountChangeAtStateVersionSet,
 }
 
 use RocksDBColumnFamily::*;
 
-const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 17] = [
+const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 16] = [
     TxnByStateVersion,
     TxnReceiptByStateVersion,
     TxnAccumulatorHashByStateVersion,
@@ -144,8 +145,7 @@ const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 17] = [
     StaleStateHashTreeNodeKeysByStateVersion,
     TransactionAccuTreeSliceByStateVersion,
     ReceiptAccuTreeSliceByStateVersion,
-    PersistentConfig,
-    AccountChangeIndexExt,
+    ExtensionsData,
     AccountChangeAtStateVersionSet,
 ];
 
@@ -168,8 +168,7 @@ impl fmt::Display for RocksDBColumnFamily {
                 "transaction_accu_tree_slice_by_state_version"
             }
             ReceiptAccuTreeSliceByStateVersion => "receipt_accu_tree_slice_by_state_version",
-            PersistentConfig => "persistent_config",
-            AccountChangeIndexExt => "account_change_index_extension",
+            ExtensionsData => "extensions_data",
             AccountChangeAtStateVersionSet => "account_change_at_state_version_set",
         };
         write!(f, "{str}")
@@ -177,14 +176,16 @@ impl fmt::Display for RocksDBColumnFamily {
 }
 
 #[derive(Eq, PartialEq, PartialOrd, Ord, Clone, Debug)]
-enum PersistedConfigKeys {
-    AccountChangeIndexExtensionEnable,
+enum ExtensionsDataKeys {
+    AccountChangeIndexLastProcessedStateVersion,
 }
 
-impl fmt::Display for PersistedConfigKeys {
+impl fmt::Display for ExtensionsDataKeys {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let str = match self {
-            Self::AccountChangeIndexExtensionEnable => "account_change_index_ext_enable",
+            Self::AccountChangeIndexLastProcessedStateVersion => {
+                "account_change_index_last_processed_state_version"
+            }
         };
         write!(f, "{str}")
     }
@@ -192,10 +193,11 @@ impl fmt::Display for PersistedConfigKeys {
 
 pub struct RocksDBStore {
     db: DB,
+    account_change_index_enabled: bool,
 }
 
 impl RocksDBStore {
-    pub fn new(root: PathBuf) -> RocksDBStore {
+    pub fn new(root: PathBuf, enable_account_change_index: bool) -> RocksDBStore {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(true);
         db_opts.create_missing_column_families(true);
@@ -207,7 +209,10 @@ impl RocksDBStore {
 
         let db = DB::open_cf_descriptors(&db_opts, root.as_path(), column_families).unwrap();
 
-        RocksDBStore { db }
+        RocksDBStore {
+            db,
+            account_change_index_enabled: enable_account_change_index,
+        }
     }
 
     fn add_transaction_to_write_batch(
@@ -318,12 +323,6 @@ impl RocksDBStore {
             .get_pinned_cf(self.cf_handle(cf), key)
             .unwrap()
             .map(|pinnable_slice| scrypto_decode(pinnable_slice.as_ref()).unwrap())
-    }
-
-    fn put<T: ScryptoEncode>(&self, cf: &RocksDBColumnFamily, key: &[u8], value: &T) {
-        self.db
-            .put_cf(self.cf_handle(cf), key, scrypto_encode(value).unwrap())
-            .expect("Failed writing to RocksDB.");
     }
 }
 
@@ -857,13 +856,13 @@ impl RocksDBStore {
         );
 
         batch.put_cf(
-            self.cf_handle(&AccountChangeIndexExt),
+            self.cf_handle(&ExtensionsData),
             "current_state_version".as_bytes(),
             state_version.to_be_bytes(),
         );
     }
 
-    fn account_change_index_update_from_store(
+    fn update_account_change_index_from_store(
         &mut self,
         start_state_version_inclusive: u64,
         limit: u64,
@@ -911,7 +910,7 @@ impl RocksDBStore {
         }
 
         batch.put_cf(
-            self.cf_handle(&AccountChangeIndexExt),
+            self.cf_handle(&ExtensionsData),
             "current_state_version".as_bytes(),
             last_state_version.to_be_bytes(),
         );
@@ -926,52 +925,32 @@ impl RocksDBStore {
 
 impl AccountChangeIndexExtension for RocksDBStore {
     fn account_change_index_last_processed_state_version(&self) -> u64 {
-        self.get_by_key::<u64>(&AccountChangeIndexExt, "current_state_version".as_bytes())
-            .unwrap_or(0)
-    }
-
-    fn is_account_change_index_enabled(&self) -> bool {
-        self.get_by_key::<bool>(
-            &PersistentConfig,
-            PersistedConfigKeys::AccountChangeIndexExtensionEnable
+        self.get_by_key::<u64>(
+            &ExtensionsData,
+            ExtensionsDataKeys::AccountChangeIndexLastProcessedStateVersion
                 .to_string()
                 .as_bytes(),
         )
-        .unwrap_or(false)
+        .unwrap_or(0)
     }
 
-    fn disable_account_change_index(&mut self) {
-        self.put(
-            &PersistentConfig,
-            PersistedConfigKeys::AccountChangeIndexExtensionEnable
-                .to_string()
-                .as_bytes(),
-            &false,
-        );
+    fn is_account_change_index_enabled(&self) -> bool {
+        self.account_change_index_enabled
     }
 
-    /// This is also responsible for building the missing parts of the index up to the latest state version
-    fn enable_account_change_index(&mut self) {
-        const MAX_TRANSACTION_BATCH: u64 = 1024;
+    fn catchup_account_change_index(&mut self) {
+        const MAX_TRANSACTION_BATCH: u64 = 16 * 1024;
 
         let last_state_version = self.max_state_version();
         let mut last_processed_state_version =
             self.account_change_index_last_processed_state_version();
 
         while last_processed_state_version < last_state_version {
-            last_processed_state_version = self.account_change_index_update_from_store(
+            last_processed_state_version = self.update_account_change_index_from_store(
                 last_processed_state_version + 1,
                 MAX_TRANSACTION_BATCH,
             );
         }
-
-        self.put(
-            &PersistentConfig,
-            PersistedConfigKeys::AccountChangeIndexExtensionEnable
-                .to_string()
-                .as_bytes(),
-            &true,
-        );
     }
 
     fn get_state_versions_for_account(
