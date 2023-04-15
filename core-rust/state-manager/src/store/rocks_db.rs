@@ -89,7 +89,7 @@ use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, Direction, IteratorMode, Options, WriteBatch, DB,
 };
 use std::path::PathBuf;
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::query::TransactionIdentifierLoader;
@@ -941,16 +941,27 @@ impl AccountChangeIndexExtension for RocksDBStore {
     fn catchup_account_change_index(&mut self) {
         const MAX_TRANSACTION_BATCH: u64 = 16 * 1024;
 
+        info!("Account Change Index is ");
+
         let last_state_version = self.max_state_version();
         let mut last_processed_state_version =
             self.account_change_index_last_processed_state_version();
+
+        if last_processed_state_version == last_state_version {
+            info!("Account Change Index is already up to date.");
+        } else {
+            info!("Account Change Index is behind at state version {last_processed_state_version} out of {last_state_version}. Catching up ...");
+        }
 
         while last_processed_state_version < last_state_version {
             last_processed_state_version = self.update_account_change_index_from_store(
                 last_processed_state_version + 1,
                 MAX_TRANSACTION_BATCH,
             );
+            info!("Account Change Index updated to {last_processed_state_version}/{last_state_version}");
         }
+
+        info!("Account Change Index catchup done!");
     }
 
     fn get_state_versions_for_account(
