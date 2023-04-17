@@ -64,7 +64,10 @@
 
 package com.radixdlt.mempool;
 
-/** An abstraction for a dispatcher of "new transaction from Core API" events. */
+/**
+ * An abstraction for a dispatcher of "new transaction from Core API" events. (We cannot use our
+ * usual `EventDispatcher` interface within `core-rust-bridge` because of maven dependency reasons.)
+ */
 public interface MempoolRelayDispatcher<RawTx> {
 
   /** Dispatches an event to relay the given transaction. */

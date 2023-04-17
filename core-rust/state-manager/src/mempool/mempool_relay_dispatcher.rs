@@ -80,6 +80,16 @@ pub struct MempoolRelayDispatcher {
 }
 
 impl MempoolRelayDispatcher {
+    /// Name of the "mempool relay trigger" method on the Java side.
+    const TRIGGER_METHOD_NAME: &'static str = "triggerMempoolRelay";
+
+    /// The Java trigger method's descriptor string (i.e. as defined by
+    /// [JVMS](https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-4.html#jvms-4.3.3)).
+    const TRIGGER_METHOD_DESCRIPTOR: &'static str = "([B)V";
+
+    // TODO: If a number of Rust->Java calls grows, we could invest in a small util for building the
+    // "method IDs" (i.e. especially these descriptors) in some more convenient way.
+
     /// Creates a long-lived dispatcher from the given short-lived JNI context and Java state
     /// manager reference.
     pub fn new(env: &JNIEnv, j_state_manager: JObject) -> Result<Self> {
@@ -101,8 +111,8 @@ impl MempoolRelayDispatcher {
             scrypto_encode(&JavaRawTransaction::from(transaction)).unwrap();
         let result = env.call_method(
             j_state_manager,
-            "triggerMempoolRelay",
-            "([B)V",
+            MempoolRelayDispatcher::TRIGGER_METHOD_NAME,
+            MempoolRelayDispatcher::TRIGGER_METHOD_DESCRIPTOR,
             &[JValue::Object(JObject::from(jni_slice_to_jbytearray(
                 env,
                 &serialized_transaction,

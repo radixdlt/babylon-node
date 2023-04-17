@@ -221,7 +221,7 @@ impl From<PendingTransaction> for JavaRawTransaction {
 impl From<NotarizedTransaction> for JavaRawTransaction {
     fn from(transaction: NotarizedTransaction) -> Self {
         let payload = manifest_encode(&transaction).unwrap();
-        let hash = UserPayloadHash::for_manifest_encoded_transaction(&payload);
+        let hash = UserPayloadHash::for_manifest_encoded_notarized_transaction(&payload);
         JavaRawTransaction {
             payload,
             payload_hash: JavaHashCode::from_bytes(hash.into_bytes()),

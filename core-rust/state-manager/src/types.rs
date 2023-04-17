@@ -395,10 +395,10 @@ impl UserPayloadHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_transaction(transaction: &NotarizedTransaction) -> Self {
-        Self::for_manifest_encoded_transaction(manifest_encode(transaction).unwrap())
+        Self::for_manifest_encoded_notarized_transaction(manifest_encode(transaction).unwrap())
     }
 
-    pub fn for_manifest_encoded_transaction<T: AsRef<[u8]>>(transaction: T) -> Self {
+    pub fn for_manifest_encoded_notarized_transaction<T: AsRef<[u8]>>(transaction: T) -> Self {
         Self(blake2b_256_hash(transaction).0)
     }
 
