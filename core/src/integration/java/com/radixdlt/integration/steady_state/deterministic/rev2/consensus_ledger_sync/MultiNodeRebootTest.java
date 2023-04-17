@@ -191,7 +191,7 @@ public final class MultiNodeRebootTest {
 
   private DeterministicTest createTest(
       SafetyRecoveryConfig safetyRecoveryConfig, Module overrideModule) {
-    var databaseConfig = REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath());
+    var databaseConfig = REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath(), false);
     var builder =
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBatch(numValidators, true))
