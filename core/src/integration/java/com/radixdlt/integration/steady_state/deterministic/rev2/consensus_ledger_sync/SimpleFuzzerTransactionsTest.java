@@ -111,7 +111,7 @@ public final class SimpleFuzzerTransactionsTest {
                         Network.LOCALSIMULATOR.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
                             10, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
-                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath(), false),
                         REV2ProposerConfig.transactionGenerator(transactionGenerator, 10)),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }

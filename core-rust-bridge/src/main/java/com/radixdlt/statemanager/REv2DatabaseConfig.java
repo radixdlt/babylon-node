@@ -75,15 +75,16 @@ public sealed interface REv2DatabaseConfig {
         codecs -> EnumCodec.fromPermittedRecordSubclasses(REv2DatabaseConfig.class, codecs));
   }
 
-  static REv2DatabaseConfig inMemory() {
-    return new InMemory();
+  static REv2DatabaseConfig inMemory(boolean enableAccountChangeIndex) {
+    return new InMemory(enableAccountChangeIndex);
   }
 
-  static REv2DatabaseConfig rocksDB(String databasePath) {
-    return new RocksDB(databasePath);
+  static REv2DatabaseConfig rocksDB(String databasePath, boolean enableAccountChangeIndex) {
+    return new RocksDB(databasePath, enableAccountChangeIndex);
   }
 
-  record InMemory() implements REv2DatabaseConfig {}
+  record InMemory(boolean enableAccountChangeIndex) implements REv2DatabaseConfig {}
 
-  record RocksDB(String databasePath) implements REv2DatabaseConfig {}
+  record RocksDB(String databasePath, boolean enableAccountChangeIndex)
+      implements REv2DatabaseConfig {}
 }

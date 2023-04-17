@@ -76,6 +76,7 @@ mod state_manager;
 pub mod store;
 pub mod transaction;
 mod types;
+mod utils;
 
 pub use crate::mempool::*;
 pub use crate::metrics::*;
