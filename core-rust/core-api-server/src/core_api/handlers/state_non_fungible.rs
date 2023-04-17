@@ -5,34 +5,28 @@ use radix_engine::types::{
     SubstateOffset,
 };
 use radix_engine_interface::api::types::NodeModuleId;
+use std::ops::Deref;
 
 use crate::core_api::models::StateNonFungibleResponse;
-use state_manager::jni::state_manager::ActualStateManager;
 
 pub(crate) async fn handle_state_non_fungible(
     state: State<CoreApiState>,
-    request: Json<models::StateNonFungibleRequest>,
+    Json(request): Json<models::StateNonFungibleRequest>,
 ) -> Result<Json<StateNonFungibleResponse>, ResponseError<()>> {
-    core_api_read_handler(state, request, handle_state_non_fungible_internal)
-}
+    assert_matching_network(&request.network, &state.network)?;
 
-fn handle_state_non_fungible_internal(
-    state_manager: &ActualStateManager,
-    request: models::StateNonFungibleRequest,
-) -> Result<StateNonFungibleResponse, ResponseError<()>> {
-    assert_matching_network(&request.network, &state_manager.network)?;
-
-    let mapping_context = MappingContext::new(&state_manager.network);
-    let extraction_context = ExtractionContext::new(&state_manager.network);
+    let mapping_context = MappingContext::new(&state.network);
+    let extraction_context = ExtractionContext::new(&state.network);
 
     let resource_address = extract_resource_address(&extraction_context, &request.resource_address)
         .map_err(|err| err.into_response_error("resource_address"))?;
 
+    let state_manager = state.state_manager.read();
     let resource_manager = {
         let substate_offset =
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let loaded_substate = read_mandatory_substate(
-            state_manager,
+            state_manager.deref(),
             RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::SELF,
             &substate_offset,
@@ -72,17 +66,18 @@ fn handle_state_non_fungible_internal(
         non_fungible_substate_offset,
     );
 
-    let key_value_store_entry_substate =
-        {
-            let loaded_substate = read_optional_substate_from_id(state_manager, &substate_id);
-            match loaded_substate {
-                Some(PersistedSubstate::KeyValueStoreEntry(substate)) => substate,
-                None => return Err(not_found_error(
+    let key_value_store_entry_substate = {
+        let loaded_substate = read_optional_substate_from_id(state_manager.deref(), &substate_id);
+        match loaded_substate {
+            Some(PersistedSubstate::KeyValueStoreEntry(substate)) => substate,
+            None => {
+                return Err(not_found_error(
                     "The specified non-fungible id does not exist under that non-fungible resource",
-                )),
-                _ => return Err(wrong_substate_type(substate_id.2)),
+                ))
             }
-        };
+            _ => return Err(wrong_substate_type(substate_id.2)),
+        }
+    };
 
     Ok(StateNonFungibleResponse {
         non_fungible: Some(to_api_key_value_story_entry_substate(
@@ -91,4 +86,5 @@ fn handle_state_non_fungible_internal(
             &key_value_store_entry_substate,
         )?),
     })
+    .map(Json)
 }

@@ -2,26 +2,20 @@ use crate::core_api::*;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{ClockOffset, SubstateOffset, CLOCK};
 use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
-use state_manager::jni::state_manager::ActualStateManager;
+use std::ops::Deref;
 
 #[tracing::instrument(skip(state), err(Debug))]
 pub(crate) async fn handle_state_clock(
     state: State<CoreApiState>,
-    request: Json<models::StateClockRequest>,
+    Json(request): Json<models::StateClockRequest>,
 ) -> Result<Json<models::StateClockResponse>, ResponseError<()>> {
-    core_api_read_handler(state, request, handle_state_clock_internal)
-}
+    assert_matching_network(&request.network, &state.network)?;
 
-fn handle_state_clock_internal(
-    state_manager: &ActualStateManager,
-    request: models::StateClockRequest,
-) -> Result<models::StateClockResponse, ResponseError<()>> {
-    assert_matching_network(&request.network, &state_manager.network)?;
-
+    let state_manager = state.state_manager.read();
     let rounded_to_minutes_substate = {
         let substate_offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
         let loaded_substate = read_mandatory_substate(
-            state_manager,
+            state_manager.deref(),
             RENodeId::GlobalObject(CLOCK.into()),
             NodeModuleId::SELF,
             &substate_offset,
@@ -37,4 +31,5 @@ fn handle_state_clock_internal(
             &rounded_to_minutes_substate,
         )?),
     })
+    .map(Json)
 }

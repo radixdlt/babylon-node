@@ -1,26 +1,13 @@
 use crate::core_api::*;
-use state_manager::{
-    jni::state_manager::ActualStateManager,
-    store::traits::{QueryableProofStore, QueryableTransactionStore},
-};
+use state_manager::store::traits::{QueryableProofStore, QueryableTransactionStore};
 
 #[tracing::instrument(skip(state), err(Debug))]
 pub(crate) async fn handle_lts_stream_transaction_outcomes(
     state: State<CoreApiState>,
-    request: Json<models::LtsStreamTransactionOutcomesRequest>,
+    Json(request): Json<models::LtsStreamTransactionOutcomesRequest>,
 ) -> Result<Json<models::LtsStreamTransactionOutcomesResponse>, ResponseError<()>> {
-    core_api_read_handler(
-        state,
-        request,
-        handle_lts_stream_transaction_outcomes_internal,
-    )
-}
-
-fn handle_lts_stream_transaction_outcomes_internal(
-    state_manager: &ActualStateManager,
-    request: models::LtsStreamTransactionOutcomesRequest,
-) -> Result<models::LtsStreamTransactionOutcomesResponse, ResponseError<()>> {
-    assert_matching_network(&request.network, &state_manager.network)?;
+    assert_matching_network(&request.network, &state.network)?;
+    let mapping_context = MappingContext::new(&state.network);
 
     let from_state_version: u64 = extract_api_state_version(request.from_state_version)
         .map_err(|err| err.into_response_error("from_state_version"))?;
@@ -40,14 +27,15 @@ fn handle_lts_stream_transaction_outcomes_internal(
         )));
     }
 
-    let max_state_version = state_manager.store().max_state_version();
+    let state_manager = state.state_manager.read();
+    let read_store = state_manager.store();
 
-    let txns = state_manager.store().get_committed_transaction_bundles(
+    let max_state_version = read_store.max_state_version();
+
+    let txns = read_store.get_committed_transaction_bundles(
         from_state_version,
         limit.try_into().expect("limit out of usize bounds"),
     );
-
-    let mapping_context = MappingContext::new(&state_manager.network);
 
     let committed_transaction_outcomes = txns
         .into_iter()
@@ -76,4 +64,5 @@ fn handle_lts_stream_transaction_outcomes_internal(
         max_ledger_state_version: to_api_state_version(max_state_version)?,
         committed_transaction_outcomes,
     })
+    .map(Json)
 }

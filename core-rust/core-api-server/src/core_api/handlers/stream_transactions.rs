@@ -2,7 +2,6 @@ use crate::core_api::*;
 
 use radix_engine::types::hash;
 
-use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
 use state_manager::transaction::{LedgerTransaction, ValidatorTransaction};
 use state_manager::{
@@ -21,17 +20,10 @@ use transaction::model::{
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_stream_transactions(
     state: State<CoreApiState>,
-    request: Json<models::StreamTransactionsRequest>,
+    Json(request): Json<models::StreamTransactionsRequest>,
 ) -> Result<Json<models::StreamTransactionsResponse>, ResponseError<()>> {
-    core_api_read_handler(state, request, handle_stream_transactions_internal)
-}
-
-#[tracing::instrument(err(Debug), skip(state_manager))]
-fn handle_stream_transactions_internal(
-    state_manager: &ActualStateManager,
-    request: models::StreamTransactionsRequest,
-) -> Result<models::StreamTransactionsResponse, ResponseError<()>> {
-    assert_matching_network(&request.network, &state_manager.network)?;
+    assert_matching_network(&request.network, &state.network)?;
+    let mapping_context = MappingContext::new(&state.network);
 
     let from_state_version: u64 = extract_api_state_version(request.from_state_version)
         .map_err(|err| err.into_response_error("from_state_version"))?;
@@ -51,14 +43,15 @@ fn handle_stream_transactions_internal(
         )));
     }
 
-    let max_state_version = state_manager.store().max_state_version();
+    let state_manager = state.state_manager.read();
+    let read_store = state_manager.store();
 
-    let txns = state_manager.store().get_committed_transaction_bundles(
+    let max_state_version = read_store.max_state_version();
+
+    let txns = read_store.get_committed_transaction_bundles(
         from_state_version,
         limit.try_into().expect("limit out of usize bounds"),
     );
-
-    let mapping_context = MappingContext::new(&state_manager.network);
 
     let api_txns = txns
         .into_iter()
@@ -88,6 +81,7 @@ fn handle_stream_transactions_internal(
         max_ledger_state_version: to_api_state_version(max_state_version)?,
         transactions: api_txns,
     })
+    .map(Json)
 }
 
 #[tracing::instrument(skip_all)]

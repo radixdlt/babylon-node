@@ -1,36 +1,30 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::core_api::*;
-use state_manager::jni::state_manager::ActualStateManager;
+
 use state_manager::{
     DetailedTransactionOutcome, HasUserPayloadHash, RejectionReason, UserPayloadHash,
 };
 
+use models::lts_transaction_payload_status::Status as LtsPayloadStatus;
+use models::LtsTransactionIntentStatus as LtsIntentStatus;
 use state_manager::mempool::pending_transaction_result_cache::PendingTransactionRecord;
+use state_manager::query::StateManagerSubstateQueries;
 use state_manager::store::traits::*;
 
 #[tracing::instrument(err(Debug), skip(state))]
 pub(crate) async fn handle_lts_transaction_status(
     state: State<CoreApiState>,
-    request: Json<models::LtsTransactionStatusRequest>,
+    Json(request): Json<models::LtsTransactionStatusRequest>,
 ) -> Result<Json<models::LtsTransactionStatusResponse>, ResponseError<()>> {
-    core_api_read_handler(state, request, handle_lts_transaction_status_internal)
-}
+    assert_matching_network(&request.network, &state.network)?;
 
-use models::lts_transaction_payload_status::Status as LtsPayloadStatus;
-use models::LtsTransactionIntentStatus as LtsIntentStatus;
-use state_manager::query::StateManagerSubstateQueries;
-
-fn handle_lts_transaction_status_internal(
-    state_manager: &ActualStateManager,
-    request: models::LtsTransactionStatusRequest,
-) -> Result<models::LtsTransactionStatusResponse, ResponseError<()>> {
-    assert_matching_network(&request.network, &state_manager.network)?;
-
-    let mapping_context = MappingContext::new_for_uncommitted_data(&state_manager.network);
+    let mapping_context = MappingContext::new_for_uncommitted_data(&state.network);
 
     let intent_hash = extract_intent_hash(request.intent_hash)
         .map_err(|err| err.into_response_error("intent_hash"))?;
+
+    let state_manager = state.state_manager.read();
 
     let txn_state_version_opt = state_manager
         .store()
@@ -107,7 +101,7 @@ fn handle_lts_transaction_status_internal(
             committed_state_version: Some(to_api_state_version(txn_state_version)?),
             invalid_from_epoch: None,
             known_payloads,
-        });
+        }).map(Json);
     }
 
     let mempool_payloads_hashes = state_manager
@@ -143,7 +137,7 @@ fn handle_lts_transaction_status_internal(
             committed_state_version: None,
             invalid_from_epoch: invalid_from_epoch.map(|epoch| to_api_epoch(&mapping_context, epoch)).transpose()?,
             known_payloads,
-        });
+        }).map(Json);
     }
 
     let known_payloads = map_pending_payloads_not_in_mempool(known_pending_payloads);
@@ -183,7 +177,7 @@ fn handle_lts_transaction_status_internal(
         }
     };
 
-    Ok(response)
+    Ok(response).map(Json)
 }
 
 fn map_rejected_payloads_due_to_known_commit(

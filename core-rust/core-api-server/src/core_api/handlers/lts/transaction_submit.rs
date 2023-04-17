@@ -12,14 +12,13 @@ pub(crate) async fn handle_lts_transaction_submit(
     Json<models::LtsTransactionSubmitResponse>,
     ResponseError<LtsTransactionSubmitErrorDetails>,
 > {
-    let mut state_manager = state.state_manager.write();
-
-    let mapping_context = MappingContext::new_for_uncommitted_data(&state_manager.network);
-
-    assert_matching_network(&request.network, &state_manager.network)?;
+    assert_matching_network(&request.network, &state.network)?;
+    let mapping_context = MappingContext::new_for_uncommitted_data(&state.network);
 
     let notarized_transaction = extract_unvalidated_transaction(&request.notarized_transaction_hex)
         .map_err(|err| err.into_response_error("notarized_transaction"))?;
+
+    let mut state_manager = state.state_manager.write();
 
     let result = state_manager
         .add_to_mempool_and_trigger_relay(MempoolAddSource::CoreApi, notarized_transaction);

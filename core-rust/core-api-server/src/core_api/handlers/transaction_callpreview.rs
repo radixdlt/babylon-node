@@ -32,10 +32,8 @@ pub(crate) async fn handle_transaction_callpreview(
     State(state): State<CoreApiState>,
     Json(request): Json<models::TransactionCallPreviewRequest>,
 ) -> Result<Json<models::TransactionCallPreviewResponse>, ResponseError<()>> {
-    let state_manager = state.state_manager.read();
-
-    let extraction_context = ExtractionContext::new(&state_manager.network);
-    let mapping_context = MappingContext::new(&state_manager.network);
+    let extraction_context = ExtractionContext::new(&state.network);
+    let mapping_context = MappingContext::new(&state.network);
 
     let args: Vec<_> = request
         .arguments
@@ -80,6 +78,8 @@ pub(crate) async fn handle_transaction_callpreview(
             }
         }
     };
+
+    let state_manager = state.state_manager.read();
 
     let epoch = state_manager.store().get_epoch();
 

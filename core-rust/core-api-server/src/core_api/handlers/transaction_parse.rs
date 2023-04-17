@@ -1,6 +1,7 @@
 use crate::core_api::*;
 use models::parsed_notarized_transaction_all_of_identifiers::ParsedNotarizedTransactionAllOfIdentifiers;
 use radix_engine_interface::data::manifest::manifest_decode;
+use std::ops::Deref;
 
 use models::parsed_signed_transaction_intent_all_of_identifiers::ParsedSignedTransactionIntentAllOfIdentifiers;
 use models::transaction_parse_request::{ParseMode, ResponseMode, ValidationMode};
@@ -19,13 +20,6 @@ use super::{
     to_api_signed_intent,
 };
 
-pub(crate) async fn handle_transaction_parse(
-    state: State<CoreApiState>,
-    request: Json<models::TransactionParseRequest>,
-) -> Result<Json<models::TransactionParseResponse>, ResponseError<()>> {
-    core_api_read_handler(state, request, handle_transaction_parse_internal)
-}
-
 pub struct ParseContext<'a> {
     mapping_context: MappingContext,
     response_mode: ResponseMode,
@@ -33,20 +27,22 @@ pub struct ParseContext<'a> {
     state_manager: &'a ActualStateManager,
 }
 
-fn handle_transaction_parse_internal(
-    state_manager: &ActualStateManager,
-    request: models::TransactionParseRequest,
-) -> Result<models::TransactionParseResponse, ResponseError<()>> {
-    assert_matching_network(&request.network, &state_manager.network)?;
+pub(crate) async fn handle_transaction_parse(
+    state: State<CoreApiState>,
+    Json(request): Json<models::TransactionParseRequest>,
+) -> Result<Json<models::TransactionParseResponse>, ResponseError<()>> {
+    assert_matching_network(&request.network, &state.network)?;
 
     let bytes =
         from_hex(request.payload_hex).map_err(|err| err.into_response_error("payload_hex"))?;
 
+    let state_manager = state.state_manager.read();
+
     let context = ParseContext {
-        mapping_context: MappingContext::new(&state_manager.network),
+        mapping_context: MappingContext::new(&state.network),
         response_mode: request.response_mode.unwrap_or(ResponseMode::Full),
         validation_mode: request.validation_mode.unwrap_or(ValidationMode::_Static),
-        state_manager,
+        state_manager: state_manager.deref(),
     };
 
     let parse_mode = request.parse_mode.unwrap_or(ParseMode::Any);
@@ -83,6 +79,7 @@ fn handle_transaction_parse_internal(
     Ok(TransactionParseResponse {
         parsed: Some(parsed),
     })
+    .map(Json)
 }
 
 fn attempt_parsing_as_any_payload_type_and_map_for_api(

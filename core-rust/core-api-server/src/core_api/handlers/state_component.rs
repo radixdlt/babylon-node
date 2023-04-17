@@ -4,25 +4,18 @@ use radix_engine::types::{ComponentOffset, RENodeId, SubstateId, SubstateOffset}
 use radix_engine_interface::api::types::{
     AccessRulesOffset, AccountOffset, NodeModuleId, RoyaltyOffset, TypeInfoOffset,
 };
-use state_manager::jni::state_manager::ActualStateManager;
+
 use state_manager::query::{dump_component_state, VaultData};
 use std::ops::Deref;
 
 pub(crate) async fn handle_state_component(
     state: State<CoreApiState>,
-    request: Json<models::StateComponentRequest>,
+    Json(request): Json<models::StateComponentRequest>,
 ) -> Result<Json<models::StateComponentResponse>, ResponseError<()>> {
-    core_api_read_handler(state, request, handle_state_component_internal)
-}
+    assert_matching_network(&request.network, &state.network)?;
 
-fn handle_state_component_internal(
-    state_manager: &ActualStateManager,
-    request: models::StateComponentRequest,
-) -> Result<models::StateComponentResponse, ResponseError<()>> {
-    assert_matching_network(&request.network, &state_manager.network)?;
-
-    let mapping_context = MappingContext::new(&state_manager.network);
-    let extraction_context = ExtractionContext::new(&state_manager.network);
+    let mapping_context = MappingContext::new(&state.network);
+    let extraction_context = ExtractionContext::new(&state.network);
 
     let component_address =
         extract_component_address(&extraction_context, &request.component_address)
@@ -35,10 +28,11 @@ fn handle_state_component_internal(
         return Err(client_error("Only component addresses starting component_ or account_ currently work with this endpoint. Try another endpoint instead."));
     }
 
+    let state_manager = state.state_manager.read();
     let type_info = {
         let substate_offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
         let loaded_substate = read_mandatory_substate(
-            state_manager,
+            state_manager.deref(),
             RENodeId::GlobalObject(component_address.into()),
             NodeModuleId::TypeInfo,
             &substate_offset,
@@ -51,7 +45,7 @@ fn handle_state_component_internal(
     let component_state = {
         let substate_offset = SubstateOffset::Component(ComponentOffset::State0);
         let loaded_substate_opt = read_optional_substate(
-            state_manager,
+            state_manager.deref(),
             RENodeId::GlobalObject(component_address.into()),
             NodeModuleId::SELF,
             &substate_offset,
@@ -65,7 +59,7 @@ fn handle_state_component_internal(
     let account_state = {
         let substate_offset = SubstateOffset::Account(AccountOffset::Account);
         let loaded_substate_opt = read_optional_substate(
-            state_manager,
+            state_manager.deref(),
             RENodeId::GlobalObject(component_address.into()),
             NodeModuleId::SELF,
             &substate_offset,
@@ -80,7 +74,7 @@ fn handle_state_component_internal(
     let component_royalty_config = {
         let substate_offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig);
         let loaded_substate_opt = read_optional_substate(
-            state_manager,
+            state_manager.deref(),
             RENodeId::GlobalObject(component_address.into()),
             NodeModuleId::ComponentRoyalty,
             &substate_offset,
@@ -94,7 +88,7 @@ fn handle_state_component_internal(
     let component_royalty_accumulator = {
         let substate_offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator);
         let loaded_substate_opt = read_optional_substate(
-            state_manager,
+            state_manager.deref(),
             RENodeId::GlobalObject(component_address.into()),
             NodeModuleId::ComponentRoyalty,
             &substate_offset,
@@ -108,7 +102,7 @@ fn handle_state_component_internal(
     let component_access_rules = {
         let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
         let loaded_substate = read_mandatory_substate(
-            state_manager,
+            state_manager.deref(),
             RENodeId::GlobalObject(component_address.into()),
             NodeModuleId::AccessRules,
             &substate_offset,
@@ -180,6 +174,7 @@ fn handle_state_component_internal(
         state_owned_vaults,
         descendent_ids,
     })
+    .map(Json)
 }
 
 pub(crate) fn map_to_descendent_id(

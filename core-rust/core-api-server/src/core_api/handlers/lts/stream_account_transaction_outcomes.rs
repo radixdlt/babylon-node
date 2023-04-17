@@ -1,23 +1,12 @@
 use crate::core_api::*;
-use state_manager::{jni::state_manager::ActualStateManager, store::traits::QueryableProofStore};
+use state_manager::store::traits::QueryableProofStore;
 
 #[tracing::instrument(skip(state), err(Debug))]
 pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
     state: State<CoreApiState>,
-    request: Json<models::LtsStreamAccountTransactionOutcomesRequest>,
+    Json(request): Json<models::LtsStreamAccountTransactionOutcomesRequest>,
 ) -> Result<Json<models::LtsStreamAccountTransactionOutcomesResponse>, ResponseError<()>> {
-    core_api_read_handler(
-        state,
-        request,
-        handle_lts_stream_account_transaction_outcomes_internal,
-    )
-}
-
-fn handle_lts_stream_account_transaction_outcomes_internal(
-    state_manager: &ActualStateManager,
-    request: models::LtsStreamAccountTransactionOutcomesRequest,
-) -> Result<models::LtsStreamAccountTransactionOutcomesResponse, ResponseError<()>> {
-    assert_matching_network(&request.network, &state_manager.network)?;
+    assert_matching_network(&request.network, &state.network)?;
 
     let _from_state_version: u64 = extract_api_state_version(request.from_state_version)
         .map_err(|err| err.into_response_error("from_state_version"))?;
@@ -37,7 +26,10 @@ fn handle_lts_stream_account_transaction_outcomes_internal(
         )));
     }
 
-    let _max_state_version = state_manager.store().max_state_version();
+    let state_manager = state.state_manager.read();
+    let read_store = state_manager.store();
+
+    let _max_state_version = read_store.max_state_version();
 
     Err(not_implemented("Endpoint not implemented yet"))
 }

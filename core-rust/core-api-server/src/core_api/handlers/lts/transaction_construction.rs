@@ -2,27 +2,22 @@ use crate::core_api::*;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{ClockOffset, EpochManagerOffset, SubstateOffset, CLOCK, EPOCH_MANAGER};
 use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
-use state_manager::jni::state_manager::ActualStateManager;
+use std::ops::Deref;
 
 #[tracing::instrument(skip(state), err(Debug))]
 pub(crate) async fn handle_lts_transaction_construction(
     state: State<CoreApiState>,
-    request: Json<models::LtsTransactionConstructionRequest>,
+    Json(request): Json<models::LtsTransactionConstructionRequest>,
 ) -> Result<Json<models::LtsTransactionConstructionResponse>, ResponseError<()>> {
-    core_api_read_handler(state, request, handle_lts_transaction_construction_internal)
-}
+    assert_matching_network(&request.network, &state.network)?;
+    let mapping_context = MappingContext::new(&state.network);
 
-fn handle_lts_transaction_construction_internal(
-    state_manager: &ActualStateManager,
-    request: models::LtsTransactionConstructionRequest,
-) -> Result<models::LtsTransactionConstructionResponse, ResponseError<()>> {
-    assert_matching_network(&request.network, &state_manager.network)?;
-    let mapping_context = MappingContext::new(&state_manager.network);
+    let state_manager = state.state_manager.read();
 
     let epoch_manager_substate = {
         let substate_offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
         let loaded_substate = read_mandatory_substate(
-            state_manager,
+            state_manager.deref(),
             RENodeId::GlobalObject(EPOCH_MANAGER.into()),
             NodeModuleId::SELF,
             &substate_offset,
@@ -36,7 +31,7 @@ fn handle_lts_transaction_construction_internal(
     let clock_substate = {
         let substate_offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
         let loaded_substate = read_mandatory_substate(
-            state_manager,
+            state_manager.deref(),
             RENodeId::GlobalObject(CLOCK.into()),
             NodeModuleId::SELF,
             &substate_offset,
@@ -53,4 +48,5 @@ fn handle_lts_transaction_construction_internal(
             clock_substate.current_time_rounded_to_minutes_ms,
         )?),
     })
+    .map(Json)
 }
