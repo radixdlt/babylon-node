@@ -890,15 +890,6 @@ impl StateTracker {
 
 impl<'db, S> StateManager<S>
 where
-    S: WriteableVertexStore,
-{
-    pub fn save_vertex_store(&'db mut self, vertex_store: Vec<u8>) {
-        self.store.write().save_vertex_store(vertex_store);
-    }
-}
-
-impl<'db, S> StateManager<S>
-where
     S: CommitStore,
     S: ReadableStore,
     S: QueryableProofStore + TransactionIdentifierLoader,
