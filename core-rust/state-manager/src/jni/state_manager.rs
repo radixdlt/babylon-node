@@ -74,6 +74,7 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use parking_lot::RwLock;
+use prometheus::{Encoder, Registry, TextEncoder};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::*;
 
@@ -100,25 +101,20 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
     JNIStateManager::cleanup(&env, j_state_manager);
 }
 
-fn do_prometheus_metrics(state_manager: &ActualStateManager, _args: ()) -> String {
-    use prometheus::Encoder;
-    let encoder = prometheus::TextEncoder::new();
-    let mut buffer = vec![];
-    encoder
-        .encode(&state_manager.prometheus_registry.gather(), &mut buffer)
-        .unwrap();
-
-    String::from_utf8(buffer).unwrap()
-}
-
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_prometheus_StateManagerPrometheus_prometheusMetrics(
+extern "system" fn Java_com_radixdlt_prometheus_RustPrometheus_prometheusMetrics(
     env: JNIEnv,
     _class: JClass,
     j_state_manager: JObject,
-    args: jbyteArray,
+    request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_read_call(env, j_state_manager, args, do_prometheus_metrics)
+    jni_sbor_coded_call(&env, request_payload, |_no_args: ()| -> String {
+        let registry = &JNIStateManager::get_state(&env, j_state_manager).metric_registry;
+        let encoder = TextEncoder::new();
+        let mut buffer = vec![];
+        encoder.encode(&registry.gather(), &mut buffer).unwrap();
+        String::from_utf8(buffer).unwrap()
+    })
 }
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -135,6 +131,7 @@ pub struct JNIStateManager {
     pub network: NetworkDefinition,
     pub state_manager: Arc<RwLock<ActualStateManager>>,
     pub database: Arc<RwLock<StateManagerDatabase>>,
+    pub metric_registry: Registry,
 }
 
 impl JNIStateManager {
@@ -160,6 +157,8 @@ impl JNIStateManager {
         let mempool = SimpleMempool::new(mempool_config);
         let mempool_relay_dispatcher = MempoolRelayDispatcher::new(env, j_state_manager).unwrap();
 
+        let metric_registry = Registry::new();
+
         // Build the state manager.
         let state_manager = Arc::new(parking_lot::const_rwlock(StateManager::new(
             network.clone(),
@@ -167,12 +166,14 @@ impl JNIStateManager {
             mempool,
             mempool_relay_dispatcher,
             config.logging_config,
+            &metric_registry,
         )));
 
         let jni_state_manager = JNIStateManager {
             network,
             state_manager,
             database,
+            metric_registry,
         };
 
         env.set_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME, jni_state_manager)

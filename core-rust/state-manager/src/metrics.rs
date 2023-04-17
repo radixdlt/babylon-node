@@ -65,88 +65,84 @@
 use prometheus::core::*;
 use prometheus::*;
 
-// TODO: Can move these into separate modules if we wish to, as long as they all register to the same registry
-pub struct StateManagerMetrics {
-    pub ledger_state_version: IntGauge,
-    pub ledger_transactions_committed: IntCounter,
-    pub ledger_last_update_epoch_second: Gauge,
-    pub mempool_current_transactions: IntGauge,
-    pub mempool_submission_added: IntCounterVec,
-    pub mempool_submission_rejected: IntCounterVec,
-    pub mempool_from_local_api_to_commit_wait: Histogram,
+pub struct LedgerMetrics {
+    pub state_version: IntGauge,
+    pub transactions_committed: IntCounter,
+    pub last_update_epoch_second: Gauge,
 }
 
-impl StateManagerMetrics {
-    pub fn new() -> Self {
+pub struct MempoolMetrics {
+    pub current_transactions: IntGauge,
+    pub submission_added: IntCounterVec,
+    pub submission_rejected: IntCounterVec,
+    pub from_local_api_to_commit_wait: Histogram,
+}
+
+impl LedgerMetrics {
+    pub fn new(registry: &Registry) -> Self {
         Self {
-            ledger_transactions_committed: IntCounter::with_opts(opts(
+            transactions_committed: IntCounter::with_opts(opts(
                 "ledger_transactions_committed_total",
                 "Count of transactions committed to the ledger.",
             ))
-            .unwrap(),
-            ledger_last_update_epoch_second: Gauge::with_opts(opts(
+            .registered_at(registry),
+            last_update_epoch_second: Gauge::with_opts(opts(
                 "ledger_last_update_epoch_second",
                 "Last timestamp at which the ledger was updated.",
             ))
-            .unwrap(),
-            ledger_state_version: IntGauge::with_opts(opts(
+            .registered_at(registry),
+            state_version: IntGauge::with_opts(opts(
                 "ledger_state_version",
                 "Version of the ledger state.",
             ))
-            .unwrap(),
-            mempool_current_transactions: IntGauge::with_opts(opts(
+            .registered_at(registry),
+        }
+    }
+}
+
+impl MempoolMetrics {
+    pub fn new(registry: &Registry) -> Self {
+        Self {
+            current_transactions: IntGauge::with_opts(opts(
                 "mempool_current_transactions",
                 "Number of transactions in progress in the mempool.",
-            ))
-            .unwrap(),
-            mempool_submission_added: IntCounterVec::new(
+            )).registered_at(registry),
+            submission_added: IntCounterVec::new(
                 opts(
                     "mempool_submission_added_total",
                     "Count of submissions added to the mempool.",
                 ),
                 &["source"],
-            )
-            .unwrap(),
-            mempool_submission_rejected: IntCounterVec::new(
+            ).registered_at(registry),
+            submission_rejected: IntCounterVec::new(
                 opts(
                     "mempool_submission_rejected_total",
                     "Count of the submissions rejected by the mempool.",
                 ),
                 &["source", "rejection_reason"],
-            )
-            .unwrap(),
-            mempool_from_local_api_to_commit_wait: new_timer(
+            ).registered_at(registry),
+            from_local_api_to_commit_wait: new_timer(
                 opts(
                     "mempool_from_local_api_to_commit_wait",
                     "Time spent in the mempool, by a transaction coming from local API, until successful commit."
                 ),
                 vec![0.01, 0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 25.0, 50.0]
-            )
-            .unwrap(),
-        }
-    }
-
-    pub fn register_with(&self, registry: &Registry) {
-        let metrics: Vec<Box<dyn Collector>> = vec![
-            Box::new(self.ledger_state_version.clone()),
-            Box::new(self.ledger_transactions_committed.clone()),
-            Box::new(self.ledger_last_update_epoch_second.clone()),
-            Box::new(self.mempool_current_transactions.clone()),
-            Box::new(self.mempool_submission_added.clone()),
-            Box::new(self.mempool_submission_rejected.clone()),
-            Box::new(self.mempool_from_local_api_to_commit_wait.clone()),
-        ];
-
-        for metric in metrics.into_iter() {
-            registry.register(metric).unwrap();
+            ).registered_at(registry)
         }
     }
 }
 
-// Appease clippy
-impl Default for StateManagerMetrics {
-    fn default() -> Self {
-        Self::new()
+/// A syntactic sugar trait allowing for an inline "create + register" metric definition.
+trait AtDefaultRegistryExt<R> {
+    /// Unwraps a Prometheus metric creation `Result` and registers it at the given registry.
+    fn registered_at(self, registry: &Registry) -> R;
+}
+
+impl<T: Collector + Clone + 'static> AtDefaultRegistryExt<T> for Result<T> {
+    fn registered_at(self, registry: &Registry) -> T {
+        let collector = self.unwrap();
+        registry.register(Box::new(collector.clone())).unwrap();
+        collector
     }
 }
 

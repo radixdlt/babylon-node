@@ -70,12 +70,12 @@ import com.radixdlt.lang.Tuple;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.statemanager.StateManager;
 
-public class StateManagerPrometheus {
+public class RustPrometheus {
 
   @Inject
-  public StateManagerPrometheus(StateManager stateManager) {
+  public RustPrometheus(StateManager stateManager) {
     this.prometheusMetricsFunc =
-        Natives.builder(stateManager, StateManagerPrometheus::prometheusMetrics)
+        Natives.builder(stateManager, RustPrometheus::prometheusMetrics)
             .build(new TypeToken<>() {});
   }
 

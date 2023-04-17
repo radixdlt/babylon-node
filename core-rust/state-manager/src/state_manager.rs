@@ -133,8 +133,8 @@ pub struct StateManager<S> {
     pub user_transaction_validator: UserTransactionValidator,
     ledger_transaction_validator: LedgerTransactionValidator,
     pub pending_transaction_result_cache: PendingTransactionResultCache,
-    pub metrics: StateManagerMetrics,
-    pub prometheus_registry: Registry,
+    ledger_metrics: LedgerMetrics,
+    mempool_metrics: MempoolMetrics,
     execution_config: ExecutionConfig,
     execution_config_for_pending_transactions: ExecutionConfig,
     execution_config_for_genesis: ExecutionConfig,
@@ -154,6 +154,7 @@ where
         mempool: SimpleMempool,
         mempool_relay_dispatcher: MempoolRelayDispatcher,
         logging_config: LoggingConfig,
+        metric_registry: &Registry,
     ) -> StateManager<S> {
         let user_transaction_validator = UserTransactionValidator {
             validation_config: ValidationConfig::default(network.id),
@@ -165,9 +166,8 @@ where
             intent_hash_manager: TestIntentHashManager::new(),
         };
 
-        let metrics = StateManagerMetrics::new();
-        let prometheus_registry = Registry::new();
-        metrics.register_with(&prometheus_registry);
+        let ledger_metrics = LedgerMetrics::new(metric_registry);
+        let mempool_metrics = MempoolMetrics::new(metric_registry);
 
         let accumulator_hash = store
             .read()
@@ -196,8 +196,8 @@ where
             intent_hash_manager: TestIntentHashManager::new(),
             logging_config: logging_config.state_manager_config,
             pending_transaction_result_cache: PendingTransactionResultCache::new(10000, 10000),
-            metrics,
-            prometheus_registry,
+            ledger_metrics,
+            mempool_metrics,
         }
     }
 }
@@ -340,17 +340,17 @@ where
     ) -> Result<(), MempoolAddError> {
         self.check_for_rejection_and_add_to_mempool_internal(unvalidated_transaction, source)
             .map(|_| {
-                self.metrics
-                    .mempool_current_transactions
+                self.mempool_metrics
+                    .current_transactions
                     .set(self.mempool.read().get_count() as i64);
-                self.metrics
-                    .mempool_submission_added
+                self.mempool_metrics
+                    .submission_added
                     .with_label(source)
                     .inc();
             })
             .map_err(|err| {
-                self.metrics
-                    .mempool_submission_rejected
+                self.mempool_metrics
+                    .submission_rejected
                     .with_two_labels(source, &err)
                     .inc();
 
@@ -537,8 +537,8 @@ where
             for transaction_to_remove in transactions_to_remove {
                 mempool.remove_transaction(&transaction_to_remove.0, &transaction_to_remove.1);
             }
-            self.metrics
-                .mempool_current_transactions
+            self.mempool_metrics
+                .current_transactions
                 .set(mempool.get_count() as i64);
         }
 
@@ -828,8 +828,8 @@ where
                     mempool.remove_transaction(intent_hash, user_payload_hash);
                 }
             }
-            self.metrics
-                .mempool_current_transactions
+            self.mempool_metrics
+                .current_transactions
                 .set(mempool.get_count() as i64);
         }
 
@@ -1040,13 +1040,13 @@ where
             receipt_tree_slice: receipt_tree_slice_merger.into_slice(),
         });
 
-        self.metrics
-            .ledger_state_version
+        self.ledger_metrics
+            .state_version
             .set(final_transaction_identifiers.state_version as i64);
-        self.metrics
-            .ledger_transactions_committed
+        self.ledger_metrics
+            .transactions_committed
             .inc_by(commit_transactions_len as u64);
-        self.metrics.ledger_last_update_epoch_second.set(
+        self.ledger_metrics.last_update_epoch_second.set(
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
@@ -1060,12 +1060,12 @@ where
                 .filter(|data| data.source == MempoolAddSource::CoreApi)
                 .map(|data| data.added_at.elapsed().as_secs_f64())
                 .for_each(|wait| {
-                    self.metrics
-                        .mempool_from_local_api_to_commit_wait
+                    self.mempool_metrics
+                        .from_local_api_to_commit_wait
                         .observe(wait)
                 });
-            self.metrics
-                .mempool_current_transactions
+            self.mempool_metrics
+                .current_transactions
                 .set(mempool.get_count() as i64);
         }
 

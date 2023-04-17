@@ -66,27 +66,27 @@ package com.radixdlt.api.prometheus;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.system.health.HealthInfoService;
-import com.radixdlt.prometheus.StateManagerPrometheus;
+import com.radixdlt.prometheus.RustPrometheus;
 
 public class PrometheusService {
 
   private final JavaPrometheus javaPrometheus;
-  private final StateManagerPrometheus stateManagerPrometheus;
+  private final RustPrometheus rustPrometheus;
   private final HealthInfoService healthInfoService;
 
   @Inject
   public PrometheusService(
       HealthInfoService healthInfoService,
-      StateManagerPrometheus stateManagerPrometheus,
+      RustPrometheus rustPrometheus,
       JavaPrometheus javaPrometheus) {
     this.healthInfoService = healthInfoService;
-    this.stateManagerPrometheus = stateManagerPrometheus;
+    this.rustPrometheus = rustPrometheus;
     this.javaPrometheus = javaPrometheus;
   }
 
   public String getMetrics() {
     var builder = new StringBuilder();
-    builder.append(this.stateManagerPrometheus.prometheusMetrics());
+    builder.append(this.rustPrometheus.prometheusMetrics());
     builder.append(this.javaPrometheus.prometheusMetrics());
     exportHealth(builder);
     return builder.append('\n').toString();
