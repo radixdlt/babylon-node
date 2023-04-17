@@ -65,6 +65,7 @@
 use jni::JNIEnv;
 use jni::{objects::JObject, sys::jbyteArray};
 use radix_engine::types::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
+use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use std::ops::DerefMut;
 
 use crate::jni::state_manager::ActualStateManager;
@@ -239,4 +240,16 @@ fn jni_state_manager_sbor_call_flatten_result_inner<
 
     let response = method(state_manager.deref_mut(), args)?;
     Ok(response)
+}
+
+#[tracing::instrument(skip_all)]
+pub fn jni_sbor_coded_call<Args: ScryptoDecode, Response: ScryptoEncode>(
+    env: &JNIEnv,
+    encoded_request: jbyteArray,
+    method: impl FnOnce(Args) -> Response,
+) -> jbyteArray {
+    let result = jni_jbytearray_to_vector(env, encoded_request)
+        .and_then(|bytes| scrypto_decode(&bytes).map_err(StateManagerError::from))
+        .map(method);
+    jni_slice_to_jbytearray(env, &scrypto_encode(&result).unwrap())
 }

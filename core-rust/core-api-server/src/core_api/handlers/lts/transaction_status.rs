@@ -19,6 +19,7 @@ pub(crate) async fn handle_lts_transaction_status(
 
 use models::lts_transaction_payload_status::Status as LtsPayloadStatus;
 use models::LtsTransactionIntentStatus as LtsIntentStatus;
+use state_manager::query::StateManagerSubstateQueries;
 
 fn handle_lts_transaction_status_internal(
     state_manager: &ActualStateManager,
@@ -39,7 +40,7 @@ fn handle_lts_transaction_status_internal(
         .pending_transaction_result_cache
         .peek_all_known_payloads_for_intent(&intent_hash);
 
-    let current_epoch = state_manager.get_epoch();
+    let current_epoch = state_manager.store().get_epoch();
 
     let invalid_from_epoch = known_pending_payloads
         .iter()
