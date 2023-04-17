@@ -118,7 +118,7 @@ jobs:
         type=sha
       context: "."
       flavor: |
-        suffix=amd64
+        suffix=-amd64
       dockerfile: "./Dockerfile"
       platforms: "linux/amd64"
     secrets:
@@ -141,7 +141,7 @@ jobs:
         type=semver,pattern={{major}}
         type=sha
       flavor: |
-        suffix=arm64
+        suffix=-arm64
       context: "."
       dockerfile: "./Dockerfile"
       platforms: "linux/arm64"
@@ -162,7 +162,7 @@ jobs:
       image_name: "babylon-node"
       tag: ${{ github.event.release.tag_name }}
       flavor: |
-        suffix=amd64
+        suffix=-amd64
       context: "."
       dockerfile: "./Dockerfile"
       platforms: "linux/amd64"
@@ -184,7 +184,7 @@ jobs:
       image_name: "babylon-node"
       tag: ${{ github.event.release.tag_name }}
       flavor: |
-        suffix=arm64
+        suffix=-arm64
       context: "."
       dockerfile: "./Dockerfile"
       platforms: "linux/arm64"
