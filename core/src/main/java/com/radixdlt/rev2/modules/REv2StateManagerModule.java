@@ -64,10 +64,7 @@
 
 package com.radixdlt.rev2.modules;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.Singleton;
+import com.google.inject.*;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.bft.*;
@@ -83,6 +80,7 @@ import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
+import com.radixdlt.p2p.NodeId;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.*;
 import com.radixdlt.serialization.DsonOutput;
@@ -183,8 +181,12 @@ public final class REv2StateManagerModule extends AbstractModule {
         new AbstractModule() {
           @Provides
           @Singleton
-          private StateManager stateManager(Network network, REv2DatabaseConfig databaseConfig) {
-            return StateManager.createAndInitialize(
+          private StateManager stateManager(
+              MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher,
+              Network network,
+              REv2DatabaseConfig databaseConfig) {
+            return new StateManager(
+                mempoolRelayDispatcher,
                 new StateManagerConfig(
                     NetworkDefinition.from(network),
                     mempoolConfig,
@@ -213,6 +215,16 @@ public final class REv2StateManagerModule extends AbstractModule {
                 byzantineEventEventDispatcher,
                 serialization,
                 metrics);
+          }
+
+          @Provides
+          MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher(
+              EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
+              @Self NodeId selfNodeId) {
+            return transaction ->
+                mempoolAddSuccessEventDispatcher.dispatch(
+                    MempoolAddSuccess.create(
+                        RawNotarizedTransaction.create(transaction.getPayload()), selfNodeId));
           }
 
           @Provides
@@ -284,8 +296,8 @@ public final class REv2StateManagerModule extends AbstractModule {
             }
 
             @Provides
-            private MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>
-                mempoolInserter(RustStateComputer stateComputer) {
+            private MempoolInserter<RawNotarizedTransaction> mempoolInserter(
+                RustStateComputer stateComputer) {
               return stateComputer.getMempoolInserter();
             }
           });

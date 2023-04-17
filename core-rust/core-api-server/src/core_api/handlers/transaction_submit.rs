@@ -19,7 +19,7 @@ pub(crate) async fn handle_transaction_submit(
         .map_err(|err| err.into_response_error("notarized_transaction"))?;
 
     let result = state_manager
-        .check_for_rejection_and_add_to_mempool(MempoolAddSource::CoreApi, notarized_transaction);
+        .add_to_mempool_and_trigger_relay(MempoolAddSource::CoreApi, notarized_transaction);
 
     match result {
         Ok(_) => Ok(models::TransactionSubmitResponse::new(false)),

@@ -71,8 +71,7 @@ import java.util.List;
  *
  * <p>Note that conceptually, a mempool can be thought of as a list indexable by hash.
  */
-public interface Mempool<RawTx, ProcessedTx>
-    extends MempoolReader<RawTx>, MempoolInserter<RawTx, ProcessedTx> {
+public interface Mempool<RawTx, ProcessedTx> extends MempoolReader<RawTx>, MempoolInserter<RawTx> {
   /**
    * Retrieve a list of transactions from the local mempool for creating a proposal for consensus.
    *

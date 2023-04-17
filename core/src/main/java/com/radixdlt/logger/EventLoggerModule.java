@@ -68,6 +68,7 @@ import static org.apache.logging.log4j.Level.*;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
+import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
@@ -175,11 +176,12 @@ public final class EventLoggerModule extends AbstractModule {
   @Singleton
   @SuppressWarnings("UnstableApiUsage")
   EventProcessorOnDispatch<?> ledgerUpdate(
-      @Self BFTValidatorId self, Function<ECDSASecp256k1PublicKey, String> nodeString) {
+      // The `Provider` indirection is needed here to break an unexpected circular dependency.
+      @Self Provider<BFTValidatorId> self, Function<ECDSASecp256k1PublicKey, String> nodeString) {
     final var logLimiter = RateLimiter.create(1.0);
     return new EventProcessorOnDispatch<>(
         LedgerUpdate.class,
-        ledgerUpdate -> processLedgerUpdate(self, nodeString, logLimiter, ledgerUpdate));
+        ledgerUpdate -> processLedgerUpdate(self.get(), nodeString, logLimiter, ledgerUpdate));
   }
 
   @SuppressWarnings("UnstableApiUsage")
