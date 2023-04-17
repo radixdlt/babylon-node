@@ -125,7 +125,7 @@ enum RocksDBColumnFamily {
     /// Account to state versions (which changed the account)
     /// Key: concat(account_address, state_version), value: null
     /// Given fast prefix iterator from RocksDB this emulates a Map<Account, Set<StateVersion>>
-    AccountChangeAtStateVersionSet,
+    AccountChangeStateVersions,
 }
 
 use RocksDBColumnFamily::*;
@@ -146,7 +146,7 @@ const ALL_COLUMN_FAMILIES: [RocksDBColumnFamily; 16] = [
     TransactionAccuTreeSliceByStateVersion,
     ReceiptAccuTreeSliceByStateVersion,
     ExtensionsData,
-    AccountChangeAtStateVersionSet,
+    AccountChangeStateVersions,
 ];
 
 impl fmt::Display for RocksDBColumnFamily {
@@ -169,7 +169,7 @@ impl fmt::Display for RocksDBColumnFamily {
             }
             ReceiptAccuTreeSliceByStateVersion => "receipt_accu_tree_slice_by_state_version",
             ExtensionsData => "extensions_data",
-            AccountChangeAtStateVersionSet => "account_change_at_state_version_set",
+            AccountChangeStateVersions => "account_change_state_versions",
         };
         write!(f, "{str}")
     }
@@ -838,7 +838,7 @@ impl RocksDBStore {
             }
             let mut key = address.to_vec();
             key.extend(state_version.to_be_bytes());
-            batch.put_cf(self.cf_handle(&AccountChangeAtStateVersionSet), key, []);
+            batch.put_cf(self.cf_handle(&AccountChangeStateVersions), key, []);
         }
     }
 
@@ -857,7 +857,9 @@ impl RocksDBStore {
 
         batch.put_cf(
             self.cf_handle(&ExtensionsData),
-            "current_state_version".as_bytes(),
+            ExtensionsDataKeys::AccountChangeIndexLastProcessedStateVersion
+                .to_string()
+                .as_bytes(),
             state_version.to_be_bytes(),
         );
     }
@@ -911,7 +913,9 @@ impl RocksDBStore {
 
         batch.put_cf(
             self.cf_handle(&ExtensionsData),
-            "current_state_version".as_bytes(),
+            ExtensionsDataKeys::AccountChangeIndexLastProcessedStateVersion
+                .to_string()
+                .as_bytes(),
             last_state_version.to_be_bytes(),
         );
 
@@ -941,15 +945,13 @@ impl AccountChangeIndexExtension for RocksDBStore {
     fn catchup_account_change_index(&mut self) {
         const MAX_TRANSACTION_BATCH: u64 = 16 * 1024;
 
-        info!("Account Change Index is ");
+        info!("Account Change Index is enabled!");
 
         let last_state_version = self.max_state_version();
         let mut last_processed_state_version =
             self.account_change_index_last_processed_state_version();
 
-        if last_processed_state_version == last_state_version {
-            info!("Account Change Index is already up to date.");
-        } else {
+        if last_processed_state_version < last_state_version {
             info!("Account Change Index is behind at state version {last_processed_state_version} out of {last_state_version}. Catching up ...");
         }
 
