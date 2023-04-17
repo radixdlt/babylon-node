@@ -23,14 +23,14 @@ pub(crate) async fn handle_state_resource(
     let resource_address = extract_resource_address(&extraction_context, &request.resource_address)
         .map_err(|err| err.into_response_error("resource_address"))?;
 
-    let state_manager = state.state_manager.read();
+    let database = state.database.read();
 
     let manager = match &resource_address {
         ResourceAddress::Fungible(_) => {
             let substate_offset =
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
             let loaded_substate = read_mandatory_substate(
-                state_manager.deref(),
+                database.deref(),
                 RENodeId::GlobalObject(resource_address.into()),
                 NodeModuleId::SELF,
                 &substate_offset,
@@ -44,7 +44,7 @@ pub(crate) async fn handle_state_resource(
             let substate_offset =
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
             let loaded_substate = read_mandatory_substate(
-                state_manager.deref(),
+                database.deref(),
                 RENodeId::GlobalObject(resource_address.into()),
                 NodeModuleId::SELF,
                 &substate_offset,
@@ -58,7 +58,7 @@ pub(crate) async fn handle_state_resource(
     let access_rules = {
         let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
         let loaded_substate = read_mandatory_substate(
-            state_manager.deref(),
+            database.deref(),
             RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::AccessRules,
             &substate_offset,
@@ -72,7 +72,7 @@ pub(crate) async fn handle_state_resource(
     let vault_access_rules = {
         let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
         let loaded_substate = read_mandatory_substate(
-            state_manager.deref(),
+            database.deref(),
             RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::AccessRules1,
             &substate_offset,

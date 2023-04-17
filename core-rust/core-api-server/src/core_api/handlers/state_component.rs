@@ -28,11 +28,11 @@ pub(crate) async fn handle_state_component(
         return Err(client_error("Only component addresses starting component_ or account_ currently work with this endpoint. Try another endpoint instead."));
     }
 
-    let state_manager = state.state_manager.read();
+    let database = state.database.read();
     let type_info = {
         let substate_offset = SubstateOffset::TypeInfo(TypeInfoOffset::TypeInfo);
         let loaded_substate = read_mandatory_substate(
-            state_manager.deref(),
+            database.deref(),
             RENodeId::GlobalObject(component_address.into()),
             NodeModuleId::TypeInfo,
             &substate_offset,
@@ -45,7 +45,7 @@ pub(crate) async fn handle_state_component(
     let component_state = {
         let substate_offset = SubstateOffset::Component(ComponentOffset::State0);
         let loaded_substate_opt = read_optional_substate(
-            state_manager.deref(),
+            database.deref(),
             RENodeId::GlobalObject(component_address.into()),
             NodeModuleId::SELF,
             &substate_offset,
@@ -59,7 +59,7 @@ pub(crate) async fn handle_state_component(
     let account_state = {
         let substate_offset = SubstateOffset::Account(AccountOffset::Account);
         let loaded_substate_opt = read_optional_substate(
-            state_manager.deref(),
+            database.deref(),
             RENodeId::GlobalObject(component_address.into()),
             NodeModuleId::SELF,
             &substate_offset,
@@ -74,7 +74,7 @@ pub(crate) async fn handle_state_component(
     let component_royalty_config = {
         let substate_offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyConfig);
         let loaded_substate_opt = read_optional_substate(
-            state_manager.deref(),
+            database.deref(),
             RENodeId::GlobalObject(component_address.into()),
             NodeModuleId::ComponentRoyalty,
             &substate_offset,
@@ -88,7 +88,7 @@ pub(crate) async fn handle_state_component(
     let component_royalty_accumulator = {
         let substate_offset = SubstateOffset::Royalty(RoyaltyOffset::RoyaltyAccumulator);
         let loaded_substate_opt = read_optional_substate(
-            state_manager.deref(),
+            database.deref(),
             RENodeId::GlobalObject(component_address.into()),
             NodeModuleId::ComponentRoyalty,
             &substate_offset,
@@ -102,7 +102,7 @@ pub(crate) async fn handle_state_component(
     let component_access_rules = {
         let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
         let loaded_substate = read_mandatory_substate(
-            state_manager.deref(),
+            database.deref(),
             RENodeId::GlobalObject(component_address.into()),
             NodeModuleId::AccessRules,
             &substate_offset,
@@ -113,8 +113,7 @@ pub(crate) async fn handle_state_component(
         substate
     };
 
-    let read_store = state_manager.store();
-    let component_dump = dump_component_state(read_store.deref(), component_address)
+    let component_dump = dump_component_state(database.deref(), component_address)
         .map_err(|err| server_error(format!("Error traversing component state: {err:?}")))?;
 
     let state_owned_vaults = component_dump

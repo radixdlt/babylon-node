@@ -27,12 +27,12 @@ pub(crate) async fn handle_state_access_controller(
         return Err(client_error("Only access controller addresses work for this endpoint. Try another endpoint instead."));
     }
 
-    let state_manager = state.state_manager.read();
+    let database = state.database.read();
     let component_state = {
         let substate_offset =
             SubstateOffset::AccessController(AccessControllerOffset::AccessController);
         let loaded_substate = read_mandatory_substate(
-            state_manager.deref(),
+            database.deref(),
             RENodeId::GlobalObject(controller_address.into()),
             NodeModuleId::SELF,
             &substate_offset,
@@ -45,7 +45,7 @@ pub(crate) async fn handle_state_access_controller(
     let component_access_rules = {
         let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
         let loaded_substate = read_mandatory_substate(
-            state_manager.deref(),
+            database.deref(),
             RENodeId::GlobalObject(controller_address.into()),
             NodeModuleId::AccessRules,
             &substate_offset,
@@ -56,8 +56,7 @@ pub(crate) async fn handle_state_access_controller(
         substate
     };
 
-    let read_store = state_manager.store();
-    let component_dump = dump_component_state(read_store.deref(), controller_address)
+    let component_dump = dump_component_state(database.deref(), controller_address)
         .map_err(|err| server_error(format!("Error traversing component state: {err:?}")))?;
 
     let state_owned_vaults = component_dump

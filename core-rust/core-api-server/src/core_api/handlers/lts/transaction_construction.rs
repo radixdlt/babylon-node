@@ -12,12 +12,12 @@ pub(crate) async fn handle_lts_transaction_construction(
     assert_matching_network(&request.network, &state.network)?;
     let mapping_context = MappingContext::new(&state.network);
 
-    let state_manager = state.state_manager.read();
+    let database = state.database.read();
 
     let epoch_manager_substate = {
         let substate_offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
         let loaded_substate = read_mandatory_substate(
-            state_manager.deref(),
+            database.deref(),
             RENodeId::GlobalObject(EPOCH_MANAGER.into()),
             NodeModuleId::SELF,
             &substate_offset,
@@ -31,7 +31,7 @@ pub(crate) async fn handle_lts_transaction_construction(
     let clock_substate = {
         let substate_offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
         let loaded_substate = read_mandatory_substate(
-            state_manager.deref(),
+            database.deref(),
             RENodeId::GlobalObject(CLOCK.into()),
             NodeModuleId::SELF,
             &substate_offset,

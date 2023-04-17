@@ -11,11 +11,11 @@ pub(crate) async fn handle_state_clock(
 ) -> Result<Json<models::StateClockResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
 
-    let state_manager = state.state_manager.read();
+    let database = state.database.read();
     let rounded_to_minutes_substate = {
         let substate_offset = SubstateOffset::Clock(ClockOffset::CurrentTimeRoundedToMinutes);
         let loaded_substate = read_mandatory_substate(
-            state_manager.deref(),
+            database.deref(),
             RENodeId::GlobalObject(CLOCK.into()),
             NodeModuleId::SELF,
             &substate_offset,

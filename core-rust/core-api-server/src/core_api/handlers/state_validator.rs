@@ -27,12 +27,12 @@ pub(crate) async fn handle_state_validator(
         ));
     }
 
-    let state_manager = state.state_manager.read();
+    let database = state.database.read();
 
     let component_state = {
         let substate_offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let loaded_substate = read_mandatory_substate(
-            state_manager.deref(),
+            database.deref(),
             RENodeId::GlobalObject(validator_address.into()),
             NodeModuleId::SELF,
             &substate_offset,
@@ -45,7 +45,7 @@ pub(crate) async fn handle_state_validator(
     let component_access_rules = {
         let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
         let loaded_substate = read_mandatory_substate(
-            state_manager.deref(),
+            database.deref(),
             RENodeId::GlobalObject(validator_address.into()),
             NodeModuleId::AccessRules,
             &substate_offset,
@@ -56,8 +56,7 @@ pub(crate) async fn handle_state_validator(
         substate
     };
 
-    let read_store = state_manager.store();
-    let component_dump = dump_component_state(read_store.deref(), validator_address)
+    let component_dump = dump_component_state(database.deref(), validator_address)
         .map_err(|err| server_error(format!("Error traversing component state: {err:?}")))?;
 
     let state_owned_vaults = component_dump
