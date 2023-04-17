@@ -101,8 +101,7 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
             .build(new TypeToken<>() {});
   }
 
-  public RawNotarizedTransaction addTransaction(RawNotarizedTransaction transaction)
-      throws MempoolRejectedException {
+  public void addTransaction(RawNotarizedTransaction transaction) throws MempoolRejectedException {
     final var result = addFunc.call(transaction);
 
     // Handle Errors.
@@ -119,8 +118,6 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
             rejected.reason());
       }
     }
-
-    return transaction;
   }
 
   public List<RawNotarizedTransaction> getTransactionsForProposal(
@@ -161,7 +158,7 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
 
   private static native byte[] add(StateManager stateManager, byte[] payload);
 
-  private final Natives.Call1<RawNotarizedTransaction, Result<HashCode, MempoolError>> addFunc;
+  private final Natives.Call1<RawNotarizedTransaction, Result<Tuple.Tuple0, MempoolError>> addFunc;
 
   private static native byte[] getTransactionsForProposal(
       StateManager stateManager, byte[] payload);

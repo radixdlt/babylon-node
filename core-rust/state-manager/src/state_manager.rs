@@ -113,6 +113,8 @@ use rand::thread_rng;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tracing::{error, info, warn};
 
+use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
+
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct LoggingConfig {
     pub engine_trace: bool,
@@ -130,6 +132,7 @@ const FULL_TRANSACTION_WARN_TIME_LIMIT: Duration = Duration::from_millis(500);
 
 pub struct StateManager<S> {
     pub mempool: RwLock<SimpleMempool>,
+    mempool_relay_dispatcher: MempoolRelayDispatcher,
     pub network: NetworkDefinition,
     store: S,
     execution_cache: ExecutionCache,
@@ -154,6 +157,7 @@ where
     pub fn new(
         network: NetworkDefinition,
         mempool: SimpleMempool,
+        mempool_relay_dispatcher: MempoolRelayDispatcher,
         store: S,
         logging_config: LoggingConfig,
     ) -> StateManager<S> {
@@ -176,6 +180,7 @@ where
         StateManager {
             network,
             mempool: RwLock::new(mempool),
+            mempool_relay_dispatcher,
             store,
             execution_cache: ExecutionCache::new(accumulator_hash),
             user_transaction_validator,
@@ -339,6 +344,26 @@ where
             ),
         )
         .execute_on(&self.store))
+    }
+
+    /// Adds the given transaction to the mempool (applying all the checks and caching, see
+    /// `check_for_rejection_and_add_to_mempool()`), and then triggers an unscheduled mempool sync
+    /// (propagating only this transaction to other nodes).
+    /// The triggering only takes place if the mempool did not already contain this transaction (to
+    /// prevent flooding). Any error encountered during the triggering will only be logged (as
+    /// `warn!`) and then ignored.
+    /// Although an arbitrary `MempoolAddSource` can be passed, this method is primarily meant for
+    /// relaying new transactions submitted via Core API.
+    pub fn add_to_mempool_and_trigger_relay(
+        &mut self,
+        source: MempoolAddSource,
+        transaction: NotarizedTransaction,
+    ) -> Result<(), MempoolAddError> {
+        self.check_for_rejection_and_add_to_mempool(source, transaction.clone())?;
+        if let Err(error) = self.mempool_relay_dispatcher.trigger_relay(transaction) {
+            warn!("Could not trigger a mempool relay: {:?}; ignoring", error);
+        }
+        Ok(())
     }
 
     /// Checking if the transaction should be rejected requires full validation, ie:

@@ -62,53 +62,65 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+use jni::errors::Result;
+use jni::objects::{GlobalRef, JObject, JValue};
+use jni::{JNIEnv, JavaVM};
+use radix_engine_common::data::scrypto::scrypto_encode;
+use std::ops::Deref;
 
-import com.radixdlt.p2p.NodeId;
-import com.radixdlt.transactions.RawNotarizedTransaction;
-import java.util.Objects;
-import java.util.Optional;
+use transaction::model::NotarizedTransaction;
 
-/** Message indicating that a transaction was successfully added to the mempool */
-public final class MempoolAddSuccess {
-  private final RawNotarizedTransaction transaction;
-  private final NodeId origin;
+use crate::jni::mempool::JavaRawTransaction;
+use crate::jni::utils::jni_slice_to_jbytearray;
 
-  private MempoolAddSuccess(RawNotarizedTransaction transaction, NodeId origin) {
-    this.transaction = transaction;
-    this.origin = origin;
-  }
+/// A Java dispatcher for a "new transaction from Core API" event.
+pub struct MempoolRelayDispatcher {
+    jvm: JavaVM,
+    j_state_manager_ref: GlobalRef,
+}
 
-  public RawNotarizedTransaction getTxn() {
-    return transaction;
-  }
+impl MempoolRelayDispatcher {
+    /// Name of the "mempool relay trigger" method on the Java side.
+    const TRIGGER_METHOD_NAME: &'static str = "triggerMempoolRelay";
 
-  public Optional<NodeId> getOrigin() {
-    return Optional.ofNullable(origin);
-  }
+    /// The Java trigger method's descriptor string (i.e. as defined by
+    /// [JVMS](https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-4.html#jvms-4.3.3)).
+    const TRIGGER_METHOD_DESCRIPTOR: &'static str = "([B)V";
 
-  public static MempoolAddSuccess create(RawNotarizedTransaction transaction, NodeId origin) {
-    Objects.requireNonNull(transaction);
-    return new MempoolAddSuccess(transaction, origin);
-  }
+    // TODO: If a number of Rust->Java calls grows, we could invest in a small util for building the
+    // "method IDs" (i.e. especially these descriptors) in some more convenient way.
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(transaction, origin);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof MempoolAddSuccess other)) {
-      return false;
+    /// Creates a long-lived dispatcher from the given short-lived JNI context and Java state
+    /// manager reference.
+    pub fn new(env: &JNIEnv, j_state_manager: JObject) -> Result<Self> {
+        Ok(Self {
+            jvm: env.get_java_vm()?,
+            j_state_manager_ref: env.new_global_ref(j_state_manager)?,
+        })
     }
 
-    return Objects.equals(this.transaction, other.transaction)
-        && Objects.equals(this.origin, other.origin);
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{txn=%s}", this.getClass().getSimpleName(), this.transaction);
-  }
+    /// Triggers a relay of the given transaction.
+    /// This is implemented using an event dispatch on the Java side, so this method should not
+    /// block. Any Java exceptions will be returned as `Err` (i.e. their Java exception status will
+    /// be cleared, as if this method was catching them).
+    pub fn trigger_relay(&self, transaction: NotarizedTransaction) -> Result<()> {
+        let attachment = self.jvm.attach_current_thread()?;
+        let env = attachment.deref();
+        let j_state_manager = self.j_state_manager_ref.as_obj();
+        let serialized_transaction =
+            scrypto_encode(&JavaRawTransaction::from(transaction)).unwrap();
+        let result = env.call_method(
+            j_state_manager,
+            MempoolRelayDispatcher::TRIGGER_METHOD_NAME,
+            MempoolRelayDispatcher::TRIGGER_METHOD_DESCRIPTOR,
+            &[JValue::Object(JObject::from(jni_slice_to_jbytearray(
+                env,
+                &serialized_transaction,
+            )))],
+        );
+        if result.is_err() && env.exception_check()? {
+            env.exception_clear()?;
+        }
+        result.map(|_| ())
+    }
 }

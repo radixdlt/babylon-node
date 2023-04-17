@@ -154,13 +154,13 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
             transaction -> {
               try {
                 stateComputer.getMempoolInserter().addTransaction(transaction);
-
-                // TODO: Implement this event in the RustMempool. This requires a JNI -> Java
-                // callback
-                // TODO: interface which hasn't been implemented yet.
+                // Please note that a `MempoolAddSuccess` event is only dispatched when the above
+                // call does not throw. This is deliberate: we do not want to propagate the
+                // transaction to other nodes if it is invalid or a duplicate (to prevent an
+                // infinite flood-fill effect across the network).
                 var success =
                     MempoolAddSuccess.create(
-                        RawNotarizedTransaction.create(transaction.getPayload()), null, origin);
+                        RawNotarizedTransaction.create(transaction.getPayload()), origin);
                 mempoolAddSuccessEventDispatcher.dispatch(success);
               } catch (MempoolFullException | MempoolDuplicateException ignored) {
               } catch (MempoolRejectedException e) {

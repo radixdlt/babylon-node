@@ -69,10 +69,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.lang.Option;
-import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.mempool.RustMempool;
-import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statemanager.LoggingConfig;
@@ -90,6 +87,9 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public final class RustMempoolTest {
+
+  /** A no-op dispatcher of transactions to be relayed. */
+  private static final MempoolRelayDispatcher<RawNotarizedTransaction> NOOP_DISPATCHER = tx -> {};
 
   private static void initStateComputer(StateManager stateManager) {
     new LedgerInitializer(
@@ -114,7 +114,7 @@ public final class RustMempoolTest {
             LoggingConfig.getDefault());
     final var metrics = new MetricsInitializer().initialize();
 
-    try (var stateManager = StateManager.createAndInitialize(config)) {
+    try (var stateManager = new StateManager(NOOP_DISPATCHER, config)) {
       initStateComputer(stateManager);
       var rustMempool = new RustMempool(metrics, stateManager);
       var transaction1 = constructValidRawTransaction(0, 0);
@@ -176,7 +176,7 @@ public final class RustMempoolTest {
             LoggingConfig.getDefault());
     final var metrics = new MetricsInitializer().initialize();
 
-    try (var stateManager = StateManager.createAndInitialize(config)) {
+    try (var stateManager = new StateManager(NOOP_DISPATCHER, config)) {
       initStateComputer(stateManager);
       var rustMempool = new RustMempool(metrics, stateManager);
       var transaction1 = constructValidRawTransaction(0, 0);
@@ -300,7 +300,7 @@ public final class RustMempoolTest {
             LoggingConfig.getDefault());
     final var metrics = new MetricsInitializer().initialize();
 
-    try (var stateManager = StateManager.createAndInitialize(config)) {
+    try (var stateManager = new StateManager(NOOP_DISPATCHER, config)) {
       initStateComputer(stateManager);
 
       var rustMempool = new RustMempool(metrics, stateManager);

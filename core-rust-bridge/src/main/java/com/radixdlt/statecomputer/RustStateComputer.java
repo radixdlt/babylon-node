@@ -80,7 +80,6 @@ import com.radixdlt.rev2.ValidatorInfo;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.statecomputer.commit.*;
 import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
@@ -88,14 +87,12 @@ import java.util.Objects;
 
 public class RustStateComputer {
   private final RustMempool mempool;
-  private final REv2TransactionAndProofStore transactionStore;
   private final VertexStoreRecovery vertexStoreRecovery;
 
   public RustStateComputer(Metrics metrics, StateManager stateManager) {
     Objects.requireNonNull(stateManager);
 
     this.mempool = new RustMempool(metrics, stateManager);
-    this.transactionStore = new REv2TransactionAndProofStore(metrics, stateManager);
     this.vertexStoreRecovery = new VertexStoreRecovery(metrics, stateManager);
 
     LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
@@ -137,15 +134,11 @@ public class RustStateComputer {
     return vertexStoreRecovery;
   }
 
-  public REv2TransactionAndProofStore getTransactionAndProofStore() {
-    return this.transactionStore;
-  }
-
   public MempoolReader<RawNotarizedTransaction> getMempoolReader() {
     return this.mempool;
   }
 
-  public MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction> getMempoolInserter() {
+  public MempoolInserter<RawNotarizedTransaction> getMempoolInserter() {
     return this.mempool::addTransaction;
   }
 
