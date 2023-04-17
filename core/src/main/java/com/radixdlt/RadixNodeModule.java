@@ -264,7 +264,7 @@ public final class RadixNodeModule extends AbstractModule {
     var databasePath = properties.get("db.location", ".//RADIXDB");
     var mempoolMaxSize = properties.get("mempool.maxSize", 50);
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
-    var enableAccountChangeIndex = properties.get("extension.account_change_index.enable", false);
+    var enableAccountChangeIndex = properties.get("db.account_change_index.enable", true);
     var databaseConfig = new REv2DatabaseConfig.RocksDB(databasePath, enableAccountChangeIndex);
 
     String genesisTxn;
