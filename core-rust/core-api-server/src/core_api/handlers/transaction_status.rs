@@ -1,36 +1,30 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::core_api::*;
-use state_manager::jni::state_manager::ActualStateManager;
+
 use state_manager::{
     DetailedTransactionOutcome, HasUserPayloadHash, RejectionReason, UserPayloadHash,
 };
 
+use models::transaction_payload_status::Status as PayloadStatus;
+use models::TransactionIntentStatus as IntentStatus;
 use state_manager::mempool::pending_transaction_result_cache::PendingTransactionRecord;
+use state_manager::query::StateManagerSubstateQueries;
 use state_manager::store::traits::*;
 
 #[tracing::instrument(err(Debug), skip(state))]
 pub(crate) async fn handle_transaction_status(
     state: State<CoreApiState>,
-    request: Json<models::TransactionStatusRequest>,
+    Json(request): Json<models::TransactionStatusRequest>,
 ) -> Result<Json<models::TransactionStatusResponse>, ResponseError<()>> {
-    core_api_read_handler(state, request, handle_transaction_status_internal)
-}
+    assert_matching_network(&request.network, &state.network)?;
 
-use models::transaction_payload_status::Status as PayloadStatus;
-use models::TransactionIntentStatus as IntentStatus;
-use state_manager::query::StateManagerSubstateQueries;
-
-fn handle_transaction_status_internal(
-    state_manager: &ActualStateManager,
-    request: models::TransactionStatusRequest,
-) -> Result<models::TransactionStatusResponse, ResponseError<()>> {
-    assert_matching_network(&request.network, &state_manager.network)?;
-
-    let mapping_context = MappingContext::new_for_uncommitted_data(&state_manager.network);
+    let mapping_context = MappingContext::new_for_uncommitted_data(&state.network);
 
     let intent_hash = extract_intent_hash(request.intent_hash)
         .map_err(|err| err.into_response_error("intent_hash"))?;
+
+    let state_manager = state.state_manager.read();
 
     let txn_state_version_opt = state_manager
         .store()
@@ -107,7 +101,7 @@ fn handle_transaction_status_internal(
             status_description: format!("The transaction has been committed to the ledger, with an outcome of {outcome}. For more information, use the /transaction/receipt endpoint."),
             invalid_from_epoch: None,
             known_payloads,
-        });
+        }).map(Json);
     }
 
     let mempool_payloads_hashes = state_manager
@@ -142,7 +136,7 @@ fn handle_transaction_status_internal(
             status_description: "At least one payload for the intent is in this node's mempool. This node believes it's possible the intent might be able to be committed. Whilst the transaction continues to live in the mempool, you can use the /mempool/transaction endpoint to read its payload.".to_owned(),
             invalid_from_epoch: invalid_from_epoch.map(|epoch| to_api_epoch(&mapping_context, epoch)).transpose()?,
             known_payloads,
-        });
+        }).map(Json);
     }
 
     let known_payloads = map_pending_payloads_not_in_mempool(known_pending_payloads);
@@ -180,7 +174,7 @@ fn handle_transaction_status_internal(
         }
     };
 
-    Ok(response)
+    Ok(response).map(Json)
 }
 
 fn map_rejected_payloads_due_to_known_commit(

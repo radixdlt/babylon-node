@@ -127,11 +127,11 @@ const FULL_TRANSACTION_WARN_TIME_LIMIT: Duration = Duration::from_millis(500);
 pub struct StateManager<S> {
     pub mempool: RwLock<SimpleMempool>,
     mempool_relay_dispatcher: MempoolRelayDispatcher,
-    pub network: NetworkDefinition,
+    network: NetworkDefinition,
     store: Arc<RwLock<S>>,
     execution_cache: ExecutionCache,
     pub user_transaction_validator: UserTransactionValidator,
-    pub ledger_transaction_validator: LedgerTransactionValidator,
+    ledger_transaction_validator: LedgerTransactionValidator,
     pub pending_transaction_result_cache: PendingTransactionResultCache,
     pub metrics: StateManagerMetrics,
     pub prometheus_registry: Registry,

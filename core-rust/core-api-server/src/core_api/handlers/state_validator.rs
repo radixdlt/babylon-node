@@ -2,7 +2,7 @@ use crate::core_api::*;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{NodeModuleId, SubstateOffset, ValidatorOffset};
 use radix_engine_interface::api::types::{AccessRulesOffset, RENodeId};
-use state_manager::jni::state_manager::ActualStateManager;
+
 use state_manager::query::{dump_component_state, VaultData};
 use std::ops::Deref;
 
@@ -10,19 +10,12 @@ use super::map_to_descendent_id;
 
 pub(crate) async fn handle_state_validator(
     state: State<CoreApiState>,
-    request: Json<models::StateValidatorRequest>,
+    Json(request): Json<models::StateValidatorRequest>,
 ) -> Result<Json<models::StateValidatorResponse>, ResponseError<()>> {
-    core_api_read_handler(state, request, handle_state_validator_internal)
-}
+    assert_matching_network(&request.network, &state.network)?;
 
-fn handle_state_validator_internal(
-    state_manager: &ActualStateManager,
-    request: models::StateValidatorRequest,
-) -> Result<models::StateValidatorResponse, ResponseError<()>> {
-    assert_matching_network(&request.network, &state_manager.network)?;
-
-    let mapping_context = MappingContext::new(&state_manager.network);
-    let extraction_context = ExtractionContext::new(&state_manager.network);
+    let mapping_context = MappingContext::new(&state.network);
+    let extraction_context = ExtractionContext::new(&state.network);
 
     let validator_address =
         extract_component_address(&extraction_context, &request.validator_address)
@@ -34,10 +27,12 @@ fn handle_state_validator_internal(
         ));
     }
 
+    let state_manager = state.state_manager.read();
+
     let component_state = {
         let substate_offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let loaded_substate = read_mandatory_substate(
-            state_manager,
+            state_manager.deref(),
             RENodeId::GlobalObject(validator_address.into()),
             NodeModuleId::SELF,
             &substate_offset,
@@ -50,7 +45,7 @@ fn handle_state_validator_internal(
     let component_access_rules = {
         let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
         let loaded_substate = read_mandatory_substate(
-            state_manager,
+            state_manager.deref(),
             RENodeId::GlobalObject(validator_address.into()),
             NodeModuleId::AccessRules,
             &substate_offset,
@@ -99,4 +94,5 @@ fn handle_state_validator_internal(
         state_owned_vaults,
         descendent_ids,
     })
+    .map(Json)
 }

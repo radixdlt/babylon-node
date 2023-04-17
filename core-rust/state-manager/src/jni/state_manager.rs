@@ -132,6 +132,7 @@ pub struct StateManagerConfig {
 pub type ActualStateManager = StateManager<StateManagerDatabase>;
 
 pub struct JNIStateManager {
+    pub network: NetworkDefinition,
     pub state_manager: Arc<RwLock<ActualStateManager>>,
     pub database: Arc<RwLock<StateManagerDatabase>>,
 }
@@ -152,6 +153,7 @@ impl JNIStateManager {
             }
         };
 
+        let network = config.network_definition;
         let database = Arc::new(parking_lot::const_rwlock(
             StateManagerDatabase::from_config(config.db_config),
         ));
@@ -160,7 +162,7 @@ impl JNIStateManager {
 
         // Build the state manager.
         let state_manager = Arc::new(parking_lot::const_rwlock(StateManager::new(
-            config.network_definition,
+            network.clone(),
             database.clone(),
             mempool,
             mempool_relay_dispatcher,
@@ -168,6 +170,7 @@ impl JNIStateManager {
         )));
 
         let jni_state_manager = JNIStateManager {
+            network,
             state_manager,
             database,
         };
@@ -184,24 +187,26 @@ impl JNIStateManager {
         drop(jni_state_manager);
     }
 
+    pub fn get_state<'a>(
+        env: &'a JNIEnv<'a>,
+        j_state_manager: JObject<'a>,
+    ) -> MutexGuard<'a, JNIStateManager> {
+        env.get_rust_field::<_, _, JNIStateManager>(j_state_manager, POINTER_JNI_FIELD_NAME)
+            .unwrap()
+    }
+
     pub fn get_state_manager(
         env: &JNIEnv,
         j_state_manager: JObject,
     ) -> Arc<RwLock<ActualStateManager>> {
-        let jni_state_manager: MutexGuard<JNIStateManager> = env
-            .get_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME)
-            .unwrap();
-        jni_state_manager.state_manager.clone()
+        Self::get_state(env, j_state_manager).state_manager.clone()
     }
 
     pub fn get_database(
         env: &JNIEnv,
         j_state_manager: JObject,
     ) -> Arc<RwLock<StateManagerDatabase>> {
-        let jni_state_manager: MutexGuard<JNIStateManager> = env
-            .get_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME)
-            .unwrap();
-        jni_state_manager.database.clone()
+        Self::get_state(env, j_state_manager).database.clone()
     }
 }
 

@@ -71,6 +71,7 @@ use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
 use parking_lot::RwLock;
+use radix_engine_common::network::NetworkDefinition;
 use state_manager::jni::java_structure::JavaStructure;
 use state_manager::jni::state_manager::{ActualStateManager, JNIStateManager};
 use state_manager::jni::utils::*;
@@ -90,6 +91,7 @@ pub struct RunningServer {
 
 pub struct JNICoreApiServer {
     pub config: CoreApiServerConfig,
+    pub network: NetworkDefinition,
     pub state_manager: Arc<RwLock<ActualStateManager>>,
     pub running_server: Option<RunningServer>,
 }
@@ -102,11 +104,14 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_init(
     j_core_api_server: JObject,
     j_config: jbyteArray,
 ) {
-    let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
+    let state = JNIStateManager::get_state(&env, j_state_manager);
+    let network = state.network.clone();
+    let state_manager = state.state_manager.clone();
     let config_bytes: Vec<u8> = jni_jbytearray_to_vector(&env, j_config).unwrap();
     let config = CoreApiServerConfig::from_java(&config_bytes).unwrap();
     let jni_core_api_server = JNICoreApiServer {
         config,
+        network,
         state_manager,
         running_server: None,
     };
@@ -135,6 +140,7 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
 
     let config = &jni_core_api_server.config;
 
+    let network = jni_core_api_server.network.clone();
     let state_manager = jni_core_api_server.state_manager.clone();
 
     let bind_addr = format!("{}:{}", config.bind_interface, config.port);
@@ -168,6 +174,7 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
         create_server(
             &bind_addr,
             shutdown_signal_receiver.map(|_| ()),
+            network,
             state_manager,
         )
         .await;

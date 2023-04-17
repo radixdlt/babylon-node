@@ -1,29 +1,15 @@
 use crate::core_api::*;
 use radix_engine::types::{ComponentAddress, Decimal, IndexMap};
+use state_manager::query::{dump_component_state, VaultData};
 use state_manager::store::traits::QueryableProofStore;
-use state_manager::{
-    jni::state_manager::ActualStateManager,
-    query::{dump_component_state, VaultData},
-};
 use std::ops::Deref;
 
 #[tracing::instrument(skip(state), err(Debug))]
 pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
     state: State<CoreApiState>,
-    request: Json<models::LtsStateAccountAllFungibleResourceBalancesRequest>,
+    Json(request): Json<models::LtsStateAccountAllFungibleResourceBalancesRequest>,
 ) -> Result<Json<models::LtsStateAccountAllFungibleResourceBalancesResponse>, ResponseError<()>> {
-    core_api_read_handler(
-        state,
-        request,
-        handle_lts_state_account_all_fungible_resource_balances_internal,
-    )
-}
-
-fn handle_lts_state_account_all_fungible_resource_balances_internal(
-    state_manager: &ActualStateManager,
-    request: models::LtsStateAccountAllFungibleResourceBalancesRequest,
-) -> Result<models::LtsStateAccountAllFungibleResourceBalancesResponse, ResponseError<()>> {
-    assert_matching_network(&request.network, &state_manager.network)?;
+    assert_matching_network(&request.network, &state.network)?;
 
     if !request.account_address.starts_with("account_") {
         return Err(client_error(
@@ -31,13 +17,14 @@ fn handle_lts_state_account_all_fungible_resource_balances_internal(
         ));
     }
 
-    let mapping_context = MappingContext::new(&state_manager.network);
-    let extraction_context = ExtractionContext::new(&state_manager.network);
+    let mapping_context = MappingContext::new(&state.network);
+    let extraction_context = ExtractionContext::new(&state.network);
 
     let component_address =
         extract_component_address(&extraction_context, &request.account_address)
             .map_err(|err| err.into_response_error("account_address"))?;
 
+    let state_manager = state.state_manager.read();
     let read_store = state_manager.store();
     let component_dump = match dump_component_state(read_store.deref(), component_address) {
         Ok(component_dump) => component_dump,
@@ -46,10 +33,11 @@ fn handle_lts_state_account_all_fungible_resource_balances_internal(
             ComponentAddress::EcdsaSecp256k1VirtualAccount(_)
             | ComponentAddress::EddsaEd25519VirtualAccount(_) => {
                 return Ok(models::LtsStateAccountAllFungibleResourceBalancesResponse {
-                    state_version: to_api_state_version(state_manager.store().max_state_version())?,
+                    state_version: to_api_state_version(read_store.max_state_version())?,
                     account_address: to_api_component_address(&mapping_context, &component_address),
                     fungible_resource_balances: Vec::new(),
                 })
+                .map(Json)
             }
             _ => {
                 return Err(server_error(format!(
@@ -93,8 +81,9 @@ fn handle_lts_state_account_all_fungible_resource_balances_internal(
         .collect();
 
     Ok(models::LtsStateAccountAllFungibleResourceBalancesResponse {
-        state_version: to_api_state_version(state_manager.store().max_state_version())?,
+        state_version: to_api_state_version(read_store.max_state_version())?,
         account_address: to_api_component_address(&mapping_context, &component_address),
         fungible_resource_balances,
     })
+    .map(Json)
 }

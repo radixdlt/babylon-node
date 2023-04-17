@@ -72,6 +72,7 @@ use axum::{
 };
 use parking_lot::RwLock;
 use radix_engine::types::{Categorize, Decode, Encode};
+use radix_engine_common::network::NetworkDefinition;
 use state_manager::jni::state_manager::ActualStateManager;
 
 use super::{constants::LARGE_REQUEST_MAX_BYTES, handlers::*, not_found_error, ResponseError};
@@ -80,17 +81,22 @@ use handle_status_network_configuration as handle_provide_info_at_root_path;
 
 #[derive(Clone)]
 pub(crate) struct CoreApiState {
+    pub network: NetworkDefinition,
     pub state_manager: Arc<RwLock<ActualStateManager>>,
 }
 
 pub async fn create_server<F>(
     bind_addr: &str,
     shutdown_signal: F,
+    network: NetworkDefinition,
     state_manager: Arc<RwLock<ActualStateManager>>,
 ) where
     F: Future<Output = ()>,
 {
-    let core_api_state = CoreApiState { state_manager };
+    let core_api_state = CoreApiState {
+        network,
+        state_manager,
+    };
 
     let router = Router::new()
         // This only adds a route for /core, /core/ doesn't seem possible using /nest

@@ -2,27 +2,20 @@ use crate::core_api::*;
 use radix_engine::system::node_substates::PersistedSubstate;
 use radix_engine::types::{EpochManagerOffset, SubstateOffset, EPOCH_MANAGER};
 use radix_engine_interface::api::types::{NodeModuleId, RENodeId};
-use state_manager::jni::state_manager::ActualStateManager;
+use std::ops::Deref;
 
 #[tracing::instrument(skip(state), err(Debug))]
 pub(crate) async fn handle_state_epoch(
     state: State<CoreApiState>,
-    request: Json<models::StateEpochRequest>,
+    Json(request): Json<models::StateEpochRequest>,
 ) -> Result<Json<models::StateEpochResponse>, ResponseError<()>> {
-    core_api_read_handler(state, request, handle_state_epoch_internal)
-}
-
-fn handle_state_epoch_internal(
-    state_manager: &ActualStateManager,
-    request: models::StateEpochRequest,
-) -> Result<models::StateEpochResponse, ResponseError<()>> {
-    assert_matching_network(&request.network, &state_manager.network)?;
-    let mapping_context = MappingContext::new(&state_manager.network);
-
+    assert_matching_network(&request.network, &state.network)?;
+    let mapping_context = MappingContext::new(&state.network);
+    let state_manager = state.state_manager.read();
     let epoch_manager_substate = {
         let substate_offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
         let loaded_substate = read_mandatory_substate(
-            state_manager,
+            state_manager.deref(),
             RENodeId::GlobalObject(EPOCH_MANAGER.into()),
             NodeModuleId::SELF,
             &substate_offset,
@@ -36,7 +29,7 @@ fn handle_state_epoch_internal(
     let validator_set_substate = {
         let substate_offset = SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet);
         let loaded_substate = read_mandatory_substate(
-            state_manager,
+            state_manager.deref(),
             RENodeId::GlobalObject(EPOCH_MANAGER.into()),
             NodeModuleId::SELF,
             &substate_offset,
@@ -58,4 +51,5 @@ fn handle_state_epoch_internal(
             &validator_set_substate,
         )?),
     })
+    .map(Json)
 }

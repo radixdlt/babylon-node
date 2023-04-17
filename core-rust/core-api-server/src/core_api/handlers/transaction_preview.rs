@@ -5,26 +5,21 @@ use radix_engine::{
 };
 use radix_engine_common::data::scrypto::scrypto_encode;
 use radix_engine_interface::network::NetworkDefinition;
-use state_manager::jni::state_manager::ActualStateManager;
+
 use state_manager::{LocalTransactionReceipt, PreviewRequest};
 use transaction::manifest;
 use transaction::model::PreviewFlags;
 
 pub(crate) async fn handle_transaction_preview(
     state: State<CoreApiState>,
-    request: Json<models::TransactionPreviewRequest>,
+    Json(request): Json<models::TransactionPreviewRequest>,
 ) -> Result<Json<models::TransactionPreviewResponse>, ResponseError<()>> {
-    core_api_read_handler(state, request, handle_preview_internal)
-}
+    assert_matching_network(&request.network, &state.network)?;
+    let mapping_context = MappingContext::new(&state.network);
 
-#[tracing::instrument(level = "debug", skip(state_manager), err(Debug))]
-fn handle_preview_internal(
-    state_manager: &ActualStateManager,
-    request: models::TransactionPreviewRequest,
-) -> Result<models::TransactionPreviewResponse, ResponseError<()>> {
-    assert_matching_network(&request.network, &state_manager.network)?;
+    let preview_request = extract_preview_request(&state.network, request)?;
 
-    let preview_request = extract_preview_request(&state_manager.network, request)?;
+    let state_manager = state.state_manager.read();
 
     let result = state_manager
         .preview(preview_request)
@@ -34,9 +29,7 @@ fn handle_preview_internal(
             }
         })?;
 
-    let mapping_context = MappingContext::new(&state_manager.network);
-
-    to_api_response(&mapping_context, result)
+    to_api_response(&mapping_context, result).map(Json)
 }
 
 fn extract_preview_request(
