@@ -3,8 +3,8 @@ version: '2.1'
 services:
   core:
     build:
-      context: .
-      dockerfile: Dockerfile.core
+      context: ../.
+      dockerfile: Dockerfile
     environment:
       RADIXDLT_LOG_LEVEL: info
       RADIXDLT_CORE_API_PORT: 3333

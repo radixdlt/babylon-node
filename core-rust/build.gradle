@@ -104,18 +104,26 @@ task buildRustDebug(type: Exec) {
 
 task buildRustForDocker(type: Exec) {
     def target = "x86_64-unknown-linux-gnu"
-
+    def dockerPlatform = "linux/amd64"
+    def tagSuffix = "linux-amd64"
     if (System.getProperty("os.arch") == "aarch64") {
-        target= "aarch64-unknown-linux-gnu"
+        target = "aarch64-unknown-linux-gnu"
+        dockerPlatform = "linux/arm64"
+        tagSuffix = "linux-arm64"
     }
+    project.logger.lifecycle('Using following target: ')
+    project.logger.lifecycle(target)
+    project.logger.lifecycle('Using following docker platform: ')
+    project.logger.lifecycle(dockerPlatform)
 
     // Trigger a custom error message on failure...
     ignoreExitValue true
     if (project.hasProperty('ci')){
+        project.logger.lifecycle('Running in CI: ')
         workingDir rootProject.projectDir
         def outputDir="core-rust/target/$target"
         def rustBuilderRepo = "eu.gcr.io/dev-container-repo/rust-builder-base"
-        def rustCacheRepo = "eu.gcr.io/dev-container-repo/rust-cache-packages"
+        def rustCacheRepo = "europe-west2-docker.pkg.dev/dev-container-repo/eu-cache-repo/babylon-node"
         def env_rust_profile =
                 (project.property("rustBinaryBuildType") == "" || project.property("rustBinaryBuildType") == null) ? "release"
                 : project.property("rustBinaryBuildType") == "debug" ? "dev"
@@ -126,27 +134,25 @@ task buildRustForDocker(type: Exec) {
 
              if [ -d $outputDir ]; then rm -Rf $outputDir; fi
              export DOCKER_BUILDKIT=1
-             docker pull $rustBuilderRepo:$cacheTag || true
-             docker pull $rustCacheRepo:$cacheTag || true
-             docker build -f docker/rust-builder/Dockerfile \\
-                 --target=base --build-arg TARGET=$target --build-arg RUST_PROFILE=$env_rust_profile --build-arg BUILDKIT_INLINE_CACHE=1 \\
-                 --cache-from=$rustBuilderRepo:$cacheTag \\
-                 --tag $rustBuilderRepo:$cacheTag .
-             docker build -f docker/rust-builder/Dockerfile \\
-                 --target=cache-packages --build-arg TARGET=$target --build-arg RUST_PROFILE=$env_rust_profile --build-arg BUILDKIT_INLINE_CACHE=1 \\
-                 --cache-from=$rustBuilderRepo:$cacheTag --cache-from=$rustCacheRepo:$cacheTag  \\
-                 --tag $rustCacheRepo:$cacheTag .
-             docker build -f docker/rust-builder/Dockerfile \\
-               --target=artifact --build-arg TARGET=$target --build-arg RUST_PROFILE=$env_rust_profile --build-arg BUILDKIT_INLINE_CACHE=1 \\
-               --cache-from=$rustBuilderRepo:$cacheTag --cache-from=$rustCacheRepo:$cacheTag  \\
-               --output type=local,dest=core-rust/target/$target/${project.property("rustBinaryBuildType")}/ .
-             docker push $rustBuilderRepo:$cacheTag || true
-             docker push $rustCacheRepo:$cacheTag || true
+
+             docker buildx build \
+                --file Dockerfile \
+                --build-arg RUST_PROFILE=$env_rust_profile \
+                --build-arg BUILDKIT_INLINE_CACHE=1 \
+                --cache-from type=registry,ref=$rustCacheRepo:$cacheTag-$target-$env_rust_profile \
+                --cache-to type=registry,ref=$rustCacheRepo:$cacheTag-$target-$env_rust_profile,mode=max \
+                --platform $dockerPlatform \
+                --tag $rustBuilderRepo:$cacheTag \
+                --target library-container \
+                --output type=local,dest=core-rust/target/$target/${project.property("rustBinaryBuildType")}/ \
+                .
+
              [ -f $outputDir/${project.property("rustBinaryBuildType")}/libcorerust.so ]
                 """
 
         commandLine 'sh', '-c', dockerMultiStageCmd
     } else{
+        project.logger.lifecycle('Not running in CI!')
         def env_rust_profile = project.property("rustBinaryBuildType") == "debug" ? "dev" : project.property("rustBinaryBuildType")
         def dockerComposeRun = """
             docker compose -f ../docker/rust-builder/build-sm.yaml build

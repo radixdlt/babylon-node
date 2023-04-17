@@ -94,3 +94,39 @@ If you meet this issue, check following configuration options:
  - `Project Structure -> Project Settings -> Project`, make sure `Project SDK` and `Project Language Level` is set to `17 (Preview) - Pattern matching for switch`.
  - `Project Structure -> Project Settings -> Modules`, make sure that every module has `Language Level` set to `17 (Preview) - Pattern matching for switch (Project default)`  
  - `Settings -> Build, Execution, Deployment -> Build Tools -> Gradle`, make sure that `Gradle JVM` is set to `Project JDK`. 
+
+### Building with docker
+
+![The structure of the docker image](babylon-node-docker-build.png)
+
+
+The application can be build using a single Dockerfile:
+
+```
+docker build . -t radixdlt/babylon-node 
+```
+
+If local testing is required, the artifacts can be produced locally with docker aswell by specifying the build target and outputting the result.
+
+Example core-rust/libcorerust.so:
+
+```
+docker build  . \
+    -t eu.gcr.io/dev-container-repo/babylon-node:local-test-core-rust \
+    --target library-container \
+    --output ./outputs
+ls outputs 
+libcorerust.so
+```
+
+Example core/java-binary/*.jar
+
+```
+docker build  . \
+    -t eu.gcr.io/dev-container-repo/babylon-node:local-test-core \
+    --target binary-container \
+    --output ./outputs
+ls outputs 
+core-SNAPSHOT-<BRANCH>-<GITSHA10>.tgz 
+core-SNAPSHOT-<BRANCH>-<GITSHA10>.zip
+```
