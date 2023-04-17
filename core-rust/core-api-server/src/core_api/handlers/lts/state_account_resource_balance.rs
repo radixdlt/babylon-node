@@ -28,7 +28,7 @@ fn handle_lts_state_account_fungible_resource_balance_internal(
 
     if !request.account_address.starts_with("account_") {
         return Err(client_error(
-            "Only component addresses starting with account_ currently work with this endpoint.",
+            "Only component addresses starting with account_ work with this endpoint.",
         ));
     }
 
@@ -60,7 +60,7 @@ fn handle_lts_state_account_fungible_resource_balance_internal(
             &substate_offset,
         ) {
             Ok(substate) => substate,
-            Err(err) => {
+            Err(_) => {
                 match component_address {
                     ComponentAddress::Account(_) => {
                         return Err(not_found_error("Account not found"))
@@ -87,10 +87,9 @@ fn handle_lts_state_account_fungible_resource_balance_internal(
                         })
                     }
                     _ => {
-                        // This should not happen
-                        return Err(server_error(format!(
-                            "Error loading account state: {err:?}"
-                        )));
+                        return Err(client_error(
+                            "Provided address is not an Account address.".to_string(),
+                        ));
                     }
                 };
             }
