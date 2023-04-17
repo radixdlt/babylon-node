@@ -136,7 +136,7 @@ public abstract class DeterministicCoreApiTestBase {
                             Network.INTEGRATIONTESTNET.getId(),
                             TransactionBuilder.createGenesisWithNumValidators(
                                 1, Decimal.of(1), UInt64.fromNonNegativeLong(roundsPerEpoch)),
-                            REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                            REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath(), false),
                             StateComputerConfig.REV2ProposerConfig.mempool(
                                 50, 50 * 1024 * 1024, 1000, MempoolRelayConfig.of())),
                         SyncRelayConfig.of(200, 10, 2000))));

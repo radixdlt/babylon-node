@@ -6,7 +6,7 @@ use state_manager::{
 use crate::core_api::*;
 
 #[tracing::instrument(skip_all)]
-pub fn to_api_lts_comitted_transaction_outcome(
+pub fn to_api_lts_committed_transaction_outcome(
     context: &MappingContext,
     receipt: LedgerTransactionReceipt,
     identifiers: CommittedTransactionIdentifiers,

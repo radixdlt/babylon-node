@@ -130,7 +130,7 @@ jobs:
     with:
       environment: release
       runs_on: ubuntu-latest
-      image_registry: "registry.hub.docker.com"
+      image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "babylon-node"
       tag: ${{ github.event.release.tag_name }}

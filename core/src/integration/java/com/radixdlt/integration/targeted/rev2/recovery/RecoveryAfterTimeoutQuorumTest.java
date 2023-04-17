@@ -106,7 +106,8 @@ public final class RecoveryAfterTimeoutQuorumTest {
 
   @Test
   public void recovery_after_timeout_quorum_test() {
-    final var databaseConfig = REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath());
+    final var databaseConfig =
+        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath(), false);
     final var builder =
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBatch(NUM_VALIDATORS, true))

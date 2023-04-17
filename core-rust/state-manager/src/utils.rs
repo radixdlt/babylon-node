@@ -62,68 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.rev2;
+use radix_engine::types::{Address, ComponentAddress};
 
-import static com.radixdlt.environment.deterministic.network.MessageMutators.*;
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
+pub trait IsAccountExt {
+    fn is_account(&self) -> bool;
+}
 
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
-import com.radixdlt.harness.invariants.Checkers;
-import com.radixdlt.harness.predicates.NodePredicate;
-import com.radixdlt.harness.predicates.NodesPredicate;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.*;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.utils.UInt64;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-public final class RandomVoteDropperTest {
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  private DeterministicTest createTest() {
-    return DeterministicTest.builder()
-        .addPhysicalNodes(PhysicalNodeConfig.createBatch(10, true))
-        .messageSelector(firstSelector())
-        .messageMutator(voteDropper(0.2))
-        .addMonitors(
-            byzantineBehaviorNotDetected(), consensusLiveness(5000), ledgerTransactionSafety())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                true,
-                SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
-                ConsensusConfig.of(1000),
-                LedgerConfig.stateComputerWithSyncRelay(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        TransactionBuilder.createGenesisWithNumValidators(
-                            10, Decimal.of(1), UInt64.fromNonNegativeLong(10)),
-                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath(), false),
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            10, 10 * 1024 * 1024, 100, MempoolRelayConfig.of(5, 5))),
-                    SyncRelayConfig.of(5000, 10, 3000L))));
-  }
-
-  @Test
-  public void normal_run_should_not_cause_unexpected_errors() {
-    try (var test = createTest()) {
-      test.startAllNodes();
-
-      // Run
-      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverStateVersion(100)), 100000);
-
-      // Post-run assertions
-      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 20);
-      Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
+impl IsAccountExt for Address {
+    fn is_account(&self) -> bool {
+        match self {
+            Address::Component(component_address) => matches!(
+                component_address,
+                ComponentAddress::EcdsaSecp256k1VirtualAccount(_)
+                    | ComponentAddress::EddsaEd25519VirtualAccount(_)
+                    | ComponentAddress::Account(_)
+            ),
+            _ => false,
+        }
     }
-  }
 }

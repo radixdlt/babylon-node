@@ -110,7 +110,7 @@ public final class REv2MempoolRelayerTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         TransactionBuilder.createGenesisWithNumValidators(
                             1, Decimal.of(1), UInt64.fromNonNegativeLong(100000)),
-                        REv2DatabaseConfig.inMemory(),
+                        REv2DatabaseConfig.inMemory(false),
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             0, 0, MEMPOOL_SIZE, new MempoolRelayConfig(0, 100))),
                     SyncRelayConfig.of(5000, 10, 3000L))));

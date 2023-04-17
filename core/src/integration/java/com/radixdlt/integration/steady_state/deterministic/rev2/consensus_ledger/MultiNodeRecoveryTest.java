@@ -170,6 +170,6 @@ public final class MultiNodeRecoveryTest {
 
   @Test
   public void rebooting_nodes_with_persistent_store_should_not_cause_safety_or_liveness_issues() {
-    runTest(createTest(REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath())));
+    runTest(createTest(REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath(), false)));
   }
 }

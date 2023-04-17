@@ -144,7 +144,8 @@ ENV RADIXDLT_HOME=/home/radixdlt \
     RADIXDLT_SYSTEM_API_BIND_ADDRESS=0.0.0.0 \
     RADIXDLT_PROMETHEUS_API_PORT=3335 \
     RADIXDLT_PROMETHEUS_API_BIND_ADDRESS=0.0.0.0 \
-    RADIXDLT_NETWORK_ID=240
+    RADIXDLT_NETWORK_ID=240 \
+    RADIXDLT_DB_ACCOUNT_CHANGE_INDEX_ENABLE=true
 
 COPY --from=binary-container / /tmp
 RUN unzip -j /tmp/*.zip && mkdir -p /opt/radixdlt/bin && \
