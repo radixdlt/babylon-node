@@ -117,6 +117,8 @@ jobs:
         type=semver,pattern={{major}}
         type=sha
       context: "."
+      flavors:
+        suffix=amd64
       dockerfile: "./Dockerfile"
       platforms: "linux/amd64"
     secrets:
@@ -138,6 +140,8 @@ jobs:
         type=semver,pattern={{major}}.{{minor}}
         type=semver,pattern={{major}}
         type=sha
+      flavors:
+        suffix=arm64
       context: "."
       dockerfile: "./Dockerfile"
       platforms: "linux/arm64"
@@ -157,6 +161,8 @@ jobs:
       image_organization: "radixdlt"
       image_name: "babylon-node"
       tag: ${{ github.event.release.tag_name }}
+      flavors:
+        suffix=amd64
       context: "."
       dockerfile: "./Dockerfile"
       platforms: "linux/amd64,linux/arm64"
@@ -177,6 +183,8 @@ jobs:
       image_organization: "radixdlt"
       image_name: "babylon-node"
       tag: ${{ github.event.release.tag_name }}
+      flavors:
+        suffix=arm64
       context: "."
       dockerfile: "./Dockerfile"
       platforms: "linux/arm64"
