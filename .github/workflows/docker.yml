@@ -121,6 +121,7 @@ jobs:
         suffix=-amd64
       dockerfile: "./Dockerfile"
       platforms: "linux/amd64"
+      provenance: "false"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
@@ -146,6 +147,7 @@ jobs:
       dockerfile: "./Dockerfile"
       platforms: "linux/arm64"
       cache_tag_suffix: arm64
+      provenance: "false"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
@@ -167,6 +169,7 @@ jobs:
       dockerfile: "./Dockerfile"
       platforms: "linux/amd64"
       enable_dockerhub: "true"
+      provenance: "false"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
@@ -190,6 +193,7 @@ jobs:
       platforms: "linux/arm64"
       enable_dockerhub: "true"
       cache_tag_suffix: arm64
+      provenance: "false"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
