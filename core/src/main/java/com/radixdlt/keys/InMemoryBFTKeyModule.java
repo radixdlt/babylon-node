@@ -70,6 +70,7 @@ import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.p2p.NodeId;
 import java.util.Objects;
 
 /** In memory Hash signing and identity handling */
@@ -94,5 +95,11 @@ public final class InMemoryBFTKeyModule extends AbstractModule {
   @Self
   ECDSASecp256k1PublicKey publicKey() {
     return keyPair.getPublicKey();
+  }
+
+  @Provides
+  @Self
+  NodeId nodeId(@Self ECDSASecp256k1PublicKey key) {
+    return NodeId.fromPublicKey(key);
   }
 }

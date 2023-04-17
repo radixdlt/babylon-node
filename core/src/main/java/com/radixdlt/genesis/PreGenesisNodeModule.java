@@ -66,12 +66,10 @@ package com.radixdlt.genesis;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
-import com.radixdlt.environment.Dispatchers;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessorOnDispatch;
@@ -79,12 +77,14 @@ import com.radixdlt.environment.NoOpEnvironment;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.mempool.MempoolRelayDispatcher;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.MetricsModule;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule.DatabaseType;
 import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.properties.RuntimeProperties;
 
 public final class PreGenesisNodeModule extends AbstractModule {
@@ -111,15 +111,11 @@ public final class PreGenesisNodeModule extends AbstractModule {
     we're just using a no-op dispatchers/environment here. */
     bind(Environment.class).toInstance(new NoOpEnvironment());
     Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessorOnDispatch<?>>() {});
-    bind(new TypeLiteral<EventDispatcher<ConsensusByzantineEvent>>() {})
-        .toProvider(Dispatchers.dispatcherProvider(ConsensusByzantineEvent.class))
-        .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() {})
-        .toProvider(Dispatchers.dispatcherProvider(MempoolAddSuccess.class))
-        .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {})
-        .toProvider(Dispatchers.dispatcherProvider(LedgerUpdate.class))
-        .in(Scopes.SINGLETON);
+    bind(new TypeLiteral<EventDispatcher<ConsensusByzantineEvent>>() {}).toInstance(event -> {});
+    bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() {}).toInstance(event -> {});
+    bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(event -> {});
+    bind(new TypeLiteral<MempoolRelayDispatcher<RawNotarizedTransaction>>() {})
+        .toInstance(transaction -> {});
     install(REv2StateManagerModule.create(0, 0, 0, DatabaseType.ROCKS_DB, Option.empty()));
   }
 

@@ -87,6 +87,7 @@ import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.mempool.MempoolRelayDispatcher;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
@@ -101,6 +102,7 @@ import com.radixdlt.p2p.liveness.Ping;
 import com.radixdlt.p2p.liveness.Pong;
 import com.radixdlt.sync.messages.local.*;
 import com.radixdlt.sync.messages.remote.*;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import io.prometheus.client.Gauge;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -118,15 +120,9 @@ public class DispatcherModule extends AbstractModule {
     bind(new TypeLiteral<EventDispatcher<ConsensusByzantineEvent>>() {})
         .toProvider(Dispatchers.dispatcherProvider(ConsensusByzantineEvent.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() {})
-        .toProvider(Dispatchers.dispatcherProvider(MempoolAdd.class))
-        .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() {})
-        .toProvider(Dispatchers.dispatcherProvider(MempoolAddSuccess.class))
-        .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<ScheduledEventDispatcher<MempoolRelayTrigger>>() {})
-        .toProvider(Dispatchers.scheduledDispatcherProvider(MempoolRelayTrigger.class))
-        .in(Scopes.SINGLETON);
+
+    configureMempoolEvents();
+
     bind(new TypeLiteral<ScheduledEventDispatcher<SyncCheckTrigger>>() {})
         .toProvider(Dispatchers.scheduledDispatcherProvider(SyncCheckTrigger.class))
         .in(Scopes.SINGLETON);
@@ -258,6 +254,32 @@ public class DispatcherModule extends AbstractModule {
 
     configureP2p();
     configureSync();
+  }
+
+  private void configureMempoolEvents() {
+    bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() {})
+        .toProvider(Dispatchers.dispatcherProvider(MempoolAdd.class))
+        .in(Scopes.SINGLETON);
+    bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() {})
+        .toProvider(Dispatchers.dispatcherProvider(MempoolAddSuccess.class))
+        .in(Scopes.SINGLETON);
+    bind(new TypeLiteral<ScheduledEventDispatcher<MempoolRelayTrigger>>() {})
+        .toProvider(Dispatchers.scheduledDispatcherProvider(MempoolRelayTrigger.class))
+        .in(Scopes.SINGLETON);
+    // The below is just another flavor of MempoolAddSuccess dispatcher, which must use a callback
+    // interface (instead of an `EventDispatcher`) for dependency reasons.
+    install(
+        new AbstractModule() {
+          @Provides
+          MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher(
+              EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
+              @Self NodeId selfNodeId) {
+            return transaction ->
+                mempoolAddSuccessEventDispatcher.dispatch(
+                    MempoolAddSuccess.create(
+                        RawNotarizedTransaction.create(transaction.getPayload()), selfNodeId));
+          }
+        });
   }
 
   private void configureP2p() {
