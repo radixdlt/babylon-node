@@ -102,7 +102,7 @@ jobs:
           path: "${{ github.workspace }}/docker/*.deb"
 
   build_push_container_gcr:
-    name: (GCR) Docker
+    name: (GCR) Docker AMD
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: ubuntu-latest
@@ -126,7 +126,7 @@ jobs:
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
   build_push_container_gcr-arm:
-    name: (GCR) Docker
+    name: (GCR) Docker ARM
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       runs_on: babylon-node-arm
@@ -152,7 +152,7 @@ jobs:
 
   build_push_container_dockerhub:
     if: github.event_name == 'release'
-    name: (DockerHub) Docker
+    name: (DockerHub) Docker AMD
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       environment: release
@@ -165,7 +165,7 @@ jobs:
         suffix=amd64
       context: "."
       dockerfile: "./Dockerfile"
-      platforms: "linux/amd64,linux/arm64"
+      platforms: "linux/amd64"
       enable_dockerhub: "true"
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
@@ -174,7 +174,7 @@ jobs:
 
   build_push_container_dockerhub_arm:
     if: github.event_name == 'release'
-    name: (DockerHub) Docker
+    name: (DockerHub) Docker ARM
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
       environment: release
