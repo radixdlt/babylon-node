@@ -123,6 +123,29 @@ jobs:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
+  build_push_container_gcr-arm:
+    name: (GCR) Docker
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      runs_on: babylon-node-arm
+      image_registry: "eu.gcr.io"
+      image_organization: "dev-container-repo"
+      image_name: "babylon-node"
+      tags: |
+        type=ref,event=branch
+        type=ref,event=pr
+        type=semver,pattern={{version}}
+        type=semver,pattern={{major}}.{{minor}}
+        type=semver,pattern={{major}}
+        type=sha
+      context: "."
+      dockerfile: "./Dockerfile"
+      platforms: "linux/arm64"
+      cache_tag_suffix: arm64
+    secrets:
+      workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
+      service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
   build_push_container_dockerhub:
     if: github.event_name == 'release'
     name: (DockerHub) Docker
@@ -138,6 +161,27 @@ jobs:
       dockerfile: "./Dockerfile"
       platforms: "linux/amd64,linux/arm64"
       enable_dockerhub: "true"
+    secrets:
+      workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
+      service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
+
+  build_push_container_dockerhub_arm:
+    if: github.event_name == 'release'
+    name: (DockerHub) Docker
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      environment: release
+      runs_on: babylon-node-arm
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "babylon-node"
+      tag: ${{ github.event.release.tag_name }}
+      context: "."
+      dockerfile: "./Dockerfile"
+      platforms: "linux/arm64"
+      enable_dockerhub: "true"
+      cache_tag_suffix: arm64
     secrets:
       workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
       service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
