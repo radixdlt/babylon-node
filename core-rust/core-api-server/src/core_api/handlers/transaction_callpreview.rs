@@ -13,6 +13,7 @@ use radix_engine_interface::manifest_args;
 use radix_engine_interface::{
     blueprints::transaction_processor::InstructionOutput, data::scrypto::scrypto_encode,
 };
+use state_manager::query::StateManagerSubstateQueries;
 use state_manager::PreviewRequest;
 use transaction::model::{Instruction, PreviewFlags, TransactionManifest};
 
@@ -80,7 +81,7 @@ pub(crate) async fn handle_transaction_callpreview(
         }
     };
 
-    let epoch = state_manager.get_epoch();
+    let epoch = state_manager.store().get_epoch();
 
     let result = state_manager
         .preview(PreviewRequest {

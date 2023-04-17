@@ -79,6 +79,8 @@ import com.radixdlt.statecomputer.commit.*;
 import com.radixdlt.statemanager.*;
 import com.radixdlt.transaction.CommittedTransactionStatus;
 import com.radixdlt.transaction.ExecutedTransaction;
+import com.radixdlt.transaction.TxnsAndProof;
+import com.radixdlt.transaction.TxnsAndProofRequest;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt16;
@@ -129,6 +131,8 @@ public final class StateManagerSbor {
     MempoolError.registerCodec(codecMap);
     CommittedTransactionStatus.registerCodec(codecMap);
     ExecutedTransaction.registerCodec(codecMap);
+    TxnsAndProofRequest.registerCodec(codecMap);
+    TxnsAndProof.registerCodec(codecMap);
     PublicKey.registerCodec(codecMap);
     ECDSASecp256k1PublicKey.registerCodec(codecMap);
     EdDSAEd25519PublicKey.registerCodec(codecMap);

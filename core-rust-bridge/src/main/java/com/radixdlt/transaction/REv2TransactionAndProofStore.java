@@ -75,14 +75,10 @@ import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
-import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 public final class REv2TransactionAndProofStore {
   public REv2TransactionAndProofStore(Metrics metrics, StateManager stateManager) {
-    Objects.requireNonNull(stateManager);
-
     LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
     this.getTransactionAtStateVersionFunc =
         Natives.builder(stateManager, REv2TransactionAndProofStore::getTransactionAtStateVersion)
@@ -110,12 +106,12 @@ public final class REv2TransactionAndProofStore {
     return this.getTransactionAtStateVersionFunc.call(UInt64.fromNonNegativeLong(stateVersion));
   }
 
-  public Option<Tuple.Tuple2<List<byte[]>, LedgerProof>> getTxnsAndProof(
+  public Option<TxnsAndProof> getTxnsAndProof(
       long startStateVersionInclusive,
       int maxNumberOfTxnsIfMoreThanOneProof,
       int maxPayloadSizeInBytes) {
     return this.getTxnsAndProof.call(
-        Tuple.Tuple3.of(
+        new TxnsAndProofRequest(
             UInt64.fromNonNegativeLong(startStateVersionInclusive),
             UInt32.fromNonNegativeInt(maxNumberOfTxnsIfMoreThanOneProof),
             UInt32.fromNonNegativeInt(maxPayloadSizeInBytes)));
@@ -134,9 +130,7 @@ public final class REv2TransactionAndProofStore {
   private static native byte[] getTransactionAtStateVersion(
       StateManager stateManager, byte[] payload);
 
-  private final Natives.Call1<
-          Tuple.Tuple3<UInt64, UInt32, UInt32>, Option<Tuple.Tuple2<List<byte[]>, LedgerProof>>>
-      getTxnsAndProof;
+  private final Natives.Call1<TxnsAndProofRequest, Option<TxnsAndProof>> getTxnsAndProof;
 
   private static native byte[] getTxnsAndProof(StateManager stateManager, byte[] payload);
 

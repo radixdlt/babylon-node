@@ -5,6 +5,7 @@ use state_manager::{
     query::{dump_component_state, VaultData},
     store::traits::QueryableProofStore,
 };
+use std::ops::Deref;
 
 #[tracing::instrument(skip(state), err(Debug))]
 pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
@@ -48,7 +49,8 @@ fn handle_lts_state_account_fungible_resource_balance_internal(
             .map_err(|err| err.into_response_error("account_address"))?;
 
     // TODO: super-inefficient implementation - change before mainnet
-    let component_dump = match dump_component_state(state_manager.store(), component_address) {
+    let read_store = state_manager.store();
+    let component_dump = match dump_component_state(read_store.deref(), component_address) {
         Ok(component_dump) => component_dump,
         Err(err) => match component_address {
             ComponentAddress::Account(_) => return Err(not_found_error("Account not found")),

@@ -6,6 +6,7 @@ use radix_engine_interface::api::types::{
 };
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::query::{dump_component_state, VaultData};
+use std::ops::Deref;
 
 pub(crate) async fn handle_state_component(
     state: State<CoreApiState>,
@@ -118,7 +119,8 @@ fn handle_state_component_internal(
         substate
     };
 
-    let component_dump = dump_component_state(state_manager.store(), component_address)
+    let read_store = state_manager.store();
+    let component_dump = dump_component_state(read_store.deref(), component_address)
         .map_err(|err| server_error(format!("Error traversing component state: {err:?}")))?;
 
     let state_owned_vaults = component_dump
