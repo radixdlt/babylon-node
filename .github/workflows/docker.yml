@@ -74,6 +74,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
+            type=sha
       - name: Join multiarch images
         run: |
           docker buildx imagetools create -t eu.gcr.io/dev-container-repo/babylon-node:${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }} \
