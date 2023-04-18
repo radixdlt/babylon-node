@@ -10,17 +10,16 @@ pub(crate) async fn handle_status_network_status(
     Json(request): Json<models::NetworkStatusRequest>,
 ) -> Result<Json<models::NetworkStatusResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
-    let state_manager = state.state_manager.read();
-    let read_store = state_manager.store();
+    let database = state.database.read();
     Ok(models::NetworkStatusResponse {
-        post_genesis_state_identifier: read_store
+        post_genesis_state_identifier: database
             .get_committed_transaction_identifiers(1)
             .map(|identifiers| -> Result<_, MappingError> {
                 Ok(Box::new(to_api_committed_state_identifier(identifiers)?))
             })
             .transpose()?,
         current_state_identifier: Box::new(to_api_committed_state_identifier(
-            read_store.get_top_transaction_identifiers(),
+            database.get_top_transaction_identifiers(),
         )?),
         pre_genesis_state_identifier: Box::new(to_api_committed_state_identifier(
             CommittedTransactionIdentifiers::pre_genesis(),

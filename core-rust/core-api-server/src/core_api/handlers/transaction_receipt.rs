@@ -15,25 +15,20 @@ pub(crate) async fn handle_transaction_receipt(
     let intent_hash = extract_intent_hash(request.intent_hash)
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
-    let state_manager = state.state_manager.read();
+    let database = state.database.read();
 
-    let txn_state_version_opt = state_manager
-        .store()
-        .get_txn_state_version_by_identifier(&intent_hash);
+    let txn_state_version_opt = database.get_txn_state_version_by_identifier(&intent_hash);
 
     if let Some(txn_state_version) = txn_state_version_opt {
-        let ledger_transaction = state_manager
-            .store()
+        let ledger_transaction = database
             .get_committed_transaction(txn_state_version)
             .expect("Txn is missing");
 
-        let receipt = state_manager
-            .store()
+        let receipt = database
             .get_committed_transaction_receipt(txn_state_version)
             .expect("Txn receipt is missing");
 
-        let identifiers = state_manager
-            .store()
+        let identifiers = database
             .get_committed_transaction_identifiers(txn_state_version)
             .expect("Txn identifiers are missing");
 

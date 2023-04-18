@@ -15,12 +15,12 @@ pub(crate) async fn handle_state_package(
     let package_address = extract_package_address(&extraction_context, &request.package_address)
         .map_err(|err| err.into_response_error("package_address"))?;
 
-    let state_manager = state.state_manager.read();
+    let database = state.database.read();
 
     let package_info = {
         let substate_offset = SubstateOffset::Package(PackageOffset::Info);
         let loaded_substate = read_mandatory_substate(
-            state_manager.deref(),
+            database.deref(),
             RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::SELF,
             &substate_offset,
@@ -33,7 +33,7 @@ pub(crate) async fn handle_state_package(
     let package_royalty = {
         let substate_offset = SubstateOffset::Package(PackageOffset::Royalty);
         let loaded_substate = read_mandatory_substate(
-            state_manager.deref(),
+            database.deref(),
             RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::SELF,
             &substate_offset,
@@ -46,7 +46,7 @@ pub(crate) async fn handle_state_package(
     let package_access_rules = {
         let substate_offset = SubstateOffset::AccessRules(AccessRulesOffset::AccessRules);
         let loaded_substate = read_mandatory_substate(
-            state_manager.deref(),
+            database.deref(),
             RENodeId::GlobalObject(package_address.into()),
             NodeModuleId::AccessRules,
             &substate_offset,

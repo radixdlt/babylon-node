@@ -27,12 +27,11 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
         )));
     }
 
-    let state_manager = state.state_manager.read();
-    let read_store = state_manager.store();
+    let database = state.database.read();
 
-    let max_state_version = read_store.max_state_version();
+    let max_state_version = database.max_state_version();
 
-    let txns = read_store.get_committed_transaction_bundles(
+    let txns = database.get_committed_transaction_bundles(
         from_state_version,
         limit.try_into().expect("limit out of usize bounds"),
     );

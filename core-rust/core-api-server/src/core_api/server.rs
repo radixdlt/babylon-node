@@ -78,11 +78,13 @@ use state_manager::jni::state_manager::ActualStateManager;
 use super::{constants::LARGE_REQUEST_MAX_BYTES, handlers::*, not_found_error, ResponseError};
 
 use handle_status_network_configuration as handle_provide_info_at_root_path;
+use state_manager::store::StateManagerDatabase;
 
 #[derive(Clone)]
 pub(crate) struct CoreApiState {
     pub network: NetworkDefinition,
     pub state_manager: Arc<RwLock<ActualStateManager>>,
+    pub database: Arc<RwLock<StateManagerDatabase>>,
 }
 
 pub async fn create_server<F>(
@@ -90,12 +92,14 @@ pub async fn create_server<F>(
     shutdown_signal: F,
     network: NetworkDefinition,
     state_manager: Arc<RwLock<ActualStateManager>>,
+    database: Arc<RwLock<StateManagerDatabase>>,
 ) where
     F: Future<Output = ()>,
 {
     let core_api_state = CoreApiState {
         network,
         state_manager,
+        database,
     };
 
     let router = Router::new()
