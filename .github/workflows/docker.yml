@@ -62,10 +62,21 @@ jobs:
           echo "---- Create build context ----"
           docker context create babylon-node
           docker buildx create babylon-node --use
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            eu.gcr.io/dev-container-repo/babylon-node
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
       - name: Join multiarch images
         run: |
-          GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD | sed 's/\//-/g')
-          docker buildx imagetools create -t eu.gcr.io/dev-container-repo/babylon-node:${GITHUB_REF} \
+          docker buildx imagetools create -t ${{ steps.meta.outputs.tags }} \
             ${{ needs.build_push_container_gcr.outputs.tags }} \
             ${{ needs.build_push_container_gcr_arm.outputs.tags }}
 
