@@ -76,9 +76,9 @@ jobs:
             type=semver,pattern={{major}}
       - name: Join multiarch images
         run: |
-          docker buildx imagetools create -t ${{ steps.meta.outputs.tags }} \
-            ${{ needs.build_push_container_gcr.outputs.tags }} \
-            ${{ needs.build_push_container_gcr_arm.outputs.tags }}
+          docker buildx imagetools create -t ${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }} \
+            ${{ fromJSON(needs.build_push_container_gcr.outputs.json).labels['org.opencontainers.image.version'] }} \
+            ${{ fromJSON(needs.build_push_container_gcr_arm.outputs.json).labels['org.opencontainers.image.version'] }}
 
   join_multiarch_image_dockerhub:
     permissions:
