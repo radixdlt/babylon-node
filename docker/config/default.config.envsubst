@@ -6,6 +6,7 @@ network.genesis_txn=$RADIXDLT_GENESIS_TXN
 network.genesis_file=$RADIXDLT_GENESIS_FILE
 
 node.key.path=$RADIXDLT_VALIDATOR_KEY_LOCATION
+node.key.create_if_missing=$RADIXDLT_NODE_KEY_CREATE_IF_MISSING
 
 network.host_ip=$RADIXDLT_HOST_IP_ADDRESS
 network.p2p.seed_nodes=$RADIXDLT_NETWORK_SEEDS_REMOTE

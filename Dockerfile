@@ -139,7 +139,7 @@ RUN apt-get update -y && \
     daemontools=1:0.76-7 \
     libssl-dev=1.1.1n-0+deb11u4 \
     software-properties-common=0.96.20.2-2.1 \
-    gettext-base=0.21-4 && \  
+    gettext-base=0.21-4 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -181,6 +181,7 @@ HEALTHCHECK CMD sh /home/radixdlt/docker-healthcheck.sh
 ENV RADIXDLT_HOME=/home/radixdlt \
     RADIXDLT_NETWORK_SEEDS_REMOTE=127.0.0.1 \
     RADIXDLT_DB_LOCATION=./RADIXDB \
+    RADIXDLT_DB_ACCOUNT_CHANGE_INDEX_ENABLE=true \
     RADIXDLT_VALIDATOR_KEY_LOCATION=/home/radixdlt/node.ks \
     RADIXDLT_NETWORK_USE_PROXY_PROTOCOL=false \
     RADIXDLT_CORE_API_PORT=3333 \
@@ -190,7 +191,7 @@ ENV RADIXDLT_HOME=/home/radixdlt \
     RADIXDLT_PROMETHEUS_API_PORT=3335 \
     RADIXDLT_PROMETHEUS_API_BIND_ADDRESS=0.0.0.0 \
     RADIXDLT_NETWORK_ID=240 \
-    RADIXDLT_DB_ACCOUNT_CHANGE_INDEX_ENABLE=true
+    RADIXDLT_NODE_KEY_CREATE_IF_MISSING=false
 
 COPY --from=binary-container / /tmp
 RUN unzip -j /tmp/*.zip && mkdir -p /opt/radixdlt/bin && \
