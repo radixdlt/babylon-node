@@ -80,7 +80,7 @@ public final class PersistedBFTKeyManager {
   public PersistedBFTKeyManager(String nodeKeyPath, boolean createNodeKeyIfMissing) {
     ECKeyPair nodeEcKeyPair;
     try {
-       nodeEcKeyPair = loadNodeKey(nodeKeyPath);
+      nodeEcKeyPair = loadNodeKey(nodeKeyPath);
     } catch (IllegalStateException ex) {
       if (createNodeKeyIfMissing) {
         nodeEcKeyPair = ECKeyPair.generateNew();
