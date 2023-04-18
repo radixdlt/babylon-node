@@ -154,6 +154,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   private final Metrics metrics;
   private final LedgerAccumulator accumulator;
   private final LedgerAccumulatorVerifier verifier;
+  // TODO(resolve during review): Is it still needed? Was it ever needed?
   private final Object lock = new Object();
   private final TimeSupplier timeSupplier;
 

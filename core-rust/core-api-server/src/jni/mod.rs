@@ -79,6 +79,7 @@ use std::str;
 use std::sync::{Arc, MutexGuard};
 use tokio::runtime::Runtime as TokioRuntime;
 
+use state_manager::simple_mempool::SimpleMempool;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
@@ -93,6 +94,7 @@ pub struct JNICoreApiServer {
     pub config: CoreApiServerConfig,
     pub network: NetworkDefinition,
     pub state_manager: Arc<RwLock<ActualStateManager>>,
+    pub mempool: Arc<RwLock<SimpleMempool>>,
     pub running_server: Option<RunningServer>,
 }
 
@@ -107,12 +109,14 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_init(
     let state = JNIStateManager::get_state(&env, j_state_manager);
     let network = state.network.clone();
     let state_manager = state.state_manager.clone();
+    let mempool = state.mempool.clone();
     let config_bytes: Vec<u8> = jni_jbytearray_to_vector(&env, j_config).unwrap();
     let config = CoreApiServerConfig::from_java(&config_bytes).unwrap();
     let jni_core_api_server = JNICoreApiServer {
         config,
         network,
         state_manager,
+        mempool,
         running_server: None,
     };
 
@@ -142,6 +146,7 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
 
     let network = jni_core_api_server.network.clone();
     let state_manager = jni_core_api_server.state_manager.clone();
+    let mempool = jni_core_api_server.mempool.clone();
 
     let bind_addr = format!("{}:{}", config.bind_interface, config.port);
     tokio_runtime.spawn(async move {
@@ -176,6 +181,7 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
             shutdown_signal_receiver.map(|_| ()),
             network,
             state_manager,
+            mempool,
         )
         .await;
     });

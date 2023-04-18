@@ -104,10 +104,8 @@ pub(crate) async fn handle_lts_transaction_status(
         }).map(Json);
     }
 
-    let mempool_payloads_hashes = state_manager
-        .mempool
-        .read()
-        .get_payload_hashes_for_intent(&intent_hash);
+    let mempool = state.mempool.read();
+    let mempool_payloads_hashes = mempool.get_payload_hashes_for_intent(&intent_hash);
 
     if !mempool_payloads_hashes.is_empty() {
         let mempool_payloads = mempool_payloads_hashes
