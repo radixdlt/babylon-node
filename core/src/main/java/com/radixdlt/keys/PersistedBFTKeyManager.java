@@ -77,17 +77,18 @@ import java.util.Optional;
 public final class PersistedBFTKeyManager {
   private final ECKeyPair ecKeyPair;
 
-  public PersistedBFTKeyManager(String nodeKeyPath) {
-    this.ecKeyPair = loadNodeKey(nodeKeyPath);
+  public PersistedBFTKeyManager(String nodeKeyPath, boolean createNodeKeyIfMissing) {
+    this.ecKeyPair = loadNodeKey(nodeKeyPath, createNodeKeyIfMissing);;
   }
 
-  private static ECKeyPair loadNodeKey(String nodeKeyPath) {
-    return readNodeKeyFromEnvironment().orElseGet(() -> loadNodeKeyFromFile(nodeKeyPath));
+  private static ECKeyPair loadNodeKey(String nodeKeyPath, boolean createNodeKeyIfMissing) {
+    return readNodeKeyFromEnvironment()
+        .orElseGet(() -> loadNodeKeyFromFile(nodeKeyPath, createNodeKeyIfMissing));
   }
 
-  private static ECKeyPair loadNodeKeyFromFile(String nodeKeyPath) {
+  private static ECKeyPair loadNodeKeyFromFile(String nodeKeyPath, boolean createNodeKeyIfMissing) {
     try {
-      return Keys.readNodeKey(nodeKeyPath);
+      return Keys.readNodeKey(nodeKeyPath, createNodeKeyIfMissing);
     } catch (IOException | CryptoException ex) {
       throw new IllegalStateException("While loading node key from " + nodeKeyPath, ex);
     }

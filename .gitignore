@@ -1,3 +1,13 @@
+# radix stuff
+cli-tools/default.config
+configs/
+
+# docker file - build outputs
+outputs/
+
+# vscode stuff
+.vscode
+
 # gradle stuff
 build/
 .gradle/
@@ -8,6 +18,7 @@ target/
 
 # eclipse stuff
 bin/
+lib/
 .settings/
 .project/
 .classpath/
@@ -55,9 +66,3 @@ package-lock.json
 # auto-generated doc
 **/resources/documentation/*.html
 **/resources/markdown
-
-configs/
-
-# rust
-target/
-cli-tools/default.config
