@@ -45,36 +45,79 @@ USER nobody
 FROM scratch AS binary-container
 COPY --from=binary-build-stage /radixdlt/core/build/distributions /
 
-# Building core-rust library
-FROM lukemathwalker/cargo-chef:0.1.52-rust-1.68.0 AS chef
-LABEL org.opencontainers.image.authors="devops@radixdlt.com"
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    clang=1:11.0-51+nmu5 \
-    libmpc-dev=1.2.0-1 \
-    libmpfr-dev=4.1.0-3 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-WORKDIR /app
+FROM ubuntu:22.04 as base
 WORKDIR /app
 
-FROM chef AS planner
-COPY core-rust ./
-RUN cargo chef prepare --recipe-path recipe.json
+RUN apt-get update; apt-get upgrade -y && \
+  apt install -y \
+  build-essential \
+  curl \
+  g++-aarch64-linux-gnu \
+  g++-x86-64-linux-gnu \
+  libc6-dev-arm64-cross \
+  libclang-dev \
+  libssl-dev \
+  pkg-config
 
-FROM chef AS library-builder 
-ENV RUST_BACKTRACE=1
-RUN apt-get update && apt-get install libclang-dev=1:11.0-51+nmu5 -y --no-install-recommends
-COPY --from=planner /app/recipe.json recipe.json
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh; sh rustup.sh -y --target aarch64-unknown-linux-gnu x86_64-unknown-linux-gnu
+RUN $HOME/.cargo/bin/cargo install sccache
+
+# This mapped-volume-build is used in development, via the build-sm.yaml docker compose.
+# By using mounts, this allows artifact caching. The whole core-rust directory is mounted, and run is called.
+# After the above stage, only this stage of the docker file is built in development.
+# This part of the docker file is ignored on CI.
+FROM base as mapped-volume-build
+ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
+ENV RUSTC_WRAPPER=/root/.cargo/bin/sccache
+
 
 ARG TARGETPLATFORM
-ARG RUST_PROFILE=release
 COPY docker/scripts/cargo_build_by_platform.sh /opt/radixdlt/cargo_build_by_platform.sh
-RUN /opt/radixdlt/cargo_build_by_platform.sh chef $TARGETPLATFORM release
-# Build application
+CMD /opt/radixdlt/cargo_build_by_platform.sh build_cache $TARGETPLATFORM release
+
+# On CI we use docker build instead of docker compose.
+# The mapped-volume-build stage is skipped, and the following stages are run, with sub-stages cached for future runs.
+FROM base as cache-packages
+WORKDIR /app
+
+ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
+ENV RUSTC_WRAPPER=/root/.cargo/bin/sccache
+
+# First - we build a dummy rust file, to cache the compilation of all our dependencies in a Docker layer
+RUN USER=root $HOME/.cargo/bin/cargo init --lib --name dummy --vcs none .
+RUN USER=root mkdir -p ./state-manager/src
+RUN USER=root mkdir -p ./core-rust/src
+RUN USER=root mkdir -p ./core-api-server/src
+RUN USER=root touch ./state-manager/src/lib.rs
+RUN USER=root touch ./core-rust/src/lib.rs
+RUN USER=root touch ./core-api-server/src/lib.rs
+COPY core-rust/Cargo.toml ./
+COPY core-rust/Cargo.lock ./
+COPY core-rust/core-rust/Cargo.toml ./core-rust
+COPY core-rust/state-manager/Cargo.toml ./state-manager
+COPY core-rust/core-api-server/Cargo.toml ./core-api-server
+
+ARG TARGETPLATFORM
+ARG RUST_PROFILE
+COPY docker/scripts/cargo_build_by_platform.sh /opt/radixdlt/cargo_build_by_platform.sh
+RUN /opt/radixdlt/cargo_build_by_platform.sh build_cache $TARGETPLATFORM release
+
+FROM cache-packages as library-builder
+
+ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
+ENV RUSTC_WRAPPER=/root/.cargo/bin/sccache
+
+WORKDIR /app
+# Now - we copy in everything, and do the actual build
+
+RUN rm -rf state-manager core-rust core-api-server
 COPY core-rust ./
+
 RUN /opt/radixdlt/cargo_build_by_platform.sh build $TARGETPLATFORM release
 
-# Exporting core-rust library
 FROM scratch as library-container
 COPY --from=library-builder /libcorerust.so /
 

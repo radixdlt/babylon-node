@@ -18,11 +18,12 @@ elif [ $TARGETPLATFORM == 'linux/arm64' ]; then
     BUILD_ARTIFACT="libcorerust.so"
 fi
 
-if [ $COMMANDSTAGE == 'chef' ]; then
-    RUST_BACKTRACE=full cargo chef cook --release --target=$TARGET --recipe-path recipe.json
+if [ $COMMANDSTAGE == 'build-cache' ]; then
+    RUST_PROFILE=$3
+    RUST_BACKTRACE=full $HOME/.cargo/bin/cargo build --release --target=$TARGET --profile=$RUST_PROFILE
 elif [ $COMMANDSTAGE == 'build' ]; then
     RUST_PROFILE=$3
-    RUST_BACKTRACE=full cargo build --release --target=$TARGET --profile=$RUST_PROFILE
+    RUST_BACKTRACE=full $HOME/.cargo/bin/cargo build --release --target=$TARGET --profile=$RUST_PROFILE
     echo "Moving build artifact to root folder /"
     cp -R target/$TARGET/release/$BUILD_ARTIFACT / 
     rm -rf /app
