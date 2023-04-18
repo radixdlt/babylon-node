@@ -12,8 +12,8 @@ pub fn to_api_lts_committed_transaction_outcome(
     identifiers: CommittedTransactionIdentifiers,
 ) -> Result<models::LtsCommittedTransactionOutcome, MappingError> {
     let status = match receipt.outcome {
-        LedgerTransactionOutcome::Success(_) => models::LtsCommittedTransactionStatus::Succeeded,
-        LedgerTransactionOutcome::Failure(_) => models::LtsCommittedTransactionStatus::Failed,
+        LedgerTransactionOutcome::Success(_) => models::LtsCommittedTransactionStatus::Success,
+        LedgerTransactionOutcome::Failure(_) => models::LtsCommittedTransactionStatus::Failure,
     };
 
     let fungible_entity_balance_changes = receipt
