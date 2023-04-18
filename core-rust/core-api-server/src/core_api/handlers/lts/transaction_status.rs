@@ -25,16 +25,15 @@ pub(crate) async fn handle_lts_transaction_status(
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
     let state_manager = state.state_manager.read();
+    let database = state.database.read();
 
-    let txn_state_version_opt = state_manager
-        .store()
-        .get_txn_state_version_by_identifier(&intent_hash);
+    let txn_state_version_opt = database.get_txn_state_version_by_identifier(&intent_hash);
 
     let mut known_pending_payloads = state_manager
         .pending_transaction_result_cache
         .peek_all_known_payloads_for_intent(&intent_hash);
 
-    let current_epoch = state_manager.store().get_epoch();
+    let current_epoch = database.get_epoch();
 
     let invalid_from_epoch = known_pending_payloads
         .iter()
@@ -50,13 +49,11 @@ pub(crate) async fn handle_lts_transaction_status(
     });
 
     if let Some(txn_state_version) = txn_state_version_opt {
-        let txn = state_manager
-            .store()
+        let txn = database
             .get_committed_transaction(txn_state_version)
             .expect("Txn is missing");
 
-        let receipt = state_manager
-            .store()
+        let receipt = database
             .get_committed_transaction_receipt(txn_state_version)
             .expect("Txn receipt is missing");
 
