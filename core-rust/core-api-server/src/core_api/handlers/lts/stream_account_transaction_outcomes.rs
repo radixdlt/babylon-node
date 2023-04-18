@@ -26,10 +26,9 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
         )));
     }
 
-    let state_manager = state.state_manager.read();
-    let read_store = state_manager.store();
+    let database = state.database.read();
 
-    let _max_state_version = read_store.max_state_version();
+    let _max_state_version = database.max_state_version();
 
     Err(not_implemented("Endpoint not implemented yet"))
 }

@@ -24,16 +24,15 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
         extract_component_address(&extraction_context, &request.account_address)
             .map_err(|err| err.into_response_error("account_address"))?;
 
-    let state_manager = state.state_manager.read();
-    let read_store = state_manager.store();
-    let component_dump = match dump_component_state(read_store.deref(), component_address) {
+    let database = state.database.read();
+    let component_dump = match dump_component_state(database.deref(), component_address) {
         Ok(component_dump) => component_dump,
         Err(err) => match component_address {
             ComponentAddress::Account(_) => return Err(not_found_error("Account not found")),
             ComponentAddress::EcdsaSecp256k1VirtualAccount(_)
             | ComponentAddress::EddsaEd25519VirtualAccount(_) => {
                 return Ok(models::LtsStateAccountAllFungibleResourceBalancesResponse {
-                    state_version: to_api_state_version(read_store.max_state_version())?,
+                    state_version: to_api_state_version(database.max_state_version())?,
                     account_address: to_api_component_address(&mapping_context, &component_address),
                     fungible_resource_balances: Vec::new(),
                 })
@@ -81,7 +80,7 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
         .collect();
 
     Ok(models::LtsStateAccountAllFungibleResourceBalancesResponse {
-        state_version: to_api_state_version(read_store.max_state_version())?,
+        state_version: to_api_state_version(database.max_state_version())?,
         account_address: to_api_component_address(&mapping_context, &component_address),
         fungible_resource_balances,
     })

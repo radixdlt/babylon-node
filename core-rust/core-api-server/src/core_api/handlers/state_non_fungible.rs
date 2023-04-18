@@ -21,12 +21,12 @@ pub(crate) async fn handle_state_non_fungible(
     let resource_address = extract_resource_address(&extraction_context, &request.resource_address)
         .map_err(|err| err.into_response_error("resource_address"))?;
 
-    let state_manager = state.state_manager.read();
+    let database = state.database.read();
     let resource_manager = {
         let substate_offset =
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let loaded_substate = read_mandatory_substate(
-            state_manager.deref(),
+            database.deref(),
             RENodeId::GlobalObject(resource_address.into()),
             NodeModuleId::SELF,
             &substate_offset,
@@ -66,18 +66,17 @@ pub(crate) async fn handle_state_non_fungible(
         non_fungible_substate_offset,
     );
 
-    let key_value_store_entry_substate = {
-        let loaded_substate = read_optional_substate_from_id(state_manager.deref(), &substate_id);
-        match loaded_substate {
-            Some(PersistedSubstate::KeyValueStoreEntry(substate)) => substate,
-            None => {
-                return Err(not_found_error(
+    let key_value_store_entry_substate =
+        {
+            let loaded_substate = read_optional_substate_from_id(database.deref(), &substate_id);
+            match loaded_substate {
+                Some(PersistedSubstate::KeyValueStoreEntry(substate)) => substate,
+                None => return Err(not_found_error(
                     "The specified non-fungible id does not exist under that non-fungible resource",
-                ))
+                )),
+                _ => return Err(wrong_substate_type(substate_id.2)),
             }
-            _ => return Err(wrong_substate_type(substate_id.2)),
-        }
-    };
+        };
 
     Ok(StateNonFungibleResponse {
         non_fungible: Some(to_api_key_value_story_entry_substate(

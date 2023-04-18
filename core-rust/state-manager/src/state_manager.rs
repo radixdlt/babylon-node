@@ -83,7 +83,7 @@ use ::transaction::model::{
     TransactionIntent,
 };
 use ::transaction::validation::{TestIntentHashManager, ValidationConfig};
-use parking_lot::{RawRwLock, RwLock};
+use parking_lot::RwLock;
 use prometheus::Registry;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, AbortReason, ExecutionConfig, FeeReserveConfig,
@@ -97,7 +97,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 use crate::staging::epoch_handling::AccuTreeEpochHandler;
-use parking_lot::lock_api::RwLockReadGuard;
+
 use radix_engine::blueprints::epoch_manager::Validator;
 use radix_engine::kernel::interpreters::ScryptoInterpreter;
 use radix_engine_interface::data::manifest::manifest_encode;
@@ -206,10 +206,6 @@ impl<S> StateManager<S>
 where
     S: ReadableSubstateStore,
 {
-    pub fn store(&self) -> RwLockReadGuard<'_, RawRwLock, S> {
-        self.store.read()
-    }
-
     pub fn preview(&self, preview_request: PreviewRequest) -> Result<PreviewResult, PreviewError> {
         let notary = preview_request.notary_public_key.unwrap_or_else(|| {
             PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PrivateKey::from_u64(2).unwrap().public_key())
