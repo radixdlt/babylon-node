@@ -4,14 +4,14 @@ WORKDIR /app
 
 RUN apt-get update; apt-get upgrade -y && \
   apt install -y \
-  build-essential= \
-  curl= \
-  g++-aarch64-linux-gnu= \
-  g++-x86-64-linux-gnu= \
-  libc6-dev-arm64-cross= \
-  libclang-dev= \
-  libssl-dev= \
-  pkg-config=
+  build-essential=12.9ubuntu3 \
+  curl=7.81.0-1ubuntu1.10 \
+  g++-aarch64-linux-gnu=4:11.2.0-1ubuntu1 \
+  g++-x86-64-linux-gnu=4:11.2.0-1ubuntu1 \
+  libc6-dev-arm64-cross=2.35-0ubuntu1cross3 \
+  libclang-dev=1:14.0-55~exp2 \
+  libssl-dev=3.0.2-0ubuntu1.8 \
+  pkg-config=0.29.2-1ubuntu3
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh; sh rustup.sh -y --target aarch64-unknown-linux-gnu x86_64-unknown-linux-gnu
 RUN $HOME/.cargo/bin/cargo install sccache
