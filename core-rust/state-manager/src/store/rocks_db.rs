@@ -929,13 +929,16 @@ impl RocksDBStore {
 
 impl AccountChangeIndexExtension for RocksDBStore {
     fn account_change_index_last_processed_state_version(&self) -> u64 {
-        self.get_by_key::<u64>(
-            &ExtensionsData,
-            ExtensionsDataKeys::AccountChangeIndexLastProcessedStateVersion
-                .to_string()
-                .as_bytes(),
-        )
-        .unwrap_or(0)
+        self.db
+            .get_pinned_cf(
+                self.cf_handle(&ExtensionsData),
+                ExtensionsDataKeys::AccountChangeIndexLastProcessedStateVersion
+                    .to_string()
+                    .as_bytes(),
+            )
+            .unwrap()
+            .map(|pinnable_slice| u64::from_be_bytes(pinnable_slice.as_ref().try_into().unwrap()))
+            .unwrap_or(0)
     }
 
     fn is_account_change_index_enabled(&self) -> bool {
