@@ -100,9 +100,9 @@ COPY core-rust/state-manager/Cargo.toml ./state-manager
 COPY core-rust/core-api-server/Cargo.toml ./core-api-server
 
 ARG TARGETPLATFORM
-ARG RUST_PROFILE
+ARG RUST_PROFILE=release
 COPY docker/scripts/cargo_build_by_platform.sh /opt/radixdlt/cargo_build_by_platform.sh
-RUN /opt/radixdlt/cargo_build_by_platform.sh build_cache $TARGETPLATFORM release
+RUN /opt/radixdlt/cargo_build_by_platform.sh build_cache $TARGETPLATFORM $RUST_PROFILE
 
 FROM cache-packages as library-builder
 
@@ -116,7 +116,9 @@ WORKDIR /app
 RUN rm -rf state-manager core-rust core-api-server
 COPY core-rust ./
 
-RUN /opt/radixdlt/cargo_build_by_platform.sh build $TARGETPLATFORM release
+ARG TARGETPLATFORM
+ARG RUST_PROFILE=release
+RUN /opt/radixdlt/cargo_build_by_platform.sh build $TARGETPLATFORM $RUST_PROFILE
 
 FROM scratch as library-container
 COPY --from=library-builder /libcorerust.so /
