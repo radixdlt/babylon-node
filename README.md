@@ -4,6 +4,11 @@ This is the repository for the upcoming Babylon release of the Radix Node.
 
 It includes a variant implementation of the [HotStuff](https://arxiv.org/abs/1803.05069) BFT-style consensus.
 
+## Integrators
+
+If you're looking to run a node for developing an integration, see [details on running a testnet node for development](testnet-node/README.md)
+and the [Babylon documentation for exchanges and integrators](https://docs.google.com/document/d/1cjc7_alyzIb2QQIGGn1PEpJyjrMRZYHq3VwkOXRP8J0).
+
 ## Subdirectories
 
 Here we have:
@@ -19,7 +24,7 @@ Here we have:
 - [shell](shell): Examples for how to run Radix shell, which can enable spinning up temporary interactive
    nodes. The Radix Shell code itself is in [cli-tools](cli-tools).
 - [docker](docker): An option for running a network of nodes locally. You can also use the "Run Single Validator" IntelliJ option.
-- [testnet-node](testnet-node): The easiest way to setup a development environment for integrators (check the [README](testnet-node/README.md))
+- [testnet-node](testnet-node): The easiest way to set up a development environment for integrators (check the [README](testnet-node/README.md))
 
 Until the Babylon engine is feature-compatible with Olympia, we are keeping around the Olympia engine for
 some of our tests.
