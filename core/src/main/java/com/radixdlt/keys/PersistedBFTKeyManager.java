@@ -79,25 +79,18 @@ public final class PersistedBFTKeyManager {
 
   public PersistedBFTKeyManager(String nodeKeyPath, boolean createNodeKeyIfMissing) {
     ECKeyPair nodeEcKeyPair;
-    try {
-      nodeEcKeyPair = loadNodeKey(nodeKeyPath);
-    } catch (IllegalStateException ex) {
-      if (createNodeKeyIfMissing) {
-        nodeEcKeyPair = ECKeyPair.generateNew();
-      } else {
-        throw ex;
-      }
-    }
+    nodeEcKeyPair = loadNodeKey(nodeKeyPath, createNodeKeyIfMissing);
     this.ecKeyPair = nodeEcKeyPair;
   }
 
-  private static ECKeyPair loadNodeKey(String nodeKeyPath) {
-    return readNodeKeyFromEnvironment().orElseGet(() -> loadNodeKeyFromFile(nodeKeyPath));
+  private static ECKeyPair loadNodeKey(String nodeKeyPath, boolean createNodeKeyIfMissing) {
+    return readNodeKeyFromEnvironment()
+        .orElseGet(() -> loadNodeKeyFromFile(nodeKeyPath, createNodeKeyIfMissing));
   }
 
-  private static ECKeyPair loadNodeKeyFromFile(String nodeKeyPath) {
+  private static ECKeyPair loadNodeKeyFromFile(String nodeKeyPath, boolean createNodeKeyIfMissing) {
     try {
-      return Keys.readNodeKey(nodeKeyPath);
+      return Keys.readNodeKey(nodeKeyPath, createNodeKeyIfMissing);
     } catch (IOException | CryptoException ex) {
       throw new IllegalStateException("While loading node key from " + nodeKeyPath, ex);
     }

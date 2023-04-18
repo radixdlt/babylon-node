@@ -19,6 +19,7 @@ Here we have:
 - [shell](shell): Examples for how to run Radix shell, which can enable spinning up temporary interactive
    nodes. The Radix Shell code itself is in [cli-tools](cli-tools).
 - [docker](docker): An option for running a network of nodes locally. You can also use the "Run Single Validator" IntelliJ option.
+- [testnet-node](testnet-node): The easiest way to setup a development environment for integrators (check the [README](testnet-node/README.md))
 
 Until the Babylon engine is feature-compatible with Olympia, we are keeping around the Olympia engine for
 some of our tests.
