@@ -64,9 +64,9 @@ jobs:
           docker buildx create babylon-node --use
       - name: Join multiarch images
         run: |
-          docker buildx imagetools create -t eu.gcr.io/dev-container-repo/babylon-node:${GITHUB_REF##*/} \
-            eu.gcr.io/dev-container-repo/babylon-node:${GITHUB_REF##*/}-arm64 \
-            eu.gcr.io/dev-container-repo/babylon-node:${GITHUB_REF##*/}-amd64
+          docker buildx imagetools create -t eu.gcr.io/dev-container-repo/babylon-node:${GITHUB_REF#refs/heads/} \
+            eu.gcr.io/dev-container-repo/babylon-node:${GITHUB_REF#refs/heads/}-arm64 \
+            eu.gcr.io/dev-container-repo/babylon-node:${GITHUB_REF#refs/heads/}-amd64
 
   join_multiarch_image_dockerhub:
     permissions:
