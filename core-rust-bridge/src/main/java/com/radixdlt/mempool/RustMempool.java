@@ -64,9 +64,6 @@
 
 package com.radixdlt.mempool;
 
-import static com.radixdlt.lang.Tuple.tuple;
-
-import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
@@ -136,7 +133,7 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
         transactionsToExclude.stream().map(RawNotarizedTransaction::getPayloadHash).toList();
 
     return getTransactionsForProposalFunc.call(
-        tuple(
+        new ProposalTransactionsRequest(
             UInt32.fromNonNegativeInt(maxCount),
             UInt32.fromNonNegativeInt(maxPayloadSizeBytes),
             transactionHashesToExclude));
@@ -163,8 +160,7 @@ public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
   private static native byte[] getTransactionsForProposal(
       StateManager stateManager, byte[] payload);
 
-  private final Natives.Call1<
-          Tuple.Tuple3<UInt32, UInt32, List<HashCode>>, List<RawNotarizedTransaction>>
+  private final Natives.Call1<ProposalTransactionsRequest, List<RawNotarizedTransaction>>
       getTransactionsForProposalFunc;
 
   private static native byte[] getTransactionsToRelay(StateManager stateManager, byte[] payload);

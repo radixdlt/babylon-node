@@ -64,6 +64,8 @@
 
 use crate::mempool::*;
 use crate::types::*;
+use crate::{MempoolMetrics, TakesMetricLabels};
+use prometheus::Registry;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::time::Instant;
@@ -96,14 +98,16 @@ pub struct SimpleMempool {
     max_size: u64,
     data: HashMap<UserPayloadHash, MempoolData>,
     intent_lookup: HashMap<IntentHash, HashSet<UserPayloadHash>>,
+    metrics: MempoolMetrics,
 }
 
 impl SimpleMempool {
-    pub fn new(mempool_config: MempoolConfig) -> SimpleMempool {
+    pub fn new(config: MempoolConfig, metric_registry: &Registry) -> SimpleMempool {
         SimpleMempool {
-            max_size: mempool_config.max_size as u64,
+            max_size: config.max_size as u64,
             data: HashMap::new(),
             intent_lookup: HashMap::new(),
+            metrics: MempoolMetrics::new(metric_registry),
         }
     }
 }
@@ -134,7 +138,25 @@ impl SimpleMempool {
             })
             .or_insert_with(|| HashSet::from([payload_hash]));
 
+        self.metrics
+            .current_transactions
+            .set(self.get_count() as i64);
+        self.metrics.submission_added.with_label(source).inc();
+
         Ok(())
+    }
+
+    /// Bumps a metric representing rejected mempool submissions.
+    // TODO: this method lives here as a side-effect of extracting mempool responsibilities out of
+    // the StateManager. It does not interact with any mempool state (and thus e.g. should not
+    // require a lock on mempool), which suggests that another layer (or monitoring decorator)
+    // should exist on top of the mempool. This awaits a refactoring, which must first sort out the
+    // highly-coupled "check for rejection with caching" code.
+    pub fn record_rejection(&self, source: MempoolAddSource, error: &MempoolAddError) {
+        self.metrics
+            .submission_rejected
+            .with_two_labels(source, error)
+            .inc();
     }
 
     pub fn check_add_would_be_possible(
@@ -165,7 +187,7 @@ impl SimpleMempool {
         &mut self,
         intent_hashes: &[IntentHash],
     ) -> Vec<MempoolData> {
-        intent_hashes
+        let removed = intent_hashes
             .iter()
             .filter_map(|intent_hash| self.intent_lookup.remove(intent_hash))
             .flat_map(|payload_hashes| payload_hashes.into_iter())
@@ -174,7 +196,16 @@ impl SimpleMempool {
                     .remove(&payload_hash)
                     .expect("Mempool intent hash lookup out of sync on handle committed")
             })
-            .collect()
+            .collect::<Vec<MempoolData>>();
+        removed
+            .iter()
+            .filter(|data| data.source == MempoolAddSource::CoreApi)
+            .map(|data| data.added_at.elapsed().as_secs_f64())
+            .for_each(|wait| self.metrics.from_local_api_to_commit_wait.observe(wait));
+        self.metrics
+            .current_transactions
+            .set(self.get_count() as i64);
+        removed
     }
 
     pub fn get_count(&self) -> u64 {
@@ -209,8 +240,12 @@ impl SimpleMempool {
             .collect()
     }
 
-    pub fn transactions(&self) -> &HashMap<UserPayloadHash, MempoolData> {
-        &self.data
+    pub fn get_all_transactions(&self) -> Vec<PendingTransaction> {
+        self.data
+            .values()
+            .map(|transaction_data| &transaction_data.transaction)
+            .cloned()
+            .collect()
     }
 
     pub fn remove_transaction(
@@ -231,6 +266,9 @@ impl SimpleMempool {
             if payload_lookup.is_empty() {
                 self.intent_lookup.remove(intent_hash);
             }
+            self.metrics
+                .current_transactions
+                .set(self.get_count() as i64);
         }
         removed
     }
@@ -337,7 +375,7 @@ mod tests {
         let tv2 = create_fake_pending_transaction(2, 0);
         let tv3 = create_fake_pending_transaction(3, 0);
 
-        let mut mp = SimpleMempool::new(MempoolConfig { max_size: 2 });
+        let mut mp = SimpleMempool::new(MempoolConfig { max_size: 2 }, &Registry::new());
         assert_eq!(mp.max_size, 2);
         assert_eq!(mp.get_count(), 0);
         let rc = mp.get_proposal_transactions(3, u64::MAX, &HashSet::new());
@@ -445,7 +483,7 @@ mod tests {
         let intent_2_payload_1 = create_fake_pending_transaction(2, 1);
         let intent_2_payload_2 = create_fake_pending_transaction(2, 2);
 
-        let mut mp = SimpleMempool::new(MempoolConfig { max_size: 10 });
+        let mut mp = SimpleMempool::new(MempoolConfig { max_size: 10 }, &Registry::new());
         mp.add_transaction(intent_1_payload_1.clone(), MempoolAddSource::CoreApi)
             .unwrap();
         mp.add_transaction(intent_1_payload_2.clone(), MempoolAddSource::CoreApi)

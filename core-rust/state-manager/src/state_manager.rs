@@ -125,7 +125,7 @@ const UP_TO_FEE_LOAN_TRANSACTION_WARN_TIME_LIMIT: Duration = Duration::from_mill
 const FULL_TRANSACTION_WARN_TIME_LIMIT: Duration = Duration::from_millis(500);
 
 pub struct StateManager<S> {
-    pub mempool: RwLock<SimpleMempool>,
+    mempool: Arc<RwLock<SimpleMempool>>,
     mempool_relay_dispatcher: MempoolRelayDispatcher,
     network: NetworkDefinition,
     store: Arc<RwLock<S>>,
@@ -134,7 +134,6 @@ pub struct StateManager<S> {
     ledger_transaction_validator: LedgerTransactionValidator,
     pub pending_transaction_result_cache: PendingTransactionResultCache,
     ledger_metrics: LedgerMetrics,
-    mempool_metrics: MempoolMetrics,
     execution_config: ExecutionConfig,
     execution_config_for_pending_transactions: ExecutionConfig,
     execution_config_for_genesis: ExecutionConfig,
@@ -151,7 +150,7 @@ where
     pub fn new(
         network: NetworkDefinition,
         store: Arc<RwLock<S>>,
-        mempool: SimpleMempool,
+        mempool: Arc<RwLock<SimpleMempool>>,
         mempool_relay_dispatcher: MempoolRelayDispatcher,
         logging_config: LoggingConfig,
         metric_registry: &Registry,
@@ -166,9 +165,6 @@ where
             intent_hash_manager: TestIntentHashManager::new(),
         };
 
-        let ledger_metrics = LedgerMetrics::new(metric_registry);
-        let mempool_metrics = MempoolMetrics::new(metric_registry);
-
         let accumulator_hash = store
             .read()
             .get_top_transaction_identifiers()
@@ -176,7 +172,7 @@ where
 
         StateManager {
             network,
-            mempool: RwLock::new(mempool),
+            mempool,
             mempool_relay_dispatcher,
             store,
             execution_cache: ExecutionCache::new(accumulator_hash),
@@ -196,8 +192,7 @@ where
             intent_hash_manager: TestIntentHashManager::new(),
             logging_config: logging_config.state_manager_config,
             pending_transaction_result_cache: PendingTransactionResultCache::new(10000, 10000),
-            ledger_metrics,
-            mempool_metrics,
+            ledger_metrics: LedgerMetrics::new(metric_registry),
         }
     }
 }
@@ -261,6 +256,18 @@ where
 
 pub enum StateManagerRejectReason {
     TransactionValidationError(TransactionValidationError),
+}
+
+/// A result of `StateManager::check_transactions_to_relay()`.
+pub struct PendingTransactionBatchCheckResult {
+    /// A subset of candidate transactions that is appropriate to relaying via a mempool sync.
+    pub to_relay: Vec<PendingTransaction>,
+    /// A subset of candidate transactions that was discovered to be invalid (and should be removed
+    /// from the mempool).
+    /// Note: this is not the same as "all candidate transactions except the ones selected to relay"
+    /// since some (valid or invalid) candidates might have not been considered at all (due to
+    /// mempool sync relay limits).
+    pub to_remove: Vec<PendingTransaction>,
 }
 
 #[derive(Debug)]
@@ -334,55 +341,31 @@ where
         source: MempoolAddSource,
         unvalidated_transaction: NotarizedTransaction,
     ) -> Result<(), MempoolAddError> {
-        self.check_for_rejection_and_add_to_mempool_internal(unvalidated_transaction, source)
-            .map(|_| {
-                self.mempool_metrics
-                    .current_transactions
-                    .set(self.mempool.read().get_count() as i64);
-                self.mempool_metrics
-                    .submission_added
-                    .with_label(source)
-                    .inc();
-            })
-            .map_err(|err| {
-                self.mempool_metrics
-                    .submission_rejected
-                    .with_two_labels(source, &err)
-                    .inc();
-
-                err
-            })
-    }
-
-    /// Checking if the transaction should be rejected requires full validation, ie:
-    /// * Static Validation
-    /// * Executing the transaction (up to loan repayment)
-    ///
-    /// We look for cached rejections first, to avoid this heavy lifting where we can
-    fn check_for_rejection_and_add_to_mempool_internal(
-        &mut self,
-        unvalidated_transaction: NotarizedTransaction,
-        source: MempoolAddSource,
-    ) -> Result<(), MempoolAddError> {
         // Quick check to avoid transaction validation if it couldn't be added to the mempool anyway
-        self.mempool
-            .write()
-            .check_add_would_be_possible(&unvalidated_transaction.user_payload_hash())?;
+        let mut write_mempool = self.mempool.write();
+        write_mempool.check_add_would_be_possible(&unvalidated_transaction.user_payload_hash())?;
+        drop(write_mempool);
 
         let (record, was_cached) = self.check_for_rejection_with_caching(&unvalidated_transaction);
-        let accept_into_mempool = record.should_accept_into_mempool(was_cached);
+        let result = record
+            .should_accept_into_mempool(was_cached)
+            .map_err(MempoolAddError::Rejected);
 
-        if accept_into_mempool.is_ok() {
-            // Note - we purposefully don't save a validated transaction in the mempool:
-            // * Currently (Nov 2022) static validation isn't sufficiently static, as it includes EG epoch validation
-            // * Moreover, the engine expects the validated transaction to be presently valid, else panics
-            // * Once epoch validation is moved to the executor, we can persist validated transactions in the mempool
-            self.mempool
-                .write()
-                .add_transaction(unvalidated_transaction.into(), source)?;
-        }
+        let mut write_mempool = self.mempool.write();
+        match &result {
+            Ok(_) => {
+                // Note - we purposefully don't save a validated transaction in the mempool:
+                // * Currently (Nov 2022) static validation isn't sufficiently static, as it includes EG epoch validation
+                // * Moreover, the engine expects the validated transaction to be presently valid, else panics
+                // * Once epoch validation is moved to the executor, we can persist validated transactions in the mempool
+                write_mempool.add_transaction(unvalidated_transaction.into(), source)?;
+            }
+            Err(error) => {
+                write_mempool.record_rejection(source, error);
+            }
+        };
 
-        accept_into_mempool.map_err(MempoolAddError::Rejected)
+        result
     }
 
     /// Reads the transaction rejection status from the cache, else calculates it fresh, by
@@ -393,7 +376,7 @@ where
     /// e.g. removing the transaction from the mempool
     ///
     /// Its pending transaction record is returned, along with a boolean about whether the last attempt was cached.
-    pub fn check_for_rejection_with_caching(
+    fn check_for_rejection_with_caching(
         &mut self,
         transaction: &NotarizedTransaction,
     ) -> (PendingTransactionRecord, bool) {
@@ -479,66 +462,48 @@ where
         }
     }
 
-    pub fn get_relay_transactions(
+    /// Checks the given candidate transactions for rejection and decides which ones should be
+    /// relayed via mempool sync, and which ones should be removed from mempool.
+    pub fn check_transactions_to_relay(
         &mut self,
+        mut candidate_transactions: Vec<PendingTransaction>,
         max_num_txns: usize,
         max_payload_size_bytes: usize,
-    ) -> Vec<PendingTransaction> {
-        let mut mempool_transaction_data: Vec<_> = {
-            // Explicit scope to ensure the lock is dropped
-            self.mempool
-                .read()
-                .transactions()
-                .values()
-                .cloned()
-                .collect()
-        };
-        mempool_transaction_data.shuffle(&mut thread_rng());
+    ) -> PendingTransactionBatchCheckResult {
+        candidate_transactions.shuffle(&mut thread_rng());
 
-        let mut transactions_to_return = Vec::new();
+        let mut to_relay = Vec::new();
         let mut payload_size_so_far = 0usize;
 
         // We (partially) cleanup the mempool on the occasion of getting the relay txns
         // TODO: move this to a separate job
-        let mut transactions_to_remove = Vec::new();
+        let mut to_remove = Vec::new();
 
-        for transaction_data in mempool_transaction_data.into_iter() {
-            let (record, _) =
-                self.check_for_rejection_with_caching(&transaction_data.transaction.payload);
+        for candidate_transaction in candidate_transactions.into_iter() {
+            let (record, _) = self.check_for_rejection_with_caching(&candidate_transaction.payload);
             if record.latest_attempt.rejection.is_some() {
                 // Mark the transaction to be removed from the mempool
                 // (see the comment above about moving this to a separate job)
-                transactions_to_remove.push((
-                    transaction_data.transaction.intent_hash,
-                    transaction_data.transaction.payload_hash,
-                ));
+                to_remove.push(candidate_transaction);
             } else {
                 // Check the payload size limit
-                payload_size_so_far += transaction_data.transaction.payload_size;
+                payload_size_so_far += candidate_transaction.payload_size;
                 if payload_size_so_far > max_payload_size_bytes {
                     break;
                 }
 
                 // Add the transaction to response
-                transactions_to_return.push(transaction_data.transaction);
-                if transactions_to_return.len() >= max_num_txns {
+                to_relay.push(candidate_transaction);
+                if to_relay.len() >= max_num_txns {
                     break;
                 }
             }
         }
 
-        // See the comment above about moving this to a separate job
-        {
-            let mut mempool = self.mempool.write();
-            for transaction_to_remove in transactions_to_remove {
-                mempool.remove_transaction(&transaction_to_remove.0, &transaction_to_remove.1);
-            }
-            self.mempool_metrics
-                .current_transactions
-                .set(mempool.get_count() as i64);
+        PendingTransactionBatchCheckResult {
+            to_relay,
+            to_remove,
         }
-
-        transactions_to_return
     }
 
     // TODO: Update to prepare_system_transaction when we start to support forking
@@ -811,22 +776,20 @@ where
             }
         }
 
-        {
-            let mut mempool = self.mempool.write();
-            for (intent_hash, user_payload_hash, _, rejection_option) in
-                pending_transaction_results.iter()
-            {
-                if rejection_option.is_some() {
-                    // Removing transactions rejected during prepare from the mempool is a bit of overkill:
-                    // just because transactions were rejected in this history doesn't mean this history will be committed.
-                    //
-                    // But it'll do for now as a defensive measure until we can have a more intelligent mempool.
-                    mempool.remove_transaction(intent_hash, user_payload_hash);
-                }
+        let pending_rejected_transactions = pending_transaction_results
+            .iter()
+            .filter(|(_, _, _, rejection)| rejection.is_some())
+            .map(|(intent_hash, user_payload_hash, _, _)| (intent_hash, user_payload_hash))
+            .collect::<Vec<_>>();
+        if !pending_rejected_transactions.is_empty() {
+            let mut write_mempool = self.mempool.write();
+            for (intent_hash, user_payload_hash) in pending_rejected_transactions {
+                // Removing transactions rejected during prepare from the mempool is a bit of overkill:
+                // just because transactions were rejected in this history doesn't mean this history will be committed.
+                //
+                // But it'll do for now as a defensive measure until we can have a more intelligent mempool.
+                write_mempool.remove_transaction(intent_hash, user_payload_hash);
             }
-            self.mempool_metrics
-                .current_transactions
-                .set(mempool.get_count() as i64);
         }
 
         for (intent_hash, user_payload_hash, invalid_at_epoch, rejection_option) in
@@ -1048,22 +1011,9 @@ where
                 .unwrap()
                 .as_secs_f64(),
         );
-        {
-            let mut mempool = self.mempool.write();
-            mempool
-                .handle_committed_transactions(&intent_hashes)
-                .iter()
-                .filter(|data| data.source == MempoolAddSource::CoreApi)
-                .map(|data| data.added_at.elapsed().as_secs_f64())
-                .for_each(|wait| {
-                    self.mempool_metrics
-                        .from_local_api_to_commit_wait
-                        .observe(wait)
-                });
-            self.mempool_metrics
-                .current_transactions
-                .set(mempool.get_count() as i64);
-        }
+        let mut write_mempool = self.mempool.write();
+        write_mempool.handle_committed_transactions(&intent_hashes);
+        drop(write_mempool);
 
         self.pending_transaction_result_cache
             .track_committed_transactions(

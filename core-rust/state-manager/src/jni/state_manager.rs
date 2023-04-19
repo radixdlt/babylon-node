@@ -131,6 +131,7 @@ pub struct JNIStateManager {
     pub network: NetworkDefinition,
     pub state_manager: Arc<RwLock<ActualStateManager>>,
     pub database: Arc<RwLock<StateManagerDatabase>>,
+    pub mempool: Arc<RwLock<SimpleMempool>>,
     pub metric_registry: Registry,
 }
 
@@ -150,20 +151,23 @@ impl JNIStateManager {
             }
         };
 
+        let metric_registry = Registry::new();
+
         let network = config.network_definition;
         let database = Arc::new(parking_lot::const_rwlock(
             StateManagerDatabase::from_config(config.db_config),
         ));
-        let mempool = SimpleMempool::new(mempool_config);
+        let mempool = Arc::new(parking_lot::const_rwlock(SimpleMempool::new(
+            mempool_config,
+            &metric_registry,
+        )));
         let mempool_relay_dispatcher = MempoolRelayDispatcher::new(env, j_state_manager).unwrap();
-
-        let metric_registry = Registry::new();
 
         // Build the state manager.
         let state_manager = Arc::new(parking_lot::const_rwlock(StateManager::new(
             network.clone(),
             database.clone(),
-            mempool,
+            mempool.clone(),
             mempool_relay_dispatcher,
             config.logging_config,
             &metric_registry,
@@ -173,6 +177,7 @@ impl JNIStateManager {
             network,
             state_manager,
             database,
+            mempool,
             metric_registry,
         };
 
@@ -208,6 +213,10 @@ impl JNIStateManager {
         j_state_manager: JObject,
     ) -> Arc<RwLock<StateManagerDatabase>> {
         Self::get_state(env, j_state_manager).database.clone()
+    }
+
+    pub fn get_mempool(env: &JNIEnv, j_state_manager: JObject) -> Arc<RwLock<SimpleMempool>> {
+        Self::get_state(env, j_state_manager).mempool.clone()
     }
 }
 

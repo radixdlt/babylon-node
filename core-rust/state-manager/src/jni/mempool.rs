@@ -64,12 +64,13 @@
 
 use std::collections::HashSet;
 
-use crate::jni::state_manager::ActualStateManager;
+use crate::jni::state_manager::{ActualStateManager, JNIStateManager};
 
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::types::manifest_encode;
+
 use sbor::{Categorize, Decode, Encode};
 use transaction::errors::TransactionValidationError;
 use transaction::model::NotarizedTransaction;
@@ -119,39 +120,29 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForPropo
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_read_call(
-        env,
-        j_state_manager,
+    jni_sbor_coded_call(
+        &env,
         request_payload,
-        do_get_transactions_for_proposal,
+        |request: ProposalTransactionsRequest| -> Vec<JavaRawTransaction> {
+            let user_payload_hashes_to_exclude: HashSet<UserPayloadHash> = request
+                .transaction_hashes_to_exclude
+                .into_iter()
+                .map(|hash| UserPayloadHash::from_raw_bytes(hash.into_bytes()))
+                .collect();
+
+            let mempool = JNIStateManager::get_mempool(&env, j_state_manager);
+            let read_mempool = mempool.read();
+            read_mempool
+                .get_proposal_transactions(
+                    request.max_count.into(),
+                    request.max_payload_size_bytes.into(),
+                    &user_payload_hashes_to_exclude,
+                )
+                .into_iter()
+                .map(|t| t.into())
+                .collect()
+        },
     )
-}
-
-#[tracing::instrument(skip_all)]
-fn do_get_transactions_for_proposal(
-    state_manager: &ActualStateManager,
-    (max_count, max_payload_size_bytes, transaction_hashes_to_exclude): (
-        u32,
-        u32,
-        Vec<JavaHashCode>,
-    ),
-) -> Vec<JavaRawTransaction> {
-    let user_payload_hashes_to_exclude: HashSet<UserPayloadHash> = transaction_hashes_to_exclude
-        .into_iter()
-        .map(|hash| UserPayloadHash::from_raw_bytes(hash.into_bytes()))
-        .collect();
-
-    state_manager
-        .mempool
-        .read()
-        .get_proposal_transactions(
-            max_count.into(),
-            max_payload_size_bytes.into(),
-            &user_payload_hashes_to_exclude,
-        )
-        .into_iter()
-        .map(|t| t.into())
-        .collect()
 }
 
 #[no_mangle]
@@ -161,12 +152,11 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getCount(
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_get_count)
-}
-
-#[tracing::instrument(skip_all)]
-fn do_get_count(state_manager: &ActualStateManager, _args: ()) -> i32 {
-    state_manager.mempool.read().get_count().try_into().unwrap()
+    jni_sbor_coded_call(&env, request_payload, |_no_args: ()| -> i32 {
+        let mempool = JNIStateManager::get_mempool(&env, j_state_manager);
+        let read_mempool = mempool.read();
+        read_mempool.get_count().try_into().unwrap()
+    })
 }
 
 #[no_mangle]
@@ -176,32 +166,52 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsToRelay(
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(
-        env,
-        j_state_manager,
+    jni_sbor_coded_call(
+        &env,
         request_payload,
-        do_get_transactions_to_relay,
-    )
-}
+        |(max_num_txns, max_payload_size_bytes): (u32, u32)| -> Vec<JavaRawTransaction> {
+            let mempool = JNIStateManager::get_mempool(&env, j_state_manager);
+            let read_mempool = mempool.read();
+            let candidate_transactions = read_mempool.get_all_transactions();
+            drop(read_mempool);
 
-#[tracing::instrument(skip_all)]
-fn do_get_transactions_to_relay(
-    state_manager: &mut ActualStateManager,
-    (max_num_txns, max_payload_size_bytes): (u32, u32),
-) -> Vec<JavaRawTransaction> {
-    state_manager
-        .get_relay_transactions(
-            max_num_txns.try_into().unwrap(),
-            max_payload_size_bytes.try_into().unwrap(),
-        )
-        .into_iter()
-        .map(|t| t.into())
-        .collect()
+            let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
+            let mut write_state_manager = state_manager.write();
+            let checked_transactions = write_state_manager.check_transactions_to_relay(
+                candidate_transactions,
+                max_num_txns.try_into().unwrap(),
+                max_payload_size_bytes.try_into().unwrap(),
+            );
+
+            if !checked_transactions.to_remove.is_empty() {
+                let mut write_mempool = mempool.write();
+                for transaction_to_remove in checked_transactions.to_remove {
+                    write_mempool.remove_transaction(
+                        &transaction_to_remove.intent_hash,
+                        &transaction_to_remove.payload_hash,
+                    );
+                }
+            }
+
+            checked_transactions
+                .to_relay
+                .into_iter()
+                .map(|transaction_to_relay| transaction_to_relay.into())
+                .collect()
+        },
+    )
 }
 
 //
 // DTO Models + Mapping
 //
+
+#[derive(Debug, Categorize, Encode, Decode)]
+pub struct ProposalTransactionsRequest {
+    pub max_count: u32,
+    pub max_payload_size_bytes: u32,
+    pub transaction_hashes_to_exclude: Vec<JavaHashCode>,
+}
 
 #[derive(Debug, Categorize, Encode, Decode)]
 pub struct JavaRawTransaction {

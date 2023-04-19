@@ -70,6 +70,7 @@ import com.radixdlt.crypto.*;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.identifiers.TID;
 import com.radixdlt.mempool.MempoolError;
+import com.radixdlt.mempool.ProposalTransactionsRequest;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.*;
 import com.radixdlt.sbor.codec.Codec;
@@ -114,6 +115,7 @@ public final class StateManagerSbor {
     UInt32.registerCodec(codecMap);
     UInt64.registerCodec(codecMap);
     RustMempoolConfig.registerCodec(codecMap);
+    ProposalTransactionsRequest.registerCodec(codecMap);
     NetworkDefinition.registerCodec(codecMap);
     LoggingConfig.registerCodec(codecMap);
     StateManagerLoggingConfig.registerCodec(codecMap);
