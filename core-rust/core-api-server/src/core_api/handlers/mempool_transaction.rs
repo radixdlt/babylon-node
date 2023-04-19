@@ -12,13 +12,8 @@ pub(crate) async fn handle_mempool_transaction(
     let payload_hash = extract_payload_hash(request.payload_hash)
         .map_err(|err| err.into_response_error("payload_hash"))?;
 
-    match state
-        .state_manager
-        .read()
-        .mempool
-        .read()
-        .get_payload(&payload_hash)
-    {
+    let mempool = state.mempool.read();
+    match mempool.get_payload(&payload_hash) {
         Some(pending_transaction) => Ok(models::MempoolTransactionResponse {
             notarized_transaction: Box::new(to_api_notarized_transaction(
                 &mapping_context,
