@@ -104,8 +104,7 @@ import org.junit.runners.Parameterized.Parameters;
 public class FProposalsPerRoundDropperTest {
   @Parameters
   public static Collection<Object[]> testParameters() {
-    // TODO(only for CI testing): bring back the `{4}, {10}`
-    return Arrays.asList(new Object[][] {{4}, {4}, {4}, {4}, {4}, {10}, {10}, {10}, {10}, {10}});
+    return Arrays.asList(new Object[][] {{4}, {10}});
   }
 
   private final Builder bftTestBuilder;
