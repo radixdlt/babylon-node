@@ -98,17 +98,13 @@ import org.junit.runners.Parameterized.Parameters;
  * Simulation with a communication adversary which drops a random proposal message in every round.
  *
  * <p>Dropped proposals implies that validators will need to retrieve the information originally in
- * this proposals via syncing with other nodes.
+ * these proposals via syncing with other nodes.
  */
 @RunWith(Parameterized.class)
 public class FProposalsPerRoundDropperTest {
   @Parameters
   public static Collection<Object[]> testParameters() {
-    return Arrays.asList(
-        new Object[][] {
-          {4},
-          {5} // TODO: Investigate why 5 still failing on Travis and 20 still failing on Jenkins
-        });
+    return Arrays.asList(new Object[][] {{4}, {10}});
   }
 
   private final Builder bftTestBuilder;
@@ -120,7 +116,7 @@ public class FProposalsPerRoundDropperTest {
             .networkModules(
                 NetworkOrdering.inOrder(),
                 NetworkLatencies.fixed(10),
-                NetworkDroppers.fRandomProposalsPerRoundDropped())
+                NetworkDroppers.fNodesAllReceivedProposalsDropped())
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
                     NodeStorageConfig.none(),
