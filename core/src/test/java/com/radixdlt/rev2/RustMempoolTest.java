@@ -95,12 +95,10 @@ public final class RustMempoolTest {
     new LedgerInitializer(
             new RustStateComputer(new MetricsInitializer().initialize(), stateManager))
         .prepareAndCommit(
-            TransactionBuilder.createGenesis(
-                Map.of(),
-                Map.of(),
-                UInt64.fromNonNegativeLong(1),
-                UInt64.fromNonNegativeLong(10),
-                UInt64.fromNonNegativeLong(1)));
+            TransactionBuilder.createGenesisWithNumValidators(
+              0,
+              Decimal.zero(),
+              UInt64.fromNonNegativeLong(10)));
   }
 
   @Test

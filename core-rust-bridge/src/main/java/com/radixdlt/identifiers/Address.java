@@ -76,10 +76,14 @@ public final class Address {
   }
 
   public static ComponentAddress virtualAccountAddress(ECDSASecp256k1PublicKey key) {
-    return virtualAccountAddressFunc.call(key);
+    return uncheckedVirtualAccountAddress(key.getCompressedBytes());
   }
 
-  private static final Natives.Call1<ECDSASecp256k1PublicKey, ComponentAddress>
+  public static ComponentAddress uncheckedVirtualAccountAddress(byte[] uncheckedKeyBytes) {
+    return virtualAccountAddressFunc.call(uncheckedKeyBytes);
+  }
+
+  private static final Natives.Call1<byte[], ComponentAddress>
       virtualAccountAddressFunc =
           Natives.builder(Address::virtualAccountAddress).build(new TypeToken<>() {});
 

@@ -175,6 +175,7 @@ pub async fn create_server<F>(
     let bind_addr = bind_addr.parse().expect("Failed to parse bind address");
 
     axum::Server::bind(&bind_addr)
+        .http1_keepalive(false)
         .serve(prefixed_router.into_make_service())
         .with_graceful_shutdown(shutdown_signal)
         .await

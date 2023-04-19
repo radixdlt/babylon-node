@@ -370,8 +370,8 @@ public final class RadixNodeBootstrapper {
                   """
              Genesis data has been successfully received from the Olympia node \
              ({} accounts, {} validators). Initializing the Babylon node...""",
-                  genesisData.accountXrdAllocations().size(),
-                  genesisData.validatorSetAndStakeOwners().size());
+                  genesisData.accounts().size(),
+                  genesisData.validators().size());
               final var genesisTxn =
                   genesisData.toGenesisTransaction(GenesisConfig.babylonDefault());
               radixNodeFuture.complete(RadixNode.start(properties, network, genesisTxn));

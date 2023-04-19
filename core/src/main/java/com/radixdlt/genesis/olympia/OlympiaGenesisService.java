@@ -187,8 +187,10 @@ public final class OlympiaGenesisService {
 
         try (final var bais = new ByteArrayInputStream(uncompressedBytes)) {
           final var parsedEndState = new OlympiaStateIRDeserializer().deserialize(bais);
-          final var genesisData = OlympiaStateToBabylonGenesisMapper.toGenesisData(parsedEndState);
-          completableFuture.complete(genesisData);
+          OlympiaStateToBabylonGenesisMapper.toGenesisData(parsedEndState)
+              .fold(
+                  completableFuture::complete,
+                  error -> completableFuture.completeExceptionally(new RuntimeException(error)));
         } catch (OlympiaStateIRSerializationException | IOException ex) {
           completableFuture.completeExceptionally(
               new RuntimeException("Failed to deserialize the Olympia end state", ex));

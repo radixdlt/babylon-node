@@ -64,52 +64,86 @@
 
 package com.radixdlt.genesis;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawLedgerTransaction;
-
-import java.util.List;
-import java.util.Map;
+import com.radixdlt.utils.UInt32;
 
 /**
  * Intermediate genesis data used as a base (together with a GenesisConfig) for creating a genesis
  * transaction.
  */
 public record GenesisData(
-  List<GenesisValidator> validators,
-  List<GenesisResource> resources,
-  List<ComponentAddress> accounts,
-  Map<Integer, List<Tuple.Tuple2<Integer, Decimal>>> resourceBalances,
-  Map<Integer, Decimal> xrdBalances,
-  Map<Integer, List<Tuple.Tuple2<Integer, Decimal>>> stakes) {
+    ImmutableList<GenesisValidator> validators,
+    ImmutableList<GenesisResource> resources,
+    ImmutableList<ComponentAddress> accounts,
+    ImmutableList<NonXrdResourceBalance> nonXrdResourceBalances,
+    ImmutableList<XrdBalance> xrdBalances,
+    ImmutableList<Stake> stakes) {
+
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+      GenesisValidator.class,
+      codecs -> StructCodec.fromRecordComponents(GenesisValidator.class, codecs));
+
+    codecMap.register(
+      GenesisResource.class,
+      codecs -> StructCodec.fromRecordComponents(GenesisResource.class, codecs));
+
+    codecMap.register(
+      NonXrdResourceBalance.class,
+      codecs -> StructCodec.fromRecordComponents(NonXrdResourceBalance.class, codecs));
+
+    codecMap.register(
+      XrdBalance.class,
+      codecs -> StructCodec.fromRecordComponents(XrdBalance.class, codecs));
+
+    codecMap.register(
+      Stake.class,
+      codecs -> StructCodec.fromRecordComponents(Stake.class, codecs));
+
+    codecMap.register(
+      GenesisData.class,
+      codecs -> StructCodec.fromRecordComponents(GenesisData.class, codecs));
+  }
 
   public record GenesisValidator(
-    ECDSASecp256k1PublicKey key,
-    ComponentAddress componentAddress) {}
+      ECDSASecp256k1PublicKey key,
+      ComponentAddress componentAddress,
+      boolean allowsDelegation,
+      boolean isRegistered,
+      ImmutableList<Tuple.Tuple2<String, String>> metadata) {}
 
   public record GenesisResource(
-    String symbol,
-    String name,
-    String description,
-    String url,
-    String iconUrl,
-    byte[] addressBytes,
-    Option<Integer> ownerWithMintAndBurnRights) {}
+      byte[] addressBytes,
+      ImmutableList<Tuple.Tuple2<String, String>> metadata,
+      Option<UInt32> ownerWithMintAndBurnRights) {}
+
+  public record NonXrdResourceBalance(UInt32 resourceIndex, UInt32 accountIndex, Decimal amount) {}
+
+  public record XrdBalance(UInt32 accountIndex, Decimal amount) {}
+
+  public record Stake(UInt32 validatorIndex, UInt32 accountIndex, Decimal xrdAmount) {}
 
   public static GenesisData empty() {
-    return new GenesisData(List.of(), List.of(), List.of(), Map.of(), Map.of(), Map.of());
+    return new GenesisData(
+        ImmutableList.of(),
+        ImmutableList.of(),
+        ImmutableList.of(),
+        ImmutableList.of(),
+        ImmutableList.of(),
+        ImmutableList.of());
   }
 
   public RawLedgerTransaction toGenesisTransaction(GenesisConfig config) {
     return TransactionBuilder.createGenesis(
-        validatorSetAndStakeOwners,
-        accountXrdAllocations,
-        config.initialEpoch(),
-        config.roundsPerEpoch(),
-        config.numUnstakeEpochs());
+        this, config.initialEpoch(), config.roundsPerEpoch(), config.numUnstakeEpochs());
   }
 }

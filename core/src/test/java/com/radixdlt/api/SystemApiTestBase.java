@@ -128,12 +128,10 @@ public abstract class SystemApiTestBase {
                     LedgerConfig.stateComputerWithSyncRelay(
                         StateComputerConfig.rev2(
                             Network.INTEGRATIONTESTNET.getId(),
-                            TransactionBuilder.createGenesis(
-                                TEST_KEY.getPublicKey(),
-                                Map.of(),
+                            TransactionBuilder.createGenesisWithNumValidators(
+                                1,
                                 Decimal.of(1),
-                                UInt64.fromNonNegativeLong(10),
-                                UInt64.fromNonNegativeLong(1)),
+                                UInt64.fromNonNegativeLong(10)),
                             REv2StateManagerModule.DatabaseType.IN_MEMORY,
                             StateComputerConfig.REV2ProposerConfig.mempool(
                                 10, 10 * 1024 * 1024, 10, MempoolRelayConfig.of())),

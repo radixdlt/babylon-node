@@ -23,14 +23,14 @@ parking_lot = { version = "0.12" }
 #
 # Ensure this version is also identically updated in ../state-manager/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-722092ac5", features = ["serde"] }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-722092ac5" }
-radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-722092ac5", features = ["serde"]  }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-722092ac5", features = ["serde"]  }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-722092ac5" }
-radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-722092ac5" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-722092ac5" }
-utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-722092ac5" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-b86482100", features = ["serde"] }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-b86482100" }
+radix-engine-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-b86482100", features = ["serde"]  }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-b86482100", features = ["serde"]  }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-b86482100" }
+radix-engine-constants = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-b86482100" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-b86482100" }
+utils = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "genesis-resources-b86482100" }
 
 jni = "0.19.0"
 

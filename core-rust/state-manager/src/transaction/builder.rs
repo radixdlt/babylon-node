@@ -85,7 +85,9 @@ pub fn create_genesis_ledger_transaction_bytes(
         rounds_per_epoch,
         num_unstake_epochs,
     );
-    manifest_encode(&LedgerTransaction::System(genesis)).unwrap()
+
+    // manifest_encode(&LedgerTransaction::System(genesis)).unwrap()
+    manifest_encode(&genesis).unwrap()
 }
 
 pub fn create_intent_bytes(

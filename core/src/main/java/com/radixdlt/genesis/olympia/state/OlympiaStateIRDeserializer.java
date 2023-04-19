@@ -65,8 +65,8 @@
 package com.radixdlt.genesis.olympia.state;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.UInt256;
@@ -112,7 +112,7 @@ public final class OlympiaStateIRDeserializer {
 
     private OlympiaStateIR.Validator readValidator() {
       return new OlympiaStateIR.Validator(
-          readPublicKey(),
+          readPublicKeyBytes(),
           readString(),
           readString(),
           readBool(),
@@ -141,7 +141,7 @@ public final class OlympiaStateIRDeserializer {
     }
 
     private ImmutableList<OlympiaStateIR.Account> readAccounts() {
-      return readList(() -> new OlympiaStateIR.Account(readPublicKey()));
+      return readList(() -> new OlympiaStateIR.Account(readPublicKeyBytes()));
     }
 
     private ImmutableList<OlympiaStateIR.AccountBalance> readBalances() {
@@ -165,13 +165,8 @@ public final class OlympiaStateIRDeserializer {
       return REAddr.of(addrBytes);
     }
 
-    private ECDSASecp256k1PublicKey readPublicKey() {
-      try {
-        return ECDSASecp256k1PublicKey.fromBytes(
-            readNBytes(ECDSASecp256k1PublicKey.COMPRESSED_BYTES));
-      } catch (PublicKeyException e) {
-        throw new OlympiaStateIRSerializationException("Failed to read public key", e);
-      }
+    private HashCode readPublicKeyBytes() {
+      return HashCode.fromBytes(readNBytes(ECDSASecp256k1PublicKey.COMPRESSED_BYTES));
     }
 
     private Optional<Integer> readOptionalInt() {

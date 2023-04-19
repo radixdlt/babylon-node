@@ -66,6 +66,7 @@ package com.radixdlt.sbor.codec;
 
 import static com.radixdlt.sbor.codec.constants.TypeId.TYPE_ARRAY;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.lang.Functions;
 import com.radixdlt.sbor.codec.constants.TypeId;
@@ -221,6 +222,10 @@ interface CollectionCodec {
     return new CollectionCodecViaArrayList<>(itemCodec, List::size, list -> list, list -> list);
   }
 
+  static <T> Codec<ImmutableList<T>> forImmutableList(Codec<T> itemCodec) {
+    return new CollectionCodecViaArrayList<>(itemCodec, ImmutableList::size, list -> list, ImmutableList::copyOf);
+  }
+
   static <T> Codec<ArrayList<T>> forArrayList(Codec<T> itemCodec) {
     return new CollectionCodecViaArrayList<>(itemCodec, List::size, list -> list, list -> list);
   }
@@ -278,6 +283,19 @@ interface CollectionCodec {
           try {
             var itemType = TypeTokenUtils.getGenericTypeParameter(collectionType, 0);
             return forList(codecs.of(itemType));
+          } catch (Exception ex) {
+            throw new SborCodecException(
+                String.format("Exception creating List type codec for %s", collectionType), ex);
+          }
+        });
+  }
+  static void registerImmutableListToMapTo(CodecMap codecMap) {
+    codecMap.registerForGeneric(
+        ImmutableList.class,
+        (codecs, collectionType) -> {
+          try {
+            var itemType = TypeTokenUtils.getGenericTypeParameter(collectionType, 0);
+            return forImmutableList(codecs.of(itemType));
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating List type codec for %s", collectionType), ex);

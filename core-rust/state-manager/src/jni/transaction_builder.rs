@@ -109,12 +109,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createGenesi
 
 #[allow(clippy::type_complexity)]
 fn do_create_genesis_ledger_transaction(
-    (
-        genesis_data,
-        initial_epoch,
-        rounds_per_epoch,
-        num_unstake_epochs,
-    ): (
+    (genesis_data, initial_epoch, rounds_per_epoch, num_unstake_epochs): (
         GenesisData,
         u64,
         u64,

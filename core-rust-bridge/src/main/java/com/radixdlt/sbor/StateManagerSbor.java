@@ -68,6 +68,7 @@ import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.*;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
+import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.identifiers.TID;
 import com.radixdlt.mempool.MempoolError;
 import com.radixdlt.mempool.RustMempoolConfig;
@@ -154,6 +155,7 @@ public final class StateManagerSbor {
     TransactionHeader.registerCodec(codecMap);
     CoreApiServerConfig.registerCodec(codecMap);
     ValidatorInfo.registerCodec(codecMap);
+    GenesisData.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

@@ -74,6 +74,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import com.radixdlt.utils.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 
 /**
@@ -274,6 +276,10 @@ public final class REAddr {
 
   public byte[] getBytes() {
     return addr;
+  }
+
+  public byte[] getBytesWithoutTypePrefix() {
+    return Arrays.copyOfRange(addr, 1, addr.length);
   }
 
   public static REAddr of(byte[] addr) {
